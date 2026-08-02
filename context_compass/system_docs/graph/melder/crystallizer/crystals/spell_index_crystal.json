@@ -9,7 +9,16 @@
    "label": "spell_index_crystal",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/spell_index_crystal.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Twin carrying index membership - which members ride which index and which is selected.",
+   "responsibilities": [
+    "persist grouping that per-spell custody cannot express"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "db598bc9ae0d67cf96c02a390e33ee39ac861ee3b5a3e77c3568588418cf4a78"
   },
   "melder.crystallizer.crystals.spell_index_crystal.SpellIndexCrystal": {
    "id": "melder.crystallizer.crystals.spell_index_crystal.SpellIndexCrystal",
@@ -31,7 +40,25 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "0adca421023b96bba6604bc16e0530765cc3fee698f498ed17bd8b3fa345a8ad",
+   "include": true,
+   "role": "Digital twin of one live SpellIndex: owner edge, selection and member set.",
+   "responsibilities": [
+    "carry selected spell id and all member ids",
+    "re-snapshot at bind, notch, disposal and transfer"
+   ],
+   "owns_state": [
+    "_index_id",
+    "_spellbook_id",
+    "_selected_spell_id",
+    "_member_spell_ids"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "0adca421023b96bba6604bc16e0530765cc3fee698f498ed17bd8b3fa345a8ad"
   }
  },
  "edges_out": [

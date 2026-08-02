@@ -9,7 +9,17 @@
    "label": "bind_guard",
    "kind": "module",
    "file": "src/melder/_build_assets/_bind_guard/bind_guard.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Hand-written loader publishing INTERNAL_MANIFEST that assert_allowed enforces.",
+   "responsibilities": [
+    "hydrate the committed manifest through an accelerator cache that is never the source"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "051831289a91e4851c1016448743c7d8dc084e4da82cf6ac9c8531581a76dae2"
   },
   "melder._build_assets._bind_guard.bind_guard.BindGuardAsset": {
    "id": "melder._build_assets._bind_guard.bind_guard.BindGuardAsset",
@@ -24,7 +34,17 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "32425561acc804038d7757dbce749e15d3ab7eeb45f154d7d92fa9312d0b3dbc",
+   "include": true,
+   "role": "Static identity namespace for the bind-guard asset.",
+   "responsibilities": [
+    "carry manifest version and entry count"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "32425561acc804038d7757dbce749e15d3ab7eeb45f154d7d92fa9312d0b3dbc"
   }
  },
  "edges_out": [],

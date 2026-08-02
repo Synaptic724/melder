@@ -9,7 +9,10 @@
    "label": "cluster_leave_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_leave_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan isolating a conduit's exit from a cluster.",
+   "semantics_authored_against": "2a3fd9b60995bde38106cc5931fc579bd2065f517c7f3afe64e4fd14b94b5c3e"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_leave_transaction_strategy.ClusterLeaveTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_leave_transaction_strategy.ClusterLeaveTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "a851e9defa4995f155566fcf6eefecbb2655a523d91322802e81354c1ca51bc2",
+   "include": true,
+   "role": "Exact inverse of cluster-join: scope isolation for a conduit's EXIT, with matching claim modes because an exit mutates the same surfaces an entry does.",
+   "responsibilities": [
+    "seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT",
+    "treat the whole exit as one link over every involved conduit, since leaving tears down share contracts with every remaining member",
+    "take the involved conduit ids from call-site metadata - scope planning only, no live-object reach"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "a851e9defa4995f155566fcf6eefecbb2655a523d91322802e81354c1ca51bc2"
   }
  },
  "edges_out": [

@@ -9,7 +9,10 @@
    "label": "persistence_analysis_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/persistence_analysis_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight strategy contract and finding-row shape for persistence payload bundles.",
+   "semantics_authored_against": "ae028f79166cb5707a705de5f87d1864fd5934a718da4be668b16c03f5808146"
   },
   "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy",
@@ -29,7 +32,19 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "55b1270bf74da59338d8699eb5b4da085621bd9fe6ce83f5bb8639bcce904542",
+   "include": true,
+   "role": "Contract for one preflight concern over a persistence payload bundle; the sanctioned runtime-inheritance ABC.",
+   "responsibilities": [
+    "inspect one concern and return finding rows of the shared shape - never mutate the bundle",
+    "never touch live runtime objects; read the detached payload only",
+    "stay stateless so the analyzer can share and iterate implementations polymorphically"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "55b1270bf74da59338d8699eb5b4da085621bd9fe6ce83f5bb8639bcce904542"
   }
  },
  "edges_out": [],

@@ -9,7 +9,18 @@
    "label": "agent_text_reader",
    "kind": "module",
    "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Bounded, resumable cursor over large documents for agent consumption.",
+   "responsibilities": [
+    "index a document once and share it across readers",
+    "let an agent walk in steps it chose the size of",
+    "report whether more remains"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "861feac5e49604ebe027d404ed382f4d081fe22466ed907424cdb9cce4916057"
   },
   "melder.utilities.ai_native_support_tools.agent_text_reader.ReaderPolicy": {
    "id": "melder.utilities.ai_native_support_tools.agent_text_reader.ReaderPolicy",
@@ -24,7 +35,17 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "56426393f03810e44e7f7effd98dba561c7aef5632062dddb8dc47ff79ff7c6e",
+   "include": true,
+   "role": "Fixed bounds and defaults for the reader, held as class constants rather than module globals.",
+   "responsibilities": [
+    "carry chunk-size and budget defaults"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "56426393f03810e44e7f7effd98dba561c7aef5632062dddb8dc47ff79ff7c6e"
   },
   "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk": {
    "id": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk",
@@ -41,7 +62,17 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "dfebc3621195139e534a467f77b32929762dfdd1a59b1579f66285c2db7fc0b3",
+   "include": true,
+   "role": "One bounded read result plus everything needed to decide what to do next.",
+   "responsibilities": [
+    "report what was read, from where, and whether more remains"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "dfebc3621195139e534a467f77b32929762dfdd1a59b1579f66285c2db7fc0b3"
   },
   "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText": {
    "id": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
@@ -68,7 +99,19 @@
     "method_count": 13,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "649126b4ca1d20b650ff442d9862a776babee74d056080d36b97c82043aefab9",
+   "include": true,
+   "role": "An immutable document plus its line-offset index, shared across readers.",
+   "responsibilities": [
+    "pay the indexing cost once per document",
+    "serve any number of concurrent readers"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "649126b4ca1d20b650ff442d9862a776babee74d056080d36b97c82043aefab9"
   },
   "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader": {
    "id": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
@@ -102,7 +145,18 @@
     "method_count": 21,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "e19f3906807c66fba7fe67501486dcaadd97ef473a547043c4871ed9f4d6753d",
+   "include": true,
+   "role": "Resumable budget-bounded cursor over one IndexedText.",
+   "responsibilities": [
+    "walk a document in caller-chosen steps",
+    "remember position between calls"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "e19f3906807c66fba7fe67501486dcaadd97ef473a547043c4871ed9f4d6753d"
   }
  },
  "edges_out": [],

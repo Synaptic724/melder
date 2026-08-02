@@ -1,103 +1,108 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py",
-  "source_sha256": "1d59e5b8d58305576a615e30824a1b2da669f135fdd2a98f69197c7bfa910332",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy": {
-      "id": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy",
-      "label": "codegen_reflection_policy_strategy",
-      "kind": "module",
-      "file": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py",
-      "lineno": 1
-    },
-    "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy": {
-      "id": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-      "label": "CodegenReflectionPolicyStrategy",
-      "kind": "class",
-      "file": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py",
-      "lineno": 16,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "validate"
-      ],
-      "shape": {
-        "method_count": 4,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Reflection-policy validation strategy.",
-      "responsibilities": [
-        "rejects obvious reflection and introspection helper usage when unsafe reflection is denied"
-      ],
-      "owns_state": [
-        "_lock",
-        "_REFLECTION_MODULE_NAMES",
-        "_REFLECTION_BUILTIN_NAMES",
-        "_REFLECTION_HELPER_NAMES_BY_MODULE"
-      ],
-      "phases": [
-        "validation",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py",
+ "source_sha256": "1d59e5b8d58305576a615e30824a1b2da669f135fdd2a98f69197c7bfa910332",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy": {
+   "id": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy",
+   "label": "codegen_reflection_policy_strategy",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Reflection-policy validation pass over submitted codegen source.",
+   "semantics_authored_against": "1d59e5b8d58305576a615e30824a1b2da669f135fdd2a98f69197c7bfa910332"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Optional": "typing.Optional",
-    "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy": {
+   "id": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+   "label": "CodegenReflectionPolicyStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py",
+   "lineno": 16,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "validate"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "beab2b5a54b19b6ab38f701b5e37d89f20b24187584507701656fa3fbf426e0a",
+   "role": "Reflection-policy validation strategy.",
+   "responsibilities": [
+    "rejects obvious reflection and introspection helper usage when unsafe reflection is denied"
+   ],
+   "owns_state": [
+    "_lock",
+    "_REFLECTION_MODULE_NAMES",
+    "_REFLECTION_BUILTIN_NAMES",
+    "_REFLECTION_HELPER_NAMES_BY_MODULE"
+   ],
+   "phases": [
+    "validation",
+    "cleanup"
+   ],
+   "semantics_authored_against": "beab2b5a54b19b6ab38f701b5e37d89f20b24187584507701656fa3fbf426e0a"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy",
+  "class": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+  "label": "CodegenReflectionPolicyStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+   "to": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
+   "relation": "uses",
+   "why": "CodegenReflectionPolicyStrategy reads CodegenNamespaceConfiguration to enforce reflection policy.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": {
-    "module": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy",
-    "class": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-    "label": "CodegenReflectionPolicyStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-      "to": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
-      "relation": "uses",
-      "why": "CodegenReflectionPolicyStrategy reads CodegenNamespaceConfiguration to enforce reflection policy.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "CodegenReflectionPolicyStrategy inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "CodegenReflectionPolicyStrategy inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

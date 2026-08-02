@@ -1,146 +1,151 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py",
-  "source_sha256": "01bb8de8413ae60024a20d7fe862e224f786002dae7d5d4ac3dff5535448f1e8",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.configurations.profiles.frame_acl_profile": {
-      "id": "melder.nexus.acl.configurations.profiles.frame_acl_profile",
-      "label": "frame_acl_profile",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py",
-      "lineno": 1
-    },
-    "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile": {
-      "id": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "label": "FrameACLProfile",
-      "kind": "class",
-      "file": "src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py",
-      "lineno": 20,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "codegen_override_ruleset",
-        "codegen_profile",
-        "command_override_ruleset",
-        "command_profile",
-        "id",
-        "name",
-        "version",
-        "view_override_ruleset",
-        "view_profile"
-      ],
-      "shape": {
-        "method_count": 10,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Composed ACL profile pairing reusable family profiles with local override rulesets.",
-      "responsibilities": [
-        "references shared view, command, and codegen base profiles",
-        "owns detached family-specific override rulesets for one composed bundle"
-      ],
-      "owns_state": [
-        "_view_profile",
-        "_command_profile",
-        "_codegen_profile",
-        "_view_override_ruleset",
-        "_command_override_ruleset",
-        "_codegen_override_ruleset"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py",
+ "source_sha256": "01bb8de8413ae60024a20d7fe862e224f786002dae7d5d4ac3dff5535448f1e8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.frame_acl_profile": {
+   "id": "melder.nexus.acl.configurations.profiles.frame_acl_profile",
+   "label": "frame_acl_profile",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The composed profile: reusable family profiles paired with local override rulesets.",
+   "semantics_authored_against": "01bb8de8413ae60024a20d7fe862e224f786002dae7d5d4ac3dff5535448f1e8"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Optional": "typing.Optional",
-    "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
-    "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-    "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-    "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+  "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile": {
+   "id": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "label": "FrameACLProfile",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py",
+   "lineno": 20,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "codegen_override_ruleset",
+    "codegen_profile",
+    "command_override_ruleset",
+    "command_profile",
+    "id",
+    "name",
+    "version",
+    "view_override_ruleset",
+    "view_profile"
+   ],
+   "shape": {
+    "method_count": 10,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "9ccd70ae2f8ead93bad670e90cc49a653446cca7ced953150062b933ca2118ee",
+   "role": "Composed ACL profile pairing reusable family profiles with local override rulesets.",
+   "responsibilities": [
+    "references shared view, command, and codegen base profiles",
+    "owns detached family-specific override rulesets for one composed bundle"
+   ],
+   "owns_state": [
+    "_view_profile",
+    "_command_profile",
+    "_codegen_profile",
+    "_view_override_ruleset",
+    "_command_override_ruleset",
+    "_codegen_override_ruleset"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "9ccd70ae2f8ead93bad670e90cc49a653446cca7ced953150062b933ca2118ee"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
-      "relation": "borrows",
-      "why": "FrameACLProfile references one reusable codegen profile as part of its family composition.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-      "relation": "borrows",
-      "why": "FrameACLProfile references one reusable command profile as part of its family composition.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-      "relation": "owns_lifecycle_of",
-      "why": "FrameACLProfile owns detached family override rulesets for one composed ACL bundle.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-      "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-      "relation": "borrows",
-      "why": "FrameACLProfile references one reusable view profile as part of its family composition.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Optional": "typing.Optional",
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+  "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+   "relation": "borrows",
+   "why": "FrameACLProfile references one reusable codegen profile as part of its family composition.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+   "relation": "borrows",
+   "why": "FrameACLProfile references one reusable command profile as part of its family composition.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+   "relation": "owns_lifecycle_of",
+   "why": "FrameACLProfile owns detached family override rulesets for one composed ACL bundle.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+   "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "relation": "borrows",
+   "why": "FrameACLProfile references one reusable view profile as part of its family composition.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

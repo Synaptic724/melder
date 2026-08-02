@@ -1,56 +1,61 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py",
-  "source_sha256": "9abc0dc521f570c939e36ab7dc878ddaaaaf0aa2d9c2ccfc7511afaf09e2a607",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy",
-      "label": "codegen_creation_discovery_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-      "label": "CodegenCreationDiscoveryStrategy",
-      "kind": "abstract",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py",
-      "lineno": 15,
-      "bases": [],
-      "markers": [
-        "ABC"
-      ],
-      "public_methods": [
-        "discover",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Abstract contract for phase-11 codegen creation discovery strategies.",
-      "responsibilities": [
-        "defines the strategy_id contract for discovery strategies",
-        "defines the discover() seam over SpellCodegenModel and SpellCodegenPlan",
-        "keeps creation-strategy selection separate from the top-level creation facade"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py",
+ "source_sha256": "9abc0dc521f570c939e36ab7dc878ddaaaaf0aa2d9c2ccfc7511afaf09e2a607",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy",
+   "label": "codegen_creation_discovery_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The contract for one Phase 11 creation-discovery strategy.",
+   "semantics_authored_against": "9abc0dc521f570c939e36ab7dc878ddaaaaf0aa2d9c2ccfc7511afaf09e2a607"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "ABC": "abc.ABC",
-    "abstractmethod": "abc.abstractmethod",
-    "Optional": "typing.Optional",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "CodegenCreationDiscovery": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
-  },
-  "collapse_candidate": null
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
+   "label": "CodegenCreationDiscoveryStrategy",
+   "kind": "abstract",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py",
+   "lineno": 15,
+   "bases": [],
+   "markers": [
+    "ABC"
+   ],
+   "public_methods": [
+    "discover",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "01e27c6a2dfb8ea5d2a92cfe669983b9964886cd4d05fa847b59b3b823f051d9",
+   "role": "Abstract contract for phase-11 codegen creation discovery strategies.",
+   "responsibilities": [
+    "defines the strategy_id contract for discovery strategies",
+    "defines the discover() seam over SpellCodegenModel and SpellCodegenPlan",
+    "keeps creation-strategy selection separate from the top-level creation facade"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "01e27c6a2dfb8ea5d2a92cfe669983b9964886cd4d05fa847b59b3b823f051d9"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ABC": "abc.ABC",
+  "abstractmethod": "abc.abstractmethod",
+  "Optional": "typing.Optional",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "CodegenCreationDiscovery": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
+  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
+ },
+ "collapse_candidate": null
 }

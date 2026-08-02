@@ -160,6 +160,54 @@ class StaticSystemDocument:
         self._indexed: Optional["IndexedText"] = None
         _ = agent_purpose
 
+    @classmethod
+    def from_markdown(
+            cls,
+            *,
+            document_name: str,
+            markdown_text: str,
+            agent_purpose: Optional[str] = None,
+    ) -> "StaticSystemDocument":
+        """
+        Build a document from markdown that is already a string.
+
+        Purpose:
+            The build asset emits document text as a Python string literal, so
+            it arrives already parsed by the interpreter. Re-wrapping 1.6 MB of
+            markdown in a JSON envelope only to `json.loads` it back out would
+            be a megabyte-scale round trip to learn something already known.
+
+        Contract:
+            Same total-construction guarantee as `__init__` - validates before
+            assigning, so a raising call leaves no half-built instance. The JSON
+            envelope is still synthesised lazily by `render_json()` for callers
+            that want it; nobody pays for it who does not ask.
+
+        Args:
+            document_name: Stable runtime document-object name, non-empty.
+            markdown_text: The document text. May be empty for a document that
+                did not ship, which is a real state, not a failure.
+            agent_purpose: Accepted for symmetry; not persisted.
+
+        Returns:
+            StaticSystemDocument: The constructed document.
+
+        Raises:
+            ValueError: If `document_name` is empty or `markdown_text` is not
+                a string.
+        """
+        if not document_name:
+            raise ValueError("document_name cannot be empty.")
+        if not isinstance(markdown_text, str):
+            raise ValueError("markdown_text must be a string.")
+        built = cls.__new__(cls)
+        built._document_name = document_name
+        built._document_json = ""
+        built._document_markdown = markdown_text
+        built._indexed = None
+        _ = agent_purpose
+        return built
+
     @property
     def document_name(self) -> str:
         """
@@ -190,6 +238,10 @@ class StaticSystemDocument:
         Returns:
             str: Minified JSON document hardcopy.
         """
+        if not self._document_json:
+            self._document_json = json.dumps(
+                {"m": self._document_markdown}, separators=(",", ":")
+            )
         return self._document_json
 
     def render_markdown(self) -> str:

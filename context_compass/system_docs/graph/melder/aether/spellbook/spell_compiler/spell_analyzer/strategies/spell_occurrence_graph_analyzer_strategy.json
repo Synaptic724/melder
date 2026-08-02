@@ -1,177 +1,182 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
-  "source_sha256": "5b6de6157a1f8bbd963da56491c0ed7570217c0032c62b7ce456948ff40b6cdb",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy",
-      "label": "spell_occurrence_graph_analyzer_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "label": "SpellOccurrenceGraphAnalyzerStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
-      "lineno": 48,
-      "bases": [
-        "SpellAnalyzerStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "analyze",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 28,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
-      "responsibilities": [
-        "expands rooted blueprint truth plus topology and contract context into an occurrence graph",
-        "publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact",
-        "owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
+ "source_sha256": "5b6de6157a1f8bbd963da56491c0ed7570217c0032c62b7ce456948ff40b6cdb",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy",
+   "label": "spell_occurrence_graph_analyzer_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 8 strategy producing the occurrence graph.",
+   "semantics_authored_against": "5b6de6157a1f8bbd963da56491c0ed7570217c0032c62b7ce456948ff40b6cdb"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to_label": "SpellAnalyzerStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to_label": "SpellOccurrenceGraphAnalysis",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to_label": "SpellExistenceOccurrenceAnalysis",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to_label": "MeldExecutionError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to_label": "SpellExistenceOccurrence",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "deque": "collections.deque",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Iterable": "typing.Iterable",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Sequence": "typing.Sequence",
-    "Set": "typing.Set",
-    "Tuple": "typing.Tuple",
-    "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
-    "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-    "SpellExistenceOccurrence": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrence",
-    "SpellExistenceOccurrenceAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
-    "SpellOccurrenceGraphAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis",
-    "SpellAnalyzerStrategy": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
-    "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-    "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
-    "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
-    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-    "DagIndex": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
-    "SocketRef": "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef",
-    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+  "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "label": "SpellOccurrenceGraphAnalyzerStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
+   "lineno": 48,
+   "bases": [
+    "SpellAnalyzerStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "analyze",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 28,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "04c5a2ee255abcb71834ee9de2c0ac97fbcbf1dd8f7151dddcacf993481fe6a4",
+   "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
+   "responsibilities": [
+    "expands rooted blueprint truth plus topology and contract context into an occurrence graph",
+    "publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact",
+    "owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "04c5a2ee255abcb71834ee9de2c0ac97fbcbf1dd8f7151dddcacf993481fe6a4"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to_label": "SpellAnalyzerStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to_label": "SpellOccurrenceGraphAnalysis",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-    "label": "SpellOccurrenceGraphAnalyzerStrategy"
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to_label": "SpellExistenceOccurrenceAnalysis",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
-      "relation": "uses",
-      "why": "SpellOccurrenceGraphAnalyzerStrategy inspects SpellContract defaults when adding contracted dependency edges to the occurrence graph.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
-      "relation": "uses",
-      "why": "SpellOccurrenceGraphAnalyzerStrategy uses SharedCompilerExecutions for deterministic schema freezing and signature hashing.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
-      "relation": "creates",
-      "why": "SpellOccurrenceGraphAnalyzerStrategy creates SpellExistenceOccurrenceAnalysis while walking the visible spell set for phase-8 occurrence work.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis",
-      "relation": "creates",
-      "why": "SpellOccurrenceGraphAnalyzerStrategy creates SpellOccurrenceGraphAnalysis as its primary phase-8 output artifact.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
-      "relation": "specializes",
-      "why": "SpellOccurrenceGraphAnalyzerStrategy specializes the abstract analyzer strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to_label": "MeldExecutionError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to_label": "SpellExistenceOccurrence",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "deque": "collections.deque",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "SpellExistenceOccurrence": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrence",
+  "SpellExistenceOccurrenceAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
+  "SpellOccurrenceGraphAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis",
+  "SpellAnalyzerStrategy": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
+  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+  "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
+  "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "DagIndex": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
+  "SocketRef": "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+  "label": "SpellOccurrenceGraphAnalyzerStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+   "relation": "uses",
+   "why": "SpellOccurrenceGraphAnalyzerStrategy inspects SpellContract defaults when adding contracted dependency edges to the occurrence graph.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+   "relation": "uses",
+   "why": "SpellOccurrenceGraphAnalyzerStrategy uses SharedCompilerExecutions for deterministic schema freezing and signature hashing.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
+   "relation": "creates",
+   "why": "SpellOccurrenceGraphAnalyzerStrategy creates SpellExistenceOccurrenceAnalysis while walking the visible spell set for phase-8 occurrence work.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis",
+   "relation": "creates",
+   "why": "SpellOccurrenceGraphAnalyzerStrategy creates SpellOccurrenceGraphAnalysis as its primary phase-8 output artifact.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
+   "relation": "specializes",
+   "why": "SpellOccurrenceGraphAnalyzerStrategy specializes the abstract analyzer strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

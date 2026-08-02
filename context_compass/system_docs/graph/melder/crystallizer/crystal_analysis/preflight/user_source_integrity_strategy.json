@@ -9,7 +9,10 @@
    "label": "user_source_integrity_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/user_source_integrity_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass verifying retained user-module sources against their own recorded shas.",
+   "semantics_authored_against": "a94c04ae91d1215a1f2561f2be4f47b34705ea2b919dac75fe2ffa1f8b9d1294"
   },
   "melder.crystallizer.crystal_analysis.preflight.user_source_integrity_strategy.UserSourceIntegrityStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.user_source_integrity_strategy.UserSourceIntegrityStrategy",
@@ -29,7 +32,19 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "652f4508cd64c49a3704b1c5ba67c00ecbf40e627c8c66f27fc9abf808ea57bd",
+   "include": true,
+   "role": "Preflight owning the record's SELF-CONSISTENCY half: retained user text versus its own recorded sha.",
+   "responsibilities": [
+    "block on tamper - retained text disagreeing with its recorded sha must never rebuild",
+    "scope to modules carried in user_module_sources; retention-off worlds produce no rows",
+    "leave disk-vs-seal comparison to SourceDriftStrategy"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "652f4508cd64c49a3704b1c5ba67c00ecbf40e627c8c66f27fc9abf808ea57bd"
   }
  },
  "edges_out": [

@@ -9,7 +9,10 @@
    "label": "synthetic_custody_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/custody/synthetic_custody_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Custody strategy for synthetic (crystallizer-born) modules, whose source IS the record.",
+   "semantics_authored_against": "c9cd8a289783bf661c642714bcd8d4a199a2b7a440f7de0c3bcc035e1f2d1356"
   },
   "melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy.SyntheticCustodyStrategy": {
    "id": "melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy.SyntheticCustodyStrategy",
@@ -36,7 +39,20 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "66a11d18cea8f99ad33bd7e8fd5630d128130ff390ddc47d0865f79b0df64a02",
+   "include": true,
+   "role": "Custody for crystallizer-born synthetic modules, whose explicit authority wins over every path-driven class.",
+   "responsibilities": [
+    "match by strict protocol identity, first in the priority order",
+    "resolve source from the protocol surface only - never touch disk",
+    "harvest the rebuildable payload SyntheticModule's constructor needs at restore"
+   ],
+   "phases": [
+    "bind",
+    "cleanup"
+   ],
+   "semantics_authored_against": "66a11d18cea8f99ad33bd7e8fd5630d128130ff390ddc47d0865f79b0df64a02"
   }
  },
  "edges_out": [

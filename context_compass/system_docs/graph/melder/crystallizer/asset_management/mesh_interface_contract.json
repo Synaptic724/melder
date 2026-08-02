@@ -9,7 +9,16 @@
    "label": "mesh_interface_contract",
    "kind": "module",
    "file": "src/melder/crystallizer/asset_management/mesh_interface_contract.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Static authority describing the value and callable boundary of the external mesh.",
+   "responsibilities": [
+    "document the complete interface an integrator must satisfy"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "a259bfcd841896cc234e0648c10a87f33529e47003bba12adeb90567c45e77bd"
   },
   "melder.crystallizer.asset_management.mesh_interface_contract.MeshInterfaceContract": {
    "id": "melder.crystallizer.asset_management.mesh_interface_contract.MeshInterfaceContract",
@@ -27,7 +36,17 @@
     "method_count": 2,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "e22179c5c1e3f0b8ebb8466c9275f26d6ed80de49a7bf38453dde0bad1a757cd",
+   "include": true,
+   "role": "Static authority describing the mesh value/callable boundary.",
+   "responsibilities": [
+    "document the complete interface an integrator must satisfy"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "e22179c5c1e3f0b8ebb8466c9275f26d6ed80de49a7bf38453dde0bad1a757cd"
   }
  },
  "edges_out": [],

@@ -1,146 +1,151 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
-  "source_sha256": "7b16de13f3a0cb09f61dccdf4042a5fb75cc3c2e521f20177c67126524a058eb",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state": {
-      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state",
-      "label": "conduit_resolution_state",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState": {
-      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-      "label": "ConduitResolutionState",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
-      "lineno": 45,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "bulk_set_root_validity",
-        "bulk_set_spell_validity",
-        "cleanup",
-        "clear_diagnostics",
-        "clear_dirty",
-        "get_root_validity",
-        "get_spell_validity",
-        "has_errors",
-        "has_warnings",
-        "is_dirty",
-        "last_validated_at",
-        "list_diagnostics",
-        "mark_dirty",
-        "record_diagnostics",
-        "set_root_validity",
-        "set_spell_validity",
-        "snapshot_root_validity",
-        "snapshot_spell_validity"
-      ],
-      "shape": {
-        "method_count": 23,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Per-conduit resolution-validity container.",
-      "responsibilities": [
-        "tracks per-spell and per-root resolution validity for one conduit",
-        "stores conduit-scoped system diagnostics and dirty/validated markers"
-      ],
-      "owns_state": [
-        "_spell_validity",
-        "_root_validity",
-        "_diagnostics",
-        "_dirty",
-        "_last_validated_at",
-        "_last_change_reason"
-      ],
-      "phases": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
+ "source_sha256": "7b16de13f3a0cb09f61dccdf4042a5fb75cc3c2e521f20177c67126524a058eb",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state": {
+   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state",
+   "label": "conduit_resolution_state",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The per-conduit resolution-validity container.",
+   "semantics_authored_against": "7b16de13f3a0cb09f61dccdf4042a5fb75cc3c2e521f20177c67126524a058eb"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-      "to_label": "SystemDiagnostic",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Callable": "typing.Callable",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Mapping": "typing.Mapping",
-    "Optional": "typing.Optional",
-    "Sequence": "typing.Sequence",
-    "Tuple": "typing.Tuple",
-    "ClassVar": "typing.ClassVar",
-    "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
-    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-    "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-    "RiskManager": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager"
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState": {
+   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+   "label": "ConduitResolutionState",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py",
+   "lineno": 45,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "bulk_set_root_validity",
+    "bulk_set_spell_validity",
+    "cleanup",
+    "clear_diagnostics",
+    "clear_dirty",
+    "get_root_validity",
+    "get_spell_validity",
+    "has_errors",
+    "has_warnings",
+    "is_dirty",
+    "last_validated_at",
+    "list_diagnostics",
+    "mark_dirty",
+    "record_diagnostics",
+    "set_root_validity",
+    "set_spell_validity",
+    "snapshot_root_validity",
+    "snapshot_spell_validity"
+   ],
+   "shape": {
+    "method_count": 23,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "aa7000dee88267d0109c68e57e264073ad9ea3b95d54b939044c726105d4fdd4",
+   "role": "Per-conduit resolution-validity container.",
+   "responsibilities": [
+    "tracks per-spell and per-root resolution validity for one conduit",
+    "stores conduit-scoped system diagnostics and dirty/validated markers"
+   ],
+   "owns_state": [
+    "_spell_validity",
+    "_root_validity",
+    "_diagnostics",
+    "_dirty",
+    "_last_validated_at",
+    "_last_change_reason"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "aa7000dee88267d0109c68e57e264073ad9ea3b95d54b939044c726105d4fdd4"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state",
-    "class": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-    "label": "ConduitResolutionState"
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-      "relation": "uses",
-      "why": "ConduitResolutionState stores SpellStateChangeReason as the latest resolution-state transition summary.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
-      "relation": "uses",
-      "why": "ConduitResolutionState stores SpellValidity verdicts for both spell and root resolution state.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+   "to_label": "SystemDiagnostic",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+  "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+  "RiskManager": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state",
+  "class": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+  "label": "ConduitResolutionState"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+   "relation": "uses",
+   "why": "ConduitResolutionState stores SpellStateChangeReason as the latest resolution-state transition summary.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+   "relation": "uses",
+   "why": "ConduitResolutionState stores SpellValidity verdicts for both spell and root resolution state.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

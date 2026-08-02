@@ -1,32 +1,33 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/helpers/ulid_factory.py",
-  "source_sha256": "9225cb9a958aacc0eca5e62847ec48b1e3d78f26b563d3db95c3902fd4fa2018",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.helpers.ulid_factory": {
-      "id": "melder.utilities.helpers.ulid_factory",
-      "label": "ulid_factory",
-      "kind": "module",
-      "file": "src/melder/utilities/helpers/ulid_factory.py",
-      "lineno": 1,
-      "role": "Minimal internal ULID generator module.",
-      "responsibilities": [
-        "replaces the external ulid package for runtime ID generation",
-        "provides the lock-free new_ulid() helper used by runtime objects and helpers",
-        "keeps ULID generation import-light and cycle-safe"
-      ],
-      "owns_state": [
-        "_CROCKFORD32"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": null
+ "schema_version": 1,
+ "source": "src/melder/utilities/helpers/ulid_factory.py",
+ "source_sha256": "9225cb9a958aacc0eca5e62847ec48b1e3d78f26b563d3db95c3902fd4fa2018",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.helpers.ulid_factory": {
+   "id": "melder.utilities.helpers.ulid_factory",
+   "label": "ulid_factory",
+   "kind": "module",
+   "file": "src/melder/utilities/helpers/ulid_factory.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Minimal internal ULID generator replacing the external dependency.",
+   "responsibilities": [
+    "produce lexicographically sortable time-ordered ids",
+    "remove a third-party runtime dependency"
+   ],
+   "owns_state": [
+    "_CROCKFORD32"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "9225cb9a958aacc0eca5e62847ec48b1e3d78f26b563d3db95c3902fd4fa2018"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
 }

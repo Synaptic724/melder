@@ -1,54 +1,66 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
-  "source_sha256": "7a83247de37dee7dd5ec8a4ba618ce9b115c74c9215957cef698c0d75574a2ff",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.custom_exceptions.spellbook_validation_error": {
-      "id": "melder.utilities.custom_exceptions.spellbook_validation_error",
-      "label": "spellbook_validation_error",
-      "kind": "module",
-      "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
-      "lineno": 1
-    },
-    "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError": {
-      "id": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
-      "label": "SpellbookValidationError",
-      "kind": "class",
-      "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
-      "lineno": 8,
-      "bases": [],
-      "markers": [
-        "RuntimeError"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Exception raised for spellbook validation failures.",
-      "responsibilities": [
-        "signals fatal spellbook validation failures"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
+ "source_sha256": "7a83247de37dee7dd5ec8a4ba618ce9b115c74c9215957cef698c0d75574a2ff",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.spellbook_validation_error": {
+   "id": "melder.utilities.custom_exceptions.spellbook_validation_error",
+   "label": "spellbook_validation_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Raised when spellbook validation finds broken spells, preserving per-spell context for remediation.",
+   "responsibilities": [
+    "surface phase 1-4 breakage at conjure",
+    "keep per-spell detail attached for the fix"
+   ],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": "7a83247de37dee7dd5ec8a4ba618ce9b115c74c9215957cef698c0d75574a2ff"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "Optional": "typing.Optional",
-    "Spell": "melder.aether.spellbook.spell.Spell"
-  },
-  "collapse_candidate": {
-    "module": "melder.utilities.custom_exceptions.spellbook_validation_error",
-    "class": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
-    "label": "SpellbookValidationError"
+  "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError": {
+   "id": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+   "label": "SpellbookValidationError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
+   "lineno": 8,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "484cdcd47d5ec81c6f252acd6cbcc30ebfb44d7ae59b2697db34d04bd04344c2",
+   "role": "Exception raised for spellbook validation failures.",
+   "responsibilities": [
+    "signals fatal spellbook validation failures"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "484cdcd47d5ec81c6f252acd6cbcc30ebfb44d7ae59b2697db34d04bd04344c2"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Optional": "typing.Optional",
+  "Spell": "melder.aether.spellbook.spell.Spell"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.spellbook_validation_error",
+  "class": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+  "label": "SpellbookValidationError"
+ }
 }

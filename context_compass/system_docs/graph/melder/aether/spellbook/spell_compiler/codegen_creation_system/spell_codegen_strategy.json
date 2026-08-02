@@ -1,79 +1,84 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py",
-  "source_sha256": "08f9ef91642b59d84faf444994fbffcd41a76cd31f2303f530e2e27049a8aa44",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy",
-      "label": "spell_codegen_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-      "label": "SpellCodegenStrategy",
-      "kind": "abstract",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py",
-      "lineno": 14,
-      "bases": [],
-      "markers": [
-        "ABC"
-      ],
-      "public_methods": [
-        "apply",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Abstract contract for codegen creation strategies.",
-      "responsibilities": [
-        "defines the stable strategy_id contract for codegen creation strategies",
-        "defines the apply() seam over SpellCodegenModel, plan truth, and SpellCodegenCreation",
-        "keeps codegen-creation strategy behavior separate from the top-level facade"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py",
+ "source_sha256": "08f9ef91642b59d84faf444994fbffcd41a76cd31f2303f530e2e27049a8aa44",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy",
+   "label": "spell_codegen_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The contract for one codegen creation strategy.",
+   "semantics_authored_against": "08f9ef91642b59d84faf444994fbffcd41a76cd31f2303f530e2e27049a8aa44"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "ABC": "abc.ABC",
-    "abstractmethod": "abc.abstractmethod",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+   "label": "SpellCodegenStrategy",
+   "kind": "abstract",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py",
+   "lineno": 14,
+   "bases": [],
+   "markers": [
+    "ABC"
+   ],
+   "public_methods": [
+    "apply",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "d412d7f8db2ed8574d787fb039766af332d911f975855e1f3ca43a1b43ac2955",
+   "role": "Abstract contract for codegen creation strategies.",
+   "responsibilities": [
+    "defines the stable strategy_id contract for codegen creation strategies",
+    "defines the apply() seam over SpellCodegenModel, plan truth, and SpellCodegenCreation",
+    "keeps codegen-creation strategy behavior separate from the top-level facade"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "d412d7f8db2ed8574d787fb039766af332d911f975855e1f3ca43a1b43ac2955"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ABC": "abc.ABC",
+  "abstractmethod": "abc.abstractmethod",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+   "relation": "uses",
+   "why": "SpellCodegenStrategy implementations read the fitted SpellCodegenModel when populating the final creation artifact.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-      "relation": "uses",
-      "why": "SpellCodegenStrategy implementations read the fitted SpellCodegenModel when populating the final creation artifact.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-      "relation": "uses",
-      "why": "SpellCodegenStrategy implementations mutate the supplied SpellCodegenCreation output directly.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+   "relation": "uses",
+   "why": "SpellCodegenStrategy implementations mutate the supplied SpellCodegenCreation output directly.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

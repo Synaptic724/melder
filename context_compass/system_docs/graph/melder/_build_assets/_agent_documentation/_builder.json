@@ -9,7 +9,17 @@
    "label": "_builder",
    "kind": "module",
    "file": "src/melder/_build_assets/_agent_documentation/_builder.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Build-time harvester turning class docstrings into a durable agent-documentation asset.",
+   "responsibilities": [
+    "scan the package and catalogue agent access states",
+    "never run at runtime"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "cece79d162fb78ea95352b0e0c9f427a5dfa0b4cd54dbb1493be4289aec2a3a6"
   },
   "melder._build_assets._agent_documentation._builder.AgentMetadataPolicy": {
    "id": "melder._build_assets._agent_documentation._builder.AgentMetadataPolicy",
@@ -24,7 +34,17 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "ea96720590e3170cfc1e930b1e95a07a82d91a243b08d6cffe10d2e0618a528e",
+   "include": true,
+   "role": "Fixed policy values for the harvester, as class constants.",
+   "responsibilities": [
+    "carry the marker names the harvester recognises"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "ea96720590e3170cfc1e930b1e95a07a82d91a243b08d6cffe10d2e0618a528e"
   },
   "melder._build_assets._agent_documentation._builder.HarvestResult": {
    "id": "melder._build_assets._agent_documentation._builder.HarvestResult",
@@ -39,7 +59,17 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "a4c7a9bdbc49c906c530a551a90def5565593099adba589e0cdd355ef46a5ee4",
+   "include": true,
+   "role": "Collected output of one package harvest scan.",
+   "responsibilities": [
+    "hold the three catalogued states plus diagnostics"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "a4c7a9bdbc49c906c530a551a90def5565593099adba589e0cdd355ef46a5ee4"
   }
  },
  "edges_out": [],

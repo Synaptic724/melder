@@ -1,113 +1,129 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
-  "source_sha256": "2e800b254b03b410c2e657a49cdfeddf222632efc609b41d0c4eac2c6aedd08f",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.topology.spell_local_topology": {
-      "id": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology",
-      "label": "spell_local_topology",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor": {
-      "id": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
-      "label": "SpellSocketDescriptor",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
-      "lineno": 12,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      }
-    },
-    "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology": {
-      "id": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-      "label": "SpellLocalTopology",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
-      "lineno": 90,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "get_sockets_for_param",
-        "iter_sockets",
-        "sockets",
-        "spell_id"
-      ],
-      "shape": {
-        "method_count": 5,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Per-spell local constructor socket topology.",
-      "responsibilities": [
-        "stores immutable socket descriptors for one spell constructor",
-        "indexes sockets by parameter name for later lookup",
-        "captures direct target spell ids and contract metadata per socket",
-        "feeds SpellSystemStates aggregation, change-control, and blueprint building"
-      ],
-      "owns_state": [
-        "_spell_id",
-        "_sockets",
-        "_by_param_name"
-      ],
-      "phases": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+ "source_sha256": "2e800b254b03b410c2e657a49cdfeddf222632efc609b41d0c4eac2c6aedd08f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.topology.spell_local_topology": {
+   "id": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology",
+   "label": "spell_local_topology",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The per-spell local constructor socket topology and its socket descriptors.",
+   "semantics_authored_against": "2e800b254b03b410c2e657a49cdfeddf222632efc609b41d0c4eac2c6aedd08f"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "dataclass": "dataclasses.dataclass",
-    "Sequence": "typing.Sequence",
-    "Tuple": "typing.Tuple",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "ClassVar": "typing.ClassVar",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind"
+  "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor": {
+   "id": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
+   "label": "SpellSocketDescriptor",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+   "lineno": 12,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "1ee6da65ee18134f03e2791639e4eafce3328abcde2f8ac6396719afeb8e920f",
+   "include": true,
+   "role": "The immutable per-spell LOCAL description of one constructor socket, which later phases stitch into the system-level blueprint.",
+   "responsibilities": [
+    "describe one constructor socket, including the is_collection truth later layers must carry forward verbatim",
+    "stay local - it makes no claim about the system graph"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "1ee6da65ee18134f03e2791639e4eafce3328abcde2f8ac6396719afeb8e920f"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-      "relation": "binds_into",
-      "why": "Phase 3 publishes local topology into SpellSystemStates for aggregation, change-control, and later blueprint work.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation",
-        "runtime"
-      ],
-      "strength": "soft"
-    }
-  ]
+  "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology": {
+   "id": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+   "label": "SpellLocalTopology",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
+   "lineno": 90,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "get_sockets_for_param",
+    "iter_sockets",
+    "sockets",
+    "spell_id"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "4b8c2228d97320f91fe65f6e08b47803d636e0dd8b7e6c87213947238b348045",
+   "role": "Per-spell local constructor socket topology.",
+   "responsibilities": [
+    "stores immutable socket descriptors for one spell constructor",
+    "indexes sockets by parameter name for later lookup",
+    "captures direct target spell ids and contract metadata per socket",
+    "feeds SpellSystemStates aggregation, change-control, and blueprint building"
+   ],
+   "owns_state": [
+    "_spell_id",
+    "_sockets",
+    "_by_param_name"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "4b8c2228d97320f91fe65f6e08b47803d636e0dd8b7e6c87213947238b348045"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "dataclass": "dataclasses.dataclass",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   "relation": "binds_into",
+   "why": "Phase 3 publishes local topology into SpellSystemStates for aggregation, change-control, and later blueprint work.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation",
+    "runtime"
+   ],
+   "strength": "soft"
+  }
+ ]
 }

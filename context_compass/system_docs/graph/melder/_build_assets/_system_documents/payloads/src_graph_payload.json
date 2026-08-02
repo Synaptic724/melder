@@ -1,0 +1,23 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py",
+ "source_sha256": "dadf0bb31dcf7e4d5c0609374540dd26c4e65090683d732638ca3a1ed5ca9bc6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._system_documents.payloads.src_graph_payload": {
+   "id": "melder._build_assets._system_documents.payloads.src_graph_payload",
+   "label": "src_graph_payload",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py",
+   "lineno": 1,
+   "include": true,
+   "role": "GENERATED. Verbatim src_graph.md captured at build time, with its verification proof; the expensive payload, which is why payloads are per-document and lazy.",
+   "semantics_authored_against": "7a3708eb2de3f40b38b1fe48d4728828e4932bc21835ab9fbae919e9bcc48255"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

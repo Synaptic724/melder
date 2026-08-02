@@ -1,73 +1,78 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/rift/rift_space/memory_system/rift_memory.py",
-  "source_sha256": "69a77eee9aaab1a904b7cb83a01094767d34d937d88b758dfe686e4dd2540278",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.rift.rift_space.memory_system.rift_memory": {
-      "id": "melder.nexus.rift.rift_space.memory_system.rift_memory",
-      "label": "rift_memory",
-      "kind": "module",
-      "file": "src/melder/nexus/rift/rift_space/memory_system/rift_memory.py",
-      "lineno": 1
-    },
-    "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory": {
-      "id": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
-      "label": "RiftMemory",
-      "kind": "class",
-      "file": "src/melder/nexus/rift/rift_space/memory_system/rift_memory.py",
-      "lineno": 7,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "action_name",
-        "created_at",
-        "epoch_counter",
-        "frame_name",
-        "memory_id",
-        "metadata",
-        "step_counter"
-      ],
-      "shape": {
-        "method_count": 7,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Immutable executed-step memory record emitted from RiftSpace.",
-      "responsibilities": [
-        "captures one immutable memory record for a completed Rift-level action"
-      ],
-      "owns_state": [
-        "_frame_name",
-        "_action_name",
-        "_step_counter",
-        "_epoch_counter",
-        "_metadata"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/rift_space/memory_system/rift_memory.py",
+ "source_sha256": "69a77eee9aaab1a904b7cb83a01094767d34d937d88b758dfe686e4dd2540278",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.rift_space.memory_system.rift_memory": {
+   "id": "melder.nexus.rift.rift_space.memory_system.rift_memory",
+   "label": "rift_memory",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/rift_space/memory_system/rift_memory.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The immutable executed-step memory record emitted from a RiftSpace.",
+   "semantics_authored_against": "69a77eee9aaab1a904b7cb83a01094767d34d937d88b758dfe686e4dd2540278"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "datetime": "datetime.datetime",
-    "timezone": "datetime.timezone",
-    "Dict": "typing.Dict",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
-  },
-  "collapse_candidate": {
-    "module": "melder.nexus.rift.rift_space.memory_system.rift_memory",
-    "class": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
-    "label": "RiftMemory"
+  "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory": {
+   "id": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
+   "label": "RiftMemory",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/rift_space/memory_system/rift_memory.py",
+   "lineno": 7,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "action_name",
+    "created_at",
+    "epoch_counter",
+    "frame_name",
+    "memory_id",
+    "metadata",
+    "step_counter"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "85e0702ef14259258020c3c57bf0ca386b7317d5d242b48a83bcce1e5439b9b5",
+   "role": "Immutable executed-step memory record emitted from RiftSpace.",
+   "responsibilities": [
+    "captures one immutable memory record for a completed Rift-level action"
+   ],
+   "owns_state": [
+    "_frame_name",
+    "_action_name",
+    "_step_counter",
+    "_epoch_counter",
+    "_metadata"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "85e0702ef14259258020c3c57bf0ca386b7317d5d242b48a83bcce1e5439b9b5"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "datetime": "datetime.datetime",
+  "timezone": "datetime.timezone",
+  "Dict": "typing.Dict",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.rift_space.memory_system.rift_memory",
+  "class": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
+  "label": "RiftMemory"
+ }
 }

@@ -1,34 +1,34 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py",
-  "source_sha256": "ed1bc01965ba9388e5fef6ce6a2484af2622fa6dadbe7466a49f1165b889d7ec",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets": {
-      "id": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
-      "label": "stdlib_import_sets",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py",
-      "lineno": 1,
-      "role": "Shared import-root and builtin-name constant catalog for codegen ACL profiles.",
-      "responsibilities": [
-        "defines reusable safe, hybrid, precision, and permissive import-root sets",
-        "defines shared denied builtin-name sets for codegen profile factories",
-        "keeps codegen profile factory modules aligned on import-surface policy constants"
-      ],
-      "owns_state": [
-        "_COMMON_SAFE_IMPORT_MODULE_ROOTS",
-        "_PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS",
-        "SAFE_DENIED_BUILTIN_NAMES"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": null
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py",
+ "source_sha256": "ed1bc01965ba9388e5fef6ce6a2484af2622fa6dadbe7466a49f1165b889d7ec",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets": {
+   "id": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
+   "label": "stdlib_import_sets",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py",
+   "lineno": 1,
+   "role": "Shared import-root and builtin-name constant catalog for codegen ACL profiles.",
+   "responsibilities": [
+    "defines reusable safe, hybrid, precision, and permissive import-root sets",
+    "defines shared denied builtin-name sets for codegen profile factories",
+    "keeps codegen profile factory modules aligned on import-surface policy constants"
+   ],
+   "owns_state": [
+    "_COMMON_SAFE_IMPORT_MODULE_ROOTS",
+    "_PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS",
+    "SAFE_DENIED_BUILTIN_NAMES"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
 }

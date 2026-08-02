@@ -1,82 +1,87 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py",
-  "source_sha256": "5dd8622ef73df2791e0824f3af407cb90c83a6f438cb89a49522c00d1a85fdba",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support": {
-      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support",
-      "label": "information_strategy_support",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector": {
-      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-      "label": "InformationFreshnessInspector",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py",
-      "lineno": 10,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build_freshness_view",
-        "normalize_region",
-        "read_optional_max_age"
-      ],
-      "shape": {
-        "method_count": 3,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Shared freshness-math helper for registry-backed dev-ops information strategies.",
-      "responsibilities": [
-        "normalizes region and scope keys into fact-record region form",
-        "builds detached freshness views from registry fact baselines",
-        "reads optional max-age tolerances used by information strategies"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py",
+ "source_sha256": "5dd8622ef73df2791e0824f3af407cb90c83a6f438cb89a49522c00d1a85fdba",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support",
+   "label": "information_strategy_support",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Shared freshness math for the registry-backed information strategies.",
+   "semantics_authored_against": "5dd8622ef73df2791e0824f3af407cb90c83a6f438cb89a49522c00d1a85fdba"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "Iterable": "typing.Iterable",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+   "label": "InformationFreshnessInspector",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py",
+   "lineno": 10,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build_freshness_view",
+    "normalize_region",
+    "read_optional_max_age"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "5e0ae2b3a792959007ae83a838808a724b85d52294dfef5cd9ebd5c737a12652",
+   "role": "Shared freshness-math helper for registry-backed dev-ops information strategies.",
+   "responsibilities": [
+    "normalizes region and scope keys into fact-record region form",
+    "builds detached freshness views from registry fact baselines",
+    "reads optional max-age tolerances used by information strategies"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "5e0ae2b3a792959007ae83a838808a724b85d52294dfef5cd9ebd5c737a12652"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-      "relation": "borrows",
-      "why": "InformationFreshnessInspector reads fact-record baselines through the registry public API to build freshness views.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+   "relation": "borrows",
+   "why": "InformationFreshnessInspector reads fact-record baselines through the registry public API to build freshness views.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

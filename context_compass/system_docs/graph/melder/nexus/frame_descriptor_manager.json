@@ -1,172 +1,185 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/frame_descriptor_manager.py",
-  "source_sha256": "7cc782e60efe22f8c3c82b5cc7668f30bd38f25d591303c6aa80600e3caebd53",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.frame_descriptor_manager": {
-      "id": "melder.nexus.frame_descriptor_manager",
-      "label": "frame_descriptor_manager",
-      "kind": "module",
-      "file": "src/melder/nexus/frame_descriptor_manager.py",
-      "lineno": 1
-    },
-    "melder.nexus.frame_descriptor_manager.FrameDescriptorManager": {
-      "id": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "label": "FrameDescriptorManager",
-      "kind": "class",
-      "file": "src/melder/nexus/frame_descriptor_manager.py",
-      "lineno": 35,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "list_published_frame_names"
-      ],
-      "shape": {
-        "method_count": 18,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Nexus-owned frame descriptor and canonical record manager.",
-      "responsibilities": [
-        "owns frame descriptors by frame name",
-        "publishes frame, conduit, and spell records",
-        "owns Nexus-managed frame record creation and lookup",
-        "refreshes frame posture cache from Aether"
-      ],
-      "owns_state": [
-        "_frame_descriptors_by_name",
-        "_aether"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "refresh",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/frame_descriptor_manager.py",
+ "source_sha256": "7cc782e60efe22f8c3c82b5cc7668f30bd38f25d591303c6aa80600e3caebd53",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.frame_descriptor_manager": {
+   "id": "melder.nexus.frame_descriptor_manager",
+   "label": "frame_descriptor_manager",
+   "kind": "module",
+   "file": "src/melder/nexus/frame_descriptor_manager.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Sole owner of the frame-name to FrameDescriptor registry and canonical record publication.",
+   "responsibilities": [
+    "publish and remove frame, conduit and spell records",
+    "refresh frame posture before passive publication"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "7cc782e60efe22f8c3c82b5cc7668f30bd38f25d591303c6aa80600e3caebd53"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "FrameDescriptorPayload",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "FrameRecord",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "ConduitDescriptorPayload",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "ConduitRecord",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "SpellRecord",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "FrameDescriptor",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to_label": "KeyError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "ConduitDescriptorPayload": "melder.nexus.frame_descriptor.conduit_descriptor_payload.ConduitDescriptorPayload",
-    "FrameDescriptorPayload": "melder.nexus.frame_descriptor.frame_descriptor_payload.FrameDescriptorPayload",
-    "SpellDescriptorPayload": "melder.nexus.frame_descriptor.spell_descriptor_payload.SpellDescriptorPayload",
-    "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-    "FrameDescriptor": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-    "ConduitRecord": "melder.nexus.frame_descriptor.conduit_record.ConduitRecord",
-    "FrameRecord": "melder.nexus.frame_descriptor.frame_record.FrameRecord",
-    "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
-    "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-    "Aether": "melder.aether.aether.Aether",
-    "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
-    "Conduit": "melder.aether.conduit.conduit.Conduit",
-    "ConduitWard": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+  "melder.nexus.frame_descriptor_manager.FrameDescriptorManager": {
+   "id": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "label": "FrameDescriptorManager",
+   "kind": "class",
+   "file": "src/melder/nexus/frame_descriptor_manager.py",
+   "lineno": 35,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "list_published_frame_names"
+   ],
+   "shape": {
+    "method_count": 18,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "fcfc90be29a0b333eae809c61104a01c42b145edca70a59d712c021ef2a8355e",
+   "role": "Nexus-owned frame descriptor and canonical record manager.",
+   "responsibilities": [
+    "owns frame descriptors by frame name",
+    "publishes frame, conduit, and spell records",
+    "owns Nexus-managed frame record creation and lookup",
+    "refreshes frame posture cache from Aether"
+   ],
+   "owns_state": [
+    "_frame_descriptors_by_name",
+    "_aether"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "refresh",
+    "cleanup"
+   ],
+   "semantics_authored_against": "fcfc90be29a0b333eae809c61104a01c42b145edca70a59d712c021ef2a8355e"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.nexus.frame_descriptor_manager",
-    "class": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-    "label": "FrameDescriptorManager"
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-      "to": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-      "relation": "owns_lifecycle_of",
-      "why": "FrameDescriptorManager owns the per-frame descriptor registry and the lifecycle of each FrameDescriptor.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime",
-        "refresh",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "FrameDescriptorPayload",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "FrameRecord",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "ConduitDescriptorPayload",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "ConduitRecord",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "SpellRecord",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "FrameDescriptor",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to_label": "KeyError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ConduitDescriptorPayload": "melder.nexus.frame_descriptor.conduit_descriptor_payload.ConduitDescriptorPayload",
+  "FrameDescriptorPayload": "melder.nexus.frame_descriptor.frame_descriptor_payload.FrameDescriptorPayload",
+  "SpellDescriptorPayload": "melder.nexus.frame_descriptor.spell_descriptor_payload.SpellDescriptorPayload",
+  "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+  "FrameDescriptor": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
+  "ConduitRecord": "melder.nexus.frame_descriptor.conduit_record.ConduitRecord",
+  "FrameRecord": "melder.nexus.frame_descriptor.frame_record.FrameRecord",
+  "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+  "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "Aether": "melder.aether.aether.Aether",
+  "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+  "Conduit": "melder.aether.conduit.conduit.Conduit",
+  "ConduitWard": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.frame_descriptor_manager",
+  "class": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+  "label": "FrameDescriptorManager"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   "to": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
+   "relation": "owns_lifecycle_of",
+   "why": "FrameDescriptorManager owns the per-frame descriptor registry and the lifecycle of each FrameDescriptor.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime",
+    "refresh",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

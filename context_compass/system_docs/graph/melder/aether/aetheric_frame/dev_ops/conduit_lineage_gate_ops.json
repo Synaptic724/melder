@@ -9,7 +9,10 @@
    "label": "conduit_lineage_gate_ops",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The narrow conduit-lineage creation-gate facade coordinated transaction strategies reach through.",
+   "semantics_authored_against": "86fc56fdd1689e0b735a5fb354a798f73110904b13a31850137d4bc32e5a40ca"
   },
   "melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops.ConduitLineageGateOps": {
    "id": "melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops.ConduitLineageGateOps",
@@ -33,7 +36,24 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "8e54b0150e5bd67728ed468557f23b8a5e9292caccb9ca3049ec00ad08d615d5",
+   "include": true,
+   "role": "The runtime-gate seam transaction strategies reach through: a narrow drain/reopen/close/count facade over the frame's single CreationGateController.",
+   "responsibilities": [
+    "wrap the controller BY REFERENCE and never clean it - DevOpsManager owns that lifecycle; cleanup drops the borrowed reference only",
+    "scope every operation to a conduit lineage, keyed by root_conduit_id",
+    "capture the controller under its own RLock then delegate OUTSIDE it, so a long blocking drain never holds this facade's lock"
+   ],
+   "owns_state": [
+    "_lock",
+    "_creation_gate_controller"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "8e54b0150e5bd67728ed468557f23b8a5e9292caccb9ca3049ec00ad08d615d5"
   }
  },
  "edges_out": [

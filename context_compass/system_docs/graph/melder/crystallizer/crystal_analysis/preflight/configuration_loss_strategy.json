@@ -9,7 +9,10 @@
    "label": "configuration_loss_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/configuration_loss_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass for configuration facts a record can never fully rebuild.",
+   "semantics_authored_against": "31832fe3bf6d4ff7c26b86ec1d3d94522f319f79f249622e45380e50268d964a"
   },
   "melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy.ConfigurationLossStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy.ConfigurationLossStrategy",
@@ -29,7 +32,18 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "91c8686df41b798429f4d115262d357f4dcd7fb000397a1b73baff6b1c6da0fa",
+   "include": true,
+   "role": "Preflight naming the code participation a bootloader must re-supply, since callable-bearing config never round-trips.",
+   "responsibilities": [
+    "report spellbook hooks and aether-root resolver/default-logger flags the record carries as presence only",
+    "emit info severity - these are honest expectations the restore reports as shortfalls, not failures"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "91c8686df41b798429f4d115262d357f4dcd7fb000397a1b73baff6b1c6da0fa"
   }
  },
  "edges_out": [

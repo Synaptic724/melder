@@ -9,7 +9,10 @@
    "label": "remove_from_index_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for the move-out SpellIndex flow.",
+   "semantics_authored_against": "48b3c4af601d78de624517580b8601033df8a8f1f79e2344cb5c8f75a7cdebf2"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy.RemoveFromIndexTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy.RemoveFromIndexTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "461ab87b61a05d9e437b0b649d3faef805334aee9bd8fe0d50803c77be9ba853",
+   "include": true,
+   "role": "Move-out counterpart to add-to-index: a removal is a move to a fresh index established in the same transaction, because a spell is always in exactly one index.",
+   "responsibilities": [
+    "seal the owning spellbook and conduit EXCLUSIVE plus the moved spell's binding key",
+    "establish the fresh index (the split) inside the held window via the Spellbook-owned apply verb",
+    "preserve the one-index-per-spell invariant it shares with the move-in flow"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "461ab87b61a05d9e437b0b649d3faef805334aee9bd8fe0d50803c77be9ba853"
   }
  },
  "edges_out": [

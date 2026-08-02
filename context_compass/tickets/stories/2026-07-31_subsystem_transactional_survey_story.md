@@ -8,7 +8,7 @@
 - Agent Name: UNASSIGNED (deliberately - see note)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-07-31T23:00:41Z
+- Updated: 2026-08-02T17:40:00Z
 
 ## Problem / Opportunity
 We do not yet know WHAT to transactionalize in each subsystem, only that each
@@ -27,7 +27,7 @@ currently protect them with, what scope keys would express that, and what are it
 ## Tasks
 - [ ] TASK-2026-07-31-survey-mr-transactional-surface
 - [ ] TASK-2026-07-31-survey-nexus-transactional-surface
-- [ ] TASK-2026-07-31-survey-crystallizer-transactional-surface
+- [x] TASK-2026-07-31-survey-crystallizer-transactional-surface (bootstrap_0, 2026-08-02T17:40:00Z)
 
 ## Acceptance Criteria
 - Each survey names the subsystem's structural mutation verbs with file:line.
@@ -47,6 +47,33 @@ currently protect them with, what scope keys would express that, and what are it
   NEXT: Any agent may claim one survey task.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
+
+## Progress
+- 2026-08-02T17:40:00Z (bootstrap_0): CRYSTALLIZER survey COMPLETE. Two CONFLICT
+  findings recorded, one of them the epic's own central claim now VERIFIED from
+  source rather than inherited: `_ensure_frame` (Aether lock, aether.py:893-941)
+  and `bind_frame_configuration` (frame lock, aetheric_frame.py:626+) are two
+  acquisitions on two different locks, called as two statements at
+  restore_engine.py:1706-1708, and the LoadGate cannot close the window because
+  it is consulted at exactly two sites - transaction_mediator.py:359 and :501,
+  both NEW-ROOT mediator ingresses - and a frame under construction has no
+  mediator. Second CONFLICT: all-or-nothing teardown is not compensation -
+  `_teardown_built` swallows every per-unit cleanup error by contract, so a
+  partial teardown leaves live objects with no record of which ones failed, and
+  claim-release ordering is not equivalent to build-order teardown because
+  claims and built units are not 1:1.
+  Also found: `graft_index` mutates live books with NO load-authority span (its
+  own docstring: "Unlike a world load it is NOT one transaction"), and
+  `record_spell_crystal` is a read-then-act pair across two locks. Neither is
+  inexpressible - both are simply unclaimed today.
+  CORRECTED a Starting Fact: the ticket said "80-site shortfall ledger"; actual
+  is 36 call sites / 18 distinct reason strings, all in restore_engine.py. The
+  ticket told me to re-verify rather than trust, so this is the mechanism
+  working.
+  Two surveys remain OPEN and UNASSIGNED: MR and Nexus. I did not claim them -
+  the story's own DECISION note says these should run on FRESH context and I now
+  carry the crystallizer read, so a different agent taking one of the remaining
+  two is better for the story than me taking all three.
 
 ## Context / Handoff Summary
 Three read-only surveys. Self-contained by design so a fresh agent can take one

@@ -5,12 +5,12 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-07-25
+- Updated: 2026-08-02
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
 for the Melder core platform (`src/melder`). It complements
-`context_compass/system_docs/src_architecture.md` by providing component-level
+`src_architecture.md` by providing component-level
 responsibilities, contracts, and relationships.
 Melder is framed here as a Dependency Graph Runtime (DGR) with DI-style
 binding and resolution as a subset capability.
@@ -25,22 +25,22 @@ This document is AUTHORED. Nothing generates its prose. Its only generated
 companion is `src_components_index.md`, rebuilt in the SAME pass as any edit:
 
 ```bash
-python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_components.md
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_components.md
 ```
 
 Consume it by slicing, never by reading this document whole:
 
 ```bash
-python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_components.md --slice "<section name>"
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_components.md --slice "<section name>"
 ```
 
 Verify before trusting any range:
 
 ```bash
-python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_components.md --check
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_components.md --check
 ```
 
 Heading discipline this document obeys, and why:
@@ -77,12 +77,19 @@ Run this after any pass that touches source or citations:
 python - <<'EOF'
 import pathlib, re
 CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
-for doc in pathlib.Path("context_compass/system_docs").glob("src_*.md"):
+# Cited source paths are relative to the SOURCE-TREE root, which is not
+# necessarily the directory you run this from. Walk up until `src/` appears, so
+# the check works from the documentation root or the repository root.
+here = pathlib.Path.cwd().resolve()
+root = next((p for p in (here, *here.parents) if (p / "src").is_dir()), here)
+docs = next(p for p in (pathlib.Path("system_docs"), pathlib.Path("."))
+            if list(p.glob("src_*.md")))
+for doc in docs.glob("src_*.md"):
     if doc.name.endswith("_index.md"):
         continue
     for i, line in enumerate(doc.read_text(encoding="utf-8").split("\n"), 1):
         for m in CITE.finditer(line):
-            f = pathlib.Path(m.group(1))
+            f = root / m.group(1)
             if not f.exists():
                 print("MISSING", doc.name, i, m.group(0)); continue
             n = len(f.read_bytes().decode("utf-8", "replace").splitlines())
@@ -337,14 +344,20 @@ Responsibilities:
 - Manage configuration lifecycle and logger initialization.
 - Register spells into local maps and spell-id caches.
 - Maintain spell_id maps for O(1) spell_id resolution.
-- Run the transaction-backed SpellIndex mutation SEAMS - `_apply_notch(...)`,
-  `_apply_add_to_index(...)`, `_apply_remove_from_index(...)` - inside the held
-  change-control window. Spellbook does NOT start these flows and exposes no
-  public verb for them; the public verbs are on `Conduit`, which delegates here.
+- Serve the transaction-backed SpellIndex mutation through TWO OWN LAYERS,
+  both internal: the entry methods `_notch_spell(...)`,
+  `_add_to_spell_index(...)`, `_remove_from_spell_index(...)` - which are what
+  the Conduit actually calls - each delegating to the matching seam
+  `_apply_notch(...)`, `_apply_add_to_index(...)`,
+  `_apply_remove_from_index(...)` that mutates index membership.
+  Spellbook does NOT start these flows and exposes no public verb for them. The
+  CONDUIT admits the transaction, calling `mediator.start_transaction(...)`
+  itself and calling in here inside the held window.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3510 (`_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:3683 (`_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:3858 (`_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3464, 3515 (`_notch_spell` -> `_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:3655, 3688 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:3831, 3863 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3684 (states the Conduit admits it)
 - Run phase pipelines before conjure.
 - Conjure exactly one Conduit per Spellbook instance.
 - Provide SpellBinder fluent adapter.
@@ -389,9 +402,30 @@ Concurrency/Threading:
     WITHOUT holding the Spellbook lock. The run lock makes register / run /
     release atomic per run, so concurrent runs QUEUE instead of corrupting each
     other's phase registrations.
-  - Because the two locks protect disjoint state and the run lock is taken
-    without `_lock` held, they impose no ordering on each other. Taking `_lock`
-    inside a phase run would introduce one; nothing does today.
+  - THERE IS AN ORDERING BETWEEN THEM, AND IT IS ONE-WAY: `_lock` BEFORE
+    `_phase_run_lock`. NEVER THE REVERSE. Two paths reach the run lock and they
+    arrive holding different things:
+      - CONJURE: `_run_structural_phases` documents a caller-held precondition -
+        "Caller must hold the Spellbook lock for deterministic conjure
+        ordering" - and it reaches `_phase_run_lock` through
+        `SpellbookCreationSystem.run_structural_phases` ->
+        `_run_scheduler_with_phases`. So on this path `_lock` is held first and
+        `_phase_run_lock` second.
+      - MELD-TIME REVALIDATION: arrives WITHOUT `_lock`, which the acquisition
+        site states explicitly. It takes only `_phase_run_lock`.
+    Because no path ever takes `_phase_run_lock` first and then `_lock`, the
+    order cannot invert and cannot deadlock. That safety is a PROPERTY OF THE
+    CALL PATHS, not of the locks - nothing in the code enforces it, so a new
+    caller that takes the run lock and then reaches a `_lock`-guarded Spellbook
+    method would introduce the inversion silently.
+    CORRECTED 2026-08-03: this document previously said the two locks "impose no
+    ordering on each other". They do. That wording invited exactly the inversion
+    described above.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:6295-6306 (`_run_structural_phases`
+    at :6295; the caller-held-lock precondition is stated at :6306)
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1868 (the only
+    `_phase_run_lock` acquisition, reached from that path)
 - `_run_structural_phases` documents a CALLER-HELD precondition rather than
   taking a lock itself: the caller must hold the Spellbook lock for
   deterministic conjure ordering. That is a contract the type cannot enforce,
@@ -897,11 +931,40 @@ Lifecycle/Cleanup:
 - Cleanup cascades to conduits, clusters, cloud, and control plane.
 
 Concurrency/Threading:
-- One frame-level `RLock`. Its real job is that the frame is the arbitration
-  point BETWEEN conduits: conduit-to-conduit operations that touch two conduits
-  serialise here rather than needing a lock ordering between the two conduit
-  locks, which is the deadlock this design avoids by construction.
-- The frame does not hold the lock while calling into an owned conduit's own
+- One frame-level `RLock` guarding the frame's own registry and services.
+- CORRECTED 2026-08-03: this document previously claimed the frame is the
+  arbitration point between conduits, so that two-conduit operations "serialise
+  here rather than needing a lock ordering between the two conduit locks". THAT
+  IS NOT WHAT THE CODE DOES. Two-conduit operations acquire BOTH conduit/ward
+  locks together, through `SafeGuard`, and the frame is not involved.
+- HOW THE TWO-LOCK ORDERING ACTUALLY WORKS. `SafeGuard` normalises a lock set -
+  drops `None`, de-duplicates by identity - and acquires in
+  `sorted(id(lock))` order, NOT ARGUMENT ORDER. That is the whole mechanism:
+  two call sites passing the same pair in opposite argument order still acquire
+  them in the same real order, so they cannot deadlock against each other.
+  THE CODEBASE CONTAINS EXACTLY THAT CASE TODAY:
+  `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:951` passes `SafeGuard(tgt_book._lock, src_book._lock)`
+  and `:1442` passes `SafeGuard(src_book._lock, tgt_book._lock)`. Do NOT "tidy"
+  those into agreement - argument order is deliberately irrelevant, and treating
+  the inconsistency as a bug is how someone talks themselves into replacing
+  `SafeGuard` with hand-ordered acquisition.
+  Other live pairs: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:799` (two peer wards), `:973`
+  (self + target ward), `src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:1984` (two frame
+  configurations), and the conduit-pair sites in `transfer_of_ownership.py`.
+  CONSTRAINTS THAT COME WITH IT: a `SafeGuard` is SINGLE-USE (`__exit__` cleans
+  it; a second `__enter__` raises) and is NOT safe to share between threads,
+  because acquisition state lives on the instance - give each thread its own.
+  What is shared safely is the ordering RULE. Its `cleanup()` deliberately does
+  NOT release external locks; letting `__exit__` do that is what prevents a
+  permanent leak.
+  The `id()` ordering is arbitrary but consistent within a run, and is not a
+  priority or a stable cross-run order - do not build anything on the sequence
+  itself.
+  EVIDENCE:
+  - src/melder/utilities/synchronization/safeguard.py:8-80
+  - src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:951, 1442
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:799, 973
+- The frame does not hold its lock while calling into an owned conduit's own
   cleanup; teardown clears the registry first and cascades afterwards.
 
 Invariants/Guarantees:
@@ -1063,8 +1126,34 @@ Lifecycle/Cleanup:
 Concurrency/Threading:
 - Instance `RLock` discipline at every level; one-way lock order
   (spellbook/frame/nexus/MR -> crystallizer -> persistence system ->
-  profile); the cadence ticker stamps under the crystallizer lock and seals
-  outside it (stamp advances BEFORE sealing - no hot-loop on failure).
+  profile).
+- CADENCE TICKER - VERIFIED 2026-08-03 against the code rather than carried
+  forward. `_maybe_create_automatic_checkpoint` takes `self._lock`, and inside
+  it does only two things: compare elapsed wall time against
+  `_checkpoint_interval_seconds`, and ADVANCE the stamp
+  (`_last_automatic_checkpoint_monotonic = now`). It then RELEASES and does the
+  expensive work outside - `_emit_policy_twin()`, then
+  `persistence_system.create_checkpoint(...)`, then optionally
+  `asset_management_system.flush_checkpoint(...)`.
+  ADVANCING THE STAMP BEFORE SEALING IS THE POINT, not an ordering detail: a
+  seal that raises has already moved the clock, so the next emit does not
+  immediately retry. Advance it after sealing instead and every subsequent sink
+  verb re-attempts a failing seal - a hot loop driven by ordinary activity.
+- The ticker is ACTIVITY-DRIVEN and has NO BACKGROUND THREAD: every sink verb
+  calls it after recording, so a quiet world journals nothing and mints nothing.
+- Related, and the reason the seal paths do not use `emit`: they call the
+  `record` seam directly, because emit's cadence ticker could otherwise
+  interleave an automatic seal mid-checkpoint. `record` is the same sink minus
+  the ticker.
+  EVIDENCE:
+  - src/melder/crystallizer/crystallizer.py:723-729 (`with self._lock` at :723;
+    elapsed check :724-728; stamp advanced at :729 - the last statement under
+    the lock)
+  - src/melder/crystallizer/crystallizer.py:732-741 (outside the lock:
+    `_emit_policy_twin()` :732, `create_checkpoint(...)` :733, conditional
+    `flush_checkpoint(...)` :741)
+  - src/melder/crystallizer/crystallizer.py:687-693 (seal paths call `record`
+    directly, bypassing `emit` and therefore the ticker)
 - `SyntheticModule` uses registry locking for importlib-facing paths.
 
 Invariants/Guarantees:
@@ -2264,7 +2353,11 @@ Invariants/Guarantees:
 
 Failure Modes:
 - ExceptionGroup raised if any disposal errors occur.
-- SpellSpaceScopeError if scope is misused.
+- `SpellSpaceScopeError` if scope is misused. NOT RAISED BY THIS COMPONENT -
+  the sole raise site in the tree is `SpellSpaceThreadState`, at
+  `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:245`, and
+  it signals STACK CORRUPTION at exit rather than a caller mistake. See
+  `### Subcomponent: SpellSpace Thread State`.
 - RuntimeError if conduit state is missing during Creations initialization.
 
 Observability:
@@ -2401,7 +2494,10 @@ Failure Modes:
 - KeyError when a spell_id or lookup key cannot be resolved.
 - TypeError when `spell_override` has an unsupported shape.
 - RuntimeError for missing runtime state or EXISTING_CREATION spells without a backing instance.
-- SpellSpaceScopeError for unique_per_spell_space without an active spellspace.
+- `SpellSpaceScopeError` for `unique_per_spell_space` without an active
+  spellspace. Raised by `SpellSpaceThreadState`
+  (`src/melder/aether/conduit/spell_space/spell_space_thread_state.py:245`),
+  not by this component.
 - MeldExecutionError for invalid spell state or dirty root gating.
 - HookExecutionError for hook failures.
 
@@ -2710,11 +2806,30 @@ Lifecycle/Cleanup:
   - src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:192-199
 
 Concurrency/Threading:
-- One `RLock` at the plane, plus each owned manager's own lock. The plane's lock
-  is taken for the composite operations that span several managers; the managers
-  guard their own state. The ordering is strictly outer-to-inner - the plane
-  acquires before calling in, never the reverse - which is what keeps a control
-  operation and a teardown from deadlocking against each other.
+- One `RLock` at the plane, plus each owned manager's own lock. Ordering is
+  strictly OUTER-TO-INNER: the plane acquires before calling in, and no owned
+  manager calls back into the plane - verified by reading the call sites, not
+  inferred from the layering. 13 of the 15 `with self._lock` blocks call into an
+  owned manager while holding it.
+- THE CONSEQUENCE THAT MATTERS, AND IT IS NOT A DEADLOCK: the plane lock is held
+  across a BLOCKING POLL. `close_conduit_creation_gate(...)` takes `self._lock`
+  and then calls `CreationGateController.close_and_wait_until_conduit_free(...)`,
+  which reaches `CreationGate.close_and_wait_until_free(...)`. That method seals
+  the gate under the gate's own lock, releases it, and then SPINS:
+  `deadline = time.monotonic() + timeout`, then
+  `while self.has_active_tickets(): ... time.sleep(interval)`. Defaults are
+  `timeout=30.0` and `interval=0.1`.
+  So a single conduit with a stuck in-flight ticket STALLS EVERY OTHER DEVOPS
+  PLANE OPERATION for up to thirty seconds, because they all need the same
+  `_lock` that the waiter is holding. On expiry the gate raises
+  `RuntimeError("Timeout waiting for creation tickets to drain.")` and the plane
+  lock is released by the `with` block unwinding.
+  This is a throughput and blast-radius property, not a correctness bug, and it
+  is invisible from the layering diagram - only the call chain shows it.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:447-452 (lock held across the call)
+  - src/melder/utilities/synchronization/creation_gate_controller.py:634-670
+  - src/melder/utilities/synchronization/creation_gate.py:529-538 (the poll loop)
 
 Invariants/Guarantees:
 - Registering a lineage marks it dirty.
@@ -2822,12 +2937,27 @@ Lifecycle/Cleanup:
 
 Concurrency/Threading:
 - One mediator `RLock` guards shared state; active execution frame stacks live
-  in `threading.local()`.
-- SCOPE WAITING NEVER HOLDS THE MEDIATOR LOCK. A blocked request parks on the
-  embargo manager's own condition and retries admission, in bounded slices of
-  `min(remaining, 1.0)` - the slice exists because a release landing between an
-  admission attempt and the park would otherwise be missed until the full
-  deadline.
+  in `threading.local()`. The mediator also owns
+  `_wait_condition = threading.Condition(self._lock)` - a condition bound to
+  that same lock, notified under it on the release paths - which is a DIFFERENT
+  mechanism from the embargo wait described next. Do not conflate them.
+- SCOPE WAITING NEVER HOLDS THE MEDIATOR LOCK. VERIFIED 2026-08-03 by reading
+  the call site rather than trusting the statement: `_admit_with_scope_wait`
+  contains NO `with self._lock` anywhere in its retry loop, and its single
+  caller invokes it at :521 and takes the lock at :522 - immediately AFTER the
+  wait returns, to stage the mutation. The property is produced by that
+  ordering; nothing enforces it, so a future caller that wraps the admit call in
+  the lock would silently convert a bounded wait into a global stall.
+- A blocked request retries admission and parks on the embargo manager's own
+  condition in bounded slices of `min(remaining, 1.0)`. The slicing rationale is
+  stated at the call site and is worth keeping: a release notification landing
+  in the narrow window BETWEEN an admission attempt and the park would otherwise
+  go unnoticed until the full deadline; slicing caps that worst case at one
+  second per retry rather than the whole `_max_transaction_wait_time_in_seconds`.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:204 (`_wait_condition` bound to `_lock`)
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:521-522 (wait outside, lock after)
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1190-1260 (`_admit_with_scope_wait`, no lock held)
 - The `LoadGate` wait happens at NEW-ROOT ingress only and outside the mediator
   lock; nested same-thread joins never consult it, and the loading thread passes
   free.
@@ -3791,17 +3921,25 @@ Purpose:
 - Expose the current public Spellbook seams for SpellIndex active-member
   switching and member movement between indices.
 Contract/Interface:
-- `Conduit.notch_spell(...)` starts the `notch` transaction; the current
-  member-store switch runs in the Spellbook seam `_apply_notch(...)`.
-- `Conduit.add_to_spell_index(spell=, target_index=)` starts the `add_to_index`
-  transaction; the move-in runs in `_apply_add_to_index(...)`.
-- `Conduit.remove_from_spell_index(spell=, source_index=)` starts the
-  `remove_from_index` transaction; the split runs in
+- `Conduit.notch_spell(...)` opens the `notch` transaction at
+  `src/melder/aether/conduit/conduit.py:4464`, then calls `Spellbook._notch_spell(...)`, which delegates
+  the member-store switch to the seam `_apply_notch(...)`.
+- `Conduit.add_to_spell_index(spell=, target_index=)` opens `add_to_index` at
+  `src/melder/aether/conduit/conduit.py:4537`, then calls `Spellbook._add_to_spell_index(...)`, which
+  delegates the move-in to `_apply_add_to_index(...)`.
+- `Conduit.remove_from_spell_index(spell=, source_index=)` opens
+  `remove_from_index` at `src/melder/aether/conduit/conduit.py:4608`, then calls
+  `Spellbook._remove_from_spell_index(...)`, which delegates the split to
   `_apply_remove_from_index(...)`.
   THE SPLIT OF OWNERSHIP IS THE POINT: the Conduit admits the transaction
   because it owns the lineage being mutated, and the Spellbook applies the
   membership change because it owns the index maps. Neither half is callable
   on its own.
+  DO NOT TRUST THE CONDUIT DOCSTRINGS HERE. All three say "Delegates to the
+  owning Spellbook, WHICH ADMITS the [...] change-control transaction". That is
+  false in all three, and the same three methods call
+  `mediator.start_transaction(...)` a few lines further down. `src/melder/aether/spellbook/spellbook.py:3684`
+  states it correctly. Raised on TASK-2026-08-02-stale-source-docstrings.
   EVIDENCE:
   - src/melder/aether/conduit/conduit.py:4392, 4482, 4560 (public verbs)
   - src/melder/aether/spellbook/spellbook.py:3510, 3683, 3858 (applied seams)
@@ -4258,15 +4396,29 @@ Data Structures:
 Concurrency/Threading:
 - RLock plus a dedicated emission RLock (`_emission_lock`, BUG-031 2026-07-18);
   one-way lock order is emission -> root -> set -> crystallizer.
-- `_emit_research_composition` serializes its whole read-and-publish body under the
-  emission lock; `create_research_set` and `load_recorded_composition` take emission
-  BEFORE root (set constructors fire `on_mutation` while the root lock is held), so a
-  concurrent emission can no longer publish a torn or stale registry around
-  hydration/creation.
-  EVIDENCE: src/melder/mutation_research/mutation_research.py:220
-  (`_emission_lock` created), :804-830 (`create_research_set` takes emission
-  before root), :905-944 (`load_recorded_composition` same order), :3874
-  (`_emit_research_composition`)
+- `_emit_research_composition` serializes its whole read-and-publish body under
+  the emission lock. `create_research_set` and `load_recorded_composition` take
+  emission BEFORE root, as NESTED acquisitions one line apart - :830 then :831,
+  and :944 then :945.
+- WHY EMISSION MUST BE THE OUTER LOCK, verified by reading the body rather than
+  taken from the ordering statement: inside both nested blocks the code
+  constructs `ResearchSet(name, on_mutation=self._emit_research_composition)` and
+  then CALLS `self._emit_research_composition()` directly, still holding both.
+  The emitter therefore re-enters `_emission_lock` from inside the root lock -
+  safe only because it is an RLock AND because emission was acquired first.
+  Reverse the order and the shape becomes the classic inversion: this path would
+  hold root and want emission, while a concurrent emitter holds emission and
+  wants root.
+  So the order is not a convention anyone could safely "tidy up" - it is forced
+  by the `on_mutation` callback reaching back into the emitter from inside the
+  registry mutation.
+  EVIDENCE:
+  - src/melder/mutation_research/mutation_research.py:220 (`_emission_lock` created)
+  - src/melder/mutation_research/mutation_research.py:830-831 (emission then root)
+  - src/melder/mutation_research/mutation_research.py:837-840 (the `on_mutation` wiring)
+  - src/melder/mutation_research/mutation_research.py:845 (emitter called under both)
+  - src/melder/mutation_research/mutation_research.py:944-945 (same order on the load path)
+  - src/melder/mutation_research/mutation_research.py:3900 (`_emission_lock` re-entered)
 Key Files (C1):
 - `src/melder/mutation_research/mutation_research.py`
 - `src/melder/mutation_research/mutation_configuration.py`
@@ -4544,6 +4696,48 @@ Concurrency/Threading:
 - No explicit lock; owner Conduit lock used upstream.
 Key Files (C1):
 - `src/melder/aether/conduit/spell_space/spell_space.py`
+
+### Subcomponent: SpellSpace Thread State
+Parent Component: Creations and SpellSpace
+Purpose:
+- Hold one active-spellspace STACK PER THREAD for a single conduit, so recursive
+  spellspace entry is expressible as push/pop order without any cross-thread
+  coordination.
+Contract/Interface:
+- `SpellSpaceThreadState.get()` returns a copy of the current thread's stack;
+  `set(...)` replaces that thread's whole stack with a detached copy;
+  `cleanup()` retires the holder so later access raises via `check_cleaned()`.
+- `_SpellSpaceLocal` extends `threading.local` and owns the per-thread
+  `spellspace_stack` list; the holder owns the contract and the cleanup.
+- IT IS THE SOLE RAISER OF `SpellSpaceScopeError` in the entire tree, at
+  `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:245`, when
+  the exiting spellspace is not the one on top of the current thread's stack -
+  i.e. stack corruption, not a user error. Two component entries document that
+  exception in their Failure Modes; NEITHER owns this file, which is why it is
+  catalogued here.
+Data Structures:
+- One `_local` (`_SpellSpaceLocal`) holding a per-thread list of spellspaces.
+Concurrency/Threading:
+- ISOLATION IS THE DESIGN: each thread sees only its own stack, so NO LOCK IS
+  REQUIRED OR TAKEN. Stated as a deliberate alternative to dynamically-created
+  `ContextVar` objects, not as an oversight.
+- WHY THE EAGER `__init__` EXISTS, and it is not convenience: a
+  `threading.local` subclass normally forces callers into
+  `getattr(local, "stack", None)` probes to discover whether the current thread
+  has been initialised, and this repository's Attribute Access Rule forbids
+  defensive `getattr`/`hasattr` on owned attributes. Initialising the stack
+  eagerly per thread makes the attribute unconditionally present, so the owner
+  can use direct access and keep the owned-code contract strict.
+  THIS IS A POLICY-DRIVEN DESIGN DECISION AND CANNOT BE DERIVED FROM THE CODE
+  SHAPE - delete the eager `__init__` as "redundant" and the class either breaks
+  or forces a banned pattern back in. The module states the rule and its
+  rationale in its own docstring, which is the evidence cited below; the
+  governing coding standard lives outside `src/` and is deliberately not cited
+  here, because this document describes `src/melder` and nothing else.
+  EVIDENCE:
+  - src/melder/aether/conduit/spell_space/spell_space_thread_state.py:39-46
+Key Files (C1):
+- `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
 
 ### Subcomponent: SpellSystemStates Registry
 Parent Component: DevOps Control Plane
@@ -4998,17 +5192,26 @@ These flows describe concrete method sequences for core behaviors.
 1. One view/command/codegen family chain inside the frame ACL container
    advances or changes current selection.
 2. The frame ACL container emits a frame-level ACL change callback.
-3. `FrameACLManager` forwards that through `Nexus`.
+3. `FrameACLManager` forwards that through
+   `Nexus._on_frame_acl_changed(frame_name)` (`src/melder/nexus/nexus.py:2579`),
+   the single entry point for the whole fan-out below.
 4. `Nexus` finds impacted Rifts by checking whether the changed frame is
    present in each Rift's assigned frame-contract set.
 5. By default, `NexusConfiguration` enables RiftGate-controlled refresh:
-   - disable the impacted Rift gates
+   - disable the impacted Rift gates (`Nexus.disable_rift_gate(rift_id)`,
+     `src/melder/nexus/nexus.py:1375`)
    - wait for in-flight tickets to drain
    - delegate the single-frame callback into the batch refresh primitive
-   - refresh each impacted Rift once for its changed-frame subset
+     `Nexus._refresh_rift_projection_sets_for_frames(...)`
+     (`src/melder/nexus/nexus.py:2491`) - the single-frame path and the batch
+     path share this ONE primitive rather than each carrying its own refresh
+   - refresh each impacted Rift once for its changed-frame subset via
+     `Rift.refresh_runtime_projections(...)`
+     (`src/melder/nexus/rift/rift.py:589`)
     - apply the refreshed projection state to the durable room viewer and
       room-owned command assets
-   - reopen the impacted Rift gates
+   - reopen the impacted Rift gates (`Nexus.enable_rift_gate(rift_id)`,
+     `src/melder/nexus/nexus.py:1343`)
    The same config owns the drain timeout and poll interval.
 6. Each impacted `Rift` asks `Nexus` for one refreshed multi-frame projection
    subset, merges it into the Rift-owned projection registry once, and then
@@ -5017,10 +5220,23 @@ These flows describe concrete method sequences for core behaviors.
 
 ### Flow: FrameDescriptorManager Passive Publication
 1. `Nexus` or a runtime publisher delegates frame/conduit/spell publication.
-2. `FrameDescriptorManager` refreshes frame posture and frame-handle cache.
-3. The manager publishes or replaces the canonical frame/conduit/spell record
-   inside the owned `FrameDescriptor`.
-4. Removal helpers delete canonical records without mutating the Rift registry.
+2. `FrameDescriptorManager._refresh_frame_posture_cache(...)`
+   (`src/melder/nexus/frame_descriptor_manager.py:177`) refreshes frame posture
+   and the frame-handle cache; `_get_publishable_frame_posture(...)` (:222)
+   decides whether the frame is publishable at all - publication is SKIPPED
+   rather than failed when it is not.
+3. The manager publishes or replaces the canonical record inside the owned
+   `FrameDescriptor` through three record-specific verbs:
+   `_publish_frame_record(spellbook)` (:259), `_publish_conduit_record(conduit)`
+   (:342), and `_publish_spell_record(...)` (:498). Each returns `bool`, so a
+   caller can tell "published" from "declined" WITHOUT an exception.
+4. Removal goes through `_remove_conduit_record(...)` (:467) and
+   `_remove_spell_record(...)` (:568), which delete canonical records WITHOUT
+   mutating the Rift registry - the Rift learns by refresh, not by callback.
+5. Payloads are contract-checked by `_validate_published_frame_payload` (:706),
+   `_validate_published_conduit_payload` (:728),
+   `_validate_published_spell_payload` (:750) and
+   `_validate_published_record_contract` (:778).
 
 ### Flow: RiftSpace Workstation Bind -> Target -> Call
 1. `Workstation.bind_object(...)`, `bind_attribute(...)`, or `bind_method(...)`
@@ -5208,29 +5424,29 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/system_document.py`
   start_line: 1
-  end_line: 343
-  loc: 343
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 395
+  loc: 395
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/__architecture__.py`
   start_line: 1
-  end_line: 39
-  loc: 39
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 45
+  loc: 45
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/__components__.py`
   start_line: 1
-  end_line: 39
-  loc: 39
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 42
+  loc: 42
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/__graph_network__.py`
   start_line: 1
-  end_line: 38
-  loc: 38
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 56
+  loc: 56
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/__graph_details__.py`
   start_line: 1
-  end_line: 38
-  loc: 38
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 49
+  loc: 49
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/aether/aether_configuration.py`
   start_line: 1
   end_line: 771
@@ -5248,9 +5464,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 6496
-  loc: 6496
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 6501
+  loc: 6501
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -5598,9 +5814,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6213
-  loc: 6213
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 6214
+  loc: 6214
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
   end_line: 603
@@ -6139,9 +6355,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T14:28:07Z
 - path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 628
-  loc: 628
-  verified_at: 2026-08-02T14:28:07Z
+  end_line: 633
+  loc: 633
+  verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/_build_assets/_build_asset_runner.py`
   start_line: 1
   end_line: 399
@@ -6237,6 +6453,11 @@ remeasure. The 18 were measured from disk and added.
 Re-check with the recipe in `## Indexing`; the two sets must be equal, and any
 future expansion of a `Key Files (C1)` list must land here in the same pass.
 
+- path: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
+  start_line: 1
+  end_line: 302
+  loc: 302
+  verified_at: 2026-08-02T16:29:16Z
 ### Full Package Inventory (exhaustive, retained)
 
 Generated from source on 2026-07-30 by AST walk over `src/melder`, one entry per
@@ -7320,6 +7541,452 @@ nothing in `src/melder` constructs any of these; a repo-wide search for
 - `src/melder/utilities/synchronization/unit_of_work.py`
   Future-based encapsulation of a single unit of work, with integrated cancellation support via...
 
+## Promoted Patch Detail (re-absorbed 2026-08-02)
+
+Component-level detail promoted out of COMPLETED patch lanes between 2026-07-07
+and 2026-07-12, moved to the recomposition lane on 2026-08-01 under the whitelist
+misreading of the Required Section Contract, and returned here on 2026-08-02.
+
+VERIFIED BEFORE RE-ABSORPTION: every class name and every method name these four
+sections cite in backticks was checked against `src/`, and ALL OF THEM RESOLVE -
+zero misses across 411 lines. They carry no `path:line` citations, so there was
+no line-range rot to inherit. This is the record-model, subsystem-decomposition,
+V3 iteration and three-lane-tail detail that the C3 entries summarise; read the
+component entry first and come here when you need the mechanism.
+
+### Crystallizer Persistence & Restore (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07)
+
+
+Ownership hierarchy (owner-ruled; CURRENT as of the 2026-07-10 subsystem
+decomposition - see the dated section at the end of this block):
+`Crystallizer` owns THREE same-rank children - `PersistenceSystem` (the
+record: profiles + checkpoint ledger, in-process truth ONLY),
+`AssetManagementSystem` (bytes at rest: `CrystallizerCache`, formation
+files, and the `ExternalPersistenceManager` DB seam), and
+`CrystalLoaderSystem` (the unfold: LoadAdmission gating (renamed from
+BootMediator 2026-07-11) + RestoreEngine +
+durable load state). The twin vocabulary lives at package level
+(`crystallizer/crystals/`) and `crystal_analysis/` is the shared analyzer
+service. Users talk to `Crystallizer` facades only.
+
+#### Record model (EMIT)
+- Twins are pure-data crystals (aether, crystallizer, nexus,
+  mutation_research, frame, spellbook, conduit, spell_index, contract,
+  cluster, spell custody) recorded replace-on-emit into the ACTIVE
+  PersistenceProfile with an insertion-ordered journal (sequence, kind, key).
+- Emission factors: configuration activation/freeze is each unit's emission
+  moment. Three re-entry seams cover legally pre-frozen configurations
+  (spellbook conjure re-freeze, nexus enable, aether root catch-up at
+  crystallizer activation - the aether structurally precedes its recorder).
+  AetherUtilitySystem mutation verbs re-emit the root twin so post-activation
+  logger-policy flips never drift from the record.
+- EVERY snapshot is self-describing (owner ruling): the crystallizer's own
+  policy twin re-emits into each seal's window (`_emit_policy_twin`, direct
+  record to keep the cadence ticker out of seal paths), so one cached
+  crystal names the recording policy that made it.
+- Capture (`capture_segment_since`): full current twins for identities
+  journaled since the mark; spell custody payloads annotate
+  `custody_location`; tombstone kinds carry synthetic removal payloads;
+  state switches (nexus/MR) journal their flips.
+- SpellCrystal carries the full bind signature (module coordinates,
+  spellframe NAME, existence/permissions names, disposal_method_names,
+  profile_family) - content-derived SHA256 ids are STABLE across restore.
+
+#### Checkpoints, cache, retention
+- `create_checkpoint` seals the delta window into a PersistenceCrystal
+  (ULID id; per-profile checkpoint_number minted highest+1 - count-based
+  minting duplicated under FIFO dropout and was fixed). Ledger retention =
+  `max_persistence_crystals` (FIFO dropout).
+- `verify_checkpoint_chain(profile)` - read-only fold-safety verdicts:
+  intact / truncated_prefix / broken / empty, with break evidence rows and
+  empty-window tolerance; full-dropout restarts detected via the first
+  retained window's start.
+- CrystallizerCache: profile-scoped layout
+  `__crystallizer_cache__/{profile}/{checkpoint_id}.json` (atomic
+  tmp+replace; legacy flat paths tolerated on read);
+  `enforce_cache_retention` FIFO-caps cached files at the checkpoint limit
+  on every flush (no DB emitter -> bounded disk; deeper durability is the
+  user's DB opt-in).
+- `reload_checkpoint_from_cache` (one id) and `reload_profile_from_cache`
+  (whole profile, insert-if-absent, idempotent) - a profile's cache folder
+  IS its portable form.
+
+#### Restore (RestoreEngine, all-or-nothing)
+- `load_checkpoint(id)`: the target's same-profile chain detaches under the
+  system lock; the single-use engine runs OUTSIDE it (replay re-enters the
+  emit path). Fold = oldest-first, later-wins per (kind, key), tombstones
+  mirror live eviction match rules, custody routes on custody_location;
+  journal-without-payload folds to an honesty shortfall, never silently.
+- Canonical stage order (owner-ruled boot order):
+  aether_configuration -> crystallizer_policy (boot-time report) ->
+  mutation_research (report; excluded from restore) -> nexus (reload verb +
+  public enable + lifecycle replay) -> frames (posture bind BEFORE books;
+  frames own the dynamic gate) -> books/binds/conjure/staged/selections ->
+  links -> clusters -> contracts LAST (borrower-called naming the owning
+  side; details live in the lineage owner's map under both labels).
+- Fresh identities always (old->new in the report's identity map; spell
+  SHAs never translate). Failure = reverse-order teardown + chained
+  RuntimeError. Shortfall ledger reports everything unreplayable (hooks,
+  non-hydratable targets, cluster leadership, index subscriptions, MR).
+
+#### Configuration reload lanes (owner law: recorded truth, never defaults)
+- Every configuration has a JSON-payload load-and-freeze reload verb:
+  SpellbookConfiguration.load_recorded_dictionary,
+  AethericFrameConfiguration.from_recorded_posture,
+  AetherConfiguration.from_recorded_payload,
+  NexusConfiguration.load_recorded_dictionary (enum-name/collection forms
+  round-trip), CrystallizerConfiguration.load_recorded_dictionary.
+  Recorded values win; backfill is per-key REPORTED; callables record as
+  presence flags and reload as code_participation reports; verbs seal on
+  return.
+
+#### ExternalPersistenceManager (the DB opt-in)
+- module asset_management/external_persistence_manager.py; ASSET-OWNED
+  since the S3 decomposition (custody moved from the crystallizer root
+  into AssetManagementSystem). Separate ExternalPersistenceManagerConfiguration
+  carries USER callables (upload/download/list) + upload_on_flush /
+  strict_uploads knobs; callables-first by owner decision (no SQLAlchemy in
+  core; users own their SQL bootstrap and secrets; a first-party adapter
+  package may PROVIDE callables later).
+- Both flush paths ship local-cache-first then upload (lenient default:
+  failures count into upload_failure_count and never break the seal lane).
+- `reload_profile_from_external` = manager download_profile -> system
+  insert_cached_items (generic insert-if-absent sink).
+
+#### CrystallizerBootstrap (the pod-restart lane)
+- src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py
+  (moved in S4): single-use fluent builder composing ONLY facades:
+  activate (defaults or supplied config) -> attach manager -> local cache
+  reload (fresh-ever pods legally boot empty) -> remote pull + re-flush
+  into the local cache -> chain-verify gate (broken REFUSES) ->
+  load_checkpoint on the newest profile ULID -> report. Its old
+  with_preflight_gate knob is an accepted no-op: blocker refusal is
+  STANDARD admission now (the engine gate; see the decomposition section).
+
+
+
+### Subsystem Decomposition (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10)
+
+
+Canonical design anchor: artifacts/2026-07-09_crystallizer_philosophy_v3.md
+(the V3 subsystem model). Owner-run validation: 614/614 across the whole
+crystallizer test tree.
+
+#### The five identities (code-real paths)
+- `crystallizer/crystals/` - the twin VOCABULARY at package level (S2):
+  every twin + spell_crystal.py + recorded_unit_state.py. CARRIER LAW:
+  crystals carry recorded truth and analysis RESULTS; they never own
+  analyzers, strategy maps, or walk logic. SpellCrystal slimmed 1684->1030
+  lines in S1: its constructor keeps identity/bind-signature capture and
+  DELEGATES analysis to a single-use CrystalAnalyzer, storing the returned
+  CrystalAnalysisResult (11 properties + describe() read the carried
+  result; describe() preserves every pre-decomposition key and adds
+  physical_module_fingerprints, export_surfaces, module_load_order, and
+  the two AST maps).
+- `crystallizer/crystal_analysis/` - the shared analyzer service (S1):
+  crystal_analyzer.py (walk owner; analyze_spell_root for live spells,
+  analyze_payload for RETAINED payloads - the MR re-analysis seam),
+  crystal_analysis_result.py (value-only carrier), custody/ (per-authority
+  strategies: synthetic text+SHA custody, user_source SHA256 FINGERPRINTS
+  at bind = on-disk drift detection, site_package path law, binary/unknown
+  honest leaves), strategies/ (fact passes: import/from-import extraction
+  with byte-order parity to the historical extractor, export_surface NEW,
+  dependency_view topological load order NEW), preflight/ (the 7 restore
+  strategies + PersistenceAnalyzer, relocated).
+- `crystallizer/persistence/` - the RECORD, ledger only (S3/S4):
+  persistence_system.py + persistence_profile.py + persistence_crystal.py.
+  Verbs: profiles, twins/journal, checkpoint minting, retention, chain
+  verify, cached_item_form/forms (flush feedstock), insert_cached_items
+  (the sink), capture_formation_record, detach_profile_chain (loader
+  feedstock). The record touches NO disk, NO DB, and constructs NO
+  engines; it calls nobody (edge law).
+- `crystallizer/asset_management/` - bytes at rest (S3):
+  asset_management_system.py (borrows the record; owns crystallizer_cache
+  .py + external_persistence_manager(.py|_configuration.py)). FLUSH
+  CONTRACT: seal (ledger) then ship - cache write, FIFO retention at the
+  record's LIVE cap, then the lenient upload leg (ONE feedstock pull
+  serves both legs; the old Crystallizer upload hook is absorbed).
+  Reloads (cache/remote) land in the record's insert sink; formation
+  FILES store/load/list here.
+- `crystallizer/crystal_loader_system/` - the unfold (S4):
+  crystal_loader_system.py (the owner; durable last-load state via
+  describe_last_load), load_admission.py (plan_checkpoint_load /
+  plan_formation_load with the canonical-kind-order window minting moved
+  from the ledger / execute_plan / scope adjudication), load_plan.py
+  (declarative: scope world|conduit|frame, per-kind key counts,
+  inspectable before activation), restore_engine.py (moved; gained
+  refuse_on_blockers), bootstrap_loader.py.
+
+#### Admission (the verdict law, S4)
+Every mediated load runs plan -> map -> verdict -> execute -> remember.
+The gate lives INSIDE the engine at the fold->preflight seam (the only
+place owning authoritative FOLDED truth - zero fold duplication): with
+refuse_on_blockers=True (every mediated load), a "blockers" verdict
+raises a teach-grade RuntimeError naming the rows BEFORE any replay.
+Warnings proceed and ride the report. LoadAdmission then ADJUDICATES per
+scope: conduit/frame loads reclassify the scope-blind frame_posture
+warnings to "expected_for_scope" in the additive "admission" payload view
+{"scope","verdict","reclassified"} - raw preflight findings are never
+rewritten. Facade payloads are byte-compatible supersets (the "admission"
+key is additive). Proven live: the M3 boot-boundary fixture carrying a
+placeholder SHA was refused by the synthetic_source_integrity blocker
+until the fixture computed its real fingerprint.
+
+#### Cross-subsystem laws
+- EDGE LAW (acyclic): anything imports crystals/; analysis reads
+  crystals; loader reads record + invokes analysis; assets read record +
+  call its sink; the record calls nobody.
+- LOCK LAW: one-way (facade -> subsystem -> record -> profile); no
+  subsystem-to-subsystem lock nesting; borrowers clean BEFORE the record
+  (crystallizer cleanup order: loader -> assets -> record).
+- Twin-kind honesty: adding a twin kind still touches record AND loader
+  (record/replay are duals) - pay it via checklist, not topology claims.
+- describe boundary: the record's describe() carries NO disk truth; the
+  Crystallizer facade re-enriches cached_checkpoint_count from the asset
+  system.
+
+
+
+### V3 Horizon Iteration (promoted 2026-07-12 from six patch dirs: aether_lazy_frames_and_load_gate_2026_07_11, crystallizer_v3_horizon_2026_07_11, crystallizer_s2_user_source_ retention_2026_07_11, crystallizer_s3_impact_engine_2026_07_11, crystallizer_external_mesh_2026_07_12, mr_restore_build_stage_2026_07_11)
+
+
+Owner-run validation: full 3.14t tree green (9702 tests) plus two
+--last-failed passes; every lane closed with acceptance walks (see the
+completed epics/stories of 2026-07-11/12).
+
+#### Lazy frames + the Aether LoadGate (owner substrate rulings)
+- `import melder` creates ZERO AethericFrames (the eager default-frame
+  construction is deleted): the first Spellbook births the frame it
+  names via `_ensure_frame` (`src/melder/aether/aether.py:893` - AETHER owns
+  this, not Spellbook; the patch-lane copy cited spellbook.py line 229 - written
+  without backticks because it is a record of a wrong citation, not a citation -
+  which is the wrong FILE entirely, and Spellbook has no such method.
+  Get-or-create is the
+  INTENDED semantic); a collapsed configuration falls back to "default"
+  via `_ensure_default_frame` (`src/melder/aether/aether.py:323`), which now
+  lazily CREATES (recreate-after-
+  individual-clean matches named-frame semantics; `_ensure_frame`'s
+  existing branch repairs a drifted default pointer). check_cleaned
+  still refuses torn-down singletons.
+- utilities/synchronization/load_gate.py - LoadGate (Cleanable):
+  exclusive one-load-at-a-time acquire(label)/release();
+  wait_for_passage(timeout) passes the HOLDER thread free and parks
+  foreign threads (teach-grade timeout names the holding load); cleanup
+  = terminal open with None TOMBSTONES (documented: parked waiters must
+  re-check after waking, so no del posture on the holder slots).
+- Aether hosts the gate BEFORE any frame can exist +
+  acquire_load_authority(label, drain_timeout)/release_load_authority()
+  (drain re-snapshots live frames per slice and counts mediator
+  sessions; failed acquisition releases the gate). The gate threads
+  frame -> DevOpsManager -> CCM -> TransactionMediator as an additive
+  load_gate kwarg (None = ungated); the mediator checks wait_for_passage
+  at BOTH new-root ingresses (begin_transaction pre-build - covers
+  start_transaction and the strategy starter - and begin_frame
+  pre-lock); joins never gate. NOTE: CCM.transaction_mediator is an
+  accessor METHOD, not a property. The loader wraps both load verbs in
+  authority spans ("the loading thread has all control").
+- Posture propagation: bind_frame_configuration's two LANDING branches
+  call AethericFrame._propagate_transaction_wait_posture, routing the
+  canonical posture's max_transaction_wait_time_in_seconds through
+  mediator.configure() - closes the captured-once-at-ctor gap (under
+  lazy frames every restore rebinds posture onto a default-postured
+  frame). The disable_* gates were already live-reads and needed
+  nothing.
+
+#### S1 load-scope maturity (formations compose into LIVE worlds)
+- LoadPlan: additive target_frame_name/skip_existing slots.
+- LoadAdmission: borrows aether (None = bare-record);
+  plan_formation_load(..., target_frame_name, skip_existing) rewrites
+  frame identity COPY-ON-WRITE in the detached window only (frame twin
+  re-key + journal frame rows + book/cluster frame_name edges;
+  multi-frame windows refuse - formations are single-frame slices);
+  _preflight_host reads the frame REGISTRY (never _ensure_frame - a
+  probe must not birth the frame it checks): frame_missing=info,
+  posture_conflict=warning, conduit/cluster name collisions=blockers via
+  the PUBLIC cloud probes has_conduit_name / has_cluster_name (the
+  documented _conduit_clusters private seam was retired by the
+  public_cloud_seams lane, 2026-07-12 - see the three-lane section
+  at the end of this doc);
+  execute_plan refuses host blockers PRE-ENGINE or downgrades them to
+  "skipped_existing" under the skip flag; admission view gains the
+  additive "host" key.
+- Engine skip lanes (skip_existing): taken conduit name -> conjure
+  name=None + shortfall "conduit_name_taken_built_unnamed" (safe: names
+  are never replay resolution keys); existing cluster -> REUSED, members
+  join + shortfall "cluster_existed_members_joined".
+- Facade restore_formation gains both params;
+  compose_frame_subtree/compose_conduit_subtree DELETED (zero callers;
+  capture_formation_slice is the shipped composer; NOTE marker in
+  persistence_profile.py records the ruling).
+
+#### S2 physical custody (opt-in user-source TEXT retention)
+- CrystallizerConfiguration.retain_user_sources (schema bool, default
+  False = byte-identical pre-S2 record) threads Crystallizer ->
+  SpellCrystal -> CrystalAnalyzer. Harvest: base
+  SourceCustodyStrategy.harvest_payload defaults None;
+  UserSourceCustodyStrategy overrides ({source_text, source_sha256,
+  module_path, is_package} via the existing read+fingerprint helpers);
+  the analyzer walk harvests beside the M3 synthetic harvest;
+  CrystalAnalysisResult.user_module_sources rides describe() and
+  analyze_payload re-folds it.
+- Restore: RestoreEngine._rebuild_user_world - ABSENT files only (THE
+  LIVE FILE ALWAYS WINS; sys.modules skip; dot-depth order), rebuilt
+  through the SyntheticModule lifecycle (normal-verbs law; binding
+  sentinel "user_source_retained"), shortfall
+  "user_module_rebuilt_synthetic_from_retained_source", single import
+  retry via _import_qualified_target.
+- Preflight: hydration downgrades absent-module blockers to info when
+  text is retained; UserSourceIntegrityStrategy: NARROWED (2026-07-12,
+  source_drift_preflight lane) to record self-consistency only -
+  retained-text sha mismatch = BLOCKER (tamper). Live-file drift moved
+  wholesale to the dedicated SourceDriftStrategy (see the three-lane
+  section at the end of this doc); CRLF-safe read_text law unchanged.
+
+#### S3 impact engine (blast radius over the manifests)
+- Read seam: PersistenceProfile.describe_spell_crystals() (BOTH custody
+  maps + additive "custody_state"; detached payloads only) + system
+  passthrough.
+- crystal_analysis/impact_engine.py - ImpactEngine: construction builds
+  module->carrying-spells + module->importers reverse indexes +
+  fingerprint/path maps; verbs spells_touching_module,
+  blast_radius_of_module (transitive closure; honest unknown_module),
+  blast_radius_of_spell (spell_id vocabulary; a spell change IS its root
+  module changing), describe_source_drift (CRLF-safe re-hash ->
+  unchanged|drifted|absent|unreadable + radius per non-unchanged),
+  describe. Documented thread-confined: immutable post-construction.
+- Facade Crystallizer.analyze_impact(module_name|spell_id|neither) -
+  one question per call (both = ValueError); engine built + cleaned per
+  invocation.
+
+#### External mesh lane + record versioning
+- Generic kind-partitioned callables on the manager configuration:
+  with_store_handler(kind, profile, unit_id, payload) /
+  with_fetch_handler(kind, unit_id) / with_list_units_handler(kind,
+  profile) / with_delete_handler(kind, unit_id) /
+  with_stream_emissions(bool). LEGACY BRIDGE: the checkpoint verbs fall
+  back to the generic lanes (upload->store_unit("checkpoint"),
+  download->fetch_unit, profile list->list_units) - one handler set
+  serves the whole mesh. WRITE-LANE GATES WIDENED in lockstep: validate()
+  AND upload_enabled accept (upload_handler OR store_handler);
+  read-only configs must disable upload_on_flush explicitly.
+- Manager: store_unit lenient + store_failure_count (strict_uploads
+  re-raises); fetch/list loud-refuse; delete_unit STRICT (a half-run
+  retention pass must not lie). Formations ship local-then-remote at
+  store_formation; reload_formations_from_external mirrors the
+  checkpoint reload; apply_external_retention(profile, cap) ULID-sorted
+  oldest-first deletes (facade cap defaults to
+  max_persistence_crystals - the local FIFO's knob).
+- EMISSION TAP (opt-in): every recorded twin streams a delta row
+  {record_version, crystal_kind, payload} under a fresh event ULID.
+  THREAD-SAFETY LAW: the payload captures BEFORE record() (replace-on-
+  emit means a concurrent same-kind emit may clean the twin
+  mid-describe) and ships AFTER (local truth leads the mirror);
+  lenient + counted; untapped worlds pay one property read.
+- persistence/record_version.py - RecordVersion (static authority,
+  CURRENT "1.0.0", key "record_version"): stamps to_cached_item,
+  capture_formation_record, and tap envelopes; check_readable refuses
+  NEWER-major artifacts at from_cached_item (covers cache + external
+  reloads) and load_formation_record; absent stamps read "0.0.0"
+  (pre-versioning = oldest, always readable). MAJOR breaks shape, MINOR
+  adds keys, PATCH documents.
+- Interface contract: a twin IS the interface - emit consumes the
+  object, the mesh ships its describe() dict, and that dict crosses
+  JSON losslessly (proven over the family + the full
+  class->json->class rehydration loop).
+
+#### MR restore build stage (twin-over handoff, executed)
+- MutationResearchConfiguration.load_recorded_dictionary (reload-lane
+  law; seals via activate() - the config's emission factor AND root
+  activation's hard gate).
+- _replay_mutation_research = BUILD stage on the canonical slot: no
+  twin = NO-OP; folded "cleaned" = honest shortfall; else reload verb
+  (per-key shortfalls) -> Aether()._get_mutation_research() (hosted
+  accessor; an ALREADY-ACTIVE root deactivates first - live-world loads
+  under the LoadGate; both acts recorded) ->
+  activate(hydrate_from_record=False) (engine owns FOLDED truth) ->
+  load_recorded_composition; pre-Phase-B = config-only +
+  "composition_not_recorded_pre_phase_b"; "disabled" later-wins =
+  activate-then-deactivate. Both first_cut shortfalls RETIRED.
+- MRCompositionStrategy (9th default preflight row; the MR root now
+  rides the engine preflight bundle): blockers ONLY on unparseable
+  shapes (composition/set/organization/lanes/residence); warnings on
+  organization/residence disagreement; spell_id vocabulary (2026-07-11
+  sweep) with pre-sweep payloads tolerated as ONE named
+  "pre_vocabulary_sweep_payload" warning. LoadAdmission reclassifies
+  its findings expected_for_scope on conduit/frame loads (MR is a
+  world-scope root).
+
+
+
+### Three-Lane Tail (promoted 2026-07-11 from patch dirs public_cloud_seams_2026_07_12, source_drift_preflight_2026_07_12, spell_index_graft_2026_07_12; owner-directed finish)
+
+
+#### Public cloud seams (access-spelling law; zero behavior change)
+- `AethericFrame.conduit_cloud` (check_cleaned property,
+  `src/melder/aether/aetheric_frame/aetheric_frame.py:463`) +
+  `ConduitCloud.has_cluster_name(name)` (lock-guarded membership read mirroring
+  `has_conduit_name`, `src/melder/aether/aetheric_frame/conduit_cloud.py:547`).
+  Both re-measured 2026-08-02; the patch-lane copy cited :411 and :379.
+  Every crystallizer reader repointed: engine
+  cluster-replay + conjure skip lanes, admission _preflight_host conduit
+  and cluster checks. Grep-proven zero private cloud reads remain
+  crystallizer-side; the retired seam comments carry NOTE markers.
+  LAW: cross-package cloud access is public-verb-only.
+
+#### Source drift at load-time preflight (10th default row)
+- preflight/source_drift_strategy.py - SourceDriftStrategy
+  ("source_drift"): EVERY bind-time physical_module_fingerprints entry
+  with a recorded module_to_path re-hashes against disk at load,
+  RETENTION-AGNOSTIC (retention-OFF worlds no longer restore blind).
+  Absent file = honest warning (import may still resolve via sys.path);
+  sha differs (CRLF-safe read_text) = warning
+  "user_source_drifted_since_seal"; unreadable = info; unchanged =
+  silent; (module, path) pairs deduplicate across crystals. Drift is
+  notice, never refusal. The DEFAULT PREFLIGHT SET is now 10 rows:
+  link_integrity, contract_peer, hydration, configuration_loss,
+  cluster_membership, frame_posture, synthetic_source_integrity,
+  user_source_integrity (tamper-only), mutation_research_composition,
+  source_drift.
+
+#### Spell-index graft lane (restore grain below the conduit slice)
+- Capture: PersistenceProfile.capture_index_graft(index_id) (:783) +
+  system passthrough (:456) - versioned record {record_version,
+  graft_kind:"spell_index", index_id, index_payload (twin describe),
+  members {spell_id: {payload, custody_state}},
+  members_without_custody}. Storage is the user's choice (plain dict;
+  mesh or formations both carry it).
+- Restore: crystal_loader_system/graft_runner.py - GraftRunner
+  (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
+  unconjured-host refusal (public `Spellbook.conduit` accessor,
+  `src/melder/aether/spellbook/spellbook.py:5954`; the patch-lane copy cited
+  :5412) -> per-member overlap rule via
+  `host_frame.find_index_for_spell`
+  (`src/melder/aether/aetheric_frame/aetheric_frame.py:841`; resident member
+  REFUSES by default;
+  skip_resident=True skips + shortfall
+  "member_resident_in_host_skipped"; existing indexes are NEVER
+  mutated - fresh-index-only law) -> hydration via the import lane with
+  failure->rebuild->retry through the shared user_world_rebuild lane ->
+  selected member binds ACTIVE (bind creates the fresh index + selects)
+  -> parked members conduit.bind_inactive onto it -> detached report
+  {status, live_index_id, members_bound, members_parked,
+  skipped_resident, shortfalls, identity}. NO LoadGate: grafts are
+  user-verb activity (per-verb transactions), not world replays.
+  Emissions free: bind/bind_inactive auto-record (re-recording
+  covenant).
+- Shared rebuild lane: crystal_loader_system/user_world_rebuild.py -
+  rebuild_absent_user_modules(spell_id, crystal, on_built,
+  on_shortfall): live-file-wins, sys.modules skip, dot-depth
+  parents-first, SyntheticModule lifecycle, honest shortfalls. The
+  engine's _rebuild_user_world DELEGATES via callbacks (identical
+  built-stack + report semantics); GraftRunner uses a no-op on_built.
+  The rebuild laws live in exactly one place.
+- Facades: Crystallizer.capture_index_graft (:621) / graft_index
+  (:647) (activation-gated; live-object facade per create_spell_crystal
+  precedent).
+
+
+
 ## Diagrams
 
 ### Mermaid: Conduit Upgrade
@@ -7569,11 +8236,11 @@ Primary source files (167, all resolved 2026-08-01T20:05:00Z):
 
 Companion documents:
 
-- `context_compass/system_docs/src_architecture.md` - the C4 boundary and
+- `src_architecture.md` - the C4 boundary and
   runtime narrative this catalog must stay aligned to.
-- `context_compass/system_docs/tests_components.md` - the test-side mirror,
+- `tests_components.md` - the test-side mirror,
   which uses this same section contract.
-- `context_compass/system_docs/patches/active/` - active patch lanes; component
+- `system_docs/patches/active/` - active patch lanes; component
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
@@ -7675,6 +8342,18 @@ Scored 83.5/100 (band B), up from 71.5 - the document has left band C, so the
 "refresh before high-risk work" caveat no longer applies. Remaining losses are
 Mirror agreement and the structural Addressability cap, neither of which can be
 closed by editing this file.
+
+PATCH LANE CLOSED (2026-08-02). Four promoted patch detail blocks were
+re-absorbed under `## Promoted Patch Detail` after every class and method name
+in them was verified against source. Four bare-filename citations arrived with
+them and were corrected to full verified paths - one of them, `_ensure_frame`,
+had been attributed to the WRONG FILE (it is on `Aether`, not `Spellbook`).
+Three call flows that named only classes now name concrete methods with line
+citations, which is what the Quality Gate asks of this section.
+CORE-SET INVARIANT HOLDS: `## C1 Code Map (Core)` is exactly the deduplicated
+union of every `Key Files (C1)` list - 201 = 201. If you add a path to a
+component's key files, add it here in the same pass or the invariant breaks
+silently; nothing but the recipe under `## Indexing` will tell you.
 
 WHAT IS STILL UNKNOWN: the `## Unknowns` section is unchanged. The advanced
 `SpellState` flag producers remain blocked by design, awaiting the

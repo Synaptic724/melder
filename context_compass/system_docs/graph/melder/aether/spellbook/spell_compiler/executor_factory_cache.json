@@ -1,39 +1,39 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py",
-  "source_sha256": "86657c4aa617d7b5e387dbbf867824af7a0e2ce5810a7e12e8c263bf4b662224",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.executor_factory_cache": {
-      "id": "melder.aether.spellbook.spell_compiler.executor_factory_cache",
-      "label": "executor_factory_cache",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py",
-      "lineno": 1,
-      "role": "Process-wide exec-time factory cache above the compiled executor code cache.",
-      "responsibilities": [
-        "wraps identity-free emitted executor source in shareable factory functions",
-        "deduplicates compile+exec of factory source by source hash",
-        "splits static helper globals from per-spell bindings for shared executor hydration"
-      ],
-      "owns_state": [
-        "_factory_by_source_hash",
-        "_max_entries"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "Dict": "typing.Dict",
-    "Iterable": "typing.Iterable",
-    "Tuple": "typing.Tuple"
-  },
-  "collapse_candidate": null
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py",
+ "source_sha256": "86657c4aa617d7b5e387dbbf867824af7a0e2ce5810a7e12e8c263bf4b662224",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.executor_factory_cache": {
+   "id": "melder.aether.spellbook.spell_compiler.executor_factory_cache",
+   "label": "executor_factory_cache",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py",
+   "lineno": 1,
+   "role": "Process-wide exec-time factory cache above the compiled executor code cache.",
+   "responsibilities": [
+    "wraps identity-free emitted executor source in shareable factory functions",
+    "deduplicates compile+exec of factory source by source hash",
+    "splits static helper globals from per-spell bindings for shared executor hydration"
+   ],
+   "owns_state": [
+    "_factory_by_source_hash",
+    "_max_entries"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": null
 }

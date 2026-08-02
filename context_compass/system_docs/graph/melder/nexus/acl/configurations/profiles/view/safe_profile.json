@@ -1,67 +1,78 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/configurations/profiles/view/safe_profile.py",
-  "source_sha256": "10737e4a8c20214bf02049c2cb23e0e1058d68769bcbab320b5fdf1d72c3e9cc",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.configurations.profiles.view.safe_profile": {
-      "id": "melder.nexus.acl.configurations.profiles.view.safe_profile",
-      "label": "safe_profile",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/configurations/profiles/view/safe_profile.py",
-      "lineno": 1,
-      "role": "Factory module for reusable safe view ACL profile.",
-      "responsibilities": [
-        "constructs one reusable ACL profile variant"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy": {
-      "id": "melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy",
-      "label": "SafeViewProfileStrategy",
-      "kind": "class",
-      "file": "src/melder/nexus/acl/configurations/profiles/view/safe_profile.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build",
-        "name"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": false,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/view/safe_profile.py",
+ "source_sha256": "10737e4a8c20214bf02049c2cb23e0e1058d68769bcbab320b5fdf1d72c3e9cc",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.view.safe_profile": {
+   "id": "melder.nexus.acl.configurations.profiles.view.safe_profile",
+   "label": "safe_profile",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/view/safe_profile.py",
+   "lineno": 1,
+   "role": "Factory module for reusable safe view ACL profile.",
+   "responsibilities": [
+    "constructs one reusable ACL profile variant"
+   ],
+   "phases": [
+    "runtime"
+   ]
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy",
-      "to_label": "FrameACLViewProfile",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
-  },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.view.safe_profile",
-      "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-      "relation": "creates",
-      "why": "This factory module constructs one reusable view ACL profile variant.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "soft"
-    }
-  ]
+  "melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy": {
+   "id": "melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy",
+   "label": "SafeViewProfileStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/view/safe_profile.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "02d1375478082ad32570b43abf14e34af638c9d6850ed6caecf8ce585dfc86f4",
+   "include": true,
+   "role": "Bottom rung of the view posture ladder: the core surfaces visible, introspection closed.",
+   "responsibilities": [
+    "keep the main frame/conduit/spell surfaces visible",
+    "deny policy, peer-link, class-profile, callable-profile, instance-member and other introspection-heavy surfaces"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "02d1375478082ad32570b43abf14e34af638c9d6850ed6caecf8ce585dfc86f4"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy",
+   "to_label": "FrameACLViewProfile",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.safe_profile",
+   "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "relation": "creates",
+   "why": "This factory module constructs one reusable view ACL profile variant.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "soft"
+  }
+ ]
 }

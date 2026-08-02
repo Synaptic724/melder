@@ -1,60 +1,65 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
-  "source_sha256": "1349bbde1996f5c0c639760636e61525da74b578b4dce80d2bef846f11ac695a",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers",
-      "label": "many_only_codegen_creation_helpers",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers",
-      "label": "ManyOnlyCodegenCreationHelpers",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
-      "lineno": 6,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build_no_overrides_step_signature_row",
-        "build_override_step_row",
-        "freeze_value",
-        "hash_signature",
-        "normalize_instance_key",
-        "serialize_signature_part"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Many-only-local phase-11 helper surface.",
-      "responsibilities": [
-        "provides deterministic hashing and signature serialization for the many-only family",
-        "normalizes instance keys and arbitrary values into deterministic tuple-backed forms",
-        "builds no-overrides signature rows and override step rows without depending on generalized helpers"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
+ "source_sha256": "1349bbde1996f5c0c639760636e61525da74b578b4dce80d2bef846f11ac695a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers",
+   "label": "many_only_codegen_creation_helpers",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Many-only-local Phase 11 helper surface.",
+   "semantics_authored_against": "1349bbde1996f5c0c639760636e61525da74b578b4dce80d2bef846f11ac695a"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers",
-    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers",
-    "label": "ManyOnlyCodegenCreationHelpers"
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers",
+   "label": "ManyOnlyCodegenCreationHelpers",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
+   "lineno": 6,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build_no_overrides_step_signature_row",
+    "build_override_step_row",
+    "freeze_value",
+    "hash_signature",
+    "normalize_instance_key",
+    "serialize_signature_part"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "f25065cd720908456a0ef68618719c3ac3d83506ae13325fcb37d6193fbe072a",
+   "role": "Many-only-local phase-11 helper surface.",
+   "responsibilities": [
+    "provides deterministic hashing and signature serialization for the many-only family",
+    "normalizes instance keys and arbitrary values into deterministic tuple-backed forms",
+    "builds no-overrides signature rows and override step rows without depending on generalized helpers"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "f25065cd720908456a0ef68618719c3ac3d83506ae13325fcb37d6193fbe072a"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers",
+  "label": "ManyOnlyCodegenCreationHelpers"
+ }
 }

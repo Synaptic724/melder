@@ -26,7 +26,8 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "e1ccfe5d42fc232a89e5bd735ffd2a4a501bd26a404e791171e1ddd60a7b57ce"
   },
   "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility": {
    "id": "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility",
@@ -44,7 +45,8 @@
     "method_count": 2,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "07860b916d7507ce43ab9efdaaaf75be7f4599245a02112ec8ab9ffc28e8227e"
   }
  },
  "edges_out": [],

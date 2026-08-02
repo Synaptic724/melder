@@ -1,129 +1,142 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/helpers/init_helpers.py",
-  "source_sha256": "c310d118ec8be5383b2a36e31d14c4e7a58128ec6add3afbfaf727476503be59",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.helpers.init_helpers": {
-      "id": "melder.utilities.helpers.init_helpers",
-      "label": "init_helpers",
-      "kind": "module",
-      "file": "src/melder/utilities/helpers/init_helpers.py",
-      "lineno": 1
-    },
-    "melder.utilities.helpers.init_helpers.InitHelpers": {
-      "id": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "label": "InitHelpers",
-      "kind": "class",
-      "file": "src/melder/utilities/helpers/init_helpers.py",
-      "lineno": 10,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "resolve_channel_logger",
-        "resolve_safe_logger"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Thin startup helper wrappers for logger resolution.",
-      "responsibilities": [
-        "routes safe and channel logger resolution through AetherUtilitySystem",
-        "keeps logger bootstrapping logic out of runtime constructors"
-      ],
-      "phases": [
-        "init",
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/helpers/init_helpers.py",
+ "source_sha256": "c310d118ec8be5383b2a36e31d14c4e7a58128ec6add3afbfaf727476503be59",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.helpers.init_helpers": {
+   "id": "melder.utilities.helpers.init_helpers",
+   "label": "init_helpers",
+   "kind": "module",
+   "file": "src/melder/utilities/helpers/init_helpers.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Startup-time logger resolution wrappers over the utility provider host.",
+   "responsibilities": [
+    "resolve a provider-backed channel logger",
+    "wrap an explicit logger as a SafeLogger",
+    "fall back silently rather than failing boot"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "c310d118ec8be5383b2a36e31d14c4e7a58128ec6add3afbfaf727476503be59"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "to_label": "AetherUtilitySystem",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Iterable": "typing.Iterable",
-    "Optional": "typing.Optional",
-    "Union": "typing.Union",
-    "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
-    "IChannelLogger": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
-    "AetherUtilitySystem": "melder.aether.aether_utility_system.AetherUtilitySystem"
+  "melder.utilities.helpers.init_helpers.InitHelpers": {
+   "id": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "label": "InitHelpers",
+   "kind": "class",
+   "file": "src/melder/utilities/helpers/init_helpers.py",
+   "lineno": 10,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "resolve_channel_logger",
+    "resolve_safe_logger"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "c385d1f8b1a91da9e5c4c48c29616a00b70a51eb756bd6754efd57bb891b9a7c",
+   "role": "Thin startup helper wrappers for logger resolution.",
+   "responsibilities": [
+    "routes safe and channel logger resolution through AetherUtilitySystem",
+    "keeps logger bootstrapping logic out of runtime constructors"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "c385d1f8b1a91da9e5c4c48c29616a00b70a51eb756bd6754efd57bb891b9a7c"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "to_label": "AetherUtilitySystem",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "Optional": "typing.Optional",
+  "Union": "typing.Union",
+  "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
+  "IChannelLogger": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
+  "AetherUtilitySystem": "melder.aether.aether_utility_system.AetherUtilitySystem"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.helpers.init_helpers",
+  "class": "melder.utilities.helpers.init_helpers.InitHelpers",
+  "label": "InitHelpers"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "to": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "relation": "uses",
+   "why": "InitHelpers delegates safe and channel logger resolution into AetherUtilitySystem instead of owning logging policy itself.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": {
-    "module": "melder.utilities.helpers.init_helpers",
-    "class": "melder.utilities.helpers.init_helpers.InitHelpers",
-    "label": "InitHelpers"
+  {
+   "from": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "to": "melder.aether.spellbook.spellbook.Spellbook",
+   "relation": "used_by",
+   "why": "Spellbook uses InitHelpers to resolve its startup logger into a SafeLogger surface.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "edges_authored": [
-    {
-      "from": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "to": "melder.aether.aether_utility_system.AetherUtilitySystem",
-      "relation": "uses",
-      "why": "InitHelpers delegates safe and channel logger resolution into AetherUtilitySystem instead of owning logging policy itself.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "to": "melder.aether.spellbook.spellbook.Spellbook",
-      "relation": "used_by",
-      "why": "Spellbook uses InitHelpers to resolve its startup logger into a SafeLogger surface.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "to": "melder.nexus.nexus.Nexus",
-      "relation": "used_by",
-      "why": "Nexus uses InitHelpers to resolve its logger surface during construction and reconfiguration.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "to": "melder.nexus.rift.rift.Rift",
-      "relation": "used_by",
-      "why": "Rift uses InitHelpers to resolve its logger surface during creation and reset flows.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.utilities.helpers.init_helpers.InitHelpers",
-      "to": "melder.utilities.logger.safe_logger.SafeLogger",
-      "relation": "creates",
-      "why": "InitHelpers resolves runtime constructor logger inputs into SafeLogger instances through AetherUtilitySystem.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "soft"
-    }
-  ]
+  {
+   "from": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "to": "melder.nexus.nexus.Nexus",
+   "relation": "used_by",
+   "why": "Nexus uses InitHelpers to resolve its logger surface during construction and reconfiguration.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "to": "melder.nexus.rift.rift.Rift",
+   "relation": "used_by",
+   "why": "Rift uses InitHelpers to resolve its logger surface during creation and reset flows.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.utilities.helpers.init_helpers.InitHelpers",
+   "to": "melder.utilities.logger.safe_logger.SafeLogger",
+   "relation": "creates",
+   "why": "InitHelpers resolves runtime constructor logger inputs into SafeLogger instances through AetherUtilitySystem.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "soft"
+  }
+ ]
 }

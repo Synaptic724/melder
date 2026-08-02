@@ -1,113 +1,124 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/configuration/crystallizer_configuration_builder.py",
-  "source_sha256": "3a2d5a22a15c8909daef7f16da6270b578822dfb53ad250224cb2e8f8e738ac8",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.configuration.crystallizer_configuration_builder": {
-      "id": "melder.crystallizer.configuration.crystallizer_configuration_builder",
-      "label": "crystallizer_configuration_builder",
-      "kind": "module",
-      "file": "src/melder/crystallizer/configuration/crystallizer_configuration_builder.py",
-      "lineno": 1
-    },
-    "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder": {
-      "id": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-      "label": "CrystallizerConfigurationBuilder",
-      "kind": "class",
-      "file": "src/melder/crystallizer/configuration/crystallizer_configuration_builder.py",
-      "lineno": 12,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "activate",
-        "build",
-        "cleanup",
-        "finalize",
-        "id",
-        "with_defaults",
-        "with_user_source_root_paths"
-      ],
-      "shape": {
-        "method_count": 8,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Standalone builder for crystallizer root configuration assembly.",
-      "responsibilities": [
-        "owns one mutable CrystallizerConfiguration during assembly",
-        "applies defaults and user-source-root policy before handoff",
-        "transfers configuration ownership through build, finalize, or activate"
-      ],
-      "owns_state": [
-        "_configuration",
-        "_id"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/configuration/crystallizer_configuration_builder.py",
+ "source_sha256": "3a2d5a22a15c8909daef7f16da6270b578822dfb53ad250224cb2e8f8e738ac8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.configuration.crystallizer_configuration_builder": {
+   "id": "melder.crystallizer.configuration.crystallizer_configuration_builder",
+   "label": "crystallizer_configuration_builder",
+   "kind": "module",
+   "file": "src/melder/crystallizer/configuration/crystallizer_configuration_builder.py",
+   "lineno": 1,
+   "include": true,
+   "role": "One-shot ownership handoff around a mutable crystallizer configuration.",
+   "responsibilities": [
+    "give callers an explicit boundary between authoring and installing"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "3a2d5a22a15c8909daef7f16da6270b578822dfb53ad250224cb2e8f8e738ac8"
   },
-  "edges_out": [
-    {
-      "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-      "to_label": "CrystallizerConfiguration",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Path": "pathlib.Path",
-    "Optional": "typing.Optional",
-    "Sequence": "typing.Sequence",
-    "Union": "typing.Union",
-    "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+  "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder": {
+   "id": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+   "label": "CrystallizerConfigurationBuilder",
+   "kind": "class",
+   "file": "src/melder/crystallizer/configuration/crystallizer_configuration_builder.py",
+   "lineno": 12,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "activate",
+    "build",
+    "cleanup",
+    "finalize",
+    "id",
+    "with_defaults",
+    "with_user_source_root_paths"
+   ],
+   "shape": {
+    "method_count": 8,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "4f2458513cbb16639b352bcea9d05dc08762f86264e30a98715d7329a93b9b4e",
+   "role": "Standalone builder for crystallizer root configuration assembly.",
+   "responsibilities": [
+    "owns one mutable CrystallizerConfiguration during assembly",
+    "applies defaults and user-source-root policy before handoff",
+    "transfers configuration ownership through build, finalize, or activate"
+   ],
+   "owns_state": [
+    "_configuration",
+    "_id"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "4f2458513cbb16639b352bcea9d05dc08762f86264e30a98715d7329a93b9b4e"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.crystallizer.configuration.crystallizer_configuration_builder",
-    "class": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-    "label": "CrystallizerConfigurationBuilder"
+  {
+   "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+   "to_label": "CrystallizerConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-      "to": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
-      "relation": "owns_lifecycle_of",
-      "why": "CrystallizerConfigurationBuilder owns one mutable configuration until handoff or cleanup.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Path": "pathlib.Path",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Union": "typing.Union",
+  "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.configuration.crystallizer_configuration_builder",
+  "class": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+  "label": "CrystallizerConfigurationBuilder"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+   "to": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
+   "relation": "owns_lifecycle_of",
+   "why": "CrystallizerConfigurationBuilder owns one mutable configuration until handoff or cleanup.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

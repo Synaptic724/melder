@@ -1,137 +1,142 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
-  "source_sha256": "7e984152de6b23d103cf3ca6d03d5148c9c5918259fa7ec0c82f7c11ebae96c1",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder": {
-      "id": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder",
-      "label": "spell_system_root_blueprint_builder",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder": {
-      "id": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "label": "SpellSystemRootBlueprintBuilder",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
-      "lineno": 30,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build_blueprint_for_spell_id",
-        "build_root_blueprints"
-      ],
-      "shape": {
-        "method_count": 7,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Phase 5 structural rooted-blueprint builder.",
-      "responsibilities": [
-        "builds rooted deep DAG blueprints from a frame-wide adjacency snapshot",
-        "computes reachable spell ids and deterministic topological order per root",
-        "overlays socket refs and dag-index state from local topologies"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+ "source_sha256": "7e984152de6b23d103cf3ca6d03d5148c9c5918259fa7ec0c82f7c11ebae96c1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder": {
+   "id": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder",
+   "label": "spell_system_root_blueprint_builder",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The Phase 5 structural rooted-blueprint builder.",
+   "semantics_authored_against": "7e984152de6b23d103cf3ca6d03d5148c9c5918259fa7ec0c82f7c11ebae96c1"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to_label": "RootResolutionBlueprint",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to_label": "DirectedAcyclicWorkGraph",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to_label": "DagIndex",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to_label": "SocketRef",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "deque": "collections.deque",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Collection": "typing.Collection",
-    "Deque": "typing.Deque",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Sequence": "typing.Sequence",
-    "Set": "typing.Set",
-    "Tuple": "typing.Tuple",
-    "ClassVar": "typing.ClassVar",
-    "FrozenSet": "typing.FrozenSet",
-    "DirectedAcyclicWorkGraph": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
-    "DagIndex": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
-    "SocketRef": "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef",
-    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-    "SpellSystemAdjacencySnapshot": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
-    "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology"
+  "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder": {
+   "id": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "label": "SpellSystemRootBlueprintBuilder",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
+   "lineno": 30,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build_blueprint_for_spell_id",
+    "build_root_blueprints"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "d9895a660a0c864fb1aaf6b7aa3cad414308f9cd462950404356f1124bdce504",
+   "role": "Phase 5 structural rooted-blueprint builder.",
+   "responsibilities": [
+    "builds rooted deep DAG blueprints from a frame-wide adjacency snapshot",
+    "computes reachable spell ids and deterministic topological order per root",
+    "overlays socket refs and dag-index state from local topologies"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "d9895a660a0c864fb1aaf6b7aa3cad414308f9cd462950404356f1124bdce504"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to_label": "RootResolutionBlueprint",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder",
-    "class": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-    "label": "SpellSystemRootBlueprintBuilder"
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to_label": "DirectedAcyclicWorkGraph",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-      "relation": "creates",
-      "why": "SpellSystemRootBlueprintBuilder constructs RootResolutionBlueprint objects for structural roots or targeted spell ids.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "validation"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
-      "relation": "borrows",
-      "why": "SpellSystemRootBlueprintBuilder consumes the frame-wide adjacency snapshot as its structural source of reachable spell ids and roots.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-      "relation": "uses",
-      "why": "SpellSystemRootBlueprintBuilder overlays socket refs and dag-index data from spell-local topologies onto rooted blueprints.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "validation"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to_label": "DagIndex",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to_label": "SocketRef",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "deque": "collections.deque",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Collection": "typing.Collection",
+  "Deque": "typing.Deque",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "FrozenSet": "typing.FrozenSet",
+  "DirectedAcyclicWorkGraph": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
+  "DagIndex": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
+  "SocketRef": "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "SpellSystemAdjacencySnapshot": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
+  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder",
+  "class": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+  "label": "SpellSystemRootBlueprintBuilder"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+   "relation": "creates",
+   "why": "SpellSystemRootBlueprintBuilder constructs RootResolutionBlueprint objects for structural roots or targeted spell ids.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "validation"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
+   "relation": "borrows",
+   "why": "SpellSystemRootBlueprintBuilder consumes the frame-wide adjacency snapshot as its structural source of reachable spell ids and roots.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+   "relation": "uses",
+   "why": "SpellSystemRootBlueprintBuilder overlays socket refs and dag-index data from spell-local topologies onto rooted blueprints.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

@@ -6168,7 +6168,8 @@ class Conduit(Cleanable):
         Invoke all local Conduit hooks registered under hook_name, if any.
 
         This uses the hook map localized into this Conduit via
-        :meth:`_initialize_conduit_hooks`. The contract is intentionally
+        :meth:`_ensure_local_conduit_hooks`, assembled per hook name by
+        :meth:`_collect_conduit_hook_chain`. The contract is intentionally
         narrow and stable:
 
             - Shared lineage hooks run before local conduit hooks.

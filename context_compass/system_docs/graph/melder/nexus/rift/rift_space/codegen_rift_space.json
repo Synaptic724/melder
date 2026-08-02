@@ -1,128 +1,133 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/rift/rift_space/codegen_rift_space.py",
-  "source_sha256": "c34513fcd0d813fa75bff721712b5e156f384f5774a928552ec3c08914be5b65",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.rift.rift_space.codegen_rift_space": {
-      "id": "melder.nexus.rift.rift_space.codegen_rift_space",
-      "label": "codegen_rift_space",
-      "kind": "module",
-      "file": "src/melder/nexus/rift/rift_space/codegen_rift_space.py",
-      "lineno": 1
-    },
-    "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace": {
-      "id": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-      "label": "CodegenRiftSpace",
-      "kind": "class",
-      "file": "src/melder/nexus/rift/rift_space/codegen_rift_space.py",
-      "lineno": 17,
-      "bases": [
-        "RiftSpace"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "codegen_system",
-        "command_system"
-      ],
-      "shape": {
-        "method_count": 4,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Codegen-oriented room specialization.",
-      "responsibilities": [
-        "fixes room kind to codegen",
-        "owns the internal codegen engine for the room",
-        "attaches the internal engine to the codegen command facade"
-      ],
-      "owns_state": [
-        "_codegen_system"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/rift_space/codegen_rift_space.py",
+ "source_sha256": "c34513fcd0d813fa75bff721712b5e156f384f5774a928552ec3c08914be5b65",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.rift_space.codegen_rift_space": {
+   "id": "melder.nexus.rift.rift_space.codegen_rift_space",
+   "label": "codegen_rift_space",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/rift_space/codegen_rift_space.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The codegen-oriented room specialization - the rung whose command surface fronts the internal codegen engine.",
+   "semantics_authored_against": "c34513fcd0d813fa75bff721712b5e156f384f5774a928552ec3c08914be5b65"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-      "to_label": "RiftSpace",
-      "relation": "specializes",
-      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-      "to_label": "CodegenSystem",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-      "to_label": "CodegenCommandSystem",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "CodegenCommandSystem": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-    "CodegenSystem": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-    "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-    "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-    "Rift": "melder.nexus.rift.rift.Rift",
-    "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
+  "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace": {
+   "id": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   "label": "CodegenRiftSpace",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/rift_space/codegen_rift_space.py",
+   "lineno": 17,
+   "bases": [
+    "RiftSpace"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "codegen_system",
+    "command_system"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "98e2e885e5dd2913e9d7c93a1cb3dbf51317747a6df08d3d63c31cd2557c9c3a",
+   "role": "Codegen-oriented room specialization.",
+   "responsibilities": [
+    "fixes room kind to codegen",
+    "owns the internal codegen engine for the room",
+    "attaches the internal engine to the codegen command facade"
+   ],
+   "owns_state": [
+    "_codegen_system"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "98e2e885e5dd2913e9d7c93a1cb3dbf51317747a6df08d3d63c31cd2557c9c3a"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   "to_label": "RiftSpace",
+   "relation": "specializes",
+   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   "to_label": "CodegenSystem",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.nexus.rift.rift_space.codegen_rift_space",
-    "class": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-    "label": "CodegenRiftSpace"
+  {
+   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   "to_label": "CodegenCommandSystem",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "CodegenCommandSystem": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+  "CodegenSystem": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+  "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+  "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+  "Rift": "melder.nexus.rift.rift.Rift",
+  "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.rift_space.codegen_rift_space",
+  "class": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+  "label": "CodegenRiftSpace"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+   "relation": "owns_lifecycle_of",
+   "why": "CodegenRiftSpace owns the internal codegen engine for the room.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
   },
-  "edges_authored": [
-    {
-      "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-      "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-      "relation": "owns_lifecycle_of",
-      "why": "CodegenRiftSpace owns the internal codegen engine for the room.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-      "to": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "relation": "owns_lifecycle_of",
-      "why": "CodegenRiftSpace owns the codegen-room specialization of the command surface.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-      "relation": "specializes",
-      "why": "CodegenRiftSpace is the codegen-mode specialization of the base room.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   "to": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "relation": "owns_lifecycle_of",
+   "why": "CodegenRiftSpace owns the codegen-room specialization of the command surface.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+   "relation": "specializes",
+   "why": "CodegenRiftSpace is the codegen-mode specialization of the base room.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

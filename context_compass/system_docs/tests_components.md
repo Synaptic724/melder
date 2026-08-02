@@ -10,7 +10,7 @@
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
 for tests under `tests/`. It complements
-`context_compass/system_docs/tests_architecture.md` by describing the actual
+`tests_architecture.md` by describing the actual
 test components and the shared support layers they use.
 
 ## Documentation Quality Standard
@@ -22,6 +22,103 @@ Required rules:
 - Explicit entrypoints and method-level call flows for important test behavior.
 - Explicit ownership and cleanup for shared harnesses.
 - Tier boundaries must match the real test tree.
+
+## Indexing
+This document is AUTHORED. Its only generated companion is
+`tests_components_index.md`, rebuilt in the SAME pass as any edit:
+
+```bash
+python tools/system_documents/index_document.py \
+    --doc system_docs/tests_components.md
+```
+
+The navigable unit is the H3 `### Component: <Name>` entry.
+`## C3 Components Catalog` is a CONTAINER - it indexes as a range spanning every
+component beneath it, so select a component, never the catalog.
+
+Consume by slicing, and verify before trusting a range:
+
+```bash
+python tools/system_documents/index_document.py \
+    --doc system_docs/tests_components.md --slice "<section name>"
+python tools/system_documents/index_document.py \
+    --doc system_docs/tests_components.md --check
+```
+
+This index was STALE for an extended period before 2026-08-02 - 140 recorded lines
+against a live 767 - so every range it returned was wrong while still parsing.
+Regenerate on mismatch; never eyeball an offset.
+
+### Verifying the cited test paths and ranges in this document
+
+THIS SIDE HAS NO GRAPH. `src_graph_index.md` is built from the source tree, so
+every source-side citation gets a free resolution check and NOTHING here does.
+A renamed or deleted test file leaves a citation that still parses and points
+nowhere, and a range that drifts inside a file that still exists is invisible
+even to an existence check. That is why the instructions require ranges to be
+REMEASURED every pass rather than carried forward.
+
+Run this after any pass that touches the test tree or this document:
+
+```bash
+python - <<'EOF'
+import pathlib, re
+
+here = pathlib.Path.cwd().resolve()
+root = next((p for p in (here, *here.parents) if (p / "tests").is_dir()), here)
+docs = next(p for p in (pathlib.Path("system_docs"), pathlib.Path("."))
+            if list(p.glob("tests_*.md")))
+
+CITE = re.compile(r"`?((?:tests|src)/[A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
+PATH = re.compile(r"`((?:tests|src)/[^`]+\.py)`")
+
+for doc in docs.glob("tests_*.md"):
+    if doc.name.endswith("_index.md"):
+        continue
+    text = doc.read_text(encoding="utf-8")
+
+    # 1. every cited path exists. Globs are statements about a set, not
+    #    citations, so they are skipped rather than reported.
+    for i, line in enumerate(text.split("\n"), 1):
+        for p in PATH.findall(line):
+            if "*" in p or "?" in p:
+                continue
+            if not (root / p).exists():
+                print("MISSING", doc.name, i, p)
+
+    # 2. every path:line range is in bounds
+    for i, line in enumerate(text.split("\n"), 1):
+        for m in CITE.finditer(line):
+            f = root / m.group(1)
+            if not f.exists():
+                continue
+            n = len(f.read_bytes().decode("utf-8", "replace").splitlines())
+            s = int(m.group(2)); e = int(m.group(3) or m.group(2))
+            if s < 1 or e > n or s > e:
+                print("OUT OF BOUNDS", doc.name, i, m.group(0), "file has", n)
+
+    # 3. every C1 record's end_line still matches the file on disk. This is the
+    #    check that catches drift, and the one nothing else here can do.
+    cur = None
+    for i, line in enumerate(text.split("\n"), 1):
+        m = re.match(r"^- path: `([^`]+)`", line)
+        if m:
+            cur = m.group(1); continue
+        if cur:
+            m2 = re.match(r"^\s+end_line:\s*(\d+)", line)
+            if m2:
+                f = root / cur
+                if f.exists():
+                    n = len(f.read_bytes().decode("utf-8", "replace").splitlines())
+                    if int(m2.group(1)) != n:
+                        print("STALE RANGE", doc.name, i, cur, m2.group(1), "->", n)
+                cur = None
+EOF
+```
+
+Measured ranges in this repository go stale FAST - a re-verification on 2026-08-03
+found sixteen source-side ranges that had been green earlier the same day. A
+range here is true as of its `verified_at` stamp and no longer.
 
 ## DO NOT ASSUME / Unknowns Gate
 Rule: No Unverified Claims.
@@ -219,11 +316,26 @@ Extension Points:
 - new subsystem-level direct contract tests
 
 Key Files (C1):
-- `tests/unit/melder/aether/`
-- `tests/unit/melder/crystallizer/`
-- `tests/unit/melder/mutation_research/`
-- `tests/unit/melder/spellbook/`
-- `tests/unit/melder/utilities/`
+- `tests/unit/melder/aether/conduit/conftest.py`
+- The aether tree carries 180 `test_*.py` modules beneath these; they are the
+  CONTENT of this component rather than its key surfaces, and are counted here
+  rather than cited so the core set stays a set an agent can verify.
+- No harness or support module of its own; the 43 test_*.py modules in
+  tests/unit/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- No harness or support module of its own; the 20 test_*.py modules in
+  tests/unit/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
+- The spellbook tree carries 130 `test_*.py` modules beneath these; they are the
+  CONTENT of this component rather than its key surfaces, and are counted here
+  rather than cited so the core set stays a set an agent can verify.
+- No harness or support module of its own; the 44 test_*.py modules in
+  tests/unit/melder/utilities/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
 
 ### Component: Component Test Suite
 Purpose:
@@ -266,11 +378,27 @@ Extension Points:
 
 Key Files (C1):
 - `tests/component/INFO.MD`
-- `tests/component/melder/aether/`
-- `tests/component/melder/crystallizer/`
-- `tests/component/melder/mutation_research/`
-- `tests/component/melder/spellbook/`
-- `tests/component/melder/utilities/`
+- No harness or support module of its own; the 33 test_*.py modules in
+  tests/component/melder/aether/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- No harness or support module of its own; the 6 test_*.py modules in
+  tests/component/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- No harness or support module of its own; the 1 test_*.py modules in
+  tests/component/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- `tests/component/melder/spellbook/compiler_test_helpers.py`
+- `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
+- The spellbook tree carries 50 `test_*.py` modules beneath these; they are the
+  CONTENT of this component rather than its key surfaces, and are counted here
+  rather than cited so the core set stays a set an agent can verify.
+- No harness or support module of its own; the 4 test_*.py modules in
+  tests/component/melder/utilities/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
 
 ### Component: Integration Runtime Suite
 Purpose:
@@ -314,14 +442,45 @@ Extension Points:
 - new subsystem integration lanes
 
 Key Files (C1):
-- `tests/integration/melder/aether/`
-- `tests/integration/melder/aether/rift/`
-- `tests/integration/melder/conduit/`
-- `tests/integration/melder/crystallizer/`
-- `tests/integration/melder/live_sim/`
-- `tests/integration/melder/multithreading/`
-- `tests/integration/melder/mutation_research/`
-- `tests/integration/melder/spellbook/`
+- `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
+- `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
+- `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
+- The aether tree carries 36 `test_*.py` modules beneath these; they are the
+  CONTENT of this component rather than its key surfaces, and are counted here
+  rather than cited so the core set stays a set an agent can verify.
+- `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
+- `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
+- `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
+- The rift tree carries 3 `test_*.py` modules beneath these; they are the
+  CONTENT of this component rather than its key surfaces, and are counted here
+  rather than cited so the core set stays a set an agent can verify.
+- No harness or support module of its own; the 33 test_*.py modules in
+  tests/integration/melder/conduit/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- No harness or support module of its own; the 9 test_*.py modules in
+  tests/integration/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- `tests/integration/melder/live_sim/bootstrap.py`
+- `tests/integration/melder/live_sim/conftest.py`
+- `tests/integration/melder/live_sim/interfaces/protocols.py`
+- `tests/integration/melder/live_sim/mini_application/application.py`
+- The live_sim tree carries 2 `test_*.py` modules beneath these; they are the
+  CONTENT of this component rather than its key surfaces, and are counted here
+  rather than cited so the core set stays a set an agent can verify.
+- No harness or support module of its own; the 3 test_*.py modules in
+  tests/integration/melder/multithreading/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- No harness or support module of its own; the 2 test_*.py modules in
+  tests/integration/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
+- No harness or support module of its own; the 39 test_*.py modules in
+  tests/integration/melder/spellbook/ depend only on the shared surfaces at tests/ and the scoped
+  conftests named in `tests_architecture.md`. Paths in this bullet are written
+  WITHOUT backticks because they are directories - descriptive, never citations.
 
 ### Component: Mock Fixture Corpus
 Purpose:
@@ -362,8 +521,48 @@ Extension Points:
 - new deterministic fixture modules for new scan/bind or spellbook cases
 
 Key Files (C1):
-- `tests/mocks/crystallizer/`
-- `tests/mocks/spellbook/`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/__init__.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/__init__.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/feature.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/surface.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/__init__.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/aggregate.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_a.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_b.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/__init__.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/__init__.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/__init__.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/provider.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/provider.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/__init__.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/provider.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/reexport.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_feature.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_surface.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_branch.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_deep.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_duplicate.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_multibranch.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_package_import.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_reexport.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_with_synthetic.py`
+- `tests/mocks/crystallizer/spell_crystal_demo_pkg/shared.py`
+- `tests/mocks/crystallizer/spell_crystal_harness.py`
+- `tests/mocks/crystallizer/synthetic_module_harness.py`
+- `tests/mocks/spellbook/contract_classes.py`
+- `tests/mocks/spellbook/core_classes.py`
+- `tests/mocks/spellbook/deep_layers.py`
+- `tests/mocks/spellbook/factories.py`
+- `tests/mocks/spellbook/protocols.py`
+- `tests/mocks/spellbook/scan_bind_module_bad_metadata.py`
+- `tests/mocks/spellbook/scan_bind_module_core.py`
+- `tests/mocks/spellbook/scan_bind_module_duplicate.py`
+- `tests/mocks/spellbook/scan_bind_module_empty.py`
+- `tests/mocks/spellbook/scan_bind_module_lambda.py`
+- `tests/mocks/spellbook/scan_bind_module_lambda_invalid.py`
+- `tests/mocks/spellbook/scan_bind_module_reexport.py`
+- `tests/mocks/spellbook/scan_bind_module_wrapped.py`
 
 ## C2 Subcomponents Catalog
 
@@ -662,25 +861,618 @@ Key Files (C1):
 3. request matrix and turn-script tests drive the live capability room.
 4. harness cleanup tears down owned runtime objects.
 
-## C1 Code Map (Key Paths)
-- `pyproject.toml`
-- `tests/conftest.py`
-- `tests/_frame_posture_test_support.py`
-- `tests/component/INFO.MD`
-- `tests/_nexus_viewer_matrix_support.py`
-- `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py`
-- `tests/experimentation/physical_to_synthetic_module_swap_semantics_testbench.py`
-- `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
-- `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
-- `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
-- `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
-- `tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py`
-- `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
-- `tests/unit/melder/aether/test_nexus.py`
-- `tests/unit/melder/aether/test_rift_runtime_contracts.py`
-- `tests/unit/melder/aether/test_workstation.py`
-- `tests/unit/melder/aether/test_command_system_direct.py`
-- `tests/mocks/spellbook/`
+## C1 Code Map (Core)
+Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
+above - 118 paths - and nothing else. Change a component's key files and this set
+follows; if the two ever disagree, this section is wrong, not the catalog.
+
+WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
+HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
+builders - not every `test_*.py` module beneath it. The 638 test modules are the
+component's CONTENT; they are counted in each entry rather than cited, because a
+core set that lists the entire tree is not a set anyone can verify, which is the
+whole reason the contract narrows it.
+
+Every range was MEASURED from disk on 2026-08-02. THIS SIDE HAS NO GRAPH TO JOIN
+AGAINST - `src_graph_index.md` is built from the source tree, so nothing will
+ever tell you a test path here has rotted. Existence is checked explicitly and
+ranges are remeasured every pass rather than carried forward.
+
+The previous version of this section was a bare 18-path list titled
+`C1 Code Map (Key Paths)`: no ranges, no LOC, no timestamps, a DIRECTORY entry
+that cannot be remeasured, and it was NOT the union of the Key Files lists.
+
+
+- path: `tests/conftest.py`
+  start_line: 1
+  end_line: 22
+  loc: 22
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/_frame_posture_test_support.py`
+  start_line: 1
+  end_line: 263
+  loc: 263
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/_codegen_system_support.py`
+  start_line: 1
+  end_line: 248
+  loc: 248
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/_nexus_viewer_matrix_support.py`
+  start_line: 1
+  end_line: 638
+  loc: 638
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/compiler_test_helpers.py`
+  start_line: 1
+  end_line: 231
+  loc: 231
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
+  start_line: 1
+  end_line: 114
+  loc: 114
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
+  start_line: 1
+  end_line: 606
+  loc: 606
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
+  start_line: 1
+  end_line: 487
+  loc: 487
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py`
+  start_line: 1
+  end_line: 868
+  loc: 868
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/experimentation/physical_to_synthetic_module_swap_semantics_testbench.py`
+  start_line: 1
+  end_line: 920
+  loc: 920
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/aether/conduit/conftest.py`
+  start_line: 1
+  end_line: 443
+  loc: 443
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
+  start_line: 1
+  end_line: 55
+  loc: 55
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/INFO.MD`
+  start_line: 1
+  end_line: 17
+  loc: 17
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
+  start_line: 1
+  end_line: 443
+  loc: 443
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/live_sim/bootstrap.py`
+  start_line: 1
+  end_line: 375
+  loc: 375
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/live_sim/conftest.py`
+  start_line: 1
+  end_line: 28
+  loc: 28
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/live_sim/interfaces/protocols.py`
+  start_line: 1
+  end_line: 34
+  loc: 34
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/live_sim/mini_application/application.py`
+  start_line: 1
+  end_line: 132
+  loc: 132
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/__init__.py`
+  start_line: 1
+  end_line: 3
+  loc: 3
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/__init__.py`
+  start_line: 1
+  end_line: 3
+  loc: 3
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/feature.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/surface.py`
+  start_line: 1
+  end_line: 13
+  loc: 13
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/__init__.py`
+  start_line: 1
+  end_line: 3
+  loc: 3
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/aggregate.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_a.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_b.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/__init__.py`
+  start_line: 1
+  end_line: 3
+  loc: 3
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/__init__.py`
+  start_line: 1
+  end_line: 3
+  loc: 3
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/__init__.py`
+  start_line: 1
+  end_line: 3
+  loc: 3
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/provider.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/provider.py`
+  start_line: 1
+  end_line: 13
+  loc: 13
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/__init__.py`
+  start_line: 1
+  end_line: 3
+  loc: 3
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/provider.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/reexport.py`
+  start_line: 1
+  end_line: 7
+  loc: 7
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root.py`
+  start_line: 1
+  end_line: 21
+  loc: 21
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_feature.py`
+  start_line: 1
+  end_line: 13
+  loc: 13
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_surface.py`
+  start_line: 1
+  end_line: 13
+  loc: 13
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_branch.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_deep.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_duplicate.py`
+  start_line: 1
+  end_line: 17
+  loc: 17
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_multibranch.py`
+  start_line: 1
+  end_line: 17
+  loc: 17
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_package_import.py`
+  start_line: 1
+  end_line: 13
+  loc: 13
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_reexport.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_with_synthetic.py`
+  start_line: 1
+  end_line: 22
+  loc: 22
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/shared.py`
+  start_line: 1
+  end_line: 15
+  loc: 15
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/spell_crystal_harness.py`
+  start_line: 1
+  end_line: 767
+  loc: 767
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/crystallizer/synthetic_module_harness.py`
+  start_line: 1
+  end_line: 531
+  loc: 531
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/contract_classes.py`
+  start_line: 1
+  end_line: 425
+  loc: 425
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/core_classes.py`
+  start_line: 1
+  end_line: 245
+  loc: 245
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/deep_layers.py`
+  start_line: 1
+  end_line: 1255
+  loc: 1255
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/factories.py`
+  start_line: 1
+  end_line: 174
+  loc: 174
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/protocols.py`
+  start_line: 1
+  end_line: 74
+  loc: 74
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_bad_metadata.py`
+  start_line: 1
+  end_line: 28
+  loc: 28
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_core.py`
+  start_line: 1
+  end_line: 98
+  loc: 98
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_duplicate.py`
+  start_line: 1
+  end_line: 59
+  loc: 59
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_empty.py`
+  start_line: 1
+  end_line: 25
+  loc: 25
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_lambda.py`
+  start_line: 1
+  end_line: 42
+  loc: 42
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_lambda_invalid.py`
+  start_line: 1
+  end_line: 14
+  loc: 14
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_reexport.py`
+  start_line: 1
+  end_line: 8
+  loc: 8
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/mocks/spellbook/scan_bind_module_wrapped.py`
+  start_line: 1
+  end_line: 123
+  loc: 123
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py`
+  start_line: 1
+  end_line: 935
+  loc: 935
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
+  start_line: 1
+  end_line: 1148
+  loc: 1148
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/aether/test_nexus.py`
+  start_line: 1
+  end_line: 6350
+  loc: 6350
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
+  start_line: 1
+  end_line: 454
+  loc: 454
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/aether/test_workstation.py`
+  start_line: 1
+  end_line: 282
+  loc: 282
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/aether/test_command_system_direct.py`
+  start_line: 1
+  end_line: 457
+  loc: 457
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/crystallizer/test_crystallizer.py`
+  start_line: 1
+  end_line: 187
+  loc: 187
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
+  start_line: 1
+  end_line: 124
+  loc: 124
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/crystallizer/test_spell_crystal.py`
+  start_line: 1
+  end_line: 303
+  loc: 303
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/crystallizer/test_synthetic_module.py`
+  start_line: 1
+  end_line: 363
+  loc: 363
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
+  start_line: 1
+  end_line: 859
+  loc: 859
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
+  start_line: 1
+  end_line: 138
+  loc: 138
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/test_spellbook.py`
+  start_line: 1
+  end_line: 5198
+  loc: 5198
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/test_spell.py`
+  start_line: 1
+  end_line: 1429
+  loc: 1429
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/test_scan_bind.py`
+  start_line: 1
+  end_line: 334
+  loc: 334
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/test_spellbinder.py`
+  start_line: 1
+  end_line: 432
+  loc: 432
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/test_cache_runtime_verification.py`
+  start_line: 1
+  end_line: 643
+  loc: 643
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/configuration/test_configuration.py`
+  start_line: 1
+  end_line: 514
+  loc: 514
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/bind/test_bind.py`
+  start_line: 1
+  end_line: 1818
+  loc: 1818
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/bind/test_spell_index.py`
+  start_line: 1
+  end_line: 296
+  loc: 296
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler_system.py`
+  start_line: 1
+  end_line: 402
+  loc: 402
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler.py`
+  start_line: 1
+  end_line: 150
+  loc: 150
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_1.py`
+  start_line: 1
+  end_line: 147
+  loc: 147
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_compiler/phases/test_shared_compiler_executions.py`
+  start_line: 1
+  end_line: 94
+  loc: 94
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_crafter/validation/test_validation_system.py`
+  start_line: 1
+  end_line: 1314
+  loc: 1314
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_crafter/dag/test_dag_index.py`
+  start_line: 1
+  end_line: 279
+  loc: 279
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/unit/melder/spellbook/spell_crafter/system/test_spell_system_validation_system.py`
+  start_line: 1
+  end_line: 742
+  loc: 742
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
+  start_line: 1
+  end_line: 153
+  loc: 153
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/aether/test_frame_acl_component.py`
+  start_line: 1
+  end_line: 74
+  loc: 74
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/aether/test_nexus_viewer_extended_surface_component_matrix.py`
+  start_line: 1
+  end_line: 188
+  loc: 188
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
+  start_line: 1
+  end_line: 135
+  loc: 135
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/crystallizer/test_synthetic_module_component.py`
+  start_line: 1
+  end_line: 163
+  loc: 163
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/mutation_research/test_mutation_research_root_component.py`
+  start_line: 1
+  end_line: 159
+  loc: 159
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_bind.py`
+  start_line: 1
+  end_line: 582
+  loc: 582
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
+  start_line: 1
+  end_line: 408
+  loc: 408
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_configuration_core.py`
+  start_line: 1
+  end_line: 225
+  loc: 225
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_contracts.py`
+  start_line: 1
+  end_line: 749
+  loc: 749
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_spell_index.py`
+  start_line: 1
+  end_line: 46
+  loc: 46
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_spellbook.py`
+  start_line: 1
+  end_line: 1703
+  loc: 1703
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
+  start_line: 1
+  end_line: 602
+  loc: 602
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/test_spell_compiler_component_system.py`
+  start_line: 1
+  end_line: 798
+  loc: 798
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/spell_compiler/test_spell_codegen_pipeline_component.py`
+  start_line: 1
+  end_line: 159
+  loc: 159
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/spell_compiler/test_generalized_cache_creation_component.py`
+  start_line: 1
+  end_line: 76
+  loc: 76
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py`
+  start_line: 1
+  end_line: 483
+  loc: 483
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py`
+  start_line: 1
+  end_line: 247
+  loc: 247
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py`
+  start_line: 1
+  end_line: 327
+  loc: 327
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
+  start_line: 1
+  end_line: 215
+  loc: 215
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
+  start_line: 1
+  end_line: 586
+  loc: 586
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
+  start_line: 1
+  end_line: 283
+  loc: 283
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
+  start_line: 1
+  end_line: 215
+  loc: 215
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
+  start_line: 1
+  end_line: 142
+  loc: 142
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/mutation_research/test_mutation_research_root_integration.py`
+  start_line: 1
+  end_line: 251
+  loc: 251
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
+  start_line: 1
+  end_line: 1427
+  loc: 1427
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
+  start_line: 1
+  end_line: 522
+  loc: 522
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py`
+  start_line: 1
+  end_line: 1954
+  loc: 1954
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/spellbook/test_spellbook_integration_public_api.py`
+  start_line: 1
+  end_line: 259
+  loc: 259
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py`
+  start_line: 1
+  end_line: 970
+  loc: 970
+  verified_at: 2026-08-02T15:19:19Z
+- path: `tests/integration/melder/spellbook/test_spell_compiler_system_integration.py`
+  start_line: 1
+  end_line: 587
+  loc: 587
+  verified_at: 2026-08-02T15:19:19Z
 
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
@@ -761,6 +1553,26 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+RECOMPOSED 2026-08-02 to the Required Section Contract.
+
+- `## Indexing` ADDED; it did not exist. Both test indexes had been STALE for an
+  extended period - 115 recorded lines against a live 386 here, 140 against 767
+  there - so every range they offered was wrong while still parsing.
+- `## C1 Code Map (Key Paths)` RENAMED to `## C1 Code Map (Core)` and REBUILT as
+  118 measured entries. It is now exactly the deduplicated union of every
+  `Key Files (C1)` list; it previously named 18 paths, had no ranges, and was
+  not the union of anything.
+- TWENTY DIRECTORY CITATIONS removed from `Key Files (C1)`. They covered whole
+  trees - one named a directory holding 181 test modules - and a directory
+  carries no range and cannot be remeasured. WHAT REPLACED THEM IS THE POINT: a
+  test component's key files are its HARNESS AND SUPPORT SURFACES (conftests,
+  benches, mock packages, shared builders), not its 638 `test_*.py` modules.
+  The modules are the component's CONTENT and are now counted per entry rather
+  than cited, because a core set that lists the entire tree is not a set anyone
+  can verify.
+- Directory paths that remain in prose are written WITHOUT backticks, so a
+  citation checker cannot mistake a description for a claim.
 The tests layer is now mapped as a real multi-tier system with reusable
 support/harness components. The most important recent addition is the
 static/capability Rift JSON bench layer, which makes AR room-mode behavior

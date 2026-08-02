@@ -9,7 +9,10 @@
    "label": "melder",
    "kind": "module",
    "file": "src/melder/__init__.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The package root and public surface of the Melder Dependency Graph Runtime - bind into Spellbooks, conjure Conduits, meld live object graphs.",
+   "semantics_authored_against": "de41866f6f427056d46a5bd5bc42ebcf11bd070e6162d23d69da1083675c2498"
   }
  },
  "edges_out": [],

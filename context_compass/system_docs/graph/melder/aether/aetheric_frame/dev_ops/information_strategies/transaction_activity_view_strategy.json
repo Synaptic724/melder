@@ -1,97 +1,102 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
-  "source_sha256": "6474edaaab00d4b3cbcf7b360c4e74a13e9b4067bfcd5152d726efa2cfca08e8",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy": {
-      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy",
-      "label": "transaction_activity_view_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy": {
-      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-      "label": "TransactionActivityViewStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
-      "lineno": 16,
-      "bases": [
-        "DevopsInformationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "execute"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Registry-backed dev-ops information strategy for live transaction activity views.",
-      "responsibilities": [
-        "queries in-flight transaction ids by identity, scope, or transaction type",
-        "returns detached transaction-activity views without live object references",
-        "adds freshness views for the touched regions when requested"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
+ "source_sha256": "6474edaaab00d4b3cbcf7b360c4e74a13e9b4067bfcd5152d726efa2cfca08e8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy",
+   "label": "transaction_activity_view_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Information strategy for live transaction activity views.",
+   "semantics_authored_against": "6474edaaab00d4b3cbcf7b360c4e74a13e9b4067bfcd5152d726efa2cfca08e8"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-      "to_label": "DevopsInformationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-    "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+   "label": "TransactionActivityViewStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py",
+   "lineno": 16,
+   "bases": [
+    "DevopsInformationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "execute"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "cd638ff7597070f826f5c9e96cbb6367ed665a982032af5dcd8db993777a1dca",
+   "role": "Registry-backed dev-ops information strategy for live transaction activity views.",
+   "responsibilities": [
+    "queries in-flight transaction ids by identity, scope, or transaction type",
+    "returns detached transaction-activity views without live object references",
+    "adds freshness views for the touched regions when requested"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "cd638ff7597070f826f5c9e96cbb6367ed665a982032af5dcd8db993777a1dca"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+   "to_label": "DevopsInformationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+  "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy",
+  "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+  "label": "TransactionActivityViewStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+   "relation": "specializes",
+   "why": "TransactionActivityViewStrategy specializes the shared dev-ops information strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy",
-    "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-    "label": "TransactionActivityViewStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-      "relation": "specializes",
-      "why": "TransactionActivityViewStrategy specializes the shared dev-ops information strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-      "relation": "uses",
-      "why": "TransactionActivityViewStrategy uses InformationFreshnessInspector to normalize regions and compute freshness for activity views.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+   "relation": "uses",
+   "why": "TransactionActivityViewStrategy uses InformationFreshnessInspector to normalize regions and compute freshness for activity views.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

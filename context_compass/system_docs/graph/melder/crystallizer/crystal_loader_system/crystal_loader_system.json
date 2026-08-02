@@ -1,126 +1,140 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py",
-  "source_sha256": "65776dea2e747ca4ec8c686f508c4616314ca33edf5052da9449a6f5b4c1af1e",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.crystal_loader_system.crystal_loader_system": {
-      "id": "melder.crystallizer.crystal_loader_system.crystal_loader_system",
-      "label": "crystal_loader_system",
-      "kind": "module",
-      "file": "src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py",
-      "lineno": 1
-    },
-    "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem": {
-      "id": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "label": "CrystalLoaderSystem",
-      "kind": "class",
-      "file": "src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py",
-      "lineno": 31,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "configure_restore_scheduler",
-        "describe_last_load",
-        "load_checkpoint",
-        "restore_formation_record"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "The unfold owner (S4): mediated load verbs + durable last-load state over a borrowed record.",
-      "responsibilities": [
-        "load_checkpoint / restore_formation_record through the BootMediator admission pipeline",
-        "describe_last_load = durable detached last-load payload + admission view"
-      ],
-      "owns_state": [
-        "BootMediator",
-        "last-load payload"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py",
+ "source_sha256": "65776dea2e747ca4ec8c686f508c4616314ca33edf5052da9449a6f5b4c1af1e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_loader_system.crystal_loader_system": {
+   "id": "melder.crystallizer.crystal_loader_system.crystal_loader_system",
+   "label": "crystal_loader_system",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The unfold owner: durable load state over the mediated boot pipeline.",
+   "responsibilities": [
+    "own checkpoint world loads and scoped formation loads",
+    "retain last-load state for describe_last_load"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "65776dea2e747ca4ec8c686f508c4616314ca33edf5052da9449a6f5b4c1af1e"
   },
-  "edges_out": [
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to_label": "LoadAdmission",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to_label": "PhaseScheduler",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "LoadAdmission": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-    "Aether": "melder.aether.aether.Aether",
-    "PersistenceSystem": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-    "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler"
+  "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem": {
+   "id": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "label": "CrystalLoaderSystem",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py",
+   "lineno": 31,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "configure_restore_scheduler",
+    "describe_last_load",
+    "load_checkpoint",
+    "restore_formation_record"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "e820ed1aac6dca31652b001f265e22dbcb5d45ca0a2c74d6d5078f2c25a31a98",
+   "role": "The unfold owner (S4): mediated load verbs + durable last-load state over a borrowed record.",
+   "responsibilities": [
+    "load_checkpoint / restore_formation_record through the BootMediator admission pipeline",
+    "describe_last_load = durable detached last-load payload + admission view"
+   ],
+   "owns_state": [
+    "BootMediator",
+    "last-load payload"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "e820ed1aac6dca31652b001f265e22dbcb5d45ca0a2c74d6d5078f2c25a31a98"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.crystallizer.crystal_loader_system.crystal_loader_system",
-    "class": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-    "label": "CrystalLoaderSystem"
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to_label": "LoadAdmission",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-      "relation": "owns_lifecycle_of",
-      "why": "The loader owns its admission plane.",
-      "cardinality": "1",
-      "phase": "runtime",
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "relation": "borrows",
-      "why": "Chain detachment through detach_profile_chain (public verb).",
-      "cardinality": "1",
-      "phase": "runtime",
-      "strength": "soft"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "to": "melder.aether.aether.Aether",
-      "relation": "uses",
-      "why": "Load verbs wrap plan+execute in acquire_load_authority/release_load_authority spans (borrowed aether; None = ungated unit posture)."
-    }
-  ]
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to_label": "PhaseScheduler",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "LoadAdmission": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+  "Aether": "melder.aether.aether.Aether",
+  "PersistenceSystem": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+  "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_loader_system.crystal_loader_system",
+  "class": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+  "label": "CrystalLoaderSystem"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+   "relation": "owns_lifecycle_of",
+   "why": "The loader owns its admission plane.",
+   "cardinality": "1",
+   "phase": "runtime",
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "relation": "borrows",
+   "why": "Chain detachment through detach_profile_chain (public verb).",
+   "cardinality": "1",
+   "phase": "runtime",
+   "strength": "soft"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "to": "melder.aether.aether.Aether",
+   "relation": "uses",
+   "why": "Load verbs wrap plan+execute in acquire_load_authority/release_load_authority spans (borrowed aether; None = ungated unit posture)."
+  }
+ ]
 }

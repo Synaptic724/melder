@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-08-01
+- Updated: 2026-08-02
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -36,15 +36,15 @@ This document is AUTHORED. Nothing generates its prose. Its only generated
 companion is `src_architecture_index.md`, rebuilt in the SAME pass as any edit:
 
 ```bash
-python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_architecture.md
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_architecture.md
 ```
 
 Consume it by slicing rather than reading this document whole:
 
 ```bash
-python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_architecture.md --slice "<section name>"
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_architecture.md --slice "<section name>"
 ```
 
 ### Verifying the `path:line` citations in this document
@@ -64,12 +64,19 @@ Run this after any pass that touches source or citations:
 python - <<'EOF'
 import pathlib, re
 CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
-for doc in pathlib.Path("context_compass/system_docs").glob("src_*.md"):
+# Cited source paths are relative to the SOURCE-TREE root, which is not
+# necessarily the directory you run this from. Walk up until `src/` appears, so
+# the check works from the documentation root or the repository root.
+here = pathlib.Path.cwd().resolve()
+root = next((p for p in (here, *here.parents) if (p / "src").is_dir()), here)
+docs = next(p for p in (pathlib.Path("system_docs"), pathlib.Path("."))
+            if list(p.glob("src_*.md")))
+for doc in docs.glob("src_*.md"):
     if doc.name.endswith("_index.md"):
         continue
     for i, line in enumerate(doc.read_text(encoding="utf-8").split("\n"), 1):
         for m in CITE.finditer(line):
-            f = pathlib.Path(m.group(1))
+            f = root / m.group(1)
             if not f.exists():
                 print("MISSING", doc.name, i, m.group(0)); continue
             n = len(f.read_bytes().decode("utf-8", "replace").splitlines())
@@ -88,8 +95,8 @@ range that merely brushes past a definition reads as verified without being it.
 Verify before trusting any range:
 
 ```bash
-python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_architecture.md --check
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_architecture.md --check
 ```
 
 Format rules the index depends on, and which this document obeys:
@@ -407,15 +414,24 @@ External interfaces are Python APIs:
   registration through `scan_bind` metadata
 - `Conduit.notch_spell(...)`, `Conduit.add_to_spell_index(...)`, and
   `Conduit.remove_from_spell_index(...)` for transaction-backed SpellIndex
-  member switching, move-in, and move-out flows. THE OWNER IS THE CONDUIT, NOT
-  THE SPELLBOOK: the Conduit is the public verb, and it delegates to the owning
-  Spellbook, which admits the change-control transaction and runs the matching
-  `_apply_*` seam inside the held window. Spellbook exposes no public verb here.
+  member switching, move-in, and move-out flows. THE CONDUIT ADMITS THE
+  TRANSACTION - it calls `mediator.start_transaction(...)` ITSELF and calls into
+  Spellbook inside the held window. Spellbook exposes no public verb here.
+  THE CHAIN HAS THREE LAYERS, NOT TWO, and the middle one is easy to miss:
+  `Conduit.<verb>` (public; opens and closes the transaction) ->
+  `Spellbook._<verb>` (internal entry, called inside the window) ->
+  `Spellbook._apply_<verb>` (the seam that mutates index membership).
+  CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
+  the owning Spellbook, WHICH ADMITS the change-control transaction". It does
+  not. That wording was inherited from the Conduit docstrings, which say the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3684`, which states the
+  opposite correctly. The code settles it.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:4392 (`notch_spell`)
-  - src/melder/aether/conduit/conduit.py:4482 (`add_to_spell_index`)
-  - src/melder/aether/conduit/conduit.py:4560 (`remove_from_spell_index`)
-  - src/melder/aether/spellbook/spellbook.py:3683 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:4392, 4464 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:4482, 4537 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:4560, 4608 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:3655 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:3688 (`_apply_add_to_index` seam)
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
 - `Conduit.create_lesser_conduit(...)` for child scopes.
@@ -467,8 +483,9 @@ SpellCompiler and PhaseScheduler run phases before Conduit creation.
 ConduitWard and contracts govern cross-conduit sharing.
 SpellSystemStates and ChangeControl track structural/resolution validity and dirty roots
 used by Meld to gate execution and trigger revalidation.
-SpellIndex member mutation is transaction-backed at the public Spellbook
-surface and the member-store work is IMPLEMENTED behind the `_apply_notch`,
+SpellIndex member mutation is transaction-backed at the public CONDUIT surface
+(not the Spellbook surface - the Conduit opens and closes the transaction) and
+the member-store work is IMPLEMENTED behind the `_apply_notch`,
 `_apply_add_to_index`, and `_apply_remove_from_index` seams, which execute
 inside the held transaction window. Notch is currently OWNER-SIDE ONLY:
 contracted borrowers are not fanned out, so a notch on a shared index does not
@@ -686,9 +703,12 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
    `notch`, `add_to_index`, or `remove_from_index`.
 3. The resolved transaction strategy seals the owning spellbook/conduit
    surfaces and the targeted binding key for the duration of the mutation.
-4. Inside the held transaction window, Spellbook delegates the member-store
-   work to `_apply_notch(...)`, `_apply_add_to_index(...)`, or
-   `_apply_remove_from_index(...)`.
+4. Inside the held transaction window the Conduit calls the Spellbook's
+   internal entry - `_notch_spell(...)`, `_add_to_spell_index(...)` or
+   `_remove_from_spell_index(...)` - which in turn delegates the member-store
+   work to `_apply_notch(...)`, `_apply_add_to_index(...)` or
+   `_apply_remove_from_index(...)`. THE ENTRY AND THE SEAM ARE DIFFERENT
+   METHODS; the entry is what the Conduit calls, the seam is what mutates.
 5. The seams execute the member-store work inside that held window:
    - notch parks the outgoing active member, promotes the incoming parked
      member, repoints the index pointer and the framewide binding signature,
@@ -716,9 +736,65 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 3. `SpellSpace.reset()` clears spellspace-scoped instances and bumps version.
 
 ### Sequence: Cleanup
-1. `Conduit.cleanup()` fires hooks, tears down Meld/Ward/Creations, logger last.
-2. `Spellbook.cleanup()` clears spells, configuration, and validators.
-3. `Aether.cleanup()` cleans frames and resets singleton state.
+`Cleanable` defines the idempotent cleanup contract every one of these
+implements. THE RECURRING SHAPE IS THAT THE LOGGER GOES LAST - a type tears down
+what it owns while it can still report a failure, and only then loses the ability
+to report. Re-absorbed 2026-08-02 from the patch lane and extended from three
+types to seven; each `cleanup()` was verified present on the class named.
+
+1. `Conduit.cleanup()` fires hooks, tears down Meld, ConduitWard and Creations,
+   clears hooks, logger last.
+2. `Spellbook.cleanup()` cleans spells and SpellIndex keys, then configuration
+   and validators, nulls references, logger last.
+3. `Aether.cleanup()` cleans frames, resets singleton state, cleans logger.
+4. `AetherUtilitySystem.cleanup()` clears the channel-resolver and
+   default-logger providers and resets singleton state for tests.
+5. `Nexus.cleanup()` cleans registered Rifts, Nexus frame records, logger state.
+6. `Rift.cleanup()` cleans the one owned space, the owned config snapshot, the
+   owned `RiftGate`, and engaged `FrameLinkContract` objects, then clears
+   Rift-local metadata, logger last.
+7. `Creations.cleanup()` calls the configured disposal methods and may raise
+   `ExceptionGroup` - it is the one teardown here that AGGREGATES failures
+   rather than stopping at the first, so a single bad object cannot strand the
+   rest of the scope.
+
+## Runtime Type Names (Concrete, No Interface Layer)
+Re-absorbed 2026-08-02 from the patch lane; every class below was verified to
+exist in `src/` and the enforcement citation was re-measured on the way in.
+
+The runtime uses CONCRETE types on these surfaces. There is no `I*` interface
+layer for them, so type against the concrete classes:
+- `RiftEvent` - room-local event record
+- `RiftMemory` - room-local memory record
+- `CodegenValidationResult` - codegen validation verdict
+- `CodegenExecutionResult` - codegen execution outcome
+- `CodegenTransactionContext` - per-call codegen transaction context
+- `Conduit` - conduit; link targets and rooted-creation returns
+
+`Conduit.link(...)` performs a CONCRETE `isinstance(target_conduit, Conduit)`
+check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
+THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
+conduit-shaped object that is not a `Conduit` subclass is rejected outright.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:4341-4343 (the check and the raise -
+    cited as :4342-4344 in the patch lane, which was off by one)
+  - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
+  - src/melder/nexus/rift/rift_space/event_system/rift_event.py
+  - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
+  - src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py
+  - src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py
+  - src/melder/nexus/rift/codegen_system/codegen_transaction_context.py
+
+## Extension Points
+Re-absorbed 2026-08-02 from the patch lane; every named seam verified present.
+These are the ARCHITECTURE-LEVEL seams. Per-component extension points live in
+each entry in `src_components.md`; this list is the set that crosses components.
+- `SpellbookConfiguration` hooks for Conduit lifecycle and the Meld pipeline.
+- Logger provider registration through `AetherUtilitySystem` and the hosted
+  `InitHelpers` resolution path.
+- Spellbook binding hooks (pre / activation / post).
+- Dynamic Conduit policies and `ConduitCluster` auto-sharing.
+- Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
 - Aether is a process singleton enforced in `__new__` under a double-checked
@@ -856,6 +932,191 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 - Ownership transfer raises RuntimeError when dynamic mode is disabled (same
   posture gate as linking, severing and upgrade).
 
+## Promoted Patch Decisions (re-absorbed 2026-08-02)
+
+The four sections below were promoted out of COMPLETED patch lanes between
+2026-07-07 and 2026-07-12, then moved to the recomposition patch lane on
+2026-08-01 under the reading that the Required Section Contract was a whitelist.
+It is not - it is a minimum in a fixed relative order - so they are back.
+
+They are owner-ruled architecture decisions, not narrative, which is why they
+belong in the canonical document rather than in a lane nobody reads. VERIFIED
+BEFORE RE-ABSORPTION, not restored on faith: all 16 classes they name exist in
+`src/` (`PersistenceSystem`, `AssetManagementSystem`, `CrystalLoaderSystem`,
+`LoadAdmission`, `RestoreEngine`, `ImpactEngine`, `CrystallizerBootstrap`,
+`RecordVersion`, `LoadGate`, `UserSourceIntegrityStrategy` among them), 10 of
+the 11 verbs they name are real `def`s, and THE TWO APPARENT MISSES CONFIRM THE
+TEXT RATHER THAN CONTRADICT IT - `BootMediator` is absent exactly because the
+topology section records it was renamed to `LoadAdmission` on 2026-07-11, and
+`refuse_on_blockers` is a keyword parameter on `RestoreEngine`, not a method,
+which is what that section calls it. The `RecordVersion` "1.0.0" literal and the
+`__crystallizer_cache__` folder name both appear in source.
+
+### Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07)
+
+
+#### Canonical configuration/boot order (owner-ruled)
+Aether|AetherUtilitySystem -> Crystallizer -> MutationResearch -> Nexus ->
+AethericFrame -> Spellbook -> Conduit|Ward. The restore engine's stage
+machine mirrors this order exactly; frames posture BEFORE books because
+frames own the dynamic gate that conjure's check_system_state reads.
+
+#### EMIT model invariants
+- The crystallizer is a passive sink: structural units push twins at their
+  configuration lock-in and pivotal runtime points; the sink never reaches
+  into emitters. Bind owns structural emission; the ONLY sanctioned
+  catch-up is the aether root at crystallizer activation (a single root
+  emission, never a world walk), because the aether hosts its own recorder
+  and legally precedes it.
+- R-A covenant: crystallizer-off worlds stay byte-identical; recording
+  changes no runtime behavior.
+- Every snapshot is self-describing: the recorder's policy twin rides
+  every sealed window.
+- Records carry plain values only; callables appear as presence flags
+  (logger resolvers, DB handlers) and reload as code-participation
+  reports.
+
+#### Restore invariants
+- Checkpoint-shaped replay through PUBLIC verbs only - never raw map
+  merges; the engine is a driver, not a surface.
+- Never-rehydrate-ULIDs: fresh identities always; recorded ids live only
+  in the report's translation map. Spell SHA256 ids are content-derived
+  and stable, so custody replays by recorded id.
+- All-or-nothing: any stage failure tears down every built unit in
+  reverse order and re-raises with the cause chained.
+- Re-emission is intended: the rebuilt world re-records itself into the
+  fresh active profile as it comes up.
+- Honesty ledger: everything unreplayable is a named shortfall (never
+  silent) - hook callables, non-hydratable/synthetic bind targets
+  (loader-chain M3 pending), cluster leader election, index
+  subscriptions, MutationResearch.
+
+#### Durability layering
+Ledger (in-process, FIFO at max_persistence_crystals) -> local cache
+(profile folders under __crystallizer_cache__, FIFO file cap at the same
+limit) -> user DB via ExternalPersistenceManager callables (unbounded,
+explicitly the user's opt-in and operational responsibility). Boot lane:
+CrystallizerBootstrap composes activation, manager attach, cache reload,
+remote pull with local re-store, chain-verification gating, and
+newest-checkpoint restore into one fluent, single-use chain.
+
+
+### Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10)
+
+
+The 2026-07-09/10 decomposition replaced the persistence god object with
+the V3 subsystem model (canonical anchor:
+artifacts/2026-07-09_crystallizer_philosophy_v3.md). Owner-run 614/614
+across the crystallizer test tree validates it.
+
+Crystallizer (thin facade, byte-compatible public surface)
+├── persistence/PersistenceSystem      THE RECORD - profiles, journal,
+│     checkpoint minting/retention, chain verify, feedstock
+│     (cached_item_forms, detach_profile_chain), the insert sink.
+│     In-process truth ONLY; calls nobody; constructs no engines.
+├── asset_management/AssetManagementSystem   BYTES AT REST - owns
+│     CrystallizerCache + ExternalPersistenceManager; flush =
+│     seal-then-ship (cache write, FIFO retention at the record's live
+│     cap, lenient upload leg - one feedstock pull, both legs);
+│     reloads feed the record's sink; formation files live here.
+└── crystal_loader_system/CrystalLoaderSystem   THE UNFOLD - owns
+      LoadAdmission (LoadPlan -> gated engine -> scope adjudication;
+      renamed from BootMediator 2026-07-11),
+      RestoreEngine (refuse_on_blockers at the fold->preflight seam:
+      blockers refuse BEFORE any replay, teach-grade), bootstrap_loader
+      (thinned; old preflight-gate knob absorbed as a no-op), and
+      durable last-load state (describe_last_load).
+
+Shared surfaces: crystallizer/crystals/ is the package-level twin
+vocabulary (carrier law: crystals carry results, never analyzers);
+crystallizer/crystal_analysis/ is the shared analyzer service (custody
+strategies with physical SHA256 fingerprints, fact strategies incl.
+export_surface + topological load order, the relocated preflight set) -
+consumed by SpellCrystal at bind and by the loader's admission, and
+re-runnable over RETAINED payloads (the MutationResearch seam).
+
+Laws: EDGE (acyclic - the record calls nobody; borrowers clean before
+the record), LOCK (one-way facade -> subsystem -> record -> profile),
+VERDICT (blockers refuse standard, warnings proceed + report; conduit/
+frame-scoped loads adjudicate expected frame-posture warnings into the
+additive "admission" view without rewriting raw findings). All prior
+restore invariants (all-or-nothing, never-rehydrate-ULIDs, re-emission,
+shortfall honesty, R-A covenant) are unchanged.
+
+
+### V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green)
+
+
+- LAZY FRAMES + LOADGATE (Aether substrate): `import melder` builds ZERO
+  frames - the first Spellbook births the frame it names; collapsed
+  config falls back to a lazily created "default". One Aether-hosted
+  LoadGate (constructed before any frame CAN exist, so mid-load-born
+  frames inherit coverage) grants a crystallizer load exclusive
+  system authority: acquire+drain at load start, mediator
+  wait_for_passage at every NEW-ROOT transaction start (the loading
+  thread passes free; joins never gate), release in finally. The gate
+  reaches mediators via an additive ctor kwarg threaded frame ->
+  DevOpsManager -> CCM -> TransactionMediator. Recorded frame postures
+  now PROPAGATE their transaction wait bound into the live mediator at
+  bind (the disable_* gates were already live-reads).
+- LOAD SCOPES MATURE: formations COMPOSE into live worlds - detached-
+  window retargeting (copy-on-write; single-frame law), host preflight
+  in LoadAdmission (registry reads only; collisions are blockers that
+  refuse pre-engine or downgrade to "skipped_existing"), engine skip
+  lanes (unnamed conjure fallback; cluster reuse). Restore units:
+  world, frame slice, conduit slice.
+- PHYSICAL CUSTODY (opt-in): user-source TEXT rides the SpellCrystal
+  beside the M3 synthetic sources; absent files rebuild through the
+  synthetic module lane (live files always win; drift/tamper are
+  preflight rows). Fresh pods rebuild user-file spells from the record
+  alone.
+- IMPACT VIEW: ImpactEngine turns the custody manifests into blast-
+  radius answers (transitive reverse-import closure; source-drift
+  report) behind one read seam (describe_spell_crystals) and one facade
+  (analyze_impact). Read-only by law.
+- EXTERNAL MESH: ONE generic callable quartet (store/fetch/list/delete,
+  kind-partitioned) carries ANY mesh unit to the user's DB - legacy
+  checkpoint handlers bridge to it; formations ship at save; an opt-in
+  emission tap streams every recorded twin (payload captured BEFORE
+  record - the thread-safety law - shipped after); melder-driven remote
+  retention is opt-in via the delete lane. Callables-first stands: the
+  record stores presence flags, never code.
+- RECORD VERSIONING: RecordVersion "1.0.0" stamps every durable
+  artifact (cached items, formation records, tap envelopes); readers
+  gate on the MAJOR (newer refuses with the upgrade instruction;
+  pre-versioning reads as 0.0.0 into the tolerance lanes). The twin
+  describe() dict IS the interface: classes in, lossless JSON across
+  the boundary.
+- MR = BUILD STAGE: checkpointed worlds unfold WITH their research
+  (reload verb -> hosted root -> folded-truth activation -> wholesale
+  composition rebuild; disabled/cleaned/pre-Phase-B lanes honest;
+  world-scope-only with expected_for_scope adjudication on formation
+  loads).
+
+
+### Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes)
+
+
+- PUBLIC CLOUD SEAMS: cross-package cloud access is public-verb-only.
+  AethericFrame.conduit_cloud (property) + ConduitCloud.has_cluster_name
+  retire the two documented private seams; every crystallizer reader
+  repointed; zero behavior change (same objects, same answers).
+- SOURCE DRIFT PREFLIGHT (10th default row): every load re-hashes EVERY
+  bind-time module fingerprint against disk, retention-agnostic - a
+  restore ANNOUNCES working-tree divergence from the sealed world before
+  building anything (drift/absent = warnings, never refusal);
+  UserSourceIntegrityStrategy narrows to retained-text tamper only.
+- SPELL-INDEX GRAFT: restore grain below the conduit slice - ONE index
+  (members + custody + selection, parked members included) captured as
+  a versioned dict and re-integrated into any LIVE conjured book through
+  normal verbs only (bind creates the fresh index; bind_inactive parks;
+  resident members refuse or skip - existing indexes are NEVER mutated).
+  Retained-text worlds rebuild through the shared user_world_rebuild
+  lane the engine also delegates to. Grafts are user-verb activity: no
+  LoadGate, emissions re-record freely.
+
+
+
 ## C1 Code Map (Core Only)
 
 Ranges are MEASURED, never estimated: `start_line`/`end_line` are the file's own
@@ -888,9 +1149,9 @@ Package root:
     committed manifest via an accelerator cache.
 - path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 628
-  loc: 628
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 633
+  loc: 633
+  verified_at: 2026-08-02T16:30:22Z
   note: GENERATED DURABLE BUILD ASSET holding `ENTRIES`; committed, do not
     edit by hand.
 - path: `src/melder/_build_assets/_bind_guard/_builder.py`
@@ -908,43 +1169,43 @@ Package root:
   note: explicit regeneration entrypoint.
 - path: `src/melder/system_document.py`
   start_line: 1
-  end_line: 343
-  loc: 343
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 395
+  loc: 395
+  verified_at: 2026-08-02T16:30:22Z
   note: immutable hardcopy system-document carrier used by package-root
     agent-facing docs.
 - path: `src/melder/__architecture__.py`
   start_line: 1
-  end_line: 39
-  loc: 39
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 45
+  loc: 45
+  verified_at: 2026-08-02T16:30:22Z
   note: packaged architecture hardcopy export.
 - path: `src/melder/__components__.py`
   start_line: 1
-  end_line: 39
-  loc: 39
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 42
+  loc: 42
+  verified_at: 2026-08-02T16:30:22Z
   note: packaged components hardcopy export.
 - path: `src/melder/__graph_network__.py`
   start_line: 1
-  end_line: 38
-  loc: 38
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 56
+  loc: 56
+  verified_at: 2026-08-02T16:30:22Z
   note: packaged graph-network hardcopy export.
 - path: `src/melder/__graph_details__.py`
   start_line: 1
-  end_line: 38
-  loc: 38
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 49
+  loc: 49
+  verified_at: 2026-08-02T16:30:22Z
   note: packaged graph-details hardcopy export.
 
 Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 6496
-  loc: 6496
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 6501
+  loc: 6501
+  verified_at: 2026-08-02T16:30:22Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
@@ -1550,9 +1811,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6213
-  loc: 6213
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 6214
+  loc: 6214
+  verified_at: 2026-08-02T16:30:22Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -1976,6 +2237,14 @@ enforces it or the failure it prevents.
   isolation and breaking the promise `automatic` posture makes. The
   frame-before-book boot ordering is recorded there as the consequence it is.
 - Scored 89.5/100 (band B), up from 85.
+
+PATCH LANE CLOSED (2026-08-02). The recomposition lane went 1,887 -> 644 lines
+and no block in it is undecided. Into this document came four promoted patch
+decision blocks under `## Promoted Patch Decisions`, the `Runtime Type Names`
+and `Extension Points` sections, and an extended `### Sequence: Cleanup` that
+now covers seven types rather than three. Everything re-absorbed was verified
+against source first; everything kept out carries a written reason in the lane.
+The document is 21 H2 sections with all 17 contract sections still in order.
 
 WHAT REMAINS UNKNOWN: the entries in `## Unknowns` are unchanged and still
 blocked by design - the advanced `SpellState` flag producers belong to the

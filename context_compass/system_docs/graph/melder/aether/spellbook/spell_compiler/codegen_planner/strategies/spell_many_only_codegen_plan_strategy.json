@@ -1,98 +1,103 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py",
-  "source_sha256": "57e674194c9a618de8e96baeca01214eb0cd6f51e4f69db68902f4a6a0bf8a8b",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy",
-      "label": "spell_many_only_codegen_plan_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
-      "label": "SpellManyOnlyCodegenPlanStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py",
-      "lineno": 19,
-      "bases": [
-        "SpellCodegenPlanStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "apply",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Standalone many-only phase-10 planner strategy.",
-      "responsibilities": [
-        "builds no-overrides and overrides planner lanes through many-only-native builder surfaces",
-        "publishes many-only planner output from fitted model truth",
-        "records many-only strategy and model-section provenance on the planner-owned plan"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py",
+ "source_sha256": "57e674194c9a618de8e96baeca01214eb0cd6f51e4f69db68902f4a6a0bf8a8b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy",
+   "label": "spell_many_only_codegen_plan_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The standalone many-only plan strategy.",
+   "semantics_authored_against": "57e674194c9a618de8e96baeca01214eb0cd6f51e4f69db68902f4a6a0bf8a8b"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
-      "to_label": "SpellCodegenPlanStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
-      "to_label": "ManyOnlyCodegenPlanBuilder",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "ManyOnlyCodegenPlanBuilder": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-    "ManyOnlyCodegenPlanVariant": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant",
-    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-    "SpellCodegenPlanStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+  "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
+   "label": "SpellManyOnlyCodegenPlanStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py",
+   "lineno": 19,
+   "bases": [
+    "SpellCodegenPlanStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "apply",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "fe60d7ddb26ea49d22e4583167e84aa3e7584c7d4fd2f0a9a693b582c3ae6d89",
+   "role": "Standalone many-only phase-10 planner strategy.",
+   "responsibilities": [
+    "builds no-overrides and overrides planner lanes through many-only-native builder surfaces",
+    "publishes many-only planner output from fitted model truth",
+    "records many-only strategy and model-section provenance on the planner-owned plan"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "fe60d7ddb26ea49d22e4583167e84aa3e7584c7d4fd2f0a9a693b582c3ae6d89"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
+   "to_label": "SpellCodegenPlanStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
+   "to_label": "ManyOnlyCodegenPlanBuilder",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "ManyOnlyCodegenPlanBuilder": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+  "ManyOnlyCodegenPlanVariant": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant",
+  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
+  "SpellCodegenPlanStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
+  "label": "SpellManyOnlyCodegenPlanStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "relation": "uses",
+   "why": "SpellManyOnlyCodegenPlanStrategy delegates many-only planner payload construction to ManyOnlyCodegenPlanBuilder.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
-    "label": "SpellManyOnlyCodegenPlanStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "relation": "uses",
-      "why": "SpellManyOnlyCodegenPlanStrategy delegates many-only planner payload construction to ManyOnlyCodegenPlanBuilder.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-      "relation": "specializes",
-      "why": "SpellManyOnlyCodegenPlanStrategy specializes the abstract planner strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
+   "relation": "specializes",
+   "why": "SpellManyOnlyCodegenPlanStrategy specializes the abstract planner strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

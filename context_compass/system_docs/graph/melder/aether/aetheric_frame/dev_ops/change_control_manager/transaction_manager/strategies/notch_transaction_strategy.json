@@ -9,7 +9,10 @@
    "label": "notch_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for the active-spell repoint - the SpellIndex flow that freezes runtime work.",
+   "semantics_authored_against": "dbaa1ffc54d6d4ff0d185951d8a786d15e3918801bddfc4014761ea224fbfc13"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "fd358120816856d9275b8470532ba37d7310bf3e82daf1cacb823dc5f8ceeac5",
+   "include": true,
+   "role": "Intra-index active-spell repoint - the one SpellIndex flow that needs a real runtime freeze, not just structural isolation.",
+   "responsibilities": [
+    "seal the owning spellbook and its conduit EXCLUSIVE plus the targeted binding key, isolated to exactly those surfaces",
+    "drain conduit lineage gates in on_start and reopen them in on_end on EVERY exit path, including the drain-timeout abort",
+    "repoint the SpellIndex to a different active, resolvable spell"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "fd358120816856d9275b8470532ba37d7310bf3e82daf1cacb823dc5f8ceeac5"
   }
  },
  "edges_out": [

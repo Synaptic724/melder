@@ -1,161 +1,166 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
-  "source_sha256": "e17854a03ca49c1c32412c930d6a564f57a27c686d60ba75434adb010d3a809e",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.configuration.spellbook_configuration": {
-      "id": "melder.aether.spellbook.configuration.spellbook_configuration",
-      "label": "spellbook_configuration",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration": {
-      "id": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "label": "SpellbookConfiguration",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
-      "lineno": 13,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "add_disposal_methods",
-        "add_hook",
-        "add_hooks",
-        "build",
-        "cleanup",
-        "clear_properties",
-        "finalize",
-        "freeze",
-        "get_conduit_hooks",
-        "get_hooks",
-        "get_meld_hooks",
-        "get_property",
-        "has_property",
-        "load_default_dictionary",
-        "load_recorded_dictionary",
-        "set_property",
-        "validate",
-        "validate_enums",
-        "with_defaults",
-        "with_disposal",
-        "with_disposal_method_names",
-        "with_hook",
-        "with_hooks",
-        "with_phase_scheduler_barrier_timeout",
-        "with_phase_scheduler_workers"
-      ],
-      "shape": {
-        "method_count": 29,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Mutable build-time configuration surface for one spellbook/runtime context.",
-      "responsibilities": [
-        "stores typed runtime posture properties and idempotent keys",
-        "owns hook registration for meld, conduit, link, and contract events"
-      ],
-      "owns_state": [
-        "_aether_frame",
-        "_properties",
-        "available_properties",
-        "_idempotent_keys",
-        "_hooks"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
+ "source_sha256": "e17854a03ca49c1c32412c930d6a564f57a27c686d60ba75434adb010d3a809e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.configuration.spellbook_configuration": {
+   "id": "melder.aether.spellbook.configuration.spellbook_configuration",
+   "label": "spellbook_configuration",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The mutable build-time configuration surface for one spellbook/runtime context.",
+   "semantics_authored_against": "e17854a03ca49c1c32412c930d6a564f57a27c686d60ba75434adb010d3a809e"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "KeyError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "Crystallizer",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to_label": "SpellbookCrystal",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "ClassVar": "typing.ClassVar",
-    "Dict": "typing.Dict",
-    "Iterator": "typing.Iterator",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "Type": "typing.Type",
-    "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-    "SpellbookCrystal": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal"
+  "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration": {
+   "id": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "label": "SpellbookConfiguration",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
+   "lineno": 13,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "add_disposal_methods",
+    "add_hook",
+    "add_hooks",
+    "build",
+    "cleanup",
+    "clear_properties",
+    "finalize",
+    "freeze",
+    "get_conduit_hooks",
+    "get_hooks",
+    "get_meld_hooks",
+    "get_property",
+    "has_property",
+    "load_default_dictionary",
+    "load_recorded_dictionary",
+    "set_property",
+    "validate",
+    "validate_enums",
+    "with_defaults",
+    "with_disposal",
+    "with_disposal_method_names",
+    "with_hook",
+    "with_hooks",
+    "with_phase_scheduler_barrier_timeout",
+    "with_phase_scheduler_workers"
+   ],
+   "shape": {
+    "method_count": 29,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "4159fa8672a8661decbe9e871dceed11f9c7a25424d8b4f96d3fcbbf2488957f",
+   "role": "Mutable build-time configuration surface for one spellbook/runtime context.",
+   "responsibilities": [
+    "stores typed runtime posture properties and idempotent keys",
+    "owns hook registration for meld, conduit, link, and contract events"
+   ],
+   "owns_state": [
+    "_aether_frame",
+    "_properties",
+    "available_properties",
+    "_idempotent_keys",
+    "_hooks"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "4159fa8672a8661decbe9e871dceed11f9c7a25424d8b4f96d3fcbbf2488957f"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.configuration.spellbook_configuration",
-    "class": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-    "label": "SpellbookConfiguration"
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-      "to": "melder.aether.spellbook.configuration.system_state.SystemState",
-      "relation": "uses",
-      "why": "Configuration stores SystemState as the high-level runtime posture flag.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "KeyError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "Crystallizer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to_label": "SpellbookCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "Iterator": "typing.Iterator",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Type": "typing.Type",
+  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+  "SpellbookCrystal": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.configuration.spellbook_configuration",
+  "class": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+  "label": "SpellbookConfiguration"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+   "to": "melder.aether.spellbook.configuration.system_state.SystemState",
+   "relation": "uses",
+   "why": "Configuration stores SystemState as the high-level runtime posture flag.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

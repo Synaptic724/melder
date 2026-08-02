@@ -1,85 +1,90 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
-  "source_sha256": "c8e9c239a7555bbd006fbf9f2363e8eb7d98861a776122b586dcc16758c34e08",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy",
-      "label": "solo_codegen_plan_discovery_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
-      "label": "SoloCodegenPlanDiscoveryStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
-      "lineno": 14,
-      "bases": [
-        "CodegenPlanDiscoveryStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "discover",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Phase-10 discovery strategy for the solo spell category.",
-      "responsibilities": [
-        "claims models whose visible spell count is exactly one",
-        "emits the solo planner strategy id and solo planning family",
-        "bounds phase-11 candidate codegen styles for the solo family"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
+ "source_sha256": "c8e9c239a7555bbd006fbf9f2363e8eb7d98861a776122b586dcc16758c34e08",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy",
+   "label": "solo_codegen_plan_discovery_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 10 discovery: the solo spell category.",
+   "semantics_authored_against": "c8e9c239a7555bbd006fbf9f2363e8eb7d98861a776122b586dcc16758c34e08"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
-      "to_label": "CodegenPlanDiscoveryStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
-      "to_label": "CodegenPlanDiscovery",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Optional": "typing.Optional",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "CodegenPlanDiscovery": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery",
-    "CodegenPlanDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
-    "label": "SoloCodegenPlanDiscoveryStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
-      "relation": "specializes",
-      "why": "SoloCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
+   "label": "SoloCodegenPlanDiscoveryStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py",
+   "lineno": 14,
+   "bases": [
+    "CodegenPlanDiscoveryStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "discover",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "b142590fc120e1f9e642bee96286557ef816bb042719ff54e0ddfc4673e18c21",
+   "role": "Phase-10 discovery strategy for the solo spell category.",
+   "responsibilities": [
+    "claims models whose visible spell count is exactly one",
+    "emits the solo planner strategy id and solo planning family",
+    "bounds phase-11 candidate codegen styles for the solo family"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "b142590fc120e1f9e642bee96286557ef816bb042719ff54e0ddfc4673e18c21"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
+   "to_label": "CodegenPlanDiscoveryStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
+   "to_label": "CodegenPlanDiscovery",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Optional": "typing.Optional",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "CodegenPlanDiscovery": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery",
+  "CodegenPlanDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
+  "label": "SoloCodegenPlanDiscoveryStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
+   "relation": "specializes",
+   "why": "SoloCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

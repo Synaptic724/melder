@@ -1,77 +1,90 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py",
-  "source_sha256": "faad942a2f20755dee81138878e65d5a60451beece198e55755ff3152102644e",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy",
-      "label": "callable_profile_hygiene_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py",
-      "lineno": 1,
-      "role": "Spell validation strategy module for callable profile hygiene.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
-      "label": "CallableProfileHygieneStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py",
-      "lineno": 32,
-      "bases": [
-        "SpellValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "validate"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py",
+ "source_sha256": "faad942a2f20755dee81138878e65d5a60451beece198e55755ff3152102644e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy",
+   "label": "callable_profile_hygiene_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 4 check: the binding profile matches the spell's declared kind.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "faad942a2f20755dee81138878e65d5a60451beece198e55755ff3152102644e"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
-      "to_label": "SpellValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
-      "to_label": "SpellValidationIssue",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "annotations": "__future__.annotations",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "CallableBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
-    "ClassBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
-    "InstanceBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
-    "OtherBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "SpellDetailedProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-    "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
-    "label": "CallableProfileHygieneStrategy"
+  "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
+   "label": "CallableProfileHygieneStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py",
+   "lineno": 32,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f5c68a78556718da272949334fe4a8537c2d9fbe8b6660730dd32a9337fd8f25",
+   "include": true,
+   "role": "Checks that a spell's binding profile matches its declared kind - class, callable, or existing creation.",
+   "responsibilities": [
+    "error on MISSING_BINDING_PROFILE, and per kind on NON_CLASS_SPELL_TARGET/CLASS_PROFILE_MISSING, NON_CALLABLE_SPELL_TARGET/CALLABLE_PROFILE_MISSING, and the existing-creation instance/profile mismatches",
+    "read the profile via SpellExaminer's general and detailed profiles; validate only"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "f5c68a78556718da272949334fe4a8537c2d9fbe8b6660730dd32a9337fd8f25"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "annotations": "__future__.annotations",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "CallableBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
+  "ClassBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
+  "InstanceBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
+  "OtherBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellDetailedProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
+  "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
+  "label": "CallableProfileHygieneStrategy"
+ }
 }

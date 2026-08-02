@@ -1,37 +1,40 @@
 """
-Packaged hardcopy runtime object for Melder component documentation.
+Melder's component inventory, queryable in-process.
 
 Purpose:
-    Publish `melder.__components__`, the subsystem inventory an agent reads
-    after the architecture document: what each component owns, what it hands
-    off to, and which are guarded kernel machinery.
+    Publish `melder.__components__` - what each subsystem owns, hands off to,
+    and whether an agent may drive it, captured from
+    `context_compass/system_docs/src_components.md` at build time.
 
 Contract:
-    - Module-level `StaticSystemDocument` instance, built at import from the
-      committed manifest at `_build_assets/_system_documents/`.
-    - `render_markdown()` returns the whole body; `render_json()` the raw
-      hardcopy envelope.
-    - BOUNDED READS are the intended path: `reader(...)`, `head(n)`, `tail(n)`,
-      `lines(start, count)`, plus `line_count` / `char_count` to size a read
-      before committing context to it. `render_markdown()` has no budget and
-      will hand back the entire document in one call.
-    - CURRENT STATE: a structured TEMPLATE, not a populated document. The
-      section skeleton is real; the body is scaffolding. Ask
-      `melder._build_assets._system_documents.system_documents.is_populated(
-      "__components__")` rather than pattern-matching the prose - population is
-      tracked as data precisely so callers do not have to guess.
+    - A `SystemDocumentView`, addressed by SECTION NAME.
+    - A LOOKUP TABLE, not orientation. At 8,171 lines, reading it whole to
+      answer a question about one component costs orders of magnitude more than
+      the answer needs. `index()`, then `get(key)` for the sections your task
+      actually touches.
+    - `find(substring)` matches section keys only, never body text - a body
+      search would mean reading the document, which is the cost this object
+      exists to avoid.
+    - `verify()` re-checks the shipped text against its recorded digest.
+
+Example:
+    >>> import melder
+    >>> view = melder.__components__
+    >>> len(view.index())
+    135
 
 Subsystem Context:
-    One of four package-root document surfaces built on
-    `melder.system_document.StaticSystemDocument`. Read order for an agent is
-    architecture -> components -> graph network -> graph details: this document
-    is the second step of that chain.
+    One of four package-root document surfaces. Read order for an agent is
+    architecture -> components -> graph network -> graph details.
 
 System Context:
     Answers at import time, before the `Aether()` substrate boot, and is
     queryable WITHOUT conjuring a conduit. It participates in no binding,
-    resolution, or cleanup path. Its line index is built on FIRST bounded read,
-    so a process that never queries it pays only for construction.
+    resolution, or cleanup path.
+
+    Construction reads the manifest only. The section table, the document text,
+    and the graph adjacency each load on first use, so a process that never
+    queries this document pays for none of them.
 """
 
 from melder._build_assets._system_documents.system_documents import get

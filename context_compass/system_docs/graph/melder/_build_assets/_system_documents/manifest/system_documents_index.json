@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "source": "src/melder/_build_assets/_system_documents/manifest/system_documents_index.py",
+  "source_sha256": "c81e5f321fbecf3d958b4c19b8c50b69ee944681ad0d68db09dd62bc8bc2826a",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder._build_assets._system_documents.manifest.system_documents_index": {
+      "id": "melder._build_assets._system_documents.manifest.system_documents_index",
+      "label": "system_documents_index",
+      "kind": "module",
+      "file": "src/melder/_build_assets/_system_documents/manifest/system_documents_index.py",
+      "lineno": 1,
+      "role": "GENERATED. THE INDEX - section line ranges transcribed verbatim from each document's *_index.md, keyed by document file. Not recomputed: Context Compass's index is the authority and this is a transcription of it.",
+      "include": true,
+      "semantics_authored_against": "c81e5f321fbecf3d958b4c19b8c50b69ee944681ad0d68db09dd62bc8bc2826a"
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {},
+  "collapse_candidate": null
+}

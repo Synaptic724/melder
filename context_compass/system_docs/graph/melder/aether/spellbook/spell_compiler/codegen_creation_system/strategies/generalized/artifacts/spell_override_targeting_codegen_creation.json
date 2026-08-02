@@ -1,157 +1,183 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
-  "source_sha256": "3a64b72737852825c4a9d1224a4d9b10f8c478abfa139e764ff166230ad4a2b4",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation",
-      "label": "spell_override_targeting_codegen_creation",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation._Specificity": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation._Specificity",
-      "label": "_Specificity",
-      "kind": "enum",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
-      "lineno": 15,
-      "bases": [],
-      "markers": [
-        "IntEnum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      }
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef",
-      "label": "SpellOverrideTargetSocketRef",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
-      "lineno": 31,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      }
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-      "label": "SpellOverrideTargetingCodegenCreation",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
-      "lineno": 47,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "from_analysis"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Compiler-owned override targeting artifact for generalized family runtime use.",
-      "responsibilities": [
-        "replaces the old OverridePatchMap runtime dependency with a compiler-owned targeting surface",
-        "owns targets_by_spec and specificity_by_spec for generalized override routing",
-        "builds deterministic socket-shape rows and override maps for specialization and runtime dispatch"
-      ],
-      "owns_state": [
-        "_root_spell_id",
-        "_targets_by_spec",
-        "_specificity_by_spec",
-        "_resolved_targets_by_raw_key",
-        "_last_single_raw_key",
-        "_last_single_value",
-        "_last_single_override_map",
-        "_last_single_socket_shape",
-        "_last_multi_signature",
-        "_last_multi_override_map",
-        "_last_multi_socket_shape"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
+ "source_sha256": "3a64b72737852825c4a9d1224a4d9b10f8c478abfa139e764ff166230ad4a2b4",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation",
+   "label": "spell_override_targeting_codegen_creation",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The generalized family's override-targeting artifact, its hashable socket row, and the PATH>UNIQUE>BROADCAST ordering.",
+   "semantics_authored_against": "3a64b72737852825c4a9d1224a4d9b10f8c478abfa139e764ff166230ad4a2b4"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-      "to_label": "SpellOverrideTargetSocketRef",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "dataclass": "dataclasses.dataclass",
-    "IntEnum": "enum.IntEnum",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "SpellOverrideTargetRef": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef",
-    "TargetSpec": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec",
-    "TargetSpecKind": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation._Specificity": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation._Specificity",
+   "label": "_Specificity",
+   "kind": "enum",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
+   "lineno": 15,
+   "bases": [],
+   "markers": [
+    "IntEnum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f33d5f650fea418dfc4a6ef4300321921e031353a066001cbecec3e252d8c7a3",
+   "include": true,
+   "role": "The override-target conflict-resolution ordering, preserved from the old Phase 10 patch map: PATH > UNIQUE > BROADCAST.",
+   "responsibilities": [
+    "rank override target matches so the more specific match wins"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "f33d5f650fea418dfc4a6ef4300321921e031353a066001cbecec3e252d8c7a3"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
-      "relation": "uses",
-      "why": "SpellOverrideTargetingCodegenCreation is built from the processor-owned SpellOverrideTargetingAnalysis section.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "SpellOverrideTargetingCodegenCreation inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef",
+   "label": "SpellOverrideTargetSocketRef",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
+   "lineno": 31,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "7a906212a0d92723f5feb7023079f82f5ea6defe695ce42d68802f52bf11beae",
+   "include": true,
+   "role": "The compiler-owned, hashable replacement for a runtime SocketRef in the generalized creation family.",
+   "responsibilities": [
+    "expose the socket identity data the override runtime needs, without the runtime object",
+    "stay hashable so it can key the override maps"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "7a906212a0d92723f5feb7023079f82f5ea6defe695ce42d68802f52bf11beae"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "label": "SpellOverrideTargetingCodegenCreation",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py",
+   "lineno": 47,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "from_analysis"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f9bd6ea889a3496e86f13e16bd0f8fdec3ad4a9421d0e467d4ad8a68bf433574",
+   "role": "Compiler-owned override targeting artifact for generalized family runtime use.",
+   "responsibilities": [
+    "replaces the old OverridePatchMap runtime dependency with a compiler-owned targeting surface",
+    "owns targets_by_spec and specificity_by_spec for generalized override routing",
+    "builds deterministic socket-shape rows and override maps for specialization and runtime dispatch"
+   ],
+   "owns_state": [
+    "_root_spell_id",
+    "_targets_by_spec",
+    "_specificity_by_spec",
+    "_resolved_targets_by_raw_key",
+    "_last_single_raw_key",
+    "_last_single_value",
+    "_last_single_override_map",
+    "_last_single_socket_shape",
+    "_last_multi_signature",
+    "_last_multi_override_map",
+    "_last_multi_socket_shape"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "f9bd6ea889a3496e86f13e16bd0f8fdec3ad4a9421d0e467d4ad8a68bf433574"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "to_label": "SpellOverrideTargetSocketRef",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "dataclass": "dataclasses.dataclass",
+  "IntEnum": "enum.IntEnum",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "SpellOverrideTargetRef": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef",
+  "TargetSpec": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec",
+  "TargetSpecKind": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
+   "relation": "uses",
+   "why": "SpellOverrideTargetingCodegenCreation is built from the processor-owned SpellOverrideTargetingAnalysis section.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "SpellOverrideTargetingCodegenCreation inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

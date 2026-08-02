@@ -1,124 +1,145 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
-  "source_sha256": "a37c7a07159ab6932f8aec86c95c7cbbf0f3dc97930ab4271f8fef4d463bb5d8",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.conduit.spell_space.spell_space_thread_state": {
-      "id": "melder.aether.conduit.spell_space.spell_space_thread_state",
-      "label": "spell_space_thread_state",
-      "kind": "module",
-      "file": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
-      "lineno": 1
-    },
-    "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal": {
-      "id": "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal",
-      "label": "_SpellSpaceLocal",
-      "kind": "class",
-      "file": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
-      "lineno": 10,
-      "bases": [
-        "local"
-      ],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      }
-    },
-    "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState": {
-      "id": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
-      "label": "SpellSpaceThreadState",
-      "kind": "class",
-      "file": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
-      "lineno": 65,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "clear_current_thread",
-        "drain",
-        "get",
-        "get_active",
-        "pop",
-        "pop_expected",
-        "push",
-        "set"
-      ],
-      "shape": {
-        "method_count": 9,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Per-thread active spellspace stack holder for one conduit.",
-      "responsibilities": [
-        "stores one independent active spellspace stack per thread",
-        "supports push/pop and top-of-stack validation for managed spellspace exit",
-        "drains or clears the current thread stack during cleanup and teardown"
-      ],
-      "owns_state": [
-        "_local"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
+ "source_sha256": "a37c7a07159ab6932f8aec86c95c7cbbf0f3dc97930ab4271f8fef4d463bb5d8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.spell_space.spell_space_thread_state": {
+   "id": "melder.aether.conduit.spell_space.spell_space_thread_state",
+   "label": "spell_space_thread_state",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Per-thread active spellspace stack for one conduit.",
+   "responsibilities": [
+    "give each thread its own stack without cross-thread coupling"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "a37c7a07159ab6932f8aec86c95c7cbbf0f3dc97930ab4271f8fef4d463bb5d8"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal",
-      "to_label": "local",
-      "relation": "specializes"
-    },
-    {
-      "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
-      "to_label": "SpellSpaceScopeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
+  "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal": {
+   "id": "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal",
+   "label": "_SpellSpaceLocal",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
+   "lineno": 10,
+   "bases": [
+    "local"
+   ],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "8e9c6e9b9443b2cee04ee2cd2a540eb9fd110868dcea3181fce507a703508ef7",
+   "include": true,
+   "role": "Per-thread storage backing the spellspace stack.",
+   "responsibilities": [
+    "hold one thread's spellspace stack"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "8e9c6e9b9443b2cee04ee2cd2a540eb9fd110868dcea3181fce507a703508ef7"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "SpellSpaceThreadState inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState": {
+   "id": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
+   "label": "SpellSpaceThreadState",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
+   "lineno": 65,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "clear_current_thread",
+    "drain",
+    "get",
+    "get_active",
+    "pop",
+    "pop_expected",
+    "push",
+    "set"
+   ],
+   "shape": {
+    "method_count": 9,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "33de719ee4df04979a75a31255de7e2dc66c3bd3b41a847c69b16f5e6b1f6c2a",
+   "role": "Per-thread active spellspace stack holder for one conduit.",
+   "responsibilities": [
+    "stores one independent active spellspace stack per thread",
+    "supports push/pop and top-of-stack validation for managed spellspace exit",
+    "drains or clears the current thread stack during cleanup and teardown"
+   ],
+   "owns_state": [
+    "_local"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "33de719ee4df04979a75a31255de7e2dc66c3bd3b41a847c69b16f5e6b1f6c2a"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal",
+   "to_label": "local",
+   "relation": "specializes"
+  },
+  {
+   "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
+   "to_label": "SpellSpaceScopeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "SpellSpaceThreadState inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

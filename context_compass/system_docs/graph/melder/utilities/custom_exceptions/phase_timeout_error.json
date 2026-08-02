@@ -1,57 +1,69 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/custom_exceptions/phase_timeout_error.py",
-  "source_sha256": "f5e26038177fe5de7e6540bf692c7b55a066707cebe9c1d826b677717e5cf5d9",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.custom_exceptions.phase_timeout_error": {
-      "id": "melder.utilities.custom_exceptions.phase_timeout_error",
-      "label": "phase_timeout_error",
-      "kind": "module",
-      "file": "src/melder/utilities/custom_exceptions/phase_timeout_error.py",
-      "lineno": 1
-    },
-    "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError": {
-      "id": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
-      "label": "PhaseTimeoutError",
-      "kind": "class",
-      "file": "src/melder/utilities/custom_exceptions/phase_timeout_error.py",
-      "lineno": 5,
-      "bases": [
-        "PhaseSchedulerError"
-      ],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Exception raised when a scheduler phase times out.",
-      "responsibilities": [
-        "specializes PhaseSchedulerError for barrier timeout failures"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/phase_timeout_error.py",
+ "source_sha256": "f5e26038177fe5de7e6540bf692c7b55a066707cebe9c1d826b677717e5cf5d9",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.phase_timeout_error": {
+   "id": "melder.utilities.custom_exceptions.phase_timeout_error",
+   "label": "phase_timeout_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/phase_timeout_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Raised when a phase's units do not all report before the configured barrier deadline.",
+   "responsibilities": [
+    "distinguish a stalled phase from a failed one"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "f5e26038177fe5de7e6540bf692c7b55a066707cebe9c1d826b677717e5cf5d9"
   },
-  "edges_out": [
-    {
-      "from": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
-      "to_label": "PhaseSchedulerError",
-      "relation": "specializes",
-      "to": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError"
-    }
-  ],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "PhaseSchedulerError": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError"
-  },
-  "collapse_candidate": {
-    "module": "melder.utilities.custom_exceptions.phase_timeout_error",
-    "class": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
-    "label": "PhaseTimeoutError"
+  "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError": {
+   "id": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
+   "label": "PhaseTimeoutError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/phase_timeout_error.py",
+   "lineno": 5,
+   "bases": [
+    "PhaseSchedulerError"
+   ],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "6d0464d0b135b8e8a8e0e30fb304c93001ba43334a3e951af4219acf06034556",
+   "role": "Exception raised when a scheduler phase times out.",
+   "responsibilities": [
+    "specializes PhaseSchedulerError for barrier timeout failures"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "6d0464d0b135b8e8a8e0e30fb304c93001ba43334a3e951af4219acf06034556"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
+   "to_label": "PhaseSchedulerError",
+   "relation": "specializes",
+   "to": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "PhaseSchedulerError": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.phase_timeout_error",
+  "class": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
+  "label": "PhaseTimeoutError"
+ }
 }

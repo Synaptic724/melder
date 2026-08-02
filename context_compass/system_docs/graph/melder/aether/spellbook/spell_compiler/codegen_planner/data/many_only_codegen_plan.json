@@ -1,472 +1,487 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-  "source_sha256": "49da147873a88833035b73474f79d90f93d855bb4d4c9bf7e6c7b32063ac4b29",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan",
-      "label": "many_only_codegen_plan",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant",
-      "label": "ManyOnlyCodegenPlanVariant",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-      "lineno": 22,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      },
-      "role": "Variant labels for many-only planner lanes.",
-      "responsibilities": [
-        "labels the many-only no-overrides and overrides planner lanes",
-        "keeps many-only planner variant identity separate from generalized variant names"
-      ],
-      "owns_state": [
-        "NO_OVERRIDES",
-        "OVERRIDES"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode",
-      "label": "ManyOnlyCodegenPlanCallMode",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-      "lineno": 36,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      },
-      "role": "Fixed-arity call-mode enum for many-only planner output.",
-      "responsibilities": [
-        "labels CALL0 through CALL8 and CALLN for many-only no-overrides execution",
-        "keeps many-only call-mode naming local to the planner and runtime family"
-      ],
-      "owns_state": [
-        "CALL0",
-        "CALL1",
-        "CALL2",
-        "CALL3",
-        "CALL4",
-        "CALL5",
-        "CALL6",
-        "CALL7",
-        "CALL8",
-        "CALLN"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
-      "label": "ManyOnlyCodegenPlanStep",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-      "lineno": 58,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "collection_param_names",
-        "contract_payload",
-        "contract_positional_override",
-        "creations_target_kind",
-        "dependency_resolution_order",
-        "has_contract_payload",
-        "instance_key",
-        "occurrence",
-        "override_match_prefix",
-        "override_match_prefix_len",
-        "shared_instance",
-        "spell",
-        "uses_positional_override"
-      ],
-      "shape": {
-        "method_count": 13,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Reusable planner step object for one many-only execution occurrence.",
-      "responsibilities": [
-        "stores spell-static instance and occurrence identity for one many-only step",
-        "stores dependency resolution order and contract payload facts for emitted execution",
-        "stores override-match prefix metadata for many-only overrides planning"
-      ],
-      "owns_state": [
-        "_instance_key",
-        "_occurrence",
-        "_spell",
-        "_shared_instance",
-        "_dependency_resolution_order",
-        "_uses_positional_override",
-        "_contract_positional_override",
-        "_has_contract_payload",
-        "_contract_payload",
-        "_override_match_prefix",
-        "_override_match_prefix_len"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
-      "label": "ManyOnlyNoOverridesPlan",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-      "lineno": 232,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "has_any_disposal_methods",
-        "lane_id",
-        "metadata",
-        "root_instance_key",
-        "root_spell_id",
-        "root_step_index",
-        "step_call_modes",
-        "step_call_targets",
-        "step_dep1",
-        "step_dep2a",
-        "step_dep2b",
-        "step_dep3a",
-        "step_dep3b",
-        "step_dep3c",
-        "step_dep4a",
-        "step_dep4b",
-        "step_dep4c",
-        "step_dep4d",
-        "step_dep5a",
-        "step_dep5b",
-        "step_dep5c",
-        "step_dep5d",
-        "step_dep5e",
-        "step_dep6a",
-        "step_dep6b",
-        "step_dep6c",
-        "step_dep6d",
-        "step_dep6e",
-        "step_dep6f",
-        "step_dep7a",
-        "step_dep7b",
-        "step_dep7c",
-        "step_dep7d",
-        "step_dep7e",
-        "step_dep7f",
-        "step_dep7g",
-        "step_dep8a",
-        "step_dep8b",
-        "step_dep8c",
-        "step_dep8d",
-        "step_dep8e",
-        "step_dep8f",
-        "step_dep8g",
-        "step_dep8h",
-        "step_disposal_methods",
-        "step_has_disposal_methods",
-        "step_spell_ids",
-        "steps"
-      ],
-      "shape": {
-        "method_count": 49,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Planner-owned no-overrides payload for the many-only family.",
-      "responsibilities": [
-        "stores ordered many-only steps plus root-step and fixed-arity dependency arrays",
-        "stores step spell and disposal metadata for no-overrides executor compilation",
-        "owns cleanup of the many-only no-overrides planner payload"
-      ],
-      "owns_state": [
-        "_lane_id",
-        "_root_spell_id",
-        "_root_instance_key",
-        "_steps",
-        "_root_step_index",
-        "_step_call_targets",
-        "_step_call_modes",
-        "_metadata"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
-      "label": "ManyOnlyOverridesPlan",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-      "lineno": 781,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "lane_id",
-        "metadata",
-        "root_instance_key",
-        "root_spell_id",
-        "steps"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Planner-owned overrides payload for the many-only family.",
-      "responsibilities": [
-        "stores the ordered many-only override steps for one root spell",
-        "keeps the many-only overrides lane separate from generalized plan payloads",
-        "owns cleanup of the many-only overrides planner payload"
-      ],
-      "owns_state": [
-        "_lane_id",
-        "_root_spell_id",
-        "_root_instance_key",
-        "_steps",
-        "_metadata"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "label": "ManyOnlyCodegenPlanBuilder",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-      "lineno": 879,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build"
-      ],
-      "shape": {
-        "method_count": 7,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Standalone builder for many-only planner payloads from SpellCodegenModel.",
-      "responsibilities": [
-        "builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections",
-        "derives fixed-arity call-mode arrays and root-step metadata for the no-overrides lane",
-        "returns the many-only no-overrides or overrides plan payload selected by variant"
-      ],
-      "owns_state": [
-        "_state",
-        "_plan_variant"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+ "source_sha256": "49da147873a88833035b73474f79d90f93d855bb4d4c9bf7e6c7b32063ac4b29",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan",
+   "label": "many_only_codegen_plan",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The many-only planner vocabulary and its reusable per-occurrence step object.",
+   "semantics_authored_against": "49da147873a88833035b73474f79d90f93d855bb4d4c9bf7e6c7b32063ac4b29"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to_label": "ManyOnlyNoOverridesPlan",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to_label": "ManyOnlyOverridesPlan",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to_label": "ManyOnlyCodegenPlanStep",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Sequence": "typing.Sequence",
-    "Tuple": "typing.Tuple",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "SpellInjectionInstanceSpec": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec",
-    "SpellRuntimeRecord": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel"
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant",
+   "label": "ManyOnlyCodegenPlanVariant",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+   "lineno": 22,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "333da8e81800125b8bd87396613d3fa55023602a8d690c85a46723ddf4073e31",
+   "role": "Variant labels for many-only planner lanes.",
+   "responsibilities": [
+    "labels the many-only no-overrides and overrides planner lanes",
+    "keeps many-only planner variant identity separate from generalized variant names"
+   ],
+   "owns_state": [
+    "NO_OVERRIDES",
+    "OVERRIDES"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "333da8e81800125b8bd87396613d3fa55023602a8d690c85a46723ddf4073e31"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to": "melder.aether.spellbook.existence.existence.Existence",
-      "relation": "uses",
-      "why": "ManyOnlyCodegenPlanBuilder enforces Existence.many-only preconditions while building the many-only planner lanes.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-      "relation": "borrows",
-      "why": "ManyOnlyCodegenPlanBuilder reads SpellCodegenModel as the fitted compiler truth for many-only planner output.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode",
-      "relation": "uses",
-      "why": "ManyOnlyCodegenPlanBuilder derives fixed-arity many-only call modes for the no-overrides planner payload.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
-      "relation": "creates",
-      "why": "ManyOnlyCodegenPlanBuilder creates ManyOnlyCodegenPlanStep objects while walking the ordered visible spell set.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant",
-      "relation": "uses",
-      "why": "ManyOnlyCodegenPlanBuilder selects between no-overrides and overrides payload construction through ManyOnlyCodegenPlanVariant.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
-      "relation": "creates",
-      "why": "ManyOnlyCodegenPlanBuilder creates ManyOnlyNoOverridesPlan as the planner-owned no-overrides payload for the many-only family.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
-      "relation": "creates",
-      "why": "ManyOnlyCodegenPlanBuilder creates ManyOnlyOverridesPlan as the planner-owned overrides payload for the many-only family.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
-      "relation": "owns_lifecycle_of",
-      "why": "ManyOnlyNoOverridesPlan owns the ordered ManyOnlyCodegenPlanStep rows that back the many-only no-overrides lane.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "ManyOnlyNoOverridesPlan inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
-      "relation": "owns_lifecycle_of",
-      "why": "ManyOnlyOverridesPlan owns the ordered ManyOnlyCodegenPlanStep rows that back the many-only overrides lane.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "ManyOnlyOverridesPlan inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode",
+   "label": "ManyOnlyCodegenPlanCallMode",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+   "lineno": 36,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "2b56c3cff97a844972c8bea076b23abecc39f100590cab225a0ccced7b85a71b",
+   "role": "Fixed-arity call-mode enum for many-only planner output.",
+   "responsibilities": [
+    "labels CALL0 through CALL8 and CALLN for many-only no-overrides execution",
+    "keeps many-only call-mode naming local to the planner and runtime family"
+   ],
+   "owns_state": [
+    "CALL0",
+    "CALL1",
+    "CALL2",
+    "CALL3",
+    "CALL4",
+    "CALL5",
+    "CALL6",
+    "CALL7",
+    "CALL8",
+    "CALLN"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "2b56c3cff97a844972c8bea076b23abecc39f100590cab225a0ccced7b85a71b"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
+   "label": "ManyOnlyCodegenPlanStep",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+   "lineno": 58,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "collection_param_names",
+    "contract_payload",
+    "contract_positional_override",
+    "creations_target_kind",
+    "dependency_resolution_order",
+    "has_contract_payload",
+    "instance_key",
+    "occurrence",
+    "override_match_prefix",
+    "override_match_prefix_len",
+    "shared_instance",
+    "spell",
+    "uses_positional_override"
+   ],
+   "shape": {
+    "method_count": 13,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "2171587a1fa060b2ddedc4b253b93f97c46fab74f23517b86cc4850054b81299",
+   "role": "Reusable planner step object for one many-only execution occurrence.",
+   "responsibilities": [
+    "stores spell-static instance and occurrence identity for one many-only step",
+    "stores dependency resolution order and contract payload facts for emitted execution",
+    "stores override-match prefix metadata for many-only overrides planning"
+   ],
+   "owns_state": [
+    "_instance_key",
+    "_occurrence",
+    "_spell",
+    "_shared_instance",
+    "_dependency_resolution_order",
+    "_uses_positional_override",
+    "_contract_positional_override",
+    "_has_contract_payload",
+    "_contract_payload",
+    "_override_match_prefix",
+    "_override_match_prefix_len"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "2171587a1fa060b2ddedc4b253b93f97c46fab74f23517b86cc4850054b81299"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
+   "label": "ManyOnlyNoOverridesPlan",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+   "lineno": 232,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "has_any_disposal_methods",
+    "lane_id",
+    "metadata",
+    "root_instance_key",
+    "root_spell_id",
+    "root_step_index",
+    "step_call_modes",
+    "step_call_targets",
+    "step_dep1",
+    "step_dep2a",
+    "step_dep2b",
+    "step_dep3a",
+    "step_dep3b",
+    "step_dep3c",
+    "step_dep4a",
+    "step_dep4b",
+    "step_dep4c",
+    "step_dep4d",
+    "step_dep5a",
+    "step_dep5b",
+    "step_dep5c",
+    "step_dep5d",
+    "step_dep5e",
+    "step_dep6a",
+    "step_dep6b",
+    "step_dep6c",
+    "step_dep6d",
+    "step_dep6e",
+    "step_dep6f",
+    "step_dep7a",
+    "step_dep7b",
+    "step_dep7c",
+    "step_dep7d",
+    "step_dep7e",
+    "step_dep7f",
+    "step_dep7g",
+    "step_dep8a",
+    "step_dep8b",
+    "step_dep8c",
+    "step_dep8d",
+    "step_dep8e",
+    "step_dep8f",
+    "step_dep8g",
+    "step_dep8h",
+    "step_disposal_methods",
+    "step_has_disposal_methods",
+    "step_spell_ids",
+    "steps"
+   ],
+   "shape": {
+    "method_count": 49,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "b017ff5961d2e226f64b03bd143a626d7508f56fdf35127ff95b7395cc5ff30e",
+   "role": "Planner-owned no-overrides payload for the many-only family.",
+   "responsibilities": [
+    "stores ordered many-only steps plus root-step and fixed-arity dependency arrays",
+    "stores step spell and disposal metadata for no-overrides executor compilation",
+    "owns cleanup of the many-only no-overrides planner payload"
+   ],
+   "owns_state": [
+    "_lane_id",
+    "_root_spell_id",
+    "_root_instance_key",
+    "_steps",
+    "_root_step_index",
+    "_step_call_targets",
+    "_step_call_modes",
+    "_metadata"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "b017ff5961d2e226f64b03bd143a626d7508f56fdf35127ff95b7395cc5ff30e"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
+   "label": "ManyOnlyOverridesPlan",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+   "lineno": 781,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "lane_id",
+    "metadata",
+    "root_instance_key",
+    "root_spell_id",
+    "steps"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "7c0bd696d43193b8bbc430d9f0a1c6a32f05b211063ce8be5c930725aef656b7",
+   "role": "Planner-owned overrides payload for the many-only family.",
+   "responsibilities": [
+    "stores the ordered many-only override steps for one root spell",
+    "keeps the many-only overrides lane separate from generalized plan payloads",
+    "owns cleanup of the many-only overrides planner payload"
+   ],
+   "owns_state": [
+    "_lane_id",
+    "_root_spell_id",
+    "_root_instance_key",
+    "_steps",
+    "_metadata"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "7c0bd696d43193b8bbc430d9f0a1c6a32f05b211063ce8be5c930725aef656b7"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "label": "ManyOnlyCodegenPlanBuilder",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
+   "lineno": 879,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "4b67448637de42ed96b67772317bedd261c75f81bf47a26a61474c2b97b46dfd",
+   "role": "Standalone builder for many-only planner payloads from SpellCodegenModel.",
+   "responsibilities": [
+    "builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections",
+    "derives fixed-arity call-mode arrays and root-step metadata for the no-overrides lane",
+    "returns the many-only no-overrides or overrides plan payload selected by variant"
+   ],
+   "owns_state": [
+    "_state",
+    "_plan_variant"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "4b67448637de42ed96b67772317bedd261c75f81bf47a26a61474c2b97b46dfd"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to_label": "ManyOnlyNoOverridesPlan",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to_label": "ManyOnlyOverridesPlan",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to_label": "ManyOnlyCodegenPlanStep",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellInjectionInstanceSpec": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec",
+  "SpellRuntimeRecord": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to": "melder.aether.spellbook.existence.existence.Existence",
+   "relation": "uses",
+   "why": "ManyOnlyCodegenPlanBuilder enforces Existence.many-only preconditions while building the many-only planner lanes.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+   "relation": "borrows",
+   "why": "ManyOnlyCodegenPlanBuilder reads SpellCodegenModel as the fitted compiler truth for many-only planner output.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode",
+   "relation": "uses",
+   "why": "ManyOnlyCodegenPlanBuilder derives fixed-arity many-only call modes for the no-overrides planner payload.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
+   "relation": "creates",
+   "why": "ManyOnlyCodegenPlanBuilder creates ManyOnlyCodegenPlanStep objects while walking the ordered visible spell set.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant",
+   "relation": "uses",
+   "why": "ManyOnlyCodegenPlanBuilder selects between no-overrides and overrides payload construction through ManyOnlyCodegenPlanVariant.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
+   "relation": "creates",
+   "why": "ManyOnlyCodegenPlanBuilder creates ManyOnlyNoOverridesPlan as the planner-owned no-overrides payload for the many-only family.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
+   "relation": "creates",
+   "why": "ManyOnlyCodegenPlanBuilder creates ManyOnlyOverridesPlan as the planner-owned overrides payload for the many-only family.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
+   "relation": "owns_lifecycle_of",
+   "why": "ManyOnlyNoOverridesPlan owns the ordered ManyOnlyCodegenPlanStep rows that back the many-only no-overrides lane.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "ManyOnlyNoOverridesPlan inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
+   "relation": "owns_lifecycle_of",
+   "why": "ManyOnlyOverridesPlan owns the ordered ManyOnlyCodegenPlanStep rows that back the many-only overrides lane.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "ManyOnlyOverridesPlan inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

@@ -1,339 +1,344 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell.py",
-  "source_sha256": "39fc7499d14a1520b24f4321222cf0e1e39625ef2e7fd54cb83c3552ab5c43c9",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell": {
-      "id": "melder.aether.spellbook.spell",
-      "label": "spell",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell.Spell": {
-      "id": "melder.aether.spellbook.spell.Spell",
-      "label": "Spell",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell.py",
-      "lineno": 60,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "apply_mutation_override",
-        "cleanup",
-        "clear_mutation_override",
-        "emit_cache",
-        "emit_cache_file",
-        "has_existing_object",
-        "has_mutation_override",
-        "invalidate_spell",
-        "is_broken",
-        "is_class_spell",
-        "is_existing_creation",
-        "is_lambda_spell",
-        "is_method_spell",
-        "key",
-        "mutation_override",
-        "owner_conduit_info",
-        "requirements",
-        "resolution_frame",
-        "symbolic_graph",
-        "system_state",
-        "validated",
-        "validation_result_phase4",
-        "validation_result_phase6"
-      ],
-      "shape": {
-        "method_count": 31,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Canonical bound spell runtime record.",
-      "responsibilities": [
-        "wraps one bound target with lineage, lifecycle, and permission policy",
-        "owns spell-local hooks, build artifacts, and execution-plan metadata",
-        "lazily owns the SpellCompiler and spell-owned creation-context machinery",
-        "records conduit ownership changes and publishes structural changes into SpellSystemStates"
-      ],
-      "owns_state": [
-        "_compiler_artifact",
-        "_creation_context",
-        "_creation_context_factory",
-        "_creation_context_switch",
-        "_spellbook",
-        "_spell_system_states",
-        "dependency_graph",
-        "dependencies"
-      ],
-      "phases": [
-        "init",
-        "validation",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell.py",
+ "source_sha256": "39fc7499d14a1520b24f4321222cf0e1e39625ef2e7fd54cb83c3552ab5c43c9",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell": {
+   "id": "melder.aether.spellbook.spell",
+   "label": "spell",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The canonical bound-spell runtime record.",
+   "semantics_authored_against": "39fc7499d14a1520b24f4321222cf0e1e39625ef2e7fd54cb83c3552ab5c43c9"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "SpellCompilerArtifact",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "CounterSwitch",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "CreationContextFactory",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Optional": "typing.Optional",
-    "List": "typing.List",
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "Sequence": "typing.Sequence",
-    "ClassVar": "typing.ClassVar",
-    "Union": "typing.Union",
-    "FrozenSet": "typing.FrozenSet",
-    "RLock": "threading.RLock",
-    "TracebackType": "types.TracebackType",
-    "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-    "CreationContextFactory": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-    "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
-    "CounterSwitch": "melder.utilities.synchronization.counter_switch.CounterSwitch",
-    "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-    "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-    "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
-    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-    "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
-    "SpellSystemState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
-    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
-    "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-    "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
-    "SpellSystemValidationState": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
-    "SpellValidationResult": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult"
+  "melder.aether.spellbook.spell.Spell": {
+   "id": "melder.aether.spellbook.spell.Spell",
+   "label": "Spell",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell.py",
+   "lineno": 60,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "apply_mutation_override",
+    "cleanup",
+    "clear_mutation_override",
+    "emit_cache",
+    "emit_cache_file",
+    "has_existing_object",
+    "has_mutation_override",
+    "invalidate_spell",
+    "is_broken",
+    "is_class_spell",
+    "is_existing_creation",
+    "is_lambda_spell",
+    "is_method_spell",
+    "key",
+    "mutation_override",
+    "owner_conduit_info",
+    "requirements",
+    "resolution_frame",
+    "symbolic_graph",
+    "system_state",
+    "validated",
+    "validation_result_phase4",
+    "validation_result_phase6"
+   ],
+   "shape": {
+    "method_count": 31,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "4f5a70519d6951131b29bb2611a82601d50aea45335c8da3a0dbeb027f2d30fd",
+   "role": "Canonical bound spell runtime record.",
+   "responsibilities": [
+    "wraps one bound target with lineage, lifecycle, and permission policy",
+    "owns spell-local hooks, build artifacts, and execution-plan metadata",
+    "lazily owns the SpellCompiler and spell-owned creation-context machinery",
+    "records conduit ownership changes and publishes structural changes into SpellSystemStates"
+   ],
+   "owns_state": [
+    "_compiler_artifact",
+    "_creation_context",
+    "_creation_context_factory",
+    "_creation_context_switch",
+    "_spellbook",
+    "_spell_system_states",
+    "dependency_graph",
+    "dependencies"
+   ],
+   "phases": [
+    "init",
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "4f5a70519d6951131b29bb2611a82601d50aea45335c8da3a0dbeb027f2d30fd"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell",
-    "class": "melder.aether.spellbook.spell.Spell",
-    "label": "Spell"
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "SpellCompilerArtifact",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-      "relation": "borrows",
-      "why": "Spell holds the frame-level SpellSystemStates service to mark structural changes and inspect lineage state.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.conduit.conduit.Conduit",
-      "relation": "holds",
-      "why": "Spell records owner-conduit identity and scoped creations when the spell is stamped into a live runtime conduit.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-      "relation": "uses",
-      "why": "Spell stores Permissions as the local capability policy later enforced during conduit contracting.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-      "relation": "owns_lifecycle_of",
-      "why": "Spell invalidates and rebuilds its spell-owned CreationContext when build details or conduit ownership change.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-      "relation": "owns_lifecycle_of",
-      "why": "Spell owns the CreationContextFactory used to build and bind its spell-owned runtime context.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-      "relation": "holds",
-      "why": "Each Spell carries one SpellIndex lineage object as its stable identity and mutable current-version pointer.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.spellbook.existence.existence.Existence",
-      "relation": "uses",
-      "why": "Spell stores Existence as the lifecycle policy for runtime creation and sharing.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler",
-      "relation": "owns_lifecycle_of",
-      "why": "Spell lazily creates and owns one SpellCompiler to hold its phase artifacts and later plan caches.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "relation": "owns_lifecycle_of",
-      "why": "Spell owns SpellCompilerArtifact as its spell-scoped mutable compiler artifact container.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "validation",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.spellbook.spell_types.spell_types.SpellType",
-      "relation": "uses",
-      "why": "Spell stores SpellType as its canonical runtime binding-family classification.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.aether.spellbook.spellbook.Spellbook",
-      "relation": "borrows",
-      "why": "Spell stores a back-reference to its owning Spellbook for coordination and publication but does not own the Spellbook lifecycle.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "init",
-        "validation",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.utilities.helpers.ulid_factory",
-      "relation": "uses",
-      "why": "Spell uses the internal ulid_factory module when minting its internal runtime identifier.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.utilities.synchronization.counter_switch.CounterSwitch",
-      "relation": "owns_lifecycle_of",
-      "why": "Spell owns the CounterSwitch used to coordinate one-leader publication of its creation context.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell.Spell",
-      "to": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
-      "relation": "borrows",
-      "why": "Spell borrows the frame-owned CreationGateController when configuring its creation-context factory for a conduit owner.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "CounterSwitch",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "CreationContextFactory",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "List": "typing.List",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Sequence": "typing.Sequence",
+  "ClassVar": "typing.ClassVar",
+  "Union": "typing.Union",
+  "FrozenSet": "typing.FrozenSet",
+  "RLock": "threading.RLock",
+  "TracebackType": "types.TracebackType",
+  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+  "CreationContextFactory": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
+  "CounterSwitch": "melder.utilities.synchronization.counter_switch.CounterSwitch",
+  "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+  "SpellSystemState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+  "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
+  "SpellSystemValidationState": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
+  "SpellValidationResult": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell",
+  "class": "melder.aether.spellbook.spell.Spell",
+  "label": "Spell"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   "relation": "borrows",
+   "why": "Spell holds the frame-level SpellSystemStates service to mark structural changes and inspect lineage state.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.conduit.conduit.Conduit",
+   "relation": "holds",
+   "why": "Spell records owner-conduit identity and scoped creations when the spell is stamped into a live runtime conduit.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+   "relation": "uses",
+   "why": "Spell stores Permissions as the local capability policy later enforced during conduit contracting.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+   "relation": "owns_lifecycle_of",
+   "why": "Spell invalidates and rebuilds its spell-owned CreationContext when build details or conduit ownership change.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+   "relation": "owns_lifecycle_of",
+   "why": "Spell owns the CreationContextFactory used to build and bind its spell-owned runtime context.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+   "relation": "holds",
+   "why": "Each Spell carries one SpellIndex lineage object as its stable identity and mutable current-version pointer.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.spellbook.existence.existence.Existence",
+   "relation": "uses",
+   "why": "Spell stores Existence as the lifecycle policy for runtime creation and sharing.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler",
+   "relation": "owns_lifecycle_of",
+   "why": "Spell lazily creates and owns one SpellCompiler to hold its phase artifacts and later plan caches.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "relation": "owns_lifecycle_of",
+   "why": "Spell owns SpellCompilerArtifact as its spell-scoped mutable compiler artifact container.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.spellbook.spell_types.spell_types.SpellType",
+   "relation": "uses",
+   "why": "Spell stores SpellType as its canonical runtime binding-family classification.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.aether.spellbook.spellbook.Spellbook",
+   "relation": "borrows",
+   "why": "Spell stores a back-reference to its owning Spellbook for coordination and publication but does not own the Spellbook lifecycle.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "validation",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.utilities.helpers.ulid_factory",
+   "relation": "uses",
+   "why": "Spell uses the internal ulid_factory module when minting its internal runtime identifier.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.utilities.synchronization.counter_switch.CounterSwitch",
+   "relation": "owns_lifecycle_of",
+   "why": "Spell owns the CounterSwitch used to coordinate one-leader publication of its creation context.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell.Spell",
+   "to": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
+   "relation": "borrows",
+   "why": "Spell borrows the frame-owned CreationGateController when configuring its creation-context factory for a conduit owner.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

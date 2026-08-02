@@ -1,163 +1,168 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/builder/frame_acl_command_builder.py",
-  "source_sha256": "2924b984fea3233858254f166f20f8fdae0001c0913e6eb762efaa3e04ac041a",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.builder.frame_acl_command_builder": {
-      "id": "melder.nexus.acl.builder.frame_acl_command_builder",
-      "label": "frame_acl_command_builder",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/builder/frame_acl_command_builder.py",
-      "lineno": 1
-    },
-    "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder": {
-      "id": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "label": "FrameACLCommandBuilder",
-      "kind": "class",
-      "file": "src/melder/nexus/acl/builder/frame_acl_command_builder.py",
-      "lineno": 16,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "allow_conduit_enable",
-        "allow_frame_enable",
-        "allow_member_dunder_access",
-        "allow_member_invoke_method",
-        "allow_member_read_attribute",
-        "allow_member_write_attribute",
-        "allow_spell_enable",
-        "cleanup",
-        "commit_change",
-        "deny_conduit_enable",
-        "deny_frame_enable",
-        "deny_member_dunder_access",
-        "deny_member_invoke_method",
-        "deny_member_read_attribute",
-        "deny_member_write_attribute",
-        "deny_spell_enable",
-        "discard_change",
-        "draft_configuration",
-        "id",
-        "remove_member_rule",
-        "set_conduit_operation",
-        "set_frame_operation",
-        "set_member_operation",
-        "set_spell_operation",
-        "use_precision_profile",
-        "use_profile"
-      ],
-      "shape": {
-        "method_count": 28,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Fluent authoring surface for one active command-family ACL draft.",
-      "responsibilities": [
-        "borrows one active command draft from the generic ACL builder",
-        "mutates the borrowed typed command configuration in place through fluent rule helpers",
-        "commits or discards the active command draft through the generic builder"
-      ],
-      "owns_state": [
-        "_id",
-        "_frame_acl_builder"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/builder/frame_acl_command_builder.py",
+ "source_sha256": "2924b984fea3233858254f166f20f8fdae0001c0913e6eb762efaa3e04ac041a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.builder.frame_acl_command_builder": {
+   "id": "melder.nexus.acl.builder.frame_acl_command_builder",
+   "label": "frame_acl_command_builder",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/builder/frame_acl_command_builder.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Fluent authoring surface for one active command-family ACL draft.",
+   "semantics_authored_against": "2924b984fea3233858254f166f20f8fdae0001c0913e6eb762efaa3e04ac041a"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to_label": "FrameACLRule",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "FrameACLRule": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-    "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-    "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-    "FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-    "_FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder"
+  "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder": {
+   "id": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "label": "FrameACLCommandBuilder",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/builder/frame_acl_command_builder.py",
+   "lineno": 16,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "allow_conduit_enable",
+    "allow_frame_enable",
+    "allow_member_dunder_access",
+    "allow_member_invoke_method",
+    "allow_member_read_attribute",
+    "allow_member_write_attribute",
+    "allow_spell_enable",
+    "cleanup",
+    "commit_change",
+    "deny_conduit_enable",
+    "deny_frame_enable",
+    "deny_member_dunder_access",
+    "deny_member_invoke_method",
+    "deny_member_read_attribute",
+    "deny_member_write_attribute",
+    "deny_spell_enable",
+    "discard_change",
+    "draft_configuration",
+    "id",
+    "remove_member_rule",
+    "set_conduit_operation",
+    "set_frame_operation",
+    "set_member_operation",
+    "set_spell_operation",
+    "use_precision_profile",
+    "use_profile"
+   ],
+   "shape": {
+    "method_count": 28,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f38540033ea172095c5045f522b3f81d62fe6992420ff5e01aeff510052f4549",
+   "role": "Fluent authoring surface for one active command-family ACL draft.",
+   "responsibilities": [
+    "borrows one active command draft from the generic ACL builder",
+    "mutates the borrowed typed command configuration in place through fluent rule helpers",
+    "commits or discards the active command draft through the generic builder"
+   ],
+   "owns_state": [
+    "_id",
+    "_frame_acl_builder"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "f38540033ea172095c5045f522b3f81d62fe6992420ff5e01aeff510052f4549"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-      "relation": "borrows",
-      "why": "FrameACLCommandBuilder borrows the generic FrameACLBuilder that owns the active command draft session.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-      "relation": "borrows",
-      "why": "FrameACLCommandBuilder borrows the active typed command configuration draft from the generic builder.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "FrameACLCommandBuilder inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to_label": "FrameACLRule",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "FrameACLRule": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+  "FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+  "_FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+   "relation": "borrows",
+   "why": "FrameACLCommandBuilder borrows the generic FrameACLBuilder that owns the active command draft session.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+   "relation": "borrows",
+   "why": "FrameACLCommandBuilder borrows the active typed command configuration draft from the generic builder.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "FrameACLCommandBuilder inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

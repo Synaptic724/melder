@@ -1,52 +1,52 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py",
-  "source_sha256": "647949e8cb938b4bbc296904a4b3d42bc9d076ed194eb62a7bbae5e314a40450",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest",
-      "label": "solo_manifest",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py",
-      "lineno": 1,
-      "role": "Manifest builder for the solo codegen-creation family.",
-      "responsibilities": [
-        "builds a small primitive-only solo manifest from model and planner truth",
-        "publishes root spell id, route key, emit key, and transient flag under the shared manifest metadata key",
-        "validates decoded solo manifest payloads for cache and hydration paths"
-      ],
-      "owns_state": [
-        "MANIFEST_VERSION",
-        "FAMILY_ID",
-        "__all__"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.MANIFEST_METADATA_KEY",
-    "SOLO_FAMILY_ID": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.SOLO_FAMILY_ID"
-  },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
-      "relation": "uses",
-      "why": "solo_manifest uses the shared manifest cache envelope constants and metadata key for cross-family export compatibility.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py",
+ "source_sha256": "647949e8cb938b4bbc296904a4b3d42bc9d076ed194eb62a7bbae5e314a40450",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest",
+   "label": "solo_manifest",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py",
+   "lineno": 1,
+   "role": "Manifest builder for the solo codegen-creation family.",
+   "responsibilities": [
+    "builds a small primitive-only solo manifest from model and planner truth",
+    "publishes root spell id, route key, emit key, and transient flag under the shared manifest metadata key",
+    "validates decoded solo manifest payloads for cache and hydration paths"
+   ],
+   "owns_state": [
+    "MANIFEST_VERSION",
+    "FAMILY_ID",
+    "__all__"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.MANIFEST_METADATA_KEY",
+  "SOLO_FAMILY_ID": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.SOLO_FAMILY_ID"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+   "relation": "uses",
+   "why": "solo_manifest uses the shared manifest cache envelope constants and metadata key for cross-family export compatibility.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

@@ -1,97 +1,102 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py",
-  "source_sha256": "541b97c134ec725b79778456f8489693578aa8b6bd1837da961d31299d1513f1",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy",
-      "label": "many_only_codegen_plan_discovery_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-      "label": "ManyOnlyCodegenPlanDiscoveryStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py",
-      "lineno": 15,
-      "bases": [
-        "CodegenPlanDiscoveryStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "discover",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Phase-10 discovery strategy for graphs made only of Existence.many spells.",
-      "responsibilities": [
-        "claims models whose visible spell set contains more than one spell and every spell is Existence.many",
-        "emits the many-only planner strategy id and many-only planning family",
-        "bounds phase-11 candidate codegen styles for the many-only family"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py",
+ "source_sha256": "541b97c134ec725b79778456f8489693578aa8b6bd1837da961d31299d1513f1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy",
+   "label": "many_only_codegen_plan_discovery_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 10 discovery: graphs made only of Existence.many spells.",
+   "semantics_authored_against": "541b97c134ec725b79778456f8489693578aa8b6bd1837da961d31299d1513f1"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-      "to_label": "CodegenPlanDiscoveryStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-      "to_label": "CodegenPlanDiscovery",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Optional": "typing.Optional",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "CodegenPlanDiscovery": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery",
-    "CodegenPlanDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
+  "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
+   "label": "ManyOnlyCodegenPlanDiscoveryStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py",
+   "lineno": 15,
+   "bases": [
+    "CodegenPlanDiscoveryStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "discover",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "b9eaca512351ab06cb941f5d3d9c62f1ce32c9a10ea1501ac8892c5860fbe2b0",
+   "role": "Phase-10 discovery strategy for graphs made only of Existence.many spells.",
+   "responsibilities": [
+    "claims models whose visible spell set contains more than one spell and every spell is Existence.many",
+    "emits the many-only planner strategy id and many-only planning family",
+    "bounds phase-11 candidate codegen styles for the many-only family"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "b9eaca512351ab06cb941f5d3d9c62f1ce32c9a10ea1501ac8892c5860fbe2b0"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
+   "to_label": "CodegenPlanDiscoveryStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
+   "to_label": "CodegenPlanDiscovery",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Optional": "typing.Optional",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "CodegenPlanDiscovery": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery",
+  "CodegenPlanDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
+  "label": "ManyOnlyCodegenPlanDiscoveryStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
+   "to": "melder.aether.spellbook.existence.existence.Existence",
+   "relation": "uses",
+   "why": "ManyOnlyCodegenPlanDiscoveryStrategy checks Existence.many counts when deciding whether to claim the current model.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-    "label": "ManyOnlyCodegenPlanDiscoveryStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-      "to": "melder.aether.spellbook.existence.existence.Existence",
-      "relation": "uses",
-      "why": "ManyOnlyCodegenPlanDiscoveryStrategy checks Existence.many counts when deciding whether to claim the current model.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
-      "relation": "specializes",
-      "why": "ManyOnlyCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
+   "relation": "specializes",
+   "why": "ManyOnlyCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

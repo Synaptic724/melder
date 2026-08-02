@@ -1,53 +1,64 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
-  "source_sha256": "09a6317a4d8b1770c1a650a825608b230e21606da7ef3b1d3468536992a00b6c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.conduit.conduit_ward.contract.detail_reason": {
-      "id": "melder.aether.conduit.conduit_ward.contract.detail_reason",
-      "label": "detail_reason",
-      "kind": "module",
-      "file": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
-      "lineno": 1
-    },
-    "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason": {
-      "id": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
-      "label": "DetailReason",
-      "kind": "enum",
-      "file": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
-      "lineno": 3,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Reason enum for why one contract detail exists.",
-      "responsibilities": [
-        "labels root, dependency, manual, and other contract-detail causes"
-      ],
-      "owns_state": [
-        "root",
-        "dependency",
-        "manual",
-        "other"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
+ "source_sha256": "09a6317a4d8b1770c1a650a825608b230e21606da7ef3b1d3468536992a00b6c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.conduit_ward.contract.detail_reason": {
+   "id": "melder.aether.conduit.conduit_ward.contract.detail_reason",
+   "label": "detail_reason",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Vocabulary for why a contract detail exists.",
+   "responsibilities": [
+    "distinguish directly shared lineages from transitive dependency links"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "09a6317a4d8b1770c1a650a825608b230e21606da7ef3b1d3468536992a00b6c"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Enum": "enum.Enum",
-    "auto": "enum.auto"
-  },
-  "collapse_candidate": null
+  "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason": {
+   "id": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
+   "label": "DetailReason",
+   "kind": "enum",
+   "file": "src/melder/aether/conduit/conduit_ward/contract/detail_reason.py",
+   "lineno": 3,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "95d5e69022345a1de33b3baaffd825992083a13a342f2e2af3c0aaad080b7d12",
+   "role": "Reason enum for why one contract detail exists.",
+   "responsibilities": [
+    "labels root, dependency, manual, and other contract-detail causes"
+   ],
+   "owns_state": [
+    "root",
+    "dependency",
+    "manual",
+    "other"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "95d5e69022345a1de33b3baaffd825992083a13a342f2e2af3c0aaad080b7d12"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "auto": "enum.auto"
+ },
+ "collapse_candidate": null
 }

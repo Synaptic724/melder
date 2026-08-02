@@ -9,7 +9,10 @@
    "label": "mutation_research_composition_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/mutation_research_composition_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass verifying the folded MutationResearch composition before rebuild.",
+   "semantics_authored_against": "598351540422de15c35fea3876b8fcbde122e934f2f9a7c6c90a324173b9a611"
   },
   "melder.crystallizer.crystal_analysis.preflight.mutation_research_composition_strategy.MutationResearchCompositionStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.mutation_research_composition_strategy.MutationResearchCompositionStrategy",
@@ -29,7 +32,19 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "28eada61a8857db617875a48316dfce06990334ff37c17dc33a995f1aacdab49",
+   "include": true,
+   "role": "Preflight proving the recorded MR composition is worth handing to load_recorded_composition wholesale.",
+   "responsibilities": [
+    "block only when the payload is UNPARSEABLE - the seams cannot read the shape at all",
+    "warn on organization/residence disagreement: teach-grade drift evidence, not a refusal",
+    "produce no rows for an absent or empty composition"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "28eada61a8857db617875a48316dfce06990334ff37c17dc33a995f1aacdab49"
   }
  },
  "edges_out": [

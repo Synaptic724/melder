@@ -9,7 +9,17 @@
    "label": "agent_documentation",
    "kind": "module",
    "file": "src/melder/_build_assets/_agent_documentation/agent_documentation.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Agent-facing class documentation harvested from docstrings at build time.",
+   "responsibilities": [
+    "serve discovery without class-bound attributes at runtime"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "97d18a65dca4046578e0354a3aecafe376e9fff01a15cbc1ec5727514b31793c"
   },
   "melder._build_assets._agent_documentation.agent_documentation.AgentDocumentationAsset": {
    "id": "melder._build_assets._agent_documentation.agent_documentation.AgentDocumentationAsset",
@@ -24,7 +34,17 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "488eca11a70a3ec87bf390cdf44297faec49f1f06baabf6d96d436819d3619c8",
+   "include": true,
+   "role": "Static identity namespace for the agent-documentation asset.",
+   "responsibilities": [
+    "carry asset name and version"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "488eca11a70a3ec87bf390cdf44297faec49f1f06baabf6d96d436819d3619c8"
   }
  },
  "edges_out": [],

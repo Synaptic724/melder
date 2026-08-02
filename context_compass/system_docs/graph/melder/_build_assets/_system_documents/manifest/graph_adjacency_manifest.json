@@ -1,0 +1,23 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
+ "source_sha256": "2e8b3152804c9275b53bf961d755c2f01df776ed252c9b8237c51f0a59cb1b18",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._system_documents.manifest.graph_adjacency_manifest": {
+   "id": "melder._build_assets._system_documents.manifest.graph_adjacency_manifest",
+   "label": "graph_adjacency_manifest",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
+   "lineno": 1,
+   "include": true,
+   "role": "GENERATED. Walkable adjacency resolved from src_graph.md's `Edges out` tables; imported lazily. Edge CANDIDATES are deliberately excluded - they over-generate ~8x and are leads, not edges.",
+   "semantics_authored_against": "6c8db23d01b21d9ffe45be6655f53dd2b7a542b1952a46c75e1e02227f29fd45"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

@@ -26,7 +26,8 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "180649c6d052f757ed7e50c45bb70cda89212d72c992389b669e753800042d40"
   },
   "melder.aether.aetheric_mediator.admission_result.AdmissionResult": {
    "id": "melder.aether.aetheric_mediator.admission_result.AdmissionResult",
@@ -52,7 +53,8 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "49c86b3210a36ebed687b05f10043d680cf9717db4de2c112adb1d8c08e1b533"
   }
  },
  "edges_out": [

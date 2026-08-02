@@ -27,7 +27,8 @@
     "method_count": 3,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "13d8ac36536253ff3a37348cdd781a6e14a51c84cb6c050dd6744b88f91c8e8f"
   },
   "melder.aether.aetheric_mediator.transaction_request.TransactionRequest": {
    "id": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
@@ -57,7 +58,8 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "791190d3ebd351436804bb7723d0a1c1b519d28ba45a81826a42d34d66dc7c39"
   }
  },
  "edges_out": [

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
- "source_sha256": "f4b858f3c614151960963b7da767aa82aba96ae21258369f0aaa551d93d91965",
+ "source_sha256": "bf006161d0a1af420258ec8449523c15c2c12aa2cbb8aaf05672e5a768fd42f5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._system_documents.manifest.system_documents_manifest": {
@@ -9,7 +9,16 @@
    "label": "system_documents_manifest",
    "kind": "module",
    "file": "src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "GENERATED committed manifest of packaged system documents. Do not edit by hand.",
+   "responsibilities": [
+    "hold the ingested document payloads"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "f4b858f3c614151960963b7da767aa82aba96ae21258369f0aaa551d93d91965"
   }
  },
  "edges_out": [],

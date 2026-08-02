@@ -30,7 +30,8 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "1f78e4e83eee59e1d8f6b6bf35240ae68e48466fa456f99c0188c762a6cda329"
   },
   "melder.aether.aetheric_mediator.information_registry.InformationRegistry": {
    "id": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
@@ -58,7 +59,8 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "fa65a16de3d77527d58e00640a26e3969944a7281abc43a71e8d1e7c03b7eaa0"
   }
  },
  "edges_out": [

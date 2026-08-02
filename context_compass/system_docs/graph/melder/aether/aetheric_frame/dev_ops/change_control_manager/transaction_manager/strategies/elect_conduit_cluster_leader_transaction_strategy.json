@@ -9,7 +9,10 @@
    "label": "elect_conduit_cluster_leader_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for cluster leader election - the inert-to-active transition.",
+   "semantics_authored_against": "c89a41ab624c428f05710ed4c09c1720d94b57e2e79af9fc557893f7543728d2"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy.ElectConduitClusterLeaderTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy.ElectConduitClusterLeaderTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "c30f2a7e3f9f6bc86a15de5e396eed67f7613367a012a3fb24c8932349664f8b",
+   "include": true,
+   "role": "Activation half of the cluster's OPTIONAL leader layer; a light envelope, because inert clusters hard-error at the door so nothing can be mid-create.",
+   "responsibilities": [
+    "seal the cluster member conduits EXCLUSIVE for the duration, isolated to them",
+    "require NO lineage drain - the inert invariant guarantees no meld is in flight against the team-store",
+    "run only the base fact-baseline stamp at commit; the leadership effect itself lives in the cluster"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "c30f2a7e3f9f6bc86a15de5e396eed67f7613367a012a3fb24c8932349664f8b"
   }
  },
  "edges_out": [

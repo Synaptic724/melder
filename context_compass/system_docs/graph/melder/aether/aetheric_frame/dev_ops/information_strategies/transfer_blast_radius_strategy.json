@@ -1,97 +1,102 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py",
-  "source_sha256": "da55ba767ccfe5aa3a7163ba02596f8d4ce2d2bac65453d636baa23c79fbd1d0",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy": {
-      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy",
-      "label": "transfer_blast_radius_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy": {
-      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-      "label": "TransferBlastRadiusStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py",
-      "lineno": 16,
-      "bases": [
-        "DevopsInformationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "execute"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Registry-backed dev-ops information strategy for ownership-transfer blast-radius views.",
-      "responsibilities": [
-        "enumerates spellbook, sibling conduit, borrower/provider, and cluster participants touched by one conduit transfer",
-        "returns detached impact-set ids before scopes are claimed",
-        "adds freshness views for the touched conduit and spellbook regions when requested"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py",
+ "source_sha256": "da55ba767ccfe5aa3a7163ba02596f8d4ce2d2bac65453d636baa23c79fbd1d0",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy",
+   "label": "transfer_blast_radius_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Information strategy for ownership-transfer blast radius.",
+   "semantics_authored_against": "da55ba767ccfe5aa3a7163ba02596f8d4ce2d2bac65453d636baa23c79fbd1d0"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-      "to_label": "DevopsInformationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-    "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+   "label": "TransferBlastRadiusStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py",
+   "lineno": 16,
+   "bases": [
+    "DevopsInformationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "execute"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "4009f997c8ddbc2f0f9e56f0564afb2c6687b6c03d389454ce167f99978636fb",
+   "role": "Registry-backed dev-ops information strategy for ownership-transfer blast-radius views.",
+   "responsibilities": [
+    "enumerates spellbook, sibling conduit, borrower/provider, and cluster participants touched by one conduit transfer",
+    "returns detached impact-set ids before scopes are claimed",
+    "adds freshness views for the touched conduit and spellbook regions when requested"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "4009f997c8ddbc2f0f9e56f0564afb2c6687b6c03d389454ce167f99978636fb"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+   "to_label": "DevopsInformationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+  "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy",
+  "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+  "label": "TransferBlastRadiusStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+   "relation": "specializes",
+   "why": "TransferBlastRadiusStrategy specializes the shared dev-ops information strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy",
-    "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-    "label": "TransferBlastRadiusStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-      "relation": "specializes",
-      "why": "TransferBlastRadiusStrategy specializes the shared dev-ops information strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-      "relation": "uses",
-      "why": "TransferBlastRadiusStrategy uses InformationFreshnessInspector to report freshness for affected conduit and spellbook regions.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+   "relation": "uses",
+   "why": "TransferBlastRadiusStrategy uses InformationFreshnessInspector to report freshness for affected conduit and spellbook regions.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

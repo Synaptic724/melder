@@ -1,133 +1,138 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/devops_identity.py",
-  "source_sha256": "81b559eef523729e1836c665ebc9288307e9f47e158bba4696ae5c844f5ca734",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.devops_identity": {
-      "id": "melder.aether.aetheric_frame.dev_ops.devops_identity",
-      "label": "devops_identity",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/devops_identity.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity": {
-      "id": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "label": "DevopsIdentity",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/devops_identity.py",
-      "lineno": 12,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "aetheric_frame_name",
-        "attach_registry",
-        "available_transactions",
-        "cleanup",
-        "describe",
-        "detach_registry",
-        "metadata",
-        "owner_id",
-        "owner_kind",
-        "refresh_registry",
-        "register_cluster_member",
-        "register_provider_conduit",
-        "set_available_transactions",
-        "supports_transaction",
-        "unregister_cluster_member",
-        "unregister_provider_conduit",
-        "update_metadata"
-      ],
-      "shape": {
-        "method_count": 17,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Frame-local dev-ops identity record for runtime objects.",
-      "responsibilities": [
-        "stores stable owner identity, frame scope, metadata, and transaction capabilities",
-        "attaches runtime objects to the frame-owned dev-ops information registry",
-        "publishes conduit-link and cluster-membership relations through the registry"
-      ],
-      "owns_state": [
-        "_owner_kind",
-        "_owner_id",
-        "_aetheric_frame_name",
-        "_metadata",
-        "_available_transactions",
-        "_registry"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/devops_identity.py",
+ "source_sha256": "81b559eef523729e1836c665ebc9288307e9f47e158bba4696ae5c844f5ca734",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.devops_identity": {
+   "id": "melder.aether.aetheric_frame.dev_ops.devops_identity",
+   "label": "devops_identity",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/devops_identity.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The frame-local dev-ops identity record for runtime objects.",
+   "semantics_authored_against": "81b559eef523729e1836c665ebc9288307e9f47e158bba4696ae5c844f5ca734"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Iterable": "typing.Iterable",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "ClassVar": "typing.ClassVar",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+  "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity": {
+   "id": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "label": "DevopsIdentity",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/devops_identity.py",
+   "lineno": 12,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "aetheric_frame_name",
+    "attach_registry",
+    "available_transactions",
+    "cleanup",
+    "describe",
+    "detach_registry",
+    "metadata",
+    "owner_id",
+    "owner_kind",
+    "refresh_registry",
+    "register_cluster_member",
+    "register_provider_conduit",
+    "set_available_transactions",
+    "supports_transaction",
+    "unregister_cluster_member",
+    "unregister_provider_conduit",
+    "update_metadata"
+   ],
+   "shape": {
+    "method_count": 17,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f645978c699cede2afbccdaff38ddb8a86908fa02fbcb0161b3e52532fcb2cf0",
+   "role": "Frame-local dev-ops identity record for runtime objects.",
+   "responsibilities": [
+    "stores stable owner identity, frame scope, metadata, and transaction capabilities",
+    "attaches runtime objects to the frame-owned dev-ops information registry",
+    "publishes conduit-link and cluster-membership relations through the registry"
+   ],
+   "owns_state": [
+    "_owner_kind",
+    "_owner_id",
+    "_aetheric_frame_name",
+    "_metadata",
+    "_available_transactions",
+    "_registry"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "f645978c699cede2afbccdaff38ddb8a86908fa02fbcb0161b3e52532fcb2cf0"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.aetheric_frame.dev_ops.devops_identity",
-    "class": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-    "label": "DevopsIdentity"
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-      "relation": "borrows",
-      "why": "DevopsIdentity attaches itself to the frame-local registry so runtime objects can publish identity and topology metadata.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.devops_identity",
+  "class": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+  "label": "DevopsIdentity"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+   "relation": "borrows",
+   "why": "DevopsIdentity attaches itself to the frame-local registry so runtime objects can publish identity and topology metadata.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

@@ -9,7 +9,10 @@
    "label": "add_to_index_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for the move-in SpellIndex flow.",
+   "semantics_authored_against": "3b8c0fcf24bd5d2882d519f1c945c6753e0006bae42d857b62dbd663c13db5dc"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy.AddToIndexTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy.AddToIndexTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "54b9e898d664905a7452447f634d0d85247c9d5072654c69e6c9b75266e0bd7c",
+   "include": true,
+   "role": "Move-in flow of the three SpellIndex mutations: a spell leaves its current index and joins the target.",
+   "responsibilities": [
+    "seal both owning spellbooks and both owning conduits EXCLUSIVE (deduped when the same), plus the moved spell's binding key",
+    "run the move and the source-index GC inside the same held window - no empty index ever rests",
+    "need no runtime gate freeze: this flow is structural only, unlike notch"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "54b9e898d664905a7452447f634d0d85247c9d5072654c69e6c9b75266e0bd7c"
   }
  },
  "edges_out": [

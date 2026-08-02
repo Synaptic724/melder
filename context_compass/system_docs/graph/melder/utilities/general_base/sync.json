@@ -9,7 +9,16 @@
    "label": "sync",
    "kind": "module",
    "file": "src/melder/utilities/general_base/sync.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Abstract mix-in supplying shared coordination for thread-safe value wrappers.",
+   "responsibilities": [
+    "carry the deterministic two-wrapper lock ordering that prevents deadlock between cells"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "8ad87330906796c6520f0b02ff59bd82295a4eadca5d1180d4845811254f9547"
   },
   "melder.utilities.general_base.sync.Sync": {
    "id": "melder.utilities.general_base.sync.Sync",
@@ -26,7 +35,17 @@
     "method_count": 6,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "00af2e1cd97c39f2cf59a89961f87a33ad4a6c898fbf2875d45c41e0414c202e",
+   "include": true,
+   "role": "Abstract mix-in supplying shared coordination for thread-safe value wrappers.",
+   "responsibilities": [
+    "provide deterministic two-wrapper lock ordering to prevent deadlock between cells"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "00af2e1cd97c39f2cf59a89961f87a33ad4a6c898fbf2875d45c41e0414c202e"
   }
  },
  "edges_out": [],

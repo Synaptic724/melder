@@ -1,67 +1,78 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py",
-  "source_sha256": "9859ca15d52cb1b6cc69baa27b8c166d8c968dbff5754ea74864d4d6055b11b5",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.configurations.profiles.command.hybrid_profile": {
-      "id": "melder.nexus.acl.configurations.profiles.command.hybrid_profile",
-      "label": "hybrid_profile",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py",
-      "lineno": 1,
-      "role": "Factory module for reusable hybrid command ACL profile.",
-      "responsibilities": [
-        "constructs one reusable ACL profile variant"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy": {
-      "id": "melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy",
-      "label": "HybridCommandProfileStrategy",
-      "kind": "class",
-      "file": "src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build",
-        "name"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": false,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py",
+ "source_sha256": "9859ca15d52cb1b6cc69baa27b8c166d8c968dbff5754ea74864d4d6055b11b5",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.command.hybrid_profile": {
+   "id": "melder.nexus.acl.configurations.profiles.command.hybrid_profile",
+   "label": "hybrid_profile",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py",
+   "lineno": 1,
+   "role": "Factory module for reusable hybrid command ACL profile.",
+   "responsibilities": [
+    "constructs one reusable ACL profile variant"
+   ],
+   "phases": [
+    "runtime"
+   ]
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy",
-      "to_label": "FrameACLCommandProfile",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile"
-  },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.command.hybrid_profile",
-      "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-      "relation": "creates",
-      "why": "This factory module constructs one reusable command ACL profile variant.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "soft"
-    }
-  ]
+  "melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy": {
+   "id": "melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy",
+   "label": "HybridCommandProfileStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "7e355d7b761720c4e6822a707781b81b0646198f8bef1fb344dbacabe459d274",
+   "include": true,
+   "role": "Middle rung of the command posture ladder: invocation without writes.",
+   "responsibilities": [
+    "allow member method invocation on top of the safe posture",
+    "still deny member writes and dunder access"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "7e355d7b761720c4e6822a707781b81b0646198f8bef1fb344dbacabe459d274"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy",
+   "to_label": "FrameACLCommandProfile",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.command.hybrid_profile",
+   "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+   "relation": "creates",
+   "why": "This factory module constructs one reusable command ACL profile variant.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "soft"
+  }
+ ]
 }

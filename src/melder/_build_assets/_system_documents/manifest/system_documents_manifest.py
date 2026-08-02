@@ -1,23 +1,26 @@
 """
 GENERATED BUILD ASSET - DO NOT EDIT MANUALLY.
 
-The four package-root system documents melder publishes, as minified
-JSON hardcopy envelopes. Consumed by
-`_build_assets/_system_documents/system_documents.py`, which builds one
-`StaticSystemDocument` per entry.
+Indexes for melder's four package-root system documents.
 
-`POPULATED` reports which documents carry real content and which are
-still structured templates. Check it rather than pattern-matching prose.
+This module carries the INDEXES - section names or source paths mapped to
+line ranges, plus each document's integrity proof. The documents themselves
+ship as `.md` package data in `../documents/` and are sliced on demand.
 
-There is NO .melc cache for this asset - see the builder for why.
+DOCUMENTS[name]['sections'] is an ordered tuple of (key, start, end), 1-based
+and inclusive on both ends, matching the Context Compass index convention.
+
+`available` is False when a pair could not be verified at build time; the
+entry still exists and carries `reason`, so a stale index is distinguishable
+from a document that was never there.
 
 Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-MANIFEST_VERSION = "1.0.0"
+MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "0ebb2e9dfddf9db64b4c4f07e11cecc5648d5c3a419bea09f609af76e3ce1d00"
+SOURCE_SHA256 = "bfad022162dbae4c5ac20e2409ed95c8f2d4e4d64393ddf8446625cb536ec607"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -27,48 +30,53 @@ READ_ORDER = (
     '__graph_details__',
 )
 
-POPULATED = {
-    '__architecture__': False,
-    '__components__': False,
-    '__graph_network__': False,
-    '__graph_details__': False,
-}
-
 DOCUMENTS = {
     '__architecture__': {
+        'name': '__architecture__',
         'title': 'Melder Architecture',
-        'summary': 'C4-level system document. Boundaries, entrypoints, boot and configuration sequencing, execution lifecycle.',
+        'summary': 'C4-level system map. Boundaries, entrypoints, boot and configuration sequencing, invariants, failure modes. Read this FIRST - it is orientation, and it is the one document meant to be read whole.',
         'source': 'context_compass/system_docs/src_architecture.md',
-        'populated': False,
-        'line_count': 34,
-        'char_count': 989,
-        'json': '{"m":"# Melder Architecture\\n\\n> TEMPLATE. Structure is final; content is not yet populated.\\n> Source of record: `context_compass/system_docs/src_architecture.md`.\\n\\nRead order: architecture -> components -> graph network -> graph details.\\n\\n## 1. System Boundary\\n\\nWhat is inside melder, what is the caller\'s, and what is neither.\\n\\n## 2. Entrypoints\\n\\n`Aether()`, `Spellbook`, `conjure(...)`, `Nexus`, `Crystallizer`,\\n`MutationResearch` - what each one is the door to.\\n\\n## 3. Boot Sequence\\n\\nWhat `import melder` does, in order, and what it deliberately does not do.\\nFrames are NOT created at boot; the first Spellbook births the frame it names.\\n\\n## 4. Configuration Sequencing\\n\\nWhich configuration must be frozen before which verb, and why activation is a\\ndistinct step from construction.\\n\\n## 5. Execution Lifecycle\\n\\nbind -> conjure -> meld -> cleanup, and where each phase can refuse.\\n\\n## 6. Concurrency Posture\\n\\nWhat free-threaded 3.14t changes, which objects are shared, and which are\\nper-caller.\\n"}',
+        'available': True,
+        'addressing': 'section',
+        'document_file': 'src_architecture.md',
+        'payload_module': 'src_architecture_payload',
+        'line_count': 2298,
+        'content_sha256': 'd252983338c5a6444b109e2b72b8c381d9d41e2cff99ec72fa960687dd572438',
     },
     '__components__': {
+        'name': '__components__',
         'title': 'Melder Components',
-        'summary': 'Subsystem inventory. What each component owns, what it hands off to, and which are guarded kernel machinery.',
+        'summary': 'Subsystem inventory - what each component owns, hands off to, and whether an agent may drive it. A LOOKUP TABLE, not orientation: read the index, then fetch only the sections your task touches.',
         'source': 'context_compass/system_docs/src_components.md',
-        'populated': False,
-        'line_count': 36,
-        'char_count': 879,
-        'json': '{"m":"# Melder Components\\n\\n> TEMPLATE. Structure is final; content is not yet populated.\\n> Source of record: `context_compass/system_docs/src_components.md`.\\n\\nEach entry answers: what does it own, what does it hand off to, and may an\\nagent drive it directly?\\n\\n## Aether\\n\\nThe global singleton root and the hidden substrate it boots.\\n\\n## Spellbook\\n\\nThe binding authority. Registration, validation, and the single conjure.\\n\\n## Conduit\\n\\nThe runtime scope. Resolution, child scopes, request scope, dynamic linking.\\n\\n## Nexus / Rift\\n\\nThe public AR surface over the substrate: rooms, viewers, ACL, codegen.\\n\\n## Crystallizer\\n\\nPersistence: capture, checkpoint, restore, and the external mesh seam.\\n\\n## MutationResearch\\n\\nVersion lanes, research sets, and derived diffs over recorded material.\\n\\n## Utilities\\n\\nSynchronization primitives, weak containers, caching, and the AI-native\\nsupport tools.\\n"}',
+        'available': True,
+        'addressing': 'section',
+        'document_file': 'src_components.md',
+        'payload_module': 'src_components_payload',
+        'line_count': 8370,
+        'content_sha256': 'c7701f1174533ef29676309e9ec4ce19ae50430e48ce972ce068783bcfa99fc7',
     },
     '__graph_network__': {
+        'name': '__graph_network__',
         'title': 'Melder Graph Network',
-        'summary': "The dependency graph's shape: nodes, edges, and how a resolution walk traverses it.",
-        'source': 'context_compass/system_docs/src_graph.json',
-        'populated': False,
-        'line_count': 21,
-        'char_count': 638,
-        'json': '{"m":"# Melder Graph Network\\n\\n> TEMPLATE. Structure is final; content is not yet populated.\\n> Source of record: `context_compass/system_docs/src_graph.json`.\\n\\nNOTE for whoever populates this: the source is MINIFIED - one line of roughly\\n750,000 characters. Line-based paging cannot bound it, so any reader over this\\ndocument must set a character budget. `readable_src_graph.json` is the\\nline-shaped variant of the same data.\\n\\n## Node Kinds\\n\\nWhat a node represents and what identity it carries.\\n\\n## Edge Kinds\\n\\nNormal DI sockets versus late-bound contract sockets.\\n\\n## Traversal\\n\\nHow a resolution walk orders the graph, and where it can refuse.\\n"}',
+        'summary': "The graph's SHAPE: every source file melder defines, with its node and edge counts. This is the index itself - enough to see the network and choose what to open, without opening anything.",
+        'source': 'context_compass/system_docs/src_graph.md',
+        'available': True,
+        'addressing': 'source_path',
+        'document_file': 'src_graph.md',
+        'payload_module': 'src_graph_payload',
+        'line_count': 25291,
+        'content_sha256': '1bed687b2fdc97abe76c38e78bb41ed96e5e9c5ff2d120b847296c33eb1dbb15',
     },
     '__graph_details__': {
+        'name': '__graph_details__',
         'title': 'Melder Graph Details',
-        'summary': 'Per-node detail: sockets, existence, permissions, and the compiled resolution plan.',
-        'source': 'context_compass/system_docs/readable_src_graph.json',
-        'populated': False,
-        'line_count': 16,
-        'char_count': 402,
-        'json': '{"m":"# Melder Graph Details\\n\\n> TEMPLATE. Structure is final; content is not yet populated.\\n> Source of record: `context_compass/system_docs/readable_src_graph.json`.\\n\\n## Per-Node Detail\\n\\nSockets, existence, permissions, and spellframe for one node.\\n\\n## Compiled Plan\\n\\nWhat the compiler produced for a node and which strategy family claimed it.\\n\\n## Diagnostics\\n\\nWhere to look when a node refuses to resolve.\\n"}',
+        'summary': 'Per-source-file detail: nodes, edges out, why-lines, edge candidates, published aliases. Address by SOURCE PATH. Trust tiers differ per field - mechanical is derived, authored can be stale, candidates are guesses.',
+        'source': 'context_compass/system_docs/src_graph.md',
+        'available': True,
+        'addressing': 'source_path',
+        'document_file': 'src_graph.md',
+        'payload_module': 'src_graph_payload',
+        'line_count': 25291,
+        'content_sha256': '1bed687b2fdc97abe76c38e78bb41ed96e5e9c5ff2d120b847296c33eb1dbb15',
     },
 }

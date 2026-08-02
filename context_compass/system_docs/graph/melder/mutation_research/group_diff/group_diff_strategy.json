@@ -1,71 +1,82 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/mutation_research/group_diff/group_diff_strategy.py",
-  "source_sha256": "d305937d066884282567bcd6d5dbc213cbaf934f584fa1b88d954742e33b267a",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.mutation_research.group_diff.group_diff_strategy": {
-      "id": "melder.mutation_research.group_diff.group_diff_strategy",
-      "label": "group_diff_strategy",
-      "kind": "module",
-      "file": "src/melder/mutation_research/group_diff/group_diff_strategy.py",
-      "lineno": 1
-    },
-    "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy": {
-      "id": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
-      "label": "GroupDiffStrategy",
-      "kind": "class",
-      "file": "src/melder/mutation_research/group_diff/group_diff_strategy.py",
-      "lineno": 7,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "diff",
-        "name"
-      ],
-      "shape": {
-        "method_count": 3,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Base contract of the MIRRORED grouped strategy family (beside DiffStrategy; duplication accepted by ruling): one way of comparing two composition materials.",
-      "responsibilities": [
-        "name registry key + diff(left_material, right_material) over composition materials"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/group_diff/group_diff_strategy.py",
+ "source_sha256": "d305937d066884282567bcd6d5dbc213cbaf934f584fa1b88d954742e33b267a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.group_diff.group_diff_strategy": {
+   "id": "melder.mutation_research.group_diff.group_diff_strategy",
+   "label": "group_diff_strategy",
+   "kind": "module",
+   "file": "src/melder/mutation_research/group_diff/group_diff_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Base contract for one derived-diff computation over composition material.",
+   "responsibilities": [
+    "give compositions their own strategy family rather than reusing the spell one"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "d305937d066884282567bcd6d5dbc213cbaf934f584fa1b88d954742e33b267a"
   },
-  "edges_out": [
-    {
-      "from": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
-      "to_label": "NotImplementedError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "abstractmethod": "abc.abstractmethod",
-    "Dict": "typing.Dict",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
-  },
-  "collapse_candidate": {
-    "module": "melder.mutation_research.group_diff.group_diff_strategy",
-    "class": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
-    "label": "GroupDiffStrategy"
+  "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy": {
+   "id": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
+   "label": "GroupDiffStrategy",
+   "kind": "class",
+   "file": "src/melder/mutation_research/group_diff/group_diff_strategy.py",
+   "lineno": 7,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "diff",
+    "name"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "79e81b134f611bba09bd660d4ee3018bff386a08a67dd37ff857587fb24f03df",
+   "role": "Base contract of the MIRRORED grouped strategy family (beside DiffStrategy; duplication accepted by ruling): one way of comparing two composition materials.",
+   "responsibilities": [
+    "name registry key + diff(left_material, right_material) over composition materials"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "79e81b134f611bba09bd660d4ee3018bff386a08a67dd37ff857587fb24f03df"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
+   "to_label": "NotImplementedError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "abstractmethod": "abc.abstractmethod",
+  "Dict": "typing.Dict",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.group_diff.group_diff_strategy",
+  "class": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
+  "label": "GroupDiffStrategy"
+ }
 }

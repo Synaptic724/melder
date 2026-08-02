@@ -1,51 +1,56 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py",
-  "source_sha256": "e0cccc39985060e6543ec48167fcd88c1f7fce0497580af8d6db027961649985",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery",
-      "label": "codegen_creation_discovery",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-      "label": "CodegenCreationDiscovery",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py",
-      "lineno": 6,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      },
-      "role": "Immutable discovery result for one phase-11 codegen creation selection pass.",
-      "responsibilities": [
-        "stores the ordered creation strategy chain for one discovery result",
-        "stores the selected concrete codegen style for the current plan family",
-        "stores compact provenance for the phase-11 selection decision"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py",
+ "source_sha256": "e0cccc39985060e6543ec48167fcd88c1f7fce0497580af8d6db027961649985",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery",
+   "label": "codegen_creation_discovery",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The immutable result of one Phase 11 creation-selection pass.",
+   "semantics_authored_against": "e0cccc39985060e6543ec48167fcd88c1f7fce0497580af8d6db027961649985"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "dataclass": "dataclasses.dataclass",
-    "Tuple": "typing.Tuple"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery",
-    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-    "label": "CodegenCreationDiscovery"
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
+   "label": "CodegenCreationDiscovery",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py",
+   "lineno": 6,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "c503777e8b5f0811fa65ab289fef2fa69d48089e74359ffbba36d7e3f6eb9180",
+   "role": "Immutable discovery result for one phase-11 codegen creation selection pass.",
+   "responsibilities": [
+    "stores the ordered creation strategy chain for one discovery result",
+    "stores the selected concrete codegen style for the current plan family",
+    "stores compact provenance for the phase-11 selection decision"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "c503777e8b5f0811fa65ab289fef2fa69d48089e74359ffbba36d7e3f6eb9180"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "dataclass": "dataclasses.dataclass",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
+  "label": "CodegenCreationDiscovery"
+ }
 }

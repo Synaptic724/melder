@@ -15,8 +15,8 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "c09facc159f9da6b953712504351f71d05c770a66c233228e2763e3261df7e3c"
-ENTRY_COUNT = 606
+SOURCE_SHA256 = "afa4704d88d6f573dfb3234018ea805fa56bcea90c0dede1032a21673a55dd0e"
+ENTRY_COUNT = 611
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -576,6 +576,11 @@ ENTRIES = (
     ('melder.utilities.ai_native_support_tools.agent_text_reader', 'ReaderPolicy'),
     ('melder.utilities.ai_native_support_tools.agent_text_reader', 'TextChunk'),
     ('melder.utilities.ai_native_support_tools.protocol_crafter', 'ProtocolCrafter'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Edge'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Node'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Section'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'SystemDocumentView'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'SystemGraphView'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.caching_system.caching_system', 'CachingSystem'),
     ('melder.utilities.custom_exceptions.dead_reference_error', 'DeadReferenceError'),

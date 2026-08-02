@@ -1,188 +1,193 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/rift/command_system/codegen_command_system.py",
-  "source_sha256": "86214d8fa305e8a6bb08cdecabe2b55b8255a060dcff1d54532361cbcc8d0821",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.rift.command_system.codegen_command_system": {
-      "id": "melder.nexus.rift.command_system.codegen_command_system",
-      "label": "codegen_command_system",
-      "kind": "module",
-      "file": "src/melder/nexus/rift/command_system/codegen_command_system.py",
-      "lineno": 1
-    },
-    "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem": {
-      "id": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "label": "CodegenCommandSystem",
-      "kind": "class",
-      "file": "src/melder/nexus/rift/command_system/codegen_command_system.py",
-      "lineno": 25,
-      "bases": [
-        "CommandSystem"
-      ],
-      "markers": [],
-      "public_methods": [
-        "attach_codegen_system",
-        "cleanup",
-        "count_conduits",
-        "execute_codegen",
-        "find_conduit_id_by_name",
-        "get_conduit_by_id",
-        "get_conduit_by_name",
-        "get_conduit_cloud",
-        "get_contracted_conduits",
-        "get_links",
-        "get_spell_in_contracts",
-        "get_spells_in_contract_by_conduit_name",
-        "list_clusters",
-        "list_conduit_ids",
-        "list_conduit_names",
-        "list_supported_command_methods",
-        "materialize_codegen",
-        "research_archive",
-        "research_attach",
-        "research_campaign_view",
-        "research_clear_campaign",
-        "research_clear_staged_ancestry",
-        "research_create_lane",
-        "research_detach",
-        "research_diff",
-        "research_group_diff",
-        "research_group_drift",
-        "research_group_footprint",
-        "research_group_history",
-        "research_group_impact",
-        "research_group_recompose",
-        "research_group_register",
-        "research_group_view",
-        "research_heads",
-        "research_history",
-        "research_impact",
-        "research_join",
-        "research_module",
-        "research_module_graph",
-        "research_part",
-        "research_part_diff",
-        "research_parts",
-        "research_preview",
-        "research_recent",
-        "research_residency",
-        "research_set_campaign",
-        "research_source",
-        "research_source_drift",
-        "research_stage_ancestry",
-        "research_synthesize",
-        "research_walk",
-        "validate_codegen"
-      ],
-      "shape": {
-        "method_count": 55,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Codegen-room command facade over the internal engine.",
-      "responsibilities": [
-        "preserves the selected runtime-helper subset for codegen rooms",
-        "delegates validate and execute requests into the attached CodegenSystem",
-        "emits full-source codegen room-memory records for top-level codegen actions",
-        "owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal"
-      ],
-      "owns_state": [
-        "_codegen_system"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/command_system/codegen_command_system.py",
+ "source_sha256": "86214d8fa305e8a6bb08cdecabe2b55b8255a060dcff1d54532361cbcc8d0821",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.command_system.codegen_command_system": {
+   "id": "melder.nexus.rift.command_system.codegen_command_system",
+   "label": "codegen_command_system",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/command_system/codegen_command_system.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Codegen-room command facade; the vocabulary that fronts the internal codegen engine.",
+   "semantics_authored_against": "86214d8fa305e8a6bb08cdecabe2b55b8255a060dcff1d54532361cbcc8d0821"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to_label": "CommandSystem",
-      "relation": "specializes",
-      "to": "melder.nexus.rift.command_system.command_system.CommandSystem"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to_label": "SyntheticModule",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem",
-    "CodegenSystem": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-    "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
-    "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
-    "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
-    "Rift": "melder.nexus.rift.rift.Rift",
-    "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-    "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation",
-    "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule"
+  "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem": {
+   "id": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "label": "CodegenCommandSystem",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/command_system/codegen_command_system.py",
+   "lineno": 25,
+   "bases": [
+    "CommandSystem"
+   ],
+   "markers": [],
+   "public_methods": [
+    "attach_codegen_system",
+    "cleanup",
+    "count_conduits",
+    "execute_codegen",
+    "find_conduit_id_by_name",
+    "get_conduit_by_id",
+    "get_conduit_by_name",
+    "get_conduit_cloud",
+    "get_contracted_conduits",
+    "get_links",
+    "get_spell_in_contracts",
+    "get_spells_in_contract_by_conduit_name",
+    "list_clusters",
+    "list_conduit_ids",
+    "list_conduit_names",
+    "list_supported_command_methods",
+    "materialize_codegen",
+    "research_archive",
+    "research_attach",
+    "research_campaign_view",
+    "research_clear_campaign",
+    "research_clear_staged_ancestry",
+    "research_create_lane",
+    "research_detach",
+    "research_diff",
+    "research_group_diff",
+    "research_group_drift",
+    "research_group_footprint",
+    "research_group_history",
+    "research_group_impact",
+    "research_group_recompose",
+    "research_group_register",
+    "research_group_view",
+    "research_heads",
+    "research_history",
+    "research_impact",
+    "research_join",
+    "research_module",
+    "research_module_graph",
+    "research_part",
+    "research_part_diff",
+    "research_parts",
+    "research_preview",
+    "research_recent",
+    "research_residency",
+    "research_set_campaign",
+    "research_source",
+    "research_source_drift",
+    "research_stage_ancestry",
+    "research_synthesize",
+    "research_walk",
+    "validate_codegen"
+   ],
+   "shape": {
+    "method_count": 55,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "6da3a9748e03b5ae90fce8d83b9e1287d2691a1c6d1375c19e4fcb5716d0f63d",
+   "role": "Codegen-room command facade over the internal engine.",
+   "responsibilities": [
+    "preserves the selected runtime-helper subset for codegen rooms",
+    "delegates validate and execute requests into the attached CodegenSystem",
+    "emits full-source codegen room-memory records for top-level codegen actions",
+    "owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal"
+   ],
+   "owns_state": [
+    "_codegen_system"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "6da3a9748e03b5ae90fce8d83b9e1287d2691a1c6d1375c19e4fcb5716d0f63d"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to_label": "CommandSystem",
+   "relation": "specializes",
+   "to": "melder.nexus.rift.command_system.command_system.CommandSystem"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.nexus.rift.command_system.codegen_command_system",
-    "class": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-    "label": "CodegenCommandSystem"
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-      "relation": "borrows",
-      "why": "CodegenCommandSystem holds the attached room-owned CodegenSystem and delegates validate/execute requests into it.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
-      "relation": "specializes",
-      "why": "CodegenCommandSystem is the codegen-room specialization of the shared command surface.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-      "to": "melder.mutation_research.mutation_research.MutationResearch",
-      "relation": "borrows",
-      "why": "Codegen rooms expose the full 34-command research family - record reads, organization (typed create_lane), campaign context, nine foresight commands (incl. the crystal-well module dossier / part reads / part diff w/ radius and research_preview), the three synthesis verbs, and the eight composition commands (register/recompose + view/diff/impact/footprint/drift/history) - through a non-constructing peek; ADVERTISED in list_supported_command_methods.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to_label": "SyntheticModule",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem",
+  "CodegenSystem": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+  "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
+  "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
+  "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+  "Rift": "melder.nexus.rift.rift.Rift",
+  "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+  "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation",
+  "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.command_system.codegen_command_system",
+  "class": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+  "label": "CodegenCommandSystem"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+   "relation": "borrows",
+   "why": "CodegenCommandSystem holds the attached room-owned CodegenSystem and delegates validate/execute requests into it.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
+   "relation": "specializes",
+   "why": "CodegenCommandSystem is the codegen-room specialization of the shared command surface.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   "to": "melder.mutation_research.mutation_research.MutationResearch",
+   "relation": "borrows",
+   "why": "Codegen rooms expose the full 34-command research family - record reads, organization (typed create_lane), campaign context, nine foresight commands (incl. the crystal-well module dossier / part reads / part diff w/ radius and research_preview), the three synthesis verbs, and the eight composition commands (register/recompose + view/diff/impact/footprint/drift/history) - through a non-constructing peek; ADVERTISED in list_supported_command_methods.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

@@ -1,48 +1,60 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/custom_exceptions/phase_scheduler_error.py",
-  "source_sha256": "dcbc283686171d53ef71afc7bfb849ae2b2a2e581fd3c061bca7f731579fb123",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.custom_exceptions.phase_scheduler_error": {
-      "id": "melder.utilities.custom_exceptions.phase_scheduler_error",
-      "label": "phase_scheduler_error",
-      "kind": "module",
-      "file": "src/melder/utilities/custom_exceptions/phase_scheduler_error.py",
-      "lineno": 1
-    },
-    "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError": {
-      "id": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",
-      "label": "PhaseSchedulerError",
-      "kind": "class",
-      "file": "src/melder/utilities/custom_exceptions/phase_scheduler_error.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [
-        "RuntimeError"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Base exception for phase scheduler failures.",
-      "responsibilities": [
-        "acts as the base error family for phase scheduler execution problems"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/phase_scheduler_error.py",
+ "source_sha256": "dcbc283686171d53ef71afc7bfb849ae2b2a2e581fd3c061bca7f731579fb123",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.phase_scheduler_error": {
+   "id": "melder.utilities.custom_exceptions.phase_scheduler_error",
+   "label": "phase_scheduler_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/phase_scheduler_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Base type for phase pipeline failures, so callers can catch the family without enumerating causes.",
+   "responsibilities": [
+    "parent the timeout and execution failure types"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "dcbc283686171d53ef71afc7bfb849ae2b2a2e581fd3c061bca7f731579fb123"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": {
-    "module": "melder.utilities.custom_exceptions.phase_scheduler_error",
-    "class": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",
-    "label": "PhaseSchedulerError"
+  "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError": {
+   "id": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",
+   "label": "PhaseSchedulerError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/phase_scheduler_error.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "a71098eb51e69e77bd320d99faf27f5d2dfb1f20032128d075f91525823361b8",
+   "role": "Base exception for phase scheduler failures.",
+   "responsibilities": [
+    "acts as the base error family for phase scheduler execution problems"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "a71098eb51e69e77bd320d99faf27f5d2dfb1f20032128d075f91525823361b8"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.phase_scheduler_error",
+  "class": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",
+  "label": "PhaseSchedulerError"
+ }
 }

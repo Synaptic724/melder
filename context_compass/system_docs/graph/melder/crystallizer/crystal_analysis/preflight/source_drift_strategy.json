@@ -9,7 +9,10 @@
    "label": "source_drift_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/source_drift_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass comparing every bind-time fingerprint against the live disk at load.",
+   "semantics_authored_against": "edd7ecbd3c1214c8e88baa1753ce9f1c55d99139fdc8b2d5622b7b4f9e8f2ec8"
   },
   "melder.crystallizer.crystal_analysis.preflight.source_drift_strategy.SourceDriftStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.source_drift_strategy.SourceDriftStrategy",
@@ -29,7 +32,19 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "3f9b9b8ba21ee3cdf3b7d4e331870ac62dd12f0a72cfe277381fb84053e729df",
+   "include": true,
+   "role": "Preflight owning ALL disk-vs-seal comparison: every bind-time fingerprint against the live file at load.",
+   "responsibilities": [
+    "warn on drift - the live file wins at import, so this is notice and never a refusal",
+    "warn on absent backing files without claiming unimportability (hydration owns that blocker)",
+    "report unreadable files as info (unverifiable, not proven divergence) and dedupe per (module, path)"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "3f9b9b8ba21ee3cdf3b7d4e331870ac62dd12f0a72cfe277381fb84053e729df"
   }
  },
  "edges_out": [

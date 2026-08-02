@@ -9,7 +9,10 @@
    "label": "cluster_join_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_join_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan isolating a conduit's entry into a cluster.",
+   "semantics_authored_against": "006a0a7280d2429a7b730db0e1abfc3c41e53bf0cfb2ae6e723c5f6be160973c"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_join_transaction_strategy.ClusterJoinTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_join_transaction_strategy.ClusterJoinTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "96fe4d8f66630b08409332df7da3fb3112b30972bb39442eedadeea6fc6ab8ec",
+   "include": true,
+   "role": "Scope isolation for a conduit's ENTRY into a cluster, treated as one link over every involved conduit because joining fans out share contracts to all members.",
+   "responsibilities": [
+    "seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT, mirroring the link pattern",
+    "take the involved conduit ids from call-site metadata - scope planning only, no live-object reach",
+    "supply the isolation ConduitCluster itself lacks, whose documented gap is that membership mutation and share fan-out are not yet one atomic unit"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "96fe4d8f66630b08409332df7da3fb3112b30972bb39442eedadeea6fc6ab8ec"
   }
  },
  "edges_out": [

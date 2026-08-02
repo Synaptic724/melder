@@ -1,247 +1,252 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
-  "source_sha256": "3f85506ef01b4cbc5f18211daca304347aa69720050432daccd49a7c4f6a5687",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.validation_system": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.validation_system",
-      "label": "validation_system",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "label": "SpellValidationSystem",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
-      "lineno": 62,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "iter_strategies",
-        "register_strategy",
-        "unregister_strategy",
-        "validate_spell"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Spell-level validation strategy registry and runner.",
-      "responsibilities": [
-        "owns the default spell validation strategies",
-        "validates one spell across requirements, symbolic graph, and phase 3 summary",
-        "aggregates issues into a SpellValidationResult for the caller",
-        "cleans validation context and strategies after use"
-      ],
-      "owns_state": [
-        "_strategies"
-      ],
-      "phases": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
+ "source_sha256": "3f85506ef01b4cbc5f18211daca304347aa69720050432daccd49a7c4f6a5687",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.validation_system": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.validation_system",
+   "label": "validation_system",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The spell-level validation strategy registry and runner.",
+   "semantics_authored_against": "3f85506ef01b4cbc5f18211daca304347aa69720050432daccd49a7c4f6a5687"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "SpellValidationContext",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "SpellValidationResult",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "ResolutionFramePresenceStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "DanglingDependenciesStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "SelfDependencyStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "CircularDependencyStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "RequiredHolesStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "DuplicateSpellNameStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "AnnotationShapeGuardStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "SpellMapShapeValidationStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "ContractProviderPresenceStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "BindingResolutionCycleStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "ParameterPolicyStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "CallableProfileHygieneStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "ExistingCreationCompatibilityStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "RLock": "threading.RLock",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "ClassVar": "typing.ClassVar",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationResult": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
-    "CircularDependencyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
-    "DanglingDependenciesStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy.DanglingDependenciesStrategy",
-    "RequiredHolesStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-    "ResolutionFramePresenceStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy.ResolutionFramePresenceStrategy",
-    "SelfDependencyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy.SelfDependencyStrategy",
-    "DuplicateSpellNameStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-    "AnnotationShapeGuardStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
-    "SpellMapShapeValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy",
-    "ParameterPolicyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
-    "CallableProfileHygieneStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
-    "ExistingCreationCompatibilityStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
-    "ContractProviderPresenceStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
-    "BindingResolutionCycleStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
-    "SpellResolutionFrame": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
-    "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
-    "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+  "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "label": "SpellValidationSystem",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/validation_system.py",
+   "lineno": 62,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "iter_strategies",
+    "register_strategy",
+    "unregister_strategy",
+    "validate_spell"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "46274b62815b40a77f39aecef6a6f148acde02f4b2e040b00f4c664bb343ee75",
+   "role": "Spell-level validation strategy registry and runner.",
+   "responsibilities": [
+    "owns the default spell validation strategies",
+    "validates one spell across requirements, symbolic graph, and phase 3 summary",
+    "aggregates issues into a SpellValidationResult for the caller",
+    "cleans validation context and strategies after use"
+   ],
+   "owns_state": [
+    "_strategies"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "46274b62815b40a77f39aecef6a6f148acde02f4b2e040b00f4c664bb343ee75"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
-      "relation": "creates",
-      "why": "SpellValidationSystem creates a SpellValidationContext for each spell validation run.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "validation"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
-      "relation": "creates",
-      "why": "SpellValidationSystem returns a SpellValidationResult for each spell validation run.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "validation"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellValidationSystem owns the registered spell validation strategies it runs.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "validation",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-      "to": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
-      "relation": "uses",
-      "why": "Spell validation flows use SpellbookValidationError for fatal validation failures.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "SpellValidationContext",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "SpellValidationResult",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "ResolutionFramePresenceStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "DanglingDependenciesStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "SelfDependencyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "CircularDependencyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "RequiredHolesStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "DuplicateSpellNameStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "AnnotationShapeGuardStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "SpellMapShapeValidationStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "ContractProviderPresenceStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "BindingResolutionCycleStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "ParameterPolicyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "CallableProfileHygieneStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "ExistingCreationCompatibilityStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "RLock": "threading.RLock",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "ClassVar": "typing.ClassVar",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationResult": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+  "CircularDependencyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
+  "DanglingDependenciesStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy.DanglingDependenciesStrategy",
+  "RequiredHolesStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
+  "ResolutionFramePresenceStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy.ResolutionFramePresenceStrategy",
+  "SelfDependencyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy.SelfDependencyStrategy",
+  "DuplicateSpellNameStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+  "AnnotationShapeGuardStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
+  "SpellMapShapeValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy",
+  "ParameterPolicyStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
+  "CallableProfileHygieneStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy",
+  "ExistingCreationCompatibilityStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
+  "ContractProviderPresenceStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
+  "BindingResolutionCycleStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "SpellResolutionFrame": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
+  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+  "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+   "relation": "creates",
+   "why": "SpellValidationSystem creates a SpellValidationContext for each spell validation run.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "validation"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+   "relation": "creates",
+   "why": "SpellValidationSystem returns a SpellValidationResult for each spell validation run.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "validation"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellValidationSystem owns the registered spell validation strategies it runs.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "validation",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "to": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+   "relation": "uses",
+   "why": "Spell validation flows use SpellbookValidationError for fatal validation failures.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

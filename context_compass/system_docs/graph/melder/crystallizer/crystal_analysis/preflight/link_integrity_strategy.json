@@ -9,7 +9,10 @@
    "label": "link_integrity_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/link_integrity_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass for conduit link targets missing from the bundle.",
+   "semantics_authored_against": "2745328b9de8e89be15405b227c20e4428f4483a24a7aaf0cd2435bae49eaad4"
   },
   "melder.crystallizer.crystal_analysis.preflight.link_integrity_strategy.LinkIntegrityStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.link_integrity_strategy.LinkIntegrityStrategy",
@@ -29,7 +32,18 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "e3d06eae739b0f4198b32086728a81f34b16c6c64d8e7f79cc512d327ba8ba9f",
+   "include": true,
+   "role": "Preflight for the owner's founding case: conduit link_targets pointing outside the bundle.",
+   "responsibilities": [
+    "warn per recorded link target absent from the bundle - the restore completes, the link is reported not rebuilt",
+    "stay stateless so one instance is reusable across bundles"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "e3d06eae739b0f4198b32086728a81f34b16c6c64d8e7f79cc512d327ba8ba9f"
   }
  },
  "edges_out": [

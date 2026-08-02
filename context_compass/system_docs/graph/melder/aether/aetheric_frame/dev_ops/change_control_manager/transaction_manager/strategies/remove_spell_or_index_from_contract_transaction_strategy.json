@@ -9,7 +9,10 @@
    "label": "remove_spell_or_index_from_contract_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_spell_or_index_from_contract_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for releasing a spell or index from a cross-link contract, standalone.",
+   "semantics_authored_against": "df44d6f64a9f420a86fcee22249da9c9548dbadfaf657cb10531059915540b76"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy.RemoveSpellOrIndexFromContractTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy.RemoveSpellOrIndexFromContractTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "2dcf660177498f9d595a01db4c2fcf91ef37095297ff63a5be80a8945258ce4b",
+   "include": true,
+   "role": "Release half of the standalone contract-mutation pair and inverse of the grant, with matching claim modes because a release mutates the surfaces a grant does.",
+   "responsibilities": [
+    "seal both participating conduits and their wards EXCLUSIVE",
+    "untrack the contracted spell or index on the borrower ward while touching the provider surface",
+    "block link, unlink, transfer, cluster and other contract work on either side for the duration"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "2dcf660177498f9d595a01db4c2fcf91ef37095297ff63a5be80a8945258ce4b"
   }
  },
  "edges_out": [

@@ -1,52 +1,63 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
-  "source_sha256": "dbc26db2381a1f6e0d1910b75bfef73a77534119d039d75af6ee3dee2a558426",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.conduit.conduit_ward.permissions.permissions": {
-      "id": "melder.aether.conduit.conduit_ward.permissions.permissions",
-      "label": "permissions",
-      "kind": "module",
-      "file": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
-      "lineno": 1
-    },
-    "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions": {
-      "id": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-      "label": "Permissions",
-      "kind": "enum",
-      "file": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
-      "lineno": 3,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Capability ceiling enum for spell lineage exposure.",
-      "responsibilities": [
-        "labels read, create, and block capability levels for local and contracted lineages"
-      ],
-      "owns_state": [
-        "read",
-        "create",
-        "block"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
+ "source_sha256": "dbc26db2381a1f6e0d1910b75bfef73a77534119d039d75af6ee3dee2a558426",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.conduit_ward.permissions.permissions": {
+   "id": "melder.aether.conduit.conduit_ward.permissions.permissions",
+   "label": "permissions",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Capability ceiling vocabulary for a spell lineage across conduits.",
+   "responsibilities": [
+    "cap what a borrower may do with a shared lineage"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "dbc26db2381a1f6e0d1910b75bfef73a77534119d039d75af6ee3dee2a558426"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Enum": "enum.Enum",
-    "auto": "enum.auto"
-  },
-  "collapse_candidate": null
+  "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions": {
+   "id": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+   "label": "Permissions",
+   "kind": "enum",
+   "file": "src/melder/aether/conduit/conduit_ward/permissions/permissions.py",
+   "lineno": 3,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "3e742a2e0c1631b2b9f15af70bbf15258a52c46a4d02be39f5b38f2fde85e47f",
+   "role": "Capability ceiling enum for spell lineage exposure.",
+   "responsibilities": [
+    "labels read, create, and block capability levels for local and contracted lineages"
+   ],
+   "owns_state": [
+    "read",
+    "create",
+    "block"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "3e742a2e0c1631b2b9f15af70bbf15258a52c46a4d02be39f5b38f2fde85e47f"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "auto": "enum.auto"
+ },
+ "collapse_candidate": null
 }

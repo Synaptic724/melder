@@ -9,7 +9,17 @@
    "label": "asset_cache",
    "kind": "module",
    "file": "src/melder/utilities/caching_system/asset_cache.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Shared hydration lane taking a committed build manifest into a hot per-interpreter cache.",
+   "responsibilities": [
+    "treat the committed manifest as truth and the cache as an accelerator"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "d3562f6f5f5a9a839b0b1341d8cfdfea5ac1fa537c9daaac380251f9002a6c8a"
   },
   "melder.utilities.caching_system.asset_cache.AssetCachePolicy": {
    "id": "melder.utilities.caching_system.asset_cache.AssetCachePolicy",
@@ -24,7 +34,17 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "213277ab11df2673ba507cd5abf8fd4b7d2a4e580bbe29973ed7e46cf3f134c8",
+   "include": true,
+   "role": "Fixed values for the asset cache, held as class constants per the module-scope rule.",
+   "responsibilities": [
+    "carry cache location and naming policy"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "213277ab11df2673ba507cd5abf8fd4b7d2a4e580bbe29973ed7e46cf3f134c8"
   }
  },
  "edges_out": [],

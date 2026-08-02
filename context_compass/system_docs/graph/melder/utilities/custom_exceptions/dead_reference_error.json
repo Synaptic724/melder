@@ -1,54 +1,65 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/custom_exceptions/dead_reference_error.py",
-  "source_sha256": "74dc80f2faf8838800944a60c834de80671e4a45bdb563415b65258fad77b41a",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.custom_exceptions.dead_reference_error": {
-      "id": "melder.utilities.custom_exceptions.dead_reference_error",
-      "label": "dead_reference_error",
-      "kind": "module",
-      "file": "src/melder/utilities/custom_exceptions/dead_reference_error.py",
-      "lineno": 1
-    },
-    "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError": {
-      "id": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
-      "label": "DeadReferenceError",
-      "kind": "class",
-      "file": "src/melder/utilities/custom_exceptions/dead_reference_error.py",
-      "lineno": 4,
-      "bases": [
-        "ReferenceError"
-      ],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Exception for dereferencing a dead weak reference.",
-      "responsibilities": [
-        "signals attempts to access a dead weak reference"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/dead_reference_error.py",
+ "source_sha256": "74dc80f2faf8838800944a60c834de80671e4a45bdb563415b65258fad77b41a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.dead_reference_error": {
+   "id": "melder.utilities.custom_exceptions.dead_reference_error",
+   "label": "dead_reference_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/dead_reference_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Raised when a weak referent is requested after collection, turning a silent None into a failure at the point of use.",
+   "responsibilities": [
+    "fail loudly instead of returning None for a collected referent"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "74dc80f2faf8838800944a60c834de80671e4a45bdb563415b65258fad77b41a"
   },
-  "edges_out": [
-    {
-      "from": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
-      "to_label": "ReferenceError",
-      "relation": "specializes"
-    }
-  ],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": {
-    "module": "melder.utilities.custom_exceptions.dead_reference_error",
-    "class": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
-    "label": "DeadReferenceError"
+  "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError": {
+   "id": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
+   "label": "DeadReferenceError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/dead_reference_error.py",
+   "lineno": 4,
+   "bases": [
+    "ReferenceError"
+   ],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "891586536508cc95dc7e88040334b410815182783c7f6d779fc7620ee2eab1f1",
+   "role": "Exception for dereferencing a dead weak reference.",
+   "responsibilities": [
+    "signals attempts to access a dead weak reference"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "891586536508cc95dc7e88040334b410815182783c7f6d779fc7620ee2eab1f1"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
+   "to_label": "ReferenceError",
+   "relation": "specializes"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.dead_reference_error",
+  "class": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
+  "label": "DeadReferenceError"
+ }
 }

@@ -9,7 +9,10 @@
    "label": "user_source_custody_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Custody strategy for user-source, file-backed, policy-rooted modules.",
+   "semantics_authored_against": "c6003d5490d75ec76016dee354e0ab5cb5e50c65a9187de46a2fcdb54baafc29"
   },
   "melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy.UserSourceCustodyStrategy": {
    "id": "melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy.UserSourceCustodyStrategy",
@@ -33,7 +36,23 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "801eda7f1d5da49319fa2575bb6ee04b8e65d12b922442cee50e5687cd6fa6e4",
+   "include": true,
+   "role": "Custody for policy-rooted user source modules; stamps the fingerprint that makes on-disk drift detectable.",
+   "responsibilities": [
+    "claim modules whose backing file lives under a configured user root; pathless modules never match",
+    "expose .py/.pyi text for fact analysis",
+    "hold the root tuple fixed at construction and delete it on cleanup"
+   ],
+   "owns_state": [
+    "_user_root_paths"
+   ],
+   "phases": [
+    "bind",
+    "cleanup"
+   ],
+   "semantics_authored_against": "801eda7f1d5da49319fa2575bb6ee04b8e65d12b922442cee50e5687cd6fa6e4"
   }
  },
  "edges_out": [

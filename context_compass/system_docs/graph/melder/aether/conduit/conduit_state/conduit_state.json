@@ -1,62 +1,73 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/conduit/conduit_state/conduit_state.py",
-  "source_sha256": "32f325d3fb04a0e653521a2e2cb3abcd09dd47b9888fe06fe870ceb31e4b5429",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.conduit.conduit_state.conduit_state": {
-      "id": "melder.aether.conduit.conduit_state.conduit_state",
-      "label": "conduit_state",
-      "kind": "module",
-      "file": "src/melder/aether/conduit/conduit_state/conduit_state.py",
-      "lineno": 1
-    },
-    "melder.aether.conduit.conduit_state.conduit_state.ConduitState": {
-      "id": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-      "label": "ConduitState",
-      "kind": "enum",
-      "file": "src/melder/aether/conduit/conduit_state/conduit_state.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [
-        "resolve"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Lifecycle classification enum for conduit instances.",
-      "responsibilities": [
-        "distinguishes normal, lesser, and cleaned conduit states"
-      ],
-      "owns_state": [
-        "normal",
-        "lesser",
-        "cleaned"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/conduit_state/conduit_state.py",
+ "source_sha256": "32f325d3fb04a0e653521a2e2cb3abcd09dd47b9888fe06fe870ceb31e4b5429",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.conduit_state.conduit_state": {
+   "id": "melder.aether.conduit.conduit_state.conduit_state",
+   "label": "conduit_state",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/conduit_state/conduit_state.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Lifecycle vocabulary distinguishing normal, lesser, pooled and cleaned conduits.",
+   "responsibilities": [
+    "label which lifecycle position a conduit occupies"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "32f325d3fb04a0e653521a2e2cb3abcd09dd47b9888fe06fe870ceb31e4b5429"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Enum": "enum.Enum",
-    "auto": "enum.auto",
-    "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers"
-  },
-  "collapse_candidate": null
+  "melder.aether.conduit.conduit_state.conduit_state.ConduitState": {
+   "id": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+   "label": "ConduitState",
+   "kind": "enum",
+   "file": "src/melder/aether/conduit/conduit_state/conduit_state.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [
+    "resolve"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "09f63f0abd3dba0930c42ead3c1f20b5c913ec3967c58b95619b832676262fbc",
+   "role": "Lifecycle classification enum for conduit instances.",
+   "responsibilities": [
+    "distinguishes normal, lesser, and cleaned conduit states"
+   ],
+   "owns_state": [
+    "normal",
+    "lesser",
+    "cleaned"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "09f63f0abd3dba0930c42ead3c1f20b5c913ec3967c58b95619b832676262fbc"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "auto": "enum.auto",
+  "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers"
+ },
+ "collapse_candidate": null
 }

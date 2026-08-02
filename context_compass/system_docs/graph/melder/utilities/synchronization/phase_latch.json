@@ -1,82 +1,103 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/synchronization/phase_latch.py",
-  "source_sha256": "4a62eb0825561d3f56a407d2f4785aeeb6675d4461e1f33a9dd65830c127d12c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.synchronization.phase_latch": {
-      "id": "melder.utilities.synchronization.phase_latch",
-      "label": "phase_latch",
-      "kind": "module",
-      "file": "src/melder/utilities/synchronization/phase_latch.py",
-      "lineno": 1
-    },
-    "melder.utilities.synchronization.phase_latch.PhaseLatch": {
-      "id": "melder.utilities.synchronization.phase_latch.PhaseLatch",
-      "label": "PhaseLatch",
-      "kind": "class",
-      "file": "src/melder/utilities/synchronization/phase_latch.py",
-      "lineno": 7,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "complete",
-        "errors",
-        "record_error",
-        "wait",
-        "wait_all_reported"
-      ],
-      "shape": {
-        "method_count": 5,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Per-phase countdown latch used by PhaseScheduler barriers.",
-      "responsibilities": [
-        "tracks remaining unit completions for one phase barrier",
-        "records failed units and wakes the control thread immediately on error",
-        "provides timeout-bounded wait plus copied error snapshots for control flow"
-      ],
-      "owns_state": [
-        "_event",
-        "_remaining",
-        "_errors"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/synchronization/phase_latch.py",
+ "source_sha256": "4a62eb0825561d3f56a407d2f4785aeeb6675d4461e1f33a9dd65830c127d12c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.synchronization.phase_latch": {
+   "id": "melder.utilities.synchronization.phase_latch",
+   "label": "phase_latch",
+   "kind": "module",
+   "file": "src/melder/utilities/synchronization/phase_latch.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Per-phase countdown barrier letting the control thread wait on one event instead of every unit's Future.",
+   "responsibilities": [
+    "count down unit completions to zero",
+    "fire immediately on the first error for fail-fast",
+    "expose a separate all-reported quiesce barrier",
+    "hand the control thread a copied error list"
+   ],
+   "owns_state": [
+    "_lock",
+    "_event",
+    "_all_reported_event",
+    "_remaining",
+    "_errors"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "4a62eb0825561d3f56a407d2f4785aeeb6675d4461e1f33a9dd65830c127d12c"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
-      "to_label": "Lock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
-      "to_label": "Event",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "ClassVar": "typing.ClassVar",
-    "List": "typing.List"
-  },
-  "collapse_candidate": {
-    "module": "melder.utilities.synchronization.phase_latch",
-    "class": "melder.utilities.synchronization.phase_latch.PhaseLatch",
-    "label": "PhaseLatch"
+  "melder.utilities.synchronization.phase_latch.PhaseLatch": {
+   "id": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "label": "PhaseLatch",
+   "kind": "class",
+   "file": "src/melder/utilities/synchronization/phase_latch.py",
+   "lineno": 7,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "complete",
+    "errors",
+    "record_error",
+    "wait",
+    "wait_all_reported"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "f3bc69493b256d88e20cdb68081fbc2c6f0a1ab4cd93ace7691536c4da6b8679",
+   "role": "Per-phase countdown latch used by PhaseScheduler barriers.",
+   "responsibilities": [
+    "tracks remaining unit completions for one phase barrier",
+    "records failed units and wakes the control thread immediately on error",
+    "provides timeout-bounded wait plus copied error snapshots for control flow"
+   ],
+   "owns_state": [
+    "_event",
+    "_remaining",
+    "_errors"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "f3bc69493b256d88e20cdb68081fbc2c6f0a1ab4cd93ace7691536c4da6b8679"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "to_label": "Lock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "to_label": "Event",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ClassVar": "typing.ClassVar",
+  "List": "typing.List"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.synchronization.phase_latch",
+  "class": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+  "label": "PhaseLatch"
+ }
 }

@@ -1,48 +1,60 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
-  "source_sha256": "43991dac01fe0de0d6c3c35c94d3b11be0ac701fd2f7843992c25094a8e15ebd",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.custom_exceptions.spell_space_scope_error": {
-      "id": "melder.utilities.custom_exceptions.spell_space_scope_error",
-      "label": "spell_space_scope_error",
-      "kind": "module",
-      "file": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
-      "lineno": 1
-    },
-    "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError": {
-      "id": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
-      "label": "SpellSpaceScopeError",
-      "kind": "class",
-      "file": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
-      "lineno": 5,
-      "bases": [],
-      "markers": [
-        "RuntimeError"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Exception raised for missing spell-space scope.",
-      "responsibilities": [
-        "signals illegal spellspace-scoped execution without an active spell space"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
+ "source_sha256": "43991dac01fe0de0d6c3c35c94d3b11be0ac701fd2f7843992c25094a8e15ebd",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.spell_space_scope_error": {
+   "id": "melder.utilities.custom_exceptions.spell_space_scope_error",
+   "label": "spell_space_scope_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Raised when a SpellSpace scoping rule is violated - a lifetime or ownership failure, not a generic runtime error.",
+   "responsibilities": [
+    "refuse unique_per_spell_space resolution with no active spellspace",
+    "refuse use of a spellspace that is not the active scope"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "43991dac01fe0de0d6c3c35c94d3b11be0ac701fd2f7843992c25094a8e15ebd"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": {
-    "module": "melder.utilities.custom_exceptions.spell_space_scope_error",
-    "class": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
-    "label": "SpellSpaceScopeError"
+  "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError": {
+   "id": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
+   "label": "SpellSpaceScopeError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/spell_space_scope_error.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "ee31aee1f0264c6591371e457ce737cd0797442adc5dbc51b04c24cc460c84e2",
+   "role": "Exception raised for missing spell-space scope.",
+   "responsibilities": [
+    "signals illegal spellspace-scoped execution without an active spell space"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "ee31aee1f0264c6591371e457ce737cd0797442adc5dbc51b04c24cc460c84e2"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.spell_space_scope_error",
+  "class": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
+  "label": "SpellSpaceScopeError"
+ }
 }

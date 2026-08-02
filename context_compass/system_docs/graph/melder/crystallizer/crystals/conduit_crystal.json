@@ -9,7 +9,16 @@
    "label": "conduit_crystal",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/conduit_crystal.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Twin carrying one root conduit's structural surface and outbound links.",
+   "responsibilities": [
+    "persist conjure posture so replay reconstructs the same scope"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "be0b961630067121ab747a82ab0089d58dabd99faa6d9d8e7007626fb1934333"
   },
   "melder.crystallizer.crystals.conduit_crystal.ConduitCrystal": {
    "id": "melder.crystallizer.crystals.conduit_crystal.ConduitCrystal",
@@ -36,7 +45,28 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "76c2e2343cdd5cec199848b501452d1b49740fc6aa108f8b915d59dac367e13d",
+   "include": true,
+   "role": "Pure-data twin of one ROOT conduit: identity, conjure posture and its initiated link edges.",
+   "responsibilities": [
+    "carry name / policy / dynamic as conjured",
+    "carry outbound link targets"
+   ],
+   "owns_state": [
+    "_conduit_id",
+    "_spellbook_id",
+    "_conduit_name",
+    "_policy_name",
+    "_dynamic",
+    "_link_targets",
+    "_configuration_payload"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "76c2e2343cdd5cec199848b501452d1b49740fc6aa108f8b915d59dac367e13d"
   }
  },
  "edges_out": [

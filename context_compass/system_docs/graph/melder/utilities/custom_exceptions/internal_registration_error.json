@@ -1,48 +1,60 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/custom_exceptions/internal_registration_error.py",
-  "source_sha256": "a6c04c1543d917d23618649f59e2c0e97f8c6b9b911177aea09289ec05b3f9f2",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.custom_exceptions.internal_registration_error": {
-      "id": "melder.utilities.custom_exceptions.internal_registration_error",
-      "label": "internal_registration_error",
-      "kind": "module",
-      "file": "src/melder/utilities/custom_exceptions/internal_registration_error.py",
-      "lineno": 1
-    },
-    "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError": {
-      "id": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
-      "label": "InternalRegistrationError",
-      "kind": "class",
-      "file": "src/melder/utilities/custom_exceptions/internal_registration_error.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [
-        "RuntimeError"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Exception raised when internal Melder objects are registered as spells.",
-      "responsibilities": [
-        "signals forbidden registration of internal control-plane objects"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/internal_registration_error.py",
+ "source_sha256": "a6c04c1543d917d23618649f59e2c0e97f8c6b9b911177aea09289ec05b3f9f2",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.internal_registration_error": {
+   "id": "melder.utilities.custom_exceptions.internal_registration_error",
+   "label": "internal_registration_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/internal_registration_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Raised when code attempts to bind a Melder-owned object that the internal manifest reserves.",
+   "responsibilities": [
+    "give the bind guard one stable refusal type"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "a6c04c1543d917d23618649f59e2c0e97f8c6b9b911177aea09289ec05b3f9f2"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": {
-    "module": "melder.utilities.custom_exceptions.internal_registration_error",
-    "class": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
-    "label": "InternalRegistrationError"
+  "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError": {
+   "id": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
+   "label": "InternalRegistrationError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/internal_registration_error.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "102b7eccb67c659c1f85a32b5e98837cedd40433beb29817205b31fa490ccbfb",
+   "role": "Exception raised when internal Melder objects are registered as spells.",
+   "responsibilities": [
+    "signals forbidden registration of internal control-plane objects"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "102b7eccb67c659c1f85a32b5e98837cedd40433beb29817205b31fa490ccbfb"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.internal_registration_error",
+  "class": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
+  "label": "InternalRegistrationError"
+ }
 }

@@ -1,118 +1,123 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/rift/rift_space/event_system/rift_event_system.py",
-  "source_sha256": "8d6204d0faf13c5f5f36b2d2377e0ba5a0098784bb87d73ae95221488db8b785",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.rift.rift_space.event_system.rift_event_system": {
-      "id": "melder.nexus.rift.rift_space.event_system.rift_event_system",
-      "label": "rift_event_system",
-      "kind": "module",
-      "file": "src/melder/nexus/rift/rift_space/event_system/rift_event_system.py",
-      "lineno": 1
-    },
-    "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem": {
-      "id": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-      "label": "RiftEventSystem",
-      "kind": "class",
-      "file": "src/melder/nexus/rift/rift_space/event_system/rift_event_system.py",
-      "lineno": 9,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "create_and_emit_event",
-        "create_event",
-        "emit_event",
-        "register_event_callback",
-        "rift_id",
-        "space_id",
-        "space_kind",
-        "unregister_event_callback"
-      ],
-      "shape": {
-        "method_count": 9,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Room-local callback-driven event publisher.",
-      "responsibilities": [
-        "owns the callback registry for one RiftSpace",
-        "creates and synchronously emits RiftEvent objects"
-      ],
-      "owns_state": [
-        "_rift_id",
-        "_space_id",
-        "_space_kind",
-        "_callbacks_by_subscription_id"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/rift_space/event_system/rift_event_system.py",
+ "source_sha256": "8d6204d0faf13c5f5f36b2d2377e0ba5a0098784bb87d73ae95221488db8b785",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.rift_space.event_system.rift_event_system": {
+   "id": "melder.nexus.rift.rift_space.event_system.rift_event_system",
+   "label": "rift_event_system",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/rift_space/event_system/rift_event_system.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Room-local callback-driven event publisher.",
+   "semantics_authored_against": "8d6204d0faf13c5f5f36b2d2377e0ba5a0098784bb87d73ae95221488db8b785"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-      "to_label": "RiftEvent",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Callable": "typing.Callable",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "RiftEvent": "melder.nexus.rift.rift_space.event_system.rift_event.RiftEvent",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+  "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem": {
+   "id": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+   "label": "RiftEventSystem",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/rift_space/event_system/rift_event_system.py",
+   "lineno": 9,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "create_and_emit_event",
+    "create_event",
+    "emit_event",
+    "register_event_callback",
+    "rift_id",
+    "space_id",
+    "space_kind",
+    "unregister_event_callback"
+   ],
+   "shape": {
+    "method_count": 9,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "b0a06ea0349ef68823950a6c504ebc70bb51f72f0d339fb0b662d99b34e631b2",
+   "role": "Room-local callback-driven event publisher.",
+   "responsibilities": [
+    "owns the callback registry for one RiftSpace",
+    "creates and synchronously emits RiftEvent objects"
+   ],
+   "owns_state": [
+    "_rift_id",
+    "_space_id",
+    "_space_kind",
+    "_callbacks_by_subscription_id"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "b0a06ea0349ef68823950a6c504ebc70bb51f72f0d339fb0b662d99b34e631b2"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.nexus.rift.rift_space.event_system.rift_event_system",
-    "class": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-    "label": "RiftEventSystem"
+  {
+   "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+   "to_label": "RiftEvent",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-      "to": "melder.nexus.rift.rift_space.event_system.rift_event.RiftEvent",
-      "relation": "creates",
-      "why": "RiftEventSystem creates immutable RiftEvent payloads before synchronous emission.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "RiftEvent": "melder.nexus.rift.rift_space.event_system.rift_event.RiftEvent",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.rift_space.event_system.rift_event_system",
+  "class": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+  "label": "RiftEventSystem"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+   "to": "melder.nexus.rift.rift_space.event_system.rift_event.RiftEvent",
+   "relation": "creates",
+   "why": "RiftEventSystem creates immutable RiftEvent payloads before synchronous emission.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

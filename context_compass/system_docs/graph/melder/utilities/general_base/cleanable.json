@@ -1,126 +1,149 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/general_base/cleanable.py",
-  "source_sha256": "d530df3c1b1c2d97af0695c1be5b94da43dcabf3c50d4e6af05f1c5067f69a4a",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.general_base.cleanable": {
-      "id": "melder.utilities.general_base.cleanable",
-      "label": "cleanable",
-      "kind": "module",
-      "file": "src/melder/utilities/general_base/cleanable.py",
-      "lineno": 1
-    },
-    "melder.utilities.general_base.cleanable.Cleanable": {
-      "id": "melder.utilities.general_base.cleanable.Cleanable",
-      "label": "Cleanable",
-      "kind": "abstract",
-      "file": "src/melder/utilities/general_base/cleanable.py",
-      "lineno": 10,
-      "bases": [],
-      "markers": [
-        "ABC"
-      ],
-      "public_methods": [
-        "async_cleanup",
-        "check_cleaned",
-        "cleaned",
-        "cleanup",
-        "is_cleaned",
-        "using_cleanup"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Universal explicit-cleanup base contract.",
-      "responsibilities": [
-        "stores the canonical cleaned-state flag",
-        "defines idempotent cleanup and cleaned-state guard expectations",
-        "provides the cleanup-context helper for deterministic teardown"
-      ],
-      "owns_state": [
-        "_cleaned"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    },
-    "melder.utilities.general_base.cleanable._CleanupContext": {
-      "id": "melder.utilities.general_base.cleanable._CleanupContext",
-      "label": "_CleanupContext",
-      "kind": "class",
-      "file": "src/melder/utilities/general_base/cleanable.py",
-      "lineno": 187,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/general_base/cleanable.py",
+ "source_sha256": "d530df3c1b1c2d97af0695c1be5b94da43dcabf3c50d4e6af05f1c5067f69a4a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.general_base.cleanable": {
+   "id": "melder.utilities.general_base.cleanable",
+   "label": "cleanable",
+   "kind": "module",
+   "file": "src/melder/utilities/general_base/cleanable.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The single teardown contract shared across the entire runtime.",
+   "responsibilities": [
+    "define idempotent explicit cleanup",
+    "provide check_cleaned so post-teardown use fails loudly"
+   ],
+   "phases": [
+    "init",
+    "cleanup"
+   ],
+   "semantics_authored_against": "d530df3c1b1c2d97af0695c1be5b94da43dcabf3c50d4e6af05f1c5067f69a4a"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.utilities.general_base.cleanable.Cleanable",
-      "to_label": "NotImplementedError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.general_base.cleanable.Cleanable",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.general_base.cleanable.Cleanable",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.general_base.cleanable._CleanupContext",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.general_base.cleanable._CleanupContext",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "ABC": "abc.ABC",
-    "abstractmethod": "abc.abstractmethod",
-    "TracebackType": "types.TracebackType",
-    "Literal": "typing.Literal",
-    "Optional": "typing.Optional",
-    "Type": "typing.Type"
+  "melder.utilities.general_base.cleanable.Cleanable": {
+   "id": "melder.utilities.general_base.cleanable.Cleanable",
+   "label": "Cleanable",
+   "kind": "abstract",
+   "file": "src/melder/utilities/general_base/cleanable.py",
+   "lineno": 10,
+   "bases": [],
+   "markers": [
+    "ABC"
+   ],
+   "public_methods": [
+    "async_cleanup",
+    "check_cleaned",
+    "cleaned",
+    "cleanup",
+    "is_cleaned",
+    "using_cleanup"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "6ba91f755243b57c72cee5712c5a94e94728af02266f90bc1950f50cf7e31944",
+   "role": "Universal explicit-cleanup base contract.",
+   "responsibilities": [
+    "stores the canonical cleaned-state flag",
+    "defines idempotent cleanup and cleaned-state guard expectations",
+    "provides the cleanup-context helper for deterministic teardown"
+   ],
+   "owns_state": [
+    "_cleaned"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "6ba91f755243b57c72cee5712c5a94e94728af02266f90bc1950f50cf7e31944"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.utilities.general_base.cleanable.Cleanable",
-      "to": "melder.utilities.interfaces.ICleanable",
-      "relation": "implements",
-      "why": "Cleanable is the concrete lifecycle base whose public surface is mirrored by ICleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  "melder.utilities.general_base.cleanable._CleanupContext": {
+   "id": "melder.utilities.general_base.cleanable._CleanupContext",
+   "label": "_CleanupContext",
+   "kind": "class",
+   "file": "src/melder/utilities/general_base/cleanable.py",
+   "lineno": 187,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "3da0ba73d972566c9a658ab10bfc2961e1969216e7994793695448d4be4d6abf",
+   "include": true,
+   "role": "Internal context helper supporting the Cleanable teardown contract.",
+   "responsibilities": [
+    "scope one cleanup pass"
+   ],
+   "phases": [
+    "cleanup"
+   ],
+   "semantics_authored_against": "3da0ba73d972566c9a658ab10bfc2961e1969216e7994793695448d4be4d6abf"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.general_base.cleanable.Cleanable",
+   "to_label": "NotImplementedError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.general_base.cleanable.Cleanable",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.general_base.cleanable.Cleanable",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.general_base.cleanable._CleanupContext",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.general_base.cleanable._CleanupContext",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ABC": "abc.ABC",
+  "abstractmethod": "abc.abstractmethod",
+  "TracebackType": "types.TracebackType",
+  "Literal": "typing.Literal",
+  "Optional": "typing.Optional",
+  "Type": "typing.Type"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.utilities.general_base.cleanable.Cleanable",
+   "to": "melder.utilities.interfaces.ICleanable",
+   "relation": "implements",
+   "why": "Cleanable is the concrete lifecycle base whose public surface is mirrored by ICleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

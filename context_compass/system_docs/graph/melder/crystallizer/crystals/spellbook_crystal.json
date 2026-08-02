@@ -9,7 +9,16 @@
    "label": "spellbook_crystal",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/spellbook_crystal.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Twin carrying one spellbook's frame membership, frozen configuration and bind order.",
+   "responsibilities": [
+    "persist bind order so replay reproduces registration sequence"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "441686b61f928c43917a22007f75e96b440421ed0ebbdd0f7fd651c9aef4d269"
   },
   "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal": {
    "id": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal",
@@ -34,7 +43,26 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "18398f0cec72e37650bf2df5acf1919904d3c7ac0dc9e31630362de49861bc77",
+   "include": true,
+   "role": "Pure-data twin of one Spellbook's configured and binding surface.",
+   "responsibilities": [
+    "carry frame membership and frozen configuration",
+    "carry hook names and bind order"
+   ],
+   "owns_state": [
+    "_spellbook_id",
+    "_frame_name",
+    "_configuration_payload",
+    "_hook_names",
+    "_bind_order"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "18398f0cec72e37650bf2df5acf1919904d3c7ac0dc9e31630362de49861bc77"
   }
  },
  "edges_out": [

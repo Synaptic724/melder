@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_system_documents/system_documents.py",
- "source_sha256": "99d0fbf752220491a20489c73aa5cc5014200f9ee36161e1f1472b05c316356e",
+ "source_sha256": "9d53a2ae5919c9c8f40dd0ced7287493378763a12c4f110d8944725b8fbc0367",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._system_documents.system_documents": {
@@ -9,7 +9,17 @@
    "label": "system_documents",
    "kind": "module",
    "file": "src/melder/_build_assets/_system_documents/system_documents.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Loader building one StaticSystemDocument per packaged system document.",
+   "responsibilities": [
+    "expose the four package-root documents without a runtime read"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "99d0fbf752220491a20489c73aa5cc5014200f9ee36161e1f1472b05c316356e"
   }
  },
  "edges_out": [],
@@ -19,7 +29,8 @@
   "Dict": "typing.Dict",
   "Tuple": "typing.Tuple",
   "_manifest": "melder._build_assets._system_documents.manifest.system_documents_manifest",
-  "StaticSystemDocument": "melder.system_document.StaticSystemDocument"
+  "SystemDocumentView": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+  "SystemGraphView": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView"
  },
  "collapse_candidate": null
 }

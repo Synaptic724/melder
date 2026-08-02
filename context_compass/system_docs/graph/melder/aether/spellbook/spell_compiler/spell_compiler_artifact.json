@@ -1,231 +1,236 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py",
-  "source_sha256": "a34da43fda8285bb0d93f644bbef4e9fdccf51ac1a147e62e92939ed32dd40d1",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.spell_compiler_artifact": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact",
-      "label": "spell_compiler_artifact",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "label": "SpellCompilerArtifact",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py",
-      "lineno": 49,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "cleanup_phase_artifacts",
-        "clear_phase5_artifacts",
-        "reset_phase_artifacts"
-      ],
-      "shape": {
-        "method_count": 7,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Spell-scoped mutable container for compiler and planning artifacts.",
-      "responsibilities": [
-        "stores structural, validation, rooted-blueprint, and later codegen artifacts for one spell",
-        "owns cleanup and reset of spell-scoped compiler artifacts across phases 1-11",
-        "tracks generic codegen model/plan/creation outputs plus phase8_11 IR freshness state"
-      ],
-      "owns_state": [
-        "_requirements",
-        "_symbolic_graph",
-        "_resolution_frame",
-        "_validation_result_phase4",
-        "_validation_result_phase6",
-        "_root_blueprint_phase5",
-        "_spell_system_index_phase5",
-        "_spell_codegen_model",
-        "_spell_codegen_plan",
-        "_spell_codegen_creation",
-        "_codegen_ir",
-        "_phase8_11_codegen_ir_dirty"
-      ],
-      "phases": [
-        "init",
-        "validation",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py",
+ "source_sha256": "a34da43fda8285bb0d93f644bbef4e9fdccf51ac1a147e62e92939ed32dd40d1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.spell_compiler_artifact": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact",
+   "label": "spell_compiler_artifact",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The spell-scoped mutable container every phase reads from and writes into.",
+   "semantics_authored_against": "a34da43fda8285bb0d93f644bbef4e9fdccf51ac1a147e62e92939ed32dd40d1"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "ClassVar": "typing.ClassVar",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-    "SpellOccurrenceContractAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
-    "SpellOccurrenceGraphAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis",
-    "SpellOccurrenceInstanceAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
-    "SpellOccurrenceOrderAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis.SpellOccurrenceOrderAnalysis",
-    "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
-    "SpellValidationResult": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
-    "SpellSystemValidationState": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
-    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-    "SpellResolutionFrame": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
-    "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
-    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-    "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions"
+  "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "label": "SpellCompilerArtifact",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py",
+   "lineno": 49,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "cleanup_phase_artifacts",
+    "clear_phase5_artifacts",
+    "reset_phase_artifacts"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "6656d72e719cdd976de17e867529289678c3664b63f58e8caec1d17ecb4058a3",
+   "role": "Spell-scoped mutable container for compiler and planning artifacts.",
+   "responsibilities": [
+    "stores structural, validation, rooted-blueprint, and later codegen artifacts for one spell",
+    "owns cleanup and reset of spell-scoped compiler artifacts across phases 1-11",
+    "tracks generic codegen model/plan/creation outputs plus phase8_11 IR freshness state"
+   ],
+   "owns_state": [
+    "_requirements",
+    "_symbolic_graph",
+    "_resolution_frame",
+    "_validation_result_phase4",
+    "_validation_result_phase6",
+    "_root_blueprint_phase5",
+    "_spell_system_index_phase5",
+    "_spell_codegen_model",
+    "_spell_codegen_plan",
+    "_spell_codegen_creation",
+    "_codegen_ir",
+    "_phase8_11_codegen_ir_dirty"
+   ],
+   "phases": [
+    "init",
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "6656d72e719cdd976de17e867529289678c3664b63f58e8caec1d17ecb4058a3"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact",
-    "class": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-    "label": "SpellCompilerArtifact"
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+  "SpellOccurrenceContractAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
+  "SpellOccurrenceGraphAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis",
+  "SpellOccurrenceInstanceAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
+  "SpellOccurrenceOrderAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis.SpellOccurrenceOrderAnalysis",
+  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+  "SpellValidationResult": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+  "SpellSystemValidationState": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
+  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
+  "SpellResolutionFrame": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
+  "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact",
+  "class": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "label": "SpellCompilerArtifact"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact retains the fitted SpellCodegenModel for later planning and runtime codegen stages.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact retains the fitted SpellCodegenModel for later planning and runtime codegen stages.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact owns the Phase 5 rooted resolution blueprint for its spell.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact retains the final SpellCodegenCreation artifact for later runtime creation-context build and cache/export use.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact retains the planner-owned SpellCodegenPlan as its generic phase-10 codegen output.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact owns the Phase 3 resolution frame artifact for its spell.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact owns the Phase 1 requirements artifact for its spell when not borrowing bind-time requirements.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact owns the Phase 2 symbolic graph artifact for its spell.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-      "relation": "owns_lifecycle_of",
-      "why": "SpellCompilerArtifact owns the Phase 5 spell-system index attached to its local/rooted view.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "SpellCompilerArtifact inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact owns the Phase 5 rooted resolution blueprint for its spell.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact retains the final SpellCodegenCreation artifact for later runtime creation-context build and cache/export use.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact retains the planner-owned SpellCodegenPlan as its generic phase-10 codegen output.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact owns the Phase 3 resolution frame artifact for its spell.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact owns the Phase 1 requirements artifact for its spell when not borrowing bind-time requirements.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact owns the Phase 2 symbolic graph artifact for its spell.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellCompilerArtifact owns the Phase 5 spell-system index attached to its local/rooted view.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "SpellCompilerArtifact inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

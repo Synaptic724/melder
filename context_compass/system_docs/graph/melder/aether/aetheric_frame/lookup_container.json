@@ -9,7 +9,10 @@
    "label": "lookup_container",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/lookup_container.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The frame-wide active binding-signature registry - one active spell per signature, framewide.",
+   "semantics_authored_against": "65c82840423ad9cd10a762ef3660a60e9ca0f38759714b35b0c36f9456a26004"
   },
   "melder.aether.aetheric_frame.lookup_container.LookupContainer": {
    "id": "melder.aether.aetheric_frame.lookup_container.LookupContainer",
@@ -34,7 +37,27 @@
     "method_count": 9,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "ba357498c03a3111318c75067dba0db5029a519417e69fdd9038be109ee3637d",
+   "include": true,
+   "role": "The frame-wide binding-signature uniqueness surface: one active spell per (frame_key, bind_key), replacing per-spellbook signature checks.",
+   "responsibilities": [
+    "hold ACTIVE signatures only, plus the inverse spell_id -> signature index so release is O(1) on notch or cleanup",
+    "raise on a re-claim for a DIFFERENT spell_id and leave state unchanged",
+    "serialize every read and write under one non-reentrant Lock, so the forward and reverse maps are never observed mid-update",
+    "clear both maps and drop the lock on cleanup; idempotent"
+   ],
+   "owns_state": [
+    "_lookup",
+    "_reverse",
+    "_lock",
+    "_cleaned"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "ba357498c03a3111318c75067dba0db5029a519417e69fdd9038be109ee3637d"
   }
  },
  "edges_out": [],

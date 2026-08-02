@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
- "source_sha256": "525f6057df812a679176594d2701426e9b006815413c658fd893746b125a5ed6",
+ "source_sha256": "b926671a99e979ad91100833dcb0a37bc59fe41770125a55db02aef412bff053",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._agent_documentation.manifest.agent_documentation_manifest": {
@@ -9,7 +9,16 @@
    "label": "agent_documentation_manifest",
    "kind": "module",
    "file": "src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "GENERATED committed manifest of harvested agent documentation. Do not edit by hand.",
+   "responsibilities": [
+    "hold the harvested entries as committed truth"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "525f6057df812a679176594d2701426e9b006815413c658fd893746b125a5ed6"
   }
  },
  "edges_out": [],

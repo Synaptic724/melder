@@ -1,187 +1,218 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-  "source_sha256": "5798cbfeb3243f2de1a4cee4df32a25dea6efe820077295e26fd46511a242b24",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager",
-      "label": "embargo_manager",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
-      "label": "ClaimMode",
-      "kind": "enum",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-      "lineno": 18,
-      "bases": [],
-      "markers": [
-        "StrEnum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Enum of scope-key claim strengths for admission gating.",
-      "responsibilities": [
-        "classifies how strongly one transaction claims one scope key",
-        "lets the admission gate admit share-compatible work in parallel while serializing true structural overlap"
-      ],
-      "owns_state": [
-        "EXCLUSIVE",
-        "SHARED",
-        "INTENT"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord",
-      "label": "ChangeControlEmbargoRecord",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-      "lineno": 71,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      }
-    },
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.AcquisitionDecision": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.AcquisitionDecision",
-      "label": "AcquisitionDecision",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-      "lineno": 126,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      }
-    },
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "label": "ChangeControlEmbargoManager",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
-      "lineno": 175,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "apply_implicit_embargoes",
-        "cleanup",
-        "close_embargo",
-        "collect_scope_claims",
-        "collect_scope_keys",
-        "collect_scope_keys_from_staged",
-        "describe",
-        "extend_embargoes",
-        "find_embargoes",
-        "list_advisory_hints",
-        "open_embargo",
-        "release_implicit_embargoes",
-        "release_owner",
-        "try_acquire",
-        "wait_for_release"
-      ],
-      "shape": {
-        "method_count": 19,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Scope-key embargo registry for transaction-driven gating.",
-      "responsibilities": [
-        "tracks temporary embargoes opened by admitted requests",
-        "answers whether requested scope is currently embargoed"
-      ],
-      "owns_state": [
-        "_embargoes_by_scope",
-        "_embargoes_by_owner"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
+ "source_sha256": "5798cbfeb3243f2de1a4cee4df32a25dea6efe820077295e26fd46511a242b24",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager",
+   "label": "embargo_manager",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The moded scope-key lock table: claim strengths, held-claim records, and the all-or-nothing acquisition outcome.",
+   "semantics_authored_against": "5798cbfeb3243f2de1a4cee4df32a25dea6efe820077295e26fd46511a242b24"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "to_label": "Condition",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "to_label": "AcquisitionDecision",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "to_label": "ClaimMode",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-      "to_label": "ChangeControlEmbargoRecord",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "dataclass": "dataclasses.dataclass",
-    "StrEnum": "enum.StrEnum",
-    "Condition": "threading.Condition",
-    "RLock": "threading.RLock",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Iterable": "typing.Iterable",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Set": "typing.Set",
-    "Tuple": "typing.Tuple",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "ClassVar": "typing.ClassVar",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "ChangeControlTransactionRequest": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
-    "ChangeControlStagedMutation": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation"
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
+   "label": "ClaimMode",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
+   "lineno": 18,
+   "bases": [],
+   "markers": [
+    "StrEnum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f59d1882e92e8da251d50f19be9b9c701f5077e82e2b9ad74541e1fbb57e82ab",
+   "role": "Enum of scope-key claim strengths for admission gating.",
+   "responsibilities": [
+    "classifies how strongly one transaction claims one scope key",
+    "lets the admission gate admit share-compatible work in parallel while serializing true structural overlap"
+   ],
+   "owns_state": [
+    "EXCLUSIVE",
+    "SHARED",
+    "INTENT"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "f59d1882e92e8da251d50f19be9b9c701f5077e82e2b9ad74541e1fbb57e82ab"
   },
-  "collapse_candidate": null
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord",
+   "label": "ChangeControlEmbargoRecord",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
+   "lineno": 71,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "1a94f9dde85ad1b1d1fd0f179ec96eb6c79bef84666132fa223d208dbbfdff8d",
+   "include": true,
+   "role": "One row of the moded lock table: an immutable record of one request-owned scope claim.",
+   "responsibilities": [
+    "tie one normalized scope key to the request holding it and the mode it is held in",
+    "carry reason_tag - the lightweight operational reason, normally the admitted transaction type",
+    "stay immutable so admission, diagnostics, and advisory tooling can share it across threads without synchronization"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "1a94f9dde85ad1b1d1fd0f179ec96eb6c79bef84666132fa223d208dbbfdff8d"
+  },
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.AcquisitionDecision": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.AcquisitionDecision",
+   "label": "AcquisitionDecision",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
+   "lineno": 126,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "11b777450096cc941804fa3e06796f44e16016977e744b4bc802423161a0615b",
+   "include": true,
+   "role": "The result type of the admission gate: the immutable outcome of one all-or-nothing scope acquisition.",
+   "responsibilities": [
+    "report acquired=True only when EVERY requested claim was granted atomically",
+    "on failure carry blocking as (scope_key, holder_request_id, holder_mode) tuples - empty on success",
+    "stay immutable and safe to share across threads"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "11b777450096cc941804fa3e06796f44e16016977e744b4bc802423161a0615b"
+  },
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "label": "ChangeControlEmbargoManager",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py",
+   "lineno": 175,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "apply_implicit_embargoes",
+    "cleanup",
+    "close_embargo",
+    "collect_scope_claims",
+    "collect_scope_keys",
+    "collect_scope_keys_from_staged",
+    "describe",
+    "extend_embargoes",
+    "find_embargoes",
+    "list_advisory_hints",
+    "open_embargo",
+    "release_implicit_embargoes",
+    "release_owner",
+    "try_acquire",
+    "wait_for_release"
+   ],
+   "shape": {
+    "method_count": 19,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "d56f597729dc932206e6598ee0e9876536aae21e76a3075ac683620ccc8668af",
+   "role": "Scope-key embargo registry for transaction-driven gating.",
+   "responsibilities": [
+    "tracks temporary embargoes opened by admitted requests",
+    "answers whether requested scope is currently embargoed"
+   ],
+   "owns_state": [
+    "_embargoes_by_scope",
+    "_embargoes_by_owner"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "d56f597729dc932206e6598ee0e9876536aae21e76a3075ac683620ccc8668af"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "to_label": "Condition",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "to_label": "AcquisitionDecision",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "to_label": "ClaimMode",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
+   "to_label": "ChangeControlEmbargoRecord",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "dataclass": "dataclasses.dataclass",
+  "StrEnum": "enum.StrEnum",
+  "Condition": "threading.Condition",
+  "RLock": "threading.RLock",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "ChangeControlTransactionRequest": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
+  "ChangeControlStagedMutation": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation"
+ },
+ "collapse_candidate": null
 }

@@ -9,7 +9,16 @@
    "label": "sqlite_mesh_adapter",
    "kind": "module",
    "file": "src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "First-party SQLite provider for the external persistence mesh.",
+   "responsibilities": [
+    "offer a durable local option requiring no custom handlers"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "d4563db0652b05ddc530654d161b5828a25a0f393c99d9177f4ad98f8bf6890c"
   },
   "melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter.SqliteMeshAdapter": {
    "id": "melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter.SqliteMeshAdapter",
@@ -34,7 +43,17 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "ad5588426235ebc0516fcae743d1df31abf209b95e038113c0cffcdb1895fb4d",
+   "include": true,
+   "role": "First-party SQLite provider for the external persistence mesh.",
+   "responsibilities": [
+    "offer durable local storage requiring no custom handlers"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "ad5588426235ebc0516fcae743d1df31abf209b95e038113c0cffcdb1895fb4d"
   }
  },
  "edges_out": [

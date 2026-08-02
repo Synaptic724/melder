@@ -151,8 +151,13 @@ and logging.
 
     AGENT_PURPOSE:
         access: public. The binding authority. Call bind(...)/scan(...) to register, then
-        conjure(...) exactly once to build the root Conduit. Also owns the transaction-backed
-        SpellIndex verbs: notch_spell, add_spell_into_spellindex, remove_spell_from_spellindex.
+        conjure(...) exactly once to build the root Conduit. Owns the APPLIED SEAMS of the
+        transaction-backed SpellIndex verbs - _apply_notch, _apply_add_to_index,
+        _apply_remove_from_index - which run inside the held change-control window. The
+        PUBLIC verbs are on Conduit (notch_spell, add_to_spell_index,
+        remove_from_spell_index): the Conduit admits the transaction because it owns the
+        lineage, and Spellbook applies the membership change because it owns the index
+        maps. Neither half is callable on its own.
     """
     _aether: ClassVar[Aether] = Aether()
     __slots__ = Cleanable.__slots__ + [

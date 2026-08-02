@@ -1,63 +1,77 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
-  "source_sha256": "cd29ca113289cd98b3c74d7c55e96a859e4f6d66d171a5656ae2df8a7dcd9958",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.system.validation.strategy_base": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base",
-      "label": "strategy_base",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
-      "lineno": 1,
-      "role": "Base module for system validation strategy contracts.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
-      "label": "SpellSystemValidationStrategy",
-      "kind": "abstract",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
-      "lineno": 17,
-      "bases": [],
-      "markers": [
-        "ABC"
-      ],
-      "public_methods": [
-        "run"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
+ "source_sha256": "cd29ca113289cd98b3c74d7c55e96a859e4f6d66d171a5656ae2df8a7dcd9958",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.system.validation.strategy_base": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base",
+   "label": "strategy_base",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The contract every Phase 6 system-validation strategy implements.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "cd29ca113289cd98b3c74d7c55e96a859e4f6d66d171a5656ae2df8a7dcd9958"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "ABC": "abc.ABC",
-    "abstractmethod": "abc.abstractmethod",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "Mapping": "typing.Mapping",
-    "Optional": "typing.Optional",
-    "List": "typing.List",
-    "Set": "typing.Set",
-    "ClassVar": "typing.ClassVar",
-    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
-  },
-  "collapse_candidate": null
+  "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
+   "label": "SpellSystemValidationStrategy",
+   "kind": "abstract",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
+   "lineno": 17,
+   "bases": [],
+   "markers": [
+    "ABC"
+   ],
+   "public_methods": [
+    "run"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "986fe4c6c4b90dcde38ae078dc4fe6ffa1cc951be327368e9b3923fcf9387828",
+   "include": true,
+   "role": "Contract for one Phase 6 system-validation strategy over the frame-level Phase 5 outputs.",
+   "responsibilities": [
+    "own ONE coherent class of system-level invariant",
+    "append into the shared diagnostics list rather than returning a separate result object",
+    "run in registration order under SpellSystemValidationSystem and stay stateless or self-contained so reuse is safe"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "986fe4c6c4b90dcde38ae078dc4fe6ffa1cc951be327368e9b3923fcf9387828"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ABC": "abc.ABC",
+  "abstractmethod": "abc.abstractmethod",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "List": "typing.List",
+  "Set": "typing.Set",
+  "ClassVar": "typing.ClassVar",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": null
 }

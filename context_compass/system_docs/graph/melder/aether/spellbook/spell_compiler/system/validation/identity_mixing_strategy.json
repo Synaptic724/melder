@@ -1,80 +1,93 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
-  "source_sha256": "0ab351c9d78a1b2d47e7faa4de5ce83c6c467711647263a01440c8d845070135",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy",
-      "label": "identity_mixing_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
-      "lineno": 1,
-      "role": "System validation strategy module for identity mixing checks.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
-      "label": "IdentityMixingStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
-      "lineno": 29,
-      "bases": [
-        "SpellSystemValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "run"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
+ "source_sha256": "0ab351c9d78a1b2d47e7faa4de5ce83c6c467711647263a01440c8d845070135",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy",
+   "label": "identity_mixing_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 6 check: dependency edges use version ids, not lineage ids.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "0ab351c9d78a1b2d47e7faa4de5ce83c6c467711647263a01440c8d845070135"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
-      "to_label": "SpellSystemValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
-      "to_label": "SystemDiagnostic",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Mapping": "typing.Mapping",
-    "Optional": "typing.Optional",
-    "Set": "typing.Set",
-    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-    "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
-    "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
-    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
-    "label": "IdentityMixingStrategy"
+  "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
+   "label": "IdentityMixingStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
+   "lineno": 29,
+   "bases": [
+    "SpellSystemValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "run"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "e60abe7edd0a0e44d155c839c4d03219357412ed13f83723ae908c17c56b241e",
+   "include": true,
+   "role": "Guard the version-id/lineage-id boundary: the system graph routes concrete VERSIONS, lineage ids are DevOps control-plane identity.",
+   "responsibilities": [
+    "report dependency edges that point at lineage ids instead of version ids",
+    "keep the two identity vocabularies from mixing inside one graph"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "e60abe7edd0a0e44d155c839c4d03219357412ed13f83723ae908c17c56b241e"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
+   "to_label": "SpellSystemValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
+   "to_label": "SystemDiagnostic",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+  "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
+  "label": "IdentityMixingStrategy"
+ }
 }

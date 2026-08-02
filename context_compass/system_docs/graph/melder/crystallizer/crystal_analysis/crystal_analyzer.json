@@ -1,225 +1,246 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
-  "source_sha256": "414aba835762cd4f121d7145254fe852fd3f0974fa547981d9f7a0adb746e23c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.crystal_analysis.crystal_analyzer": {
-      "id": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-      "label": "crystal_analyzer",
-      "kind": "module",
-      "file": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
-      "lineno": 1,
-      "role": "Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).",
-      "responsibilities": [
-        "walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves)",
-        "classifies via the first-match custody chain (synthetic/user_source/site_package/fallback)",
-        "runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)",
-        "analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)",
-        "public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths"
-      ],
-      "owns_state": [
-        "custody strategy chain",
-        "fact strategy list"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer": {
-      "id": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "label": "CrystalAnalyzer",
-      "kind": "class",
-      "file": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
-      "lineno": 77,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "analyze_payload",
-        "analyze_spell_root",
-        "cleanup",
-        "resolve_file_extension",
-        "resolve_module_path",
-        "resolve_site_package_root_paths",
-        "resolve_user_root_paths"
-      ],
-      "shape": {
-        "method_count": 19,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
+ "source_sha256": "414aba835762cd4f121d7145254fe852fd3f0974fa547981d9f7a0adb746e23c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_analysis.crystal_analyzer": {
+   "id": "melder.crystallizer.crystal_analysis.crystal_analyzer",
+   "label": "crystal_analyzer",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
+   "lineno": 1,
+   "role": "Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).",
+   "responsibilities": [
+    "walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves)",
+    "classifies via the first-match custody chain (synthetic/user_source/site_package/fallback)",
+    "runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)",
+    "analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)",
+    "public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths"
+   ],
+   "owns_state": [
+    "custody strategy chain",
+    "fact strategy list"
+   ],
+   "phases": [
+    "runtime"
+   ]
   },
-  "edges_out": [
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "OrderedDict",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "CrystalAnalysisResult",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "FactContext",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "SyntheticCustodyStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "UserSourceCustodyStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "SitePackageCustodyStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "BinaryUnknownCustodyStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "ImportStatementStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "FromImportStatementStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "ExportSurfaceStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "DependencyViewStrategy",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-      "to_label": "Path",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "OrderedDict": "collections.OrderedDict",
-    "Path": "pathlib.Path",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Mapping": "typing.Mapping",
-    "Optional": "typing.Optional",
-    "Sequence": "typing.Sequence",
-    "Set": "typing.Set",
-    "Tuple": "typing.Tuple",
-    "Union": "typing.Union",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule",
-    "PhysicalSourceCache": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
-    "CrystalAnalysisResult": "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult",
-    "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy",
-    "SyntheticCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy.SyntheticCustodyStrategy",
-    "UserSourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy.UserSourceCustodyStrategy",
-    "SitePackageCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy",
-    "BinaryUnknownCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy.BinaryUnknownCustodyStrategy",
-    "CrystalFactStrategy": "melder.crystallizer.crystal_analysis.strategies.base_strategy.CrystalFactStrategy",
-    "FactContext": "melder.crystallizer.crystal_analysis.strategies.base_strategy.FactContext",
-    "ImportEvent": "melder.crystallizer.crystal_analysis.strategies.base_strategy.ImportEvent",
-    "ImportStatementStrategy": "melder.crystallizer.crystal_analysis.strategies.import_statement_strategy.ImportStatementStrategy",
-    "FromImportStatementStrategy": "melder.crystallizer.crystal_analysis.strategies.from_import_statement_strategy.FromImportStatementStrategy",
-    "ExportSurfaceStrategy": "melder.crystallizer.crystal_analysis.strategies.export_surface_strategy.ExportSurfaceStrategy",
-    "DependencyViewStrategy": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy"
+  "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer": {
+   "id": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "label": "CrystalAnalyzer",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
+   "lineno": 77,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "analyze_payload",
+    "analyze_spell_root",
+    "cleanup",
+    "resolve_file_extension",
+    "resolve_module_path",
+    "resolve_site_package_root_paths",
+    "resolve_user_root_paths"
+   ],
+   "shape": {
+    "method_count": 19,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "4dd4ebfdccddbd0f9b2d0cb28c82f3bc463725e95a9f75bb882b1234f719b01a",
+   "include": true,
+   "role": "Single-use composer of custody and fact strategies that produces one CrystalAnalysisResult per module world.",
+   "responsibilities": [
+    "consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies",
+    "drive ONE ast.walk per module and dispatch every node to the fact strategies",
+    "own its strategy instances and clean them children-first; the shared syntax memo survives instance cleanup"
+   ],
+   "owns_state": [
+    "_custody_strategies",
+    "_fact_strategies",
+    "_retain_user_sources",
+    "_site_package_dependency_descent",
+    "_uses_default_fact_strategies"
+   ],
+   "phases": [
+    "bind",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "4dd4ebfdccddbd0f9b2d0cb28c82f3bc463725e95a9f75bb882b1234f719b01a"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-    "class": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
-    "label": "CrystalAnalyzer"
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "OrderedDict",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-      "to": "melder.crystallizer.crystal_analysis.crystal_analysis_result",
-      "relation": "creates",
-      "why": "Every analysis pass produces one detached result.",
-      "cardinality": "N",
-      "phase": "runtime",
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-      "to": "melder.crystallizer.crystal_analysis.custody",
-      "relation": "owns_lifecycle_of",
-      "why": "The analyzer owns its custody strategy chain (per-analysis instances).",
-      "cardinality": "1",
-      "phase": "runtime",
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-      "to": "melder.crystallizer.crystal_analysis.strategies.base_strategy",
-      "relation": "owns_lifecycle_of",
-      "why": "The analyzer owns its fact strategy list (per-analysis instances).",
-      "cardinality": "1",
-      "phase": "runtime",
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "CrystalAnalysisResult",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "FactContext",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "SyntheticCustodyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "UserSourceCustodyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "SitePackageCustodyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "BinaryUnknownCustodyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "ImportStatementStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "FromImportStatementStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "ExportSurfaceStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "DependencyViewStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+   "to_label": "Path",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "OrderedDict": "collections.OrderedDict",
+  "Path": "pathlib.Path",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule",
+  "PhysicalSourceCache": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
+  "CrystalAnalysisResult": "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult",
+  "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy",
+  "SyntheticCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy.SyntheticCustodyStrategy",
+  "UserSourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy.UserSourceCustodyStrategy",
+  "SitePackageCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy",
+  "BinaryUnknownCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy.BinaryUnknownCustodyStrategy",
+  "CrystalFactStrategy": "melder.crystallizer.crystal_analysis.strategies.base_strategy.CrystalFactStrategy",
+  "FactContext": "melder.crystallizer.crystal_analysis.strategies.base_strategy.FactContext",
+  "ImportEvent": "melder.crystallizer.crystal_analysis.strategies.base_strategy.ImportEvent",
+  "ImportStatementStrategy": "melder.crystallizer.crystal_analysis.strategies.import_statement_strategy.ImportStatementStrategy",
+  "FromImportStatementStrategy": "melder.crystallizer.crystal_analysis.strategies.from_import_statement_strategy.FromImportStatementStrategy",
+  "ExportSurfaceStrategy": "melder.crystallizer.crystal_analysis.strategies.export_surface_strategy.ExportSurfaceStrategy",
+  "DependencyViewStrategy": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_analysis.crystal_analyzer",
+  "class": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
+  "label": "CrystalAnalyzer"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
+   "to": "melder.crystallizer.crystal_analysis.crystal_analysis_result",
+   "relation": "creates",
+   "why": "Every analysis pass produces one detached result.",
+   "cardinality": "N",
+   "phase": "runtime",
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
+   "to": "melder.crystallizer.crystal_analysis.custody",
+   "relation": "owns_lifecycle_of",
+   "why": "The analyzer owns its custody strategy chain (per-analysis instances).",
+   "cardinality": "1",
+   "phase": "runtime",
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
+   "to": "melder.crystallizer.crystal_analysis.strategies.base_strategy",
+   "relation": "owns_lifecycle_of",
+   "why": "The analyzer owns its fact strategy list (per-analysis instances).",
+   "cardinality": "1",
+   "phase": "runtime",
+   "strength": "hard"
+  }
+ ]
 }

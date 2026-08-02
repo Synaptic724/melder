@@ -10,6 +10,22 @@
    "cohesion": 0.9
   },
   {
+   "id": "src.melder._build_assets._system_documents.manifest",
+   "kind": "package",
+   "file": "src/melder/_build_assets/_system_documents/manifest/",
+   "member_count": 3,
+   "shared_suffix": "manifest",
+   "cohesion": 0.67
+  },
+  {
+   "id": "src.melder._build_assets._system_documents.payloads",
+   "kind": "package",
+   "file": "src/melder/_build_assets/_system_documents/payloads/",
+   "member_count": 3,
+   "shared_suffix": "payload",
+   "cohesion": 1.0
+  },
+  {
    "id": "src.melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies",
    "kind": "package",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/",

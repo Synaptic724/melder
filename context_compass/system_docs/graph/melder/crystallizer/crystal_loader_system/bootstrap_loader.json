@@ -1,117 +1,129 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py",
-  "source_sha256": "439d40365fe1b4b926c70e054a3453111063c9c50e85d42bbe5b4204f9459b5b",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.crystal_loader_system.bootstrap_loader": {
-      "id": "melder.crystallizer.crystal_loader_system.bootstrap_loader",
-      "label": "bootstrap_loader",
-      "kind": "module",
-      "file": "src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py",
-      "lineno": 1
-    },
-    "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap": {
-      "id": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "label": "CrystallizerBootstrap",
-      "kind": "class",
-      "file": "src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py",
-      "lineno": 14,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "bootstrap",
-        "cleanup",
-        "with_crystallizer_configuration",
-        "with_external_persistence_manager",
-        "with_formation_reload",
-        "with_preflight_gate",
-        "with_profile",
-        "with_pull_remote"
-      ],
-      "shape": {
-        "method_count": 10,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Single-use fluent pod-boot lane composing ONLY Crystallizer facades.",
-      "responsibilities": [
-        "activate -> attach manager -> cache reload (fresh-ever pods legally boot empty) -> remote pull with local re-store -> chain-verify gate (broken refuses) -> newest-checkpoint load_checkpoint",
-        "returns one bootstrap report (reload summaries, chain verdict, restore report)"
-      ],
-      "owns_state": [
-        "held configurations until consumed"
-      ],
-      "phases": [
-        "init"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py",
+ "source_sha256": "439d40365fe1b4b926c70e054a3453111063c9c50e85d42bbe5b4204f9459b5b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_loader_system.bootstrap_loader": {
+   "id": "melder.crystallizer.crystal_loader_system.bootstrap_loader",
+   "label": "bootstrap_loader",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Fluent pod-boot lane composing a fresh process into a rebuilt world.",
+   "responsibilities": [
+    "compose activate -> attach -> reload -> verify -> restore as one single-use chain"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "439d40365fe1b4b926c70e054a3453111063c9c50e85d42bbe5b4204f9459b5b"
   },
-  "edges_out": [
-    {
-      "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "to_label": "Crystallizer",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "to_label": "CrystallizerConfiguration",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "ClassVar": "typing.ClassVar",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
-    "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-    "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap": {
+   "id": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "label": "CrystallizerBootstrap",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py",
+   "lineno": 14,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "bootstrap",
+    "cleanup",
+    "with_crystallizer_configuration",
+    "with_external_persistence_manager",
+    "with_formation_reload",
+    "with_preflight_gate",
+    "with_profile",
+    "with_pull_remote"
+   ],
+   "shape": {
+    "method_count": 10,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "0d340f337e26f7be695207f235b2749a8e59de675d742e17e12a7a9fd9c6e32f",
+   "role": "Single-use fluent pod-boot lane composing ONLY Crystallizer facades.",
+   "responsibilities": [
+    "activate -> attach manager -> cache reload (fresh-ever pods legally boot empty) -> remote pull with local re-store -> chain-verify gate (broken refuses) -> newest-checkpoint load_checkpoint",
+    "returns one bootstrap report (reload summaries, chain verdict, restore report)"
+   ],
+   "owns_state": [
+    "held configurations until consumed"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "0d340f337e26f7be695207f235b2749a8e59de675d742e17e12a7a9fd9c6e32f"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "to_label": "Crystallizer",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
-      "to": "melder.crystallizer.crystallizer.Crystallizer",
-      "relation": "uses",
-      "why": "The bootstrap composes crystallizer facades only; it owns the boot ORDER, nothing else.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "to_label": "CrystallizerConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
+  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+  "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+   "to": "melder.crystallizer.crystallizer.Crystallizer",
+   "relation": "uses",
+   "why": "The bootstrap composes crystallizer facades only; it owns the boot ORDER, nothing else.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

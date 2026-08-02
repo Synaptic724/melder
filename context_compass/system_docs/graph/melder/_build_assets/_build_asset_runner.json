@@ -9,7 +9,10 @@
    "label": "_build_asset_runner",
    "kind": "module",
    "file": "src/melder/_build_assets/_build_asset_runner.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Discovery-driven runner for every durable build asset melder ships; exists because generated assets rot silently and whatever is committed IS the enforced policy.",
+   "semantics_authored_against": "a70d3f111fbf30f1f7b849c6e95892db14ee1f26bc14d1b8b3233ee2b8db1321"
   },
   "melder._build_assets._build_asset_runner.BuildAssetRunnerPolicy": {
    "id": "melder._build_assets._build_asset_runner.BuildAssetRunnerPolicy",
@@ -24,7 +27,18 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "fe43a6ebd831b38ffdb0fbfccf1463bde448402c1e5cd208e801b393c938df02",
+   "include": true,
+   "role": "Static namespace of the build-asset runner's fixed conventions, as class constants per the module-scope rule.",
+   "responsibilities": [
+    "name the builder filename that marks a directory as a build asset, and the runner's other fixed conventions",
+    "hold nothing mutated at runtime"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "fe43a6ebd831b38ffdb0fbfccf1463bde448402c1e5cd208e801b393c938df02"
   }
  },
  "edges_out": [],

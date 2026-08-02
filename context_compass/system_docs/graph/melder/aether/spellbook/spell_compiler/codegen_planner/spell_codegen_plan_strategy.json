@@ -1,81 +1,86 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py",
-  "source_sha256": "d4334e0cf38f278b61d350241c729c9535b96ec32ee44ed15471ad6a49c3ba5c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy",
-      "label": "spell_codegen_plan_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-      "label": "SpellCodegenPlanStrategy",
-      "kind": "abstract",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py",
-      "lineno": 18,
-      "bases": [],
-      "markers": [
-        "ABC"
-      ],
-      "public_methods": [
-        "apply",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Abstract contract for one codegen-plan shaping strategy.",
-      "responsibilities": [
-        "defines the stable strategy_id contract for planner strategies",
-        "defines the apply seam that mutates SpellCodegenPlan from assessed model and artifact truth",
-        "keeps planner strategy behavior separate from the top-level planner facade"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py",
+ "source_sha256": "d4334e0cf38f278b61d350241c729c9535b96ec32ee44ed15471ad6a49c3ba5c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy",
+   "label": "spell_codegen_plan_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The contract for one plan-shaping strategy.",
+   "semantics_authored_against": "d4334e0cf38f278b61d350241c729c9535b96ec32ee44ed15471ad6a49c3ba5c"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "ABC": "abc.ABC",
-    "abstractmethod": "abc.abstractmethod",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "ClassVar": "typing.ClassVar",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+  "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
+   "label": "SpellCodegenPlanStrategy",
+   "kind": "abstract",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py",
+   "lineno": 18,
+   "bases": [],
+   "markers": [
+    "ABC"
+   ],
+   "public_methods": [
+    "apply",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "3b1c5177ce5ed36cd88b0a1d005ec5b23aabd2e922c58af24c2386bed694e305",
+   "role": "Abstract contract for one codegen-plan shaping strategy.",
+   "responsibilities": [
+    "defines the stable strategy_id contract for planner strategies",
+    "defines the apply seam that mutates SpellCodegenPlan from assessed model and artifact truth",
+    "keeps planner strategy behavior separate from the top-level planner facade"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "3b1c5177ce5ed36cd88b0a1d005ec5b23aabd2e922c58af24c2386bed694e305"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ABC": "abc.ABC",
+  "abstractmethod": "abc.abstractmethod",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+   "relation": "uses",
+   "why": "SpellCodegenPlanStrategy implementations read the assessed SpellCodegenModel when shaping planner output.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-      "relation": "uses",
-      "why": "SpellCodegenPlanStrategy implementations read the assessed SpellCodegenModel when shaping planner output.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-      "relation": "uses",
-      "why": "SpellCodegenPlanStrategy implementations mutate the planner-owned SpellCodegenPlan in place.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
+   "relation": "uses",
+   "why": "SpellCodegenPlanStrategy implementations mutate the planner-owned SpellCodegenPlan in place.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

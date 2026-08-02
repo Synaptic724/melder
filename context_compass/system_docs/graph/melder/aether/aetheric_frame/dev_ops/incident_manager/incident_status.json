@@ -1,53 +1,58 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
-  "source_sha256": "c1e1d14ef86ac8df0ebc1926ea0f15366a7b521bf0ebbc4836ad10ffdf5e281f",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status": {
-      "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status",
-      "label": "incident_status",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus": {
-      "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus",
-      "label": "IncidentStatus",
-      "kind": "enum",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
-      "lineno": 3,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Lifecycle status enum for incidents.",
-      "responsibilities": [
-        "labels open, acknowledged, resolved, and suppressed incident lifecycle states"
-      ],
-      "owns_state": [
-        "open",
-        "acknowledged",
-        "resolved",
-        "suppressed"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
+ "source_sha256": "c1e1d14ef86ac8df0ebc1926ea0f15366a7b521bf0ebbc4836ad10ffdf5e281f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status": {
+   "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status",
+   "label": "incident_status",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The lifecycle status enum for incidents.",
+   "semantics_authored_against": "c1e1d14ef86ac8df0ebc1926ea0f15366a7b521bf0ebbc4836ad10ffdf5e281f"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "auto": "enum.auto",
-    "Enum": "enum.Enum"
-  },
-  "collapse_candidate": null
+  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus": {
+   "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus",
+   "label": "IncidentStatus",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py",
+   "lineno": 3,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "6e7b29345c89d1f840520ea3ad77ceb5a7edb93b10bbf78fc557ee052c852950",
+   "role": "Lifecycle status enum for incidents.",
+   "responsibilities": [
+    "labels open, acknowledged, resolved, and suppressed incident lifecycle states"
+   ],
+   "owns_state": [
+    "open",
+    "acknowledged",
+    "resolved",
+    "suppressed"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "6e7b29345c89d1f840520ea3ad77ceb5a7edb93b10bbf78fc557ee052c852950"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "auto": "enum.auto",
+  "Enum": "enum.Enum"
+ },
+ "collapse_candidate": null
 }

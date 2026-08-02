@@ -9,7 +9,16 @@
    "label": "contract_crystal",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/contract_crystal.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Twin carrying one ward contract - the record's inter-conduit relationship map.",
+   "responsibilities": [
+    "persist which conduits are linked and what each side may reach"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "f2580fa98427009bb17ce90b9de226723dd1e47f34d00f6cbcc0c864814a24bd"
   },
   "melder.crystallizer.crystals.contract_crystal.ContractCrystal": {
    "id": "melder.crystallizer.crystals.contract_crystal.ContractCrystal",
@@ -32,7 +41,29 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "99aba51429c4719cc1070e7c5e09c22e40d7edd9a83bb4c5148d52b9dc60cdbe",
+   "include": true,
+   "role": "Digital twin of one Contract, carrying both endpoints and each side's own projection.",
+   "responsibilities": [
+    "carry both conduit endpoints",
+    "carry per-side detail and index-detail projections",
+    "evict at sever through the single _remove_contract choke point"
+   ],
+   "owns_state": [
+    "_contract_id",
+    "_conduit_a_id",
+    "_conduit_b_id",
+    "_details_a",
+    "_details_b",
+    "_index_details_a",
+    "_index_details_b"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "99aba51429c4719cc1070e7c5e09c22e40d7edd9a83bb4c5148d52b9dc60cdbe"
   }
  },
  "edges_out": [

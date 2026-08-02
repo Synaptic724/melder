@@ -12,7 +12,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 ## src/melder/__architecture__.py
 
-- source_sha256: `9649cfd4d626e7c0019d00236c51ce4d8847ba4a0f44c31b0b068d12e5121fdb`
+- source_sha256: `e817cc60cd05b8ec0ac5ad9571ac823481d2230247bf327c36b5d9e4432ca0b6`
 - nodes: 1
 
 ### Nodes
@@ -60,7 +60,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 ## src/melder/__components__.py
 
-- source_sha256: `6088aaacec9b14c377bdac0a3376bfef45b3efb397f4651324b3f691c1481651`
+- source_sha256: `1b068fb4fa1a0f0083e7a8568cdb9973cc0a31266035a9c297d9f6bb25638096`
 - nodes: 1
 
 ### Nodes
@@ -108,7 +108,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 ## src/melder/__graph_details__.py
 
-- source_sha256: `803c769755fed1087b1c04158f87e095eb04364da6b04ceb7872ac40231b5e1e`
+- source_sha256: `32b52400c58dd14dcf6ff5c9c04f68b0e5d9e6cbac4b2eb087d3b2ae7d074794`
 - nodes: 1
 
 ### Nodes
@@ -136,7 +136,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 ## src/melder/__graph_network__.py
 
-- source_sha256: `73ea5cfb92697fdcf1ec78bd5e677c6e5ac955565324a1f9829833544dbec6c7`
+- source_sha256: `787d47f3b6baf59adbb10d416642dfc4653b819981d319df69562542c70b6bbe`
 - nodes: 1
 
 ### Nodes
@@ -173,7 +173,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder`
 - defined at: `src/melder/__init__.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The package root and public surface of the Melder Dependency Graph Runtime - bind into Spellbooks, conjure Conduits, meld live object graphs.
 
 <!-- END FILE: src/melder/__init__.py -->
 
@@ -249,19 +249,25 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._agent_documentation._builder`
 - defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Build-time harvester turning class docstrings into a durable agent-documentation asset.
+- responsibilities: `scan the package and catalogue agent access states`, `never run at runtime`
+- phases: `init`
 
 #### `AgentMetadataPolicy` (class)
 
 - id: `melder._build_assets._agent_documentation._builder.AgentMetadataPolicy`
 - defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:75`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fixed policy values for the harvester, as class constants.
+- responsibilities: `carry the marker names the harvester recognises`
+- phases: `init`
 
 #### `HarvestResult` (class)
 
 - id: `melder._build_assets._agent_documentation._builder.HarvestResult`
 - defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:381`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Collected output of one package harvest scan.
+- responsibilities: `hold the three catalogued states plus diagnostics`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_agent_documentation/_builder.py -->
 
@@ -278,13 +284,17 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._agent_documentation.agent_documentation`
 - defined at: `src/melder/_build_assets/_agent_documentation/agent_documentation.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Agent-facing class documentation harvested from docstrings at build time.
+- responsibilities: `serve discovery without class-bound attributes at runtime`
+- phases: `init`, `runtime`
 
 #### `AgentDocumentationAsset` (class)
 
 - id: `melder._build_assets._agent_documentation.agent_documentation.AgentDocumentationAsset`
 - defined at: `src/melder/_build_assets/_agent_documentation/agent_documentation.py:50`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Static identity namespace for the agent-documentation asset.
+- responsibilities: `carry asset name and version`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_agent_documentation/agent_documentation.py -->
 
@@ -292,7 +302,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `525f6057df812a679176594d2701426e9b006815413c658fd893746b125a5ed6`
+- source_sha256: `b926671a99e979ad91100833dcb0a37bc59fe41770125a55db02aef412bff053`
 - nodes: 1
 
 ### Nodes
@@ -301,7 +311,9 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._agent_documentation.manifest.agent_documentation_manifest`
 - defined at: `src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: GENERATED committed manifest of harvested agent documentation. Do not edit by hand.
+- responsibilities: `hold the harvested entries as committed truth`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py -->
 
@@ -318,13 +330,17 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._bind_guard._builder`
 - defined at: `src/melder/_build_assets/_bind_guard/_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Build-time scanner producing the committed internal-bind manifest.
+- responsibilities: `own the single source of truth for which classes are guarded`, `run only via the explicit asset runner`
+- phases: `init`
 
 #### `BindGuardBuildPolicy` (class)
 
 - id: `melder._build_assets._bind_guard._builder.BindGuardBuildPolicy`
 - defined at: `src/melder/_build_assets/_bind_guard/_builder.py:39`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fixed policy values for the manifest generator, as class constants.
+- responsibilities: `carry scan roots and exclusion rules`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_bind_guard/_builder.py -->
 
@@ -341,13 +357,17 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._bind_guard.bind_guard`
 - defined at: `src/melder/_build_assets/_bind_guard/bind_guard.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Hand-written loader publishing INTERNAL_MANIFEST that assert_allowed enforces.
+- responsibilities: `hydrate the committed manifest through an accelerator cache that is never the source`
+- phases: `init`, `runtime`
 
 #### `BindGuardAsset` (class)
 
 - id: `melder._build_assets._bind_guard.bind_guard.BindGuardAsset`
 - defined at: `src/melder/_build_assets/_bind_guard/bind_guard.py:31`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Static identity namespace for the bind-guard asset.
+- responsibilities: `carry manifest version and entry count`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_bind_guard/bind_guard.py -->
 
@@ -355,7 +375,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `2c66e407c7177c69a106a42712afada68d4cf17af5e0d214bbb4382e8c77f880`
+- source_sha256: `dfe74f61e21d970cf25bf9541e0361783d78bccf01c4351a3fa6f24355f4c124`
 - nodes: 1
 
 ### Nodes
@@ -364,7 +384,9 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._bind_guard.manifest.bind_guard_manifest`
 - defined at: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: GENERATED committed manifest of guarded (module, qualname) pairs. The truth; do not edit by hand.
+- responsibilities: `hold the exact-match entries registration refusal tests against`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py -->
 
@@ -381,13 +403,15 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._build_asset_runner`
 - defined at: `src/melder/_build_assets/_build_asset_runner.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Discovery-driven runner for every durable build asset melder ships; exists because generated assets rot silently and whatever is committed IS the enforced policy.
 
 #### `BuildAssetRunnerPolicy` (class)
 
 - id: `melder._build_assets._build_asset_runner.BuildAssetRunnerPolicy`
 - defined at: `src/melder/_build_assets/_build_asset_runner.py:105`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Static namespace of the build-asset runner's fixed conventions, as class constants per the module-scope rule.
+- responsibilities: `name the builder filename that marks a directory as a build asset, and the runner's other fixed conventions`, `hold nothing mutated at runtime`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_build_asset_runner.py -->
 
@@ -395,7 +419,7 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/_builder.py
 
-- source_sha256: `1941b32dbfe03f5537b5e2e0fe0f59c38869eb30ccbed78048516283195f236e`
+- source_sha256: `d448cb54837b1653f7002d995db87d755d186cb38859e32e2d1502331576034c`
 - nodes: 2
 
 ### Nodes
@@ -404,21 +428,59 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._system_documents._builder`
 - defined at: `src/melder/_build_assets/_system_documents/_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Build-time ingest of context-map document/index pairs into the package.
+- responsibilities: `pull the authored system documents in at build time`
+- phases: `init`
 
 #### `SystemDocumentsBuildPolicy` (class)
 
 - id: `melder._build_assets._system_documents._builder.SystemDocumentsBuildPolicy`
-- defined at: `src/melder/_build_assets/_system_documents/_builder.py:50`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- defined at: `src/melder/_build_assets/_system_documents/_builder.py:80`
+- role: Static namespace of the system-document generator's fixed values; class constants per the module-scope rule.
+- responsibilities: `name the asset/manifest/payload directories and the repo-relative ingest root`, `declare READ_ORDER - the order an agent should read the four documents`, `carry MANIFEST_VERSION, the manifest shape's schema version`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_system_documents/_builder.py -->
+
+<!-- BEGIN FILE: src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py -->
+
+## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
+
+- source_sha256: `2e8b3152804c9275b53bf961d755c2f01df776ed252c9b8237c51f0a59cb1b18`
+- nodes: 1
+
+### Nodes
+
+#### `graph_adjacency_manifest` (module)
+
+- id: `melder._build_assets._system_documents.manifest.graph_adjacency_manifest`
+- defined at: `src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py:1`
+- role: GENERATED. Walkable adjacency resolved from src_graph.md's `Edges out` tables; imported lazily. Edge CANDIDATES are deliberately excluded - they over-generate ~8x and are leads, not edges.
+
+<!-- END FILE: src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py -->
+
+<!-- BEGIN FILE: src/melder/_build_assets/_system_documents/manifest/system_documents_index.py -->
+
+## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
+
+- source_sha256: `c81e5f321fbecf3d958b4c19b8c50b69ee944681ad0d68db09dd62bc8bc2826a`
+- nodes: 1
+
+### Nodes
+
+#### `system_documents_index` (module)
+
+- id: `melder._build_assets._system_documents.manifest.system_documents_index`
+- defined at: `src/melder/_build_assets/_system_documents/manifest/system_documents_index.py:1`
+- role: GENERATED. THE INDEX - section line ranges transcribed verbatim from each document's *_index.md, keyed by document file. Not recomputed: Context Compass's index is the authority and this is a transcription of it.
+
+<!-- END FILE: src/melder/_build_assets/_system_documents/manifest/system_documents_index.py -->
 
 <!-- BEGIN FILE: src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py -->
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `f4b858f3c614151960963b7da767aa82aba96ae21258369f0aaa551d93d91965`
+- source_sha256: `bf006161d0a1af420258ec8449523c15c2c12aa2cbb8aaf05672e5a768fd42f5`
 - nodes: 1
 
 ### Nodes
@@ -427,15 +489,68 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._system_documents.manifest.system_documents_manifest`
 - defined at: `src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: GENERATED committed manifest of packaged system documents. Do not edit by hand.
+- responsibilities: `hold the ingested document payloads`
+- phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py -->
+
+<!-- BEGIN FILE: src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py -->
+
+## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
+
+- source_sha256: `b2b2519ef71ae30639e2aeaf9308c02b67179986399bf230f03c404b28b8d91a`
+- nodes: 1
+
+### Nodes
+
+#### `src_architecture_payload` (module)
+
+- id: `melder._build_assets._system_documents.payloads.src_architecture_payload`
+- defined at: `src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py:1`
+- role: GENERATED. Verbatim src_architecture.md captured at build time, with LINE_COUNT and CONTENT_SHA256 for the runtime verification gate; imported lazily.
+
+<!-- END FILE: src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py -->
+
+<!-- BEGIN FILE: src/melder/_build_assets/_system_documents/payloads/src_components_payload.py -->
+
+## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
+
+- source_sha256: `1f1cad54f0bc4612802ba2c642127688f9885d0781cedef35d1faedd56ead6ae`
+- nodes: 1
+
+### Nodes
+
+#### `src_components_payload` (module)
+
+- id: `melder._build_assets._system_documents.payloads.src_components_payload`
+- defined at: `src/melder/_build_assets/_system_documents/payloads/src_components_payload.py:1`
+- role: GENERATED. Verbatim src_components.md captured at build time, with its verification proof; imported lazily.
+
+<!-- END FILE: src/melder/_build_assets/_system_documents/payloads/src_components_payload.py -->
+
+<!-- BEGIN FILE: src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py -->
+
+## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
+
+- source_sha256: `dadf0bb31dcf7e4d5c0609374540dd26c4e65090683d732638ca3a1ed5ca9bc6`
+- nodes: 1
+
+### Nodes
+
+#### `src_graph_payload` (module)
+
+- id: `melder._build_assets._system_documents.payloads.src_graph_payload`
+- defined at: `src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py:1`
+- role: GENERATED. Verbatim src_graph.md captured at build time, with its verification proof; the expensive payload, which is why payloads are per-document and lazy.
+
+<!-- END FILE: src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py -->
 
 <!-- BEGIN FILE: src/melder/_build_assets/_system_documents/system_documents.py -->
 
 ## src/melder/_build_assets/_system_documents/system_documents.py
 
-- source_sha256: `99d0fbf752220491a20489c73aa5cc5014200f9ee36161e1f1472b05c316356e`
+- source_sha256: `9d53a2ae5919c9c8f40dd0ced7287493378763a12c4f110d8944725b8fbc0367`
 - nodes: 1
 
 ### Nodes
@@ -444,7 +559,9 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder._build_assets._system_documents.system_documents`
 - defined at: `src/melder/_build_assets/_system_documents/system_documents.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Loader building one StaticSystemDocument per packaged system document.
+- responsibilities: `expose the four package-root documents without a runtime read`
+- phases: `init`, `runtime`
 
 <!-- END FILE: src/melder/_build_assets/_system_documents/system_documents.py -->
 
@@ -461,7 +578,9 @@ Do not hand-edit: edit the per-file descriptors and reassemble.
 
 - id: `melder.aether.aether`
 - defined at: `src/melder/aether/aether.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The global singleton root hosting every AethericFrame and the process-wide support singletons.
+- responsibilities: `own the named frame registry and the default frame`, `privately host AetherUtilitySystem, Crystallizer, Nexus and the lazy MutationResearch root`, `hold the LoadGate before any frame can exist so mid-load frames inherit coverage`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `Aether` (class)
 
@@ -531,7 +650,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aether_configuration`
 - defined at: `src/melder/aether/aether_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Mutable-to-frozen policy surface for the Aether root, applied into the utility host.
+- responsibilities: `hold root logger policy before activation`, `freeze once installed`
+- phases: `init`
 
 #### `AetherConfiguration` (class)
 
@@ -581,7 +702,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aether_configuration_builder`
 - defined at: `src/melder/aether/aether_configuration_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One-shot builder making ownership of an Aether configuration explicit.
+- responsibilities: `mirror the mutable-then-finalize style used across the repo`
+- phases: `init`
 
 #### `AetherConfigurationBuilder` (class)
 
@@ -630,7 +753,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aether_utility_system`
 - defined at: `src/melder/aether/aether_utility_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Process-wide host for Aether-owned shared providers, currently logger resolution.
+- responsibilities: `own the registered channel-logger resolver and stdlib fallback`, `replace the retired logger-factory layer`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `AetherUtilitySystem` (class)
 
@@ -674,7 +799,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.aetheric_frame`
 - defined at: `src/melder/aether/aetheric_frame/aetheric_frame.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-frame runtime container - the boundary everything frame-scoped hangs off.
 
 #### `AethericFrame` (class)
 
@@ -740,7 +865,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.aetheric_frame_configuration`
 - defined at: `src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The narrow frame-level runtime posture object for AR-facing behavior.
 
 #### `AethericFrameConfiguration` (class)
 
@@ -790,7 +915,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.conduit_cloud`
 - defined at: `src/melder/aether/aetheric_frame/conduit_cloud.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-scoped registry of named conduits.
 
 #### `ConduitCloud` (class)
 
@@ -834,7 +959,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-level change-control registry and admission surface.
 
 #### `ChangeControlManager` (class)
 
@@ -892,7 +1017,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Detects scope overlap between change-control requests.
 
 #### `ChangeControlConflictManager` (class)
 
@@ -932,7 +1057,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The moded scope-key lock table: claim strengths, held-claim records, and the all-or-nothing acquisition outcome.
 
 #### `ClaimMode` (enum)
 
@@ -948,13 +1073,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:71`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One row of the moded lock table: an immutable record of one request-owned scope claim.
+- responsibilities: `tie one normalized scope key to the request holding it and the mode it is held in`, `carry reason_tag - the lightweight operational reason, normally the admitted transaction type`, `stay immutable so admission, diagnostics, and advisory tooling can share it across threads without synchronization`
+- phases: `runtime`
 
 #### `AcquisitionDecision` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.AcquisitionDecision`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:126`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The result type of the admission gate: the immutable outcome of one all-or-nothing scope acquisition.
+- responsibilities: `report acquired=True only when EVERY requested claim was granted atomically`, `on failure carry blocking as (scope_key, holder_request_id, holder_mode) tuples - empty on success`, `stay immutable and safe to share across threads`
+- phases: `runtime`
 
 #### `ChangeControlEmbargoManager` (class)
 
@@ -999,7 +1128,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The serialized control-plane coordinator for change-control requests.
 
 #### `ChangeControlOrchestrator` (class)
 
@@ -1051,7 +1180,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The immutable record of one staged change-control mutation.
 
 #### `ChangeControlStagedMutation` (class)
 
@@ -1092,15 +1221,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_spell_or_index_to_contract_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for granting a spell or index into a cross-link contract, standalone.
 
 #### `AddSpellOrIndexToContractTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy.AddSpellOrIndexToContractTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_spell_or_index_to_contract_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Grant half of the standalone contract-mutation pair: a self-admitting envelope for an add that would otherwise ride inside a link or cluster transaction.
+- responsibilities: `seal both the borrower conduit and the provider peer, and their wards, EXCLUSIVE - the mutation writes the borrower ward and reads the provider surface`, `block link, unlink, transfer, cluster and other contract work on either side for the duration`, `claim the owning spellbook(s) alongside the conduit scope`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1123,15 +1254,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for the move-in SpellIndex flow.
 
 #### `AddToIndexTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy.AddToIndexTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Move-in flow of the three SpellIndex mutations: a spell leaves its current index and joins the target.
+- responsibilities: `seal both owning spellbooks and both owning conduits EXCLUSIVE (deduped when the same), plus the moved spell's binding key`, `run the move and the source-index GC inside the same held window - no empty index ever rests`, `need no runtime gate freeze: this flow is structural only, unlike notch`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1154,7 +1287,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for bind and scan requests.
 
 #### `BindTransactionStrategy` (class)
 
@@ -1200,15 +1333,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_join_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_join_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan isolating a conduit's entry into a cluster.
 
 #### `ClusterJoinTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_join_transaction_strategy.ClusterJoinTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_join_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Scope isolation for a conduit's ENTRY into a cluster, treated as one link over every involved conduit because joining fans out share contracts to all members.
+- responsibilities: `seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT, mirroring the link pattern`, `take the involved conduit ids from call-site metadata - scope planning only, no live-object reach`, `supply the isolation ConduitCluster itself lacks, whose documented gap is that membership mutation and share fan-out are not yet one atomic unit`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1237,15 +1372,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_leave_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_leave_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan isolating a conduit's exit from a cluster.
 
 #### `ClusterLeaveTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_leave_transaction_strategy.ClusterLeaveTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_leave_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Exact inverse of cluster-join: scope isolation for a conduit's EXIT, with matching claim modes because an exit mutates the same surfaces an entry does.
+- responsibilities: `seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT`, `treat the whole exit as one link over every involved conduit, since leaving tears down share contracts with every remaining member`, `take the involved conduit ids from call-site metadata - scope planning only, no live-object reach`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1274,7 +1411,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for cluster-owned share and unshare requests.
 
 #### `ClusterLinkTransactionStrategy` (class)
 
@@ -1321,15 +1458,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/conjure_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for conjure - spellbook to root-conduit genesis.
 
 #### `ConjureTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy.ConjureTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/conjure_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: The genesis member of the transaction family: spellbook -> root conduit, the event every conduit-scoped strategy presupposes.
+- responsibilities: `claim the owning spellbook EXCLUSIVE for the whole creation pipeline, so genesis is admitted through the mediator rather than riding the Spellbook lock alone`, `claim NO conduit, ward or cluster scope - the root conduit id is minted mid-pipeline and does not exist to claim`, `leave disjoint spellbooks free to conjure in parallel`
+- phases: `bind`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1352,15 +1491,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for cluster leader election - the inert-to-active transition.
 
 #### `ElectConduitClusterLeaderTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy.ElectConduitClusterLeaderTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Activation half of the cluster's OPTIONAL leader layer; a light envelope, because inert clusters hard-error at the door so nothing can be mid-create.
+- responsibilities: `seal the cluster member conduits EXCLUSIVE for the duration, isolated to them`, `require NO lineage drain - the inert invariant guarantees no meld is in flight against the team-store`, `run only the base fact-baseline stamp at commit; the leadership effect itself lives in the cluster`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1383,7 +1524,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for conduit link requests.
 
 #### `LinkTransactionStrategy` (class)
 
@@ -1430,15 +1571,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for the active-spell repoint - the SpellIndex flow that freezes runtime work.
 
 #### `NotchTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Intra-index active-spell repoint - the one SpellIndex flow that needs a real runtime freeze, not just structural isolation.
+- responsibilities: `seal the owning spellbook and its conduit EXCLUSIVE plus the targeted binding key, isolated to exactly those surfaces`, `drain conduit lineage gates in on_start and reopen them in on_end on EVERY exit path, including the drain-timeout abort`, `repoint the SpellIndex to a different active, resolvable spell`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1461,15 +1604,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for the move-out SpellIndex flow.
 
 #### `RemoveFromIndexTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy.RemoveFromIndexTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Move-out counterpart to add-to-index: a removal is a move to a fresh index established in the same transaction, because a spell is always in exactly one index.
+- responsibilities: `seal the owning spellbook and conduit EXCLUSIVE plus the moved spell's binding key`, `establish the fresh index (the split) inside the held window via the Spellbook-owned apply verb`, `preserve the one-index-per-spell invariant it shares with the move-in flow`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1492,15 +1637,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_spell_or_index_from_contract_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for releasing a spell or index from a cross-link contract, standalone.
 
 #### `RemoveSpellOrIndexFromContractTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy.RemoveSpellOrIndexFromContractTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_spell_or_index_from_contract_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Release half of the standalone contract-mutation pair and inverse of the grant, with matching claim modes because a release mutates the surfaces a grant does.
+- responsibilities: `seal both participating conduits and their wards EXCLUSIVE`, `untrack the contracted spell or index on the borrower ward while touching the provider surface`, `block link, unlink, transfer, cluster and other contract work on either side for the duration`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1523,7 +1670,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The abstract contract every mediator-registered transaction strategy implements.
 
 #### `TransactionStrategy` (abstract)
 
@@ -1550,7 +1697,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The kind -> strategy-class registry the mediator asks to resolve one request.
 
 #### `TransactionStrategyBuilder` (class)
 
@@ -1597,7 +1744,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for conduit ownership-transfer requests.
 
 #### `TransferOwnershipTransactionStrategy` (class)
 
@@ -1645,15 +1792,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for cluster leader unelection, including the runtime freeze active-to-inert requires.
 
 #### `UnelectConduitClusterLeaderTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy.UnelectConduitClusterLeaderTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
+- role: Deactivation half of the leader layer and the heavier twin of election: active -> inert, so readers may be in flight and the store must not be re-targeted underneath them.
+- responsibilities: `seal the member conduits EXCLUSIVE in build_start_plan`, `quiesce every member root lineage through the gate facade in on_start in PARK mode, so concurrent melds park at their gate and resume on reopen`, `reopen every lineage after the domain effect`
+- phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1676,7 +1825,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unlink_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Scope plan for conduit unlink requests.
 
 #### `UnlinkTransactionStrategy` (class)
 
@@ -1725,7 +1874,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The transaction-bookkeeping root for change-control admission.
 
 #### `ChangeControlTransactionManager` (class)
 
@@ -1772,7 +1921,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-local live session mediator above admitted requests and staged mutations.
 
 #### `TransactionMediator` (class)
 
@@ -1839,7 +1988,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_session`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One live root transaction session for one admitted change-control request.
 
 #### `TransactionSession` (class)
 
@@ -1890,7 +2039,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The pre-admission side of change control: the transaction kinds, the request payload, and the admission decision.
 
 #### `ChangeTransactionType` (enum)
 
@@ -1935,15 +2084,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The narrow conduit-lineage creation-gate facade coordinated transaction strategies reach through.
 
 #### `ConduitLineageGateOps` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops.ConduitLineageGateOps`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:12`
 - extends: `Cleanable`
+- role: The runtime-gate seam transaction strategies reach through: a narrow drain/reopen/close/count facade over the frame's single CreationGateController.
+- responsibilities: `wrap the controller BY REFERENCE and never clean it - DevOpsManager owns that lifecycle; cleanup drops the borrowed reference only`, `scope every operation to a conduit lineage, keyed by root_conduit_id`, `capture the controller under its own RLock then delegate OUTSIDE it, so a long blocking drain never holds this facade's lock`
+- owns_state: `_lock`, `_creation_gate_controller`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `close_and_wait_conduit_lineage`, `count_active_tickets_for_conduit_lineage`, `disable_conduit_lineage`, `enable_conduit_lineage`, `quiesce_conduit_lineage`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -1973,7 +2125,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.dev_ops_manager`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-level DevOps and admission-control hub; owns the frame's single CreationGateController.
 
 #### `DevOpsManager` (class)
 
@@ -2030,7 +2182,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.devops_identity`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_identity.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-local dev-ops identity record for runtime objects.
 
 #### `DevopsIdentity` (class)
 
@@ -2076,13 +2228,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.devops_information_registry`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-scoped in-memory mirror of operational topology, plus the fact baseline that makes freshness answerable.
 
 #### `DevopsFactRecord` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsFactRecord`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py:41`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The freshness primitive under the information registry: when one fact family for one region was last reported, and by whom.
+- responsibilities: `name the reported truth class in fact_family (normally a transaction type such as bind or link)`, `carry region as a scope-shaped key such as conduit:<id> or spellbook:<id>`, `record last_reporter so every fact traces to its reporter, letting strategies skip re-derivation when all change since the baseline flowed through the transaction plane`
+- phases: `runtime`
 
 #### `DevopsInformationRegistry` (class)
 
@@ -2132,7 +2286,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.devops_information_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The abstract contract for registry-backed dev-ops information queries.
 
 #### `DevopsInformationStrategy` (abstract)
 
@@ -2159,7 +2313,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Registry-backed resolver and executor for the dev-ops information strategies.
 
 #### `DevopsInformationStrategyBuilder` (class)
 
@@ -2214,7 +2368,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.incident_manager.incident`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The mutable incident record owned by IncidentManager.
 
 #### `Incident` (class)
 
@@ -2260,7 +2414,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-local incident registry.
 
 #### `IncidentManager` (class)
 
@@ -2305,7 +2459,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The severity enum for incident records.
 
 #### `IncidentSeverity` (enum)
 
@@ -2332,7 +2486,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The lifecycle status enum for incidents.
 
 #### `IncidentStatus` (enum)
 
@@ -2359,7 +2513,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Information strategy for cluster membership fan-out views.
 
 #### `ClusterFanoutStrategy` (class)
 
@@ -2403,7 +2557,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Information strategy for frame-wide operational rollups.
 
 #### `FrameOperationalViewStrategy` (class)
 
@@ -2441,7 +2595,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Shared freshness math for the registry-backed information strategies.
 
 #### `InformationFreshnessInspector` (class)
 
@@ -2482,7 +2636,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Information strategy auditing mirrored-map symmetry in the registry.
 
 #### `RegistryConsistencyAuditStrategy` (class)
 
@@ -2518,7 +2672,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Information strategy for live transaction activity views.
 
 #### `TransactionActivityViewStrategy` (class)
 
@@ -2562,7 +2716,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Information strategy for ownership-transfer blast radius.
 
 #### `TransferBlastRadiusStrategy` (class)
 
@@ -2606,13 +2760,16 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Conduit-local risk aggregation distilled into one validation-required flag per spellbook.
 
 #### `_ConduitRiskState` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager._ConduitRiskState`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:17`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Per-conduit storage bucket behind RiskManager's distillation into one validation-required flag per spellbook.
+- responsibilities: `hold one bucket per registered conduit; buckets never span conduits`, `track structural and resolution risk SEPARATELY - they have different scopes (frame-global versus conduit-local)`, `hold no lock of its own; mutated only under the owning RiskManager's RLock`
+- owns_state: `spellbook`, `lineages`, `risky_structural`, `risky_resolution`
+- phases: `runtime`
 
 #### `RiskManager` (class)
 
@@ -2656,7 +2813,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-conduit resolution-validity container.
 
 #### `ConduitResolutionState` (class)
 
@@ -2703,7 +2860,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fine-grained state-flag enum for one spell lineage.
 
 #### `SpellState` (enum)
 
@@ -2730,7 +2887,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The coarse latest-transition reason enum for one lineage.
 
 #### `SpellStateChangeReason` (enum)
 
@@ -2757,7 +2914,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: System-level state for a single spell lineage.
 
 #### `SpellSystemState` (class)
 
@@ -2805,7 +2962,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-frame lineage and resolution state registry.
 
 #### `SpellSystemStates` (class)
 
@@ -2860,7 +3017,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The coarse validity gate enum over structural and resolution state.
 
 #### `SpellValidity` (enum)
 
@@ -2887,14 +3044,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_frame.lookup_container`
 - defined at: `src/melder/aether/aetheric_frame/lookup_container.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-wide active binding-signature registry - one active spell per signature, framewide.
 
 #### `LookupContainer` (class)
 
 - id: `melder.aether.aetheric_frame.lookup_container.LookupContainer`
 - defined at: `src/melder/aether/aetheric_frame/lookup_container.py:5`
+- role: The frame-wide binding-signature uniqueness surface: one active spell per (frame_key, bind_key), replacing per-spellbook signature checks.
+- responsibilities: `hold ACTIVE signatures only, plus the inverse spell_id -> signature index so release is O(1) on notch or cleanup`, `raise on a re-claim for a DIFFERENT spell_id and leave state unchanged`, `serialize every read and write under one non-reentrant Lock, so the forward and reverse maps are never observed mid-update`, `clear both maps and drop the lock on cleanup; idempotent`
+- owns_state: `_lookup`, `_reverse`, `_lock`, `_cleaned`
+- phases: `runtime`, `cleanup`
 - public methods: `claim`, `cleanup`, `contains`, `contains_spell_id`, `get`, `get_sig_by_spell_id`, `release`, `release_by_spell_id`, `update`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (2, unconfirmed)
 
@@ -3489,7 +3649,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `f7611eacae8947592240fbb97f3fa5d7541f589e9755d411703d088bf0a0b74b`
+- source_sha256: `3d38cd524c6a65677c7cd1b33b35136a25d333b8087f37c3ffaecc3a3095734d`
 - nodes: 2
 
 ### Nodes
@@ -3498,7 +3658,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit`
 - defined at: `src/melder/aether/conduit/conduit.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Runtime scope, execution boundary and contract-aware access surface for one branch of the graph.
+- responsibilities: `own creations, meld, ward, gate and pools for its scope`, `create and upgrade lesser conduits`, `link and sever peers in dynamic mode`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `Conduit` (class)
 
@@ -3578,7 +3740,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_cluster`
 - defined at: `src/melder/aether/conduit/conduit_cluster.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Frame-local membership group with leaderless spell sharing plus an optional elected-leader store.
+- responsibilities: `share cluster-scoped roots among members`, `elect a leader only for the optional team store`
+- phases: `runtime`, `cleanup`
 
 #### `ConduitCluster` (class)
 
@@ -3627,7 +3791,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_pool`
 - defined at: `src/melder/aether/conduit/conduit_pool.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Root-conduit-owned elastic pool for reusable lesser conduits.
+- responsibilities: `keep lesser conduits alive for reuse rather than rebuilding them`
+- phases: `runtime`, `cleanup`
 
 #### `ConduitPool` (class)
 
@@ -3666,7 +3832,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_state.conduit_state`
 - defined at: `src/melder/aether/conduit/conduit_state/conduit_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Lifecycle vocabulary distinguishing normal, lesser, pooled and cleaned conduits.
+- responsibilities: `label which lifecycle position a conduit occupies`
+- phases: `runtime`
 
 #### `ConduitState` (enum)
 
@@ -3700,7 +3868,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.conduit_ward`
 - defined at: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Control plane for one conduit: contracts, lineage links and policy.
+- responsibilities: `own the contract graph and inbound/outbound indexes`, `own and clean the lesser conduits it links`, `enforce same-frame linking`
+- phases: `runtime`, `cleanup`
 
 #### `ConduitWard` (class)
 
@@ -3758,7 +3928,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.contract.contract`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/contract.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Bidirectional contract between two wards, symmetric at the pair level.
+- responsibilities: `let each side keep its own detail projection`
+- phases: `runtime`, `cleanup`
 
 #### `Contract` (class)
 
@@ -3810,7 +3982,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.contract.contract_types.contract_types`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Perspective vocabulary for a Detail inside one side of a contract.
+- responsibilities: `distinguish which side of the pair a detail belongs to`
+- phases: `runtime`
 
 #### `ContractTypes` (enum)
 
@@ -3837,7 +4011,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.contract.detail_reason`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/detail_reason.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Vocabulary for why a contract detail exists.
+- responsibilities: `distinguish directly shared lineages from transitive dependency links`
+- phases: `runtime`
 
 #### `DetailReason` (enum)
 
@@ -3864,7 +4040,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.contract.details`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/details.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Spell-level and index-level permission entries stored inside a contract.
+- responsibilities: `snapshot a version, or subscribe to a whole index`
+- phases: `runtime`
 
 #### `Detail` (class)
 
@@ -3882,8 +4060,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.contract.details.IndexDetail`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/details.py:245`
 - extends: `Cleanable`
+- role: Index-level entry subscribing a peer to a whole SpellIndex rather than one version.
+- responsibilities: `follow the index's selected member rather than pinning a version`
+- phases: `runtime`
 - public methods: `add_source`, `cleanup`, `has_spell`, `index_id`, `remove_source`, `update_selected`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3923,7 +4103,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.permissions.permissions`
 - defined at: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Capability ceiling vocabulary for a spell lineage across conduits.
+- responsibilities: `cap what a borrower may do with a shared lineage`
+- phases: `runtime`
 
 #### `Permissions` (enum)
 
@@ -3950,7 +4132,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.policies.policies`
 - defined at: `src/melder/aether/conduit/conduit_ward/policies/policies.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Runtime policy vocabulary for conduit-to-conduit contracting.
+- responsibilities: `gate which links a ward may form in dynamic mode`
+- phases: `runtime`
 
 #### `Policies` (enum)
 
@@ -3977,7 +4161,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership`
 - defined at: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Control-plane helper migrating a spell lineage between conduit owners.
+- responsibilities: `preflight borrowers, dependencies and creations before flipping registries`, `mark lineage dirty and gated so revalidation follows`
+- phases: `runtime`
 
 #### `TransferOfOwnership` (class)
 
@@ -4031,15 +4217,19 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.creations.cluster_creations`
 - defined at: `src/melder/aether/conduit/creations/cluster_creations.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Facade pointing at whichever conduit is the cluster's elected leader.
+- responsibilities: `give members one stable handle while the real store moves with the leader`
+- phases: `runtime`, `cleanup`
 
 #### `ClusterCreations` (class)
 
 - id: `melder.aether.conduit.creations.cluster_creations.ClusterCreations`
 - defined at: `src/melder/aether/conduit/creations/cluster_creations.py:9`
 - extends: `Cleanable`
+- role: Facade over the elected leader's store; references, never owns.
+- responsibilities: `refuse use while no leader is elected`, `never clean the store it points at`
+- phases: `runtime`, `cleanup`
 - public methods: `add_creation`, `bind`, `cleanup`, `get_creation`, `is_active`, `resolved_store`, `unbind`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -4068,7 +4258,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.creations.conduit_creations`
 - defined at: `src/melder/aether/conduit/creations/conduit_creations.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Conduit and root specialization over the generic scoped store.
+- responsibilities: `add conduit-scoped extraction and restore for ownership transfer`
+- phases: `runtime`, `cleanup`
 
 #### `ConduitCreations` (class)
 
@@ -4105,7 +4297,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.creations.creations`
 - defined at: `src/melder/aether/conduit/creations/creations.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Generic scoped live-object store: the storage layer beneath Meld.
+- responsibilities: `hold live objects for exactly one scope`, `keep disposal metadata apart so resolution never pays for it`, `dispose in reverse creation order`
+- phases: `runtime`, `cleanup`
 
 #### `Creations` (class)
 
@@ -4148,7 +4342,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.conduit_meld`
 - defined at: `src/melder/aether/conduit/meld/conduit_meld.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Conduit-facing meld front door.
+- responsibilities: `own the caller-conduit creations store`, `refuse spellspace-scoped lineages the conduit door cannot satisfy`
+- phases: `runtime`
 
 #### `ConduitMeld` (class)
 
@@ -4194,7 +4390,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.contracts.spell_contract`
 - defined at: `src/melder/aether/conduit/meld/contracts/spell_contract.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Late-binding socket satisfied by conduit linking rather than local resolution.
+- responsibilities: `declare a dependency a link will supply later`
+- phases: `validation`, `runtime`
 
 #### `SpellContract` (class)
 
@@ -4234,7 +4432,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.contracts.spell_map`
 - defined at: `src/melder/aether/conduit/meld/contracts/spell_map.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Declarative DI descriptor for ordinary spellbook-local resolution.
+- responsibilities: `express explicit spell / spellframe / binding intent`, `carry optional override payloads`
+- phases: `validation`, `runtime`
 
 #### `SpellMap` (class)
 
@@ -4274,7 +4474,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.creation_context.creation_context`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Spell-bound executor context running phase-11 doors under the dynamic gate.
+- responsibilities: `dispatch the prebuilt no-overrides lane directly`, `specialize only when overrides are present`
+- phases: `runtime`, `cleanup`
 
 #### `CreationContext` (class)
 
@@ -4315,7 +4517,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.creation_context.creation_context_builder`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Builds spell-bound creation contexts from phase-11 inputs.
+- responsibilities: `require codegen creation for constructed spells`, `route existing-creation spells around the phase 8-11 group`
+- phases: `runtime`
 
 #### `CreationContextBuilder` (class)
 
@@ -4349,7 +4553,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.creation_context.creation_context_factory`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Centralizes context construction so front doors stay minimal.
+- responsibilities: `produce spell-shaped contexts behind one factory`
+- phases: `runtime`
 
 #### `CreationContextFactory` (class)
 
@@ -4395,7 +4601,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.meld`
 - defined at: `src/melder/aether/conduit/meld/meld.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Shared runtime core for spell activation and dependency resolution beneath the front doors.
+- responsibilities: `resolve by id or normalized key`, `gate on structural and per-conduit resolution validity`, `choose reuse or instantiate from Existence`
+- phases: `runtime`, `cleanup`
 
 #### `Meld` (abstract)
 
@@ -4455,14 +4663,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.overrides.spell_overrider`
 - defined at: `src/melder/aether/conduit/meld/overrides/spell_overrider.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Turns a raw override payload into a socket-aware map for one root blueprint.
+- responsibilities: `resolve override targets against blueprint sockets`, `rank competing specs by specificity`
+- phases: `runtime`
 
 #### `_Specificity` (enum)
 
 - id: `melder.aether.conduit.meld.overrides.spell_overrider._Specificity`
 - defined at: `src/melder/aether/conduit/meld/overrides/spell_overrider.py:17`
 - markers: `IntEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Precedence tiers deciding which override spec wins a contested socket.
+- responsibilities: `make higher specificity win deterministically`
+- phases: `runtime`
 
 #### `SpellOverrider` (class)
 
@@ -4507,7 +4719,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.spellspace_meld`
 - defined at: `src/melder/aether/conduit/meld/spellspace_meld.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Spellspace-facing meld front door.
+- responsibilities: `route unique_per_spell_space work onto spellspace-local storage`
+- phases: `runtime`
 
 #### `SpellSpaceMeld` (class)
 
@@ -4557,7 +4771,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.spell_space.spell_space`
 - defined at: `src/melder/aether/conduit/spell_space/spell_space.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Explicit scope handle for unique_per_spell_space resolution.
+- responsibilities: `represent one spellspace-bound resolution window`, `refuse meld when it is not the active scope`
+- phases: `runtime`, `cleanup`
 
 #### `SpellSpace` (class)
 
@@ -4604,7 +4820,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.spell_space.spell_space_pool`
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_pool.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Elastic pool recycling spellspace objects across repeated use.
+- responsibilities: `keep spellspaces alive so normal cleanup can recycle them`
+- phases: `runtime`, `cleanup`
 
 #### `SpellSpacePool` (class)
 
@@ -4655,14 +4873,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.spell_space.spell_space_thread_state`
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Per-thread active spellspace stack for one conduit.
+- responsibilities: `give each thread its own stack without cross-thread coupling`
+- phases: `runtime`
 
 #### `_SpellSpaceLocal` (class)
 
 - id: `melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal`
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:10`
 - extends: `local`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Per-thread storage backing the spellspace stack.
+- responsibilities: `hold one thread's spellspace stack`
+- phases: `runtime`
 
 #### `SpellSpaceThreadState` (class)
 
@@ -4707,7 +4929,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.bind.bind`
 - defined at: `src/melder/aether/spellbook/bind/bind.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The spell registration gateway for one Spellbook.
 
 #### `Bind` (class)
 
@@ -4767,14 +4989,16 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.bind.scan`
 - defined at: `src/melder/aether/spellbook/bind/scan.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Deferred binding: the frozen scan_bind payload and the module-only scanner that replays it.
 
 #### `ScanBindMetadata` (class)
 
 - id: `melder.aether.spellbook.bind.scan.ScanBindMetadata`
 - defined at: `src/melder/aether/spellbook/bind/scan.py:55`
+- role: The frozen payload a scan_bind decoration leaves behind - bind-time policy captured now, registration replayed later.
+- responsibilities: `carry every input Spellbook.bind needs during a later module scan`, `preserve Existence|str and Permissions|str AS PROVIDED, so the later replay takes the same normalization path as direct binding`, `store hook collections as tuples at rest and materialize fresh lists on use`, `stay immutable once created; safe to share across threads`
+- phases: `bind`
 - public methods: `to_bind_kwargs`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `Scan` (class)
 
@@ -4818,7 +5042,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.bind.spell_index`
 - defined at: `src/melder/aether/spellbook/bind/spell_index.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Stable index identity with a mutable selected-spell pointer - the thing notch repoints.
 
 #### `SpellIndex` (class)
 
@@ -4865,7 +5089,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.configuration.spellbook_configuration`
 - defined at: `src/melder/aether/spellbook/configuration/spellbook_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The mutable build-time configuration surface for one spellbook/runtime context.
 
 #### `SpellbookConfiguration` (class)
 
@@ -4914,7 +5138,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.configuration.system_state`
 - defined at: `src/melder/aether/spellbook/configuration/system_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The high-level runtime posture enum (dynamic versus automatic) that decides how strict compilation is.
 
 #### `SystemState` (enum)
 
@@ -4941,7 +5165,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.existence.existence`
 - defined at: `src/melder/aether/spellbook/existence/existence.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The lifecycle mode enum for a spell binding.
 
 #### `Existence` (enum)
 
@@ -4968,7 +5192,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.resolution_style_matrix`
 - defined at: `src/melder/aether/spellbook/resolution_style_matrix.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The canonical support matrix for resolution styles.
 
 #### `ResolutionStyleMatrix` (class)
 
@@ -5005,7 +5229,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell`
 - defined at: `src/melder/aether/spellbook/spell.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The canonical bound-spell runtime record.
 
 #### `Spell` (class)
 
@@ -5080,19 +5304,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fitted injection section: per-parameter sources and per-instance-key wiring.
 
 #### `SpellInjectionParamSource` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:9`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Says where ONE injected parameter gets its value in the fitted injection section of the codegen model.
+- responsibilities: `carry is_collection forward from the phase-3 socket truth so planner and codegen can tell a one-member collection from single DI`, `never let is_collection be inferred from dependency count - a collection socket with one wired provider still injects a list`, `hold the dependency keys plus the override and contract keys for that parameter`
+- owns_state: `kind`, `dependency_keys`, `override_key`, `contract_key`, `is_collection`
+- phases: `compile`
 
 #### `SpellInjectionInstanceSpec` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:61`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-instance-key injection wiring and payload posture in the fitted model.
+- responsibilities: `hold the parameter sources for one concrete instance key`, `carry the aggregation and positional-override posture and the contract payload alongside them`
+- owns_state: `param_sources`, `allow_list_aggregation`, `uses_positional_override`, `contract_payload`, `collection_param_names`
+- phases: `compile`
 
 #### `SpellInjectionAnalysis` (class)
 
@@ -5129,7 +5359,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fitted occurrence contract-routing section.
 
 #### `SpellOccurrenceContractAnalysis` (class)
 
@@ -5166,7 +5396,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fitted occurrence instance/sharedness section.
 
 #### `SpellOccurrenceInstanceAnalysis` (class)
 
@@ -5203,7 +5433,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_order_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fitted occurrence-order section.
 
 #### `SpellOccurrenceOrderAnalysis` (class)
 
@@ -5240,13 +5470,16 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_override_targeting_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fitted override-targeting section and its normalized target rows.
 
 #### `SpellOverrideTargetRef` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_override_targeting_analysis.py:6`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One normalized override-target socket identity, held WITHOUT keeping a raw SocketRef object in the fitted model.
+- responsibilities: `carry node id, param path id, param name and socket kind as plain values`, `keep the fitted model free of live runtime targeting objects`
+- owns_state: `node_id`, `param_path_id`, `param_name`, `socket_kind_value`
+- phases: `compile`
 
 #### `SpellOverrideTargetingAnalysis` (class)
 
@@ -5283,13 +5516,16 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fitted runtime section: spell-static facts planner strategies read instead of the live book.
 
 #### `SpellRuntimeRecord` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py:7`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The spell-static runtime facts planner strategies need, so they never have to reopen the live spellbook maps.
+- responsibilities: `carry spell id/name, the spell and its call target, existence, and the kind flags`, `let planner strategies read runtime truth from the fitted model instead of the live book`
+- owns_state: `spell_id`, `spell_name`, `spell`, `call_target`, `existence`, `is_existing_creation`, `is_class_spell`
+- phases: `compile`
 
 #### `SpellRuntimeAnalysis` (class)
 
@@ -5328,7 +5564,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 9 processor facade that fits compiler artifact truth into the codegen model.
 
 #### `SpellArtifactProcessor` (class)
 
@@ -5379,7 +5615,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The contract for one processor strategy fitting one section of the model.
 
 #### `SpellArtifactProcessorStrategy` (abstract)
 
@@ -5416,7 +5652,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The registry of built-in artifact-processor strategies.
 
 #### `SpellArtifactProcessorStrategyBuilder` (class)
 
@@ -5482,7 +5718,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The processor-owned codegen model for one spell - the fitted truth phases 10 and 11 consume.
 
 #### `SpellCodegenModel` (class)
 
@@ -5531,7 +5767,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_existence_occurrence_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_existence_occurrence_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Publishes analyzer-owned existence-occurrence truth onto the codegen model.
 
 #### `SpellExistenceOccurrenceProcessorStrategy` (class)
 
@@ -5573,7 +5809,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fits the injection section of the codegen model.
 
 #### `SpellInjectionProcessorStrategy` (class)
 
@@ -5623,7 +5859,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fits SpellContract routing and payload facts into the codegen model.
 
 #### `SpellOccurrenceContractProcessorStrategy` (class)
 
@@ -5671,7 +5907,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fits occurrence instance and sharedness facts into the codegen model.
 
 #### `SpellOccurrenceInstanceProcessorStrategy` (class)
 
@@ -5718,7 +5954,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_order_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fits deterministic execution order into the codegen model.
 
 #### `SpellOccurrenceOrderProcessorStrategy` (class)
 
@@ -5765,7 +6001,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fits override-targeting truth into the codegen model.
 
 #### `SpellOverrideTargetingProcessorStrategy` (class)
 
@@ -5813,7 +6049,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fits runtime spell facts into the codegen model.
 
 #### `SpellRuntimeProcessorStrategy` (class)
 
@@ -5861,7 +6097,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint`
 - defined at: `src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 5 rooted deep-DAG blueprint for one spell.
 
 #### `RootResolutionBlueprint` (class)
 
@@ -5908,7 +6144,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The final creation container for one spell.
 
 #### `SpellCodegenCreation` (class)
 
@@ -5983,7 +6219,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The immutable result of one Phase 11 creation-selection pass.
 
 #### `CodegenCreationDiscovery` (class)
 
@@ -6008,7 +6244,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The contract for one Phase 11 creation-discovery strategy.
 
 #### `CodegenCreationDiscoveryStrategy` (abstract)
 
@@ -6035,7 +6271,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The registry of Phase 11 creation-discovery strategies.
 
 #### `CodegenCreationDiscoveryStrategyBuilder` (class)
 
@@ -6093,7 +6329,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_system`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 11 facade selecting the best creation-discovery result for one model/plan pair.
 
 #### `CodegenCreationDiscoverySystem` (class)
 
@@ -6149,8 +6385,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy.FallbackNoOverridesCodegenCreationDiscoveryStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/fallback_no_overrides_codegen_creation_discovery_strategy.py:15`
 - extends: `CodegenCreationDiscoveryStrategy`
+- role: The terminal Phase-11 strategy: preserves the fallback no-overrides result when no earlier strategy claims the model/plan pair.
+- responsibilities: `produce the fallback no-overrides discovery result`, `guarantee every model/plan pair resolves to something, so discovery cannot end empty`
+- phases: `compile`
 - public methods: `discover`, `strategy_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -6195,8 +6433,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
+- role: Phase-11 routing that sends generalized planner output to the manifest-first creation family - registered AHEAD of the legacy strategy, so every generalized plan resolves here concretely with no stamp and no config gate.
+- responsibilities: `claim exactly the plans the legacy generalized discovery claimed (selected_strategy_id == 'generalized_codegen_plan')`, `decline every other plan family so solo and many_only routing is untouched`, `leave the legacy strategy registered behind it as the rollback seam - removing this one restores the old routing`
+- phases: `compile`
 - public methods: `discover`, `strategy_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -6241,8 +6481,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy.GeneralizedCodegenCreationDiscoveryStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
+- role: The legacy generalized Phase-11 strategy: the pre-existing behavior moved behind an explicit discovery contract, now the rollback seam behind the cache strategy.
+- responsibilities: `claim only generalized planner output and emit the generalized family facade id`, `choose one concrete codegen style from the plan's candidate list`, `keep the runtime contract narrow - family and style only, no new top-level output fields`
+- phases: `compile`
 - public methods: `discover`, `strategy_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -6287,8 +6529,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
+- role: Phase-11 routing for many-only plan-family output, keeping it in its own creation family.
+- responsibilities: `claim phase-10 many-only planner output`, `route it to the dedicated many-only creation family rather than collapsing it back into generalized discovery`
+- phases: `compile`
 - public methods: `discover`, `strategy_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -6333,8 +6577,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy.SoloCodegenCreationDiscoveryStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/solo_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
+- role: Phase-11 routing for solo plan-family output, keeping it in its own creation family.
+- responsibilities: `claim phase-10 solo planner output`, `route it to the dedicated solo creation family rather than collapsing it back into generalized discovery`
+- phases: `compile`
 - public methods: `discover`, `strategy_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -6370,7 +6616,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 11 facade that builds and publishes the final codegen-creation artifact for one spell.
 
 #### `CodegenCreationSystem` (class)
 
@@ -6426,7 +6672,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_family_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The shared internal step contract every creation family's steps implement.
 
 #### `CodegenCreationFamilyStep` (abstract)
 
@@ -6453,7 +6699,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The shared Phase 11 helper surface across creation families.
 
 #### `CodegenCreationSchemaHelpers` (class)
 
@@ -6553,7 +6799,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The contract for one codegen creation strategy.
 
 #### `SpellCodegenStrategy` (abstract)
 
@@ -6590,7 +6836,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The registry of built-in codegen creation strategies.
 
 #### `SpellCodegenStrategyBuilder` (class)
 
@@ -6643,7 +6889,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/fallback_no_overrides/fallback_no_overrides_codegen_creation_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fallback creation family: no-overrides-only output when nothing else claims the pair.
 
 #### `FallbackNoOverridesCodegenCreationStrategy` (class)
 
@@ -6689,20 +6935,24 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The generalized family's override-targeting artifact, its hashable socket row, and the PATH>UNIQUE>BROADCAST ordering.
 
 #### `_Specificity` (enum)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation._Specificity`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py:15`
 - markers: `IntEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The override-target conflict-resolution ordering, preserved from the old Phase 10 patch map: PATH > UNIQUE > BROADCAST.
+- responsibilities: `rank override target matches so the more specific match wins`
+- phases: `compile`
 
 #### `SpellOverrideTargetSocketRef` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py:31`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The compiler-owned, hashable replacement for a runtime SocketRef in the generalized creation family.
+- responsibilities: `expose the socket identity data the override runtime needs, without the runtime object`, `stay hashable so it can key the override maps`
+- phases: `compile`
 
 #### `SpellOverrideTargetingCodegenCreation` (class)
 
@@ -6940,7 +7190,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The slotted hydrated runtime step row for the generalized family.
 
 #### `CodegenStepRuntimeRow` (class)
 
@@ -6977,7 +7227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Family-local mutable state for the generalized creation strategy.
 
 #### `GeneralizedCodegenCreationState` (class)
 
@@ -7013,7 +7263,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The manifest-first generalized creation family for generalized planner output.
 
 #### `GeneralizedCodegenCreationStrategy` (class)
 
@@ -7098,7 +7348,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_manifest_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Family-local mutable state for the generalized manifest-first path.
 
 #### `GeneralizedManifestState` (class)
 
@@ -7134,7 +7384,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The two binding resolvers of the generalized family: live over plan/model truth, and cache-load over the live Spellbook.
 
 #### `PlanBindingResolver` (class)
 
@@ -7279,7 +7529,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_finalize_creation_context_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Generalized family step: finalize the output.
 
 #### `GeneralizedFinalizeCreationContextStep` (class)
 
@@ -7326,7 +7576,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Generalized family step: publish the lazy door.
 
 #### `GeneralizedLazyDoorStep` (class)
 
@@ -7375,7 +7625,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_manifest_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Generalized family step: build the manifest.
 
 #### `GeneralizedManifestStep` (class)
 
@@ -7415,7 +7665,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_no_overrides_codegen_creation_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Generalized family step: build the no-overrides executor.
 
 #### `GeneralizedNoOverridesCodegenCreationStep` (class)
 
@@ -7465,7 +7715,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_overrides_codegen_creation_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Generalized family step: package the overrides.
 
 #### `GeneralizedOverridesCodegenCreationStep` (class)
 
@@ -7515,20 +7765,24 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The many-only family's override-targeting artifact, its hashable socket row, and the PATH>UNIQUE>BROADCAST ordering.
 
 #### `_Specificity` (enum)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation._Specificity`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:15`
 - markers: `IntEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The many-only family's copy of the override-target ordering: PATH > UNIQUE > BROADCAST, preserved from the old Phase 10 patch map.
+- responsibilities: `rank override target matches so the more specific match wins`
+- phases: `compile`
 
 #### `SpellOverrideTargetSocketRef` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:31`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The many-only family's compiler-owned, hashable replacement for a runtime SocketRef.
+- responsibilities: `expose the socket identity data the override runtime needs, without the runtime object`, `stay hashable so it can key the override maps`
+- phases: `compile`
 
 #### `SpellOverrideTargetingCodegenCreation` (class)
 
@@ -7577,7 +7831,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:1`
-- role: Spell-scoped no-overrides compiler for the many-only family.
+- role: Spell-scoped no-overrides compiler for the many-only family, plus its compiler-local target-kind and call-mode vocabulary.
 - responsibilities: `hydrates many-only no-overrides executors from plan objects or schema rows`, `builds transient unrolled or emitted step-plan source for many-only no-overrides execution`, `uses the process-wide executor code cache for emitted no-overrides executors`
 - owns_state: `_TRANSIENT_SCHEMA_SEQUENCE_FIELDS`
 - phases: `runtime`
@@ -7586,13 +7840,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:52`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Compiler-local target-kind labels for the many-only no-overrides compiler.
+- responsibilities: `name the target kinds this compiler emits, scoped to the compiler rather than shared vocabulary`
+- phases: `compile`
 
 #### `ManyOnlyCodegenPlanCallMode` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:63`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Compiler-local call-mode labels for the many-only no-overrides compiler.
+- responsibilities: `name the call modes this compiler emits, scoped to the compiler rather than shared vocabulary`
+- phases: `compile`
 
 ### Edges out
 
@@ -7734,7 +7992,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Many-only-local Phase 11 helper surface.
 
 #### `ManyOnlyCodegenCreationHelpers` (class)
 
@@ -7760,7 +8018,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Family-local mutable state for the many-only creation strategy.
 
 #### `ManyOnlyCodegenCreationState` (class)
 
@@ -7796,7 +8054,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The manifest-first many-only creation family for many-only planner output.
 
 #### `ManyOnlyCodegenCreationStrategy` (class)
 
@@ -7880,7 +8138,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_finalize_creation_context_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Many-only family step: finalize the output.
 
 #### `ManyOnlyFinalizeCreationContextStep` (class)
 
@@ -7925,7 +8183,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_lazy_door_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Many-only family step: publish the lazy door.
 
 #### `ManyOnlyLazyDoorStep` (class)
 
@@ -7971,7 +8229,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_manifest_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Many-only family step: build the manifest.
 
 #### `ManyOnlyManifestStep` (class)
 
@@ -8017,7 +8275,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Many-only family step: build the no-overrides executor.
 
 #### `ManyOnlyNoOverridesCodegenCreationStep` (class)
 
@@ -8065,7 +8323,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_overrides_codegen_creation_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_overrides_codegen_creation_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Many-only family step: package the overrides.
 
 #### `ManyOnlyOverridesCodegenCreationStep` (class)
 
@@ -8248,7 +8506,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Family-local mutable state for the solo creation strategy.
 
 #### `SoloCodegenCreationState` (class)
 
@@ -8284,7 +8542,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The manifest-first solo creation family for solo planner output.
 
 #### `SoloCodegenCreationStrategy` (class)
 
@@ -8366,7 +8624,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_creation_context_setup_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_creation_context_setup_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Solo family step: set up the creation context.
 
 #### `SoloCreationContextSetupStep` (class)
 
@@ -8404,7 +8662,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_lazy_door_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Solo family step: publish the lazy door.
 
 #### `SoloLazyDoorStep` (class)
 
@@ -8450,7 +8708,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_manifest_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Solo family step: build the manifest.
 
 #### `SoloManifestStep` (class)
 
@@ -8490,7 +8748,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Solo family step: build the no-overrides executor.
 
 #### `SoloNoOverridesCodegenCreationStep` (class)
 
@@ -8530,7 +8788,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_overrides_codegen_creation_step.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Solo family step: build the overrides executor.
 
 #### `SoloOverridesCodegenCreationStep` (class)
 
@@ -8570,7 +8828,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The discovery result of one plan-selection pass.
 
 #### `CodegenPlanDiscovery` (class)
 
@@ -8596,7 +8854,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The contract for one Phase 10 discovery strategy.
 
 #### `CodegenPlanDiscoveryStrategy` (abstract)
 
@@ -8633,7 +8891,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The registry of Phase 10 discovery strategies.
 
 #### `CodegenPlanDiscoveryStrategyBuilder` (class)
 
@@ -8687,7 +8945,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_system`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 10 facade selecting the best plan-discovery result for one model.
 
 #### `CodegenPlanDiscoverySystem` (class)
 
@@ -8735,7 +8993,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 10 discovery: the default generalized route.
 
 #### `GeneralizedCodegenPlanDiscoveryStrategy` (class)
 
@@ -8777,7 +9035,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 10 discovery: graphs made only of Existence.many spells.
 
 #### `ManyOnlyCodegenPlanDiscoveryStrategy` (class)
 
@@ -8821,7 +9079,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 10 discovery: the solo spell category.
 
 #### `SoloCodegenPlanDiscoveryStrategy` (class)
 
@@ -8863,7 +9121,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The many-only planner vocabulary and its reusable per-occurrence step object.
 
 #### `ManyOnlyCodegenPlanVariant` (class)
 
@@ -8980,7 +9238,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The generalized lane vocabulary: variant, target-kind and call-mode labels.
 
 #### `SpellGeneralizedCodegenPlanVariant` (class)
 
@@ -9118,7 +9376,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The planner-owned plan container for one spell.
 
 #### `SpellCodegenPlan` (class)
 
@@ -9155,7 +9413,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The contract for one plan-shaping strategy.
 
 #### `SpellCodegenPlanStrategy` (abstract)
 
@@ -9192,7 +9450,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The registry of codegen-plan strategies.
 
 #### `SpellCodegenPlanStrategyBuilder` (class)
 
@@ -9246,7 +9504,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_planner.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 10 planner facade over artifact-owned model truth.
 
 #### `SpellCodegenPlanner` (class)
 
@@ -9302,7 +9560,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_codegen_plan_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_codegen_plan_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The generalized model-native plan strategy.
 
 #### `SpellGeneralizedCodegenPlanStrategy` (class)
 
@@ -9346,7 +9604,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The residual generalized many-only plan strategy.
 
 #### `SpellGeneralizedManyOnlyCodegenPlanStrategy` (class)
 
@@ -9390,7 +9648,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_solo_codegen_plan_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_solo_codegen_plan_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The solo-category plan strategy.
 
 #### `SpellGeneralizedSoloCodegenPlanStrategy` (class)
 
@@ -9434,7 +9692,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The standalone many-only plan strategy.
 
 #### `SpellManyOnlyCodegenPlanStrategy` (class)
 
@@ -9478,7 +9736,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_index`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The targeting surface: interned parameter paths, stable socket references, and the index over them.
 
 #### `PathRegistry` (class)
 
@@ -9579,7 +9837,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_node`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_node.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One node in the spellbook directed acyclic work graph.
 
 #### `DagNode` (class)
 
@@ -9623,7 +9881,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/directed_acyclic_work_graph.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The minimal DAG implementation specialized for Melder resolution.
 
 #### `DirectedAcyclicWorkGraph` (class)
 
@@ -9669,7 +9927,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.dag.resolution_frame.resolution_frame`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolution_frame.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-meld runtime value frame.
 
 #### `ResolutionFrame` (class)
 
@@ -9710,7 +9968,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.dag.socket_kind`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The enum classifying what kind of socket a DAG edge represents.
 
 #### `SocketKind` (enum)
 
@@ -9737,7 +9995,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.dag.target_spec`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Override targeting: the supported targeting modes and the parsed form of one override target key.
 
 #### `TargetSpecKind` (enum)
 
@@ -9829,7 +10087,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_1`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_1.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 1: requirements extraction.
 
 #### `CompilerPhase1` (class)
 
@@ -9873,7 +10131,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_10`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 10: the live wrapper over SpellCodegenPlanner - plan shaping.
 
 #### `CompilerPhase10` (class)
 
@@ -9921,7 +10179,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_11`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_11.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 11: the live wrapper over CodegenCreationSystem - final creation artifact.
 
 #### `CompilerPhase11` (class)
 
@@ -9969,7 +10227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_2`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 2: symbolic graph build.
 
 #### `CompilerPhase2` (class)
 
@@ -10015,7 +10273,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 3: local-frame and DAG build - where socket truth including is_collection is established.
 
 #### `CompilerPhase3` (class)
 
@@ -10074,7 +10332,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_4`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 4: spell-local structural validation.
 
 #### `CompilerPhase4` (class)
 
@@ -10118,7 +10376,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_5`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 5: rooted-blueprint build, producing both the blueprints and the system index.
 
 #### `CompilerPhase5` (class)
 
@@ -10175,7 +10433,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_6`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 6: system validation across the rooted graphs.
 
 #### `CompilerPhase6` (class)
 
@@ -10239,7 +10497,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_7`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 7: change-control wiring.
 
 #### `CompilerPhase7` (class)
 
@@ -10283,7 +10541,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_8`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 8: the live wrapper over SpellAnalyzer.
 
 #### `CompilerPhase8` (class)
 
@@ -10330,7 +10588,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_9`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 9: the live wrapper over SpellArtifactProcessor - model fitting.
 
 #### `CompilerPhase9` (class)
 
@@ -10377,7 +10635,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Shared static execution helpers the phases call rather than duplicate.
 
 #### `SharedCompilerExecutions` (class)
 
@@ -10411,7 +10669,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.phases.utility`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/utility.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Shared static helper surface for the compiler phases.
 
 #### `CompilerPhaseUtility` (class)
 
@@ -10437,31 +10695,40 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.profiles.resolution_profile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The resolution_profile placeholder family - symbolic node/edge/graph plus validation issue/result, all DISTINCT from the live classes of the same names elsewhere in the compiler.
 
 #### `SpellSymbolicNode` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicNode`
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:11`
 - extends: `Cleanable`
+- role: Placeholder node of the resolution_profile family's symbolic graph.
+- responsibilities: `carry a node id, kind and metadata for one element of a spell's local dependency graph`
+- owns_state: `node_id`, `kind`, `metadata`
+- phases: `compile`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `SpellSymbolicEdge` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicEdge`
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:74`
 - extends: `Cleanable`
+- role: Placeholder edge of the resolution_profile family's symbolic graph: from_node depends on to_node, optionally via one parameter.
+- responsibilities: `pair two SpellSymbolicNodes and record the parameter the dependency travels through`
+- owns_state: `from_node`, `to_node`, `via_parameter`
+- phases: `compile`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `SpellSymbolicGraph` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicGraph`
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:131`
 - extends: `Cleanable`
+- role: Phase 2 artifact: the local symbolic dependency graph for ONE spell - no global DAG semantics and no resolution against the Spellbook. DISTINCT from spell_compiler/symbolic_graph's class of the same name.
+- responsibilities: `own the node and edge lists describing one spell's structure`, `stay purely structural - resolution belongs to later phases`
+- owns_state: `spell_id`, `nodes`, `edges`
+- phases: `compile`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `SpellResolutionFrame` (class)
 
@@ -10479,16 +10746,22 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationIssue`
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:268`
 - extends: `Cleanable`
+- role: One warning or error in the resolution_profile family. DISTINCT from spell_compiler/validation's class of the same name.
+- responsibilities: `carry a code, a message, and structured details`
+- owns_state: `code`, `message`, `details`
+- phases: `compile`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `SpellValidationResult` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationResult`
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:325`
 - extends: `Cleanable`
+- role: Phase 4 artifact of the resolution_profile family: the readiness summary over requirements, symbolic graph and local frame. DISTINCT from spell_compiler/validation's class of the same name.
+- responsibilities: `aggregate this family's SpellValidationIssue lists into one validity verdict`
+- owns_state: `is_valid`, `errors`, `warnings`
+- phases: `compile`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `SpellResolutionProfile` (class)
 
@@ -10528,7 +10801,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_existence_occurrence_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 8 existence-occurrence capture: spell id to existence rows from the spell walk.
 
 #### `SpellExistenceOccurrence` (class)
 
@@ -10571,7 +10844,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_occurrence_graph_analysis.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The occurrence-graph analysis artifact.
 
 #### `SpellOccurrenceGraphAnalysis` (class)
 
@@ -10610,7 +10883,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The compiler-side Phase 8 analyzer orchestrator.
 
 #### `SpellAnalyzer` (class)
 
@@ -10657,7 +10930,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The contract for one analyzer strategy.
 
 #### `SpellAnalyzerStrategy` (abstract)
 
@@ -10692,7 +10965,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The registry of analyzer strategies.
 
 #### `SpellAnalyzerStrategyBuilder` (class)
 
@@ -10740,7 +11013,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 8 strategy producing the occurrence graph.
 
 #### `SpellOccurrenceGraphAnalyzerStrategy` (class)
 
@@ -10794,7 +11067,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-spell phase pipeline owner - phases 1 through 11 for one spell.
 
 #### `SpellCompiler` (class)
 
@@ -10875,7 +11148,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_compiler_artifact`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The spell-scoped mutable container every phase reads from and writes into.
 
 #### `SpellCompilerArtifact` (class)
 
@@ -10935,7 +11208,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_compiler_system`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The compiler-owned orchestration facade over spell compilation phases.
 
 #### `SpellCompilerSystem` (class)
 
@@ -10983,7 +11256,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Produces structured class inventories for the examiner.
 
 #### `ClassInspector` (class)
 
@@ -11028,7 +11301,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Shared low-level helpers for the examiner inspectors.
 
 #### `InspectorUtility` (class)
 
@@ -11054,7 +11327,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Produces structured callable inventories for the examiner.
 
 #### `MethodInspector` (class)
 
@@ -11099,7 +11372,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/class_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The structured class inspection profile.
 
 #### `ClassProfile` (class)
 
@@ -11133,7 +11406,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The structured callable inspection profile.
 
 #### `MethodProfile` (class)
 
@@ -11167,7 +11440,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The binding-time profile family: the kind enum, the base, and the class/callable/instance/other views.
 
 #### `SpellBindingKind` (enum)
 
@@ -11195,38 +11468,53 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:67`
 - extends: `SpellBindingProfile`
+- role: Binding-time view of a class candidate - enough to fingerprint it, reason about protocol compatibility, and produce diagnostics.
+- responsibilities: `record name, qualname, module, bases, MRO, annotations and origin file`, `keep the per-method view shallow (names only); deep inspection belongs to later phases`
+- owns_state: `name`, `qualname`, `module`, `bases`, `mro`, `annotations`, `origin_file`
+- phases: `bind`
 - public methods: `cleanup`, `source_preview`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `CallableParameterBindingSummary` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:234`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The minimal binding-time view of one callable parameter, for fingerprinting and diagnostics.
+- responsibilities: `record the parameter's name, kind, default repr and annotation repr`
+- owns_state: `name`, `kind`, `default_repr`, `annotation_repr`
+- phases: `bind`
 
 #### `CallableBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:269`
 - extends: `SpellBindingProfile`
+- role: Binding-time view of a function, method or lambda spell candidate.
+- responsibilities: `store callable identity, signature and the shallow parameter summaries`, `avoid deeper runtime-resolution detail, which belongs to later profile phases`
+- owns_state: `name`, `qualname`, `module`, `object_id`, `type_name`, `repr_string`, `signature`
+- phases: `bind`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `InstanceBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:390`
 - extends: `SpellBindingProfile`
+- role: Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.
+- responsibilities: `record the instance's type name, module and repr`
+- owns_state: `type_name`, `module`, `repr_string`
+- phases: `bind`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `OtherBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:449`
 - extends: `SpellBindingProfile`
+- role: Fallback profile for candidates that fit none of the normal shapes.
+- responsibilities: `store only the minimum detached identity and representation surface`
+- owns_state: `type_name`, `module`, `repr_string`
+- phases: `bind`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -11256,7 +11544,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The richer detailed profile, a superset of general.
 
 #### `SpellDetailedProfile` (class)
 
@@ -11307,7 +11595,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The combined general profile, binding and resolution halves together.
 
 #### `SpellGeneralProfile` (class)
 
@@ -11353,7 +11641,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The registry-backed front door for spell examination profiles.
 
 #### `SpellExaminer` (class)
 
@@ -11399,7 +11687,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Builds binding profiles from raw registration candidates.
 
 #### `BindingProfileStrategy` (class)
 
@@ -11443,7 +11731,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/resolution_profile_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Builds resolution profiles from live spells.
 
 #### `ResolutionProfileStrategy` (class)
 
@@ -11484,7 +11772,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The enum classifying how one parameter is satisfied during resolution.
 
 #### `ParameterDIShape` (enum)
 
@@ -11511,7 +11799,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_parameter_requirements.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 1 description of one constructor parameter.
 
 #### `SpellParameterRequirement` (class)
 
@@ -11557,7 +11845,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-spell Phase 1 DI requirements artifact.
 
 #### `SpellRequirements` (class)
 
@@ -11598,7 +11886,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Builds the Phase 1 requirements artifact.
 
 #### `SpellRequirementsFinder` (class)
 
@@ -11647,7 +11935,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency`
 - defined at: `src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 2 symbolic representation of one constructor socket.
 
 #### `SpellSymbolicDependency` (class)
 
@@ -11688,7 +11976,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph`
 - defined at: `src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-spell Phase 2 symbolic constructor graph (the live one, distinct from the profiles-family placeholder).
 
 #### `SpellSymbolicGraph` (class)
 
@@ -11732,7 +12020,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Builds the adjacency snapshot from SpellSystemStates.
 
 #### `SpellSystemAdjacencyBuilder` (class)
 
@@ -11775,7 +12063,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-wide structural adjacency snapshot.
 
 #### `SpellSystemAdjacencySnapshot` (class)
 
@@ -11814,7 +12102,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_index`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-level Phase 5+ system index keyed by spell version id.
 
 #### `SpellSystemIndex` (class)
 
@@ -11858,7 +12146,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_node`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One version-id keyed node of the Phase 5-7 system view.
 
 #### `SpellSystemNode` (class)
 
@@ -11898,7 +12186,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 5 structural rooted-blueprint builder.
 
 #### `SpellSystemRootBlueprintBuilder` (class)
 
@@ -11946,7 +12234,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_validation_state`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The frame-level verdict system validation returns.
 
 #### `SpellSystemValidationState` (class)
 
@@ -11985,7 +12273,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_validation_system`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Phase 6 orchestrator that runs the system-validation strategies in registration order.
 
 #### `SpellSystemValidationSystem` (class)
 
@@ -12038,14 +12326,16 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.system_diagnostic`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The system-level diagnostic row and its severity bucket.
 
 #### `SystemDiagnosticSeverity` (enum)
 
 - id: `melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py:8`
 - markers: `Enum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The severity bucket for system-level validation diagnostics.
+- responsibilities: `separate the errors that gate resolution from the warnings that only inform review`
+- phases: `compile`
 
 #### `SystemDiagnostic` (class)
 
@@ -12085,7 +12375,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:1`
-- role: System validation strategy module for broken-spell-in-dag checks.
+- role: Phase 6 check: known-broken spells are not silently reachable from a root.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12094,8 +12384,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:28`
 - extends: `SpellSystemValidationStrategy`
+- role: Lift spell-local breakage into the rooted system view, so a spell already broken at Phase 4 cannot silently survive inside a root DAG.
+- responsibilities: `report every root blueprint that still reaches a known-broken spell`, `keep breakage from being invisible at the system level just because it was diagnosed locally`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12124,7 +12416,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py:1`
-- role: System validation strategy module for contract graph cycle checks.
+- role: Phase 6 check: contract-only edges introduce no cycles.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12133,8 +12425,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy.ContractGraphCycleStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that SpellContract sockets do not introduce cycles the normal-dependency DAG check cannot see.
+- responsibilities: `build the contract-only edge graph layered on top of the normal dependency structure`, `report cycles that exist only across contract edges`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12163,7 +12457,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py:1`
-- role: System validation strategy module for contracted version drift checks.
+- role: Phase 6 check: the visible index has not drifted onto stale lineage versions.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12172,8 +12466,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy.ContractedVersionDriftStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that the visible system index has not drifted onto stale lineage versions, aimed at contracted spells.
+- responsibilities: `compare version ids stored on SpellSystemIndex nodes against the currently visible version for each lineage`, `report drift so a contract is not silently served by a superseded version`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12202,7 +12498,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py:1`
-- role: System validation strategy module for cycle detection.
+- role: Phase 6 check: the frame-level dependency graph is still acyclic.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12211,8 +12507,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py:24`
 - extends: `SpellSystemValidationStrategy`
+- role: The broadest structural check in the Phase 6 set: can the frame-level dependency graph still be topologically ordered?
+- responsibilities: `work at SpellSystemIndex level rather than per root blueprint`, `emit at most one coarse cycle_detected error for the frame`, `honour cancellation during traversal and never mutate the index or its nodes`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12242,7 +12540,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.dependency_type_sanity_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py:1`
-- role: System validation strategy module for dependency-type sanity checks.
+- role: Phase 6 advisory: unexpected method/lambda dependency types.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12251,8 +12549,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.dependency_type_sanity_strategy.DependencyTypeSanityStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
+- role: An advisory check on dependency SHAPE: rooted system dependencies leaning on method/lambda spell types where class or existing-creation nodes are expected.
+- responsibilities: `emit dependency_type_unexpected for method and lambda dependencies`, `use WARNING severity - it informs system review without by itself gating resolution`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12281,15 +12581,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Phase 6 check: required collection sockets with zero providers - an error in automatic books, a warning in dynamic ones.
 
 #### `EmptyCollectionStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: The runtime-mode-sensitive check: a required collection socket that wired zero providers means two different things depending on the owning book's mode.
+- responsibilities: `read local topologies from SpellSystemStates for every scoped spell`, `emit collection_socket_no_providers as an ERROR when the book is not dynamic - composition is final at conjure, so zero providers is a permanent wiring mistake`, `emit it as a WARNING in dynamic mode, where deferred contract provisioning is still viable and the consumer spawns with [] injected (owner policy 2026-07-06)`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12318,7 +12620,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py:1`
-- role: System validation strategy module for graph consistency checks.
+- role: Phase 6 check: blueprints and index describe the same edges.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12327,8 +12629,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy.GraphConsistencyStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that Phase 5's two structural views agree: the rooted DAG blueprints used by planning and the SpellSystemIndex used by system validation.
+- responsibilities: `compare the dependency edges each view describes and report disagreement`, `catch the class of bug where planning and validation reason about different graphs`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12357,7 +12661,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py:1`
-- role: System validation strategy module for identity mixing checks.
+- role: Phase 6 check: dependency edges use version ids, not lineage ids.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12366,8 +12670,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard the version-id/lineage-id boundary: the system graph routes concrete VERSIONS, lineage ids are DevOps control-plane identity.
+- responsibilities: `report dependency edges that point at lineage ids instead of version ids`, `keep the two identity vocabularies from mixing inside one graph`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12396,7 +12702,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py:1`
-- role: System validation strategy module for index coverage checks.
+- role: Phase 6 check: blueprints and index describe the same node set.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12405,8 +12711,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy.IndexCoverageStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that the Phase 5 index and the rooted blueprints describe the same NODE SET, not just the same edges.
+- responsibilities: `compare the frame-level catalog against the rooted structural view`, `report nodes present in one view and absent from the other`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12435,7 +12743,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py:1`
-- role: System validation strategy module for index dependency sanity checks.
+- role: Phase 6 check: every index dependency edge points at a real node.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12444,8 +12752,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: The index-local counterpart to graph consistency: every dependency edge in the index must point at a real node.
+- responsibilities: `emit missing_index_dependency when a node depends on an absent id`, `establish the internal self-consistency later reachability, lineage and viability strategies assume`, `leave diagnostics unchanged when every indexed dependency resolves`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12474,7 +12784,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:1`
-- role: System validation strategy module for lineage alignment checks.
+- role: Phase 6 check: blueprint root-lineage metadata agrees with the index.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12483,8 +12793,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that the optional root-lineage metadata carried on version-id blueprints agrees with the index.
+- responsibilities: `emit root_lineage_mismatch when a root's lineage id disagrees with the index`, `skip the check when a blueprint intentionally carries no lineage metadata`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12513,7 +12825,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py:1`
-- role: System validation strategy module for lineage version conflict checks.
+- role: Phase 6 check: one root does not mix versions of the same lineage.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12522,8 +12834,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy.LineageVersionConflictStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that one root DAG does not mix multiple versions of the same lineage - a root is one coherent runtime slice.
+- responsibilities: `report a lineage appearing more than once under a single root as differing versions`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12552,7 +12866,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py:1`
-- role: System validation strategy module for missing Phase 4 checks.
+- role: Phase 6 check: every node in a root DAG has a Phase 4 result.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12561,8 +12875,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy.MissingPhase4Strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: The bridge between spell-local and system-level validation: every node reachable through a root DAG must already carry a Phase 4 result.
+- responsibilities: `report nodes in a root blueprint with no Phase 4 spell-validation result`, `catch the ordering failure where system validation runs over spells that were never locally validated`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12591,7 +12907,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.ownership_consistency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:1`
-- role: System validation strategy module for ownership consistency checks.
+- role: Phase 6 check: a lineage does not claim conflicting conduit ownership.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12600,8 +12916,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.ownership_consistency_strategy.OwnershipConsistencyStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that a lineage does not claim conflicting conduit ownership - the premise contracted spells, transfer-of-ownership and conduit-scoped validation all rest on.
+- responsibilities: `report a lineage whose ownership metadata points at more than one owner`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12630,7 +12948,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_coverage_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py:1`
-- role: System validation strategy module for root coverage checks.
+- role: Phase 6 check: root designation agrees between blueprints and index.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12639,8 +12957,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_coverage_strategy.RootCoverageStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that root designation stays aligned between the blueprints and the index's is_root metadata.
+- responsibilities: `compare which spells the blueprints treat as roots against the index's is_root flags`, `report disagreement between the planning view and the system-reporting view`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12669,7 +12989,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_lineage_conflict_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py:1`
-- role: System validation strategy module for root-lineage conflict checks.
+- role: Phase 6 check: one lineage does not fan out into multiple roots.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12678,8 +12998,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_lineage_conflict_strategy.RootLineageConflictStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that one lineage does not fan out into multiple structural roots.
+- responsibilities: `report multiple root spell ids mapping back to the same lineage`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12708,7 +13030,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_reachability_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py:1`
-- role: System validation strategy module for root reachability checks.
+- role: Phase 6 check: each blueprint is exactly its root's reachable closure.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12717,8 +13039,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_reachability_strategy.RootReachabilityStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that each root blueprint is a TRUE root-reachable DAG - exactly the closure reachable from its declared root.
+- responsibilities: `report a blueprint whose declared root node is missing`, `report orphaned nodes that cannot be reached from the root`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12747,7 +13071,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py:1`
-- role: System validation strategy module for root scale limit checks.
+- role: Phase 6 pressure gauge: root DAG size against configured scale limits.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12756,8 +13080,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_strategy.RootScaleLimitStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Not a correctness check but an operational pressure gauge: root DAG size against configured scale limits.
+- responsibilities: `warn when a root blueprint exceeds the configured node, edge, depth or fan-out limits`, `carry its own configured thresholds and severity rather than reading them per call`
+- owns_state: `_max_nodes`, `_max_edges`, `_max_depth`, `_max_fan_out`, `_severity`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12786,7 +13113,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py:1`
-- role: System validation strategy module for root viability checks.
+- role: Phase 6 verdict: folds the root-affecting errors already reported into one viability answer.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12795,8 +13122,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy.RootViabilityStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
+- role: The verdict pass: performs no fresh analysis, but collapses the root-affecting errors earlier strategies already produced into one viability answer per root.
+- responsibilities: `read the diagnostics accumulated by prior strategies rather than re-deriving structure`, `answer the system-level question of whether each root is still viable given what has been reported`, `depend on registration order - it must run after the strategies whose errors it folds`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12825,7 +13154,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:1`
-- role: System validation strategy module for scope ordering checks.
+- role: Phase 6 check: narrower-lived nodes do not leak upward into broader scopes.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12834,8 +13163,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy.ScopeOrderingStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard lifecycle-scope ordering across dependency edges - the leak check.
+- responsibilities: `report broader-lived nodes depending on narrower-lived ones`, `prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12864,7 +13195,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.py:1`
-- role: System validation strategy module for socket-ref sanity checks.
+- role: Phase 6 check: blueprint socket_refs and DagIndex stay aligned.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12873,8 +13204,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy.SocketRefSanityStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that the two synchronized views of the targeting surface stay aligned: each blueprint's raw socket_refs list and the DagIndex lookup.
+- responsibilities: `report socket refs present in one view and missing from the other`, `protect override planning, which depends on both views agreeing`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12903,7 +13236,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.strategy_base`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py:1`
-- role: Base module for system validation strategy contracts.
+- role: The contract every Phase 6 system-validation strategy implements.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12912,8 +13245,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py:17`
 - markers: `ABC`
+- role: Contract for one Phase 6 system-validation strategy over the frame-level Phase 5 outputs.
+- responsibilities: `own ONE coherent class of system-level invariant`, `append into the shared diagnostics list rather than returning a separate result object`, `run in registration order under SpellSystemValidationSystem and stay stateless or self-contained so reuse is safe`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py -->
 
@@ -12930,7 +13265,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py:1`
-- role: System validation strategy module for topology dependency mismatch checks.
+- role: Phase 6 check: Phase 3 sockets agree with index-level edges.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12939,8 +13274,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy.TopologyDependencyMismatchStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that the Phase 3 socket-aware per-spell topology agrees with the index-level edges.
+- responsibilities: `compare local topology sockets against the broader system graph's dependency edges`, `report where the socket view and the graph view disagree`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -12969,7 +13306,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py:1`
-- role: System validation strategy module for visibility gap checks.
+- role: Phase 6 check: visibility filtering has not amputated needed dependencies.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -12978,8 +13315,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
+- role: Guard that spellbook visibility filtering has not silently amputated dependencies a visible spell still needs.
+- responsibilities: `compare the direct dependencies SpellSystemStates recorded against the smaller visible SpellSystemIndex`, `report dependencies dropped by filtering rather than by design`
+- phases: `compile`
 - public methods: `run`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13008,13 +13347,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.topology.spell_local_topology`
 - defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-spell local constructor socket topology and its socket descriptors.
 
 #### `SpellSocketDescriptor` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor`
 - defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:12`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The immutable per-spell LOCAL description of one constructor socket, which later phases stitch into the system-level blueprint.
+- responsibilities: `describe one constructor socket, including the is_collection truth later layers must carry forward verbatim`, `stay local - it makes no claim about the system graph`
+- phases: `compile`
 
 #### `SpellLocalTopology` (class)
 
@@ -13057,7 +13398,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.spell_validation_context`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-spell context passed to validation strategies.
 
 #### `SpellValidationContext` (class)
 
@@ -13100,7 +13441,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.spell_validation_issue`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_issue.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One spell-level validation issue.
 
 #### `SpellValidationIssue` (class)
 
@@ -13140,7 +13481,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.spell_validation_result`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The aggregate spell validation result.
 
 #### `SpellValidationResult` (class)
 
@@ -13183,7 +13524,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:1`
-- role: Spell validation strategy module for annotation shape guards.
+- role: Phase 4 check: unsupported collection-style DI annotation shapes.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13192,8 +13533,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:22`
 - extends: `SpellValidationStrategy`
+- role: Rejects collection-style DI annotation shapes Melder does not support, reading Phase-1 requirements annotations.
+- responsibilities: `treat list[T] as the only collection DI form worth deeper inspection in this cut`, `defer SpellMap and SpellContract defaults to their own strategies`, `emit issues into the context; never mutate the spell or attempt recovery`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13222,7 +13565,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:1`
-- role: Spell validation strategy module for binding resolution cycle checks.
+- role: Phase 4 check: cycles visible only when resolution is modeled by binding key.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13231,8 +13574,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:29`
 - extends: `SpellValidationStrategy`
+- role: The binding-KEY counterpart to the spell-id cycle check: loops invisible by spell id but visible once resolution is modeled by binding key.
+- responsibilities: `build a binding-key graph from available requirements`, `report cycles reachable from the spell under validation`, `mutate nothing - spells, spellbooks and requirements are read only`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13261,7 +13606,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py:1`
-- role: Spell validation strategy module for callable profile hygiene.
+- role: Phase 4 check: the binding profile matches the spell's declared kind.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13270,8 +13615,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy.CallableProfileHygieneStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py:32`
 - extends: `SpellValidationStrategy`
+- role: Checks that a spell's binding profile matches its declared kind - class, callable, or existing creation.
+- responsibilities: `error on MISSING_BINDING_PROFILE, and per kind on NON_CLASS_SPELL_TARGET/CLASS_PROFILE_MISSING, NON_CALLABLE_SPELL_TARGET/CALLABLE_PROFILE_MISSING, and the existing-creation instance/profile mismatches`, `read the profile via SpellExaminer's general and detailed profiles; validate only`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13300,7 +13647,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py:1`
-- role: Spell validation strategy module for circular dependency checks.
+- role: Phase 4 check: multi-hop cycles by spell/version id.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13309,8 +13656,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py:14`
 - extends: `SpellValidationStrategy`
+- role: The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.
+- responsibilities: `traverse the spellbook-wide dependency graph by spell/version id`, `report only cycles reachable from the spell under validation`, `leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13339,7 +13688,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:1`
-- role: Spell validation strategy module for contract provider presence checks.
+- role: Phase 4 check: missing or ambiguous SpellContract providers, mode-sensitive.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13348,8 +13697,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:23`
 - extends: `SpellValidationStrategy`
+- role: Explains at Phase 4 why a contracted spell cannot resolve, rather than letting it fail later without a reason.
+- responsibilities: `error on malformed contract descriptors and on more than one provider matching a contract key`, `warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state`, `read the Spellbook's contracted-spell maps and the frame system_state`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13378,7 +13729,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py:1`
-- role: Spell validation strategy module for dangling dependency checks.
+- role: Phase 4 check: dependencies absent from the visible spell pool.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13387,8 +13738,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy.DanglingDependenciesStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py:11`
 - extends: `SpellValidationStrategy`
+- role: Owner of dangling-id reporting, which the cycle strategies deliberately ignore so this one is the single voice on it.
+- responsibilities: `validate dependency existence against the owning spellbook's current VISIBLE spell-id pool`, `distinguish 'cannot check because no spellbook exists' from 'dependency is genuinely absent'`, `never repair or prune dependency lists`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13417,7 +13770,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py:1`
-- role: Spell validation strategy module for duplicate spell-name checks.
+- role: Phase 4 check: duplicate visible spell names, which make name-based resolution ambiguous.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13426,8 +13779,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py:13`
 - extends: `SpellValidationStrategy`
+- role: Guard name-based resolution: two visible spells sharing a spell_name is a hard ambiguity.
+- responsibilities: `use the visible spellbook spell pool as the source of truth`, `emit issues only - never rename or partition spells`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13456,7 +13811,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py:1`
-- role: Spell validation strategy module for existing-creation compatibility checks.
+- role: Phase 4 check: the invariants that make an existing-creation spell resolvable.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13465,8 +13820,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py:29`
 - extends: `SpellValidationStrategy`
+- role: Enforces the invariants that make an existing-creation spell - one binding an already-constructed object rather than a class Melder instantiates - resolvable.
+- responsibilities: `error per violated invariant: missing instance, existence not Existence.unique, missing instance binding profile, and the parameter cases`, `read Phase-1 requirements and the spell's binding profile`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13495,7 +13852,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py:1`
-- role: Spell validation strategy module for parameter policy checks.
+- role: Phase 4 check: DI annotation policy over Phase 1 parameters.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13504,8 +13861,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py:24`
 - extends: `SpellValidationStrategy`
+- role: The DI-annotation policy pass over Phase-1 parameters and their ParameterDIShape.
+- responsibilities: `error on VARIADIC_DI_UNSUPPORTED, DI_MISSING_ANNOTATION, DI_BUILTIN_ANNOTATION, DI_COLLECTION_MISSING_ELEMENT and DI_COLLECTION_NON_FRAME`, `validate only - mutate nothing`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13534,7 +13893,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:1`
-- role: Spell validation strategy module for required-hole checks.
+- role: Phase 4 advisory: caller-required parameters DI will never satisfy.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13543,8 +13902,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:11`
 - extends: `SpellValidationStrategy`
+- role: Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.
+- responsibilities: `consume the Phase-1 SpellRequirements.iter_required_holes() view`, `emit warnings rather than hard errors`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13573,7 +13934,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py:1`
-- role: Spell validation strategy module for resolution-frame presence checks.
+- role: Phase 4 check: the minimum Phase 3 artifacts exist.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13582,8 +13943,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy.ResolutionFramePresenceStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py:11`
 - extends: `SpellValidationStrategy`
+- role: The most basic structural check of the Phase 4 family, run first in the default registration order.
+- responsibilities: `verify Phase 3 produced the minimum runtime artifacts downstream resolution needs`, `emit issues into the supplied context; never rebuild missing graph artifacts`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13612,7 +13975,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py:1`
-- role: Spell validation strategy module for self-dependency checks.
+- role: Phase 4 check: direct self-dependency.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13621,8 +13984,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy.SelfDependencyStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py:12`
 - extends: `SpellValidationStrategy`
+- role: The direct self-dependency check; sibling to CircularDependencyStrategy, which owns the multi-hop cycles this one deliberately does not.
+- responsibilities: `check only for direct self-dependency`, `emit issues into the context; never mutate the dependency graph`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13651,7 +14016,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The base class every spell validation strategy extends.
 
 #### `SpellValidationStrategy` (class)
 
@@ -13692,7 +14057,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py:1`
-- role: Spell validation strategy module for SpellMap shape checks.
+- role: Phase 4 check: the shape of SpellMap defaults captured on Phase 1 parameters.
 - responsibilities: `provides one validation or examination strategy/support surface`
 - phases: `validation`, `runtime`
 
@@ -13701,8 +14066,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy.SpellMapShapeValidationStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py:23`
 - extends: `SpellValidationStrategy`
+- role: Validates the SpellMap defaults captured on Phase-1 parameters, one pass per SPELLMAP_DEFAULT parameter.
+- responsibilities: `error on SPELLMAP_DEFAULT_MISSING, SPELLMAP_DEFAULT_INVALID, and SPELLMAP_MISSING_TARGET (neither spell nor spellframe)`, `warn on SPELLMAP_BINDING_NAME_NOT_NORMALIZED, normalizing via SpellInputUtils`, `validate only; mutate nothing`
+- phases: `compile`
 - public methods: `validate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -13731,7 +14098,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.validation_system`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The spell-level validation strategy registry and runner.
 
 #### `SpellValidationSystem` (class)
 
@@ -13796,7 +14163,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_types.spell_types`
 - defined at: `src/melder/aether/spellbook/spell_types/spell_types.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The canonical runtime binding-family classification enum for bound spells.
 
 #### `SpellType` (enum)
 
@@ -13823,7 +14190,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spellbinder`
 - defined at: `src/melder/aether/spellbook/spellbinder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The fluent registration helper layered over Spellbook.bind.
 
 #### `SpellBinder` (class)
 
@@ -13861,7 +14228,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `a9122e38a0db791019073a5a7b577f3a17bb06a681e3a98dc7fb0ef970679178`
+- source_sha256: `e7cebd1e8409bf92df8afb288f51623cdb6f9a9e2149e6dbf201bb9711ebf73a`
 - nodes: 2
 
 ### Nodes
@@ -13870,7 +14237,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spellbook`
 - defined at: `src/melder/aether/spellbook/spellbook.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The public binding, validation and conjure surface - the object a user actually holds.
 
 #### `Spellbook` (class)
 
@@ -13948,7 +14315,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `c5f843a05f18c9ee88db42a70abec0490e5cf421939d23afb18128cc4ef8248e`
+- source_sha256: `054dbc0ad0e3be9bdf091c67617647b6bb37cfe01fb9fe2d62d8e841e0df4c20`
 - nodes: 2
 
 ### Nodes
@@ -13957,7 +14324,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spellbook_creation_system`
 - defined at: `src/melder/aether/spellbook/spellbook_creation_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Conjure-only orchestration helper, kept off Spellbook itself.
 
 #### `SpellbookCreationSystem` (class)
 
@@ -14019,15 +14386,19 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter`
 - defined at: `src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: First-party SQLite provider for the external persistence mesh.
+- responsibilities: `offer a durable local option requiring no custom handlers`
+- phases: `runtime`
 
 #### `SqliteMeshAdapter` (class)
 
 - id: `melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter.SqliteMeshAdapter`
 - defined at: `src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py:18`
 - extends: `Cleanable`
+- role: First-party SQLite provider for the external persistence mesh.
+- responsibilities: `offer durable local storage requiring no custom handlers`
+- phases: `runtime`
 - public methods: `cleanup`, `delete_unit`, `describe`, `fetch_unit`, `list_units`, `register_with`, `store_unit`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14058,7 +14429,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.asset_management.asset_management_system`
 - defined at: `src/melder/crystallizer/asset_management/asset_management_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Bytes-at-rest custody: cache files, formations, and the external DB seam.
+- responsibilities: `seal then ship - cache write, FIFO retention, then lenient upload`, `land reloads in the record's insert sink`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `AssetManagementSystem` (class)
 
@@ -14113,7 +14486,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.asset_management.crystallizer_cache`
 - defined at: `src/melder/crystallizer/asset_management/crystallizer_cache.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Local filesystem custody for checkpoint cached items and formations.
+- responsibilities: `write atomically per checkpoint ULID`, `FIFO-cap cached files at the record's live limit`
+- phases: `runtime`
 
 #### `CrystallizerCache` (class)
 
@@ -14156,7 +14531,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.asset_management.external_persistence_manager`
 - defined at: `src/melder/crystallizer/asset_management/external_persistence_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: User-callable transport carrying mesh units to storage the application chose.
+- responsibilities: `carry checkpoints, formations, grafts and emission events across the boundary`, `stay lenient on upload so a failure never breaks the seal lane`
+- phases: `runtime`
 
 #### `ExternalPersistenceManager` (class)
 
@@ -14202,7 +14579,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.asset_management.external_persistence_manager_configuration`
 - defined at: `src/melder/crystallizer/asset_management/external_persistence_manager_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Handler configuration connecting crystallizer assets to user-chosen storage.
+- responsibilities: `hold the user's store/fetch/list/delete callables`
+- phases: `init`
 
 #### `ExternalPersistenceManagerConfiguration` (class)
 
@@ -14245,14 +14624,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.asset_management.mesh_interface_contract`
 - defined at: `src/melder/crystallizer/asset_management/mesh_interface_contract.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Static authority describing the value and callable boundary of the external mesh.
+- responsibilities: `document the complete interface an integrator must satisfy`
+- phases: `init`
 
 #### `MeshInterfaceContract` (class)
 
 - id: `melder.crystallizer.asset_management.mesh_interface_contract.MeshInterfaceContract`
 - defined at: `src/melder/crystallizer/asset_management/mesh_interface_contract.py:6`
+- role: Static authority describing the mesh value/callable boundary.
+- responsibilities: `document the complete interface an integrator must satisfy`
+- phases: `init`
 - public methods: `describe`, `unit_kinds`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 <!-- END FILE: src/melder/crystallizer/asset_management/mesh_interface_contract.py -->
 
@@ -14269,7 +14652,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.configuration.crystallizer_configuration`
 - defined at: `src/melder/crystallizer/configuration/crystallizer_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Authoring surface for capture and durability policy.
+- responsibilities: `tell the crystallizer which modules are user-owned`, `set retention and checkpoint cadence`
+- phases: `init`
 
 #### `CrystallizerConfiguration` (class)
 
@@ -14313,7 +14698,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.configuration.crystallizer_configuration_builder`
 - defined at: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One-shot ownership handoff around a mutable crystallizer configuration.
+- responsibilities: `give callers an explicit boundary between authoring and installing`
+- phases: `init`
 
 #### `CrystallizerConfigurationBuilder` (class)
 
@@ -14368,8 +14755,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult`
 - defined at: `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py:21`
 - extends: `Cleanable`
+- role: Value-only carrier for one module-world analysis pass; crystals hold analysis OUTPUT without owning the machinery.
+- responsibilities: `hold every analysis-derived fact as plain str/list/dict/bool - never a live module, spell, or strategy`, `accept record_*/set_* writes from the analyzer during the write phase, then serve detached reads`, `guard every mutation and detached read with the instance RLock`
+- owns_state: `_lock`, `_root_module_kind`, `_module_targets`, `_path_targets`, `_synthetic_module_targets`, `_synthetic_module_sources`, `_user_module_sources`
+- phases: `bind`, `runtime`, `cleanup`
 - public methods: `ast_from_import_targets_by_module`, `ast_import_targets_by_module`, `cleanup`, `describe`, `distribution_provenance`, `export_surfaces`, `module_load_order`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension`, `module_to_kind`, `module_to_path` (+19 more)
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14408,8 +14798,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer`
 - defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:77`
 - extends: `Cleanable`
+- role: Single-use composer of custody and fact strategies that produces one CrystalAnalysisResult per module world.
+- responsibilities: `consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies`, `drive ONE ast.walk per module and dispatch every node to the fact strategies`, `own its strategy instances and clean them children-first; the shared syntax memo survives instance cleanup`
+- owns_state: `_custody_strategies`, `_fact_strategies`, `_retain_user_sources`, `_site_package_dependency_descent`, `_uses_default_fact_strategies`
+- phases: `bind`, `runtime`, `cleanup`
 - public methods: `analyze_payload`, `analyze_spell_root`, `cleanup`, `resolve_file_extension`, `resolve_module_path`, `resolve_site_package_root_paths`, `resolve_user_root_paths`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14460,15 +14853,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fallback custody strategy for unresolvable and non-source module targets.
 
 #### `BinaryUnknownCustodyStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy.BinaryUnknownCustodyStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py:21`
 - extends: `SourceCustodyStrategy`
+- role: Terminal fallback custody: guarantees every module classifies by claiming whatever the prior authorities declined.
+- responsibilities: `match unconditionally - MUST be last in the analyzer's priority order`, `offer no source, no fingerprint, and no descent`, `expose compiled leaves (.so/.pyd/.dylib) through harvest_binary_identity - hash the bytes, never parse them`
+- phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_binary_identity`, `kind`, `matches`, `reads_physical_source`, `resolve_source`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14491,15 +14886,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Custody strategy for site-package (installed distribution) modules; path-driven classification.
 
 #### `SitePackageCustodyStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py:24`
 - extends: `SourceCustodyStrategy`
+- role: Custody for installed site-package modules; reads their source but asserts no fingerprint over third-party code.
+- responsibilities: `claim modules under interpreter site roots or the historical path-text fallback`, `expose source for fact analysis while returning None from fingerprint (no custody claim)`, `hold the site-root tuple fixed at construction and delete it on cleanup`
+- owns_state: `_site_package_root_paths`
+- phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_provenance`, `kind`, `matches`, `resolve_source`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14522,7 +14920,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.custody.source_custody_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/source_custody_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Authority-class custody contract for crystal analysis; one strategy per source authority class.
 
 #### `SourceCustodyStrategy` (abstract)
 
@@ -14530,8 +14928,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/source_custody_strategy.py:21`
 - extends: `Cleanable`
 - markers: `ABC`
+- role: Contract for one authority class's custody behavior: match, resolve source, fingerprint, and decide descent.
+- responsibilities: `answer matches/resolve_source/fingerprint/descends for exactly one authority class`, `stay deterministic for a given input triple and never raise for content problems (errors ride the error channel)`, `remain immutable after construction - thread-confined to one analyzer pass, so no locks`
+- phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `descends`, `fingerprint`, `harvest_payload`, `kind`, `matches`, `reads_physical_source`, `resolve_source`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14554,15 +14954,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/synthetic_custody_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Custody strategy for synthetic (crystallizer-born) modules, whose source IS the record.
 
 #### `SyntheticCustodyStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy.SyntheticCustodyStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/synthetic_custody_strategy.py:21`
 - extends: `SourceCustodyStrategy`
+- role: Custody for crystallizer-born synthetic modules, whose explicit authority wins over every path-driven class.
+- responsibilities: `match by strict protocol identity, first in the priority order`, `resolve source from the protocol surface only - never touch disk`, `harvest the rebuildable payload SyntheticModule's constructor needs at restore`
+- phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_payload`, `kind`, `matches`, `reads_physical_source`, `resolve_source`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14585,15 +14987,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Custody strategy for user-source, file-backed, policy-rooted modules.
 
 #### `UserSourceCustodyStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy.UserSourceCustodyStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:21`
 - extends: `SourceCustodyStrategy`
+- role: Custody for policy-rooted user source modules; stamps the fingerprint that makes on-disk drift detectable.
+- responsibilities: `claim modules whose backing file lives under a configured user root; pathless modules never match`, `expose .py/.pyi text for fact analysis`, `hold the root tuple fixed at construction and delete it on cleanup`
+- owns_state: `_user_root_paths`
+- phases: `bind`, `cleanup`
 - public methods: `cleanup`, `descends`, `harvest_payload`, `kind`, `matches`, `resolve_source`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14616,7 +15021,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.impact_engine`
 - defined at: `src/melder/crystallizer/crystal_analysis/impact_engine.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Blast-radius view over the custody manifests: reverse module edges and per-spell impact answers.
 
 #### `ImpactEngine` (class)
 
@@ -14657,14 +15062,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.physical_source_cache`
 - defined at: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Process-wide stat-guarded fingerprint cache that kills the analysis IO storm.
 
 #### `PhysicalSourceCache` (class)
 
 - id: `melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache`
 - defined at: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py:36`
+- role: Process-wide stat-guarded fingerprint cache: one answer for a source file's current sha256 without redundant disk reads.
+- responsibilities: `serve fingerprint_if_unchanged without ever reading file content`, `own the single read law for physical source (read_text_and_fingerprint) and feed the cache from it`, `serialize entry-map access under the class RLock while running IO outside it`, `LRU-evict beyond class capacity`
+- owns_state: `class-level entry map`, `class-level RLock`, `hit/miss counters`
+- phases: `runtime`
 - public methods: `fingerprint_if_unchanged`, `read_text_and_fingerprint`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (2, unconfirmed)
 
@@ -14688,15 +15096,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass for cluster members missing from the bundle.
 
 #### `ClusterMembershipStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight for cluster members outside the bundle, which cannot re-join and shortfall at restore.
+- responsibilities: `warn per absent member conduit`, `report a recorded leader as info once per cluster - election re-runs live and the recorded leader is never replayed`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14719,15 +15129,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/configuration_loss_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass for configuration facts a record can never fully rebuild.
 
 #### `ConfigurationLossStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy.ConfigurationLossStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/configuration_loss_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight naming the code participation a bootloader must re-supply, since callable-bearing config never round-trips.
+- responsibilities: `report spellbook hooks and aether-root resolver/default-logger flags the record carries as presence only`, `emit info severity - these are honest expectations the restore reports as shortfalls, not failures`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14750,15 +15162,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/contract_peer_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass for contracts whose endpoints are not both in the bundle.
 
 #### `ContractPeerStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy.ContractPeerStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/contract_peer_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight for contracts captured around one endpoint, whose details cannot re-grant until the peer exists.
+- responsibilities: `warn per contract whose conduit endpoints are not both in the bundle (endpoint_not_rebuilt)`, `stay stateless so one instance is reusable across bundles`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14781,15 +15195,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/frame_posture_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass for books whose frame posture is missing from the bundle.
 
 #### `FramePostureStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy.FramePostureStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/frame_posture_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight for books whose frame twin is absent, so their dynamic posture is a guessed fallback rather than truth.
+- responsibilities: `warn once per (frame_name, spellbook) pair whose recorded frame twin is missing from the bundle`, `stay stateless so one instance is reusable across bundles`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14812,15 +15228,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.hydration_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/hydration_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass for custody that cannot rebuild its bind target.
 
 #### `HydrationStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.hydration_strategy.HydrationStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/hydration_strategy.py:10`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight over every custody payload for the bootloader's hardest class of failure: hydration.
+- responsibilities: `block on custody that will not rebuild - absent owning book, pre-M3 synthetic root, unfindable module`, `warn on replay_required target kinds, where the restore completes but the custody shortfalls`, `probe modules with importlib.util.find_spec only - nothing imports during analysis`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14843,15 +15261,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.link_integrity_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/link_integrity_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass for conduit link targets missing from the bundle.
 
 #### `LinkIntegrityStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.link_integrity_strategy.LinkIntegrityStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/link_integrity_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight for the owner's founding case: conduit link_targets pointing outside the bundle.
+- responsibilities: `warn per recorded link target absent from the bundle - the restore completes, the link is reported not rebuilt`, `stay stateless so one instance is reusable across bundles`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14874,15 +15294,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.mutation_research_composition_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/mutation_research_composition_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass verifying the folded MutationResearch composition before rebuild.
 
 #### `MutationResearchCompositionStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.mutation_research_composition_strategy.MutationResearchCompositionStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/mutation_research_composition_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight proving the recorded MR composition is worth handing to load_recorded_composition wholesale.
+- responsibilities: `block only when the payload is UNPARSEABLE - the seams cannot read the shape at all`, `warn on organization/residence disagreement: teach-grade drift evidence, not a refusal`, `produce no rows for an absent or empty composition`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14905,15 +15327,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analysis_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight strategy contract and finding-row shape for persistence payload bundles.
 
 #### `PersistenceAnalysisStrategy` (abstract)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analysis_strategy.py:7`
 - markers: `ABC`
+- role: Contract for one preflight concern over a persistence payload bundle; the sanctioned runtime-inheritance ABC.
+- responsibilities: `inspect one concern and return finding rows of the shared shape - never mutate the bundle`, `never touch live runtime objects; read the detached payload only`, `stay stateless so the analyzer can share and iterate implementations polymorphically`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 <!-- END FILE: src/melder/crystallizer/crystal_analysis/preflight/persistence_analysis_strategy.py -->
 
@@ -14930,15 +15354,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Strategy-driven bootload pre-flight entry point over persistence payload bundles.
 
 #### `PersistenceAnalyzer` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py:40`
 - extends: `Cleanable`
+- role: Strategy-driven bootload pre-flight: runs the analysis set over a bundle and folds findings into a verdict.
+- responsibilities: `run the ten-strategy default set in order, or an explicit caller-supplied sequence`, `run the same default set at load time inside the RestoreEngine (owner ruling)`, `drop the strategy list on cleanup; idempotent, and the stateless strategies need no teardown of their own`
+- owns_state: `_strategies`
+- phases: `restore`, `cleanup`
 - public methods: `analyze`, `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -14976,15 +15403,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.source_drift_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/source_drift_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass comparing every bind-time fingerprint against the live disk at load.
 
 #### `SourceDriftStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.source_drift_strategy.SourceDriftStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/source_drift_strategy.py:13`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight owning ALL disk-vs-seal comparison: every bind-time fingerprint against the live file at load.
+- responsibilities: `warn on drift - the live file wins at import, so this is notice and never a refusal`, `warn on absent backing files without claiming unimportability (hydration owns that blocker)`, `report unreadable files as info (unverifiable, not proven divergence) and dedupe per (module, path)`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15013,15 +15442,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.synthetic_source_integrity_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/synthetic_source_integrity_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass verifying recorded synthetic module sources against their SHA256.
 
 #### `SyntheticSourceIntegrityStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.synthetic_source_integrity_strategy.SyntheticSourceIntegrityStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/synthetic_source_integrity_strategy.py:10`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight recomputing recorded synthetic source SHA256s, because synthetic source IS the record and would execute at restore.
+- responsibilities: `block on mismatch - executing unverified source is worse than not booting`, `report absent/empty recorded shas as info: a documentation gap, not proven corruption`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15044,15 +15475,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_analysis.preflight.user_source_integrity_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/user_source_integrity_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Preflight pass verifying retained user-module sources against their own recorded shas.
 
 #### `UserSourceIntegrityStrategy` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.user_source_integrity_strategy.UserSourceIntegrityStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/user_source_integrity_strategy.py:10`
 - extends: `PersistenceAnalysisStrategy`
+- role: Preflight owning the record's SELF-CONSISTENCY half: retained user text versus its own recorded sha.
+- responsibilities: `block on tamper - retained text disagreeing with its recorded sha must never rebuild`, `scope to modules carried in user_module_sources; retention-off worlds produce no rows`, `leave disk-vs-seal comparison to SourceDriftStrategy`
+- phases: `restore`
 - public methods: `analyze`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15084,8 +15517,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.base_strategy.FactContext`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/base_strategy.py:29`
 - extends: `Cleanable`
+- role: Per-(module, pass) accumulator carrying parse inputs to the fact strategies and collecting their contributions.
+- responsibilities: `carry module name, package, source text, and syntax tree for exactly one module of one pass`, `collect flat/from import targets in visit order (duplicates allowed - the analyzer dedupes first-seen on merge)`, `preserve the mixed Import/ImportFrom event sequence as value-only memo entries`
+- owns_state: `_module_name`, `_current_package`, `_source_text`, `_syntax_tree`, `flat_import_targets`, `from_import_targets`, `import_events`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `current_package`, `module_name`, `source_text`, `syntax_tree`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `CrystalFactStrategy` (abstract)
 
@@ -15093,8 +15529,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/base_strategy.py:243`
 - extends: `Cleanable`
 - markers: `ABC`
+- role: Contract letting independent fact passes share the analyzer's single AST walk without owning traversal or record order.
+- responsibilities: `receive visit_node for EVERY node of the analyzer's walk, in walk order, and act only on owned node types`, `receive analyze_module once per module after node dispatch`, `stay thread-confined to one analyzer pass; default cleanup is a flag flip`
+- phases: `runtime`, `cleanup`
 - public methods: `analyze_module`, `cleanup`, `finalize`, `name`, `visit_node`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15127,8 +15565,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:22`
 - extends: `CrystalFactStrategy`
+- role: Fact pass computing the topological dependencies-first unfold order, making load order recorded truth instead of restore-time guessing.
+- responsibilities: `order every walked module over dependency->dependent edges restricted to walked modules`, `stay deterministic by processing ready nodes in sorted name order`, `stay cycle-tolerant: append the blocked remainder in sorted order and name them in one walk error`
+- phases: `runtime`
 - public methods: `finalize`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15160,8 +15600,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.export_surface_strategy.ExportSurfaceStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/export_surface_strategy.py:25`
 - extends: `CrystalFactStrategy`
+- role: Fact pass recording what a module EXPOSES, so retained versions answer that without a live import.
+- responsibilities: `extract __all__ statically - only literal list/tuple of string constants resolve; dynamic forms under-claim honestly`, `collect public top-level function/class/assignment names in first-seen order`, `consider top-level statements only; nested definitions are not exports`
+- phases: `runtime`
 - public methods: `analyze_module`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15193,8 +15635,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.from_import_statement_strategy.FromImportStatementStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/from_import_statement_strategy.py:26`
 - extends: `CrystalFactStrategy`
+- role: Fact pass contributing from-import bases, probed submodule members, and the from-import diagnostics map.
+- responsibilities: `handle ast.ImportFrom only; resolve relative levels against the context package and skip unresolvable bases silently`, `record star imports in the member map but never probe them`, `emit candidates per node as probed member submodules first (alias order), then the base module`
+- phases: `runtime`
 - public methods: `name`, `visit_node`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15226,8 +15670,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.import_statement_strategy.ImportStatementStrategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/import_statement_strategy.py:19`
 - extends: `CrystalFactStrategy`
+- role: Fact pass contributing `import x` alias names as dependency candidates in visit order.
+- responsibilities: `handle ast.Import nodes only and append alias names verbatim, dotted names included`, `capture nested imports too, because the analyzer walks the full tree`, `append one value-only memo event per matching node (kind 'import', level zero)`
+- phases: `runtime`
 - public methods: `name`, `visit_node`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15250,7 +15696,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_loader_system.bootstrap_loader`
 - defined at: `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fluent pod-boot lane composing a fresh process into a rebuilt world.
+- responsibilities: `compose activate -> attach -> reload -> verify -> restore as one single-use chain`
+- phases: `init`, `runtime`
 
 #### `CrystallizerBootstrap` (class)
 
@@ -15297,7 +15745,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_loader_system.crystal_loader_system`
 - defined at: `src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The unfold owner: durable load state over the mediated boot pipeline.
+- responsibilities: `own checkpoint world loads and scoped formation loads`, `retain last-load state for describe_last_load`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `CrystalLoaderSystem` (class)
 
@@ -15347,7 +15797,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_loader_system.graft_runner`
 - defined at: `src/melder/crystallizer/crystal_loader_system/graft_runner.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Restore grain below the conduit slice: re-integrates one captured spell index into a live host book.
+- responsibilities: `replay index membership, custody and selection through public verbs only`, `never mutate an existing index - fresh-index-only`
+- phases: `runtime`
 
 #### `GraftRunner` (class)
 
@@ -15394,7 +15846,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_loader_system.load_admission`
 - defined at: `src/melder/crystallizer/crystal_loader_system/load_admission.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Admission plane for load transactions: plan in, gated engine, scope adjudication out.
+- responsibilities: `turn a request into a declarative LoadPlan`, `refuse blockers pre-engine`, `reclassify scope-blind findings as expected_for_scope`
+- phases: `runtime`
 
 #### `LoadAdmission` (class)
 
@@ -15442,7 +15896,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_loader_system.load_plan`
 - defined at: `src/melder/crystallizer/crystal_loader_system/load_plan.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Declarative description of one planned load, inspectable before anything executes.
+- responsibilities: `carry scope, profile, checkpoint ids and per-kind key counts`, `let a caller inspect a load before activating it`
+- phases: `runtime`
 
 #### `LoadPlan` (class)
 
@@ -15482,15 +15938,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine`
 - defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Single-use driver unfolding one folded checkpoint chain into the live runtime through public verbs.
+- responsibilities: `fold the chain oldest-first, later-wins`, `refuse on blockers before any replay`, `tear down in reverse order on failure`
+- phases: `init`, `runtime`
 
 #### `RestoreReport` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport`
 - defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:23`
 - extends: `Cleanable`
+- role: Detached outcome record for one restore run, built to be judged honestly rather than trusted.
+- responsibilities: `carry built counts by kind`, `carry named shortfalls for everything unreplayable`, `carry the old-to-new identity map`
+- owns_state: `_lock`, `_profile_name`, `_checkpoint_ids`, `_built_counts`, `_shortfalls`, `_identity_map`, `_status`, `_failed_stage`, `_preflight`
+- phases: `runtime`
 - public methods: `add_shortfall`, `cleanup`, `describe`, `map_identity`, `mark_complete`, `mark_failed`, `record_built`, `set_plan_summary`, `set_preflight`, `translate`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `RestoreEngine` (class)
 
@@ -15572,7 +16033,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystallizer`
 - defined at: `src/melder/crystallizer/crystallizer.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Public facade and singleton ownership root over the three V3 crystallizer subsystems.
+- responsibilities: `present one stable surface over record, assets and loader`, `stay a passive sink - emitters push, the sink never reaches back`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `Crystallizer` (class)
 
@@ -15643,15 +16106,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.aether_crystal`
 - defined at: `src/melder/crystallizer/crystals/aether_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying the Aether root's configured surface for the record.
+- responsibilities: `persist root logger policy`
+- phases: `runtime`
 
 #### `AetherCrystal` (class)
 
 - id: `melder.crystallizer.crystals.aether_crystal.AetherCrystal`
 - defined at: `src/melder/crystallizer/crystals/aether_crystal.py:8`
 - extends: `Cleanable`
+- role: Pure-data twin of the process Aether root's configuration.
+- responsibilities: `carry root configuration as a detached payload`, `round-trip losslessly through describe()`
+- owns_state: `_configuration_payload`
+- phases: `init`, `runtime`
 - public methods: `cleanup`, `configuration_payload`, `describe`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15674,15 +16142,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.aetheric_frame_crystal`
 - defined at: `src/melder/crystallizer/crystals/aetheric_frame_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying one frame's identity and feature-gating posture.
+- responsibilities: `persist frame posture so restore rebuilds the gate before books`
+- phases: `runtime`
 
 #### `AethericFrameCrystal` (class)
 
 - id: `melder.crystallizer.crystals.aetheric_frame_crystal.AethericFrameCrystal`
 - defined at: `src/melder/crystallizer/crystals/aetheric_frame_crystal.py:8`
 - extends: `Cleanable`
+- role: Pure-data twin of one AethericFrame: identity plus the system_state / rift_enabled / ai_native trio.
+- responsibilities: `carry the posture conjure reads`, `carry frame-local dev-ops payload`
+- owns_state: `_frame_name`, `_system_state_name`, `_rift_enabled`, `_ai_native_enabled`, `_dev_ops_payload`
+- phases: `init`, `runtime`
 - public methods: `ai_native_enabled`, `cleanup`, `describe`, `dev_ops_payload`, `frame_name`, `rift_enabled`, `system_state_name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15711,15 +16184,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.cluster_crystal`
 - defined at: `src/melder/crystallizer/crystals/cluster_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying frame-local cluster topology - the third inter-conduit relationship.
+- responsibilities: `persist named member groups and their elected leader`
+- phases: `runtime`
 
 #### `ClusterCrystal` (class)
 
 - id: `melder.crystallizer.crystals.cluster_crystal.ClusterCrystal`
 - defined at: `src/melder/crystallizer/crystals/cluster_crystal.py:6`
 - extends: `Cleanable`
+- role: Digital twin of one ConduitCluster: membership, elected leader and shared lineage entries.
+- responsibilities: `carry member conduit ids and the leader`, `carry shared lineage entries`, `emit from the cluster's own mutators, having no crystallizer-bearing parent`
+- owns_state: `_cluster_id`, `_cluster_name`, `_frame_name`, `_member_conduit_ids`, `_leader_conduit_id`, `_shared_spells`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cluster_id`, `describe`, `frame_name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15742,15 +16220,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.conduit_crystal`
 - defined at: `src/melder/crystallizer/crystals/conduit_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying one root conduit's structural surface and outbound links.
+- responsibilities: `persist conjure posture so replay reconstructs the same scope`
+- phases: `runtime`
 
 #### `ConduitCrystal` (class)
 
 - id: `melder.crystallizer.crystals.conduit_crystal.ConduitCrystal`
 - defined at: `src/melder/crystallizer/crystals/conduit_crystal.py:8`
 - extends: `Cleanable`
+- role: Pure-data twin of one ROOT conduit: identity, conjure posture and its initiated link edges.
+- responsibilities: `carry name / policy / dynamic as conjured`, `carry outbound link targets`
+- owns_state: `_conduit_id`, `_spellbook_id`, `_conduit_name`, `_policy_name`, `_dynamic`, `_link_targets`, `_configuration_payload`
+- phases: `init`, `runtime`
 - public methods: `cleanup`, `conduit_id`, `conduit_name`, `configuration_payload`, `describe`, `dynamic`, `link_targets`, `policy_name`, `spellbook_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15779,15 +16262,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.contract_crystal`
 - defined at: `src/melder/crystallizer/crystals/contract_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying one ward contract - the record's inter-conduit relationship map.
+- responsibilities: `persist which conduits are linked and what each side may reach`
+- phases: `runtime`
 
 #### `ContractCrystal` (class)
 
 - id: `melder.crystallizer.crystals.contract_crystal.ContractCrystal`
 - defined at: `src/melder/crystallizer/crystals/contract_crystal.py:6`
 - extends: `Cleanable`
+- role: Digital twin of one Contract, carrying both endpoints and each side's own projection.
+- responsibilities: `carry both conduit endpoints`, `carry per-side detail and index-detail projections`, `evict at sever through the single _remove_contract choke point`
+- owns_state: `_contract_id`, `_conduit_a_id`, `_conduit_b_id`, `_details_a`, `_details_b`, `_index_details_a`, `_index_details_b`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `conduit_a_id`, `conduit_b_id`, `contract_id`, `describe`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15810,15 +16298,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.crystallizer_crystal`
 - defined at: `src/melder/crystallizer/crystals/crystallizer_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying the recorder's own policy, so every snapshot is self-describing.
+- responsibilities: `persist the policy that produced the snapshot alongside it`
+- phases: `runtime`
 
 #### `CrystallizerCrystal` (class)
 
 - id: `melder.crystallizer.crystals.crystallizer_crystal.CrystallizerCrystal`
 - defined at: `src/melder/crystallizer/crystals/crystallizer_crystal.py:8`
 - extends: `Cleanable`
+- role: Pure-data twin of the crystallizer's configured surface, re-emitted into every sealed window.
+- responsibilities: `carry source-root and retention policy`, `make a cached crystal name the policy that made it`
+- owns_state: `_configuration_payload`
+- phases: `init`, `runtime`
 - public methods: `cleanup`, `configuration_payload`, `describe`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15841,15 +16334,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.mutation_research_crystal`
 - defined at: `src/melder/crystallizer/crystals/mutation_research_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying the MutationResearch root plus DB-storable node rows.
+- responsibilities: `persist research composition and derive flat storable rows at construction`
+- phases: `runtime`
 
 #### `MutationResearchCrystal` (class)
 
 - id: `melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal`
 - defined at: `src/melder/crystallizer/crystals/mutation_research_crystal.py:8`
 - extends: `Cleanable`
+- role: Pure-data twin of the MR root that derives explicit node rows for both node families at construction.
+- responsibilities: `carry configuration and composition payloads`, `derive research_nodes and grouped_research_node rows so blob and objects cannot disagree`
+- owns_state: `_activated`, `_configuration_payload`, `_composition_payload`, `_research_node_rows`, `_grouped_research_node_rows`
+- phases: `init`, `runtime`
 - public methods: `activated`, `cleanup`, `composition_payload`, `configuration_payload`, `describe`, `grouped_research_nodes`, `research_nodes`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15872,15 +16370,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.nexus_crystal`
 - defined at: `src/melder/crystallizer/crystals/nexus_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying the Nexus root's configured and enabled state.
+- responsibilities: `persist AR root state as a switch rather than by eviction`
+- phases: `runtime`
 
 #### `NexusCrystal` (class)
 
 - id: `melder.crystallizer.crystals.nexus_crystal.NexusCrystal`
 - defined at: `src/melder/crystallizer/crystals/nexus_crystal.py:8`
 - extends: `Cleanable`
+- role: Pure-data twin of the process Nexus root.
+- responsibilities: `carry configured / enabled flags and the config payload`
+- owns_state: `_configured`, `_enabled`, `_configuration_payload`
+- phases: `init`, `runtime`
 - public methods: `cleanup`, `configuration_payload`, `configured`, `describe`, `enabled`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -15903,14 +16406,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.recorded_unit_state`
 - defined at: `src/melder/crystallizer/crystals/recorded_unit_state.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Lifecycle vocabulary for singletons the record tracks by state switch rather than eviction.
+- responsibilities: `let a disabled singleton keep its twin instead of vanishing`
+- phases: `runtime`
 
 #### `RecordedUnitState` (enum)
 
 - id: `melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState`
 - defined at: `src/melder/crystallizer/crystals/recorded_unit_state.py:4`
 - markers: `Enum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Recorded lifecycle state for state-switch tracked singletons such as Nexus and MutationResearch.
+- responsibilities: `distinguish enabled / disabled / cleaned without evicting the twin`
+- phases: `runtime`, `cleanup`
 
 <!-- END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py -->
 
@@ -15927,7 +16434,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.spell_crystal`
 - defined at: `src/melder/crystallizer/crystals/spell_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Custody carrier for one concrete spell version and the module world it depends on.
+- responsibilities: `carry the bind signature and delegate module analysis to crystal_analysis`
+- phases: `runtime`
 
 #### `SpellCrystal` (class)
 
@@ -15977,15 +16486,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.spell_index_crystal`
 - defined at: `src/melder/crystallizer/crystals/spell_index_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying index membership - which members ride which index and which is selected.
+- responsibilities: `persist grouping that per-spell custody cannot express`
+- phases: `runtime`
 
 #### `SpellIndexCrystal` (class)
 
 - id: `melder.crystallizer.crystals.spell_index_crystal.SpellIndexCrystal`
 - defined at: `src/melder/crystallizer/crystals/spell_index_crystal.py:6`
 - extends: `Cleanable`
+- role: Digital twin of one live SpellIndex: owner edge, selection and member set.
+- responsibilities: `carry selected spell id and all member ids`, `re-snapshot at bind, notch, disposal and transfer`
+- owns_state: `_index_id`, `_spellbook_id`, `_selected_spell_id`, `_member_spell_ids`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `index_id`, `spellbook_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -16008,15 +16522,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.crystals.spellbook_crystal`
 - defined at: `src/melder/crystallizer/crystals/spellbook_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Twin carrying one spellbook's frame membership, frozen configuration and bind order.
+- responsibilities: `persist bind order so replay reproduces registration sequence`
+- phases: `runtime`
 
 #### `SpellbookCrystal` (class)
 
 - id: `melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal`
 - defined at: `src/melder/crystallizer/crystals/spellbook_crystal.py:8`
 - extends: `Cleanable`
+- role: Pure-data twin of one Spellbook's configured and binding surface.
+- responsibilities: `carry frame membership and frozen configuration`, `carry hook names and bind order`
+- owns_state: `_spellbook_id`, `_frame_name`, `_configuration_payload`, `_hook_names`, `_bind_order`
+- phases: `init`, `runtime`
 - public methods: `bind_order`, `cleanup`, `configuration_payload`, `describe`, `frame_name`, `hook_names`, `spellbook_id`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -16045,7 +16564,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.persistence_crystal`
 - defined at: `src/melder/crystallizer/persistence/persistence_crystal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One sealed checkpoint - the snapshot artifact of a profile's segment.
+- responsibilities: `capture everything journaled since the previous mark`, `detach to and from a cached item losslessly`
+- phases: `runtime`
 
 #### `PersistenceCrystal` (class)
 
@@ -16088,7 +16609,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.persistence_profile`
 - defined at: `src/melder/crystallizer/persistence/persistence_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One recorded world: the flat level-mapped twin store for a single profile.
+- responsibilities: `hold twins by level with an insertion-ordered journal`, `carry the emission mark that bounds each checkpoint window`
+- phases: `runtime`
 
 #### `PersistenceProfile` (class)
 
@@ -16134,7 +16657,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.persistence_system`
 - defined at: `src/melder/crystallizer/persistence/persistence_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The RECORD: profiles and the checkpoint ledger, in-process truth only.
+- responsibilities: `own profiles and the shared checkpoint ledger`, `call nobody and construct no engines - the edge law`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `PersistenceSystem` (class)
 
@@ -16185,7 +16710,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.record_version`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Schema version authority for every durable crystallizer artifact.
+- responsibilities: `stamp outgoing payloads`, `refuse newer-major artifacts on read`
+- phases: `runtime`
 
 #### `RecordVersion` (class)
 
@@ -16217,23 +16744,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.synthetic_module`
 - defined at: `src/melder/crystallizer/synthetic_module.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The live in-memory embodiment of crystallized source, plus the importlib finder/loader pair that lets it enter sys.modules through normal import machinery.
 
 #### `_SyntheticModuleImportLoader` (class)
 
 - id: `melder.crystallizer.synthetic_module._SyntheticModuleImportLoader`
 - defined at: `src/melder/crystallizer/synthetic_module.py:14`
 - extends: `Loader`
+- role: The create/exec half of the SyntheticModule importlib bridge - lets restored or synthesized code enter sys.modules through the normal machinery.
+- responsibilities: `resolve specs back to the EXACT SyntheticModule held by the class registry; never allocate a second world object`, `delegate execution to that object's retained source`, `own no module and expose no independent cleanup surface; one process-wide loader created lazily by SyntheticModule`
+- phases: `runtime`
 - public methods: `create_module`, `exec_module`, `get_source`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `_SyntheticModuleMetaPathFinder` (class)
 
 - id: `melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder`
 - defined at: `src/melder/crystallizer/synthetic_module.py:154`
 - extends: `MetaPathFinder`
+- role: The DISCOVERY half of the same bridge: sits on sys.meta_path so plain `import ...` finds registered synthetic modules.
+- responsibilities: `return a spec only for a currently registered name`, `return None otherwise, delegating to later meta-path finders without touching any synthetic state`, `tolerate repeated install/remove - removal does not unregister, unpublish, execute, or clean a module`
+- phases: `runtime`
 - public methods: `find_spec`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `SyntheticModule` (class)
 
@@ -16279,7 +16810,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.diff.diff_engine`
 - defined at: `src/melder/mutation_research/diff/diff_engine.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Strategy-dispatched derived-diff computation over custody material.
+- responsibilities: `resolve two versions' recorded material and dispatch to a named strategy`, `keep diffs a READ over the record, never storage`
+- phases: `runtime`
 
 #### `DiffEngine` (class)
 
@@ -16338,7 +16871,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.diff.diff_strategy`
 - defined at: `src/melder/mutation_research/diff/diff_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Base contract for one derived-diff computation over version material.
+- responsibilities: `let the caller choose the grain rather than fixing one`
+- phases: `runtime`
 
 #### `DiffStrategy` (class)
 
@@ -16380,7 +16915,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.diff.strategies.part_diff_strategy`
 - defined at: `src/melder/mutation_research/diff/strategies/part_diff_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Class- and function-grain comparison: the code grain of the diff family.
+- responsibilities: `report added/removed parts with full text and changed parts as unified diffs`, `compare module-body residue as its own region`
+- phases: `runtime`
 
 #### `PartDiffStrategy` (class)
 
@@ -16416,7 +16953,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.diff.strategies.source_diff_strategy`
 - defined at: `src/melder/mutation_research/diff/strategies/source_diff_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Per-module source comparison: which modules were added, removed or changed.
+- responsibilities: `report module-level text differences between two versions`
+- phases: `runtime`
 
 #### `SourceDiffStrategy` (class)
 
@@ -16452,7 +16991,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.diff.strategies.structural_diff_strategy`
 - defined at: `src/melder/mutation_research/diff/strategies/structural_diff_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: AST-level structural comparison for reasoning about shape rather than text.
+- responsibilities: `report structural deltas so agents can judge candidate futures`
+- phases: `runtime`
 
 #### `StructuralDiffStrategy` (class)
 
@@ -16488,7 +17029,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.group_diff.group_diff_engine`
 - defined at: `src/melder/mutation_research/group_diff/group_diff_engine.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Grouped mirror of DiffEngine, computing derived diffs over composition material.
+- responsibilities: `dispatch composition diffs by named strategy`
+- phases: `runtime`
 
 #### `GroupDiffEngine` (class)
 
@@ -16536,7 +17079,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.group_diff.group_diff_strategy`
 - defined at: `src/melder/mutation_research/group_diff/group_diff_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Base contract for one derived-diff computation over composition material.
+- responsibilities: `give compositions their own strategy family rather than reusing the spell one`
+- phases: `runtime`
 
 #### `GroupDiffStrategy` (class)
 
@@ -16575,7 +17120,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.group_diff.strategies.member_diff_strategy`
 - defined at: `src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Default grouped strategy comparing two subsystem compositions at member grain.
+- responsibilities: `report added and removed members`, `pair version_moved from lane evidence rather than guessing`
+- phases: `runtime`
 
 #### `MemberDiffStrategy` (class)
 
@@ -16611,7 +17158,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.mutation_configuration`
 - defined at: `src/melder/mutation_research/mutation_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Mutable-to-frozen policy surface for the mutation-research root.
+- responsibilities: `hold research policy before activation`, `carry the recorded composition forward at activate - the docking-loop law`
+- phases: `init`
 
 #### `MutationResearchConfiguration` (class)
 
@@ -16656,7 +17205,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.mutation_configuration_builder`
 - defined at: `src/melder/mutation_research/mutation_configuration_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One-shot builder for mutation-research configuration assembly.
+- responsibilities: `make the authoring-to-installing handoff explicit`
+- phases: `init`
 
 #### `MutationResearchConfigurationBuilder` (class)
 
@@ -16701,7 +17252,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.mutation_research`
 - defined at: `src/melder/mutation_research/mutation_research.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Singleton mutation-research root hosted by Aether, owning the formal research record.
+- responsibilities: `own the ResearchSet registry and the composition emission seam`, `be the package's only crystallizer touchpoint`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `MutationResearch` (class)
 
@@ -16772,7 +17325,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.grouped_research_node`
 - defined at: `src/melder/mutation_research/research_set/grouped_research_node.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One immutable composition record: a subsystem declared as a set of pinned members.
+- responsibilities: `content-address identity over the canonical member list so an identical roster is a rediscovery`, `stay purely informational - never gate, never execute`
+- phases: `runtime`
 
 #### `GroupedResearchNode` (class)
 
@@ -16811,7 +17366,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.network_versioner`
 - defined at: `src/melder/mutation_research/research_set/network_versioner.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Content-addressed snapshots of the network's organization, with a FIFO retention ring.
+- responsibilities: `snapshot organization, never the journal`, `dedupe by canonical-JSON sha so identical states cost nothing`
+- phases: `runtime`
 
 #### `NetworkVersioner` (class)
 
@@ -16856,7 +17413,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.research_journal`
 - defined at: `src/melder/mutation_research/research_set/research_journal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Set-level monotonic append-only log of world-entry events.
+- responsibilities: `own one forward-only event stream per set`, `mint sequence numbers without reuse across hydration`
+- phases: `runtime`
 
 #### `ResearchJournal` (class)
 
@@ -16903,21 +17462,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.research_lane`
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One lane of a research network, plus its lifecycle and policy vocabularies.
+- responsibilities: `hold an ordered node sequence with an anchor and a tip`, `keep every mutator set-internal so residence cannot be bypassed`
+- phases: `runtime`
 
 #### `LaneState` (enum)
 
 - id: `melder.mutation_research.research_set.research_lane.LaneState`
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:49`
 - markers: `Enum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Lifecycle vocabulary for a lane: open, joined or archived.
+- responsibilities: `name the terminal states a lane can reach`
+- phases: `runtime`
 
 #### `LaneType` (enum)
 
 - id: `melder.mutation_research.research_set.research_lane.LaneType`
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:96`
 - markers: `Enum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Policy vocabulary classifying a lane as development, experiment, production or test.
+- responsibilities: `carry the type the join gate enforces when armed`
+- phases: `runtime`
 
 #### `ResearchLane` (class)
 
@@ -16969,7 +17534,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.research_node`
 - defined at: `src/melder/mutation_research/research_set/research_node.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One immutable version record: a full object reference, never a diff.
+- responsibilities: `pin one bound version by spell id and module source sha`, `carry parent ancestry for multi-parent composition`
+- phases: `runtime`
 
 #### `ResearchNode` (class)
 
@@ -17012,7 +17579,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.research_set`
 - defined at: `src/melder/mutation_research/research_set/research_set.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The agent-facing research network: every lane, one journal, one residence partition.
+- responsibilities: `own lanes and the single forward-only journal`, `enforce single residence through the registry`, `notify on mutation so the composition twin stays current`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `ResearchSet` (class)
 
@@ -17076,7 +17645,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.residence_registry`
 - defined at: `src/melder/mutation_research/research_set/residence_registry.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Single-residence partition enforcing that one identity lives in exactly one lane.
+- responsibilities: `raise the rediscovery signal on a claim collision, naming the holding lane`, `offer no release verb - residence is permanent by design`
+- phases: `runtime`
 
 #### `ResidenceRegistry` (class)
 
@@ -17122,14 +17693,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.research_set.transition_entry`
 - defined at: `src/melder/mutation_research/research_set/transition_entry.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The act vocabulary and immutable event shape for the research journal.
+- responsibilities: `name the only acts the record acknowledges`, `keep the stream forward-only with no rollback act`
+- phases: `runtime`
 
 #### `TransitionAct` (enum)
 
 - id: `melder.mutation_research.research_set.transition_entry.TransitionAct`
 - defined at: `src/melder/mutation_research/research_set/transition_entry.py:9`
 - markers: `Enum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Vocabulary of world-entry acts; deliberately contains no rollback act.
+- responsibilities: `name lane_created, registered, staged, promoted, attached, detached, joined, archived, restored`
+- phases: `runtime`
 
 #### `TransitionEntry` (class)
 
@@ -17173,7 +17748,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.mutation_research.synthesis.structural_synthesizer`
 - defined at: `src/melder/mutation_research/synthesis/structural_synthesizer.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: AST-guided source composition splicing donor parts into a base module.
+- responsibilities: `replace same-named parts and append new ones, carrying decorators`, `refuse unknown selections loudly rather than silently dropping them`
+- phases: `runtime`
 
 #### `StructuralSynthesizer` (class)
 
@@ -17214,7 +17791,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.builder.frame_acl_builder`
 - defined at: `src/melder/nexus/acl/builder/frame_acl_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Frame-local mutable ACL authoring surface - the entry point to the three family builders.
 
 #### `FrameACLBuilder` (class)
 
@@ -17275,7 +17852,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.builder.frame_acl_codegen_builder`
 - defined at: `src/melder/nexus/acl/builder/frame_acl_codegen_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fluent authoring surface for one active codegen-family ACL draft.
 
 #### `FrameACLCodegenBuilder` (class)
 
@@ -17326,7 +17903,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.builder.frame_acl_command_builder`
 - defined at: `src/melder/nexus/acl/builder/frame_acl_command_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fluent authoring surface for one active command-family ACL draft.
 
 #### `FrameACLCommandBuilder` (class)
 
@@ -17377,7 +17954,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.builder.frame_acl_view_builder`
 - defined at: `src/melder/nexus/acl/builder/frame_acl_view_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fluent authoring surface for one active view-family ACL draft.
 
 #### `FrameACLViewBuilder` (class)
 
@@ -17428,7 +18005,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.frame_acl_codegen_configuration`
 - defined at: `src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Applied codegen-side ACL configuration revision.
 
 #### `FrameACLCodegenConfiguration` (class)
 
@@ -17477,7 +18054,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.frame_acl_command_configuration`
 - defined at: `src/melder/nexus/acl/configurations/frame_acl_command_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Applied command-side ACL configuration revision.
 
 #### `FrameACLCommandConfiguration` (class)
 
@@ -17526,7 +18103,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.frame_acl_view_configuration`
 - defined at: `src/melder/nexus/acl/configurations/frame_acl_view_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Applied view-side ACL configuration revision.
 
 #### `FrameACLViewConfiguration` (class)
 
@@ -17575,15 +18152,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder`
 - defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Registry and composer for reusable ACL profiles, plus the minimal structural shape its generic helpers need.
 
 #### `_NamedCleanableProfile` (interface)
 
 - id: `melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder._NamedCleanableProfile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:29`
 - markers: `Protocol`
+- role: Structural contract - the two things (name, cleanup) the generic profile-registry helpers need from any family profile.
+- responsibilities: `expose a stable registry name and a cleanup entry point`, `let view, command, and codegen profiles share registry code without an inheritance relationship the domain does not have`
+- phases: `init`, `cleanup`
 - public methods: `cleanup`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `FrameACLProfileBuilder` (class)
 
@@ -17645,7 +18224,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Reusable typed codegen-profile ruleset bundle.
 
 #### `FrameACLCodegenProfile` (class)
 
@@ -17694,7 +18273,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile_builder`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Registry-backed builder for the reusable codegen ACL profiles, selected by preset name.
 
 #### `FrameACLCodegenProfileBuilder` (class)
 
@@ -17757,8 +18336,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py:7`
+- role: The unconstrained top end of the codegen ACL model - above the standard ladder, not a rung of it.
+- responsibilities: `enable imports without an allowlist and leave builtin/meta posture open`, `allow the broadest conduit, spell, and capability operations including recursive codegen`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (1, unconfirmed)
 
@@ -17789,8 +18370,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.hybrid_profile.HybridCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py:12`
+- role: Middle rung of the codegen posture ladder, between safe and permissive.
+- responsibilities: `allow core query/link/invoke/read operations`, `still deny local creation, direct mutation, and the more aggressive capability overrides`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -17831,8 +18414,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.permissive_profile.PermissiveCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py:10`
+- role: Top standard rung of the codegen posture ladder: broadest conduit and spell operations still under capability gates.
+- responsibilities: `allow the broadest set of conduit and spell operations`, `still deny the highest-risk capability gates - mutation and unsafe reflection`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -17873,8 +18458,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/precision.py:12`
+- role: The enumerate-exactly posture, deliberately outside the safe/hybrid/permissive ordering.
+- responsibilities: `build the precision codegen profile from explicitly-enumerated allowances (frame: query only)`, `draw its import posture from the PRECISION_* stdlib import sets rather than an open allowlist`, `exist for operators who enumerate what is permitted instead of picking a tier`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -17915,8 +18502,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.codegen.safe_profile.SafeCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py:10`
+- role: Bottom rung of the codegen posture ladder: the reviewed restrictive default.
+- responsibilities: `build a FrameACLCodegenProfile limited to safe query/bind-existing operations`, `deny link mutation, local creation, invocation, writes, and dangerous capability escalation`, `register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -17969,7 +18558,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Reusable typed command-profile ruleset bundle.
 
 #### `FrameACLCommandProfile` (class)
 
@@ -18020,7 +18609,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile_builder`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Registry-backed builder for the reusable command ACL profiles, selected by preset name.
 
 #### `FrameACLCommandProfileBuilder` (class)
 
@@ -18080,8 +18669,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py:4`
+- role: Middle rung of the command posture ladder: invocation without writes.
+- responsibilities: `allow member method invocation on top of the safe posture`, `still deny member writes and dunder access`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18120,8 +18711,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.command.permissive_profile.PermissiveCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py:4`
+- role: Top standard rung of the command posture ladder: reads, invocation, and writes.
+- responsibilities: `allow member reads, invocation, and writes`, `still deny dunder access`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18160,8 +18753,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.command.precision.PrecisionCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/precision.py:4`
+- role: The enumerate-exactly command posture, deliberately outside the safe/hybrid/permissive ordering.
+- responsibilities: `build the precision command profile from explicitly-enumerated allowances`, `exist for operators who enumerate what is permitted instead of picking a tier`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18200,8 +18795,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.command.safe_profile.SafeCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/safe_profile.py:4`
+- role: Bottom rung of the command posture ladder: reads only at the member surface.
+- responsibilities: `keep the main frame/conduit/spell enablement surfaces available`, `limit member operations to read-only access`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18232,7 +18829,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.frame_acl_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The composed profile: reusable family profiles paired with local override rulesets.
 
 #### `FrameACLProfile` (class)
 
@@ -18283,7 +18880,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.rules.frame_acl_rule`
 - defined at: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The typed ACL rule object - one allow/deny decision over one operation.
 
 #### `FrameACLRule` (class)
 
@@ -18325,7 +18922,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset`
 - defined at: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_ruleset.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: A named collection of typed ACL rules; the unit a profile is assembled from.
 
 #### `FrameACLRuleSet` (class)
 
@@ -18371,7 +18968,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Reusable typed view-profile ruleset bundle.
 
 #### `FrameACLViewProfile` (class)
 
@@ -18422,7 +19019,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile_builder`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Registry-backed builder for the reusable view ACL profiles, selected by preset name.
 
 #### `FrameACLViewProfileBuilder` (class)
 
@@ -18482,8 +19079,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.view.hybrid_profile.HybridViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py:4`
+- role: Middle rung of the view posture ladder, between safe and permissive.
+- responsibilities: `allow the main frame/conduit/spell payloads plus selected profile information`, `still deny the more aggressive dynamic and instance-member surfaces`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18522,8 +19121,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.view.permissive_profile.PermissiveViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py:4`
+- role: Top standard rung of the view posture ladder: adds the dynamic and instance-member visibility the stricter rungs deny.
+- responsibilities: `keep the main frame/conduit/spell surfaces visible`, `allow instance-member and dynamic-access visibility`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18562,8 +19163,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/precision.py:4`
+- role: The enumerate-exactly view posture, deliberately outside the safe/hybrid/permissive ordering.
+- responsibilities: `build the precision view profile from explicitly-enumerated allowances`, `exist for operators who enumerate what is permitted instead of picking a tier`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18602,8 +19205,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/safe_profile.py:4`
+- role: Bottom rung of the view posture ladder: the core surfaces visible, introspection closed.
+- responsibilities: `keep the main frame/conduit/spell surfaces visible`, `deny policy, peer-link, class-profile, callable-profile, instance-member and other introspection-heavy surfaces`
+- phases: `init`
 - public methods: `build`, `name`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -18634,7 +19239,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.frame_acl_compiled_access_surface`
 - defined at: `src/melder/nexus/acl/frame_acl_compiled_access_surface.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The compiler's output: the derived, consumer-facing ACL access surface for one frame.
 
 #### `CompiledFrameACLAccessSurface` (class)
 
@@ -18674,7 +19279,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.frame_acl_compiler`
 - defined at: `src/melder/nexus/acl/frame_acl_compiler.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Compiles descriptor truth plus typed ACL configuration into the consumer-facing access surface.
 
 #### `FrameACLCompiler` (class)
 
@@ -18723,7 +19328,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.frame_acl_configuration`
 - defined at: `src/melder/nexus/acl/frame_acl_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The typed frame-local ACL bundle: view, command, and codegen configuration in one object.
 
 #### `FrameACLConfiguration` (class)
 
@@ -18766,7 +19371,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.frame_acl_configuration_chain`
 - defined at: `src/melder/nexus/acl/frame_acl_configuration_chain.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Named revision chain for one ACL configuration family - applied revisions in order.
 
 #### `FrameACLConfigurationChain` (class)
 
@@ -18816,7 +19421,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.frame_acl_container`
 - defined at: `src/melder/nexus/acl/frame_acl_container.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Frame-local ACL subsystem container - the assembly point for one frame's ACL machinery.
 
 #### `FrameACLContainer` (class)
 
@@ -18876,7 +19481,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report`
 - defined at: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_report.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Detached compatibility-validation report for one ACL bundle.
 
 #### `FrameACLSetCompatibilityReport` (class)
 
@@ -18917,7 +19522,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator`
 - defined at: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Cross-family compatibility validation over a whole ACL bundle.
 
 #### `FrameACLSetCompatibilityValidator` (class)
 
@@ -18965,7 +19570,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.acl.validator.frame_acl_validator`
 - defined at: `src/melder/nexus/acl/validator/frame_acl_validator.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Frame-scoped validation of an ACL configuration against descriptor truth.
 
 #### `FrameACLValidator` (class)
 
@@ -19194,7 +19799,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.nexus_configuration`
 - defined at: `src/melder/nexus/configuration/nexus_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Process-wide Nexus governance policy, held apart from per-Rift room semantics.
+- responsibilities: `carry freeze-once process policy for Rift creation and access`
+- phases: `init`, `runtime`
 
 #### `NexusConfiguration` (class)
 
@@ -19246,7 +19853,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.nexus_frame_mode`
 - defined at: `src/melder/nexus/configuration/nexus_frame_mode.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Topology vocabulary for how Nexus-managed frames are allocated to workspaces.
+- responsibilities: `distinguish single / indexed / one_per_workspace allocation`
+- phases: `runtime`
 
 #### `NexusFrameMode` (enum)
 
@@ -19273,7 +19882,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_access_mode`
 - defined at: `src/melder/nexus/configuration/rift_access_mode.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Policy vocabulary for whether direct Rift lookup requires a token.
+- responsibilities: `gate direct Rift retrieval as open or token_required`
+- phases: `runtime`
 
 #### `RiftAccessMode` (enum)
 
@@ -19300,7 +19911,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_configuration`
 - defined at: `src/melder/nexus/configuration/rift_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Per-Rift configuration consumed once to build one live Rift.
+- responsibilities: `capture room posture and gate settings without putting them on the live Rift`, `freeze and be consumed at creation`
+- phases: `init`
 
 #### `RiftConfiguration` (class)
 
@@ -19348,7 +19961,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_creation_mode`
 - defined at: `src/melder/nexus/configuration/rift_creation_mode.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Policy vocabulary for whether Rift creation requires a token.
+- responsibilities: `gate Rift creation as open or token_required`
+- phases: `runtime`
 
 #### `RiftCreationMode` (enum)
 
@@ -19375,7 +19990,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_space_type`
 - defined at: `src/melder/nexus/configuration/rift_space_type.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The room-posture vocabulary selecting which primary room a Rift programs.
+- responsibilities: `distinguish static / capability / codegen room behaviour`
+- phases: `runtime`
 
 #### `RiftSpaceType` (enum)
 
@@ -19402,7 +20019,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.configuration.rift_validation_mode`
 - defined at: `src/melder/nexus/configuration/rift_validation_mode.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Validation posture vocabulary for Rift codegen and runtime execution.
+- responsibilities: `select strict or relaxed contract enforcement`
+- phases: `runtime`
 
 #### `RiftValidationMode` (enum)
 
@@ -19429,7 +20048,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_acl_manager`
 - defined at: `src/melder/nexus/frame_acl_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Owner of every frame-scoped ACL container held by one Nexus.
+- responsibilities: `create containers on demand and expose profile registries`, `propagate frame-level ACL change callbacks back through Nexus`
+- phases: `runtime`, `cleanup`
 
 #### `FrameACLManager` (class)
 
@@ -19478,7 +20099,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor.conduit_descriptor_payload`
 - defined at: `src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Descriptor-safe conduit payload, kept off the record surface.
+- responsibilities: `carry conduit state, policy and peers without flattening them into ConduitRecord`
+- phases: `runtime`
 
 #### `ConduitDescriptorPayload` (class)
 
@@ -19519,7 +20142,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor.conduit_record`
 - defined at: `src/melder/nexus/frame_descriptor/conduit_record.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Canonical Nexus record for one published conduit.
+- responsibilities: `hold directly targetable conduit identity and lineage`
+- phases: `runtime`
 
 #### `ConduitRecord` (class)
 
@@ -19564,7 +20189,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor.frame_descriptor`
 - defined at: `src/melder/nexus/frame_descriptor/frame_descriptor.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Per-frame aggregate of Nexus-owned metadata and record indexes.
+- responsibilities: `hold at most one descriptor per frame name`, `index conduit and spell records for that frame`
+- phases: `runtime`, `cleanup`
 
 #### `FrameDescriptor` (class)
 
@@ -19611,7 +20238,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor.frame_descriptor_payload`
 - defined at: `src/melder/nexus/frame_descriptor/frame_descriptor_payload.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Descriptor-safe frame payload, kept off the record surface.
+- responsibilities: `carry posture and topology without flattening them into FrameRecord`
+- phases: `runtime`
 
 #### `FrameDescriptorPayload` (class)
 
@@ -19652,7 +20281,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor.frame_record`
 - defined at: `src/melder/nexus/frame_descriptor/frame_record.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Canonical Nexus record for one AR-publishable frame.
+- responsibilities: `hold frame posture without depending on the live frame object`
+- phases: `runtime`
 
 #### `FrameRecord` (class)
 
@@ -19697,7 +20328,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor.spell_descriptor_payload`
 - defined at: `src/melder/nexus/frame_descriptor/spell_descriptor_payload.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Descriptor-safe spell payload carrying profiles without live runtime references.
+- responsibilities: `carry binding/resolution profiles as detached data`
+- phases: `runtime`
 
 #### `SpellDescriptorPayload` (class)
 
@@ -19738,7 +20371,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor.spell_record`
 - defined at: `src/melder/nexus/frame_descriptor/spell_record.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Canonical Nexus record for one published spell.
+- responsibilities: `hold spell-facing identity without re-reading the owning Spellbook`
+- phases: `runtime`
 
 #### `SpellRecord` (class)
 
@@ -19783,7 +20418,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.frame_descriptor_manager`
 - defined at: `src/melder/nexus/frame_descriptor_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Sole owner of the frame-name to FrameDescriptor registry and canonical record publication.
+- responsibilities: `publish and remove frame, conduit and spell records`, `refresh frame posture before passive publication`
+- phases: `runtime`, `cleanup`
 
 #### `FrameDescriptorManager` (class)
 
@@ -19836,7 +20473,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.nexus`
 - defined at: `src/melder/nexus/nexus.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Public singleton AR root owning Rift registry, process policy and Nexus-managed frame topology.
+- responsibilities: `gate Rift creation and direct access`, `own descriptor and ACL managers`, `compile and fan out frame projection sets`
+- phases: `init`, `runtime`, `refresh`, `cleanup`
 
 #### `Nexus` (class)
 
@@ -19909,7 +20548,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.nexus_frame_builder`
 - defined at: `src/melder/nexus/nexus_frame_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fluent builder staging one Nexus-managed frame configuration before rooted creation.
+- responsibilities: `default authored frames to dynamic + ai_native + rift_enabled`, `return the rooted conduit rather than the frame`
+- phases: `init`
 
 #### `NexusFrameBuilder` (class)
 
@@ -19956,7 +20597,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.nexus_frame_configuration`
 - defined at: `src/melder/nexus/nexus_frame_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Authored posture and root-conduit bootstrap intent for one Nexus-managed frame.
+- responsibilities: `capture the posture the frame will be created with`
+- phases: `init`
 
 #### `NexusFrameConfiguration` (class)
 
@@ -20007,7 +20650,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.nexus_frame_manager`
 - defined at: `src/melder/nexus/nexus_frame_manager.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Authoring and topology facade for Nexus-managed frames above the lower Aether frame surface.
+- responsibilities: `own the managed-frame registry and authored metadata`, `enforce single / indexed / one_per_workspace creation rules`
+- phases: `init`, `runtime`
 
 #### `NexusFrameManager` (class)
 
@@ -20058,7 +20703,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.codegen_system`
 - defined at: `src/melder/nexus/rift/codegen_system/codegen_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The real engine beneath the codegen command facade; owns the per-call context, validator, namespace builder, compiler, executor and monitor, and enforces validate-before-execute.
 
 #### `CodegenSystem` (class)
 
@@ -20124,7 +20769,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.codegen_transaction_context`
 - defined at: `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-call codegen transaction context carried through validation, namespace build, compile and execute.
 
 #### `CodegenTransactionContext` (class)
 
@@ -20165,7 +20810,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.execution.codegen_compiler`
 - defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The internal compile stage of codegen execution.
 
 #### `CodegenCompiler` (class)
 
@@ -20205,7 +20850,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.execution.codegen_execution_result`
 - defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The execution-layer result for one codegen request.
 
 #### `CodegenExecutionResult` (class)
 
@@ -20246,7 +20891,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.execution.codegen_executor`
 - defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Owner of governed code execution for one codegen request.
 
 #### `CodegenExecutor` (class)
 
@@ -20290,7 +20935,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.codegen_control_surface`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Runtime wrapper for the internal codegen namespace object exposed to generated code.
 
 #### `CodegenControlSurface` (class)
 
@@ -20331,7 +20976,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.codegen_namespace`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The live namespace payload for one codegen request - built only AFTER validation is accepted.
 
 #### `CodegenNamespace` (class)
 
@@ -20372,7 +21017,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Builder that assembles a live codegen namespace from the exposure strategies.
 
 #### `CodegenNamespaceBuilder` (class)
 
@@ -20435,7 +21080,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The namespace exposure policy for one codegen request - what the strategies are permitted to place.
 
 #### `CodegenNamespaceConfiguration` (class)
 
@@ -20476,7 +21121,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Namespace exposure strategy for Python builtins.
 
 #### `CodegenBuiltinsStrategy` (class)
 
@@ -20522,7 +21167,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_command_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Namespace exposure strategy for the room-facing command surface.
 
 #### `CodegenCommandStrategy` (class)
 
@@ -20568,7 +21213,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Namespace exposure strategy for the room-owned codegen object.
 
 #### `CodegenControlStrategy` (class)
 
@@ -20615,7 +21260,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_room_objects_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Namespace exposure strategy for stable room and runtime objects.
 
 #### `CodegenRoomObjectsStrategy` (class)
 
@@ -20661,7 +21306,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_target_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Namespace exposure strategy for the current room target.
 
 #### `CodegenTargetStrategy` (class)
 
@@ -20707,7 +21352,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_workstation_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Namespace exposure strategy for the room-local workstation.
 
 #### `CodegenWorkstationStrategy` (class)
 
@@ -20753,7 +21398,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.observability.codegen_event_publisher`
 - defined at: `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Publishes codegen lifecycle signals as events through the OWNING ROOM.
 
 #### `CodegenEventPublisher` (class)
 
@@ -20799,7 +21444,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.observability.codegen_monitor`
 - defined at: `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Thin room-event monitor for codegen lifecycle publication.
 
 #### `CodegenMonitor` (class)
 
@@ -20843,7 +21488,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.codegen_validation_reporter`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Formats validation payloads out of codegen results.
 
 #### `CodegenValidationReporter` (class)
 
@@ -20883,7 +21528,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.codegen_validation_result`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The validation-layer result for one codegen request.
 
 #### `CodegenValidationResult` (class)
 
@@ -20924,7 +21569,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.codegen_validator`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Root validation orchestrator for one codegen request - the gate that must pass before a namespace is built.
 
 #### `CodegenValidator` (class)
 
@@ -20989,7 +21634,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_ast_structure_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Structural AST validation pass over submitted codegen source.
 
 #### `CodegenAstStructureStrategy` (class)
 
@@ -21032,7 +21677,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_attribute_access_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Attribute-access validation pass over submitted codegen source.
 
 #### `CodegenAttributeAccessStrategy` (class)
 
@@ -21077,7 +21722,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Builtins-policy validation pass over submitted codegen source.
 
 #### `CodegenBuiltinPolicyStrategy` (class)
 
@@ -21122,7 +21767,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Import-policy validation pass over submitted codegen source.
 
 #### `CodegenImportPolicyStrategy` (class)
 
@@ -21167,7 +21812,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Name-resolution validation pass over submitted codegen source.
 
 #### `CodegenNameResolutionStrategy` (class)
 
@@ -21212,7 +21857,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_recursive_control_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Recursive-codegen validation pass - the gate on codegen invoking codegen.
 
 #### `CodegenRecursiveControlStrategy` (class)
 
@@ -21257,7 +21902,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy`
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Reflection-policy validation pass over submitted codegen source.
 
 #### `CodegenReflectionPolicyStrategy` (class)
 
@@ -21302,7 +21947,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.command_system.capability_command_system`
 - defined at: `src/melder/nexus/rift/command_system/capability_command_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Capability-room command vocabulary on top of the shared mediated surface.
 
 #### `CapabilityCommandSystem` (class)
 
@@ -21346,7 +21991,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.command_system.codegen_command_system`
 - defined at: `src/melder/nexus/rift/command_system/codegen_command_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Codegen-room command facade; the vocabulary that fronts the internal codegen engine.
 
 #### `CodegenCommandSystem` (class)
 
@@ -21396,7 +22041,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.command_system.command_system`
 - defined at: `src/melder/nexus/rift/command_system/command_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The mediated command layer above the viewer/workstation split - the surface through which getters and executes actually run, with command ACL checked BEFORE any runtime object is exposed.
 
 #### `CommandSystem` (class)
 
@@ -21445,7 +22090,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.command_system.static_command_system`
 - defined at: `src/melder/nexus/rift/command_system/static_command_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Static-room command vocabulary on top of the shared mediated surface.
 
 #### `StaticCommandSystem` (class)
 
@@ -21488,7 +22133,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_link.frame_link`
 - defined at: `src/melder/nexus/rift/frame_link/frame_link.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The view-safe frame target entry a Rift holds after attachment.
 
 #### `FrameLink` (class)
 
@@ -21530,7 +22175,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_link.frame_link_contract`
 - defined at: `src/melder/nexus/rift/frame_link/frame_link_contract.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The per-frame ACL SELECTION for one Rift - which named contract it picked in each family - distinct from the ACL containers themselves.
 
 #### `FrameLinkContract` (class)
 
@@ -21572,7 +22217,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_viewer.frame_viewer`
 - defined at: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The READ surface of a room, opposite CommandSystem and Workstation; a view rather than a cache - helpers are built on demand so projection refreshes cannot leave it answering stale.
 
 #### `FrameViewer` (class)
 
@@ -21632,7 +22277,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_viewer.static_frame_viewer`
 - defined at: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Static-room viewer specialization.
 
 #### `StaticFrameViewer` (class)
 
@@ -21696,7 +22341,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_viewer.view_conduit`
 - defined at: `src/melder/nexus/rift/frame_viewer/view_conduit.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Conduit-scoped helper surface for one selected frame view.
 
 #### `ViewConduit` (class)
 
@@ -21743,7 +22388,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_viewer.view_frame`
 - defined at: `src/melder/nexus/rift/frame_viewer/view_frame.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Frame-scoped helper surface for one selected view projection.
 
 #### `ViewFrame` (class)
 
@@ -21790,7 +22435,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_viewer.view_multiframe`
 - defined at: `src/melder/nexus/rift/frame_viewer/view_multiframe.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Cross-frame descriptor helper surface for FrameViewer.
 
 #### `ViewMultiFrame` (class)
 
@@ -21836,7 +22481,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.frame_viewer.view_spell`
 - defined at: `src/melder/nexus/rift/frame_viewer/view_spell.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Spell-scoped helper surface for one selected frame view.
 
 #### `ViewSpell` (class)
 
@@ -21885,7 +22530,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.projection.codegen_projection`
 - defined at: `src/melder/nexus/rift/projection/codegen_projection.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The codegen-facing projection of one frame's compiled ACL state.
 
 #### `CodegenProjection` (class)
 
@@ -21928,7 +22573,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.projection.command_projection`
 - defined at: `src/melder/nexus/rift/projection/command_projection.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The command-facing projection of one frame's compiled ACL state.
 
 #### `CommandProjection` (class)
 
@@ -21971,7 +22616,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.projection.frame_projection_set`
 - defined at: `src/melder/nexus/rift/projection/frame_projection_set.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The view/command/codegen projection bundle plus one generation marker - what lets a room swap all three as ONE coherent unit.
 
 #### `FrameProjectionSet` (class)
 
@@ -22018,7 +22663,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.projection.view_projection`
 - defined at: `src/melder/nexus/rift/projection/view_projection.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The viewer-facing projection of one frame's compiled ACL state.
 
 #### `ViewProjection` (class)
 
@@ -22061,7 +22706,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift`
 - defined at: `src/melder/nexus/rift/rift.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The live AR session object: Nexus is the process-wide root, Rift is one live connection into the object world, and it owns exactly ONE primary room programmed at creation.
 
 #### `Rift` (class)
 
@@ -22122,7 +22767,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_gate.rift_gate`
 - defined at: `src/melder/nexus/rift/rift_gate/rift_gate.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The admission and drain gate of the AR layer, sibling to CreationGate for conduits and LoadGate for crystallizer loads; reversible blocking for refresh, one-way close for shutdown.
 
 #### `RiftGate` (class)
 
@@ -22165,7 +22810,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_gate_controller.rift_gate_controller`
 - defined at: `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The Nexus-owned control plane over per-Rift gates - what makes an ACL-driven projection refresh a coordinated block/drain/refresh/reopen across many Rifts.
 
 #### `RiftGateController` (class)
 
@@ -22207,7 +22852,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.capability_rift_space`
 - defined at: `src/melder/nexus/rift/rift_space/capability_rift_space.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Broad manual non-codegen room: strong-by-default binds and real topology mutation.
 
 #### `CapabilityRiftSpace` (class)
 
@@ -22251,7 +22896,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.codegen_rift_space`
 - defined at: `src/melder/nexus/rift/rift_space/codegen_rift_space.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The codegen-oriented room specialization - the rung whose command surface fronts the internal codegen engine.
 
 #### `CodegenRiftSpace` (class)
 
@@ -22299,7 +22944,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.event_system.rift_event`
 - defined at: `src/melder/nexus/rift/rift_space/event_system/rift_event.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The immutable event object a RiftSpace emits.
 
 #### `RiftEvent` (class)
 
@@ -22332,7 +22977,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.event_system.rift_event_system`
 - defined at: `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Room-local callback-driven event publisher.
 
 #### `RiftEventSystem` (class)
 
@@ -22378,7 +23023,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.memory_system.rift_memory`
 - defined at: `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The immutable executed-step memory record emitted from a RiftSpace.
 
 #### `RiftMemory` (class)
 
@@ -22411,7 +23056,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.memory_system.rift_memory_system`
 - defined at: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Locked source of truth for a room's memory sequencing and shared context.
 
 #### `RiftMemorySystem` (class)
 
@@ -22457,7 +23102,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.rift_space`
 - defined at: `src/melder/nexus/rift/rift_space/rift_space.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The room a user works in, hosted by Rift; an asset host (viewer, command system, workstation) rather than a projection manager.
 
 #### `RiftSpace` (class)
 
@@ -22516,7 +23161,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.static_rift_space`
 - defined at: `src/melder/nexus/rift/rift_space/static_rift_space.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Bottom rung of the room capability ladder: live-only and read-shaped, weak-by-default binds, no topology mutation.
 
 #### `StaticRiftSpace` (class)
 
@@ -22558,7 +23203,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.nexus.rift.rift_space.workstation`
 - defined at: `src/melder/nexus/rift/rift_space/workstation.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The binding canvas of a room, third beside FrameViewer (reads) and CommandSystem (mediated actions); commands store nothing, so results land here.
 
 #### `Workstation` (class)
 
@@ -22592,7 +23237,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/system_document.py
 
-- source_sha256: `4f2603a9377ed53ab5cbf998fa3533bf5efe6fb8c25697c7e1da26137c52e6de`
+- source_sha256: `3453c6d0c2d5b8150a21d03dd9a0bf6d516e8b2e03454d6bf41f782b19c1ddc8`
 - nodes: 2
 
 ### Nodes
@@ -22601,7 +23246,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.system_document`
 - defined at: `src/melder/system_document.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Immutable hardcopy system-document carrier queried directly at the package root.
+- responsibilities: `carry a packaged document without entering the runtime graph`, `render as json or markdown on demand`
+- phases: `init`, `runtime`
 
 #### `StaticSystemDocument` (class)
 
@@ -22611,7 +23258,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities: `stores one minified JSON hardcopy string for a system document`, `renders both JSON and markdown views for agent-facing queries`
 - owns_state: `_document_name`, `_document_json`, `_document_markdown`
 - phases: `init`, `runtime`
-- public methods: `char_count`, `document_name`, `head`, `line_count`, `lines`, `reader`, `render_json`, `render_markdown`, `tail`
+- public methods: `char_count`, `document_name`, `from_markdown`, `head`, `line_count`, `lines`, `reader`, `render_json`, `render_markdown`, `tail`
 
 ### Edge candidates (2, unconfirmed)
 
@@ -22635,34 +23282,44 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Bounded, resumable cursor over large documents for agent consumption.
+- responsibilities: `index a document once and share it across readers`, `let an agent walk in steps it chose the size of`, `report whether more remains`
+- phases: `runtime`
 
 #### `ReaderPolicy` (class)
 
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader.ReaderPolicy`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:69`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fixed bounds and defaults for the reader, held as class constants rather than module globals.
+- responsibilities: `carry chunk-size and budget defaults`
+- phases: `runtime`
 
 #### `TextChunk` (record)
 
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:111`
 - markers: `NamedTuple`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: One bounded read result plus everything needed to decide what to do next.
+- responsibilities: `report what was read, from where, and whether more remains`
+- phases: `runtime`
 
 #### `IndexedText` (class)
 
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:154`
+- role: An immutable document plus its line-offset index, shared across readers.
+- responsibilities: `pay the indexing cost once per document`, `serve any number of concurrent readers`
+- phases: `init`, `runtime`
 - public methods: `char_count`, `head`, `line_count`, `line_of_offset`, `line_start`, `line_text`, `lines_text`, `reader`, `split_lines`, `tail`, `text`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `AgentTextReader` (class)
 
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:569`
+- role: Resumable budget-bounded cursor over one IndexedText.
+- responsibilities: `walk a document in caller-chosen steps`, `remember position between calls`
+- phases: `runtime`
 - public methods: `char_target`, `current_line`, `current_offset`, `document`, `exhausted`, `head`, `line_target`, `peek`, `read`, `remaining_chars`, `remaining_lines`, `reset` (+6 more)
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (8, unconfirmed)
 
@@ -22692,7 +23349,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.ai_native_support_tools.protocol_crafter`
 - defined at: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Protocol generation and bounded protocol-block maintenance inside interface files.
+- responsibilities: `generate protocol code from a class or object`, `WRITES TO DISK - the unusual capability in this package`
+- phases: `runtime`
 
 #### `ProtocolCrafter` (class)
 
@@ -22736,6 +23395,109 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/utilities/ai_native_support_tools/protocol_crafter.py -->
 
+<!-- BEGIN FILE: src/melder/utilities/ai_native_support_tools/system_document_view.py -->
+
+## src/melder/utilities/ai_native_support_tools/system_document_view.py
+
+- source_sha256: `836168dfce31e4ee8c2132f9bffc327072c944000274670daf00c7074ef8abe6`
+- nodes: 8
+
+### Nodes
+
+#### `system_document_view` (module)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:1`
+- role: Query objects for melder's shipped system documents - what __architecture__, __components__, __graph_network__ and __graph_details__ return.
+
+#### `Section` (record)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view.Section`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:56`
+- markers: `NamedTuple`
+- role: One addressable span of a system document, keyed by heading path or by repository-relative source path depending on the document's addressing scheme.
+- responsibilities: `carry the addressing key plus first and last line of the span`
+- phases: `runtime`
+
+#### `SearchHit` (record)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view.SearchHit`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:97`
+- markers: `NamedTuple`
+- role: One section whose BODY matches a search term, with a ranking signal attached.
+- responsibilities: `carry the section key, usable directly with get()`, `carry the match count - a section mentioning a term twenty times is usually the one wanted`
+- phases: `runtime`
+
+#### `Group` (record)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view.Group`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:118`
+- markers: `NamedTuple`
+- role: A cluster of sections sharing a prefix, so a caller can see the cost of reading a whole group before asking for it.
+- responsibilities: `carry the prefix - a directory path under source_path addressing, a top-level heading under section addressing`, `carry the section count and their combined line count`
+- phases: `runtime`
+
+#### `Edge` (record)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view.Edge`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:135`
+- markers: `NamedTuple`
+- role: One outbound relationship between two graph nodes, as resolved at build time.
+- responsibilities: `carry source, relation, target, cardinality and the rest of the edge's authored shape`
+- phases: `runtime`
+
+#### `Node` (record)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view.Node`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:159`
+- markers: `NamedTuple`
+- role: One graph node; its `source` path is also its section key in __graph_details__, which is the join between the two graph views.
+- responsibilities: `carry node_id, source path, bare name and kind`
+- phases: `runtime`
+
+#### `SystemDocumentView` (class)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:184`
+- role: An indexed, sliceable view over one shipped system document - a document an agent can interrogate rather than one it must consume.
+- responsibilities: `state every bound up front through index(), so every read is bounded`, `look sections up exactly by key, with find() covering the substring case`, `RAISE when slicing an unavailable document - a silent empty slice reads exactly like a section that says nothing`, `stay immutable and shared`
+- phases: `runtime`
+- public methods: `addressing`, `available`, `char_count`, `content_sha256`, `document_name`, `find`, `get`, `groups`, `head`, `index`, `keys`, `line_count` (+13 more)
+
+#### `SystemGraphView` (class)
+
+- id: `melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:806`
+- extends: `SystemDocumentView`
+- role: A document view that is also a walkable graph; backs __graph_network__ and __graph_details__ over the same document.
+- responsibilities: `add build-time adjacency so a node's neighbours are a dict lookup rather than a parse`, `import the adjacency module on FIRST graph access, never at construction - a process that never walks pays nothing`
+- phases: `runtime`
+- public methods: `describe`, `details_key`, `edge_count`, `edges_from`, `edges_to`, `find_nodes`, `neighbors`, `node`, `node_at`, `node_count`, `node_ids`, `nodes_in` (+2 more)
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView` | specializes | `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` | - | - | derived |
+
+### Edge candidates (11, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` creates `KeyError`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` creates `MappingProxyType`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` creates `ValueError`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` creates `RuntimeError`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` creates `SearchHit`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` creates `Group`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView` creates `Section`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView` creates `Node`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView` creates `KeyError`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView` creates `Edge`
+- `melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView` creates `ValueError`
+
+<!-- END FILE: src/melder/utilities/ai_native_support_tools/system_document_view.py -->
+
 <!-- BEGIN FILE: src/melder/utilities/caching_system/asset_cache.py -->
 
 ## src/melder/utilities/caching_system/asset_cache.py
@@ -22749,13 +23511,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.caching_system.asset_cache`
 - defined at: `src/melder/utilities/caching_system/asset_cache.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Shared hydration lane taking a committed build manifest into a hot per-interpreter cache.
+- responsibilities: `treat the committed manifest as truth and the cache as an accelerator`
+- phases: `init`, `runtime`
 
 #### `AssetCachePolicy` (class)
 
 - id: `melder.utilities.caching_system.asset_cache.AssetCachePolicy`
 - defined at: `src/melder/utilities/caching_system/asset_cache.py:85`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Fixed values for the asset cache, held as class constants per the module-scope rule.
+- responsibilities: `carry cache location and naming policy`
+- phases: `init`
 
 <!-- END FILE: src/melder/utilities/caching_system/asset_cache.py -->
 
@@ -22772,7 +23538,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.caching_system.caching_system`
 - defined at: `src/melder/utilities/caching_system/caching_system.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Conduit-scoped cache file persistence owned by the runtime.
+- responsibilities: `own cache-file lifecycle so a user never registers one`
+- phases: `runtime`, `cleanup`
 
 #### `CachingSystem` (class)
 
@@ -22823,7 +23591,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.dead_reference_error`
 - defined at: `src/melder/utilities/custom_exceptions/dead_reference_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when a weak referent is requested after collection, turning a silent None into a failure at the point of use.
+- responsibilities: `fail loudly instead of returning None for a collected referent`
+- phases: `runtime`
 
 #### `DeadReferenceError` (class)
 
@@ -22855,7 +23625,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.empty_error`
 - defined at: `src/melder/utilities/custom_exceptions/empty_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when an operation required at least one item and the container was empty.
+- responsibilities: `signal emptiness where emptiness is the contract violation`
+- phases: `runtime`
 
 #### `Empty` (class)
 
@@ -22881,7 +23653,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.hook_execution_error`
 - defined at: `src/melder/utilities/custom_exceptions/hook_execution_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when a user-supplied lifecycle hook fails during melding, carrying which hook failed and why.
+- responsibilities: `separate user hook failure from runtime failure`, `preserve the identity of the failing hook`
+- phases: `runtime`
 
 #### `HookExecutionError` (class)
 
@@ -22907,7 +23681,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.internal_registration_error`
 - defined at: `src/melder/utilities/custom_exceptions/internal_registration_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when code attempts to bind a Melder-owned object that the internal manifest reserves.
+- responsibilities: `give the bind guard one stable refusal type`
+- phases: `init`, `runtime`
 
 #### `InternalRegistrationError` (class)
 
@@ -22933,7 +23709,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.meld_execution_error`
 - defined at: `src/melder/utilities/custom_exceptions/meld_execution_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Single stable failure type for DAG-based meld execution, so the Conduit/Meld boundary has one resolution-failed signal.
+- responsibilities: `collapse many low-level failures into one boundary error`, `keep callers from catching a dozen leaked exception types`
+- phases: `runtime`
 
 #### `MeldExecutionError` (class)
 
@@ -22959,7 +23737,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.operation_cancelled_error`
 - defined at: `src/melder/utilities/custom_exceptions/operation_cancelled_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when work stops because cooperative cancellation was observed - an abort, not a failure.
+- responsibilities: `distinguish told-to-stop from something-went-wrong`
+- phases: `runtime`, `cleanup`
 
 #### `OperationCancelledError` (class)
 
@@ -22985,7 +23765,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.phase_execution_error`
 - defined at: `src/melder/utilities/custom_exceptions/phase_execution_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when units inside a scheduled phase fail, aggregating the whole failure set rather than the first error.
+- responsibilities: `carry every failing unit, not just the first`, `abort the resolution pipeline at the phase barrier`
+- phases: `validation`, `runtime`
 
 #### `PhaseExecutionError` (class)
 
@@ -23017,7 +23799,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.phase_scheduler_error`
 - defined at: `src/melder/utilities/custom_exceptions/phase_scheduler_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Base type for phase pipeline failures, so callers can catch the family without enumerating causes.
+- responsibilities: `parent the timeout and execution failure types`
+- phases: `validation`, `runtime`
 
 #### `PhaseSchedulerError` (class)
 
@@ -23043,7 +23827,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.phase_timeout_error`
 - defined at: `src/melder/utilities/custom_exceptions/phase_timeout_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when a phase's units do not all report before the configured barrier deadline.
+- responsibilities: `distinguish a stalled phase from a failed one`
+- phases: `validation`, `runtime`
 
 #### `PhaseTimeoutError` (class)
 
@@ -23075,7 +23861,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.spell_space_scope_error`
 - defined at: `src/melder/utilities/custom_exceptions/spell_space_scope_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when a SpellSpace scoping rule is violated - a lifetime or ownership failure, not a generic runtime error.
+- responsibilities: `refuse unique_per_spell_space resolution with no active spellspace`, `refuse use of a spellspace that is not the active scope`
+- phases: `runtime`
 
 #### `SpellSpaceScopeError` (class)
 
@@ -23101,7 +23889,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.spellbook_validation_error`
 - defined at: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Raised when spellbook validation finds broken spells, preserving per-spell context for remediation.
+- responsibilities: `surface phase 1-4 breakage at conjure`, `keep per-spell detail attached for the fix`
+- phases: `validation`
 
 #### `SpellbookValidationError` (class)
 
@@ -23127,28 +23917,36 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Thread-safe dictionary holding values weakly, with live dynamic views.
+- responsibilities: `store values as weak nodes and dereference lazily`, `expose keys/items/values views that snapshot through the parent`
+- phases: `runtime`, `cleanup`
 
 #### `_WeakDictKeysView` (class)
 
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict._WeakDictKeysView`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:69`
 - extends: `Collection`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Dynamic keys view over the live-key surface of a WeakConcurrentDict.
+- responsibilities: `mirror dict_keys while snapshotting through the parent`
+- phases: `runtime`
 
 #### `_WeakDictItemsView` (class)
 
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict._WeakDictItemsView`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:141`
 - extends: `Collection`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Dynamic items view dereferencing weak values lazily.
+- responsibilities: `mirror dict_items over weakly-held values`
+- phases: `runtime`
 
 #### `_WeakDictValuesView` (class)
 
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict._WeakDictValuesView`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:220`
 - extends: `Collection`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Dynamic values view dereferencing weak nodes on iteration.
+- responsibilities: `mirror dict_values over weakly-held values`
+- phases: `runtime`
 
 #### `WeakConcurrentDict` (class)
 
@@ -23198,7 +23996,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_list`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Thread-safe list-like container holding weak references rather than strong ones.
+- responsibilities: `let elements be collected without the container extending their life`
+- phases: `runtime`, `cleanup`
 
 #### `WeakConcurrentList` (class)
 
@@ -23246,7 +24046,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_set`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Thread-safe set holding members weakly.
+- responsibilities: `hold membership without ownership`
+- phases: `runtime`, `cleanup`
 
 #### `WeakConcurrentSet` (class)
 
@@ -23293,7 +24095,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.data_structures.weak_data_structures.weak_ref_node`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Reusable weak-reference element with phantom-style collection notification.
+- responsibilities: `wrap one referent weakly for a container that owns synchronization`, `notify on collection so the container can prune`
+- phases: `runtime`, `cleanup`
 
 #### `WeakRefNode` (class)
 
@@ -23338,7 +24142,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.general_base.abstract_elastic_pool`
 - defined at: `src/melder/utilities/general_base/abstract_elastic_pool.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Shared bounded elastic pooling policy for expensive reusable runtime objects.
+- responsibilities: `provide one pooling policy surface for lesser conduits and spellspaces`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `AbstractElasticPool` (abstract)
 
@@ -23383,7 +24189,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.general_base.cleanable`
 - defined at: `src/melder/utilities/general_base/cleanable.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The single teardown contract shared across the entire runtime.
+- responsibilities: `define idempotent explicit cleanup`, `provide check_cleaned so post-teardown use fails loudly`
+- phases: `init`, `cleanup`
 
 #### `Cleanable` (abstract)
 
@@ -23400,7 +24208,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.general_base.cleanable._CleanupContext`
 - defined at: `src/melder/utilities/general_base/cleanable.py:187`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Internal context helper supporting the Cleanable teardown contract.
+- responsibilities: `scope one cleanup pass`
+- phases: `cleanup`
 
 ### Edges out
 
@@ -23435,14 +24245,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.general_base.sync`
 - defined at: `src/melder/utilities/general_base/sync.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Abstract mix-in supplying shared coordination for thread-safe value wrappers.
+- responsibilities: `carry the deterministic two-wrapper lock ordering that prevents deadlock between cells`
+- phases: `runtime`
 
 #### `Sync` (class)
 
 - id: `melder.utilities.general_base.sync.Sync`
 - defined at: `src/melder/utilities/general_base/sync.py:6`
+- role: Abstract mix-in supplying shared coordination for thread-safe value wrappers.
+- responsibilities: `provide deterministic two-wrapper lock ordering to prevent deadlock between cells`
+- phases: `runtime`
 - public methods: `get`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (2, unconfirmed)
 
@@ -23470,28 +24284,36 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.helpers.class_surface_ast_describer`
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: AST-backed class-surface describer: the consumer of `__ast_helper_access__`.
+- responsibilities: `describe a class surface without importing or instantiating it`, `emit typed payloads rather than live references`
+- phases: `runtime`
 
 #### `InheritedAgentPurposeDescription` (record)
 
 - id: `melder.utilities.helpers.class_surface_ast_describer.InheritedAgentPurposeDescription`
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:19`
 - markers: `TypedDict`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Typed payload for one parent class's inherited purpose in the MRO.
+- responsibilities: `carry inherited purpose as a shape, not a live object`
+- phases: `runtime`
 
 #### `ClassMemberDescription` (record)
 
 - id: `melder.utilities.helpers.class_surface_ast_describer.ClassMemberDescription`
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:44`
 - markers: `TypedDict`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Typed payload for one AST-described method or property.
+- responsibilities: `carry member shape without importing the class`
+- phases: `runtime`
 
 #### `ClassSurfaceDescription` (record)
 
 - id: `melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceDescription`
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:74`
 - markers: `TypedDict`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Typed top-level payload returned by the class-surface describer.
+- responsibilities: `carry the whole described surface as detached data`
+- phases: `runtime`
 
 #### `ClassSurfaceAstDescriber` (class)
 
@@ -23532,8 +24354,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.helpers.class_wraps`
 - defined at: `src/melder/utilities/helpers/class_wraps.py:1`
-- role: Helper module for class-wrapping utilities.
-- responsibilities: `provides helper wrapping behavior for class utilities`
+- role: Class-level wrapping helpers.
+- responsibilities: `support decoration patterns applied at class scope`
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/helpers/class_wraps.py -->
@@ -23551,7 +24373,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.helpers.general_helpers`
 - defined at: `src/melder/utilities/helpers/general_helpers.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Enum normalization and canonical spell-input identification.
+- responsibilities: `let API boundaries accept a raw string and still hold a real enum`, `own the single source of truth for spell identity normalization`
+- phases: `runtime`
 
 #### `EnumHelpers` (class)
 
@@ -23606,7 +24430,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.helpers.id_builder`
 - defined at: `src/melder/utilities/helpers/id_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Stable lineage-style identifier construction for every runtime-owned object.
+- responsibilities: `compose ids one way instead of per call site`
+- phases: `init`, `runtime`
 
 #### `IDBuilder` (class)
 
@@ -23654,7 +24480,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.helpers.init_helpers`
 - defined at: `src/melder/utilities/helpers/init_helpers.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Startup-time logger resolution wrappers over the utility provider host.
+- responsibilities: `resolve a provider-backed channel logger`, `wrap an explicit logger as a SafeLogger`, `fall back silently rather than failing boot`
+- phases: `init`
 
 #### `InitHelpers` (class)
 
@@ -23702,7 +24530,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.helpers.package`
 - defined at: `src/melder/utilities/helpers/package.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Thread-safe wrapper around a callable, sync or coroutine.
+- responsibilities: `accept both sync callables and coroutine functions behind one surface`
+- phases: `runtime`
 
 #### `Package` (class)
 
@@ -23753,8 +24583,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.helpers.ulid_factory`
 - defined at: `src/melder/utilities/helpers/ulid_factory.py:1`
-- role: Minimal internal ULID generator module.
-- responsibilities: `replaces the external ulid package for runtime ID generation`, `provides the lock-free new_ulid() helper used by runtime objects and helpers`, `keeps ULID generation import-light and cycle-safe`
+- role: Minimal internal ULID generator replacing the external dependency.
+- responsibilities: `produce lexicographically sortable time-ordered ids`, `remove a third-party runtime dependency`
 - owns_state: `_CROCKFORD32`
 - phases: `runtime`
 
@@ -23773,7 +24603,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.interfaces.ichannellogger`
 - defined at: `src/melder/utilities/interfaces/ichannellogger.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Structural description of the channel-logger shape.
+- responsibilities: `let the runtime accept any conforming logger without importing one`
+- phases: `runtime`
 
 #### `IChannelLogger` (interface)
 
@@ -23801,7 +24633,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.interfaces.icleanable`
 - defined at: `src/melder/utilities/interfaces/icleanable.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Structural mirror of the Cleanable public API.
+- responsibilities: `let a caller depend on the cleanup contract without inheriting the ABC`
+- phases: `cleanup`
 
 #### `ICleanable` (interface)
 
@@ -23829,7 +24663,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.logger.safe_logger`
 - defined at: `src/melder/utilities/logger/safe_logger.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Unified logging adapter over channel loggers and stdlib loggers.
+- responsibilities: `give the runtime one stable logging surface`, `never raise during init on a None logger`, `stay safe to call during teardown`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `SafeLogger` (class)
 
@@ -23875,7 +24711,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.cancellation_event_signal`
 - defined at: `src/melder/utilities/synchronization/cancellation_event_signal.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Cooperative cancellation for a scheduler run, split into a writer and a read-only view.
+- responsibilities: `own the threading.Event carrying cancellation state`, `hand workers a read-only view that cannot cancel`, `keep the worker poll path lock-free`, `tear the view down with the signal`
+- owns_state: `_lock`, `_flag`, `_event`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `CancellationEvent` (class)
 
@@ -23940,7 +24779,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.counter_switch`
 - defined at: `src/melder/utilities/synchronization/counter_switch.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Deque-cardinality coordination primitive with leader election on the idle-to-pending edge.
+- responsibilities: `encode idle / pending / open as ticket count`, `elect exactly one leader out of the idle state`, `keep advance and the open fast path lock-free`, `expose a lock-free int mirror for hot reads`
+- owns_state: `_lock`, `_event`, `_tickets`, `fast_state`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `CounterSwitch` (class)
 
@@ -23985,7 +24827,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.creation_gate`
 - defined at: `src/melder/utilities/synchronization/creation_gate.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Admission boundary guarding creation-oriented paths, with ticket tracking and terminal close.
+- responsibilities: `block or admit callers via an enabled flag`, `track in-flight work as tickets`, `support close-and-drain so teardown waits for active work`, `keep the wait path lock-free`
+- owns_state: `_lock`, `enabled`, `_event`, `_tickets`, `_closed`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `CreationGate` (class)
 
@@ -24030,7 +24875,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.creation_gate_controller`
 - defined at: `src/melder/utilities/synchronization/creation_gate_controller.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Frame-owned registry indexing creation gates by conduit lineage and by spell index.
+- responsibilities: `index conduit gates by root and by conduit id`, `index spell-index gates by index id`, `fan enable/disable across both registries`, `aggregate active-thread counts and drive lineage drain`
+- owns_state: `_lock`, `_conduit_creation_gates`, `_conduit_creation_gates_by_root`, `_conduit_root_by_conduit`, `_spell_index_creation_gates`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `CreationGateController` (class)
 
@@ -24077,7 +24925,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.fast_switch`
 - defined at: `src/melder/utilities/synchronization/fast_switch.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Cheapest boolean-like primitive in the package; truth is deque length and nothing else.
+- responsibilities: `derive truth from ticket cardinality`, `offer set_true / set_false without a Python lock`, `serve hot paths that cannot afford lock acquisition`
+- owns_state: `_tickets`
+- phases: `runtime`, `cleanup`
 
 #### `FastSwitch` (class)
 
@@ -24113,7 +24964,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.load_gate`
 - defined at: `src/melder/utilities/synchronization/load_gate.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Process-wide admission barrier granting one crystallizer load exclusive authority over new root transactions.
+- responsibilities: `let the holding thread and its enrolled cohort pass freely`, `park foreign threads at root transaction start`, `name the blocking load when a wait times out`, `open terminally on cleanup so nothing stays parked`
+- owns_state: `_condition`, `_holder_thread_id`, `_holder_label`, `_cohort_thread_ids`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `LoadGate` (class)
 
@@ -24155,7 +25009,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.phase_latch`
 - defined at: `src/melder/utilities/synchronization/phase_latch.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Per-phase countdown barrier letting the control thread wait on one event instead of every unit's Future.
+- responsibilities: `count down unit completions to zero`, `fire immediately on the first error for fail-fast`, `expose a separate all-reported quiesce barrier`, `hand the control thread a copied error list`
+- owns_state: `_lock`, `_event`, `_all_reported_event`, `_remaining`, `_errors`
+- phases: `runtime`
 
 #### `PhaseLatch` (class)
 
@@ -24190,7 +25047,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.phase_scheduler`
 - defined at: `src/melder/utilities/synchronization/phase_scheduler.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Persistent per-owner pipeline runner executing registered phases in order across a reused worker pool.
+- responsibilities: `own a lazily spawned worker pool reused across runs`, `feed one queue that workers block on rather than poll`, `enforce a per-phase barrier through one PhaseLatch`, `open a fresh cancellation scope per run so one failure cannot poison the next`
+- owns_state: `_configuration`, `_workers`, `_barrier_timeout_ms`, `_cancel_signal`, `_cancel_event`, `_queue`, `_threads`, `_lock`, `_workers_started`, `_shutdown`, `_phase_factories`, `_phase_order`, `_sentinel`
+- phases: `init`, `validation`, `runtime`, `cleanup`
 
 #### `PhaseScheduler` (class)
 
@@ -24256,7 +25116,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.safeguard`
 - defined at: `src/melder/utilities/synchronization/safeguard.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Deadlock-avoidance helper acquiring an arbitrary lock set in one deterministic global order.
+- responsibilities: `drop None locks and de-duplicate by identity`, `sort by id(lock) so every caller converges on one order`, `release in reverse acquisition order`, `default to single use so a guard cannot be silently reused`
+- owns_state: `_locks`, `_acquired`, `_timeout`, `_one_time_use`, `_cleanup_lock`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `SafeGuard` (class)
 
@@ -24299,7 +25162,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.sync_weak_ref`
 - defined at: `src/melder/utilities/synchronization/sync_weak_ref.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Self-synchronizing weak reference cell supporting compare-and-swap and phantom-style collection callbacks.
+- responsibilities: `hold one referent weakly without extending its life`, `serialize get/set/cas/swap on its own lock`, `notify registered callbacks when the referent is collected`, `optionally self-clean on collection`
+- owns_state: `_cleaned`, `_weak`, `_lock`, `_id`, `_on_collect`, `_auto_cleanup`, `_phantom_fired`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `SyncWeakRef` (class)
 
@@ -24346,7 +25212,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.ticket_flag`
 - defined at: `src/melder/utilities/synchronization/ticket_flag.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Deque-cardinality boolean with context-manager support and forgiving unbalanced exits.
+- responsibilities: `derive truth from ticket count`, `treat empty-pop as a no-op so unbalanced exits degrade quietly`, `never suppress exceptions raised inside a with-body`
+- owns_state: `_tickets`
+- phases: `runtime`, `cleanup`
 
 #### `TicketFlag` (class)
 
@@ -24382,7 +25251,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.synchronization.unit_of_work`
 - defined at: `src/melder/utilities/synchronization/unit_of_work.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Future-backed single work item carrying a bound call, a cancellation view and supervision metadata.
+- responsibilities: `bind a callable with its args for later execution`, `observe a borrowed CancellationEvent without owning it`, `carry label and metadata for supervision`, `leave Future result state intact through cleanup`
+- owns_state: `_func`, `_args`, `_kwargs`, `_cancel_event`, `_label`, `_metadata`, `_lock`
+- phases: `init`, `runtime`, `cleanup`
 
 #### `UnitOfWork` (class)
 

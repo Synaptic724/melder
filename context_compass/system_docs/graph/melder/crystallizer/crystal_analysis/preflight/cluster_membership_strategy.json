@@ -9,7 +9,10 @@
    "label": "cluster_membership_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass for cluster members missing from the bundle.",
+   "semantics_authored_against": "527c5ee43b8819996451bceedd4280d8672a1de927068e5b75d41b7a4e0fee8c"
   },
   "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy",
@@ -29,7 +32,18 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "ef18173ee60391668d54fcbd00095827be8e5e16e718df56126158b2b9286301",
+   "include": true,
+   "role": "Preflight for cluster members outside the bundle, which cannot re-join and shortfall at restore.",
+   "responsibilities": [
+    "warn per absent member conduit",
+    "report a recorded leader as info once per cluster - election re-runs live and the recorded leader is never replayed"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "ef18173ee60391668d54fcbd00095827be8e5e16e718df56126158b2b9286301"
   }
  },
  "edges_out": [

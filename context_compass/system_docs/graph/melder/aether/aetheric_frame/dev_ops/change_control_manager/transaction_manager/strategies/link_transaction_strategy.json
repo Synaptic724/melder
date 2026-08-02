@@ -1,119 +1,124 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py",
-  "source_sha256": "4d6fe3a506343145f7fb6da080bcffc2c14056491884630b957aee5545adbc9f",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy",
-      "label": "link_transaction_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-      "label": "LinkTransactionStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py",
-      "lineno": 22,
-      "bases": [
-        "TransactionStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "build_start_plan",
-        "on_end",
-        "on_start"
-      ],
-      "shape": {
-        "method_count": 5,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Transaction strategy for conduit link requests.",
-      "responsibilities": [
-        "resolves participating conduit ids for one link request",
-        "derives conduit, conduit-ward, and spellbook scopes for link admission",
-        "normalizes affected identities and capability requirements for conduit-link transactions"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py",
+ "source_sha256": "4d6fe3a506343145f7fb6da080bcffc2c14056491884630b957aee5545adbc9f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy",
+   "label": "link_transaction_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for conduit link requests.",
+   "semantics_authored_against": "4d6fe3a506343145f7fb6da080bcffc2c14056491884630b957aee5545adbc9f"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-      "to_label": "TransactionStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "Set": "typing.Set",
-    "Tuple": "typing.Tuple",
-    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-    "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-    "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
-    "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+   "label": "LinkTransactionStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py",
+   "lineno": 22,
+   "bases": [
+    "TransactionStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build_start_plan",
+    "on_end",
+    "on_start"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "ad61ff7e84b3d10709137399b5ec7d0fde50a9e077b32150e306510341e4d75b",
+   "role": "Transaction strategy for conduit link requests.",
+   "responsibilities": [
+    "resolves participating conduit ids for one link request",
+    "derives conduit, conduit-ward, and spellbook scopes for link admission",
+    "normalizes affected identities and capability requirements for conduit-link transactions"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "ad61ff7e84b3d10709137399b5ec7d0fde50a9e077b32150e306510341e4d75b"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+   "to_label": "TransactionStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy",
-    "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-    "label": "LinkTransactionStrategy"
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+  "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+  "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
+  "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy",
+  "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+  "label": "LinkTransactionStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+   "relation": "specializes",
+   "why": "LinkTransactionStrategy specializes the shared transaction strategy contract for conduit-link requests.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-      "relation": "specializes",
-      "why": "LinkTransactionStrategy specializes the shared transaction strategy contract for conduit-link requests.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-      "relation": "uses",
-      "why": "LinkTransactionStrategy reads conduit and spellbook DevopsIdentity data while building link admission scopes.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-      "relation": "borrows",
-      "why": "LinkTransactionStrategy borrows the frame registry to resolve participant conduits and owning spellbooks.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "relation": "uses",
+   "why": "LinkTransactionStrategy reads conduit and spellbook DevopsIdentity data while building link admission scopes.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+   "relation": "borrows",
+   "why": "LinkTransactionStrategy borrows the frame registry to resolve participant conduits and owning spellbooks.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

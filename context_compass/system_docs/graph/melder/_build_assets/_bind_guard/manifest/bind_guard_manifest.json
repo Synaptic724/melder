@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
- "source_sha256": "2c66e407c7177c69a106a42712afada68d4cf17af5e0d214bbb4382e8c77f880",
+ "source_sha256": "dfe74f61e21d970cf25bf9541e0361783d78bccf01c4351a3fa6f24355f4c124",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._bind_guard.manifest.bind_guard_manifest": {
@@ -9,7 +9,16 @@
    "label": "bind_guard_manifest",
    "kind": "module",
    "file": "src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "GENERATED committed manifest of guarded (module, qualname) pairs. The truth; do not edit by hand.",
+   "responsibilities": [
+    "hold the exact-match entries registration refusal tests against"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "2c66e407c7177c69a106a42712afada68d4cf17af5e0d214bbb4382e8c77f880"
   }
  },
  "edges_out": [],

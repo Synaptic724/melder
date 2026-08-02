@@ -1,86 +1,97 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/mutation_research/diff/diff_strategy.py",
-  "source_sha256": "619dc08f109bcb51bc616ad68cc3a7a1fed4b7b842d5349a615a97ed8d484c0c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.mutation_research.diff.diff_strategy": {
-      "id": "melder.mutation_research.diff.diff_strategy",
-      "label": "diff_strategy",
-      "kind": "module",
-      "file": "src/melder/mutation_research/diff/diff_strategy.py",
-      "lineno": 1
-    },
-    "melder.mutation_research.diff.diff_strategy.DiffStrategy": {
-      "id": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-      "label": "DiffStrategy",
-      "kind": "class",
-      "file": "src/melder/mutation_research/diff/diff_strategy.py",
-      "lineno": 7,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "diff",
-        "name"
-      ],
-      "shape": {
-        "method_count": 3,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Abstract contract for one derived-diff computation over two version material payloads.",
-      "responsibilities": [
-        "defines the stable registry name plus diff(left_material, right_material) seam",
-        "strategies receive detached {spell_id, sources, fingerprints} payloads and return value-typed verdicts without retaining material"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/diff/diff_strategy.py",
+ "source_sha256": "619dc08f109bcb51bc616ad68cc3a7a1fed4b7b842d5349a615a97ed8d484c0c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.diff.diff_strategy": {
+   "id": "melder.mutation_research.diff.diff_strategy",
+   "label": "diff_strategy",
+   "kind": "module",
+   "file": "src/melder/mutation_research/diff/diff_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Base contract for one derived-diff computation over version material.",
+   "responsibilities": [
+    "let the caller choose the grain rather than fixing one"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "619dc08f109bcb51bc616ad68cc3a7a1fed4b7b842d5349a615a97ed8d484c0c"
   },
-  "edges_out": [
-    {
-      "from": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-      "to_label": "NotImplementedError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "abstractmethod": "abc.abstractmethod",
-    "Dict": "typing.Dict",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
-  },
-  "collapse_candidate": {
-    "module": "melder.mutation_research.diff.diff_strategy",
-    "class": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-    "label": "DiffStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "DiffStrategy inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  "melder.mutation_research.diff.diff_strategy.DiffStrategy": {
+   "id": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+   "label": "DiffStrategy",
+   "kind": "class",
+   "file": "src/melder/mutation_research/diff/diff_strategy.py",
+   "lineno": 7,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "diff",
+    "name"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "cf938ffcc5e4e8c61674baff73612e7896b2aa3ff98194f562e1f75f1f1655f2",
+   "role": "Abstract contract for one derived-diff computation over two version material payloads.",
+   "responsibilities": [
+    "defines the stable registry name plus diff(left_material, right_material) seam",
+    "strategies receive detached {spell_id, sources, fingerprints} payloads and return value-typed verdicts without retaining material"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "cf938ffcc5e4e8c61674baff73612e7896b2aa3ff98194f562e1f75f1f1655f2"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+   "to_label": "NotImplementedError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "abstractmethod": "abc.abstractmethod",
+  "Dict": "typing.Dict",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.diff.diff_strategy",
+  "class": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+  "label": "DiffStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "DiffStrategy inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

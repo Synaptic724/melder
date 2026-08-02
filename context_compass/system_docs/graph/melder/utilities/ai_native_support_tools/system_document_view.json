@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "source": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+  "source_sha256": "836168dfce31e4ee8c2132f9bffc327072c944000274670daf00c7074ef8abe6",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.ai_native_support_tools.system_document_view": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view",
+      "label": "system_document_view",
+      "kind": "module",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Query objects for melder's shipped system documents - what __architecture__, __components__, __graph_network__ and __graph_details__ return.",
+      "semantics_authored_against": "cbd838750b5207555105b898d999ae53f7b6de315e97f6b243dbeda368032056"
+    },
+    "melder.utilities.ai_native_support_tools.system_document_view.Section": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view.Section",
+      "label": "Section",
+      "kind": "record",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 56,
+      "bases": [],
+      "markers": [
+        "NamedTuple"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "8cc5681162b21fcad0222ea377e9734a024bfbb88b61e15b1eebe61627594a8e",
+      "include": true,
+      "role": "One addressable span of a system document, keyed by heading path or by repository-relative source path depending on the document's addressing scheme.",
+      "responsibilities": [
+        "carry the addressing key plus first and last line of the span"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "8cc5681162b21fcad0222ea377e9734a024bfbb88b61e15b1eebe61627594a8e"
+    },
+    "melder.utilities.ai_native_support_tools.system_document_view.SearchHit": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view.SearchHit",
+      "label": "SearchHit",
+      "kind": "record",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 97,
+      "bases": [],
+      "markers": [
+        "NamedTuple"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "b136678f3f54be4bd4824e2e3b348298f5dcbb40565123f097e9d98245fe52ab",
+      "role": "One section whose BODY matches a search term, with a ranking signal attached.",
+      "responsibilities": [
+        "carry the section key, usable directly with get()",
+        "carry the match count - a section mentioning a term twenty times is usually the one wanted"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "include": true,
+      "semantics_authored_against": "b136678f3f54be4bd4824e2e3b348298f5dcbb40565123f097e9d98245fe52ab"
+    },
+    "melder.utilities.ai_native_support_tools.system_document_view.Group": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view.Group",
+      "label": "Group",
+      "kind": "record",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 118,
+      "bases": [],
+      "markers": [
+        "NamedTuple"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "b0b1bf7372dc0fd6f7cde4f91a9bd44486b790b69a99e753bb4211d674b72b53",
+      "role": "A cluster of sections sharing a prefix, so a caller can see the cost of reading a whole group before asking for it.",
+      "responsibilities": [
+        "carry the prefix - a directory path under source_path addressing, a top-level heading under section addressing",
+        "carry the section count and their combined line count"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "include": true,
+      "semantics_authored_against": "b0b1bf7372dc0fd6f7cde4f91a9bd44486b790b69a99e753bb4211d674b72b53"
+    },
+    "melder.utilities.ai_native_support_tools.system_document_view.Edge": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view.Edge",
+      "label": "Edge",
+      "kind": "record",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 135,
+      "bases": [],
+      "markers": [
+        "NamedTuple"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "b11b0a349069c243e6fc6aac2b2ce0b98fa95e03719821dccdf61000cf59b694",
+      "include": true,
+      "role": "One outbound relationship between two graph nodes, as resolved at build time.",
+      "responsibilities": [
+        "carry source, relation, target, cardinality and the rest of the edge's authored shape"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "b11b0a349069c243e6fc6aac2b2ce0b98fa95e03719821dccdf61000cf59b694"
+    },
+    "melder.utilities.ai_native_support_tools.system_document_view.Node": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view.Node",
+      "label": "Node",
+      "kind": "record",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 159,
+      "bases": [],
+      "markers": [
+        "NamedTuple"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "3ac6279de6ab4924e8ac7804c5b7ffa8f3993c6142a92116e8213b240e1d9c04",
+      "include": true,
+      "role": "One graph node; its `source` path is also its section key in __graph_details__, which is the join between the two graph views.",
+      "responsibilities": [
+        "carry node_id, source path, bare name and kind"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "3ac6279de6ab4924e8ac7804c5b7ffa8f3993c6142a92116e8213b240e1d9c04"
+    },
+    "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "label": "SystemDocumentView",
+      "kind": "class",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 184,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "addressing",
+        "available",
+        "char_count",
+        "content_sha256",
+        "document_name",
+        "find",
+        "get",
+        "groups",
+        "head",
+        "index",
+        "keys",
+        "line_count",
+        "name",
+        "reader",
+        "reason",
+        "render_json",
+        "render_markdown",
+        "search",
+        "section",
+        "source",
+        "stream",
+        "summary",
+        "tail",
+        "title",
+        "verify"
+      ],
+      "shape": {
+        "method_count": 28,
+        "has_bases": false,
+        "trivial": false
+      },
+      "span_sha256": "8ed461960cd0ee31e1f989f5b17b64e55b12ac01d0fef95065aa7901923efc5c",
+      "include": true,
+      "role": "An indexed, sliceable view over one shipped system document - a document an agent can interrogate rather than one it must consume.",
+      "responsibilities": [
+        "state every bound up front through index(), so every read is bounded",
+        "look sections up exactly by key, with find() covering the substring case",
+        "RAISE when slicing an unavailable document - a silent empty slice reads exactly like a section that says nothing",
+        "stay immutable and shared"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "8ed461960cd0ee31e1f989f5b17b64e55b12ac01d0fef95065aa7901923efc5c"
+    },
+    "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView": {
+      "id": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "label": "SystemGraphView",
+      "kind": "class",
+      "file": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
+      "lineno": 806,
+      "bases": [
+        "SystemDocumentView"
+      ],
+      "markers": [],
+      "public_methods": [
+        "describe",
+        "details_key",
+        "edge_count",
+        "edges_from",
+        "edges_to",
+        "find_nodes",
+        "neighbors",
+        "node",
+        "node_at",
+        "node_count",
+        "node_ids",
+        "nodes_in",
+        "relations",
+        "walk"
+      ],
+      "shape": {
+        "method_count": 16,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "0c799660bd0600044a41c96bfba107039c9bf5ca110f0664645a1b688d321362",
+      "include": true,
+      "role": "A document view that is also a walkable graph; backs __graph_network__ and __graph_details__ over the same document.",
+      "responsibilities": [
+        "add build-time adjacency so a node's neighbours are a dict lookup rather than a parse",
+        "import the adjacency module on FIRST graph access, never at construction - a process that never walks pays nothing"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "0c799660bd0600044a41c96bfba107039c9bf5ca110f0664645a1b688d321362"
+    }
+  },
+  "edges_out": [
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "to_label": "SystemDocumentView",
+      "relation": "specializes",
+      "to": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "to_label": "KeyError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "to_label": "MappingProxyType",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "to_label": "SearchHit",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "to_label": "Group",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "to_label": "Section",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "to_label": "Node",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "to_label": "KeyError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "to_label": "Edge",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "MappingProxyType": "types.MappingProxyType",
+    "Dict": "typing.Dict",
+    "Iterator": "typing.Iterator",
+    "List": "typing.List",
+    "Mapping": "typing.Mapping",
+    "NamedTuple": "typing.NamedTuple",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "AgentTextReader": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
+    "TextChunk": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk",
+    "system_documents_index": "melder._build_assets._system_documents.manifest.system_documents_index",
+    "import_module": "importlib.import_module",
+    "StaticSystemDocument": "melder.system_document.StaticSystemDocument",
+    "graph_adjacency_manifest": "melder._build_assets._system_documents.manifest.graph_adjacency_manifest"
+  },
+  "collapse_candidate": null
+}

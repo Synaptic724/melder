@@ -1,74 +1,87 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
-  "source_sha256": "efb2f26d284c70943ee3a5384b2850e213ad2e6b392a6f3629dfd262efa6772a",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
-      "label": "duplicate_spell_name_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
-      "lineno": 1,
-      "role": "Spell validation strategy module for duplicate spell-name checks.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-      "label": "DuplicateSpellNameStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
-      "lineno": 13,
-      "bases": [
-        "SpellValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "validate"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
+ "source_sha256": "efb2f26d284c70943ee3a5384b2850e213ad2e6b392a6f3629dfd262efa6772a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
+   "label": "duplicate_spell_name_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 4 check: duplicate visible spell names, which make name-based resolution ambiguous.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "efb2f26d284c70943ee3a5384b2850e213ad2e6b392a6f3629dfd262efa6772a"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-      "to_label": "SpellValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-      "to_label": "SpellValidationIssue",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Any": "typing.Any",
-    "Optional": "typing.Optional",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-    "label": "DuplicateSpellNameStrategy"
+  "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+   "label": "DuplicateSpellNameStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
+   "lineno": 13,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "cfca42908e966a3d60e94895da6eb552ee27a81bd820deb5c3d9764837b086c0",
+   "include": true,
+   "role": "Guard name-based resolution: two visible spells sharing a spell_name is a hard ambiguity.",
+   "responsibilities": [
+    "use the visible spellbook spell pool as the source of truth",
+    "emit issues only - never rename or partition spells"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "cfca42908e966a3d60e94895da6eb552ee27a81bd820deb5c3d9764837b086c0"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Any": "typing.Any",
+  "Optional": "typing.Optional",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+  "label": "DuplicateSpellNameStrategy"
+ }
 }

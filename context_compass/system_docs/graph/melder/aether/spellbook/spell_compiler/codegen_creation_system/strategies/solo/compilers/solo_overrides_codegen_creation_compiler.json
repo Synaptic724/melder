@@ -1,51 +1,51 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py",
-  "source_sha256": "73f461c7f0889385b7d51a713069924855bf023a3da390683655096a6ba178d1",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler",
-      "label": "solo_overrides_codegen_creation_compiler",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py",
-      "lineno": 1,
-      "role": "Root-only overrides compiler for the solo family.",
-      "responsibilities": [
-        "emits deterministic root-only overrides executor source for the solo family",
-        "hydrates callable override executors from emitted source against one root spell",
-        "uses the process-wide emitted-source code-object cache for solo overrides executors"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "Sequence": "typing.Sequence",
-    "Tuple": "typing.Tuple",
-    "Union": "typing.Union",
-    "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code"
-  },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler",
-      "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
-      "relation": "uses",
-      "why": "solo_overrides_codegen_creation_compiler uses the process-wide emitted-source code-object cache for root-only overrides executors.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py",
+ "source_sha256": "73f461c7f0889385b7d51a713069924855bf023a3da390683655096a6ba178d1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler",
+   "label": "solo_overrides_codegen_creation_compiler",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py",
+   "lineno": 1,
+   "role": "Root-only overrides compiler for the solo family.",
+   "responsibilities": [
+    "emits deterministic root-only overrides executor source for the solo family",
+    "hydrates callable override executors from emitted source against one root spell",
+    "uses the process-wide emitted-source code-object cache for solo overrides executors"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
+  "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler",
+   "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+   "relation": "uses",
+   "why": "solo_overrides_codegen_creation_compiler uses the process-wide emitted-source code-object cache for root-only overrides executors.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

@@ -34,7 +34,8 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "34e37b0937139fa65b2af8bb8af7296e84517886dde35705318fe70149205881"
   }
  },
  "edges_out": [

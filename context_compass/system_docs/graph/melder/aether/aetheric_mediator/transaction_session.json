@@ -26,7 +26,8 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "4b7ca53f4245fdd60f72983401ecbff1e26d814618e7539c6844a0d096d28a97"
   },
   "melder.aether.aetheric_mediator.transaction_session.SessionStatus": {
    "id": "melder.aether.aetheric_mediator.transaction_session.SessionStatus",
@@ -43,7 +44,8 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "3d9974b7c7499d3740d62dc94cc148cf6c8556220abceb259d089aaae655059e"
   },
   "melder.aether.aetheric_mediator.transaction_session._RollbackAction": {
    "id": "melder.aether.aetheric_mediator.transaction_session._RollbackAction",
@@ -62,7 +64,8 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "012f898a723d7301660e77097aa10cf5d3ee5e002a53d83bce2c5595c803c102"
   },
   "melder.aether.aetheric_mediator.transaction_session.TransactionSession": {
    "id": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
@@ -97,7 +100,8 @@
     "method_count": 18,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "2cae4270d38cd9da0fdccd43705b1d66f79d6a61d07530118ee7f9a8071d19ce"
   }
  },
  "edges_out": [

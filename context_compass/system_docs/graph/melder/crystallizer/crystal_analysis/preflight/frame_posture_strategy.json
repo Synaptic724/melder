@@ -9,7 +9,10 @@
    "label": "frame_posture_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/frame_posture_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass for books whose frame posture is missing from the bundle.",
+   "semantics_authored_against": "851ed3bae701ddfe957a5f67186e55863c7d527e13f147bf84cbcbdedfd1c2f2"
   },
   "melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy.FramePostureStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy.FramePostureStrategy",
@@ -29,7 +32,18 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "61f26ff87334759aac0749493e496cd4fcc0b0a84d34fc9540864d65d25cf14f",
+   "include": true,
+   "role": "Preflight for books whose frame twin is absent, so their dynamic posture is a guessed fallback rather than truth.",
+   "responsibilities": [
+    "warn once per (frame_name, spellbook) pair whose recorded frame twin is missing from the bundle",
+    "stay stateless so one instance is reusable across bundles"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "61f26ff87334759aac0749493e496cd4fcc0b0a84d34fc9540864d65d25cf14f"
   }
  },
  "edges_out": [

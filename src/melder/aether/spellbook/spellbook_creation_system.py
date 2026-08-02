@@ -1253,8 +1253,8 @@ class SpellbookCreationSystem(Cleanable):
             return None
         except Exception as exc:
             spellbook._logger.error(
-                f"_get_conjure_hook_map failed: {exc}",
-                "_get_conjure_hook_map",
+                f"get_conjure_hook_map failed: {exc}",
+                "get_conjure_hook_map",
                 exc_info=True,
             )
             return None

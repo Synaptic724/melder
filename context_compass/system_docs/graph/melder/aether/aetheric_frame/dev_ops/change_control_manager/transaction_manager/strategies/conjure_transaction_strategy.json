@@ -9,7 +9,10 @@
    "label": "conjure_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/conjure_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for conjure - spellbook to root-conduit genesis.",
+   "semantics_authored_against": "1e72f1e06fc1df6770068dcaee77716943dc4da3ee832f874ebdebe59983fd71"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy.ConjureTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy.ConjureTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "b5e7a4b0f8ac7d6b9a93bce0cbd7fb28610fe6b884915f7f5488148be49506cb",
+   "include": true,
+   "role": "The genesis member of the transaction family: spellbook -> root conduit, the event every conduit-scoped strategy presupposes.",
+   "responsibilities": [
+    "claim the owning spellbook EXCLUSIVE for the whole creation pipeline, so genesis is admitted through the mediator rather than riding the Spellbook lock alone",
+    "claim NO conduit, ward or cluster scope - the root conduit id is minted mid-pipeline and does not exist to claim",
+    "leave disjoint spellbooks free to conjure in parallel"
+   ],
+   "phases": [
+    "bind"
+   ],
+   "semantics_authored_against": "b5e7a4b0f8ac7d6b9a93bce0cbd7fb28610fe6b884915f7f5488148be49506cb"
   }
  },
  "edges_out": [

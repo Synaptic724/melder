@@ -1,143 +1,154 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/conduit/meld/spellspace_meld.py",
-  "source_sha256": "bc916849393df23d5e1931638a80f290ccb775afc7232de84e0c1a075156bd47",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.conduit.meld.spellspace_meld": {
-      "id": "melder.aether.conduit.meld.spellspace_meld",
-      "label": "spellspace_meld",
-      "kind": "module",
-      "file": "src/melder/aether/conduit/meld/spellspace_meld.py",
-      "lineno": 1
-    },
-    "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld": {
-      "id": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "label": "SpellSpaceMeld",
-      "kind": "class",
-      "file": "src/melder/aether/conduit/meld/spellspace_meld.py",
-      "lineno": 15,
-      "bases": [
-        "Meld"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "describe_live_creation_status",
-        "meld",
-        "meld_existing_spell"
-      ],
-      "shape": {
-        "method_count": 5,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Spellspace-facing meld front door.",
-      "responsibilities": [
-        "routes unique_per_spell_space storage through spellspace-local Creations",
-        "routes conduit-owned lifetimes through owner-conduit ConduitCreations",
-        "provides live-creation status over spellspace-local and owner-conduit storage"
-      ],
-      "owns_state": [
-        "_spellspace",
-        "_spellspace_creations",
-        "_owner_conduit_creations",
-        "_spellspace_id",
-        "_owner_conduit_id"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/meld/spellspace_meld.py",
+ "source_sha256": "bc916849393df23d5e1931638a80f290ccb775afc7232de84e0c1a075156bd47",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.meld.spellspace_meld": {
+   "id": "melder.aether.conduit.meld.spellspace_meld",
+   "label": "spellspace_meld",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/meld/spellspace_meld.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Spellspace-facing meld front door.",
+   "responsibilities": [
+    "route unique_per_spell_space work onto spellspace-local storage"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "bc916849393df23d5e1931638a80f290ccb775afc7232de84e0c1a075156bd47"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "to_label": "Meld",
-      "relation": "specializes",
-      "to": "melder.aether.conduit.meld.meld.Meld"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Optional": "typing.Optional",
-    "Dict": "typing.Dict",
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "ClassVar": "typing.ClassVar",
-    "Meld": "melder.aether.conduit.meld.meld.Meld",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-    "Creations": "melder.aether.conduit.creations.creations.Creations",
-    "ClusterCreations": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
-    "SpellSpace": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+  "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld": {
+   "id": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "label": "SpellSpaceMeld",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/meld/spellspace_meld.py",
+   "lineno": 15,
+   "bases": [
+    "Meld"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "describe_live_creation_status",
+    "meld",
+    "meld_existing_spell"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "22cf46ec000d68b51d06f0d3f11c275a08a85c475d652e903f497e070aa430e8",
+   "role": "Spellspace-facing meld front door.",
+   "responsibilities": [
+    "routes unique_per_spell_space storage through spellspace-local Creations",
+    "routes conduit-owned lifetimes through owner-conduit ConduitCreations",
+    "provides live-creation status over spellspace-local and owner-conduit storage"
+   ],
+   "owns_state": [
+    "_spellspace",
+    "_spellspace_creations",
+    "_owner_conduit_creations",
+    "_spellspace_id",
+    "_owner_conduit_id"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "22cf46ec000d68b51d06f0d3f11c275a08a85c475d652e903f497e070aa430e8"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "to_label": "Meld",
+   "relation": "specializes",
+   "to": "melder.aether.conduit.meld.meld.Meld"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "to": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-      "relation": "borrows",
-      "why": "SpellSpaceMeld borrows owner-conduit ConduitCreations for conduit-scoped lifetimes beneath the spellspace door.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "to": "melder.aether.conduit.creations.creations.Creations",
-      "relation": "borrows",
-      "why": "SpellSpaceMeld borrows spellspace-local Creations for unique_per_spell_space storage.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "to": "melder.aether.conduit.meld.meld.Meld",
-      "relation": "specializes",
-      "why": "SpellSpaceMeld specializes Meld with spellspace-local storage routing.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-      "to": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
-      "relation": "borrows",
-      "why": "SpellSpaceMeld keeps a direct reference to the owning spellspace for spellspace-local diagnostics and routing.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "Dict": "typing.Dict",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "ClassVar": "typing.ClassVar",
+  "Meld": "melder.aether.conduit.meld.meld.Meld",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+  "Creations": "melder.aether.conduit.creations.creations.Creations",
+  "ClusterCreations": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
+  "SpellSpace": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "to": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+   "relation": "borrows",
+   "why": "SpellSpaceMeld borrows owner-conduit ConduitCreations for conduit-scoped lifetimes beneath the spellspace door.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "to": "melder.aether.conduit.creations.creations.Creations",
+   "relation": "borrows",
+   "why": "SpellSpaceMeld borrows spellspace-local Creations for unique_per_spell_space storage.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "to": "melder.aether.conduit.meld.meld.Meld",
+   "relation": "specializes",
+   "why": "SpellSpaceMeld specializes Meld with spellspace-local storage routing.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+   "to": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+   "relation": "borrows",
+   "why": "SpellSpaceMeld keeps a direct reference to the owning spellspace for spellspace-local diagnostics and routing.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

@@ -9,7 +9,10 @@
    "label": "empty_collection_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 6 check: required collection sockets with zero providers - an error in automatic books, a warning in dynamic ones.",
+   "semantics_authored_against": "425101ff8d0177816fe4b6dc735e7dfcf510c62d1b44efac12becb1c1ab44a19"
   },
   "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy",
@@ -28,7 +31,19 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "d8f3cf63c9e2355c56f83637f5d38e3537dc3822dfc9ee71441b1c950b301048",
+   "include": true,
+   "role": "The runtime-mode-sensitive check: a required collection socket that wired zero providers means two different things depending on the owning book's mode.",
+   "responsibilities": [
+    "read local topologies from SpellSystemStates for every scoped spell",
+    "emit collection_socket_no_providers as an ERROR when the book is not dynamic - composition is final at conjure, so zero providers is a permanent wiring mistake",
+    "emit it as a WARNING in dynamic mode, where deferred contract provisioning is still viable and the consumer spawns with [] injected (owner policy 2026-07-06)"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "d8f3cf63c9e2355c56f83637f5d38e3537dc3822dfc9ee71441b1c950b301048"
   }
  },
  "edges_out": [

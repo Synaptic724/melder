@@ -1,80 +1,93 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
-  "source_sha256": "9826ccc3262b4f4b0aa76fb129be56481373db64e02f22d4101f921c63338c62",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy",
-      "label": "lineage_alignment_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
-      "lineno": 1,
-      "role": "System validation strategy module for lineage alignment checks.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
-      "label": "LineageAlignmentStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
-      "lineno": 30,
-      "bases": [
-        "SpellSystemValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "run"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
+ "source_sha256": "9826ccc3262b4f4b0aa76fb129be56481373db64e02f22d4101f921c63338c62",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy",
+   "label": "lineage_alignment_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 6 check: blueprint root-lineage metadata agrees with the index.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "9826ccc3262b4f4b0aa76fb129be56481373db64e02f22d4101f921c63338c62"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
-      "to_label": "SpellSystemValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
-      "to_label": "SystemDiagnostic",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Mapping": "typing.Mapping",
-    "Optional": "typing.Optional",
-    "Set": "typing.Set",
-    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-    "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
-    "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
-    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
-    "label": "LineageAlignmentStrategy"
+  "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
+   "label": "LineageAlignmentStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
+   "lineno": 30,
+   "bases": [
+    "SpellSystemValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "run"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "811ef5af27c6f03191ff01e21f6162e442c9fa3a75ebc02ceebba21d1d81339e",
+   "include": true,
+   "role": "Guard that the optional root-lineage metadata carried on version-id blueprints agrees with the index.",
+   "responsibilities": [
+    "emit root_lineage_mismatch when a root's lineage id disagrees with the index",
+    "skip the check when a blueprint intentionally carries no lineage metadata"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "811ef5af27c6f03191ff01e21f6162e442c9fa3a75ebc02ceebba21d1d81339e"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
+   "to_label": "SpellSystemValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
+   "to_label": "SystemDiagnostic",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+  "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
+  "label": "LineageAlignmentStrategy"
+ }
 }

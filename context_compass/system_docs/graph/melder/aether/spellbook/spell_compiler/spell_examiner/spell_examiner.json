@@ -1,115 +1,120 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py",
-  "source_sha256": "86ff96c4f7a6fd68cc53e4ff7f6d2c4e7b0cc9d2cfd9a17b122ffe756e4de5c7",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner",
-      "label": "spell_examiner",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-      "label": "SpellExaminer",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py",
-      "lineno": 15,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "create_profile",
-        "has_profile_builder",
-        "id",
-        "list_profile_builder_names",
-        "register_profile_builder"
-      ],
-      "shape": {
-        "method_count": 7,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Registry-backed front door for spell examination profiles.",
-      "responsibilities": [
-        "routes profile requests to named profile builders",
-        "seeds and owns the built-in general and detailed profile builders"
-      ],
-      "owns_state": [
-        "_profile_builders_by_name"
-      ],
-      "phases": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py",
+ "source_sha256": "86ff96c4f7a6fd68cc53e4ff7f6d2c4e7b0cc9d2cfd9a17b122ffe756e4de5c7",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner",
+   "label": "spell_examiner",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The registry-backed front door for spell examination profiles.",
+   "semantics_authored_against": "86ff96c4f7a6fd68cc53e4ff7f6d2c4e7b0cc9d2cfd9a17b122ffe756e4de5c7"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "ClassVar": "typing.ClassVar",
-    "SpellDetailedProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-    "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+  "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
+   "label": "SpellExaminer",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py",
+   "lineno": 15,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "create_profile",
+    "has_profile_builder",
+    "id",
+    "list_profile_builder_names",
+    "register_profile_builder"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "8f91494f25fbed82d30e3ee6cffd6ade3f567760af94fae1e2f42d8281d0ab09",
+   "role": "Registry-backed front door for spell examination profiles.",
+   "responsibilities": [
+    "routes profile requests to named profile builders",
+    "seeds and owns the built-in general and detailed profile builders"
+   ],
+   "owns_state": [
+    "_profile_builders_by_name"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "8f91494f25fbed82d30e3ee6cffd6ade3f567760af94fae1e2f42d8281d0ab09"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner",
-    "class": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-    "label": "SpellExaminer"
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "ClassVar": "typing.ClassVar",
+  "SpellDetailedProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
+  "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner",
+  "class": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
+  "label": "SpellExaminer"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
+   "relation": "creates",
+   "why": "SpellExaminer can build detailed spell profiles through its named builder registry.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "validation"
+   ],
+   "strength": "hard"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-      "relation": "creates",
-      "why": "SpellExaminer can build detailed spell profiles through its named builder registry.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "validation"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-      "relation": "creates",
-      "why": "SpellExaminer can build general spell profiles through its named builder registry.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "validation"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   "relation": "creates",
+   "why": "SpellExaminer can build general spell profiles through its named builder registry.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "validation"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

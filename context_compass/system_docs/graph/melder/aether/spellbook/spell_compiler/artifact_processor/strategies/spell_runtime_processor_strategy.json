@@ -1,123 +1,128 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py",
-  "source_sha256": "b280c459ababb0c6b3582077c5bf932679c07187607085eabc01a862b8e7733f",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy",
-      "label": "spell_runtime_processor_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "label": "SpellRuntimeProcessorStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py",
-      "lineno": 21,
-      "bases": [
-        "SpellArtifactProcessorStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "process",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 3,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Processor strategy fitting runtime spell facts into the codegen model.",
-      "responsibilities": [
-        "captures static spell facts needed by planner strategies",
-        "publishes SpellRuntimeAnalysis onto SpellCodegenModel",
-        "scopes runtime spell records by occurrence order or graph-visible spell ids"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py",
+ "source_sha256": "b280c459ababb0c6b3582077c5bf932679c07187607085eabc01a862b8e7733f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy",
+   "label": "spell_runtime_processor_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Fits runtime spell facts into the codegen model.",
+   "semantics_authored_against": "b280c459ababb0c6b3582077c5bf932679c07187607085eabc01a862b8e7733f"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "to_label": "SpellArtifactProcessorStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "to_label": "SpellRuntimeAnalysis",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "to_label": "SpellRuntimeRecord",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Optional": "typing.Optional",
-    "SpellRuntimeAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
-    "SpellRuntimeRecord": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
-    "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "label": "SpellRuntimeProcessorStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py",
+   "lineno": 21,
+   "bases": [
+    "SpellArtifactProcessorStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "process",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "65d1c73ebc0685b3759204b6ba6dd90e8e64d26f251193f7925bebb5b7736ff8",
+   "role": "Processor strategy fitting runtime spell facts into the codegen model.",
+   "responsibilities": [
+    "captures static spell facts needed by planner strategies",
+    "publishes SpellRuntimeAnalysis onto SpellCodegenModel",
+    "scopes runtime spell records by occurrence order or graph-visible spell ids"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "65d1c73ebc0685b3759204b6ba6dd90e8e64d26f251193f7925bebb5b7736ff8"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "to_label": "SpellArtifactProcessorStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "to_label": "SpellRuntimeAnalysis",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-    "label": "SpellRuntimeProcessorStrategy"
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
-      "relation": "creates",
-      "why": "SpellRuntimeProcessorStrategy builds and publishes SpellRuntimeAnalysis.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-      "relation": "specializes",
-      "why": "SpellRuntimeProcessorStrategy specializes the abstract processor-strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-      "relation": "uses",
-      "why": "SpellRuntimeProcessorStrategy fits the runtime spell section directly onto SpellCodegenModel.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "to_label": "SpellRuntimeRecord",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "SpellRuntimeAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+  "SpellRuntimeRecord": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
+  "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+  "label": "SpellRuntimeProcessorStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+   "relation": "creates",
+   "why": "SpellRuntimeProcessorStrategy builds and publishes SpellRuntimeAnalysis.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
+   "relation": "specializes",
+   "why": "SpellRuntimeProcessorStrategy specializes the abstract processor-strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+   "relation": "uses",
+   "why": "SpellRuntimeProcessorStrategy fits the runtime spell section directly onto SpellCodegenModel.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

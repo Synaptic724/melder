@@ -1,83 +1,88 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py",
-  "source_sha256": "e7d9f9a1887df6413c188a28e591f2b97eef94ec19875841d3e4495a1665be21",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation",
-      "label": "staged_mutation",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation": {
-      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
-      "label": "ChangeControlStagedMutation",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py",
-      "lineno": 14,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "from_request",
-        "with_updates"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Immutable record describing one staged change-control mutation.",
-      "responsibilities": [
-        "captures admitted request identity plus normalized scope metadata",
-        "acts as the shared payload across commit and abort hook boundaries"
-      ],
-      "owns_state": [
-        "request_id",
-        "request_type",
-        "scope_keys",
-        "binding_keys",
-        "contract_keys"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py",
+ "source_sha256": "e7d9f9a1887df6413c188a28e591f2b97eef94ec19875841d3e4495a1665be21",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation",
+   "label": "staged_mutation",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The immutable record of one staged change-control mutation.",
+   "semantics_authored_against": "e7d9f9a1887df6413c188a28e591f2b97eef94ec19875841d3e4495a1665be21"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
-      "to_label": "ChangeControlStagedMutation",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "dataclass": "dataclasses.dataclass",
-    "field": "dataclasses.field",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "ClassVar": "typing.ClassVar",
-    "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType"
-  },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
-      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
-      "relation": "uses",
-      "why": "ChangeControlStagedMutation is derived from request metadata after admission and preserves request identity fields.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
+   "label": "ChangeControlStagedMutation",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py",
+   "lineno": 14,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "from_request",
+    "with_updates"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "70a436d4f127964c5d97e29b91b26a260ee29d7b247faf10da0f1c0267055e4e",
+   "role": "Immutable record describing one staged change-control mutation.",
+   "responsibilities": [
+    "captures admitted request identity plus normalized scope metadata",
+    "acts as the shared payload across commit and abort hook boundaries"
+   ],
+   "owns_state": [
+    "request_id",
+    "request_type",
+    "scope_keys",
+    "binding_keys",
+    "contract_keys"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "70a436d4f127964c5d97e29b91b26a260ee29d7b247faf10da0f1c0267055e4e"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
+   "to_label": "ChangeControlStagedMutation",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "dataclass": "dataclasses.dataclass",
+  "field": "dataclasses.field",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
+   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
+   "relation": "uses",
+   "why": "ChangeControlStagedMutation is derived from request metadata after admission and preserves request identity fields.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

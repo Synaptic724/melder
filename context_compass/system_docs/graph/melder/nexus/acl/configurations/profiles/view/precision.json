@@ -1,67 +1,78 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/configurations/profiles/view/precision.py",
-  "source_sha256": "85751f862e49b4bf3825d4ff0a9384b8a11a917cafa297d15274769068bff001",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.configurations.profiles.view.precision": {
-      "id": "melder.nexus.acl.configurations.profiles.view.precision",
-      "label": "precision",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/configurations/profiles/view/precision.py",
-      "lineno": 1,
-      "role": "Factory module for reusable precision view ACL profile.",
-      "responsibilities": [
-        "constructs one reusable ACL profile variant"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy": {
-      "id": "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy",
-      "label": "PrecisionViewProfileStrategy",
-      "kind": "class",
-      "file": "src/melder/nexus/acl/configurations/profiles/view/precision.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build",
-        "name"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": false,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/view/precision.py",
+ "source_sha256": "85751f862e49b4bf3825d4ff0a9384b8a11a917cafa297d15274769068bff001",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.view.precision": {
+   "id": "melder.nexus.acl.configurations.profiles.view.precision",
+   "label": "precision",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/view/precision.py",
+   "lineno": 1,
+   "role": "Factory module for reusable precision view ACL profile.",
+   "responsibilities": [
+    "constructs one reusable ACL profile variant"
+   ],
+   "phases": [
+    "runtime"
+   ]
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy",
-      "to_label": "FrameACLViewProfile",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
-  },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.view.precision",
-      "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-      "relation": "creates",
-      "why": "This factory module constructs one reusable view ACL profile variant.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "soft"
-    }
-  ]
+  "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy": {
+   "id": "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy",
+   "label": "PrecisionViewProfileStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/view/precision.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "355dc350b56d93960211856644aa74824afd91c0d5d0680336b431e89a1ae55f",
+   "include": true,
+   "role": "The enumerate-exactly view posture, deliberately outside the safe/hybrid/permissive ordering.",
+   "responsibilities": [
+    "build the precision view profile from explicitly-enumerated allowances",
+    "exist for operators who enumerate what is permitted instead of picking a tier"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "355dc350b56d93960211856644aa74824afd91c0d5d0680336b431e89a1ae55f"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy",
+   "to_label": "FrameACLViewProfile",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.precision",
+   "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "relation": "creates",
+   "why": "This factory module constructs one reusable view ACL profile variant.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "soft"
+  }
+ ]
 }

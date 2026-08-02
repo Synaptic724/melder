@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-02T14:01:50Z |
-| line_count | 2029 |
+| generated_at | 2026-08-02T16:36:11Z |
+| line_count | 2298 |
 | line_ending | lf |
-| content_sha256 | `6cc09cda0b6c0e02849f00d4a52cf0eafe48046672a16058e2a1d617bab39b86` |
-| sections | 39 |
+| content_sha256 | `d252983338c5a6444b109e2b72b8c381d9d41e2cff99ec72fa960687dd572438` |
+| sections | 46 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -29,40 +29,47 @@ which you did.
 | --- | --- | --- |
 | 3-9 | 2 | Metadata |
 | 10-32 | 2 | Scope and Intent |
-| 33-108 | 2 | Indexing |
-| 50-108 | 3 | Indexing > Verifying the `path:line` citations in this document |
-| 109-132 | 2 | DO NOT ASSUME / Unknowns Gate |
-| 133-196 | 2 | Unknowns |
-| 197-212 | 2 | System Context (C4) |
-| 213-297 | 2 | Glossary and Core Terms |
-| 298-446 | 2 | System Boundary and External Interfaces |
-| 447-477 | 2 | Architecture Summary (C4) |
-| 478-521 | 2 | Entrypoints and Runtime Guardrails |
-| 522-588 | 2 | Boot and Configuration Sequence |
-| 589-722 | 2 | Data Flows and Sequences |
-| 590-596 | 3 | Data Flows and Sequences > Sequence: Import to Ready |
-| 597-603 | 3 | Data Flows and Sequences > Sequence: Spellbook Initialization |
-| 604-610 | 3 | Data Flows and Sequences > Sequence: Bind Spell |
-| 611-623 | 3 | Data Flows and Sequences > Sequence: Conjure Conduit |
-| 624-634 | 3 | Data Flows and Sequences > Sequence: Meld Resolution |
-| 635-643 | 3 | Data Flows and Sequences > Sequence: Meld-Time Validation Gate |
-| 644-650 | 3 | Data Flows and Sequences > Sequence: Create Lesser Conduit |
-| 651-659 | 3 | Data Flows and Sequences > Sequence: Upgrade Lesser to Normal |
-| 660-669 | 3 | Data Flows and Sequences > Sequence: Link and Sever Conduits |
-| 670-679 | 3 | Data Flows and Sequences > Sequence: Transfer Spell Ownership |
-| 680-706 | 3 | Data Flows and Sequences > Sequence: SpellIndex Mutation Entry |
-| 707-712 | 3 | Data Flows and Sequences > Sequence: Change-Control Revalidation |
-| 713-717 | 3 | Data Flows and Sequences > Sequence: SpellSpace Usage |
-| 718-722 | 3 | Data Flows and Sequences > Sequence: Cleanup |
-| 723-823 | 2 | Operational Invariants |
-| 824-858 | 2 | Failure Modes and Error Paths |
-| 859-1726 | 2 | C1 Code Map (Core Only) |
-| 1727-1810 | 2 | Diagrams |
-| 1728-1744 | 3 | Diagrams > ASCII Context Diagram (C4) |
-| 1745-1761 | 3 | Diagrams > Mermaid Context Diagram (C4) |
-| 1762-1773 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
-| 1774-1791 | 3 | Diagrams > Mermaid Meld Flow |
-| 1792-1810 | 3 | Diagrams > Mermaid Conduit Upgrade |
-| 1811-1922 | 2 | Information Sources |
-| 1923-2029 | 2 | Context / Handoff Summary |
-| 1994-2029 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |
+| 33-115 | 2 | Indexing |
+| 50-115 | 3 | Indexing > Verifying the `path:line` citations in this document |
+| 116-139 | 2 | DO NOT ASSUME / Unknowns Gate |
+| 140-203 | 2 | Unknowns |
+| 204-219 | 2 | System Context (C4) |
+| 220-304 | 2 | Glossary and Core Terms |
+| 305-462 | 2 | System Boundary and External Interfaces |
+| 463-494 | 2 | Architecture Summary (C4) |
+| 495-538 | 2 | Entrypoints and Runtime Guardrails |
+| 539-605 | 2 | Boot and Configuration Sequence |
+| 606-760 | 2 | Data Flows and Sequences |
+| 607-613 | 3 | Data Flows and Sequences > Sequence: Import to Ready |
+| 614-620 | 3 | Data Flows and Sequences > Sequence: Spellbook Initialization |
+| 621-627 | 3 | Data Flows and Sequences > Sequence: Bind Spell |
+| 628-640 | 3 | Data Flows and Sequences > Sequence: Conjure Conduit |
+| 641-651 | 3 | Data Flows and Sequences > Sequence: Meld Resolution |
+| 652-660 | 3 | Data Flows and Sequences > Sequence: Meld-Time Validation Gate |
+| 661-667 | 3 | Data Flows and Sequences > Sequence: Create Lesser Conduit |
+| 668-676 | 3 | Data Flows and Sequences > Sequence: Upgrade Lesser to Normal |
+| 677-686 | 3 | Data Flows and Sequences > Sequence: Link and Sever Conduits |
+| 687-696 | 3 | Data Flows and Sequences > Sequence: Transfer Spell Ownership |
+| 697-726 | 3 | Data Flows and Sequences > Sequence: SpellIndex Mutation Entry |
+| 727-732 | 3 | Data Flows and Sequences > Sequence: Change-Control Revalidation |
+| 733-737 | 3 | Data Flows and Sequences > Sequence: SpellSpace Usage |
+| 738-760 | 3 | Data Flows and Sequences > Sequence: Cleanup |
+| 761-787 | 2 | Runtime Type Names (Concrete, No Interface Layer) |
+| 788-798 | 2 | Extension Points |
+| 799-899 | 2 | Operational Invariants |
+| 900-934 | 2 | Failure Modes and Error Paths |
+| 935-1119 | 2 | Promoted Patch Decisions (re-absorbed 2026-08-02) |
+| 955-1003 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
+| 1004-1046 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
+| 1047-1096 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green) |
+| 1097-1119 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes) |
+| 1120-1987 | 2 | C1 Code Map (Core Only) |
+| 1988-2071 | 2 | Diagrams |
+| 1989-2005 | 3 | Diagrams > ASCII Context Diagram (C4) |
+| 2006-2022 | 3 | Diagrams > Mermaid Context Diagram (C4) |
+| 2023-2034 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
+| 2035-2052 | 3 | Diagrams > Mermaid Meld Flow |
+| 2053-2071 | 3 | Diagrams > Mermaid Conduit Upgrade |
+| 2072-2183 | 2 | Information Sources |
+| 2184-2298 | 2 | Context / Handoff Summary |
+| 2263-2298 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |

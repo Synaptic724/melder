@@ -1,0 +1,23 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py",
+ "source_sha256": "b2b2519ef71ae30639e2aeaf9308c02b67179986399bf230f03c404b28b8d91a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._system_documents.payloads.src_architecture_payload": {
+   "id": "melder._build_assets._system_documents.payloads.src_architecture_payload",
+   "label": "src_architecture_payload",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py",
+   "lineno": 1,
+   "include": true,
+   "role": "GENERATED. Verbatim src_architecture.md captured at build time, with LINE_COUNT and CONTENT_SHA256 for the runtime verification gate; imported lazily.",
+   "semantics_authored_against": "9384902b1a56e3398b9db7640b54127ab60c7aafa76782802a832d6bef87c26b"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

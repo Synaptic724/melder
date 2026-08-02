@@ -1,47 +1,47 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/__architecture__.py",
-  "source_sha256": "9649cfd4d626e7c0019d00236c51ce4d8847ba4a0f44c31b0b068d12e5121fdb",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.__architecture__": {
-      "id": "melder.__architecture__",
-      "label": "__architecture__",
-      "kind": "module",
-      "file": "src/melder/__architecture__.py",
-      "lineno": 1,
-      "role": "Top-level packaged architecture hardcopy module.",
-      "responsibilities": [
-        "publishes the top-level packaged architecture document object"
-      ],
-      "owns_state": [
-        "__architecture__"
-      ],
-      "phases": [
-        "init",
-        "runtime"
-      ]
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "get": "melder._build_assets._system_documents.system_documents.get"
-  },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.__architecture__",
-      "to": "melder.system_document.StaticSystemDocument",
-      "relation": "creates",
-      "why": "The packaged architecture module instantiates one top-level StaticSystemDocument for architecture hardcopy access.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+ "schema_version": 1,
+ "source": "src/melder/__architecture__.py",
+ "source_sha256": "e817cc60cd05b8ec0ac5ad9571ac823481d2230247bf327c36b5d9e4432ca0b6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.__architecture__": {
+   "id": "melder.__architecture__",
+   "label": "__architecture__",
+   "kind": "module",
+   "file": "src/melder/__architecture__.py",
+   "lineno": 1,
+   "role": "Top-level packaged architecture hardcopy module.",
+   "responsibilities": [
+    "publishes the top-level packaged architecture document object"
+   ],
+   "owns_state": [
+    "__architecture__"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "get": "melder._build_assets._system_documents.system_documents.get"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.__architecture__",
+   "to": "melder.system_document.StaticSystemDocument",
+   "relation": "creates",
+   "why": "The packaged architecture module instantiates one top-level StaticSystemDocument for architecture hardcopy access.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

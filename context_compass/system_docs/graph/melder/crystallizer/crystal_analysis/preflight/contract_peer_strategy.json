@@ -9,7 +9,10 @@
    "label": "contract_peer_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/contract_peer_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Preflight pass for contracts whose endpoints are not both in the bundle.",
+   "semantics_authored_against": "fec0197f5251363d1e9aa2e339140cd41984c3f115966a9da188ef79818eec2a"
   },
   "melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy.ContractPeerStrategy": {
    "id": "melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy.ContractPeerStrategy",
@@ -29,7 +32,18 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "a96abc66cecae2efc874b4472183565fdd6fb20dda790498a27aba718ccb9535",
+   "include": true,
+   "role": "Preflight for contracts captured around one endpoint, whose details cannot re-grant until the peer exists.",
+   "responsibilities": [
+    "warn per contract whose conduit endpoints are not both in the bundle (endpoint_not_rebuilt)",
+    "stay stateless so one instance is reusable across bundles"
+   ],
+   "phases": [
+    "restore"
+   ],
+   "semantics_authored_against": "a96abc66cecae2efc874b4472183565fdd6fb20dda790498a27aba718ccb9535"
   }
  },
  "edges_out": [

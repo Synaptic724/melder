@@ -9,7 +9,16 @@
    "label": "mutation_research_crystal",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/mutation_research_crystal.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Twin carrying the MutationResearch root plus DB-storable node rows.",
+   "responsibilities": [
+    "persist research composition and derive flat storable rows at construction"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "256607ebe06fbd5c66b07647db8dfe8a69448ea28f58fdb6f0464ae7e7922824"
   },
   "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal": {
    "id": "melder.crystallizer.crystals.mutation_research_crystal.MutationResearchCrystal",
@@ -34,7 +43,26 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "e83d795016c5369e8ad637b69620445573547f2611a2f112a6d62c3376d9d67b",
+   "include": true,
+   "role": "Pure-data twin of the MR root that derives explicit node rows for both node families at construction.",
+   "responsibilities": [
+    "carry configuration and composition payloads",
+    "derive research_nodes and grouped_research_node rows so blob and objects cannot disagree"
+   ],
+   "owns_state": [
+    "_activated",
+    "_configuration_payload",
+    "_composition_payload",
+    "_research_node_rows",
+    "_grouped_research_node_rows"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "e83d795016c5369e8ad637b69620445573547f2611a2f112a6d62c3376d9d67b"
   }
  },
  "edges_out": [

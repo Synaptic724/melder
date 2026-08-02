@@ -20,10 +20,10 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "c09facc159f9da6b953712504351f71d05c770a66c233228e2763e3261df7e3c"
+SOURCE_SHA256 = "c186c3d2d00742b409b18782fb9daf79083fc34f4e394b5148d981618dd46118"
 MARKED_COUNT = 430
 EXEMPT_COUNT = 163
-PENDING_COUNT = 13
+PENDING_COUNT = 20
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -213,7 +213,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.validation.validation_system', 'SpellValidationSystem'): ('internal', 'access: internal. Phase-4 registry+runner: auto-registers the built-in SpellValidationStrategy set, runs them in order over one SpellValidationContext per spell, tags issues with their strategy, and returns a SpellValidationResult. Ephemeral - one per validation run, cleaned after.'),
     ('melder.aether.spellbook.spell_types.spell_types', 'SpellType'): ('internal', 'access: internal. Canonical runtime binding-family classification for bound spells. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.spellbook.spellbinder', 'SpellBinder'): ('public', 'access: public. Fluent alternative to Spellbook.bind(...). Chain the bind-time choices then finalize() to submit. Holds one pending registration at a time; bind(...) resets in-flight state. Holds the Spellbook weakly.'),
-    ('melder.aether.spellbook.spellbook', 'Spellbook'): ('public', 'access: public. The binding authority. Call bind(...)/scan(...) to register, then conjure(...) exactly once to build the root Conduit. Also owns the transaction-backed SpellIndex verbs: notch_spell, add_spell_into_spellindex, remove_spell_from_spellindex.'),
+    ('melder.aether.spellbook.spellbook', 'Spellbook'): ('public', 'access: public. The binding authority. Call bind(...)/scan(...) to register, then conjure(...) exactly once to build the root Conduit. Owns the APPLIED SEAMS of the transaction-backed SpellIndex verbs - _apply_notch, _apply_add_to_index, _apply_remove_from_index - which run inside the held change-control window. The PUBLIC verbs are on Conduit (notch_spell, add_to_spell_index, remove_from_spell_index): the Conduit admits the transaction because it owns the lineage, and Spellbook applies the membership change because it owns the index maps. Neither half is callable on its own.'),
     ('melder.aether.spellbook.spellbook_creation_system', 'SpellbookCreationSystem'): ('internal', 'access: internal. Internal conjure orchestration system for Spellbook. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter', 'SqliteMeshAdapter'): ('internal', 'access: internal. First-party SQLite provider for the external persistence mesh. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.crystallizer.asset_management.asset_management_system', 'AssetManagementSystem'): ('internal', "access: internal. Own the crystallizer's bytes at rest: cache files, formations, DB seam. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
@@ -627,6 +627,13 @@ EXEMPT = (
 PENDING = (
     ('melder.utilities.ai_native_support_tools.agent_text_reader', 'ReaderPolicy'),
     ('melder.utilities.ai_native_support_tools.agent_text_reader', 'TextChunk'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Edge'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Group'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Node'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'SearchHit'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Section'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'SystemDocumentView'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'SystemGraphView'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictKeysView'),
@@ -1110,6 +1117,12 @@ CLASS_BASES = {
     ('melder.nexus.rift.rift_space.workstation', 'Workstation'): ('Cleanable',),
     ('melder.utilities.ai_native_support_tools.agent_text_reader', 'TextChunk'): ('NamedTuple',),
     ('melder.utilities.ai_native_support_tools.protocol_crafter', 'ProtocolCrafter'): ('Cleanable',),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Edge'): ('NamedTuple',),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Group'): ('NamedTuple',),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Node'): ('NamedTuple',),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'SearchHit'): ('NamedTuple',),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Section'): ('NamedTuple',),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'SystemGraphView'): ('SystemDocumentView',),
     ('melder.utilities.caching_system.caching_system', 'CachingSystem'): ('Cleanable',),
     ('melder.utilities.custom_exceptions.dead_reference_error', 'DeadReferenceError'): ('ReferenceError',),
     ('melder.utilities.custom_exceptions.empty_error', 'Empty'): ('Exception',),

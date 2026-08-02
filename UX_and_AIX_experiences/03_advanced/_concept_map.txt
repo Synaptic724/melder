@@ -23,21 +23,92 @@ AUTHORED
   07 frame_posture_cheatsheet (ALL 15 posture knobs mapped: mode, AR
      eligibility, sharing, caching, the 7 devops brakes, transaction
      patience, the 3 presets, the freeze law)
+  08 frame_posture_object (the object itself: CONSTRUCTOR-FIRST, 4
+     required kw-only values; with_* mutates and returns SELF never a
+     copy; validate() RAISES rather than returning False - ai_native
+     requires dynamic; finalize() seals and returns THE SAME instance)
+  09 aether_config_two_doors (create_configuration().finalize() vs
+     create_configuration_builder().build() - same destination, different
+     ownership; build() is one-shot and CONSUMING. THE LADDER: frozen and
+     activated are TWO BITS. finalize/build -> frozen. activate -> in
+     force. config.activate() BEFORE aether.activate() or it raises)
+  10 nexus_enablement (md.Nexus() -> create_system_configuration() ->
+     enable(config). THREE ASYMMETRIES WITH AETHER: the nexus factory
+     PRE-DEFAULTS, enable() FINALIZES FOR YOU (aether makes the caller
+     activate first), and neither factory installs. is_configured vs
+     is_enabled = the two-bit split again under different names;
+     disable() drops liveness and keeps the configuration)
+  11 opening_a_rift (create_rift_configuration -> with_space_type ->
+     create_rift. THE CONFIG IS CONSUMED - one config, one rift, second
+     use raises "already been consumed". is_registered vs is_active is
+     the THIRD two-bit split; creation registers but does not make live)
+
+  12 the_room_and_its_fixtures (ONE RIFT = ONE ROOM, kind chosen once at
+     creation and NEVER switched - no room registry, no active-space, no
+     re-type verb. Fixtures identical on every kind: frame_viewer,
+     workstation, command_system, event_system, memory_system, plus
+     action/category hooks. Shape is constant; AUTHORITY is not)
+
+THE THROUGH-LINE (named at lesson 11, teach it forward)
+  Melder NEVER conflates "this exists" with "this is live". Every
+  subsystem splits it in two and only the names change:
+      09  config  frozen        / activated
+      10  nexus   is_configured / is_enabled
+      11  rift    is_registered / is_active
+  When you meet an unfamiliar melder object, find its two bits first.
+  Presence never implies liveness.
 
 FINDINGS (recorded for the owner's init/public-surface program)
   - NO PUBLIC DOOR for frame devops flags (disable_linking/bind/
     cluster/transfer/contract_mutation/all_transactions): staging goes
     through the PRIVATE retained posture only. Probe pins the gate via
     the seam (test_advanced_probes).
-  - "compatibility mode" (owner syllabus item) does not exist in
-    src/melder today - awaiting owner definition in the advanced epic.
+  - WIDER THAN THAT (2026-08-02, lesson 08): md.AethericFrameConfiguration
+    is EXPORTED FROM THE ROOT AND CANNOT BE INSTALLED FROM IT. Spellbook
+    __init__ takes (aetheric_frame, configuration, logger) where
+    `configuration` is a SpellbookConfiguration. Every path to the live
+    frame posture is private. The one public door,
+    configure_aether_frame(...), reaches TWO of the 15 knobs
+    (system_state, system_caching_enabled). A constructed posture has
+    nowhere to go.
+  - CLOSED 2026-08-02: "compatibility mode" was a TERMINOLOGY ERROR for
+    the owner's CAPABILITY mode, which exists - CapabilityRiftSpace
+    alongside StaticRiftSpace and CodegenRiftSpace, selected by
+    RiftSpaceType. No missing feature; arc B teaches it.
+  - AR TARGETING IS UNREACHABLE FROM THE PUBLIC ROOT (2026-08-02,
+    lesson 11). Nexus raises "AR requires rift_enabled on target frame"
+    (nexus.py:2957) and NOTHING PUBLIC SETS rift_enabled - not
+    configure_aether_frame, and the posture object owning
+    with_rift_enabled() has no install door. Rifts/rooms/workstations ARE
+    reachable; dynamic AR targeting is not. Pinned as a probe.
+  - DOC DRIFT (2026-08-02, lesson 12): RiftSpaceType's docstring
+    documents a "dynamic" member as a legacy alias for codegen. NO SUCH
+    MEMBER EXISTS and there is no _missing_ handler, so
+    RiftSpaceType("dynamic") raises. Same shape as the false
+    with_defaults() docstring at spellbook_configuration.py:1062-1064.
+    Pinned; the probe goes red when someone fixes either side.
 
 PLANNED (per README ORANGE + AGENTS charter)
   - aetheric frames as isolated worlds (categories arc act 3):
     Spellbook(aetheric_frame="tenant-a"), per-frame singletons,
-    frames do not link across - the wall is real
+    frames do not link across - the wall is real  [DONE - 03]
   - AethericFrameConfiguration surface (fenced out of intermediate)
-  - static Nexus rooms as read-only endpoints (health/admin/debug)
+    [DONE - 07 maps it, 08 handles it]
+  - ARC A (09): AetherConfiguration + AetherConfigurationBuilder - two
+    doors to one config (builder.build() vs config.finalize())
+  - ARC B (10-14): Nexus / NexusConfiguration / NexusFrameMode, Rift /
+    RiftConfiguration, RiftSpace + RiftSpaceType STATIC then CAPABILITY,
+    Workstation
+  - ARC C (15-17): FrameViewer, ViewFrame, ViewConduit, ViewSpell,
+    ViewMultiFrame - the read family
+  - ARC D (18): Policies (ward)
+  - ARC E (19-20): checkpoint / load - BLOCKED on owner ruling, the only
+    public doors are crystallizer names assigned to EXPERT
   - wildcard/broadcast override grammar (*name / **name, specificity,
     conflict refusals - component suite already proves it)
   - cluster operations at scale (leader lifecycle, teardown)
+
+NOT THIS TIER
+  - ConduitCloud -> INTERMEDIATE (owner 2026-08-02, dynamic-mode basics)
+  - research sets / lanes / diff / impact / drift -> EXPERT
+  - notch, codegen, crystallizer save+load, synthetic modules -> EXPERT

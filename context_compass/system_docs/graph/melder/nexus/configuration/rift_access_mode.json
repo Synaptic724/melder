@@ -1,51 +1,62 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/configuration/rift_access_mode.py",
-  "source_sha256": "b4d4c2438ae67f683142efd4ef1237360430185cea0c310a48d6a6e8f8cb8b68",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.configuration.rift_access_mode": {
-      "id": "melder.nexus.configuration.rift_access_mode",
-      "label": "rift_access_mode",
-      "kind": "module",
-      "file": "src/melder/nexus/configuration/rift_access_mode.py",
-      "lineno": 1
-    },
-    "melder.nexus.configuration.rift_access_mode.RiftAccessMode": {
-      "id": "melder.nexus.configuration.rift_access_mode.RiftAccessMode",
-      "label": "RiftAccessMode",
-      "kind": "enum",
-      "file": "src/melder/nexus/configuration/rift_access_mode.py",
-      "lineno": 5,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "System-level policy enum for direct Rift retrieval.",
-      "responsibilities": [
-        "labels open, token-required, and system-only Rift access modes"
-      ],
-      "owns_state": [
-        "open",
-        "token_required",
-        "system_only"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/configuration/rift_access_mode.py",
+ "source_sha256": "b4d4c2438ae67f683142efd4ef1237360430185cea0c310a48d6a6e8f8cb8b68",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.configuration.rift_access_mode": {
+   "id": "melder.nexus.configuration.rift_access_mode",
+   "label": "rift_access_mode",
+   "kind": "module",
+   "file": "src/melder/nexus/configuration/rift_access_mode.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Policy vocabulary for whether direct Rift lookup requires a token.",
+   "responsibilities": [
+    "gate direct Rift retrieval as open or token_required"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "b4d4c2438ae67f683142efd4ef1237360430185cea0c310a48d6a6e8f8cb8b68"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Enum": "enum.Enum"
-  },
-  "collapse_candidate": null
+  "melder.nexus.configuration.rift_access_mode.RiftAccessMode": {
+   "id": "melder.nexus.configuration.rift_access_mode.RiftAccessMode",
+   "label": "RiftAccessMode",
+   "kind": "enum",
+   "file": "src/melder/nexus/configuration/rift_access_mode.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "01cbfd46fed3cf07b67afa4344a5b923e36d25ec9f80d060605bab35e0fe1743",
+   "role": "System-level policy enum for direct Rift retrieval.",
+   "responsibilities": [
+    "labels open, token-required, and system-only Rift access modes"
+   ],
+   "owns_state": [
+    "open",
+    "token_required",
+    "system_only"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "01cbfd46fed3cf07b67afa4344a5b923e36d25ec9f80d060605bab35e0fe1743"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum"
+ },
+ "collapse_candidate": null
 }

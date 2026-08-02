@@ -1,73 +1,73 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_creation_cache.py",
-  "source_sha256": "995cfa920f16d5f5a9a9b2e701dd2854473cf1bb3398eff299817069aa96ab5d",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
-      "label": "solo_creation_cache",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_creation_cache.py",
-      "lineno": 1,
-      "role": "Cache codec for the solo codegen-creation family.",
-      "responsibilities": [
-        "validates solo manifest cache packages against the shared cross-family envelope",
-        "publishes lazy CreationContext loads with zero hydration work at cache-load time",
-        "rebuilds eager CreationContext instances for tests and diagnostics from solo family packages"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_creation_cache.py",
+ "source_sha256": "995cfa920f16d5f5a9a9b2e701dd2854473cf1bb3398eff299817069aa96ab5d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
+   "label": "solo_creation_cache",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_creation_cache.py",
+   "lineno": 1,
+   "role": "Cache codec for the solo codegen-creation family.",
+   "responsibilities": [
+    "validates solo manifest cache packages against the shared cross-family envelope",
+    "publishes lazy CreationContext loads with zero hydration work at cache-load time",
+    "rebuilds eager CreationContext instances for tests and diagnostics from solo family packages"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+  "PACKAGE_VERSION": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.PACKAGE_VERSION",
+  "build_solo_lazy_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator.build_solo_lazy_creation_executors",
+  "hydrate_solo_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator.hydrate_solo_creation_executors",
+  "FAMILY_ID": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest.FAMILY_ID",
+  "validate_solo_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest.validate_solo_manifest"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
+   "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+   "relation": "creates",
+   "why": "solo_creation_cache publishes lazy or eager CreationContext instances from solo family packages.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-    "PACKAGE_VERSION": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.PACKAGE_VERSION",
-    "build_solo_lazy_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator.build_solo_lazy_creation_executors",
-    "hydrate_solo_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator.hydrate_solo_creation_executors",
-    "FAMILY_ID": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest.FAMILY_ID",
-    "validate_solo_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest.validate_solo_manifest"
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator",
+   "relation": "uses",
+   "why": "solo_creation_cache delegates lazy and eager solo cache hydration to solo_hydrator.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
-      "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-      "relation": "creates",
-      "why": "solo_creation_cache publishes lazy or eager CreationContext instances from solo family packages.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator",
-      "relation": "uses",
-      "why": "solo_creation_cache delegates lazy and eager solo cache hydration to solo_hydrator.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest",
-      "relation": "uses",
-      "why": "solo_creation_cache validates solo family manifest payloads before cache-load hydration.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest",
+   "relation": "uses",
+   "why": "solo_creation_cache validates solo family manifest payloads before cache-load hydration.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

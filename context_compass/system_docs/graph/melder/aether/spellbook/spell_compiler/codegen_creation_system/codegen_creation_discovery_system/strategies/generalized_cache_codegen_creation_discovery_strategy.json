@@ -1,108 +1,120 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py",
-  "source_sha256": "4ab45b82d97cfdea5ef8bc1cad09f58b59c2bb55f1014a770e61aa42d39d91f0",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
-      "label": "generalized_cache_codegen_creation_discovery_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py",
-      "lineno": 1,
-      "role": "Phase-11 discovery strategy for the generalized_cache family.",
-      "responsibilities": [
-        "claims generalized planner output for the manifest-first creation family",
-        "selects one concrete codegen style from plan candidates",
-        "sits ahead of the legacy generalized discovery strategy as the rollback seam"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
-      "label": "GeneralizedCacheCodegenCreationDiscoveryStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py",
-      "lineno": 17,
-      "bases": [
-        "CodegenCreationDiscoveryStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "discover",
-        "strategy_id"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py",
+ "source_sha256": "4ab45b82d97cfdea5ef8bc1cad09f58b59c2bb55f1014a770e61aa42d39d91f0",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
+   "label": "generalized_cache_codegen_creation_discovery_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py",
+   "lineno": 1,
+   "role": "Phase-11 discovery strategy for the generalized_cache family.",
+   "responsibilities": [
+    "claims generalized planner output for the manifest-first creation family",
+    "selects one concrete codegen style from plan candidates",
+    "sits ahead of the legacy generalized discovery strategy as the rollback seam"
+   ],
+   "phases": [
+    "runtime"
+   ]
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
-      "to_label": "CodegenCreationDiscoveryStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
-      "to_label": "CodegenCreationDiscovery",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Optional": "typing.Optional",
-    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-    "CodegenCreationDiscovery": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-    "CodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
+   "label": "GeneralizedCacheCodegenCreationDiscoveryStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py",
+   "lineno": 17,
+   "bases": [
+    "CodegenCreationDiscoveryStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "discover",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "3b2f1eab83cb540d27b3789e11b690113635f87879cbbf10c229ffcec96527db",
+   "include": true,
+   "role": "Phase-11 routing that sends generalized planner output to the manifest-first creation family - registered AHEAD of the legacy strategy, so every generalized plan resolves here concretely with no stamp and no config gate.",
+   "responsibilities": [
+    "claim exactly the plans the legacy generalized discovery claimed (selected_strategy_id == 'generalized_codegen_plan')",
+    "decline every other plan family so solo and many_only routing is untouched",
+    "leave the legacy strategy registered behind it as the rollback seam - removing this one restores the old routing"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "3b2f1eab83cb540d27b3789e11b690113635f87879cbbf10c229ffcec96527db"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
+   "to_label": "CodegenCreationDiscoveryStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
+   "to_label": "CodegenCreationDiscovery",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Optional": "typing.Optional",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "CodegenCreationDiscovery": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
+  "CodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
+  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
+  "label": "GeneralizedCacheCodegenCreationDiscoveryStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+   "relation": "uses",
+   "why": "GeneralizedCacheCodegenCreationDiscoveryStrategy inspects the fitted SpellCodegenModel when deciding whether to claim the current pair.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy.GeneralizedCacheCodegenCreationDiscoveryStrategy",
-    "label": "GeneralizedCacheCodegenCreationDiscoveryStrategy"
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
+   "relation": "creates",
+   "why": "GeneralizedCacheCodegenCreationDiscoveryStrategy returns a CodegenCreationDiscovery when it claims the current model/plan pair.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
   },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
-      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-      "relation": "uses",
-      "why": "GeneralizedCacheCodegenCreationDiscoveryStrategy inspects the fitted SpellCodegenModel when deciding whether to claim the current pair.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-      "relation": "creates",
-      "why": "GeneralizedCacheCodegenCreationDiscoveryStrategy returns a CodegenCreationDiscovery when it claims the current model/plan pair.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
-      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-      "relation": "specializes",
-      "why": "GeneralizedCacheCodegenCreationDiscoveryStrategy specializes the abstract discovery-strategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
+   "relation": "specializes",
+   "why": "GeneralizedCacheCodegenCreationDiscoveryStrategy specializes the abstract discovery-strategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

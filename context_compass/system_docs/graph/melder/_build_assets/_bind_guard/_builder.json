@@ -9,7 +9,17 @@
    "label": "_builder",
    "kind": "module",
    "file": "src/melder/_build_assets/_bind_guard/_builder.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Build-time scanner producing the committed internal-bind manifest.",
+   "responsibilities": [
+    "own the single source of truth for which classes are guarded",
+    "run only via the explicit asset runner"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "1cd4aded02fec27885a4ffc95dbe3561b17e5a467e3189e06b08f9ab7482a2e0"
   },
   "melder._build_assets._bind_guard._builder.BindGuardBuildPolicy": {
    "id": "melder._build_assets._bind_guard._builder.BindGuardBuildPolicy",
@@ -24,7 +34,17 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "3a5903a9dd764ed325be80b48b52c06600a8ed318a84dea932b92ba3c6b2a91b",
+   "include": true,
+   "role": "Fixed policy values for the manifest generator, as class constants.",
+   "responsibilities": [
+    "carry scan roots and exclusion rules"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "3a5903a9dd764ed325be80b48b52c06600a8ed318a84dea932b92ba3c6b2a91b"
   }
  },
  "edges_out": [],

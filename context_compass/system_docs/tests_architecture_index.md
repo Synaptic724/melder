@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-01T17:39:21Z |
-| line_count | 115 |
+| generated_at | 2026-08-02T16:38:50Z |
+| line_count | 710 |
 | line_ending | lf |
-| content_sha256 | `f6822db7b2e22de51824b5f4ab348e4f492a02bbd2751872f2143b6f36936c52` |
-| sections | 14 |
+| content_sha256 | `3290c2ed8a5eb6dd92e4c60bff28f626753044e4cfc800deab7f69d2be097cb4` |
+| sections | 28 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -27,17 +27,31 @@ which you did.
 
 | lines | lvl | name |
 | --- | --- | --- |
-| 7-11 | 2 | Metadata |
-| 12-17 | 2 | Scope and Intent |
-| 18-49 | 2 | Indexing |
-| 50-53 | 2 | DO NOT ASSUME / Unknowns Gate |
-| 54-57 | 2 | Unknowns |
-| 58-60 | 2 | System Context (C4) |
-| 61-64 | 2 | External Interfaces and Entry Points |
-| 65-69 | 2 | Core Responsibilities |
-| 70-73 | 2 | Data Flows and Lifecycle |
-| 74-77 | 2 | Invariants and Guarantees |
-| 78-94 | 2 | C1 Code Map (Key Paths) |
-| 95-107 | 2 | Diagrams |
-| 108-112 | 2 | Information Sources |
-| 113-115 | 2 | Context / Handoff Summary |
+| 3-9 | 2 | Metadata |
+| 10-23 | 2 | Scope and Intent |
+| 24-118 | 2 | Indexing |
+| 48-118 | 3 | Indexing > Verifying the cited test paths and ranges in this document |
+| 119-130 | 2 | DO NOT ASSUME / Unknowns Gate |
+| 131-139 | 2 | Unknowns |
+| 140-156 | 2 | System Context (C4) |
+| 157-199 | 2 | System Boundary and External Interfaces |
+| 200-237 | 2 | Architecture Summary (C4) |
+| 238-255 | 2 | Entrypoints and Runtime Guardrails |
+| 256-275 | 2 | Boot and Configuration Sequence |
+| 276-305 | 2 | Data Flows and Sequences |
+| 277-285 | 3 | Data Flows and Sequences > Flow: Standard Pytest Run |
+| 286-291 | 3 | Data Flows and Sequences > Flow: Viewer/ACL Matrix Fixture Path |
+| 292-305 | 3 | Data Flows and Sequences > Flow: Static/Capability Rift Bench Path |
+| 306-316 | 2 | Operational Invariants |
+| 317-346 | 2 | Source Coverage and Evidence |
+| 347-366 | 2 | Core Responsibilities |
+| 367-387 | 2 | C3 Components Overview |
+| 388-423 | 2 | C2 Subcomponents Overview |
+| 424-429 | 2 | Open Questions |
+| 430-446 | 2 | Failure Modes and Error Paths |
+| 447-609 | 2 | C1 Code Map (Core Only) |
+| 610-656 | 2 | Diagrams |
+| 611-632 | 3 | Diagrams > ASCII Diagram (C4) |
+| 633-656 | 3 | Diagrams > Mermaid Diagram (C4) |
+| 657-677 | 2 | Information Sources |
+| 678-710 | 2 | Context / Handoff Summary |

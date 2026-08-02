@@ -9,7 +9,16 @@
    "label": "cluster_crystal",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/cluster_crystal.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Twin carrying frame-local cluster topology - the third inter-conduit relationship.",
+   "responsibilities": [
+    "persist named member groups and their elected leader"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "1546a6bda835766a2220b602f0c9580dc639e9412151387859044ba0825840c4"
   },
   "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal": {
    "id": "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal",
@@ -31,7 +40,28 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "3540055b5a04799674bcd44c6d4048af9f05cbceeefb886c6cbfce0cf2e04330",
+   "include": true,
+   "role": "Digital twin of one ConduitCluster: membership, elected leader and shared lineage entries.",
+   "responsibilities": [
+    "carry member conduit ids and the leader",
+    "carry shared lineage entries",
+    "emit from the cluster's own mutators, having no crystallizer-bearing parent"
+   ],
+   "owns_state": [
+    "_cluster_id",
+    "_cluster_name",
+    "_frame_name",
+    "_member_conduit_ids",
+    "_leader_conduit_id",
+    "_shared_spells"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "3540055b5a04799674bcd44c6d4048af9f05cbceeefb886c6cbfce0cf2e04330"
   }
  },
  "edges_out": [

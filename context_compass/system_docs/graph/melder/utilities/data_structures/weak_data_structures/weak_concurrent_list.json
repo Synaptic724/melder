@@ -1,150 +1,162 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py",
-  "source_sha256": "155060a21aeefdc799765f77e54bbf50339fabe4dc18addb53388ab66991c77c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list": {
-      "id": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list",
-      "label": "weak_concurrent_list",
-      "kind": "module",
-      "file": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py",
-      "lineno": 1
-    },
-    "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList": {
-      "id": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "label": "WeakConcurrentList",
-      "kind": "class",
-      "file": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py",
-      "lineno": 19,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [
-        "Generic"
-      ],
-      "public_methods": [
-        "append",
-        "append_with_callback",
-        "auto_prune",
-        "auto_prune",
-        "cleanup",
-        "clear",
-        "copy",
-        "count",
-        "extend",
-        "filter",
-        "freeze",
-        "id",
-        "index",
-        "insert",
-        "is_frozen",
-        "map",
-        "pop",
-        "prune",
-        "reduce",
-        "remove",
-        "reverse",
-        "to_list",
-        "unfreeze"
-      ],
-      "shape": {
-        "method_count": 28,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Concurrent weak-reference list.",
-      "responsibilities": [
-        "stores weakly referenced items in a list-like concurrent container"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py",
+ "source_sha256": "155060a21aeefdc799765f77e54bbf50339fabe4dc18addb53388ab66991c77c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list": {
+   "id": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list",
+   "label": "weak_concurrent_list",
+   "kind": "module",
+   "file": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Thread-safe list-like container holding weak references rather than strong ones.",
+   "responsibilities": [
+    "let elements be collected without the container extending their life"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "155060a21aeefdc799765f77e54bbf50339fabe4dc18addb53388ab66991c77c"
   },
-  "edges_out": [
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to_label": "WeakRefNode",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to_label": "WeakConcurrentList",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to_label": "IndexError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TracebackType": "types.TracebackType",
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "Optional": "typing.Optional",
-    "List": "typing.List",
-    "TypeVar": "typing.TypeVar",
-    "Generic": "typing.Generic",
-    "cast": "typing.cast",
-    "ClassVar": "typing.ClassVar",
-    "Iterable": "collections.abc.Iterable",
-    "Iterator": "collections.abc.Iterator",
-    "_reduce": "functools.reduce",
-    "DeadReferenceError": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "WeakRefNode": "melder.utilities.data_structures.weak_data_structures.weak_ref_node.WeakRefNode",
-    "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid"
+  "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList": {
+   "id": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "label": "WeakConcurrentList",
+   "kind": "class",
+   "file": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py",
+   "lineno": 19,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [
+    "Generic"
+   ],
+   "public_methods": [
+    "append",
+    "append_with_callback",
+    "auto_prune",
+    "auto_prune",
+    "cleanup",
+    "clear",
+    "copy",
+    "count",
+    "extend",
+    "filter",
+    "freeze",
+    "id",
+    "index",
+    "insert",
+    "is_frozen",
+    "map",
+    "pop",
+    "prune",
+    "reduce",
+    "remove",
+    "reverse",
+    "to_list",
+    "unfreeze"
+   ],
+   "shape": {
+    "method_count": 28,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "9b4890529a50005c779fd59057b08b6b0bf08993d1659a9ca49ad351fd7347d5",
+   "role": "Concurrent weak-reference list.",
+   "responsibilities": [
+    "stores weakly referenced items in a list-like concurrent container"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "9b4890529a50005c779fd59057b08b6b0bf08993d1659a9ca49ad351fd7347d5"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list",
-    "class": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-    "label": "WeakConcurrentList"
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to_label": "WeakRefNode",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "WeakConcurrentList inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to_label": "WeakConcurrentList",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to_label": "IndexError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TracebackType": "types.TracebackType",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Optional": "typing.Optional",
+  "List": "typing.List",
+  "TypeVar": "typing.TypeVar",
+  "Generic": "typing.Generic",
+  "cast": "typing.cast",
+  "ClassVar": "typing.ClassVar",
+  "Iterable": "collections.abc.Iterable",
+  "Iterator": "collections.abc.Iterator",
+  "_reduce": "functools.reduce",
+  "DeadReferenceError": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "WeakRefNode": "melder.utilities.data_structures.weak_data_structures.weak_ref_node.WeakRefNode",
+  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list",
+  "class": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+  "label": "WeakConcurrentList"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_list.WeakConcurrentList",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "WeakConcurrentList inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

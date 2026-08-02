@@ -9,7 +9,10 @@
    "label": "add_spell_or_index_to_contract_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_spell_or_index_to_contract_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for granting a spell or index into a cross-link contract, standalone.",
+   "semantics_authored_against": "500c4fce517684cb3bdd2beb9067836286c64c2e7fc7d318546daece6d2b1b09"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy.AddSpellOrIndexToContractTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy.AddSpellOrIndexToContractTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "f1b5092e20ec78fbf42d8008724982ec117cdf4cd41c52fe4eda78ccba856fbf",
+   "include": true,
+   "role": "Grant half of the standalone contract-mutation pair: a self-admitting envelope for an add that would otherwise ride inside a link or cluster transaction.",
+   "responsibilities": [
+    "seal both the borrower conduit and the provider peer, and their wards, EXCLUSIVE - the mutation writes the borrower ward and reads the provider surface",
+    "block link, unlink, transfer, cluster and other contract work on either side for the duration",
+    "claim the owning spellbook(s) alongside the conduit scope"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "f1b5092e20ec78fbf42d8008724982ec117cdf4cd41c52fe4eda78ccba856fbf"
   }
  },
  "edges_out": [

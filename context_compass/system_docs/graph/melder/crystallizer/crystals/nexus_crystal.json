@@ -9,7 +9,16 @@
    "label": "nexus_crystal",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/nexus_crystal.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Twin carrying the Nexus root's configured and enabled state.",
+   "responsibilities": [
+    "persist AR root state as a switch rather than by eviction"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "3646184aea8ba01bb9cc7664057cbdbd553d3ef12cb2ea3a94705dab57fd8727"
   },
   "melder.crystallizer.crystals.nexus_crystal.NexusCrystal": {
    "id": "melder.crystallizer.crystals.nexus_crystal.NexusCrystal",
@@ -32,7 +41,23 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "fdeda769dab7b1abde256392bb1e1648db8408788559e520d1029c49acafb555",
+   "include": true,
+   "role": "Pure-data twin of the process Nexus root.",
+   "responsibilities": [
+    "carry configured / enabled flags and the config payload"
+   ],
+   "owns_state": [
+    "_configured",
+    "_enabled",
+    "_configuration_payload"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "fdeda769dab7b1abde256392bb1e1648db8408788559e520d1029c49acafb555"
   }
  },
  "edges_out": [

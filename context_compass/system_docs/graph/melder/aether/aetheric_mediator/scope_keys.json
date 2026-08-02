@@ -26,7 +26,8 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "798e48f4aae31bdcc3e01366355b3fae513cd19643381b0a97a706e4b208b28c"
   },
   "melder.aether.aetheric_mediator.scope_keys.ScopeKey": {
    "id": "melder.aether.aetheric_mediator.scope_keys.ScopeKey",
@@ -46,7 +47,8 @@
     "method_count": 4,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "02cd624b4ac75f5178f6fd2c5f263bbefa8410cdd869a9c42fe3b370e79bd7eb"
   }
  },
  "edges_out": [],

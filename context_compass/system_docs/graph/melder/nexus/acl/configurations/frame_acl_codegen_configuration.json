@@ -1,154 +1,159 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py",
-  "source_sha256": "7975d54201bf12e19b55888dc24616031c2150817a392d81e02a4271f8c50726",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.configurations.frame_acl_codegen_configuration": {
-      "id": "melder.nexus.acl.configurations.frame_acl_codegen_configuration",
-      "label": "frame_acl_codegen_configuration",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py",
-      "lineno": 1
-    },
-    "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration": {
-      "id": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "label": "FrameACLCodegenConfiguration",
-      "kind": "class",
-      "file": "src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py",
-      "lineno": 13,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "capability_override_ruleset",
-        "cleanup",
-        "clone",
-        "conduit_override_ruleset",
-        "configuration_id",
-        "create_new_from_configuration",
-        "created_at",
-        "finalize",
-        "frame_override_ruleset",
-        "from_json_dict",
-        "from_profile",
-        "locked",
-        "precision_profile_name",
-        "precision_profile_version",
-        "previous_configuration_id",
-        "profile_name",
-        "profile_version",
-        "reason",
-        "set_previous_configuration_id",
-        "set_profiles",
-        "source_configuration_id",
-        "spell_override_ruleset",
-        "to_json_dict",
-        "to_json_string"
-      ],
-      "shape": {
-        "method_count": 25,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Applied codegen-side ACL configuration revision.",
-      "responsibilities": [
-        "stores reusable codegen-profile identity plus override rulesets",
-        "carries revision metadata for container-owned configuration chains"
-      ],
-      "owns_state": [
-        "_profile_name",
-        "_frame_override_ruleset",
-        "_conduit_override_ruleset",
-        "_spell_override_ruleset",
-        "_capability_override_ruleset"
-      ],
-      "phases": [
-        "runtime",
-        "refresh",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py",
+ "source_sha256": "7975d54201bf12e19b55888dc24616031c2150817a392d81e02a4271f8c50726",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.frame_acl_codegen_configuration": {
+   "id": "melder.nexus.acl.configurations.frame_acl_codegen_configuration",
+   "label": "frame_acl_codegen_configuration",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Applied codegen-side ACL configuration revision.",
+   "semantics_authored_against": "7975d54201bf12e19b55888dc24616031c2150817a392d81e02a4271f8c50726"
   },
-  "edges_out": [
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to_label": "FrameACLRuleSet",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "datetime": "datetime.datetime",
-    "timezone": "datetime.timezone",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "Optional": "typing.Optional",
-    "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-    "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile"
+  "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration": {
+   "id": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "label": "FrameACLCodegenConfiguration",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py",
+   "lineno": 13,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "capability_override_ruleset",
+    "cleanup",
+    "clone",
+    "conduit_override_ruleset",
+    "configuration_id",
+    "create_new_from_configuration",
+    "created_at",
+    "finalize",
+    "frame_override_ruleset",
+    "from_json_dict",
+    "from_profile",
+    "locked",
+    "precision_profile_name",
+    "precision_profile_version",
+    "previous_configuration_id",
+    "profile_name",
+    "profile_version",
+    "reason",
+    "set_previous_configuration_id",
+    "set_profiles",
+    "source_configuration_id",
+    "spell_override_ruleset",
+    "to_json_dict",
+    "to_json_string"
+   ],
+   "shape": {
+    "method_count": 25,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "34cdbb6db6a5d369a15b2078d586cedc4ab8712f01b3bcdb65573021ba1fb2c1",
+   "role": "Applied codegen-side ACL configuration revision.",
+   "responsibilities": [
+    "stores reusable codegen-profile identity plus override rulesets",
+    "carries revision metadata for container-owned configuration chains"
+   ],
+   "owns_state": [
+    "_profile_name",
+    "_frame_override_ruleset",
+    "_conduit_override_ruleset",
+    "_spell_override_ruleset",
+    "_capability_override_ruleset"
+   ],
+   "phases": [
+    "runtime",
+    "refresh",
+    "cleanup"
+   ],
+   "semantics_authored_against": "34cdbb6db6a5d369a15b2078d586cedc4ab8712f01b3bcdb65573021ba1fb2c1"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
-      "relation": "borrows",
-      "why": "FrameACLCodegenConfiguration borrows the reusable codegen profile identity it was built from.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "runtime",
-        "refresh"
-      ],
-      "strength": "borrowed"
-    },
-    {
-      "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-      "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-      "relation": "owns_lifecycle_of",
-      "why": "FrameACLCodegenConfiguration owns detached override rulesets for one applied codegen revision.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime",
-        "refresh",
-        "cleanup"
-      ],
-      "strength": "hard"
-    }
-  ]
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to_label": "FrameACLRuleSet",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "datetime": "datetime.datetime",
+  "timezone": "datetime.timezone",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+   "relation": "borrows",
+   "why": "FrameACLCodegenConfiguration borrows the reusable codegen profile identity it was built from.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime",
+    "refresh"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+   "relation": "owns_lifecycle_of",
+   "why": "FrameACLCodegenConfiguration owns detached override rulesets for one applied codegen revision.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime",
+    "refresh",
+    "cleanup"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

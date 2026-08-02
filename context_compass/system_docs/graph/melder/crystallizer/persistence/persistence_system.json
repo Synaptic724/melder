@@ -1,177 +1,191 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/persistence/persistence_system.py",
-  "source_sha256": "6ddc89180add867c176cd2dffb5fb06cf1a5638e08b458d9fad9cbf8eefe747a",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.persistence.persistence_system": {
-      "id": "melder.crystallizer.persistence.persistence_system",
-      "label": "persistence_system",
-      "kind": "module",
-      "file": "src/melder/crystallizer/persistence/persistence_system.py",
-      "lineno": 1
-    },
-    "melder.crystallizer.persistence.persistence_system.PersistenceSystem": {
-      "id": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "label": "PersistenceSystem",
-      "kind": "class",
-      "file": "src/melder/crystallizer/persistence/persistence_system.py",
-      "lineno": 14,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "active_profile",
-        "active_profile_name",
-        "cached_item_form",
-        "cached_item_forms",
-        "capture_formation_record",
-        "capture_index_graft",
-        "checkpoint_replay_data",
-        "cleanup",
-        "clear_profile",
-        "create_checkpoint",
-        "create_profile",
-        "default_profile",
-        "delete_profile",
-        "describe",
-        "describe_checkpoint",
-        "describe_mutation_research_record",
-        "describe_spell_crystals",
-        "detach_profile_chain",
-        "get_profile",
-        "get_spell_crystal",
-        "insert_cached_items",
-        "list_checkpoint_ids",
-        "list_profile_names",
-        "max_persistence_crystals",
-        "record",
-        "record_mutation_research_state",
-        "record_nexus_state",
-        "record_spell_activity",
-        "record_spell_crystal",
-        "remove_cluster_crystal",
-        "remove_contract_crystal",
-        "remove_frame_crystal",
-        "remove_spell_crystal",
-        "remove_spell_index_crystal",
-        "remove_spellbook_subtree",
-        "set_active_profile",
-        "set_checkpoint_retention",
-        "verify_checkpoint_chain"
-      ],
-      "shape": {
-        "method_count": 41,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Owns ALL persistence stores: profiles, the checkpoint ledger, and the cache.",
-      "responsibilities": [
-        "routes twin emissions to the ACTIVE profile",
-        "seals checkpoints (per-profile numbers minted highest+1)",
-        "verifies chain fold-safety (verify_checkpoint_chain)",
-        "flushes/reloads the profile-scoped cache and enforces its FIFO cap",
-        "constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)",
-        "inserts cached items insert-if-absent (cache and external-manager import sinks)"
-      ],
-      "owns_state": [
-        "profiles_by_name",
-        "checkpoint_crystals_by_id",
-        "crystallizer_cache",
-        "max_persistence_crystals"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/persistence/persistence_system.py",
+ "source_sha256": "6ddc89180add867c176cd2dffb5fb06cf1a5638e08b458d9fad9cbf8eefe747a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.persistence.persistence_system": {
+   "id": "melder.crystallizer.persistence.persistence_system",
+   "label": "persistence_system",
+   "kind": "module",
+   "file": "src/melder/crystallizer/persistence/persistence_system.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The RECORD: profiles and the checkpoint ledger, in-process truth only.",
+   "responsibilities": [
+    "own profiles and the shared checkpoint ledger",
+    "call nobody and construct no engines - the edge law"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "6ddc89180add867c176cd2dffb5fb06cf1a5638e08b458d9fad9cbf8eefe747a"
   },
-  "edges_out": [
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to_label": "PersistenceProfile",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to_label": "PersistenceCrystal",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to_label": "KeyError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "PersistenceCrystal": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-    "SpellCrystal": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
-    "PersistenceProfile": "melder.crystallizer.persistence.persistence_profile.PersistenceProfile",
-    "RecordedUnitState": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-    "RecordVersion": "melder.crystallizer.persistence.record_version.RecordVersion"
+  "melder.crystallizer.persistence.persistence_system.PersistenceSystem": {
+   "id": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "label": "PersistenceSystem",
+   "kind": "class",
+   "file": "src/melder/crystallizer/persistence/persistence_system.py",
+   "lineno": 14,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "active_profile",
+    "active_profile_name",
+    "cached_item_form",
+    "cached_item_forms",
+    "capture_formation_record",
+    "capture_index_graft",
+    "checkpoint_replay_data",
+    "cleanup",
+    "clear_profile",
+    "create_checkpoint",
+    "create_profile",
+    "default_profile",
+    "delete_profile",
+    "describe",
+    "describe_checkpoint",
+    "describe_mutation_research_record",
+    "describe_spell_crystals",
+    "detach_profile_chain",
+    "get_profile",
+    "get_spell_crystal",
+    "insert_cached_items",
+    "list_checkpoint_ids",
+    "list_profile_names",
+    "max_persistence_crystals",
+    "record",
+    "record_mutation_research_state",
+    "record_nexus_state",
+    "record_spell_activity",
+    "record_spell_crystal",
+    "remove_cluster_crystal",
+    "remove_contract_crystal",
+    "remove_frame_crystal",
+    "remove_spell_crystal",
+    "remove_spell_index_crystal",
+    "remove_spellbook_subtree",
+    "set_active_profile",
+    "set_checkpoint_retention",
+    "verify_checkpoint_chain"
+   ],
+   "shape": {
+    "method_count": 41,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "603ec1f03735e3586da60b769e07801b616fda1b590bab71025df2258ff0d9b0",
+   "role": "Owns ALL persistence stores: profiles, the checkpoint ledger, and the cache.",
+   "responsibilities": [
+    "routes twin emissions to the ACTIVE profile",
+    "seals checkpoints (per-profile numbers minted highest+1)",
+    "verifies chain fold-safety (verify_checkpoint_chain)",
+    "flushes/reloads the profile-scoped cache and enforces its FIFO cap",
+    "constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)",
+    "inserts cached items insert-if-absent (cache and external-manager import sinks)"
+   ],
+   "owns_state": [
+    "profiles_by_name",
+    "checkpoint_crystals_by_id",
+    "crystallizer_cache",
+    "max_persistence_crystals"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "603ec1f03735e3586da60b769e07801b616fda1b590bab71025df2258ff0d9b0"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.crystallizer.persistence.persistence_system",
-    "class": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-    "label": "PersistenceSystem"
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to_label": "PersistenceProfile",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to": "melder.crystallizer.persistence.persistence_profile.PersistenceProfile",
-      "relation": "owns",
-      "why": "The system owns every profile; exactly one is ACTIVE for emissions.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-      "relation": "owns",
-      "why": "The checkpoint ledger, FIFO-capped at max_persistence_crystals.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "to": "melder.crystallizer.persistence.record_version.RecordVersion",
-      "relation": "uses",
-      "why": "capture_formation_record stamps the assembled formation record."
-    }
-  ]
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to_label": "PersistenceCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to_label": "KeyError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "PersistenceCrystal": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
+  "SpellCrystal": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+  "PersistenceProfile": "melder.crystallizer.persistence.persistence_profile.PersistenceProfile",
+  "RecordedUnitState": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "RecordVersion": "melder.crystallizer.persistence.record_version.RecordVersion"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.persistence.persistence_system",
+  "class": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+  "label": "PersistenceSystem"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to": "melder.crystallizer.persistence.persistence_profile.PersistenceProfile",
+   "relation": "owns",
+   "why": "The system owns every profile; exactly one is ACTIVE for emissions.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
+   "relation": "owns",
+   "why": "The checkpoint ledger, FIFO-capped at max_persistence_crystals.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "to": "melder.crystallizer.persistence.record_version.RecordVersion",
+   "relation": "uses",
+   "why": "capture_formation_record stamps the assembled formation record."
+  }
+ ]
 }

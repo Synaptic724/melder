@@ -1,57 +1,68 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py",
-  "source_sha256": "d5cab4579298a42654b7fadee695268d3f0ac4ac52a581560f72eb2ef9e86e8f",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.nexus.acl.configurations.profiles.codegen.full_access_profile": {
-      "id": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile",
-      "label": "full_access_profile",
-      "kind": "module",
-      "file": "src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py",
-      "lineno": 1,
-      "role": "Factory module for the reusable full_access codegen ACL profile.",
-      "responsibilities": [
-        "constructs the unconstrained top-end codegen profile variant",
-        "enables broad conduit, spell, and capability operations including recursive codegen",
-        "returns fresh FrameACLCodegenProfile instances through its strategy class"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    },
-    "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy": {
-      "id": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy",
-      "label": "FullAccessCodegenProfileStrategy",
-      "kind": "class",
-      "file": "src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py",
-      "lineno": 7,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build",
-        "name"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": false,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py",
+ "source_sha256": "d5cab4579298a42654b7fadee695268d3f0ac4ac52a581560f72eb2ef9e86e8f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.codegen.full_access_profile": {
+   "id": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile",
+   "label": "full_access_profile",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py",
+   "lineno": 1,
+   "role": "Factory module for the reusable full_access codegen ACL profile.",
+   "responsibilities": [
+    "constructs the unconstrained top-end codegen profile variant",
+    "enables broad conduit, spell, and capability operations including recursive codegen",
+    "returns fresh FrameACLCodegenProfile instances through its strategy class"
+   ],
+   "phases": [
+    "runtime"
+   ]
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy",
-      "to_label": "FrameACLCodegenProfile",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
-    "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
-  },
-  "collapse_candidate": null
+  "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy": {
+   "id": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy",
+   "label": "FullAccessCodegenProfileStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py",
+   "lineno": 7,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "900125a271e25e2f2b92a499b93541db260086be1dd313ec538f245809add9b6",
+   "include": true,
+   "role": "The unconstrained top end of the codegen ACL model - above the standard ladder, not a rung of it.",
+   "responsibilities": [
+    "enable imports without an allowlist and leave builtin/meta posture open",
+    "allow the broadest conduit, spell, and capability operations including recursive codegen"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "900125a271e25e2f2b92a499b93541db260086be1dd313ec538f245809add9b6"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy",
+   "to_label": "FrameACLCodegenProfile",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
+ },
+ "collapse_candidate": null
 }

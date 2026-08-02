@@ -1,63 +1,68 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
-  "source_sha256": "00caa7e1b1834ca150a794a999d59b7f17736aab1c0b6e1e4092ce3dc8973336",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state": {
-      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state",
-      "label": "spell_state",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
-      "lineno": 1
-    },
-    "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState": {
-      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
-      "label": "SpellState",
-      "kind": "enum",
-      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Fine-grained state-flag enum for one spell lineage.",
-      "responsibilities": [
-        "labels topology, contract, mutation, and ops state flags for a lineage"
-      ],
-      "owns_state": [
-        "new_lineage",
-        "structure_changed",
-        "dependencies_changed",
-        "impacted_by_dependency",
-        "contract_unvalidated",
-        "contract_violation",
-        "mutation_candidate",
-        "mutation_quarantined",
-        "mutation_failed",
-        "has_open_incident",
-        "anchored_component",
-        "config_missing",
-        "transfer_in_progress"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
+ "source_sha256": "00caa7e1b1834ca150a794a999d59b7f17736aab1c0b6e1e4092ce3dc8973336",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state": {
+   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state",
+   "label": "spell_state",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The fine-grained state-flag enum for one spell lineage.",
+   "semantics_authored_against": "00caa7e1b1834ca150a794a999d59b7f17736aab1c0b6e1e4092ce3dc8973336"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Enum": "enum.Enum",
-    "auto": "enum.auto"
-  },
-  "collapse_candidate": null
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState": {
+   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
+   "label": "SpellState",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "94398de5ff59c1cb3ee1862b1b7aef3d6648afe2ab99fad7cae16cee5f9feaba",
+   "role": "Fine-grained state-flag enum for one spell lineage.",
+   "responsibilities": [
+    "labels topology, contract, mutation, and ops state flags for a lineage"
+   ],
+   "owns_state": [
+    "new_lineage",
+    "structure_changed",
+    "dependencies_changed",
+    "impacted_by_dependency",
+    "contract_unvalidated",
+    "contract_violation",
+    "mutation_candidate",
+    "mutation_quarantined",
+    "mutation_failed",
+    "has_open_incident",
+    "anchored_component",
+    "config_missing",
+    "transfer_in_progress"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "94398de5ff59c1cb3ee1862b1b7aef3d6648afe2ab99fad7cae16cee5f9feaba"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "auto": "enum.auto"
+ },
+ "collapse_candidate": null
 }

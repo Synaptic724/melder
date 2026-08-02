@@ -1,62 +1,73 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/interfaces/icleanable.py",
-  "source_sha256": "49be024545b9f1247959d5bf9fe6acae12251052112a89a2f0e368812d0dee8e",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.interfaces.icleanable": {
-      "id": "melder.utilities.interfaces.icleanable",
-      "label": "icleanable",
-      "kind": "module",
-      "file": "src/melder/utilities/interfaces/icleanable.py",
-      "lineno": 1
-    },
-    "melder.utilities.interfaces.icleanable.ICleanable": {
-      "id": "melder.utilities.interfaces.icleanable.ICleanable",
-      "label": "ICleanable",
-      "kind": "interface",
-      "file": "src/melder/utilities/interfaces/icleanable.py",
-      "lineno": 4,
-      "bases": [],
-      "markers": [
-        "Protocol"
-      ],
-      "public_methods": [
-        "async_cleanup",
-        "check_cleaned",
-        "cleaned",
-        "cleanup",
-        "is_cleaned"
-      ],
-      "shape": {
-        "method_count": 5,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Protocol mirror of the cleanup lifecycle contract.",
-      "responsibilities": [
-        "defines the public cleaned-state and cleanup surface expected across runtime objects"
-      ],
-      "owns_state": [
-        "_cleaned"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/interfaces/icleanable.py",
+ "source_sha256": "49be024545b9f1247959d5bf9fe6acae12251052112a89a2f0e368812d0dee8e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.interfaces.icleanable": {
+   "id": "melder.utilities.interfaces.icleanable",
+   "label": "icleanable",
+   "kind": "module",
+   "file": "src/melder/utilities/interfaces/icleanable.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Structural mirror of the Cleanable public API.",
+   "responsibilities": [
+    "let a caller depend on the cleanup contract without inheriting the ABC"
+   ],
+   "phases": [
+    "cleanup"
+   ],
+   "semantics_authored_against": "49be024545b9f1247959d5bf9fe6acae12251052112a89a2f0e368812d0dee8e"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Protocol": "typing.Protocol",
-    "runtime_checkable": "typing.runtime_checkable"
-  },
-  "collapse_candidate": {
-    "module": "melder.utilities.interfaces.icleanable",
-    "class": "melder.utilities.interfaces.icleanable.ICleanable",
-    "label": "ICleanable"
+  "melder.utilities.interfaces.icleanable.ICleanable": {
+   "id": "melder.utilities.interfaces.icleanable.ICleanable",
+   "label": "ICleanable",
+   "kind": "interface",
+   "file": "src/melder/utilities/interfaces/icleanable.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "Protocol"
+   ],
+   "public_methods": [
+    "async_cleanup",
+    "check_cleaned",
+    "cleaned",
+    "cleanup",
+    "is_cleaned"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "3a8e9dea20010a1a590b424eb0d5582fb7870f59fa1ffc0aa21ab743c9b7b93d",
+   "role": "Protocol mirror of the cleanup lifecycle contract.",
+   "responsibilities": [
+    "defines the public cleaned-state and cleanup surface expected across runtime objects"
+   ],
+   "owns_state": [
+    "_cleaned"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "3a8e9dea20010a1a590b424eb0d5582fb7870f59fa1ffc0aa21ab743c9b7b93d"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Protocol": "typing.Protocol",
+  "runtime_checkable": "typing.runtime_checkable"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.interfaces.icleanable",
+  "class": "melder.utilities.interfaces.icleanable.ICleanable",
+  "label": "ICleanable"
+ }
 }

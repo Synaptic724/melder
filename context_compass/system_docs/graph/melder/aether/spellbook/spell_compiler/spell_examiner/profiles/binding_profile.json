@@ -1,229 +1,322 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-  "source_sha256": "33591ccb54c50aeb6f05d0d03b6ef9b3c496675ceb6e3ca80b309d438d150b52",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile",
-      "label": "binding_profile",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 1
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind",
-      "label": "SpellBindingKind",
-      "kind": "enum",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 10,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Enum classifying the raw binding shape of a candidate.",
-      "responsibilities": [
-        "labels class, callable, instance, and other binding kinds"
-      ],
-      "owns_state": [
-        "CLASS",
-        "CALLABLE",
-        "INSTANCE",
-        "OTHER"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
-      "label": "SpellBindingProfile",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 23,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Base binding-time profile for raw registration candidates.",
-      "responsibilities": [
-        "stores the high-level binding kind and original candidate object",
-        "acts as the base for class, callable, instance, and other binding profiles"
-      ],
-      "owns_state": [
-        "kind",
-        "original_object"
-      ],
-      "phases": [
-        "validation",
-        "runtime",
-        "cleanup"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
-      "label": "ClassBindingProfile",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 67,
-      "bases": [
-        "SpellBindingProfile"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup",
-        "source_preview"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      }
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary",
-      "label": "CallableParameterBindingSummary",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 234,
-      "bases": [],
-      "markers": [],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": false,
-        "trivial": true
-      }
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
-      "label": "CallableBindingProfile",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 269,
-      "bases": [
-        "SpellBindingProfile"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
-      "label": "InstanceBindingProfile",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 390,
-      "bases": [
-        "SpellBindingProfile"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    },
-    "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile": {
-      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
-      "label": "OtherBindingProfile",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
-      "lineno": 449,
-      "bases": [
-        "SpellBindingProfile"
-      ],
-      "markers": [],
-      "public_methods": [
-        "cleanup"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+ "source_sha256": "33591ccb54c50aeb6f05d0d03b6ef9b3c496675ceb6e3ca80b309d438d150b52",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile",
+   "label": "binding_profile",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The binding-time profile family: the kind enum, the base, and the class/callable/instance/other views.",
+   "semantics_authored_against": "33591ccb54c50aeb6f05d0d03b6ef9b3c496675ceb6e3ca80b309d438d150b52"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
-      "to_label": "SpellBindingProfile",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
-      "to_label": "SpellBindingProfile",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
-      "to_label": "SpellBindingProfile",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
-      "to_label": "SpellBindingProfile",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
-    }
-  ],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Enum": "enum.Enum",
-    "auto": "enum.auto",
-    "Any": "typing.Any",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "ClassVar": "typing.ClassVar",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind",
+   "label": "SpellBindingKind",
+   "kind": "enum",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 10,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "7f49f63d865c152ee4b5e11b87444c587a04061646da9cfbbba1127163ab691b",
+   "role": "Enum classifying the raw binding shape of a candidate.",
+   "responsibilities": [
+    "labels class, callable, instance, and other binding kinds"
+   ],
+   "owns_state": [
+    "CLASS",
+    "CALLABLE",
+    "INSTANCE",
+    "OTHER"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "7f49f63d865c152ee4b5e11b87444c587a04061646da9cfbbba1127163ab691b"
   },
-  "collapse_candidate": null,
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
-      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind",
-      "relation": "uses",
-      "why": "SpellBindingProfile stores SpellBindingKind as the high-level raw binding classification.",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation"
-      ],
-      "strength": "borrowed"
-    }
-  ]
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
+   "label": "SpellBindingProfile",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 23,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "7024091b0547af95af1854872d15704228c8504e11834a693cdf2fadb32aece7",
+   "role": "Base binding-time profile for raw registration candidates.",
+   "responsibilities": [
+    "stores the high-level binding kind and original candidate object",
+    "acts as the base for class, callable, instance, and other binding profiles"
+   ],
+   "owns_state": [
+    "kind",
+    "original_object"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "7024091b0547af95af1854872d15704228c8504e11834a693cdf2fadb32aece7"
+  },
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
+   "label": "ClassBindingProfile",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 67,
+   "bases": [
+    "SpellBindingProfile"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "source_preview"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "dbae87b0cec8746025683e8432133a00cae6ee3cc7ec4ef8e1b558aa8cd261f4",
+   "include": true,
+   "role": "Binding-time view of a class candidate - enough to fingerprint it, reason about protocol compatibility, and produce diagnostics.",
+   "responsibilities": [
+    "record name, qualname, module, bases, MRO, annotations and origin file",
+    "keep the per-method view shallow (names only); deep inspection belongs to later phases"
+   ],
+   "owns_state": [
+    "name",
+    "qualname",
+    "module",
+    "bases",
+    "mro",
+    "annotations",
+    "origin_file"
+   ],
+   "phases": [
+    "bind"
+   ],
+   "semantics_authored_against": "dbae87b0cec8746025683e8432133a00cae6ee3cc7ec4ef8e1b558aa8cd261f4"
+  },
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary",
+   "label": "CallableParameterBindingSummary",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 234,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "80eed4dbb8092a2a08df7af4317678b5f0abac103788d1f09f8c0e4870cd60d4",
+   "include": true,
+   "role": "The minimal binding-time view of one callable parameter, for fingerprinting and diagnostics.",
+   "responsibilities": [
+    "record the parameter's name, kind, default repr and annotation repr"
+   ],
+   "owns_state": [
+    "name",
+    "kind",
+    "default_repr",
+    "annotation_repr"
+   ],
+   "phases": [
+    "bind"
+   ],
+   "semantics_authored_against": "80eed4dbb8092a2a08df7af4317678b5f0abac103788d1f09f8c0e4870cd60d4"
+  },
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
+   "label": "CallableBindingProfile",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 269,
+   "bases": [
+    "SpellBindingProfile"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "542d1111566ba56b2a8610d8dfef47676aa5ee0c9a046818f5b2ef45dcdb797a",
+   "include": true,
+   "role": "Binding-time view of a function, method or lambda spell candidate.",
+   "responsibilities": [
+    "store callable identity, signature and the shallow parameter summaries",
+    "avoid deeper runtime-resolution detail, which belongs to later profile phases"
+   ],
+   "owns_state": [
+    "name",
+    "qualname",
+    "module",
+    "object_id",
+    "type_name",
+    "repr_string",
+    "signature"
+   ],
+   "phases": [
+    "bind"
+   ],
+   "semantics_authored_against": "542d1111566ba56b2a8610d8dfef47676aa5ee0c9a046818f5b2ef45dcdb797a"
+  },
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
+   "label": "InstanceBindingProfile",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 390,
+   "bases": [
+    "SpellBindingProfile"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "eb9f41b2abe4b48f92c41e92be1cf3bf284555289d221b62bcd62c8e7339c897",
+   "include": true,
+   "role": "Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.",
+   "responsibilities": [
+    "record the instance's type name, module and repr"
+   ],
+   "owns_state": [
+    "type_name",
+    "module",
+    "repr_string"
+   ],
+   "phases": [
+    "bind"
+   ],
+   "semantics_authored_against": "eb9f41b2abe4b48f92c41e92be1cf3bf284555289d221b62bcd62c8e7339c897"
+  },
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
+   "label": "OtherBindingProfile",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py",
+   "lineno": 449,
+   "bases": [
+    "SpellBindingProfile"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "b77f2315bf0a790b814136468735c3e737c9a7d29e0ed25541051e775f6cc899",
+   "include": true,
+   "role": "Fallback profile for candidates that fit none of the normal shapes.",
+   "responsibilities": [
+    "store only the minimum detached identity and representation surface"
+   ],
+   "owns_state": [
+    "type_name",
+    "module",
+    "repr_string"
+   ],
+   "phases": [
+    "bind"
+   ],
+   "semantics_authored_against": "b77f2315bf0a790b814136468735c3e737c9a7d29e0ed25541051e775f6cc899"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
+   "to_label": "SpellBindingProfile",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
+   "to_label": "SpellBindingProfile",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
+   "to_label": "SpellBindingProfile",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
+   "to_label": "SpellBindingProfile",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "auto": "enum.auto",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind",
+   "relation": "uses",
+   "why": "SpellBindingProfile stores SpellBindingKind as the high-level raw binding classification.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

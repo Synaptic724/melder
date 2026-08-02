@@ -1,82 +1,96 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
-  "source_sha256": "697c05120275a0e8fb1f46a6e118cf3cc6a7da3b64aa709fe2dfab9f47305a07",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy",
-      "label": "binding_resolution_cycle_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
-      "lineno": 1,
-      "role": "Spell validation strategy module for binding resolution cycle checks.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
-      "label": "BindingResolutionCycleStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
-      "lineno": 29,
-      "bases": [
-        "SpellValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "validate"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
+ "source_sha256": "697c05120275a0e8fb1f46a6e118cf3cc6a7da3b64aa709fe2dfab9f47305a07",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy",
+   "label": "binding_resolution_cycle_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 4 check: cycles visible only when resolution is modeled by binding key.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "697c05120275a0e8fb1f46a6e118cf3cc6a7da3b64aa709fe2dfab9f47305a07"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
-      "to_label": "SpellValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
-      "to_label": "SpellValidationIssue",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Set": "typing.Set",
-    "Tuple": "typing.Tuple",
-    "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
-    "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
-    "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
-    "SpellParameterRequirement": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
-    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
-    "label": "BindingResolutionCycleStrategy"
+  "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
+   "label": "BindingResolutionCycleStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
+   "lineno": 29,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "625fcf98ce627d8939aa3d88dfa4b2f46b1b10d2fb2340e5acaeb2130cab36d5",
+   "include": true,
+   "role": "The binding-KEY counterpart to the spell-id cycle check: loops invisible by spell id but visible once resolution is modeled by binding key.",
+   "responsibilities": [
+    "build a binding-key graph from available requirements",
+    "report cycles reachable from the spell under validation",
+    "mutate nothing - spells, spellbooks and requirements are read only"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "625fcf98ce627d8939aa3d88dfa4b2f46b1b10d2fb2340e5acaeb2130cab36d5"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+  "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
+  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "SpellParameterRequirement": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy",
+  "label": "BindingResolutionCycleStrategy"
+ }
 }

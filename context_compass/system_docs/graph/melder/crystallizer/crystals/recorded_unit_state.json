@@ -9,7 +9,16 @@
    "label": "recorded_unit_state",
    "kind": "module",
    "file": "src/melder/crystallizer/crystals/recorded_unit_state.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Lifecycle vocabulary for singletons the record tracks by state switch rather than eviction.",
+   "responsibilities": [
+    "let a disabled singleton keep its twin instead of vanishing"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "559c4771a52ede5d345ca69913b7c680d9f5f37ce0f4e4afbb28c92db0558d54"
   },
   "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState": {
    "id": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
@@ -26,7 +35,18 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "363422e331e7621d3866df5b2d9185c2357ce446848d839dc60799dfd4a1368d",
+   "include": true,
+   "role": "Recorded lifecycle state for state-switch tracked singletons such as Nexus and MutationResearch.",
+   "responsibilities": [
+    "distinguish enabled / disabled / cleaned without evicting the twin"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "363422e331e7621d3866df5b2d9185c2357ce446848d839dc60799dfd4a1368d"
   }
  },
  "edges_out": [],

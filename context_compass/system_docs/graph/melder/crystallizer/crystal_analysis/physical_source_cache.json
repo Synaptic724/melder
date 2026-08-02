@@ -9,7 +9,10 @@
    "label": "physical_source_cache",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/physical_source_cache.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Process-wide stat-guarded fingerprint cache that kills the analysis IO storm.",
+   "semantics_authored_against": "dcc0efbcde459a0b8f2284833dfdfb0243db2bbb7a2b2e95ff3be5110b88c7bb"
   },
   "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache": {
    "id": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
@@ -27,7 +30,25 @@
     "method_count": 4,
     "has_bases": false,
     "trivial": false
-   }
+   },
+   "span_sha256": "8407054ee4648cf3ab67b5dedf01080ccc68ee1e545a34d9f260b7d31110784d",
+   "include": true,
+   "role": "Process-wide stat-guarded fingerprint cache: one answer for a source file's current sha256 without redundant disk reads.",
+   "responsibilities": [
+    "serve fingerprint_if_unchanged without ever reading file content",
+    "own the single read law for physical source (read_text_and_fingerprint) and feed the cache from it",
+    "serialize entry-map access under the class RLock while running IO outside it",
+    "LRU-evict beyond class capacity"
+   ],
+   "owns_state": [
+    "class-level entry map",
+    "class-level RLock",
+    "hit/miss counters"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "8407054ee4648cf3ab67b5dedf01080ccc68ee1e545a34d9f260b7d31110784d"
   }
  },
  "edges_out": [],

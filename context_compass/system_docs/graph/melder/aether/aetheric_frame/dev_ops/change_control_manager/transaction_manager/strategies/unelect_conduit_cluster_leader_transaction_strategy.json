@@ -9,7 +9,10 @@
    "label": "unelect_conduit_cluster_leader_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Scope plan for cluster leader unelection, including the runtime freeze active-to-inert requires.",
+   "semantics_authored_against": "7806685f89bdf2fef3877a5e2ef71fb3732e3978567cb40aff64dc8e73b47146"
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy.UnelectConduitClusterLeaderTransactionStrategy": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy.UnelectConduitClusterLeaderTransactionStrategy",
@@ -30,7 +33,19 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "9770fe4ce8d827a13934ca1ec24d4409155332a656c185822016a3413863392b",
+   "include": true,
+   "role": "Deactivation half of the leader layer and the heavier twin of election: active -> inert, so readers may be in flight and the store must not be re-targeted underneath them.",
+   "responsibilities": [
+    "seal the member conduits EXCLUSIVE in build_start_plan",
+    "quiesce every member root lineage through the gate facade in on_start in PARK mode, so concurrent melds park at their gate and resume on reopen",
+    "reopen every lineage after the domain effect"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "9770fe4ce8d827a13934ca1ec24d4409155332a656c185822016a3413863392b"
   }
  },
  "edges_out": [

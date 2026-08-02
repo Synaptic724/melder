@@ -1,50 +1,62 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
-  "source_sha256": "c4ef62802568d6b6dc2caeb0081b205a16537811418061db8b4a59d1eb3543fb",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.custom_exceptions.meld_execution_error": {
-      "id": "melder.utilities.custom_exceptions.meld_execution_error",
-      "label": "meld_execution_error",
-      "kind": "module",
-      "file": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
-      "lineno": 1
-    },
-    "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError": {
-      "id": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
-      "label": "MeldExecutionError",
-      "kind": "class",
-      "file": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
-      "lineno": 5,
-      "bases": [],
-      "markers": [
-        "RuntimeError"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Runtime exception for meld execution failures.",
-      "responsibilities": [
-        "captures spell/runtime context for meld execution errors"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
+ "source_sha256": "c4ef62802568d6b6dc2caeb0081b205a16537811418061db8b4a59d1eb3543fb",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.meld_execution_error": {
+   "id": "melder.utilities.custom_exceptions.meld_execution_error",
+   "label": "meld_execution_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Single stable failure type for DAG-based meld execution, so the Conduit/Meld boundary has one resolution-failed signal.",
+   "responsibilities": [
+    "collapse many low-level failures into one boundary error",
+    "keep callers from catching a dozen leaked exception types"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "c4ef62802568d6b6dc2caeb0081b205a16537811418061db8b4a59d1eb3543fb"
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Optional": "typing.Optional"
-  },
-  "collapse_candidate": {
-    "module": "melder.utilities.custom_exceptions.meld_execution_error",
-    "class": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
-    "label": "MeldExecutionError"
+  "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError": {
+   "id": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+   "label": "MeldExecutionError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "9dd8280f0eadd35c8759313e893cae571a4f010fb202169c7283f4c513dd458f",
+   "role": "Runtime exception for meld execution failures.",
+   "responsibilities": [
+    "captures spell/runtime context for meld execution errors"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "9dd8280f0eadd35c8759313e893cae571a4f010fb202169c7283f4c513dd458f"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Optional": "typing.Optional"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.meld_execution_error",
+  "class": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+  "label": "MeldExecutionError"
+ }
 }

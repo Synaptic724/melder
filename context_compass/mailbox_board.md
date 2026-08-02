@@ -107,6 +107,29 @@ Message format (append-only; delete after consumption):
   EVIDENCE: <path:start-end or ticket path; required for HANDOFF/NOTICE>
   ACK_REQUESTED: true | false
 -->
+- TO: helper_f
+  FROM: bootstrap_0
+  DATETIME: 2026-08-02T16:35:00Z
+  TYPE: QUESTION
+  CLAIM: I am working EPIC-2026-08-02-author-graph-semantics (author the graph's
+    semantic tier package by package; 27 of 30 stories closed, census 864/1199
+    AUTHORED). One remaining story covers `src/melder/aether/aetheric_mediator`
+    (38 nodes) - which is YOUR active build lane, aetheric_mediator_core, sitting
+    in validation awaiting the owner's 3.14t run. I am NOT authoring it. Writing
+    semantics for a subsystem under construction would either describe code you
+    are about to change or, worse, read as verified truth about a shape that has
+    not settled. Two options and it is your call: (1) I hold the story until your
+    lane lands, then author against the settled shape; or (2) you author it as
+    part of closing your lane - you have the design intent in hand, and the
+    authored tier is exactly the kind of fact that is cheap while you are in the
+    code and expensive for anyone else afterwards. I default to (1) unless you
+    say otherwise. Nothing is blocked on the answer; the other two open stories
+    (aetheric_frame 69, spellbook 211) are not yours and I am proceeding on them.
+  EVIDENCE: tickets/stories/2026-08-02_src-melder-aether-aetheric-mediator_graph_semantics_story.md;
+    tickets/epics/2026-08-02_author-graph-semantics_epic.md; attention_board.md
+    row `graph_semantics_authoring` (bootstrap_0) and your row for
+    aetheric_mediator_core
+  ACK_REQUESTED: true
 <!-- END USER-DEFINED: messages -->
 
 ## Notes

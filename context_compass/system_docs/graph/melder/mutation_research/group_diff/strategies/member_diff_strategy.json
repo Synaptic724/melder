@@ -1,79 +1,91 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py",
-  "source_sha256": "80059f6992c51460cdf720349e089b124d473066d725f8c27e8383e5ec706427",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.mutation_research.group_diff.strategies.member_diff_strategy": {
-      "id": "melder.mutation_research.group_diff.strategies.member_diff_strategy",
-      "label": "member_diff_strategy",
-      "kind": "module",
-      "file": "src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py",
-      "lineno": 1
-    },
-    "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy": {
-      "id": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
-      "label": "MemberDiffStrategy",
-      "kind": "class",
-      "file": "src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py",
-      "lineno": 8,
-      "bases": [
-        "GroupDiffStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "diff",
-        "name"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Default grouped strategy: added/removed/unchanged members plus LANE-EVIDENCED version_moved pairing (a removed+added identity sharing a lane = one object at a new version; no residence truth = plain rows, never guessed) + ancestry_related.",
-      "responsibilities": [
-        "roster set math + lane-join pairing + composition-ancestry signal"
-      ],
-      "phases": [
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py",
+ "source_sha256": "80059f6992c51460cdf720349e089b124d473066d725f8c27e8383e5ec706427",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.group_diff.strategies.member_diff_strategy": {
+   "id": "melder.mutation_research.group_diff.strategies.member_diff_strategy",
+   "label": "member_diff_strategy",
+   "kind": "module",
+   "file": "src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Default grouped strategy comparing two subsystem compositions at member grain.",
+   "responsibilities": [
+    "report added and removed members",
+    "pair version_moved from lane evidence rather than guessing"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "80059f6992c51460cdf720349e089b124d473066d725f8c27e8383e5ec706427"
   },
-  "edges_out": [
-    {
-      "from": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
-      "to_label": "GroupDiffStrategy",
-      "relation": "specializes",
-      "to": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy"
-    }
-  ],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "ClassVar": "typing.ClassVar",
-    "GroupDiffStrategy": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy"
-  },
-  "collapse_candidate": {
-    "module": "melder.mutation_research.group_diff.strategies.member_diff_strategy",
-    "class": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
-    "label": "MemberDiffStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
-      "to": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
-      "relation": "specializes",
-      "why": "Implements the GroupDiffStrategy contract.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init"
-      ],
-      "strength": "strong"
-    }
-  ]
+  "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy": {
+   "id": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
+   "label": "MemberDiffStrategy",
+   "kind": "class",
+   "file": "src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py",
+   "lineno": 8,
+   "bases": [
+    "GroupDiffStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "diff",
+    "name"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "34562cc20b634d09e384849ed18649c83d091ab89fb942e539d495a2975deecb",
+   "role": "Default grouped strategy: added/removed/unchanged members plus LANE-EVIDENCED version_moved pairing (a removed+added identity sharing a lane = one object at a new version; no residence truth = plain rows, never guessed) + ancestry_related.",
+   "responsibilities": [
+    "roster set math + lane-join pairing + composition-ancestry signal"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "34562cc20b634d09e384849ed18649c83d091ab89fb942e539d495a2975deecb"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
+   "to_label": "GroupDiffStrategy",
+   "relation": "specializes",
+   "to": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "GroupDiffStrategy": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.group_diff.strategies.member_diff_strategy",
+  "class": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
+  "label": "MemberDiffStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
+   "to": "melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy",
+   "relation": "specializes",
+   "why": "Implements the GroupDiffStrategy contract.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init"
+   ],
+   "strength": "strong"
+  }
+ ]
 }

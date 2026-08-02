@@ -1,86 +1,100 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
-  "source_sha256": "3e241960620d763d3f646fb3245c6cecc44f0661017450d106213d21acf42a02",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy",
-      "label": "cycle_detection_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
-      "lineno": 1,
-      "role": "System validation strategy module for cycle detection.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
-      "label": "CycleDetectionStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
-      "lineno": 24,
-      "bases": [
-        "SpellSystemValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "run"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
+ "source_sha256": "3e241960620d763d3f646fb3245c6cecc44f0661017450d106213d21acf42a02",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy",
+   "label": "cycle_detection_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 6 check: the frame-level dependency graph is still acyclic.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "3e241960620d763d3f646fb3245c6cecc44f0661017450d106213d21acf42a02"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
-      "to_label": "SpellSystemValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
-      "to_label": "SystemDiagnostic",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Mapping": "typing.Mapping",
-    "Optional": "typing.Optional",
-    "Set": "typing.Set",
-    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-    "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
-    "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
-    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
-    "label": "CycleDetectionStrategy"
+  "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
+   "label": "CycleDetectionStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
+   "lineno": 24,
+   "bases": [
+    "SpellSystemValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "run"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "3ff0d4ae00b4380c934f93b1176f39826a1d68548ac6255f9c20c4a4965083ca",
+   "include": true,
+   "role": "The broadest structural check in the Phase 6 set: can the frame-level dependency graph still be topologically ordered?",
+   "responsibilities": [
+    "work at SpellSystemIndex level rather than per root blueprint",
+    "emit at most one coarse cycle_detected error for the frame",
+    "honour cancellation during traversal and never mutate the index or its nodes"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "3ff0d4ae00b4380c934f93b1176f39826a1d68548ac6255f9c20c4a4965083ca"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
+   "to_label": "SpellSystemValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
+   "to_label": "SystemDiagnostic",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+  "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
+  "label": "CycleDetectionStrategy"
+ }
 }

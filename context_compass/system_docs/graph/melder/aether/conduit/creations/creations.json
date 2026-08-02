@@ -1,111 +1,125 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/conduit/creations/creations.py",
-  "source_sha256": "e1e90a575ddd8e431bb75db86b79a6098b617ab1502eb50c80444af4b914997c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.conduit.creations.creations": {
-      "id": "melder.aether.conduit.creations.creations",
-      "label": "creations",
-      "kind": "module",
-      "file": "src/melder/aether/conduit/creations/creations.py",
-      "lineno": 1
-    },
-    "melder.aether.conduit.creations.creations.Creations": {
-      "id": "melder.aether.conduit.creations.creations.Creations",
-      "label": "Creations",
-      "kind": "class",
-      "file": "src/melder/aether/conduit/creations/creations.py",
-      "lineno": 9,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "add_creation",
-        "add_many_creations",
-        "cleanup",
-        "clear_all",
-        "extract_spell_creations",
-        "get_creation",
-        "id",
-        "owner_conduit_id",
-        "reset_for_pool",
-        "reset_for_pool_unlocked",
-        "restore_spell_creations"
-      ],
-      "shape": {
-        "method_count": 13,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Conduit-owned live creation registry.",
-      "responsibilities": [
-        "stores live creation wrappers under spell and spellspace scopes",
-        "owns disposal stacks for tracked creations",
-        "supports extraction and restoration during ownership transfer"
-      ],
-      "owns_state": [
-        "_creations",
-        "_disposal_stack",
-        "_spellspace_disposal_stacks",
-        "_conduit"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/creations/creations.py",
+ "source_sha256": "e1e90a575ddd8e431bb75db86b79a6098b617ab1502eb50c80444af4b914997c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.creations.creations": {
+   "id": "melder.aether.conduit.creations.creations",
+   "label": "creations",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/creations/creations.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Generic scoped live-object store: the storage layer beneath Meld.",
+   "responsibilities": [
+    "hold live objects for exactly one scope",
+    "keep disposal metadata apart so resolution never pays for it",
+    "dispose in reverse creation order"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "e1e90a575ddd8e431bb75db86b79a6098b617ab1502eb50c80444af4b914997c"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.conduit.creations.creations.Creations",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.conduit.creations.creations.Creations",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.conduit.creations.creations.Creations",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.conduit.creations.creations.Creations",
-      "to_label": "ExceptionGroup",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.aether.conduit.creations.creations.Creations",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "RLock": "threading.RLock",
-    "Any": "typing.Any",
-    "ClassVar": "typing.ClassVar",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.conduit.creations.creations",
-    "class": "melder.aether.conduit.creations.creations.Creations",
-    "label": "Creations"
+  "melder.aether.conduit.creations.creations.Creations": {
+   "id": "melder.aether.conduit.creations.creations.Creations",
+   "label": "Creations",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/creations/creations.py",
+   "lineno": 9,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "add_creation",
+    "add_many_creations",
+    "cleanup",
+    "clear_all",
+    "extract_spell_creations",
+    "get_creation",
+    "id",
+    "owner_conduit_id",
+    "reset_for_pool",
+    "reset_for_pool_unlocked",
+    "restore_spell_creations"
+   ],
+   "shape": {
+    "method_count": 13,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "7d8940c38e2d92b3758c62dda70f89ceaf7529b56aa1d54445f87c06d7e5e0ca",
+   "role": "Conduit-owned live creation registry.",
+   "responsibilities": [
+    "stores live creation wrappers under spell and spellspace scopes",
+    "owns disposal stacks for tracked creations",
+    "supports extraction and restoration during ownership transfer"
+   ],
+   "owns_state": [
+    "_creations",
+    "_disposal_stack",
+    "_spellspace_disposal_stacks",
+    "_conduit"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "7d8940c38e2d92b3758c62dda70f89ceaf7529b56aa1d54445f87c06d7e5e0ca"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.creations.creations.Creations",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.creations.creations.Creations",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.creations.Creations",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.creations.Creations",
+   "to_label": "ExceptionGroup",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.creations.Creations",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "RLock": "threading.RLock",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.creations.creations",
+  "class": "melder.aether.conduit.creations.creations.Creations",
+  "label": "Creations"
+ }
 }

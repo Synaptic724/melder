@@ -1,79 +1,93 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/system_document.py",
-  "source_sha256": "4f2603a9377ed53ab5cbf998fa3533bf5efe6fb8c25697c7e1da26137c52e6de",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.system_document": {
-      "id": "melder.system_document",
-      "label": "system_document",
-      "kind": "module",
-      "file": "src/melder/system_document.py",
-      "lineno": 1
-    },
-    "melder.system_document.StaticSystemDocument": {
-      "id": "melder.system_document.StaticSystemDocument",
-      "label": "StaticSystemDocument",
-      "kind": "class",
-      "file": "src/melder/system_document.py",
-      "lineno": 19,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "char_count",
-        "document_name",
-        "head",
-        "line_count",
-        "lines",
-        "reader",
-        "render_json",
-        "render_markdown",
-        "tail"
-      ],
-      "shape": {
-        "method_count": 10,
-        "has_bases": false,
-        "trivial": false
-      },
-      "role": "Packaged hardcopy system document object.",
-      "responsibilities": [
-        "stores one minified JSON hardcopy string for a system document",
-        "renders both JSON and markdown views for agent-facing queries"
-      ],
-      "owns_state": [
-        "_document_name",
-        "_document_json",
-        "_document_markdown"
-      ],
-      "phases": [
-        "init",
-        "runtime"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/system_document.py",
+ "source_sha256": "3453c6d0c2d5b8150a21d03dd9a0bf6d516e8b2e03454d6bf41f782b19c1ddc8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.system_document": {
+   "id": "melder.system_document",
+   "label": "system_document",
+   "kind": "module",
+   "file": "src/melder/system_document.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Immutable hardcopy system-document carrier queried directly at the package root.",
+   "responsibilities": [
+    "carry a packaged document without entering the runtime graph",
+    "render as json or markdown on demand"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "4f2603a9377ed53ab5cbf998fa3533bf5efe6fb8c25697c7e1da26137c52e6de"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.system_document.StaticSystemDocument",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.system_document.StaticSystemDocument",
-      "to_label": "IndexedText",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "ClassVar": "typing.ClassVar",
-    "Optional": "typing.Optional",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "AgentTextReader": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
-    "IndexedText": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
-    "TextChunk": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk"
+  "melder.system_document.StaticSystemDocument": {
+   "id": "melder.system_document.StaticSystemDocument",
+   "label": "StaticSystemDocument",
+   "kind": "class",
+   "file": "src/melder/system_document.py",
+   "lineno": 19,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "char_count",
+    "document_name",
+    "from_markdown",
+    "head",
+    "line_count",
+    "lines",
+    "reader",
+    "render_json",
+    "render_markdown",
+    "tail"
+   ],
+   "shape": {
+    "method_count": 11,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "de1668e3324a3ba4a9209f4b314c659c5bed4600d22f36be5240a61fe65f1ba0",
+   "role": "Packaged hardcopy system document object.",
+   "responsibilities": [
+    "stores one minified JSON hardcopy string for a system document",
+    "renders both JSON and markdown views for agent-facing queries"
+   ],
+   "owns_state": [
+    "_document_name",
+    "_document_json",
+    "_document_markdown"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "de1668e3324a3ba4a9209f4b314c659c5bed4600d22f36be5240a61fe65f1ba0"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.system_document.StaticSystemDocument",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": null
+  {
+   "from": "melder.system_document.StaticSystemDocument",
+   "to_label": "IndexedText",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "AgentTextReader": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
+  "IndexedText": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+  "TextChunk": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk"
+ },
+ "collapse_candidate": null
 }

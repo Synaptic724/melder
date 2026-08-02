@@ -1,321 +1,335 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/crystallizer.py",
-  "source_sha256": "58133dd7fdcf4943eb7a7d3e593b11b348e5aae0acac80d7277a60615207576d",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.crystallizer": {
-      "id": "melder.crystallizer.crystallizer",
-      "label": "crystallizer",
-      "kind": "module",
-      "file": "src/melder/crystallizer/crystallizer.py",
-      "lineno": 1
-    },
-    "melder.crystallizer.crystallizer.Crystallizer": {
-      "id": "melder.crystallizer.crystallizer.Crystallizer",
-      "label": "Crystallizer",
-      "kind": "class",
-      "file": "src/melder/crystallizer/crystallizer.py",
-      "lineno": 41,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "activate",
-        "activated",
-        "active_profile_name",
-        "analyze_checkpoint",
-        "analyze_formation",
-        "analyze_impact",
-        "apply_external_retention",
-        "capture_index_graft",
-        "checkpoint_replay_data",
-        "cleanup",
-        "clear_profile",
-        "configuration",
-        "configure",
-        "configure_external_persistence_manager",
-        "configured",
-        "create_checkpoint",
-        "create_configuration",
-        "create_contract_crystal",
-        "create_profile",
-        "create_spell_crystal",
-        "create_spell_index_crystal",
-        "deactivate",
-        "delete_cached_checkpoint",
-        "delete_formation",
-        "delete_profile",
-        "describe_checkpoint",
-        "describe_external_interface",
-        "describe_external_persistence_manager",
-        "describe_mutation_research_record",
-        "describe_profile",
-        "describe_record",
-        "emit",
-        "emit_cluster_removed",
-        "emit_contract_removed",
-        "emit_frame_removed",
-        "emit_mutation_research_state",
-        "emit_nexus_state",
-        "emit_spell_activity",
-        "emit_spell_crystal",
-        "emit_spell_index_removed",
-        "emit_spell_removed",
-        "emit_spellbook_removed",
-        "fetch_index_graft_external",
-        "flush_checkpoint",
-        "get_spell_crystal",
-        "graft_index",
-        "id",
-        "is_activated",
-        "is_configured",
-        "list_cached_checkpoint_ids",
-        "list_checkpoint_ids",
-        "list_formations",
-        "list_index_grafts_external",
-        "list_profile_names",
-        "load_checkpoint",
-        "reload_cached_checkpoint",
-        "reload_formations_from_external",
-        "reload_profile_from_cache",
-        "reload_profile_from_external",
-        "restore_formation",
-        "save_formation",
-        "set_active_profile",
-        "store_index_graft_external",
-        "verify_checkpoint_chain"
-      ],
-      "shape": {
-        "method_count": 69,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "Hosted singleton crystallizer root.",
-      "responsibilities": [
-        "owns installed crystallizer configuration and activation state",
-        "builds SpellCrystal manifests from live spells under installed policy",
-        "anchors crystallizer policy above retained and live module-world surfaces"
-      ],
-      "owns_state": [
-        "_configuration",
-        "_configured",
-        "_activated",
-        "_aether"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystallizer.py",
+ "source_sha256": "58133dd7fdcf4943eb7a7d3e593b11b348e5aae0acac80d7277a60615207576d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystallizer": {
+   "id": "melder.crystallizer.crystallizer",
+   "label": "crystallizer",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystallizer.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Public facade and singleton ownership root over the three V3 crystallizer subsystems.",
+   "responsibilities": [
+    "present one stable surface over record, assets and loader",
+    "stay a passive sink - emitters push, the sink never reaches back"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "58133dd7fdcf4943eb7a7d3e593b11b348e5aae0acac80d7277a60615207576d"
   },
-  "edges_out": [
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "CrystallizerConfiguration",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "ImpactEngine",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "GraftRunner",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "SpellIndexCrystal",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "SpellCrystal",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "PersistenceAnalyzer",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "PersistenceSystem",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "AssetManagementSystem",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "CrystalLoaderSystem",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "CrystallizerCrystal",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to_label": "ContractCrystal",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Any": "typing.Any",
-    "AssetManagementSystem": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
-    "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
-    "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
-    "CrystalLoaderSystem": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-    "ContractCrystal": "melder.crystallizer.crystals.contract_crystal.ContractCrystal",
-    "CrystallizerCrystal": "melder.crystallizer.crystals.crystallizer_crystal.CrystallizerCrystal",
-    "RecordedUnitState": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
-    "SpellCrystal": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
-    "SpellIndexCrystal": "melder.crystallizer.crystals.spell_index_crystal.SpellIndexCrystal",
-    "PersistenceSystem": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-    "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-    "Aether": "melder.aether.aether.Aether",
-    "Contract": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
-    "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-    "Spell": "melder.aether.spellbook.spell.Spell",
-    "ImpactEngine": "melder.crystallizer.crystal_analysis.impact_engine.ImpactEngine",
-    "GraftRunner": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
-    "PersistenceAnalyzer": "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer"
+  "melder.crystallizer.crystallizer.Crystallizer": {
+   "id": "melder.crystallizer.crystallizer.Crystallizer",
+   "label": "Crystallizer",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystallizer.py",
+   "lineno": 41,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "activate",
+    "activated",
+    "active_profile_name",
+    "analyze_checkpoint",
+    "analyze_formation",
+    "analyze_impact",
+    "apply_external_retention",
+    "capture_index_graft",
+    "checkpoint_replay_data",
+    "cleanup",
+    "clear_profile",
+    "configuration",
+    "configure",
+    "configure_external_persistence_manager",
+    "configured",
+    "create_checkpoint",
+    "create_configuration",
+    "create_contract_crystal",
+    "create_profile",
+    "create_spell_crystal",
+    "create_spell_index_crystal",
+    "deactivate",
+    "delete_cached_checkpoint",
+    "delete_formation",
+    "delete_profile",
+    "describe_checkpoint",
+    "describe_external_interface",
+    "describe_external_persistence_manager",
+    "describe_mutation_research_record",
+    "describe_profile",
+    "describe_record",
+    "emit",
+    "emit_cluster_removed",
+    "emit_contract_removed",
+    "emit_frame_removed",
+    "emit_mutation_research_state",
+    "emit_nexus_state",
+    "emit_spell_activity",
+    "emit_spell_crystal",
+    "emit_spell_index_removed",
+    "emit_spell_removed",
+    "emit_spellbook_removed",
+    "fetch_index_graft_external",
+    "flush_checkpoint",
+    "get_spell_crystal",
+    "graft_index",
+    "id",
+    "is_activated",
+    "is_configured",
+    "list_cached_checkpoint_ids",
+    "list_checkpoint_ids",
+    "list_formations",
+    "list_index_grafts_external",
+    "list_profile_names",
+    "load_checkpoint",
+    "reload_cached_checkpoint",
+    "reload_formations_from_external",
+    "reload_profile_from_cache",
+    "reload_profile_from_external",
+    "restore_formation",
+    "save_formation",
+    "set_active_profile",
+    "store_index_graft_external",
+    "verify_checkpoint_chain"
+   ],
+   "shape": {
+    "method_count": 69,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "5a222f223ffa2379de04b360add034af3febfdd6742b83e295cbeffde631e8f8",
+   "role": "Hosted singleton crystallizer root.",
+   "responsibilities": [
+    "owns installed crystallizer configuration and activation state",
+    "builds SpellCrystal manifests from live spells under installed policy",
+    "anchors crystallizer policy above retained and live module-world surfaces"
+   ],
+   "owns_state": [
+    "_configuration",
+    "_configured",
+    "_activated",
+    "_aether"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "5a222f223ffa2379de04b360add034af3febfdd6742b83e295cbeffde631e8f8"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "collapse_candidate": {
-    "module": "melder.crystallizer.crystallizer",
-    "class": "melder.crystallizer.crystallizer.Crystallizer",
-    "label": "Crystallizer"
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "CrystallizerConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
   },
-  "edges_authored": [
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
-      "relation": "owns_lifecycle_of",
-      "why": "Crystallizer installs and cleans one active crystallizer configuration instance.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-      "relation": "uses",
-      "why": "Crystallizer is configured through the standalone builder path even though it does not expose a root-owned builder method.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "soft"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
-      "relation": "creates",
-      "why": "Crystallizer creates SpellCrystal manifests from live spells under the installed policy.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-      "relation": "owns",
-      "why": "The crystallizer owns the persistence system; all record verbs facade through it.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
-      "relation": "owns_lifecycle_of",
-      "why": "S3 decomposition: the asset system is a same-rank child; cleaned before the record it borrows.",
-      "cardinality": "1",
-      "phase": "runtime",
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-      "relation": "owns_lifecycle_of",
-      "why": "S4 decomposition: the loader is the third same-rank child; cleaned first (borrower).",
-      "cardinality": "1",
-      "phase": "runtime",
-      "strength": "hard"
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.crystal_analysis.impact_engine.ImpactEngine",
-      "relation": "creates",
-      "why": "analyze_impact builds a per-call engine over describe_spell_crystals payloads and cleans it after answering."
-    },
-    {
-      "from": "melder.crystallizer.crystallizer.Crystallizer",
-      "to": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
-      "relation": "creates",
-      "why": "graft_index facade constructs one single-use GraftRunner per invocation (activation-gated; live-object facade precedent)."
-    }
-  ]
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "ImpactEngine",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "GraftRunner",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "SpellIndexCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "SpellCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "PersistenceAnalyzer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "PersistenceSystem",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "AssetManagementSystem",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "CrystalLoaderSystem",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "CrystallizerCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "ContractCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "AssetManagementSystem": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
+  "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
+  "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
+  "CrystalLoaderSystem": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+  "ContractCrystal": "melder.crystallizer.crystals.contract_crystal.ContractCrystal",
+  "CrystallizerCrystal": "melder.crystallizer.crystals.crystallizer_crystal.CrystallizerCrystal",
+  "RecordedUnitState": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
+  "SpellCrystal": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+  "SpellIndexCrystal": "melder.crystallizer.crystals.spell_index_crystal.SpellIndexCrystal",
+  "PersistenceSystem": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+  "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "Aether": "melder.aether.aether.Aether",
+  "Contract": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
+  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "ImpactEngine": "melder.crystallizer.crystal_analysis.impact_engine.ImpactEngine",
+  "GraftRunner": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
+  "PersistenceAnalyzer": "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystallizer",
+  "class": "melder.crystallizer.crystallizer.Crystallizer",
+  "label": "Crystallizer"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
+   "relation": "owns_lifecycle_of",
+   "why": "Crystallizer installs and cleans one active crystallizer configuration instance.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+   "relation": "uses",
+   "why": "Crystallizer is configured through the standalone builder path even though it does not expose a root-owned builder method.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "soft"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "relation": "creates",
+   "why": "Crystallizer creates SpellCrystal manifests from live spells under the installed policy.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+   "relation": "owns",
+   "why": "The crystallizer owns the persistence system; all record verbs facade through it.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
+   "relation": "owns_lifecycle_of",
+   "why": "S3 decomposition: the asset system is a same-rank child; cleaned before the record it borrows.",
+   "cardinality": "1",
+   "phase": "runtime",
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   "relation": "owns_lifecycle_of",
+   "why": "S4 decomposition: the loader is the third same-rank child; cleaned first (borrower).",
+   "cardinality": "1",
+   "phase": "runtime",
+   "strength": "hard"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.crystal_analysis.impact_engine.ImpactEngine",
+   "relation": "creates",
+   "why": "analyze_impact builds a per-call engine over describe_spell_crystals payloads and cleans it after answering."
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
+   "relation": "creates",
+   "why": "graft_index facade constructs one single-use GraftRunner per invocation (activation-gated; live-object facade precedent)."
+  }
+ ]
 }

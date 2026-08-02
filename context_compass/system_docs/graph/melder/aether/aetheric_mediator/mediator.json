@@ -38,7 +38,8 @@
     "method_count": 16,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "de40437598ec6ab49cc1f5fc57c83563725f376d0e777a00245b603dfa8617f4"
   }
  },
  "edges_out": [

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_system_documents/_builder.py",
- "source_sha256": "1941b32dbfe03f5537b5e2e0fe0f59c38869eb30ccbed78048516283195f236e",
+ "source_sha256": "d448cb54837b1653f7002d995db87d755d186cb38859e32e2d1502331576034c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._system_documents._builder": {
@@ -9,14 +9,23 @@
    "label": "_builder",
    "kind": "module",
    "file": "src/melder/_build_assets/_system_documents/_builder.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Build-time ingest of context-map document/index pairs into the package.",
+   "responsibilities": [
+    "pull the authored system documents in at build time"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "1941b32dbfe03f5537b5e2e0fe0f59c38869eb30ccbed78048516283195f236e"
   },
   "melder._build_assets._system_documents._builder.SystemDocumentsBuildPolicy": {
    "id": "melder._build_assets._system_documents._builder.SystemDocumentsBuildPolicy",
    "label": "SystemDocumentsBuildPolicy",
    "kind": "class",
    "file": "src/melder/_build_assets/_system_documents/_builder.py",
-   "lineno": 50,
+   "lineno": 80,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -24,7 +33,19 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   }
+   },
+   "span_sha256": "271807133d9bf12ec206c1cbdd36fe8c0dc0daa69eb2fa261bccd855e0520496",
+   "include": true,
+   "role": "Static namespace of the system-document generator's fixed values; class constants per the module-scope rule.",
+   "responsibilities": [
+    "name the asset/manifest/payload directories and the repo-relative ingest root",
+    "declare READ_ORDER - the order an agent should read the four documents",
+    "carry MANIFEST_VERSION, the manifest shape's schema version"
+   ],
+   "phases": [
+    "init"
+   ],
+   "semantics_authored_against": "271807133d9bf12ec206c1cbdd36fe8c0dc0daa69eb2fa261bccd855e0520496"
   }
  },
  "edges_out": [],
@@ -33,6 +54,7 @@
  "imports": {
   "Dict": "typing.Dict",
   "List": "typing.List",
+  "Optional": "typing.Optional",
   "Tuple": "typing.Tuple"
  },
  "collapse_candidate": null

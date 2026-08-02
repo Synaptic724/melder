@@ -1,76 +1,89 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py",
-  "source_sha256": "5c1f93a69c984b6fad95bfaab652a061ccadd3c0a2f12f41c144982bd720d918",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy",
-      "label": "existing_creation_compatibility_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py",
-      "lineno": 1,
-      "role": "Spell validation strategy module for existing-creation compatibility checks.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ]
-    },
-    "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
-      "label": "ExistingCreationCompatibilityStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py",
-      "lineno": 29,
-      "bases": [
-        "SpellValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "validate"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      }
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py",
+ "source_sha256": "5c1f93a69c984b6fad95bfaab652a061ccadd3c0a2f12f41c144982bd720d918",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy",
+   "label": "existing_creation_compatibility_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 4 check: the invariants that make an existing-creation spell resolvable.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "5c1f93a69c984b6fad95bfaab652a061ccadd3c0a2f12f41c144982bd720d918"
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
-      "to_label": "SpellValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
-      "to_label": "SpellValidationIssue",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "annotations": "__future__.annotations",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Existence": "melder.aether.spellbook.existence.existence.Existence",
-    "InstanceBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
-    "OtherBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "SpellDetailedProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-    "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
-    "label": "ExistingCreationCompatibilityStrategy"
+  "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
+   "label": "ExistingCreationCompatibilityStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py",
+   "lineno": 29,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "67ff12fe9ce7aa35bd9aaf2c3aade255d6b2e1c71570b51c0fddb45527e6d5bd",
+   "include": true,
+   "role": "Enforces the invariants that make an existing-creation spell - one binding an already-constructed object rather than a class Melder instantiates - resolvable.",
+   "responsibilities": [
+    "error per violated invariant: missing instance, existence not Existence.unique, missing instance binding profile, and the parameter cases",
+    "read Phase-1 requirements and the spell's binding profile"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "67ff12fe9ce7aa35bd9aaf2c3aade255d6b2e1c71570b51c0fddb45527e6d5bd"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "annotations": "__future__.annotations",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "InstanceBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
+  "OtherBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellDetailedProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
+  "SpellGeneralProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",
+  "label": "ExistingCreationCompatibilityStrategy"
+ }
 }

@@ -1,207 +1,239 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/mutation_research/research_set/research_lane.py",
-  "source_sha256": "2df4ff9aa8edbc57758b4e3bd5dc6419c9da19fbac9b48242e2e4d0b6ba2c732",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.mutation_research.research_set.research_lane": {
-      "id": "melder.mutation_research.research_set.research_lane",
-      "label": "research_lane",
-      "kind": "module",
-      "file": "src/melder/mutation_research/research_set/research_lane.py",
-      "lineno": 1
-    },
-    "melder.mutation_research.research_set.research_lane.LaneState": {
-      "id": "melder.mutation_research.research_set.research_lane.LaneState",
-      "label": "LaneState",
-      "kind": "enum",
-      "file": "src/melder/mutation_research/research_set/research_lane.py",
-      "lineno": 49,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      }
-    },
-    "melder.mutation_research.research_set.research_lane.LaneType": {
-      "id": "melder.mutation_research.research_set.research_lane.LaneType",
-      "label": "LaneType",
-      "kind": "enum",
-      "file": "src/melder/mutation_research/research_set/research_lane.py",
-      "lineno": 96,
-      "bases": [],
-      "markers": [
-        "Enum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      }
-    },
-    "melder.mutation_research.research_set.research_lane.ResearchLane": {
-      "id": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "label": "ResearchLane",
-      "kind": "class",
-      "file": "src/melder/mutation_research/research_set/research_lane.py",
-      "lineno": 144,
-      "bases": [
-        "Cleanable"
-      ],
-      "markers": [],
-      "public_methods": [
-        "anchor_lane_id",
-        "anchor_spell_id",
-        "cleanup",
-        "clear_anchor",
-        "created_at",
-        "describe",
-        "from_payload",
-        "get_node",
-        "has_node",
-        "joined_into_lane_id",
-        "lane_id",
-        "lane_type",
-        "name",
-        "node_count",
-        "node_spell_ids",
-        "nodes",
-        "state",
-        "tip_spell_id"
-      ],
-      "shape": {
-        "method_count": 24,
-        "has_bases": true,
-        "trivial": false
-      },
-      "role": "One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).",
-      "responsibilities": [
-        "holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)",
-        "carries the ancestry anchor (organization only, never content)",
-        "detach_nodes powers the join transfer; terminal states refuse further work"
-      ],
-      "owns_state": [
-        "_nodes_by_spell_id",
-        "_node_order",
-        "_tip_spell_id",
-        "_state",
-        "_anchor_lane_id",
-        "_anchor_spell_id"
-      ],
-      "phases": [
-        "init",
-        "runtime",
-        "cleanup"
-      ]
-    }
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/research_set/research_lane.py",
+ "source_sha256": "2df4ff9aa8edbc57758b4e3bd5dc6419c9da19fbac9b48242e2e4d0b6ba2c732",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.research_set.research_lane": {
+   "id": "melder.mutation_research.research_set.research_lane",
+   "label": "research_lane",
+   "kind": "module",
+   "file": "src/melder/mutation_research/research_set/research_lane.py",
+   "lineno": 1,
+   "include": true,
+   "role": "One lane of a research network, plus its lifecycle and policy vocabularies.",
+   "responsibilities": [
+    "hold an ordered node sequence with an anchor and a tip",
+    "keep every mutator set-internal so residence cannot be bypassed"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "2df4ff9aa8edbc57758b4e3bd5dc6419c9da19fbac9b48242e2e4d0b6ba2c732"
   },
-  "edges_out": [
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to_label": "Cleanable",
-      "relation": "specializes",
-      "to": "melder.utilities.general_base.cleanable.Cleanable"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to_label": "RLock",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to_label": "RuntimeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to_label": "LaneType",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to_label": "KeyError",
-      "relation": "creates",
-      "confidence": "candidate"
-    },
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to_label": "LaneState",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "datetime": "datetime.datetime",
-    "timezone": "datetime.timezone",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "ClassVar": "typing.ClassVar",
-    "GroupedResearchNode": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
-    "ResearchNode": "melder.mutation_research.research_set.research_node.ResearchNode",
-    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+  "melder.mutation_research.research_set.research_lane.LaneState": {
+   "id": "melder.mutation_research.research_set.research_lane.LaneState",
+   "label": "LaneState",
+   "kind": "enum",
+   "file": "src/melder/mutation_research/research_set/research_lane.py",
+   "lineno": 49,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "ec05ce2f7b629bdfd97911ae1c70b3c3fe7d2f0f753b10532c7d68144c3b55b0",
+   "include": true,
+   "role": "Lifecycle vocabulary for a lane: open, joined or archived.",
+   "responsibilities": [
+    "name the terminal states a lane can reach"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "ec05ce2f7b629bdfd97911ae1c70b3c3fe7d2f0f753b10532c7d68144c3b55b0"
   },
-  "collapse_candidate": {
-    "module": "melder.mutation_research.research_set.research_lane",
-    "class": "melder.mutation_research.research_set.research_lane.ResearchLane",
-    "label": "ResearchLane"
+  "melder.mutation_research.research_set.research_lane.LaneType": {
+   "id": "melder.mutation_research.research_set.research_lane.LaneType",
+   "label": "LaneType",
+   "kind": "enum",
+   "file": "src/melder/mutation_research/research_set/research_lane.py",
+   "lineno": 96,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "cf19735b8e011f5ef0d275b88f60be5bb41c9b83ccf427796f32520e0090cc77",
+   "include": true,
+   "role": "Policy vocabulary classifying a lane as development, experiment, production or test.",
+   "responsibilities": [
+    "carry the type the join gate enforces when armed"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "cf19735b8e011f5ef0d275b88f60be5bb41c9b83ccf427796f32520e0090cc77"
   },
-  "edges_authored": [
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to": "melder.mutation_research.research_set.research_node.ResearchNode",
-      "relation": "owns_lifecycle_of",
-      "why": "A lane holds its version records in registration order and cleans them on teardown; join transfers ownership between lanes.",
-      "cardinality": "one_to_many",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to": "melder.utilities.general_base.cleanable.Cleanable",
-      "relation": "specializes",
-      "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "init",
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "hard"
-    },
-    {
-      "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-      "to": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
-      "relation": "owns_lifecycle_of",
-      "why": "Lanes hold BOTH node families via the module-level node_identity() dispatch; cleanup cascades.",
-      "cardinality": "one_to_one",
-      "phase": [
-        "runtime",
-        "cleanup"
-      ],
-      "strength": "strong"
-    }
-  ]
+  "melder.mutation_research.research_set.research_lane.ResearchLane": {
+   "id": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "label": "ResearchLane",
+   "kind": "class",
+   "file": "src/melder/mutation_research/research_set/research_lane.py",
+   "lineno": 144,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "anchor_lane_id",
+    "anchor_spell_id",
+    "cleanup",
+    "clear_anchor",
+    "created_at",
+    "describe",
+    "from_payload",
+    "get_node",
+    "has_node",
+    "joined_into_lane_id",
+    "lane_id",
+    "lane_type",
+    "name",
+    "node_count",
+    "node_spell_ids",
+    "nodes",
+    "state",
+    "tip_spell_id"
+   ],
+   "shape": {
+    "method_count": 24,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f2eb526ac4be9d05693ad6efced788378c668992449c50921b9bf3672d514254",
+   "role": "One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).",
+   "responsibilities": [
+    "holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)",
+    "carries the ancestry anchor (organization only, never content)",
+    "detach_nodes powers the join transfer; terminal states refuse further work"
+   ],
+   "owns_state": [
+    "_nodes_by_spell_id",
+    "_node_order",
+    "_tip_spell_id",
+    "_state",
+    "_anchor_lane_id",
+    "_anchor_spell_id"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "f2eb526ac4be9d05693ad6efced788378c668992449c50921b9bf3672d514254"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to_label": "LaneType",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to_label": "KeyError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to_label": "LaneState",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "datetime": "datetime.datetime",
+  "timezone": "datetime.timezone",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "ClassVar": "typing.ClassVar",
+  "GroupedResearchNode": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
+  "ResearchNode": "melder.mutation_research.research_set.research_node.ResearchNode",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.research_set.research_lane",
+  "class": "melder.mutation_research.research_set.research_lane.ResearchLane",
+  "label": "ResearchLane"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to": "melder.mutation_research.research_set.research_node.ResearchNode",
+   "relation": "owns_lifecycle_of",
+   "why": "A lane holds its version records in registration order and cleans them on teardown; join transfers ownership between lanes.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
+   "to": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
+   "relation": "owns_lifecycle_of",
+   "why": "Lanes hold BOTH node families via the module-level node_identity() dispatch; cleanup cascades.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "strong"
+  }
+ ]
 }

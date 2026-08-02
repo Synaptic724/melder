@@ -9,7 +9,17 @@
    "label": "cluster_creations",
    "kind": "module",
    "file": "src/melder/aether/conduit/creations/cluster_creations.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Facade pointing at whichever conduit is the cluster's elected leader.",
+   "responsibilities": [
+    "give members one stable handle while the real store moves with the leader"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "6df125a5a74225bff05fac1d0bf79ca76d833a40606db9a86e6afda935ef29f9"
   },
   "melder.aether.conduit.creations.cluster_creations.ClusterCreations": {
    "id": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
@@ -34,7 +44,19 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   }
+   },
+   "span_sha256": "c1f259d0e3aa31a235313f0c90ba9c73d7fe86e83a1800979b02df1edd9ee8e2",
+   "include": true,
+   "role": "Facade over the elected leader's store; references, never owns.",
+   "responsibilities": [
+    "refuse use while no leader is elected",
+    "never clean the store it points at"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "c1f259d0e3aa31a235313f0c90ba9c73d7fe86e83a1800979b02df1edd9ee8e2"
   }
  },
  "edges_out": [

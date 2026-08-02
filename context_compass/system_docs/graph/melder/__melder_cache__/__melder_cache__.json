@@ -1,27 +1,27 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/__melder_cache__/__melder_cache__.py",
-  "source_sha256": "341c6b436e659adbf52d64c5936f3fafab8782df4400140de9c65f45bbc8d274",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.__melder_cache__.__melder_cache__": {
-      "id": "melder.__melder_cache__.__melder_cache__",
-      "label": "__melder_cache__",
-      "kind": "module",
-      "file": "src/melder/__melder_cache__/__melder_cache__.py",
-      "lineno": 1,
-      "role": "Package-local marker module for the default Melder cache root.",
-      "responsibilities": [
-        "anchors the package-local cache-root fragment used by frame configuration defaults"
-      ],
-      "phases": [
-        "runtime"
-      ]
-    }
-  },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {},
-  "collapse_candidate": null
+ "schema_version": 1,
+ "source": "src/melder/__melder_cache__/__melder_cache__.py",
+ "source_sha256": "341c6b436e659adbf52d64c5936f3fafab8782df4400140de9c65f45bbc8d274",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.__melder_cache__.__melder_cache__": {
+   "id": "melder.__melder_cache__.__melder_cache__",
+   "label": "__melder_cache__",
+   "kind": "module",
+   "file": "src/melder/__melder_cache__/__melder_cache__.py",
+   "lineno": 1,
+   "role": "Package-local marker module for the default Melder cache root.",
+   "responsibilities": [
+    "anchors the package-local cache-root fragment used by frame configuration defaults"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
 }
