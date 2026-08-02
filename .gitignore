@@ -25,7 +25,10 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
+# Root-anchored: bare MANIFEST + Windows core.ignorecase=true matched every
+# package directory named manifest/ (e.g. the phase-11 family manifest
+# modules), silently keeping their source out of git.
+/MANIFEST
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -190,3 +193,33 @@ cython_debug/
 context_compass/skill_check/.sealed/**/*.json
 context_compass/skill_check/.sealed/**/*.jsonl
 context_compass/skill_check/.sealed/**/*.seed
+
+# Melder runtime cache storage (generated, python-tag specific).
+# The cache root src/melder/__melder_cache__/ hosts one subdirectory per
+# caching subsystem: __conjure_cache__/ (compiler artifact bundles) and
+# __crystallizer_cache__/ (persisted checkpoint cached-items). The package
+# markers (__melder_cache__.py and the per-subsystem marker modules) stay
+# tracked; generated bundle/cache subdirectories are ignored. Test-emitted
+# cache droppings in the source tree are covered until those tests move to
+# tmp_path cache roots.
+*.melc
+src/melder/__melder_cache__/__conjure_cache__/*/
+src/melder/__melder_cache__/__crystallizer_cache__/*/
+src/melder/tests/integration/melder/spellbook/_cache_runtime_*/
+tests/tests/unit/melder/utilities/_caching_system_tmp_*/
+
+# Build-asset caches. Same rule as every other .melc: derived, never committed.
+#
+# `*.melc` above already covers these; the directories are listed only so the
+# convention is discoverable from this file.
+#
+#     src/melder/__melder_cache__/__bind_guard__/
+#     src/melder/__melder_cache__/__agent_documentation__/
+#
+# The COMMITTED truth for those two assets is not a .melc at all - it is
+# src/melder/_build_assets/<asset>/manifest/<asset>_manifest.py, plain Python
+# literals, tracked and reviewed. The cache is rebuilt from it on demand and is
+# interpreter-specific (marshal carries no cross-version guarantee), which is
+# exactly why it cannot be the artifact that ships.
+src/melder/__melder_cache__/__bind_guard__/
+src/melder/__melder_cache__/__agent_documentation__/
