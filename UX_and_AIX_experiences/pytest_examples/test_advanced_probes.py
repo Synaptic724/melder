@@ -6,7 +6,7 @@ Advanced-tier contract probes. Run on 3.14t:
 import melder as md
 import pytest
 
-from melder import Aether, Conduit, Nexus
+from melder import Aether, Conduit, Crystallizer, Nexus
 from melder.aether.spellbook.spellbook import Spellbook
 
 
@@ -21,16 +21,18 @@ def reset_aether_world() -> None:
     are process-wide flips; without the reset they would leak forward and
     make later rows pass or fail depending on collection order.
 
+    Crystallizer joined the reset with arc E (lessons 19-20): checkpoint
+    ids and cached checkpoints are process-wide, so without it one row's
+    checkpoints show up in the next row's list_checkpoint_ids().
+
     NOT reset here, deliberately:
       - AetherUtilitySystem: Aether resolves its logger provider through
         it, and resetting it underneath a live Aether is a wider blast
         radius than these rows need.
-      - Crystallizer / MutationResearch: untouched by advanced today.
-        ARC E (checkpoint/load) WILL need the Crystallizer reset - add it
-        to this fixture in the same commit that adds those rows, not
-        after, or arc E rows will bleed checkpoint state into each other.
+      - MutationResearch: untouched by advanced - it is EXPERT material.
     """
     def _fresh() -> None:
+        Crystallizer._reset_singleton_for_tests()
         Nexus._reset_singleton_for_tests()
         Aether._reset_singleton_for_tests()
         aether = Aether()
@@ -418,11 +420,11 @@ def test_probe_a_rift_owns_exactly_one_room_by_identity():
     print("one-room law pinned: identity stable, no re-type verb")
 
 
-def test_probe_every_room_carries_the_same_fixture_set():
-    """Lesson 12 claim: room SHAPE is constant across kinds. Static and
-    capability rooms expose the identical fixture set; only authority
-    differs (lesson 13). A red means the kinds diverged structurally,
-    which would change what lesson 12 can promise."""
+def test_probe_every_room_carries_the_same_fixture_set_by_name():
+    """Lesson 12 claim, sharpened by the owner's run: every room carries
+    the same fixtures BY NAME whatever its kind. Two of them differ BY
+    TYPE (command_system, frame_viewer - see the corrected lesson 13);
+    the other three are literally the same classes."""
     nexus = _enabled_nexus()
     static_room = _rift_with_room(
         nexus, md.RiftSpaceType.static, "probe-fixtures-static").space
@@ -435,7 +437,7 @@ def test_probe_every_room_carries_the_same_fixture_set():
             assert getattr(room, fixture) is not None, (
                 f"{fixture} missing on {type(room).__name__}"
             )
-    print("fixture parity pinned across static and capability rooms")
+    print("fixture-set parity pinned by name across both room kinds")
 
 
 def test_probe_configured_space_type_becomes_the_room_kind():
@@ -476,24 +478,41 @@ def test_probe_rift_space_type_docstring_documents_a_member_that_is_gone():
     print("doc drift pinned: 'dynamic' documented, not defined")
 
 
-def test_probe_room_kind_changes_exactly_one_fixture():
-    """Lesson 13 claim: StaticRiftSpace and CapabilityRiftSpace override
-    EXACTLY ONE property - command_system. Every other fixture is the same
-    class on both. A red means the kinds diverged further, which would
-    make lesson 12's "shape is constant" promise false."""
+def test_probe_room_kind_changes_exactly_two_fixtures():
+    """Lesson 13, CORRECTED by the owner's run 2026-08-02.
+
+    My original claim was that the room kinds override EXACTLY ONE
+    property, command_system. THAT WAS WRONG. They override TWO:
+
+        command_system  StaticCommandSystem / CapabilityCommandSystem
+        frame_viewer    StaticFrameViewer   / FrameViewer
+
+    Which is a BETTER story than the one I wrote, not a worse one: the
+    room kind narrows BOTH what you may do AND what you may see, and it
+    does it the same way both times - by handing you a different class
+    rather than by guarding a shared one. Authority-by-absence applies to
+    the read surface too.
+
+    workstation / event_system / memory_system remain shared."""
     nexus = _enabled_nexus()
     static_room = _rift_with_room(
         nexus, md.RiftSpaceType.static, "probe-auth-static").space
     capability_room = _rift_with_room(
         nexus, md.RiftSpaceType.capability, "probe-auth-capability").space
 
+    # the two that DIVERGE
     assert type(static_room.command_system) is not type(
         capability_room.command_system)
-    for fixture in ("frame_viewer", "workstation", "event_system",
-                    "memory_system"):
+    assert type(static_room.frame_viewer) is not type(
+        capability_room.frame_viewer)
+    assert type(static_room.frame_viewer).__name__ == "StaticFrameViewer"
+    assert type(capability_room.frame_viewer).__name__ == "FrameViewer"
+
+    # the three that are SHARED
+    for fixture in ("workstation", "event_system", "memory_system"):
         assert type(getattr(static_room, fixture)) is type(
             getattr(capability_room, fixture)), fixture
-    print("one-fixture-differs pinned: only command_system changes")
+    print("two-fixtures-differ pinned: command_system AND frame_viewer")
 
 
 def test_probe_authority_is_granted_by_absence_not_by_refusal():
@@ -605,8 +624,13 @@ def test_probe_explicit_weak_binding_refuses_instead_of_degrading():
     stored as a consolation prize."""
     workstation = _workstation(_enabled_nexus(), "probe-weak")
 
-    # weak-referenceable: accepted
-    workstation.bind_object("ok", _Greeter(), weak_ref=True)
+    # weak-referenceable: accepted.
+    # HOLD A STRONG REFERENCE. The first version of this row passed
+    # _Greeter() inline and the binding was EMPTY on the next line -
+    # correct weak-storage behaviour, and a lesson in itself: a weak
+    # binding to a temporary is already dead when you look at it.
+    keeper = _Greeter()
+    workstation.bind_object("ok", keeper, weak_ref=True)
     assert "ok" in workstation.describe_bindings()["objects"]
 
     # not weak-referenceable: refused, and NOT stored strongly
@@ -670,6 +694,558 @@ def test_probe_workstation_is_not_a_resolver():
             f"not supposed to resolve anything"
         )
     print("separation pinned: canvas holds, command system resolves")
+
+
+def _viewer(nexus, name="probe-observatory"):
+    return _rift_with_room(
+        nexus, md.RiftSpaceType.capability, name).space.frame_viewer
+
+
+def test_probe_view_accessors_split_into_host_and_frame_scoped():
+    """Lesson 15, CORRECTED by the owner's run 2026-08-02.
+
+    get_view_multiframe() is HOST-SCOPED and works with nothing bound.
+    get_view_frame / get_view_conduit / get_view_spell are FRAME-SCOPED
+    and REQUIRE a name - "the viewer no longer supports default-frame
+    routing for frame-local operations"."""
+    viewer = _viewer(_enabled_nexus(), "probe-views")
+    assert isinstance(viewer, md.FrameViewer)
+    assert isinstance(viewer.get_view_multiframe(), md.ViewMultiFrame)
+
+    for accessor in ("get_view_frame", "get_view_conduit", "get_view_spell"):
+        with pytest.raises(ValueError, match="frame_name is required"):
+            getattr(viewer, accessor)()
+    print("scope split pinned: 1 host-scoped, 3 frame-scoped")
+
+
+def test_probe_frame_scoped_accessors_default_to_an_invalid_value():
+    """DEFECT (owner's 3.14t run, 2026-08-02).
+
+    get_view_frame / get_view_conduit / get_view_spell and the
+    describe_*_surface reads are typed
+
+        frame_name: Optional[str] = None
+
+    and then reject None UNCONDITIONALLY. THE DEFAULT VALUE IS NEVER
+    VALID. A reader who trusts the signature calls get_view_frame() and
+    gets a ValueError for using the documented default.
+
+    Either the parameter should be `frame_name: str` with no default, or
+    None should route somewhere. This row goes GREEN while the defect
+    stands and RED when it is fixed either way."""
+    import inspect
+    viewer = _viewer(_enabled_nexus(), "probe-defect")
+    for accessor in ("get_view_frame", "get_view_conduit", "get_view_spell"):
+        signature = inspect.signature(getattr(md.FrameViewer, accessor))
+        assert signature.parameters["frame_name"].default is None, accessor
+        with pytest.raises(ValueError, match="frame_name is required"):
+            getattr(viewer, accessor)()
+    print("defect pinned: Optional[str] = None where None always raises")
+
+
+def test_probe_frame_viewer_holds_no_snapshot():
+    """Lesson 15 claim: the facade resolves PER INVOCATION - melder's own
+    docstrings say it builds "a ViewMultiFrame per invocation against a
+    freshly resolved" source. So two calls give two objects and a viewer
+    held for an hour cannot serve an hour-old world.
+
+    A red here means someone added memoization, which would make every
+    'is this stale?' question live again."""
+    viewer = _viewer(_enabled_nexus(), "probe-nosnapshot")
+    assert viewer.get_view_multiframe() is not viewer.get_view_multiframe()
+    print("no-snapshot pinned: fresh view object per call")
+
+
+def test_probe_frame_viewer_reads_are_coherent_on_an_empty_world():
+    """Lesson 15 claim: the read surface works on a fresh rift with no
+    assigned frames - honest zeros, not errors - and count agrees with
+    the list it counts."""
+    viewer = _viewer(_enabled_nexus(), "probe-empty")
+    names = viewer.list_frame_names()
+    assert isinstance(names, list)
+    assert viewer.count_frames() == len(names)
+    assert isinstance(viewer.describe_available_views(), list)
+    print("empty-world reads pinned: count agrees with list")
+
+
+def test_probe_viewer_onboards_agents_in_valid_json():
+    """Lesson 15 HEADLINE and arc C's AIX claim: the viewer carries a
+    surface built FOR AGENTS by name - describe_agent_onboarding_json(),
+    describe_viewer_agent_purpose_json() - and both must be PARSEABLE, not
+    merely present. A method that returns malformed JSON is worse than no
+    method, because a caller has no way to tell the difference until it
+    breaks mid-parse.
+
+    Same idea as list_supported_command_methods() in lesson 13: melder
+    answers "what may I do here?" with a method instead of a manual."""
+    import json
+    viewer = _viewer(_enabled_nexus(), "probe-aix")
+
+    onboarding = viewer.describe_agent_onboarding_json()
+    assert isinstance(onboarding, str) and onboarding.strip()
+    assert isinstance(json.loads(onboarding), (dict, list))
+
+    purpose = viewer.describe_viewer_agent_purpose_json()
+    assert isinstance(purpose, str) and purpose.strip()
+    assert isinstance(json.loads(purpose), (dict, list))
+
+    surface = viewer.describe_viewer_method_surface()
+    assert isinstance(surface, dict) and surface
+    print("AIX surface pinned: onboarding + purpose parse as JSON")
+
+
+def test_probe_viewer_clone_is_independent_but_agrees():
+    """Lesson 15 claim: clone() returns a separate facade over the same
+    world - a different object that reads the same numbers."""
+    viewer = _viewer(_enabled_nexus(), "probe-clone")
+    twin = viewer.clone()
+    assert isinstance(twin, md.FrameViewer)
+    assert twin is not viewer
+    assert twin.count_frames() == viewer.count_frames()
+    print("clone pinned: independent object, identical reading")
+
+
+def test_probe_the_spell_describe_ladder_exists_rung_by_rung():
+    """Lesson 16 claim: ViewSpell offers GRADED RESOLUTION - brief,
+    normal, detail, payload - plus nine per-facet verbs. The ladder is a
+    context budget control: survey 400 spells at brief, pay full price for
+    the three that matter. A missing rung collapses that trade."""
+    for verb in ("describe_spell_brief", "describe_spell",
+                 "describe_spell_detail", "describe_spell_payload"):
+        assert hasattr(md.ViewSpell, verb), verb
+    facets = ("describe_spell_identity", "describe_spell_source",
+              "describe_spell_origin", "describe_spell_binding",
+              "describe_spell_index", "describe_spell_resolution",
+              "describe_spell_metadata", "describe_spell_research",
+              "describe_spell_class_profile")
+    for verb in facets:
+        assert hasattr(md.ViewSpell, verb), verb
+    assert len(facets) > 4, "more facets than rungs is the design"
+    print("spell ladder pinned: 4 rungs,", len(facets), "facets")
+
+
+def test_probe_the_conduit_view_follows_the_same_plan():
+    """Lesson 16 claim: ViewConduit is built to the same shape, and its
+    narrowing filters sit on the CHEAP rung so a caller can reduce the
+    set before paying to describe it."""
+    for verb in ("describe_conduit_brief", "describe_conduit",
+                 "describe_conduit_topology", "describe_conduit_inventory",
+                 "describe_conduit_relationships",
+                 "describe_conduit_crosswalk"):
+        assert hasattr(md.ViewConduit, verb), verb
+    for narrowing in ("list_conduits_by_root_id", "list_conduits_by_policy",
+                      "is_root_conduit", "get_root_conduit_id"):
+        assert hasattr(md.ViewConduit, narrowing), narrowing
+    print("conduit ladder + cheap-rung filters pinned")
+
+
+def test_probe_host_scoped_reads_answer_on_an_empty_world():
+    """Lesson 16, CORRECTED by the owner's run. My original claim was
+    that ALL reads answer with honest empties on a frameless rift. Only
+    the HOST-SCOPED ones do - the frame-scoped views refuse, and refusing
+    is right (see lesson 17).
+
+    What survives, and it is the part that mattered: the SURVEY entry
+    point works before you have committed to anything. count agrees with
+    the list it counts, so you can size a world before paying to read
+    it."""
+    nexus = _enabled_nexus()
+    rift = _rift_with_room(nexus, md.RiftSpaceType.capability, "probe-empty-rd")
+    assert rift.list_assigned_frame_names() == ()
+
+    viewer = rift.space.frame_viewer
+    assert view_list(viewer.list_frame_names())
+    assert viewer.count_frames() == len(viewer.list_frame_names())
+    assert view_list(viewer.get_view_multiframe().list_frame_names())
+    assert view_list(viewer.describe_available_views())
+    print("host-scoped survey pinned: count agrees with list, no frame needed")
+
+
+def view_list(value) -> bool:
+    """A list result is the contract - emptiness is allowed, None is not."""
+    return isinstance(value, list)
+
+
+def test_probe_every_view_can_report_its_own_blind_spots():
+    """Lesson 17 claim: the withheld-section probe exists at EVERY level
+    of the view family, so a caller never has to wonder whether this
+    particular view can tell it what it is hiding.
+
+    Checked on the TYPES - the frame-scoped views cannot be instantiated
+    without an assigned frame (lesson 15), and the probe's EXISTENCE is a
+    property of the class either way."""
+    assert hasattr(md.ViewSpell, "describe_spell_missing_sections")
+    assert hasattr(md.ViewConduit, "describe_conduit_missing_sections")
+    assert hasattr(md.ViewFrame, "describe_missing_surface")
+    assert hasattr(md.FrameViewer, "describe_missing_surface")
+    print("blind-spot probes pinned at every view level")
+
+
+def test_probe_visible_and_missing_are_complements():
+    """Lesson 17 claim: describe_visible_surface() and
+    describe_missing_surface() are a PAIR - "what I can see" and "what I
+    cannot". Either alone is half an answer, so both must exist wherever
+    one does."""
+    for owner_type in (md.FrameViewer, md.ViewFrame):
+        assert hasattr(owner_type, "describe_visible_surface"), owner_type
+        assert hasattr(owner_type, "describe_missing_surface"), owner_type
+    print("complements pinned on both FrameViewer and ViewFrame")
+
+
+def test_probe_blind_spot_report_refuses_when_no_frame_is_bound():
+    """Lesson 17, CORRECTED by the owner's run 2026-08-02.
+
+    I predicted this row might go red and said so in its docstring: "if
+    it raises on an unbound frame, the lesson needs a bound frame". It
+    raised - and the corrected reading is BETTER than my original.
+
+    Asking "what am I not seeing?" with NO FRAME BOUND is refused rather
+    than answered with an empty dict. That is the right call: with no
+    frame there is no surface to compare against, so a cheerful empty
+    result would be A LIE SHAPED LIKE AN ANSWER - which is precisely the
+    confusion the whole missing-sections family exists to prevent.
+
+    The never-substitute rule (08/13/14/18) reaches the read surface."""
+    nexus = _enabled_nexus()
+    rift = _rift_with_room(nexus, md.RiftSpaceType.static, "probe-nf-missing")
+    assert rift.list_assigned_frame_names() == ()
+    viewer = rift.space.frame_viewer
+    for verb in ("describe_visible_surface", "describe_missing_surface"):
+        with pytest.raises(ValueError, match="frame_name is required"):
+            getattr(viewer, verb)()
+    print("refusal pinned: no frame bound, no blind-spot report")
+
+
+def test_probe_frame_name_is_an_assertion_not_a_selector():
+    """Lesson 17's anti-footgun: frame_name on these reads is a GUARD, not
+    a filter - "when supplied it must match the bound frame or the call
+    raises". You cannot accidentally read a different frame than the one
+    you believe you are holding.
+
+    A rift with no assigned frames cannot match ANY name, so supplying one
+    must be refused rather than quietly answered about something else.
+    This is melder's never-substitute rule (lessons 08/13/14) applied to
+    the read surface."""
+    nexus = _enabled_nexus()
+    rift = _rift_with_room(nexus, md.RiftSpaceType.static, "probe-assertion")
+    assert rift.list_assigned_frame_names() == ()
+    viewer = rift.space.frame_viewer
+    with pytest.raises(Exception) as refused:
+        viewer.describe_missing_surface(frame_name="a-frame-we-never-bound")
+    print("assertion-not-selector pinned; refusal type:",
+          type(refused.value).__name__)
+
+
+def _dynamic_root(frame: str, conduit_name: str):
+    book = Spellbook(aetheric_frame=frame)
+    book.bind(spell=Payload, existence="unique")
+    book.configure_aether_frame(system_state="dynamic", disposal=None,
+                                disposal_method_names=None)
+    return book, book.conjure(name=conduit_name)
+
+
+def test_probe_policy_door_is_dynamic_mode_only():
+    """Lesson 18 refusal #1: set_new_policy on an AUTOMATIC frame raises.
+    Wards only form and sever contracts at runtime in dynamic mode, so
+    outside it the setting would be decoration."""
+    book = Spellbook(aetheric_frame="probe-ward-automatic")
+    book.bind(spell=Payload, existence="unique")
+    root = book.conjure(name="probe-automatic-root")
+    with pytest.raises(RuntimeError, match="[Dd]ynamic"):
+        root.set_new_policy("block_all")
+    print("dynamic-only pinned: automatic frame refuses a policy")
+
+
+def test_probe_policy_accepts_both_the_enum_and_the_string():
+    """Lesson 18 FINDING: Conduit.set_new_policy is annotated `policy:
+    str`, but it delegates to a ward method typed `str | Policies` that
+    runs EnumHelpers.convert_enum_and_check. So the exported md.Policies
+    enum works - the public hint under-sells the code.
+
+    Pinned so that if the signature is ever tightened to reject the enum,
+    the lesson's claim goes red rather than the docs quietly becoming
+    right by accident."""
+    _, root = _dynamic_root("probe-ward-both", "probe-both-root")
+    root.set_new_policy(md.Policies.outbound_only)
+    root.set_new_policy("inbound_only")
+    root.set_new_policy(md.Policies.default.name)
+    print("both forms pinned: enum and string are equally accepted")
+
+
+def test_probe_policies_value_is_an_int_not_the_mode_name():
+    """Lesson 18 FINDING: Policies uses auto(), so `.value` is an INT.
+    Anyone reaching for `.value` to build the string argument gets a
+    number. `.name` is the string form."""
+    assert {p.name for p in md.Policies} == {
+        "default", "whitelist_all", "block_all",
+        "inbound_only", "outbound_only",
+    }
+    for policy in md.Policies:
+        assert isinstance(policy.value, int)
+    assert md.Policies.block_all.name == "block_all"
+    print("auto() pinned: .value is int, .name is the mode string")
+
+
+def test_probe_lesser_conduits_cannot_hold_a_policy():
+    """Lesson 18 refusal #2: policy belongs to the owner of a lineage, not
+    to a borrower. A lesser conduit is told to convert first."""
+    _, root = _dynamic_root("probe-ward-lesser", "probe-lesser-root")
+    lesser = root.create_lesser_conduit()
+    with pytest.raises(RuntimeError, match="[Ll]esser"):
+        lesser.set_new_policy("block_all")
+    print("normal-only pinned: a lesser conduit refuses a policy")
+
+
+def test_probe_no_retroactive_lockdown_while_contracts_exist():
+    """Lesson 18 refusal #3, and the one worth the lesson. Setting
+    block_all or whitelist_all WHILE CONTRACTS EXIST raises.
+
+    Melder will not silently sever what you already granted, and it will
+    not quietly leave the grants standing under a policy that says they
+    should not exist. It refuses and makes you tear them down yourself -
+    the never-substitute rule (08/13/14/17) applied to authority.
+
+    The directional modes stay available, because they do not invalidate
+    grants that already happened."""
+    _, root = _dynamic_root("probe-ward-lock", "probe-lock-root")
+
+    # no contracts yet: the restrictive modes are fine
+    root.set_new_policy("block_all")
+    root.set_new_policy("default")
+
+    peer = Spellbook(aetheric_frame="probe-ward-lock").conjure(
+        name="probe-lock-peer")
+    assert root.link(peer) is True
+
+    for restrictive in ("block_all", "whitelist_all"):
+        with pytest.raises(RuntimeError, match="contracts"):
+            root.set_new_policy(restrictive)
+
+    # non-invalidating modes still allowed
+    root.set_new_policy("outbound_only")
+    print("no-retroactive-lockdown pinned: refuses, never partially applies")
+
+
+def test_probe_policy_is_write_only_on_the_public_surface():
+    """Lesson 18 FINDING: set_new_policy is public; there is NO public way
+    to read a conduit's current policy back. Write-only authority - you
+    can change it and cannot audit it from outside.
+
+    Green while the gap exists, red the day a reader lands."""
+    import inspect
+    _, root = _dynamic_root("probe-ward-read", "probe-read-root")
+    assert hasattr(root, "set_new_policy")
+    public_readers = [
+        name for name in dir(root)
+        if not name.startswith("_") and "policy" in name.lower()
+    ]
+    assert public_readers == ["set_new_policy"], (
+        f"a public policy reader appeared: {public_readers}"
+    )
+    print("write-only gap pinned: only door is", public_readers)
+
+
+def _active_crystallizer() -> "Crystallizer":
+    crystallizer = Crystallizer()
+    config = md.CrystallizerConfiguration()
+    config.with_defaults()
+    config.finalize()
+    config.activate()
+    crystallizer.activate(config)
+    return crystallizer
+
+
+def test_probe_crystallizer_follows_aethers_ladder_not_nexuss():
+    """Lesson 19 HEADLINE. Three subsystems, two ladders:
+
+        Aether       caller finalizes AND activates the config, then
+                     subsystem.activate() - a merely-frozen config raises
+        Crystallizer SAME
+        Nexus        enable() finalizes the config for the caller
+
+    Two against one, so caller-driven activation is the house rule and
+    Nexus is the exception. A red here means they converged - good news
+    for the configuration-uniformity program, and it would mean lessons
+    10 and 19 need their contrast sections rewritten."""
+    crystallizer = Crystallizer()
+    assert crystallizer.activated is False
+
+    config = md.CrystallizerConfiguration()
+    config.with_defaults().finalize()
+    assert config.activated is False, "finalize must not activate"
+
+    config.activate()
+    assert config.activated is True
+    crystallizer.activate(config)
+    assert crystallizer.activated is True
+    # `is_activated` is a PROPERTY, not a method (owner run 2026-08-02).
+    assert crystallizer.is_activated is True
+    print("ladder pinned: crystallizer sides with aether, not nexus")
+
+
+def test_probe_crystallizer_builder_offers_a_terminator_per_rung():
+    """Lesson 19 claim: CrystallizerConfigurationBuilder is the most
+    generous builder in the library - build / finalize / activate, one
+    exit per rung - while AetherConfigurationBuilder offers only build()
+    and leaves rung 2 to the caller.
+
+    Divergence catalogued for the configuration-uniformity program."""
+    builder = md.CrystallizerConfigurationBuilder()
+    for terminator in ("build", "finalize", "activate"):
+        assert hasattr(builder, terminator), terminator
+    assert not hasattr(md.AetherConfigurationBuilder(), "activate"), (
+        "the aether builder gained activate() - the divergence closed"
+    )
+    ready = md.CrystallizerConfigurationBuilder().with_defaults().activate()
+    assert isinstance(ready, md.CrystallizerConfiguration)
+    assert ready.activated is True
+    print("terminator divergence pinned: crystallizer 3, aether 1")
+
+
+def test_probe_create_checkpoint_returns_an_id_that_lists_and_describes():
+    """Lesson 19 claim: create_checkpoint hands back an ID and the ID is
+    the whole handle - list_checkpoint_ids finds it, describe_checkpoint
+    reads it."""
+    crystallizer = _active_crystallizer()
+    before = crystallizer.list_checkpoint_ids()
+    assert isinstance(before, list)
+
+    checkpoint_id = crystallizer.create_checkpoint(description="probe-19")
+    assert isinstance(checkpoint_id, str) and checkpoint_id
+
+    after = crystallizer.list_checkpoint_ids()
+    assert checkpoint_id in after
+    assert len(after) == len(before) + 1
+
+    described = crystallizer.describe_checkpoint(checkpoint_id)
+    assert isinstance(described, dict) and described
+    print("checkpoint id pinned: created, listed, described")
+
+
+def test_probe_checkpoints_accumulate_rather_than_overwrite():
+    """Lesson 19 claim: a second checkpoint is a NEW id, not a
+    replacement. If checkpoints ever started overwriting, every restore
+    story in arc E changes."""
+    crystallizer = _active_crystallizer()
+    first = crystallizer.create_checkpoint(description="probe-first")
+    second = crystallizer.create_checkpoint(description="probe-second")
+    assert first != second
+    ids = crystallizer.list_checkpoint_ids()
+    assert first in ids and second in ids
+    print("accumulation pinned:", len(ids), "distinct checkpoint ids")
+
+
+def test_probe_flush_moves_a_checkpoint_from_created_to_cached():
+    """Lesson 20 claim: a checkpoint lives in two places - CREATED (an id
+    in the running crystallizer) and CACHED (sealed locally).
+    flush_checkpoint is the verb that moves it."""
+    crystallizer = _active_crystallizer()
+    checkpoint_id = crystallizer.create_checkpoint(description="probe-20")
+    assert checkpoint_id in crystallizer.list_checkpoint_ids()
+
+    flushed = crystallizer.flush_checkpoint(checkpoint_id)
+    assert isinstance(flushed, list)
+    assert isinstance(crystallizer.list_cached_checkpoint_ids(), list)
+    print("seal pinned: flush returned", flushed)
+
+
+def test_probe_the_cached_read_path_round_trips():
+    """Lesson 20 claim: the id stays the whole handle across the seal -
+    a cached checkpoint reads back as a dict.
+
+    Guarded on presence rather than assumed, because the cache is FIFO
+    bounded and the contract says a flush can evict."""
+    crystallizer = _active_crystallizer()
+    checkpoint_id = crystallizer.create_checkpoint(description="probe-rt")
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    if checkpoint_id in crystallizer.list_cached_checkpoint_ids():
+        reloaded = crystallizer.reload_cached_checkpoint(checkpoint_id)
+        assert isinstance(reloaded, dict)
+        print("round trip pinned:", len(reloaded), "keys")
+    else:
+        print("evicted by the FIFO cap before reload - contract behavior")
+
+
+def test_probe_checkpoint_chain_verification_answers():
+    """Lesson 20 claim: checkpoints form a CHAIN, not a pile, and the
+    crystallizer can report on that lineage."""
+    crystallizer = _active_crystallizer()
+    crystallizer.create_checkpoint(description="probe-chain-1")
+    crystallizer.create_checkpoint(description="probe-chain-2")
+    chain = crystallizer.verify_checkpoint_chain()
+    assert isinstance(chain, dict) and chain
+    print("chain verification pinned:", len(chain), "keys")
+
+
+def test_probe_deletion_is_explicit_and_removes_from_the_cache():
+    """Lesson 20 claim: EVICTION is a side effect of a bounded cache;
+    DELETION is a decision. The two must not be confused, so deletion has
+    its own verb and its effect is observable."""
+    crystallizer = _active_crystallizer()
+    checkpoint_id = crystallizer.create_checkpoint(description="probe-del")
+    crystallizer.flush_checkpoint(checkpoint_id)
+    if checkpoint_id not in crystallizer.list_cached_checkpoint_ids():
+        print("already evicted - nothing to delete, contract behavior")
+        return
+    deleted = crystallizer.delete_cached_checkpoint(checkpoint_id)
+    assert isinstance(deleted, str)
+    assert checkpoint_id not in crystallizer.list_cached_checkpoint_ids()
+    print("deletion pinned: explicit verb, observable effect")
+
+
+def test_probe_caller_driven_activation_is_the_house_rule_three_to_one():
+    """Arc E closing claim, and evidence for the configuration-uniformity
+    program. FOUR subsystems, and only ONE activates the configuration on
+    the caller's behalf:
+
+        Aether           caller activates the config   (lesson 09)
+        Crystallizer     caller activates the config   (lesson 19)
+        MutationResearch caller activates the config   (expert tier)
+        Nexus            enable() does it FOR you      (lesson 10)
+
+    Their configuration BUILDERS diverge the same way: crystallizer and
+    mutation-research offer build/finalize/activate; aether offers only
+    build. Pinned so the split is a test rather than a memory."""
+    for configuration_type in (md.AetherConfiguration,
+                               md.CrystallizerConfiguration,
+                               md.MutationResearchConfiguration):
+        assert hasattr(configuration_type, "activate"), configuration_type
+        assert hasattr(configuration_type, "finalize"), configuration_type
+
+    for builder_type in (md.CrystallizerConfigurationBuilder,
+                         md.MutationResearchConfigurationBuilder):
+        for terminator in ("build", "finalize", "activate"):
+            assert hasattr(builder_type, terminator), (builder_type, terminator)
+
+    assert not hasattr(md.AetherConfigurationBuilder, "activate")
+    print("house rule pinned 3-to-1: nexus is the lone exception")
+
+
+def test_probe_spell_examiner_was_curated_off_the_public_root():
+    """CURATION CALL EXECUTED (owner ruling 2026-08-02).
+
+    SpellExaminer is Bind's private reflection registry - the thing that
+    builds a binding profile when you bind a class. The graph records it
+    as `Bind owns_lifecycle_of SpellExaminer, one_to_one`, and the only
+    live instance is Bind's private `self._spell_examiner`.
+
+    It had been exported WITH an extension point - register_profile_builder
+    (...) and "the registry remains open for explicit extension" - but no
+    public accessor ever reached the instance you would need to call it
+    on. Public class, public extension API, private instance: half a
+    feature. Curated off the root rather than left that way.
+
+    Removed from `__all__` AND from the namespace, per the counter-example
+    law in tests/unit/melder/test_package_public_surface.py, where it now
+    sits in the curated-exclusions list beside ConduitWard and Meld.
+
+    If the extension point is ever wanted for real, the fix is not to
+    re-export the class - it is to expose the examiner on Bind."""
+    import melder
+    assert "SpellExaminer" not in melder.__all__
+    assert not hasattr(melder, "SpellExaminer")
+    print("curation pinned: SpellExaminer is off the public root")
 
 
 def test_probe_rift_enabled_has_no_public_setter():

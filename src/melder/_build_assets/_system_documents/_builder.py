@@ -689,7 +689,7 @@ def parse_graph_adjacency(
     return nodes, tuple(edges), whys
 
 
-def write_graph_adjacency(entries: Dict[str, Dict[str, object]]) -> int:
+def write_graph_adjacency(entries: Dict[str, Dict[str, object]], version: str) -> int:
     """
     Emit the resolved graph adjacency as a generated module.
 
@@ -706,6 +706,7 @@ def write_graph_adjacency(entries: Dict[str, Dict[str, object]]) -> int:
 
     Args:
         entries: The ingested entries.
+        version: The melder version to stamp into the generated module.
 
     Returns:
         int: Number of edges emitted, or 0 when the graph document is
@@ -743,6 +744,7 @@ def write_graph_adjacency(entries: Dict[str, Dict[str, object]]) -> int:
         "    python src/melder/_build_assets/_build_asset_runner.py",
         '"""',
         "",
+        f'BUILT_FOR_VERSION = "{version}"',
         f"NODE_COUNT = {len(nodes)}",
         f"EDGE_COUNT = {len(edges)}",
         f"WHY_COUNT = {len(whys)}",
@@ -846,7 +848,7 @@ def render_from_entries(entries: Dict[str, Dict[str, object]], version: str) -> 
     return "\n".join(lines)
 
 
-def write_index(entries: Dict[str, Dict[str, object]]) -> int:
+def write_index(entries: Dict[str, Dict[str, object]], version: str) -> int:
     """
     Emit the transcribed index as its own generated module.
 
@@ -868,6 +870,7 @@ def write_index(entries: Dict[str, Dict[str, object]]) -> int:
 
     Args:
         entries: The ingested entries.
+        version: The melder version to stamp into the generated module.
 
     Returns:
         int: Number of distinct section tables written.
@@ -899,6 +902,10 @@ def write_index(entries: Dict[str, Dict[str, object]]) -> int:
         "    python src/melder/_build_assets/_build_asset_runner.py",
         '"""',
         "",
+        # Stamped like every other generated manifest. The version gate globs
+        # `*/manifest/*.py` and requires each one to carry a stamp - an
+        # unstamped module makes that gate silently incomplete.
+        f'BUILT_FOR_VERSION = "{version}"',
         f"TABLE_COUNT = {len(tables)}",
         f"SECTION_COUNT = {sum(len(rows) for rows in tables.values())}",
         "",
@@ -937,9 +944,9 @@ def write_manifest(version: str) -> Tuple[pathlib.Path, int]:
     for refusal in refusals:
         print(f"  REFUSED  {refusal}")
 
-    write_index(entries)
+    write_index(entries, version)
     write_payloads(entries)
-    write_graph_adjacency(entries)
+    write_graph_adjacency(entries, version)
     target = manifest_path()
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(".py.tmp")

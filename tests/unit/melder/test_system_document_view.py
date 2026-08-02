@@ -28,6 +28,9 @@ import sys
 
 import pytest
 
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.nexus.nexus import Nexus
 from melder._build_assets._system_documents import system_documents
 from melder.utilities.ai_native_support_tools.system_document_view import (
     Edge,
@@ -42,6 +45,39 @@ from melder.utilities.ai_native_support_tools.system_document_view import (
 
 DOCUMENT_NAMES = list(system_documents.READ_ORDER)
 GRAPH_NAMES = ["__graph_network__", "__graph_details__"]
+
+
+@pytest.fixture(autouse=True)
+def fresh_singletons() -> None:
+    """
+    Reset singleton runtime surfaces around each test.
+
+    Contract:
+        - AetherUtilitySystem, Nexus, and Aether are reset before and after
+          each test.
+
+    Purpose:
+        Importing this module imports `melder`, which boots `Aether()` at
+        package scope - the four system documents are published there. Every
+        test in this file therefore runs against a live singleton whether or
+        not it touches one, so it is reset on both sides like every other unit
+        test that loads the package.
+
+        The views themselves are immutable and share no state with the
+        substrate, so this guards the ORDER of tests rather than the views: a
+        test here must not be the reason an unrelated test later in the session
+        sees a dirty Aether.
+
+    Returns:
+        None.
+    """
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    yield
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
 
 
 def _available(name: str) -> SystemDocumentView:
@@ -97,9 +133,16 @@ def test_metadata_is_answerable_without_loading_the_document() -> None:
         These are what an agent reads to decide WHETHER to open a document.
         Paying 1.6 MB to find out a document is not the one you wanted defeats
         the entire index-first discipline.
+
+    Contract:
+        Builds a FRESH view per document rather than inspecting the shared one.
+        `DOCUMENTS` is module-level and its views cache their payload on first
+        slice, so any earlier test in the session leaves them warm - asserting
+        `_document is None` on a shared view tests test ORDER, not laziness.
     """
     for name in DOCUMENT_NAMES:
-        view = system_documents.get(name)
+        shared = system_documents.get(name)
+        view = type(shared)(shared._entry)
         assert view.name == name
         assert view.title
         assert view.summary
@@ -491,13 +534,25 @@ def test_unsemantic_nodes_are_flagged_as_data() -> None:
     An agent must be able to tell scaffold from authored meaning without prose.
 
     Purpose:
-        `src_graph_usage.md` forbids inferring purpose from an UNSEMANTIC
-        node's name. That is only enforceable if the flag is queryable.
+        Inferring purpose from an UNSEMANTIC node's NAME is exactly the mistake
+        the flag prevents, and that is only enforceable if it is queryable
+        rather than something to spot in prose.
+
+    Contract:
+        Asserts the flag is present and boolean on every node - NOT that this
+        snapshot contains any unsemantic ones. It does not currently: the graph
+        was regenerated with every node authored, taking the count from 513 to
+        zero. That is the repository improving, not the extractor breaking, and
+        a test that fails on it is asserting a moment rather than a contract.
+
+        Extraction itself is covered against a fixed fragment in
+        `tests/unit/melder/build_assets/test_system_documents_builder.py`, which
+        is where a parser regression would surface.
     """
     view = _available("__graph_network__")
     flags = [view.node(n).unsemantic for n in view.node_ids()]
-    assert any(flags)
-    assert not all(flags)
+    assert flags
+    assert all(isinstance(flag, bool) for flag in flags)
 
 
 def test_edge_and_node_records_are_named_tuples() -> None:

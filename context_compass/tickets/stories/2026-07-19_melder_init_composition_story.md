@@ -4,7 +4,7 @@
 - Story ID: STORY-2026-07-19-melder-init-composition
 - Status: in_progress
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p1
 - Created: 2026-07-19T11:49:00Z
 - Updated: 2026-07-19T11:52:00Z

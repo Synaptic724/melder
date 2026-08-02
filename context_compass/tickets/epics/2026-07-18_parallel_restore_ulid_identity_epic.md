@@ -4,7 +4,7 @@
 - Epic ID: EPIC-2026-07-18-parallel-restore-ulid-identity
 - Status: in_progress
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p0
 - Created: 2026-07-18T22:30:00Z
 - Updated: 2026-07-18T22:30:00Z

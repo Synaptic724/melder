@@ -5,7 +5,7 @@
 - Status: in_progress (CLAIMED by helper_f 2026-07-29 under owner directive;
   investigation lane only - no design, no implementation)
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p2
 - Created: 2026-07-27T23:19:33Z
 - Updated: 2026-07-29T22:21:25Z

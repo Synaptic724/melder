@@ -7,10 +7,17 @@
 - Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-08-01T10:41:33Z
+- Updated: 2026-08-02T18:40:00Z
 
 ## Objective
-The working developer's tier: SpellBinder fluent binding, spellframes and contracts (SpellMap/SpellContract), SpellSpace scoped resolution, spellbook and aether configuration (+builders), conduit linking and the ConduitCloud, SpellIndex membership verbs, crystallizer activation + first checkpoint.
+The working developer's tier: SpellBinder fluent binding, spellframes and
+contracts (SpellMap/SpellContract), SpellSpace scoped resolution, SPELLBOOK
+configuration, conduit linking and the ConduitCloud, and Scan.
+
+SCOPE CORRECTED 2026-08-02 (owner). The previous objective also claimed
+"aether configuration (+builders)", "SpellIndex membership verbs" and
+"crystallizer activation + first checkpoint". ALL THREE MOVED OUT - see the
+DECISION note below. SpellContract stays; it is authored at lesson 36.
 
 ## Ticket Contract
 - ENTRY_GATE: owner directive 2026-07-19 ("explore all the ways a user might use the
@@ -932,7 +939,55 @@ restore_engine.py:1654; melder/__init__.py:68, :198.
   SCORE_0_TO_10: 9
 
 
+- DATETIME: 2026-08-02T18:40:00Z
+  TYPE: DECISION
+  CLAIM: TIER SCOPE CORRECTED IN BOTH DIRECTIONS BY OWNER RULINGS. This note
+    exists because the moves were decided while working the ADVANCED epic, and
+    without it they would live only in that epic's notes and never reach
+    whoever picks this one up.
+
+    MOVED OUT of intermediate -> ADVANCED (owner 2026-08-01, reason: "at this
+    point we do not use crystallizer"):
+      - SpellIndex membership verbs
+      - AetherConfiguration + AetherConfigurationBuilder (now advanced 09)
+      - crystallizer activation + first checkpoint (now advanced 19-20)
+    STAYS: SpellContract - authored at 02_intermediate/36.
+
+    MOVED IN to intermediate (owner 2026-08-02):
+      - `ConduitCloud` - "thats for dynamic mode basics". Already named in the
+        objective; now it is a ruling rather than an assumption.
+      - `Scan` - previously unruled. WARNING FOR WHOEVER AUTHORS IT: a scan
+        lesson EXISTED AND WAS KILLED - see
+        `UX_and_AIX_experiences/_to_delete/_gone_05_scan_bind_decorator.py`.
+        Read why it died before rewriting it.
+  EVIDENCE: owner directives 2026-08-01 and 2026-08-02, recorded in
+    EPIC-2026-07-19-ux-aix-advanced notes of the same dates.
+  IMPACT: Two names land here, three leave. `Scan` and `ConduitCloud` are the
+    only two public-root names this tier still owes a lesson - every other
+    name in `melder.__all__` is now either authored, assigned to advanced or
+    expert, or curated off the root.
+  NEXT: author Scan and ConduitCloud lessons in 02_intermediate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-08-02T18:40:00Z
+  TYPE: FACT
+  CLAIM: PUBLIC-ROOT COVERAGE CONTEXT for this tier. `melder.__all__` is now
+    64 names (SpellExaminer was curated off 2026-08-02). 48 are exercised by
+    at least one lesson across all tiers. Of the 16 remaining, exactly TWO
+    belong to intermediate - `Scan` and `ConduitCloud`. Eleven are expert
+    material and three are dunders that need no lesson.
+  EVIDENCE: scripted `md.<Name>` sweep over
+    `UX_and_AIX_experiences/**/[0-9]*.py`, run 2026-08-02.
+  IMPACT: This tier's remaining debt against the public surface is two
+    lessons, not an open-ended list.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
 owner's 3.14t runs (device VM cannot import the runtime).
+
+SCOPE NOTE 2026-08-02: this tier's objective was corrected in both directions
+(see the DECISION note). Three subjects left for advanced; two arrived. The
+only public-root names this tier still owes are `Scan` and `ConduitCloud`.

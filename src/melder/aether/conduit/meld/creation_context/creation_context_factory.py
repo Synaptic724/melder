@@ -247,7 +247,7 @@ class CreationContextFactory(Cleanable):
         gate = self._resolve_or_create_spell_index_gate(index_id)
         return gate, index_id
 
-    def build_for_spell(self, spell: Spell) -> CreationContext:
+    def build_for_spell(self, spell: "Spell") -> "CreationContext":
         """
         Build one fresh context for the spell without publishing it back onto
         the spell.
@@ -266,7 +266,7 @@ class CreationContextFactory(Cleanable):
             creation_gate_index_id=index_id,
         )
 
-    def build_and_bind_for_spell(self, spell: Spell) -> CreationContext:
+    def build_and_bind_for_spell(self, spell: "Spell") -> "CreationContext":
         """
         Build one CreationContext and bind it onto the target spell.
 
@@ -291,7 +291,7 @@ class CreationContextFactory(Cleanable):
         self._cleanup_creation_context(previous_creation_context)
         return built_creation_context
 
-    def get_or_build_for_spell(self, spell: Spell) -> CreationContext:
+    def get_or_build_for_spell(self, spell: "Spell") -> "CreationContext":
         """
         Resolve one spell-owned context via spell-level CounterSwitch election.
 
@@ -365,7 +365,7 @@ class CreationContextFactory(Cleanable):
         elif current_state > 2:
             spell._creation_context_switch.advance(-(current_state - 2))
 
-    def rebuild_for_spell(self, spell: Spell) -> CreationContext:
+    def rebuild_for_spell(self, spell: "Spell") -> "CreationContext":
         """
         Force rebuild and replace the spell-owned CreationContext.
 

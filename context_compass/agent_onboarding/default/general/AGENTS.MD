@@ -5,10 +5,16 @@
 ## PRIME DIRECTIVE
 Certification is denied unless the resolved SKILLS chain is satisfied exactly.
 
-- You MUST read every path listed under **Active skills** / **Required baseline skills**
-  in each resolved `SKILLS.MD` file (parent-first).
-- **On-demand** skills are NOT part of baseline certification, but become mandatory
-  when triggered by the active task. If triggered, you MUST read them before proceeding.
+- You MUST read every path in every section a resolved `SKILLS.MD` marks as
+  **baseline** (parent-first). Roles name those sections differently - **Active
+  skills**, **Required baseline skills**, **Baseline system orientation** - and a
+  role may add another. Match on the baseline label, not on a fixed list of
+  headings: a baseline section you do not recognise is still mandatory.
+- Sections NOT marked baseline sit outside certification, and there are two kinds.
+  **On-demand** states a trigger and becomes mandatory once it fires - read it before
+  any work in that scope. **Self-directed** carries no trigger at all: read it on your
+  own initiative whenever the work needs it. Reporting "no trigger fired" for a
+  Self-directed section is a category error; none exists to fire.
 - You MUST NOT claim a skill was read unless it was actually read.
 
 ## Document Intent
@@ -56,6 +62,27 @@ When unsure:
 * Mark it UNKNOWN.
 * Identify the most likely evidence target (file + symbol).
 * Investigate, then update the doc (or leave it UNKNOWN).
+
+**"Investigate" means go and read it. Yourself, now, without asking.** This gate
+creates an obligation to look; it is not satisfied by asking the user what the
+answer is. Where a role provides system documents, they exist to make that lookup
+cheap - narrative first, then an index, then a slice, then the source. Engineers:
+`agent_onboarding/default/engineer/skills/context_protocol.md`.
+
+Two failures sit either side of this rule and both produce UNKNOWNs dressed as
+facts:
+
+* **Not looking.** Inferring behaviour from a class name, a folder layout, or what
+  a framework usually does. The gate already forbids this - reading is how you
+  comply with it.
+* **Looking at everything.** Loading whole documents and large trees with no
+  question in hand. That is not evidence-gathering, it is a spent context budget,
+  and it ends in vague claims about a lot rather than an evidenced claim about the
+  thing that mattered. See
+  `agent_onboarding/default/general/skills/context_window_budget.md`.
+
+Ask the user for **guidance** when you cannot tell where to look. Never for
+**permission** to look.
 
 ## Operating Protocol (How You Should Work)
 
@@ -148,8 +175,19 @@ As a ritual, after implementing a change:
 * Treat `agent_onboarding/default/general/skills/compaction_requirements.md` as the mandatory re-entry checklist.
 * Ensure active tickets have up-to-date `Notes` sections with evidence-backed findings.
 * Ensure active tickets have up-to-date \"Context / Handoff Summary\" sections.
-* After context compaction or a fresh session, re-read
-  `agent_onboarding/default/new/skills/first_time_profile_setup.md`.
+* After context compaction or a fresh session, re-onboard per
+  `agent_onboarding/default/general/skills/compaction_requirements.md` and read the
+  baseline sections of your own resolved `SKILLS.MD` chain. **Do not read another
+  role's documents.**
+  - This line previously ordered every role to re-read
+    `agent_onboarding/default/new/skills/first_time_profile_setup.md`. That is a
+    `new`-role document, `new` is entry-only and never a steady-state role, and the
+    path appears in no readset but `new`'s - so the order was both unreachable from
+    the routing manifest and contradicted by `compaction_requirements.md`, which
+    requires non-`new` re-entry to use skills and policy docs.
+  - It applies only when `new` is the active role AND
+    `profiles.onboarding.first_time_enabled` is `true` in
+    `config/context_compass_config.yaml`.
 
 ## Stop Conditions (Ask Before Proceeding)
 

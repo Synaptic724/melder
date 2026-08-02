@@ -96,7 +96,7 @@ class Contract(Cleanable):
         "_index_details_b",
     ]
 
-    def __init__(self, ward_a: ConduitWard, ward_b: ConduitWard):
+    def __init__(self, ward_a: "ConduitWard", ward_b: "ConduitWard"):
         """
         Create a new symmetric contract between two wards.
 
@@ -195,7 +195,7 @@ class Contract(Cleanable):
 
     #endregion Context Manager
 
-    def _get_peer(self, ward: ConduitWard) -> ConduitWard:
+    def _get_peer(self, ward: "ConduitWard") -> "ConduitWard":
         """
         Internal
 

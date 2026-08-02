@@ -1045,7 +1045,7 @@ class ConduitCluster(Cleanable):
                 except Exception:
                     continue
 
-    def remove_and_strip_spell(self, owner: Conduit, spell: Spell) -> None:
+    def remove_and_strip_spell(self, owner: "Conduit", spell: "Spell") -> None:
         """
         Explicitly remove a shared root from the cluster and strip it from peers.
 
@@ -1254,7 +1254,7 @@ class ConduitCluster(Cleanable):
                 if spell.existence == Existence.unique_per_conduit_cluster
             ]
 
-    def _resolve_spell_from_index(self, conduit: Conduit, spell_index: SpellIndex) -> Optional[Spell]:
+    def _resolve_spell_from_index(self, conduit: "Conduit", spell_index: "SpellIndex") -> Optional[Spell]:
         """
         Resolve a Spell object from a conduit given its SpellIndex.
 

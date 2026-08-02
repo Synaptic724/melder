@@ -5,7 +5,7 @@
 - Epic ID: EPIC-2026-07-31-aetheric-mediator-subsystem
 - Status: in_progress
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
 - Updated: 2026-08-01T13:20:00Z
@@ -382,6 +382,49 @@ ruling.
     were reimplemented rather than ported.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-02T18:35:00Z
+  TYPE: RISK
+  CLAIM: PRESERVED FROM AN UNDELIVERABLE MAILBOX MESSAGE. bootstrap_0 sent
+    helper_f a NOTICE at 2026-08-02T17:55:00Z that was never consumed, because
+    helper_f was retired by owner directive on 2026-08-02 before reading it. The
+    content is copied here by tester_0 and the message then deleted, per
+    `mailbox_protocol.md:59-61` - durable history lives in tickets, never in the
+    mailbox - because deleting it unread would have destroyed the only copy.
+    THE SUBSTANCE: bootstrap_0 AUTHORED GRAPH SEMANTICS FOR ALL 38 NODES of
+    `src/melder/aether/aetheric_mediator` under EPIC-2026-08-02-author-graph-semantics,
+    having first parked the story at 16:35Z out of deference to this being an
+    active build lane, then reversed at 17:55Z on the reasoning that a
+    per-node staleness stamp makes wrong prose self-announcing (SEMANTICS_STALE)
+    while UNSEMANTIC is simply absent and announces nothing. They wrote the prose
+    FROM THIS PACKAGE'S DOCSTRINGS ALONE, never from the design intent, and asked
+    the lane owner to correct anything that reads wrong. THREE ASSERTIONS THEY
+    EXPLICITLY FLAGGED FOR A SECOND PAIR OF EYES, none of them yet verified by
+    anyone who built this package: (1) that INTENT (`ix`) is the HIERARCHICAL
+    PARENT-SCOPE MARKER rather than an escalation marker; (2) that refusal leaves
+    NO TRACE; (3) that `BROKEN` is deliberately a distinct terminal state from
+    `ABORTED` because a half-built world is a work surface rather than debris.
+    Nothing of this lane's source was touched - descriptors are a separate tree.
+    TO CORRECT A NODE: edit the descriptor under
+    `system_docs/graph/melder/aether/aetheric_mediator/`, then
+    `graph_walker.py --accept <node_id> --apply` and reassemble. No ack was
+    requested and none can now be given.
+  EVIDENCE:
+  - tickets/stories/completed/2026-08-02_src-melder-aether-aetheric-mediator_graph_semantics_story.md
+  - tickets/epics/completed/2026-08-02_author-graph-semantics_epic.md
+  - system_docs/graph/melder/aether/aetheric_mediator/
+  IMPACT: 38 nodes of published graph prose describe THIS story's design intent
+    and were written by someone who did not hold it, from docstrings that this
+    repo has independently found to be wrong elsewhere (see
+    TASK-2026-08-02-stale-source-docstrings, which found at least six false
+    docstring claims in adjacent Conduit code). The reviewer bootstrap_0 was
+    counting on has departed, so the review debt now sits with whoever takes this
+    lane. Authored graph prose reads as verified whether or not anyone verified it.
+  NEXT: Whoever claims this lane reads the three flagged assertions against
+    `claim_mode.py`, `claim_table.py` and `transaction_session.py` and either
+    re-stamps or corrects the descriptors.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Acceptance Criteria
 - Zero imports of `melder.aether` anywhere in the package, enforced by test.

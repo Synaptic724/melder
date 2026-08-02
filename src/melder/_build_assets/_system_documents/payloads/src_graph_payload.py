@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 25291
-CONTENT_SHA256 = '1bed687b2fdc97abe76c38e78bb41ed96e5e9c5ff2d120b847296c33eb1dbb15'
+LINE_COUNT = 25353
+CONTENT_SHA256 = '40f75759fffe4cdd6bf93737919e22c9f07efdd7ff82e96ca0b8418db927a053'
 
 TEXT = """# src_graph
 
@@ -3097,15 +3097,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.admission_orchestrator`
 - defined at: `src/melder/aether/aetheric_mediator/admission_orchestrator.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The serialized admission decision point - one lock, one atomic acquisition, no second adjudication layer.
 
 #### `AdmissionOrchestrator` (class)
 
 - id: `melder.aether.aetheric_mediator.admission_orchestrator.AdmissionOrchestrator`
 - defined at: `src/melder/aether/aetheric_mediator/admission_orchestrator.py:26`
 - extends: `Cleanable`
+- role: The serialized admission decision point: the ONE place a request becomes admitted, so 'is this allowed to proceed' has a single answer arrived at a single way.
+- responsibilities: `take the admission lock for the ENTIRE decision path and perform exactly ONE atomic all-or-nothing ClaimTable.try_acquire - the moded matrix IS the decision, with no second adjudication layer and no in-flight overlap scan`, `leave NO TRACE on refusal`, `BORROW the claim table, never own it: cleanup drops the in-flight registry but does NOT release claims, because silently releasing another component's claims during teardown would be the worse failure`
+- owns_state: `_lock`, `_in_flight`
+- phases: `runtime`, `cleanup`
 - public methods: `admit`, `cleanup`, `describe`, `get_in_flight`, `list_in_flight`, `release`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3135,22 +3138,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.admission_result`
 - defined at: `src/melder/aether/aetheric_mediator/admission_result.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The admission verdict and its reason codes; admission returns EVIDENCE, not a bool.
 
 #### `AdmissionReason` (enum)
 
 - id: `melder.aether.aetheric_mediator.admission_result.AdmissionReason`
 - defined at: `src/melder/aether/aetheric_mediator/admission_result.py:18`
 - markers: `StrEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Machine-readable codes for WHY a request was refused, so callers branch without parsing rendered evidence lines.
+- responsibilities: `describe the CLASS of refusal, leaving the specific contended scopes and holders to travel separately on the result`, `keep values stable - they travel into logs and stored evidence`
+- phases: `runtime`
 
 #### `AdmissionResult` (class)
 
 - id: `melder.aether.aetheric_mediator.admission_result.AdmissionResult`
 - defined at: `src/melder/aether/aetheric_mediator/admission_result.py:52`
 - extends: `Cleanable`
+- role: The immutable verdict for one admission attempt - EVIDENCE, NOT A BOOL.
+- responsibilities: `always carry at least one reason when admitted=False; a bare False is not a legal verdict`, `carry the contended scopes and holders so a refusal is retryable by a caller, explicable to an operator, and reportable without reaching back into live plane state`, `hold value fields only - one bool and three tuples of strings, with no reference to the table, the session, or any holder`
+- owns_state: `_admitted`, `_reasons`, `_blocked_scopes`, `_evidence`
+- phases: `runtime`, `cleanup`
 - public methods: `admitted`, `blocked_scopes`, `cleanup`, `describe`, `evidence`, `granted`, `reasons`, `refused`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3180,21 +3188,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.claim_mode`
 - defined at: `src/melder/aether/aetheric_mediator/claim_mode.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The claim vocabulary - EXCLUSIVE / SHARED / INTENT - and the static compatibility matrix between a held claim and a requested one.
 
 #### `ClaimMode` (enum)
 
 - id: `melder.aether.aetheric_mediator.claim_mode.ClaimMode`
 - defined at: `src/melder/aether/aetheric_mediator/claim_mode.py:17`
 - markers: `StrEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The access posture one holder requests over one scope key - and the vocabulary the whole plane turns on.
+- responsibilities: `EXCLUSIVE ('x'): no other claim of ANY mode may coexist`, `SHARED ('s'): coexists with other SHARED claims only`, `INTENT ('ix'): the HIERARCHICAL PARENT-SCOPE MARKER - hold ix on the parent while holding x on the child, so disjoint children proceed in parallel while a whole-unit writer is excluded`
+- phases: `init`, `runtime`
 
 #### `ClaimCompatibility` (class)
 
 - id: `melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility`
 - defined at: `src/melder/aether/aetheric_mediator/claim_mode.py:72`
+- role: The static compatibility matrix: may `requested` be granted on a scope already held under `held`?
+- responsibilities: `exclude EXCLUSIVE against everything, in both directions`, `permit SHARED with SHARED and INTENT with INTENT; DENY shared-vs-intent, matching the DevOps embargo manager exactly`, `never be instantiated - one ClassVar frozenset of permitted pairs plus two static predicates, so no Cleanable contract`
+- phases: `init`, `runtime`
 - public methods: `is_exclusive`, `permits`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (1, unconfirmed)
 
@@ -3217,31 +3229,40 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.claim_table`
 - defined at: `src/melder/aether/aetheric_mediator/claim_table.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The scope-claim table: atomic all-or-nothing acquisition, its granted-claim record, and the blocking evidence a refusal carries out.
 
 #### `ClaimBlock` (class)
 
 - id: `melder.aether.aetheric_mediator.claim_table.ClaimBlock`
 - defined at: `src/melder/aether/aetheric_mediator/claim_table.py:23`
 - extends: `Cleanable`
+- role: One reason an acquisition could not be granted - which scope, held by whom, in what mode.
+- responsibilities: `carry actionable blocking evidence out of a refused or timed-out acquisition`, `store the holder's RENDERED DESCRIPTION, never the live Identity - it takes the identity because that is what the caller has, and renders immediately`, `hold no lock: built under the table's condition, handed to exactly one caller, rendered and cleaned by that same caller, never shared`
+- owns_state: `_scope_key`, `_holder_description`, `_held_mode`, `_requested_mode`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `held_mode`, `holder_description`, `requested_mode`, `scope_key`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `_GrantedClaim` (class)
 
 - id: `melder.aether.aetheric_mediator.claim_table._GrantedClaim`
 - defined at: `src/melder/aether/aetheric_mediator/claim_table.py:213`
 - extends: `Cleanable`
+- role: One granted claim on one scope key, internal to the table.
+- responsibilities: `record that one identity holds one scope in one mode for as long as the claim is held`, `retain the LIVE Identity rather than a rendered string, because release matches on it`, `hold no lock deliberately - every read, write and cleanup happens while the owning table holds its condition`
+- owns_state: `holder`, `mode`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `ClaimTable` (class)
 
 - id: `melder.aether.aetheric_mediator.claim_table.ClaimTable`
 - defined at: `src/melder/aether/aetheric_mediator/claim_table.py:285`
 - extends: `Cleanable`
+- role: Atomic mode-aware scope-claim table: serialises structural work BY SCOPE rather than globally, so disjoint work runs in parallel and only true overlap waits.
+- responsibilities: `grant ALL requested scopes or NONE - no partial grant, so a caller can never hold half a set and believe it is isolated`, `treat re-entry as a NO-OP, not an upgrade: a holder re-claiming a scope keeps its EXISTING mode`, `wake every waiter BEFORE dropping state on cleanup, so parked threads observe a cleaned table and exit rather than hang`
+- owns_state: `_claims`, `_condition`
+- phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire`, `cleanup`, `describe`, `held_scopes`, `release_holder`, `try_acquire`, `wait_for_change`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3276,15 +3297,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.identity`
 - defined at: `src/melder/aether/aetheric_mediator/identity.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Claimant identity for the plane - caller-owned, borrowed by the plane, equal on (kind, identity_id).
 
 #### `Identity` (class)
 
 - id: `melder.aether.aetheric_mediator.identity.Identity`
 - defined at: `src/melder/aether/aetheric_mediator/identity.py:18`
 - extends: `Cleanable`
+- role: The immutable identity of one claimant - the pivot the whole plane turns on, since sessions are keyed per identity.
+- responsibilities: `name WHO holds or requests a claim, stably across a span, hashably enough to key a holder table, and legibly enough that a timeout message points at something actionable`, `compare and hash over (kind, identity_id) ONLY - label is presentation and deliberately excluded, so two references to one claimant compare equal`, `be CALLER-OWNED: the plane BORROWS it for the life of a transaction and never calls cleanup() on one`
+- owns_state: `_kind`, `_identity_id`, `_label`, `_thread_ident`
+- phases: `runtime`
 - public methods: `cleanup`, `describe`, `identity_id`, `identity_key`, `kind`, `label`, `thread_ident`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3313,23 +3337,29 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.information_registry`
 - defined at: `src/melder/aether/aetheric_mediator/information_registry.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The reporting surface: fact baselines plus live activity indexes, caller-paid and always detached.
 
 #### `FactRecord` (class)
 
 - id: `melder.aether.aetheric_mediator.information_registry.FactRecord`
 - defined at: `src/melder/aether/aetheric_mediator/information_registry.py:25`
 - extends: `Cleanable`
+- role: One 'this region was last changed by this reporter at this time' baseline.
+- responsibilities: `stay immutable and be REPLACED WHOLESALE on each report rather than mutated, so a reader holding one never observes it change underneath`, `carry no lock - every mutation of the map holding these happens under the registry's RLock`
+- owns_state: `fact_family`, `region`, `reporter`, `reported_at`
+- phases: `runtime`, `cleanup`
 - public methods: `age_seconds`, `cleanup`, `describe`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `InformationRegistry` (class)
 
 - id: `melder.aether.aetheric_mediator.information_registry.InformationRegistry`
 - defined at: `src/melder/aether/aetheric_mediator/information_registry.py:155`
 - extends: `Cleanable`
+- role: The reporting surface: answers 'what is happening right now' and 'has this region changed since I last looked' without touching live subsystem state.
+- responsibilities: `stay CALLER-PAID - nothing in the runtime reports automatically, which keeps the admission hot path free of reporting cost`, `return DETACHED results: values and strings, never a live StagedTransaction or Identity`, `copy under its RLock so a caller never holds a reference into live registry state`
+- owns_state: `_lock`, `_facts`, `_active`
+- phases: `runtime`, `cleanup`
 - public methods: `activity_by_scope`, `activity_by_submitter`, `activity_by_type`, `cleanup`, `describe`, `get_fact`, `register_activity`, `report_fact`, `stale_regions`, `unregister_activity`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3360,15 +3390,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.mediator`
 - defined at: `src/melder/aether/aetheric_mediator/mediator.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The plane root Aether holds - admission, sessions, strategies and reporting behind one front door. Imports stdlib and melder.utilities ONLY.
 
 #### `Mediator` (class)
 
 - id: `melder.aether.aetheric_mediator.mediator.Mediator`
 - defined at: `src/melder/aether/aetheric_mediator/mediator.py:45`
 - extends: `Cleanable`
+- role: The plane root Aether holds: the single front door every top-level structural transaction passes through.
+- responsibilities: `own and clean the claim table, admission orchestrator, information registry and strategy builder, in reverse construction order - the table LAST, because its cleanup wakes anyone parked in wait_for_change`, `key sessions PER IDENTITY, PER THREAD: same identity re-entering JOINS (depth increments); a different identity on the same thread opens its own root`, `import stdlib and melder.utilities ONLY - never melder.aether, which is what lets it exist before any frame can`
+- owns_state: `_lock`, `_claim_table`, `_orchestrator`, `_information_registry`, `_strategy_builder`, `_max_wait_seconds`, `_thread_local`, `_sessions_by_request_id`
+- phases: `init`, `runtime`, `cleanup`
 - public methods: `begin`, `cleanup`, `commit`, `describe`, `fail`, `has_participant`, `participants`, `register_participant`, `reporting`, `strategies`, `unregister_participant`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3404,21 +3437,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.scope_keys`
 - defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Canonical scope-key construction: the closed namespace vocabulary plus the builders that are the ONLY sanctioned way to make a key.
 
 #### `ScopePrefix` (enum)
 
 - id: `melder.aether.aetheric_mediator.scope_keys.ScopePrefix`
 - defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:16`
 - markers: `StrEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The CLOSED vocabulary of scope-key namespaces - the levels this plane can isolate at, as a type rather than loose strings.
+- responsibilities: `name each isolation level once, in one place`, `stay closed: a caller reaching for a non-member prefix is the signal a level is MISSING, not an invitation to format a string by hand`
+- phases: `init`, `runtime`
 
 #### `ScopeKey` (class)
 
 - id: `melder.aether.aetheric_mediator.scope_keys.ScopeKey`
 - defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:56`
+- role: The only sanctioned way to build a scope key, because a typo in a hand-written key does not fail loudly - it silently claims the wrong thing.
+- responsibilities: `build FLAT, NAMESPACED keys - one string space with a subsystem or level prefix, keeping acquisition O(requested scopes) dict operations`, `express the HIERARCHY BY MODE, NOT BY KEY SHAPE: 'world' is the parent of every frame, but that relationship lives in the claim mode`, `never be instantiated - a namespace of static builders over ScopePrefix, holding no instance state`
+- phases: `init`, `runtime`
 - public methods: `frame`, `is_world`, `subsystem`, `world`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edge candidates (1, unconfirmed)
 
@@ -3441,15 +3478,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.staged_transaction`
 - defined at: `src/melder/aether/aetheric_mediator/staged_transaction.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The immutable post-admission record of what was GRANTED - what commit-time hooks adjudicate against.
 
 #### `StagedTransaction` (class)
 
 - id: `melder.aether.aetheric_mediator.staged_transaction.StagedTransaction`
 - defined at: `src/melder/aether/aetheric_mediator/staged_transaction.py:21`
 - extends: `Cleanable`
+- role: The immutable post-admission record - the inverse of a request: a request is what was ASKED FOR, this is what was GRANTED.
+- responsibilities: `give commit-time work a fixed detached view of what was admitted, without handing it the live session or the claim table`, `stay value-only, carrying metadata already validated through MetadataPolicy and re-copied rather than aliased`, `be cleaned by ONE owner at ONE moment: TransactionSession.cleanup()`
+- owns_state: `_request_id`, `_transaction_type`, `_submitter_kind`, `_submitter_id`, `_admitted_at`, `_granted_scopes`, `_metadata`
+- phases: `runtime`, `cleanup`
 - public methods: `admitted_at`, `cleanup`, `describe`, `from_request`, `granted_scopes`, `metadata`, `regions`, `request_id`, `submitter_id`, `submitter_kind`, `transaction_type`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3478,15 +3518,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.strategy_builder`
 - defined at: `src/melder/aether/aetheric_mediator/strategy_builder.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The transaction-type -> strategy-class registry; a missing answer is a loud early failure.
 
 #### `StrategyBuilder` (class)
 
 - id: `melder.aether.aetheric_mediator.strategy_builder.StrategyBuilder`
 - defined at: `src/melder/aether/aetheric_mediator/strategy_builder.py:21`
 - extends: `Cleanable`
+- role: The registry resolving a transaction type to its strategy class - the one way to answer 'who decides what this transaction claims'.
+- responsibilities: `make a MISSING answer a loud early failure rather than a silent default`, `store the type object itself, never an instance`, `let re-registration REPLACE the previous class deliberately, so a subsystem can override a default - silently keeping the first registration would be the worse behaviour`
+- owns_state: `_lock`, `_strategies`
+- phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `is_registered`, `missing_types`, `register`, `resolve`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3517,22 +3560,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.transaction_request`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_request.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The immutable pre-admission request, frozen before admission, plus the MetadataPolicy that enforces its value-only rule.
 
 #### `MetadataPolicy` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_request.MetadataPolicy`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_request.py:22`
+- role: The value-only guard that ENFORCES, rather than documents, the rule that a frozen transaction record carries values only.
+- responsibilities: `permit None, bool, int, float, str (covering StrEnum members), and tuple/list/dict recursively composed of those with str keys`, `reject everything else LOUDLY at the construction boundary, so a record stays safe to log, ship and retain after the runtime objects it describes are gone`, `never be instantiated - two static methods over caller-supplied mappings`
+- phases: `runtime`
 - public methods: `empty`, `normalize`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `TransactionRequest` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_request.TransactionRequest`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_request.py:172`
 - extends: `Cleanable`
+- role: The immutable pre-admission record, FROZEN BEFORE ADMISSION so acquisition reads a fixed snapshot.
+- responsibilities: `state what is being done, by whom, over which scopes, in which modes`, `stay frozen so the same request cannot admit differently depending on read timing - this is what makes admission deterministic and replayable`, `store the submitter as its two identity STRINGS, holding no live references`, `be cleaned by ONE owner at ONE moment: TransactionSession.cleanup()`
+- owns_state: `_request_id`, `_transaction_type`, `_submitter_kind`, `_submitter_id`, `_created_at`, `_scope_claims`, `_metadata`
+- phases: `runtime`, `cleanup`
 - public methods: `build`, `claim_map`, `cleanup`, `created_at`, `describe`, `metadata`, `request_id`, `scope_claims`, `scope_keys`, `submitter_id`, `submitter_kind`, `transaction_type`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3566,37 +3614,47 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.transaction_session`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The live transaction span: root ownership, same-thread joins, described rollback actions, and the UNWIND / LEAVE_BROKEN outcome policy.
 
 #### `OutcomePolicy` (enum)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.OutcomePolicy`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:22`
 - markers: `StrEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: What a transaction does to the world when it fails - an EXPLICIT per-transaction choice rather than an accident of whichever path raised.
+- responsibilities: `UNWIND: run registered rollback actions newest-first, then raise; the world is returned toward its prior shape`, `LEAVE_BROKEN: run NO rollback actions, record precisely what was left in place, and mark the session BROKEN - the half-built world is a WORK SURFACE for a repairing agent, not debris`
+- phases: `runtime`
 
 #### `SessionStatus` (enum)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.SessionStatus`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:61`
 - markers: `StrEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The lifecycle state of one session, in which BROKEN is a DISTINCT TERMINAL STATE and deliberately not a flavour of ABORTED.
+- responsibilities: `separate aborted (world returned toward its prior shape) from broken (world knowingly left mid-flight for repair)`, `preserve the distinction an agent needs to know whether there is anything to go and fix`
+- phases: `runtime`
 
 #### `_RollbackAction` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_session._RollbackAction`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:90`
 - extends: `Cleanable`
+- role: One registered inverse paired with a description - the owner of the single most dangerous reference in this package, a caller-supplied closure.
+- responsibilities: `make the DESCRIPTION mandatory: under LEAVE_BROKEN the action is never invoked, so the description is the ONLY record of what was left in place, and an undescribed action is invisible residue`, `release the closure at an exact chosen moment via cleanup`, `hold no lock - built and cleaned only while the owning session's lock is held`
+- owns_state: `action`, `description`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `TransactionSession` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.TransactionSession`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:177`
 - extends: `Cleanable`
+- role: One live transaction span owned by exactly one root thread: everything true about a transaction between admission and its terminal state.
+- responsibilities: `fail a FOREIGN-thread join FAST, naming the owning thread, rather than waiting - a cross-thread re-begin is a caller bug and blocking would turn it into a hang`, `depth-count same-thread joins so nested work by one actor is safe`, `NOT own or reference the claim table - releasing claims belongs to the orchestrator`, `drop the rollback action list on cleanup WITHOUT running it: a session being cleaned is not a session being aborted, and quietly firing inverses during teardown would be an invisible mutation`
+- owns_state: `_lock`, `_request`, `_staged`, `_holder`, `_owner_thread_id`, `_depth`, `_status`, `_failure_reason`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `depth`, `describe`, `discard_inverses`, `fail`, `failure_reason`, `holder`, `join`, `leave`, `leave_broken_residue`, `mark_committed`, `mark_committing` (+5 more)
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3628,15 +3686,17 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.transaction_strategy`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The dispatch contract every transaction family implements, and where scope proportionality is decided.
 
 #### `TransactionStrategy` (abstract)
 
 - id: `melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_strategy.py:28`
 - markers: `ABC`
+- role: The dispatch contract every transaction family implements, and where SCOPE PROPORTIONALITY is decided.
+- responsibilities: `define what a transaction of a given type CLAIMS, plus its local work at start, end and commit`, `keep build_start_plan PURE - it reads identity and metadata and returns a claim map, mutating nothing`, `be REGISTERED AS A CLASS, never an instance: every hook is static or class level, so there is no per-strategy state to guard and concurrency lives entirely in the mediator`
+- phases: `runtime`
 - public methods: `apply_commit_delta`, `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/transaction_strategy.py -->
 
@@ -3653,14 +3713,16 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.transaction_type`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_type.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The closed transaction vocabulary the plane admits; adding an operation means adding a member AND registering its strategy.
 
 #### `TransactionType` (enum)
 
 - id: `melder.aether.aetheric_mediator.transaction_type.TransactionType`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_type.py:15`
 - markers: `StrEnum`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The CLOSED set of top-level operations the plane admits, so admission, dispatch, activity indexes and logs all key on one stable vocabulary.
+- responsibilities: `name every structural operation that can claim scopes at world level`, `stay closed: wanting to pass a non-member string is the signal a STRATEGY is missing, not a reason to widen the type`, `keep values stable - they travel into request payloads, admission evidence and logs`
+- phases: `init`, `runtime`
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/transaction_type.py -->
 

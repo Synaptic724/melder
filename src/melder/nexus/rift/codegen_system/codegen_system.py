@@ -112,7 +112,7 @@ class CodegenSystem(Cleanable):
         "_monitor",
     ]
 
-    def __init__(self, *, rift: Rift, space: CodegenRiftSpace) -> None:
+    def __init__(self, *, rift: "Rift", space: "CodegenRiftSpace") -> None:
         """
         Initialize one root codegen system.
 

@@ -122,7 +122,7 @@ class CodegenRiftSpace(RiftSpace):
         )
         self.command_system.attach_codegen_system(self._codegen_system)
 
-    def _create_command_system(self, rift: Rift) -> CommandSystem:
+    def _create_command_system(self, rift: "Rift") -> "CommandSystem":
         """
         Build the codegen room's command system.
 

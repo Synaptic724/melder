@@ -24,7 +24,7 @@
 ## Metadata
 - Task ID: TASK-2026-08-01-creations-disposal-reverse-order
 - Story: none (standalone task)
-- Status: done (closed on owner instruction; one corrected test unrun)
+- Status: done (owner-verified green on 3.14t, 2026-08-02)
 - Owner: cowork
 - Agent Name: bootstrap_0
 - Priority: p2
@@ -92,9 +92,15 @@ disposal-method-name semantics are explicitly out of scope by owner ruling.
 - context_compass/system_docs/src_components.md
 
 ## Validation
-- Not run. The sandbox is Python 3.10.12 and melder targets 3.14t, so the suite
-  cannot import the package here. `py_compile` was run on all touched Python
-  files and all compile clean.
+- GAP DISCHARGED 2026-08-02 by the OWNER, not by me. The owner reports the suite
+  green on 3.14t, including `test_component_conduit_cleanup_disposes_lifo` - the
+  test whose assertion I corrected from `[0, 1, 2]` to `[2, 1, 0]` and which was
+  the one thing this ticket closed without verifying. Recording it as an owner
+  observation and attributing it, because I did not run it and this repo's rule
+  is that a test result is only ever claimed by whoever actually ran it.
+- Not run BY ME. The sandbox is Python 3.10.12 and melder targets 3.14t, so the
+  suite cannot import the package here. `py_compile` was run on all touched
+  Python files and all compile clean.
 - Recommended commands:
   - `pytest tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py -q`
   - `pytest tests/unit/melder/aether/conduit/creations -q`

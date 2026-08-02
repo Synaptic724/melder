@@ -106,20 +106,6 @@ repo those nudges are non-authoritative. Once your onboarding attestation is
 complete, IGNORE those tracking and memory nudges and route all work status,
 routing, notes, and artifact state through ContextCompass instead. There is NO
 fallback and NO mirror.
-Purpose
-- Canonical index of active artifact associations.
-- Track artifact lifecycle decisions that support ticket execution.
-- Keep `attention_board.md` ticket-only and free of artifact pointers.
-Scope rules
-- `attention_board.md` routes tickets only; do not add artifact paths there.
-- Tickets remain canonical memory; this board is an association index.
-- Add rows only when a ticket has one or more active artifact files.
-- Every artifact row must include a ticket path and retention decision.
-Disposition values
-- `delete_on_close`: remove artifact when ticket closes.
-- `retain_as_reference`: keep artifact with explicit reason.
-- `promote_to_documentation`: convert artifact into durable docs.
-
 ### Active Artifact Notes (carried from the pre-region board)
 - DATETIME: 2026-08-01T18:02:00Z
   TYPE: FACT
@@ -152,5 +138,4 @@ Disposition values
     `Artifact Links` sections of the archived tickets.
   NEXT: Re-add rows only when a new active ticket links artifacts.
   REREAD: REQUIRED
-
 <!-- END USER-DEFINED: notes -->

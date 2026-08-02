@@ -137,9 +137,6 @@ def test_user_held_work_surfaces_are_loaded():
     """
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.conduit.spell_space.spell_space import SpellSpace
-    from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import (
-        SpellExaminer,
-    )
     from melder.crystallizer.asset_management.external_persistence_manager import (
         ExternalPersistenceManager,
     )
@@ -159,7 +156,6 @@ def test_user_held_work_surfaces_are_loaded():
 
     assert melder.ConduitCloud is ConduitCloud
     assert melder.SpellSpace is SpellSpace
-    assert melder.SpellExaminer is SpellExaminer
     assert melder.ExternalPersistenceManager is ExternalPersistenceManager
     assert (
         melder.ExternalPersistenceManagerConfiguration
@@ -259,6 +255,13 @@ def test_internal_depths_stay_off_the_root():
         "ClaimMode",
         "ConduitCluster",
         "StaticFrameViewer",
+        # Owner ruling 2026-08-02: SpellExaminer is Bind's private reflection
+        # registry (Bind owns_lifecycle_of SpellExaminer, one_to_one). It was
+        # exported with an extension point - register_profile_builder(...) -
+        # but no public accessor ever reached the live instance, so the
+        # extension API was unusable from outside. Curated off the root
+        # rather than left as half a feature.
+        "SpellExaminer",
     ):
         assert name not in melder.__all__
         assert name not in vars(melder)

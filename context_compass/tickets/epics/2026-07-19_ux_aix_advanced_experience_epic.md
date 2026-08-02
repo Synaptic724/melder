@@ -224,10 +224,231 @@ crystallizer save/load, and synthetic modules. See the tier scope note below.
   REREAD: REQUIRED
   SCORE_0_TO_10: 6
 
+- DATETIME: 2026-08-02T18:00:00Z
+  TYPE: MEASURE
+  CLAIM: ARCS A-E AUTHORED. Lessons 08-20 written (06 stays RETIRED), tier
+    goes 6 -> 19 authored lesson files. `test_advanced_probes.py` goes 4 rows
+    -> 62. Public-root coverage moves from 27/65 names exercised to 48/65 -
+    advanced closed 21 names.
+    REMAINING 17 UNUSED, and they sort cleanly:
+      EXPERT (11): MutationResearch(+Configuration+Builder), ResearchSet,
+        LaneState, LaneType, DiffEngine, ExternalPersistenceManager(+Config),
+        CrystallizerBootstrap, ProtocolCrafter
+      INTERMEDIATE (1): ConduitCloud (owner ruling 2026-08-02)
+      UNRULED (2): Scan, SpellExaminer
+      NOT LESSON MATERIAL (3): __author__, __description__, __license__
+  EVIDENCE: scripted `md.<Name>` sweep over UX_and_AIX_experiences/**/[0-9]*.py
+    against `melder.__all__`, run 2026-08-02 before and after authoring.
+  IMPACT: The advanced tier's share of the public surface is done. Expert now
+    has a fully enumerated target list rather than a vibe.
+  NEXT: owner ruling on Scan and SpellExaminer; expert tier opens on the 11.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T18:00:00Z
+  TYPE: FACT
+  CLAIM: DEFECT - FRAME-SCOPED VIEW ACCESSORS DECLARE A DEFAULT THAT IS NEVER
+    VALID. `FrameViewer.get_view_frame`, `get_view_conduit`, `get_view_spell`,
+    `describe_visible_surface` and `describe_missing_surface` are all typed
+    `frame_name: Optional[str] = None` and then reject None UNCONDITIONALLY
+    with `ValueError: frame_name is required.` A reader who trusts the
+    signature calls get_view_frame() and is refused for using the documented
+    default.
+  EVIDENCE:
+  - src/melder/nexus/rift/frame_viewer/frame_viewer.py:2204 (call site)
+  - src/melder/nexus/rift/frame_viewer/frame_viewer.py:2480 (unconditional raise)
+  - owner 3.14t run 2026-08-02: 11 of 16 failures traced to this single cause
+  IMPACT: This is the highest-yield finding of the tier. It cost arc C a full
+    rewrite and it will cost every user the same confusion once. The fix is
+    either `frame_name: str` with no default, or routing None somewhere.
+    NOTE: get_view_multiframe() is HOST-SCOPED and correctly needs no name -
+    the split itself is good design, only the signature is wrong.
+  NEXT: owner decision - tighten the signature or restore default routing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-08-02T18:00:00Z
+  TYPE: FACT
+  CLAIM: TWO DOC DRIFTS, same shape as the known false `with_defaults()`
+    docstring at spellbook_configuration.py:1062-1064.
+    (a) `RiftSpaceType` documents a fourth member - "dynamic: Legacy alias for
+        codegen" - that DOES NOT EXIST. No member, no `_missing_` handler, so
+        RiftSpaceType("dynamic") raises.
+    (b) `Workstation.describe_bindings` documents "a FOUR-KEY summary...
+        always with all four keys present, so callers can index" and RETURNS
+        FIVE - it also emits `target_store`. This one explicitly invites
+        callers to rely on the count.
+  EVIDENCE:
+  - src/melder/nexus/configuration/rift_space_type.py:22,44,55
+  - src/melder/nexus/rift/rift_space/workstation.py:416-450
+  IMPACT: Three known drifts of identical shape now. Worth a sweep rather than
+    three point fixes - a docstring that states a count or a member list is a
+    testable claim and nothing currently tests them.
+  NEXT: Both pinned in test_advanced_probes; each row asserts BOTH sides so it
+    goes red when either the code or the prose is corrected.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T18:00:00Z
+  TYPE: FACT
+  CLAIM: INIT-SURFACE GAPS FOUND WHILE AUTHORING, all pinned as probes.
+    (a) `md.AethericFrameConfiguration` is exported and CANNOT BE INSTALLED
+        from the public root. Spellbook.__init__ takes a SpellbookConfiguration;
+        every path to the live posture is private; configure_aether_frame
+        reaches 2 of 15 knobs.
+    (b) AR TARGETING IS UNREACHABLE. Nexus raises "AR requires rift_enabled on
+        target frame" (nexus.py:2957) and nothing public sets rift_enabled.
+        Rifts, rooms and workstations ARE reachable - only AR is not.
+    (c) WARD POLICY IS WRITE-ONLY. `set_new_policy` is public; there is no
+        public reader. Authority you can change and cannot audit.
+    (d) `Conduit.set_new_policy` is annotated `policy: str` but the ward
+        accepts `str | Policies` - the hint under-sells the code, and the
+        exported enum works.
+  EVIDENCE: lessons 08, 11, 18 + their probe rows.
+  IMPACT: Four concrete items for the init/public-surface program, each with a
+    test that flips when the gap closes.
+  NEXT: owner triage.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T18:00:00Z
+  TYPE: MEASURE
+  CLAIM: FIRST OWNER RUN: 16 failures, FOUR root causes, three of them mine.
+    MINE: (1) `Crystallizer.is_activated` is a @property, called as a method.
+    (2) weak-binding probe passed a temporary with no strong reference, so the
+    weakref died before assertion - correct melder behaviour, bad test.
+    (3) I claimed the room kinds override ONE property; they override TWO.
+    NOT MINE: (4) the frame_name default defect above, which accounted for 11
+    of the 16.
+  EVIDENCE: owner 3.14t run 2026-08-02, pytest_examples --last-failed.
+  IMPACT: Correction (3) IMPROVED the curriculum. StaticRiftSpace overrides
+    `command_system` AND `frame_viewer`, so the room kind narrows WHAT YOU MAY
+    DO and WHAT YOU MAY SEE together, both by handing over a different class
+    rather than guarding a shared one. Lessons 12 and 13 now teach the pair.
+  NEXT: re-run; all 16 addressed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T18:00:00Z
+  TYPE: FACT
+  CLAIM: TWO CURRICULUM THROUGH-LINES emerged from the source rather than from
+    a plan, and are now taught forward from the concept map.
+    (1) PRESENCE IS NEVER LIVENESS. Every subsystem splits it into two bits:
+        frozen/activated (09), is_configured/is_enabled (10),
+        is_registered/is_active (11), and the crystallizer pair (19).
+    (2) MELDER NEVER SUBSTITUTES. validate() raises rather than returning
+        False (08); static has no meld() rather than refusing it (13); weak
+        binding raises rather than degrading to strong (14); the blind-spot
+        report refuses rather than returning an empty dict (17); a policy
+        change that cannot be honestly applied is refused, never partial (18).
+        THE ONE DELIBERATE EXCEPTION is flush_checkpoint's remote leg, which
+        is lenient BY CONTRACT and says so (20).
+  EVIDENCE: UX_and_AIX_experiences/03_advanced/_concept_map.txt
+  IMPACT: These give the tier a spine and give a reader a predictive rule for
+    objects they have not met. Worth carrying into expert.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 7
+- DATETIME: 2026-08-02T18:00:00Z
+  TYPE: MEASURE
+  CLAIM: CONFIGURATION DIVERGENCE, MEASURED. Nine public configuration objects
+    carry FIVE different terminator sets. Subsystem activation is 3-to-1:
+    Aether, Crystallizer and MutationResearch all require the CALLER to
+    activate the configuration before the subsystem; NEXUS alone does it
+    inside enable(). Owner note: "activate means something specific" - the
+    divergence is Nexus, not the verb.
+  EVIDENCE: _concept_map.txt tables; probe
+    test_probe_caller_driven_activation_is_the_house_rule_three_to_one.
+  IMPACT: Hard evidence for EPIC-2026-08-01-configuration-surface-uniformity,
+    collected as a by-product of teaching rather than as a separate
+    investigation.
+  NEXT: feed into that epic when it reopens.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-02T18:20:00Z
+  TYPE: DECISION
+  CLAIM: THE LAST TWO UNRULED PUBLIC NAMES ARE RULED. Owner 2026-08-02:
+    `Scan` -> INTERMEDIATE. `SpellExaminer` -> INTERNAL, "not for users or
+    agents" - NO TIER, recorded as a REJECTED CURATION CALL per this epic's
+    exit gate.
+  EVIDENCE: owner directive this session.
+  IMPACT: Every name in `melder.__all__` now has a tier or a documented
+    reason for having none. The advanced tier's contribution to the
+    init/public-surface program is complete on the classification axis.
+    Note for the intermediate epic: a Scan lesson EXISTED and was killed
+    (`_to_delete/_gone_05_scan_bind_decorator.py`) - it returns at
+    intermediate, and whoever picks it up should read why it died first.
+  NEXT: intermediate epic gains Scan and ConduitCloud.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T18:40:00Z
+  TYPE: DECISION
+  CLAIM: THE SPELLEXAMINER CONFLICT BELOW IS RESOLVED AND EXECUTED. Owner
+    ruling 2026-08-02: remove it from `__all__`. Done, following the existing
+    counter-example law rather than half-removing it:
+      - `src/melder/__init__.py` - import AND `__all__` entry removed
+        (`__all__` is now 64 names, py_compile clean)
+      - `tests/unit/melder/test_package_public_surface.py` - the identity
+        assertion dropped, and "SpellExaminer" added to the curated-exclusions
+        tuple in `test_internal_depths_stay_off_the_root` beside ConduitWard
+        and Meld, with the reasoning inline
+      - the advanced probe inverted to pin the REMOVAL
+    Removing only the `__all__` entry would have left `melder.SpellExaminer`
+    still resolving - advertised-as-gone but reachable - and that test asserts
+    exclusions are absent from `__all__` AND the namespace.
+  EVIDENCE: verified after edit - zero remaining references to
+    `md.SpellExaminer` / `melder.SpellExaminer` outside `src/melder/`.
+  IMPACT: THE REASON MATTERS MORE THAN THE REMOVAL, and it is recorded at the
+    exclusion site: this was not an internal helper that leaked. It was
+    exported WITH a working extension point - `register_profile_builder(...)`
+    and "the registry remains open for explicit extension" - that nobody could
+    reach, because the only live instance is Bind's private
+    `self._spell_examiner`. Public class, public extension API, private
+    instance: half a feature. If that extension point is ever wanted for real,
+    the fix is NOT to re-export the class - it is to expose the examiner on
+    `Bind`.
+  NEXT: NOTE FOR THE OWNER - `tests/unit/melder/test_package_public_surface.py`
+    is not this epic's suite. The edit is minimal and follows that file's own
+    convention, but whoever owns it should see it rather than discover it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T18:20:00Z
+  TYPE: CONFLICT
+  CLAIM: [RESOLVED 2026-08-02 - see the DECISION above.] `SpellExaminer` IS
+    RULED INTERNAL BUT IS STILL PUBLIC, AND THE CLASS ITSELF SAYS NOTHING. It is exported from `melder.__all__`, and unlike
+    `Scan` - which carries `AGENT_ACCESS: internal` and `AGENT_ACCESS: public`
+    markers on its surfaces - `SpellExaminer` declares NO access marker of any
+    kind. So it is currently neither public nor internal by its own account,
+    while sitting in the public root.
+  EVIDENCE:
+  - src/melder/__init__.py `__all__` contains "SpellExaminer"
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py
+    - no AGENT_ACCESS / Internal / Public API marker in the class docstring
+  - src/melder/aether/spellbook/bind/scan.py:101,277 - Scan DOES mark itself
+  IMPACT: An unmarked name in `__all__` is the worst of both worlds: agents
+    and users will find it by enumeration and have nothing telling them not
+    to use it. The owner ruling exists only in a ticket, not in the code.
+  NEXT: OWNER DECISION - either mark it internal and drop it from `__all__`,
+    or mark it public and give it a tier. Pinned by
+    test_probe_spell_examiner_is_exported_but_carries_no_access_marker, which
+    goes red the moment either half is acted on.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
 owner's 3.14t runs (device VM cannot import the runtime).
+
+STATE AT 2026-08-02 (second update this session): ARCS A-E ALL AUTHORED.
+Lessons 08-20 exist, probes are at 62 rows, public-root coverage is 48/65.
+First owner run produced 16 failures across four root causes; all addressed
+and awaiting a re-run. Do NOT treat the tier as green until that re-run lands.
+
+THE ONE THING TO ACT ON: the frame_name defect. Five FrameViewer reads declare
+`frame_name: Optional[str] = None` and reject None unconditionally. It caused
+11 of 16 failures and forced arc C to map its surfaces off the exported TYPES
+instead of live instances. Arc C is honest as written, but it teaches less
+than it could until a frame can actually be assigned from the public root.
+
+STILL OPEN: owner ruling on `Scan` and `SpellExaminer` (the only two unruled
+public names). ConduitCloud belongs to INTERMEDIATE, not here. Everything else
+unused is expert material and is now enumerated in the MEASURE note above.
 
 STATE AT 2026-08-02: 7 lesson slots used, 6 authored (06 is RETIRED, not
 missing - do not refill it). Tier scope was corrected by the owner on

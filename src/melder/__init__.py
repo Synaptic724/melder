@@ -89,9 +89,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
-from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import (
-    SpellExaminer,
-)
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.crystallizer.asset_management.external_persistence_manager import (
@@ -234,7 +231,6 @@ __all__ = [
     "Spell",
     "SpellBinder",
     "SpellContract",
-    "SpellExaminer",
     "SpellIndex",
     "SpellMap",
     "SpellSpace",

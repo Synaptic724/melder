@@ -4,7 +4,7 @@
 - Story ID: STORY-2026-07-19-bind-kwargs-transplant
 - Status: in_progress
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE. NOTE: examples_0 holds the four sibling UX/AIX tier epics; the outstanding owner ruling at attention_board.md on whether this row moves with them is NOT resolved by this unassignment)
 - Priority: p1
 - Created: 2026-07-19T14:12:00Z
 - Updated: 2026-07-19T14:12:00Z

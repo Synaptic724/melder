@@ -2,12 +2,12 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-08-01-conflict-manager-zombie
-- Status: ready (filed for later per owner; NOT active, no board row)
+- Status: in_progress (investigation delivered 2026-08-02; awaiting owner DECISION)
 - Owner: cowork
-- Agent Name: UNASSIGNED
+- Agent Name: bootstrap_0
 - Priority: p3
 - Created: 2026-08-01T00:05:04Z
-- Updated: 2026-08-01T00:05:04Z
+- Updated: 2026-08-02T18:30:00Z
 - Target Window: UNKNOWN
 - Related Program/Initiative: EPIC-2026-07-31-aetheric-mediator-subsystem
   (the port that surfaced this)
@@ -170,6 +170,173 @@ Not run - investigation stage.
     both sides.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+## INVESTIGATION (bootstrap_0, 2026-08-02T18:30:00Z)
+
+Read-only. No code changed. Every "STILL ALIVE" line in the Problem section was
+re-verified line by line and **all of them hold** - this epic's facts are
+accurate as filed.
+
+### Lane 1 - CAN HASH OVERLAP EXIST WITHOUT KEY OVERLAP? **YES. Demonstrably, and there is already a green test doing it.**
+
+The mechanism is in `_normalize_hashes` (`conflict_manager.py:156-163`):
+
+    if scope_hashes:
+        return {hash_value for hash_value in scope_hashes if hash_value}
+    ...
+    return {sha256(key) for key in scope_keys if key}
+
+**Supplied hashes WIN and the keys are then ignored entirely.** Derivation is the
+fallback, not the rule. The same precedence is enforced upstream at
+`transaction_manager.py:261-263`: hashes are derived from keys ONLY when the
+caller supplied none.
+
+And `scope_hashes` is not an internal detail - it is a **public parameter**:
+- `Spellbook.begin_transaction(..., scope_hashes=...)` - `spellbook.py:4069`
+- `Conduit.begin_transaction(..., scope_hashes=...)` - `conduit.py:2718`
+- `TransactionMediator.begin_transaction(..., scope_hashes=...)` - `transaction_mediator.py:400`
+
+So a caller can hand in any opaque strings they like, with any scope keys they
+like. The two are not required to relate.
+
+The concrete case Lane 1 asked for **already exists as a live integration test**,
+`test_change_control_scope_hash_only_roots_admit_independently`
+(`tests/integration/melder/aether/test_aether_integration_change_control_transactions.py:219-260`):
+two DIFFERENT spellbooks, two different conduits, identical `scope_hashes`, no
+shared scope keys - and the test asserts **both admit**, 2 in flight. The old
+`find_conflicts` would have reported that pair as conflicting
+(`req_hashes.intersection(active_hashes)`); the claim table admits it.
+
+**So the behaviour did change, and the change is deliberate and asserted.** The
+test's own Contract states it: "Scope KEYS are the admission vocabulary; scope
+hashes are advisory identity evidence and carry no claims."
+
+### THE FINDING THAT REFRAMES THIS EPIC
+
+The epic asks whether a capability was lost. The sharper answer is that
+**`scope_hashes` is a PUBLIC API parameter that promises behaviour it does not
+deliver.** The docstring on both public verbs reads, verbatim:
+
+> `scope_hashes:` Optional normalized scope hashes **for conflict checks**.
+> (`spellbook.py:4100-4101`, `conduit.py:2751-2752`)
+
+There are no conflict checks. `request.scope_hashes` is READ at exactly two
+lines in the entire source tree - `conflict_manager.py:121` and `:127` - both
+inside `find_conflicts`, which has **zero call sites**. Everything else in the
+~70 `scope_hashes` occurrences is plumbing: accept, normalize, store, expose.
+
+This is the second zombie the epic's Open Questions suspected, and it is the
+**worse** of the two:
+- The CLASS is internal. It costs construction and a slot, and no user can see it.
+- The PARAMETER is public surface with a written promise. A user who passes
+  `scope_hashes` reads "for conflict checks", reasonably concludes they have
+  declared an overlap, and receives no isolation - silently, with a green test
+  guaranteeing the silence.
+
+A dead internal class is waste. A public parameter that lies is a trap.
+
+### Lane 2 - WHY WAS IT RETIRED? **Not recoverable. Recording that as the finding.**
+
+`git log -S find_conflicts` surfaces three commits, none of which is the
+retirement. The story that landed the scope-acquisition plane
+(`2026-06-12_implement_scope_acquisition_control_plane_story.md`) was **deleted**
+in commit `14a8ab77f` ("Delete deprecated ... files"), and recovering it from
+`14a8ab77f^` yields no text matching conflict/hash/retire. The in-code statement
+at `orchestrator.py:393-395` records the POSITION - "the legacy in-flight
+conflict scan is retired and `conflict_manager` is accepted for signature
+compatibility only" - but not the REASONING.
+
+So the question "was it removed as redundant, or as too conservative?" cannot be
+answered from history. It has to be decided on merits now. I am not going to
+manufacture a reason and present it as recovered.
+
+### Lane 3 - WHAT DO THE TESTS ACTUALLY GUARD? **Not the capability in question.**
+
+`test_conflict_manager.py` holds four tests:
+- `..._cleanup_is_idempotent_and_blocks_reuse` (:13) - cleanup mechanics
+- `..._cleanup_rechecks_cleaned_inside_lock` (:34) - cleanup mechanics
+- `..._find_conflicts_returns_empty_for_none_request` (:90) - null guard
+- `..._detects_key_only_overlap_without_hashes` (:107) - **the KEY branch**
+
+Three test teardown hygiene. The one that tests detection constructs BOTH
+requests with `scope_hashes=()` and states in its own Contract: "The raw-key
+branch is used even when scope_hashes are empty."
+
+**Zero tests cover hash-overlap-without-key-overlap** - the exact capability this
+epic exists to adjudicate. The suite is green and proves the unit works; it does
+not protect the behaviour anyone would miss. This is precisely the shape the
+epic's Risk section named, confirmed rather than assumed.
+
+### Lane 4 - CARRYING COST, measured
+
+- constructed per frame - `change_control_manager.py:204`
+- TWO `__slots__` entries - `change_control_manager.py:139`, `transaction_mediator.py:123`
+- **MANDATORY**: `transaction_mediator.py:185-186` raises `ValueError` if it is
+  `None`, so a mediator cannot be constructed without one
+- cleaned in two places - `change_control_manager.py:305-306` and `:323`,
+  `transaction_mediator.py:254`
+- public property - `change_control_manager.py:896-905`
+- threaded through two signatures - `change_control_manager.py:225`, `:972`,
+  `transaction_mediator.py:139`, `:1231`, `orchestrator.py:380`
+- **`ChangeControlOrchestrator.admit_request` (`orchestrator.py:375`) references
+  `conflict_manager` ZERO times in its body** - verified by AST, not by reading.
+
+### Lane 5 - EXTERNAL CALLERS OF THE PUBLIC PROPERTY? **None.**
+
+Zero property accesses across `src/`, `tests/` and `examples/`. Every textual
+match is the module path `...change_control_manager.conflict_manager.conflict_manager`
+in an import, not `x.conflict_manager` attribute access. Removing the property
+is not an API break anywhere in this repository. I cannot speak for consumers
+outside it.
+
+### COUPLED RISK TO EPIC-2026-07-31 - **CONFIRMED, not reopened**
+
+The aetheric plane dropped scope hashes on the reasoning that nothing consumes
+them. **That reasoning is correct as stated**: nothing does consume them, because
+the only consumer is unreachable. Verified the new plane carries none - a `hash`
+grep over `aetheric_mediator/*.py` returns only Python object-hashing on
+`Identity`, nothing scope-related.
+
+The no-hashes decision stands. One caution worth carrying forward rather than a
+change: DevOps did not get here by accepting hashes, it got here by continuing to
+ACCEPT them publicly after they stopped meaning anything. The plane should hold
+the line that a parameter it accepts must carry a claim.
+
+### WHAT I DID NOT DO
+
+The EXECUTION_BOUNDARY is investigation plus a recorded decision. I deleted
+nothing and revived nothing. The DECISION is the owner's and this epic stays open
+until it is recorded.
+
+### MY READ, offered as input to that decision and not as the decision
+
+The capability question resolves toward **DELETE**, because hash-only isolation
+was never checkable: an opaque caller-supplied string asserts "I overlap
+something" without naming what, whereas a scope key names it and can be
+adjudicated. Keys are the better vocabulary and the claim table is the better
+mechanism.
+
+But deletion should be scoped to **the parameter, not just the class.** Removing
+`ChangeControlConflictManager` while leaving `scope_hashes` accepted on
+`Spellbook.begin_transaction` and `Conduit.begin_transaction` - still documented
+"for conflict checks" - would be the worst of the three outcomes: it removes the
+cheap half and leaves the public lie in place. If the answer is DELETE, the unit
+of work is the parameter, its plumbing, the class, the property, the two
+signatures, and the docstrings - together.
+
+If the answer is KEEP, the acceptance criterion already says the zombie state
+must be documented at the class. I would add: it must also be documented at the
+two PUBLIC verbs, because that is where a user meets it.
+
+### Evidence index (every path:line above was resolved against source)
+`conflict_manager.py` 121, 127, 156-163; `transaction_manager.py` 261-263;
+`transaction_mediator.py` 20, 123, 139, 185-186, 206, 254, 400, 1231;
+`orchestrator.py` 29, 375-380, 393-395, 407; `change_control_manager.py` 139,
+204, 225, 305-306, 323, 896-905, 972; `spellbook.py` 4069, 4100-4101;
+`conduit.py` 2718, 2751-2752;
+`tests/.../test_conflict_manager.py` 13, 34, 90, 107-138;
+`tests/integration/.../test_aether_integration_change_control_transactions.py` 219-260.
+
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

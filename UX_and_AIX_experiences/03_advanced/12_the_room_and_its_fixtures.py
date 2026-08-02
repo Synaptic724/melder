@@ -17,18 +17,23 @@ GOAL: THE ROOM. Every Rift owns exactly one, and the law around it is
       the kind at birth makes the answer cacheable and makes an audit of
       "what can this rift do" a question about creation, not about now.
 
-      THE FIXTURES - every room has the same ones, whatever its kind:
+      THE FIXTURES - every room carries the same SET, whatever its kind:
         space_id / space_name / owner_rift_id / space_kind / metadata
-        frame_viewer     - the read surface over assigned frames (lesson 15)
+        frame_viewer     - the read surface (TYPE VARIES BY KIND)
         workstation      - the binding canvas (lesson 14)
-        command_system   - THE ONE THING THE KIND CHANGES (lesson 13)
+        command_system   - the verb surface (TYPE VARIES BY KIND)
         event_system     - rift-local publish/subscribe
         memory_system    - rift-local command/execution records
         action + category hooks - pre/post interception, unregister by id
 
-      So the room's SHAPE is constant and its AUTHORITY is not. Lesson 13
-      takes the two kinds apart to show that the difference between static
-      and capability is exactly one property.
+      So every room has the same fixtures BY NAME, and two of them differ
+      BY TYPE: command_system and frame_viewer - what you may DO and what
+      you may SEE. The other three are literally the same classes.
+
+      Lesson 13 takes that pair apart. (An earlier draft of these lessons
+      claimed only command_system varied; the owner's 3.14t run proved
+      frame_viewer varies too, and the corrected version is the better
+      story - authority and visibility narrow TOGETHER.)
 SURFACE EXERCISED: md.RiftSpace via rift.space, md.RiftSpaceType,
                    the room fixtures, the one-room law
 VERIFY: rides the owner's 3.14t run; asserts are the contract.

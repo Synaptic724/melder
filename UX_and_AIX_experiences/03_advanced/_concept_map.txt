@@ -71,6 +71,102 @@ AUTHORED
 
 ARC B COMPLETE (lessons 10-14)
 
+  15 the_frame_viewer_facade (FrameViewer is an EXPLICIT facade - its own
+     docstrings say "FACADE PASS-THROUGH to ViewMultiFrame..." and build
+     a fresh view PER INVOCATION, so there is NO CACHED SNAPSHOT and
+     nothing to go stale. Four views behind it: get_view_frame /
+     get_view_conduit / get_view_spell / get_view_multiframe. THE AIX
+     SURFACE, by name: describe_agent_onboarding_json(),
+     describe_viewer_agent_purpose_json(), describe_viewer_method_surface(),
+     list_viewer_method_names_ast_json(). The object onboards its own
+     caller in JSON at runtime instead of assuming the reader found the
+     docs - same idea as list_supported_command_methods() at lesson 13)
+
+  16 the_describe_ladder (GRADED RESOLUTION as a CONTEXT BUDGET CONTROL.
+     ViewSpell: brief / describe / detail / payload, PLUS nine per-facet
+     verbs (identity, source, origin, binding, index, resolution,
+     metadata, research, class_profile). ViewConduit follows the same
+     plan. Cheap rung is always list_* + the narrowing filters - survey
+     400 at brief, pay full price for the 3 that matter. A single fat
+     describe() forces the bad trade: thin and useless, or fat and
+     unaffordable to survey. Also pinned: a rift with NO assigned frames
+     still answers with honest empties - a read surface that throws on an
+     empty world cannot be surveyed with)
+
+  17 what_you_cannot_see (THE READ SURFACE REPORTS ITS OWN BLIND SPOTS.
+     Absence is AMBIGUOUS - melder says so: "absence means 'not visible
+     to this rift' OR 'not present', INDISTINGUISHABLE FROM OUTSIDE". So
+     it ships the disambiguator: describe_spell_missing_sections /
+     describe_conduit_missing_sections / describe_missing_surface. THE
+     WITHHELD-SECTION PROBE reports the NAMES of sections you cannot
+     read and never the bodies - "this is how you tell hidden from empty
+     WITHOUT THE CONTENTS" - which is why it is safe to ship to a
+     low-authority room. visible/missing are COMPLEMENTS; either alone is
+     half an answer. ANTI-FOOTGUN: frame_name is an ASSERTION, not a
+     selector - wrong name raises instead of answering about something
+     else. For an agent this is the difference between "no source
+     binding exists" and "I was not shown the source binding")
+
+ARC C COMPLETE (lessons 15-17)
+
+  18 ward_policies (5 modes over THREE control surfaces: outbound grants,
+     inbound borrowing, and whether per-spell permission/whitelist checks
+     apply at all. THREE REFUSALS: dynamic-mode only; normal conduits
+     only (a lesser is told to convert first); and NO RETROACTIVE
+     LOCKDOWN - block_all/whitelist_all refuse while contracts exist,
+     because melder will neither silently sever grants nor leave them
+     standing under a policy that forbids them. Directional modes stay
+     available since they do not invalidate past grants)
+
+ARC D COMPLETE (lesson 18)
+
+  19 taking_a_checkpoint (CRYSTALLIZER FOLLOWS AETHER'S LADDER, NOT
+     NEXUS'S - same "ORDERING RULE: THE CONFIGURATION MUST BE ACTIVATED
+     FIRST" in the same capitals. So it is 2 vs 1: caller-driven
+     activation is the HOUSE RULE and Nexus is the exception. Guess
+     aether's ladder on a new subsystem and you are right more often
+     than not. CrystallizerConfigurationBuilder is the most generous in
+     the library - build/finalize/activate, ONE TERMINATOR PER RUNG -
+     while AetherConfigurationBuilder offers only build(). THE
+     CHECKPOINT: create_checkpoint(...) -> an ID, and the ID is the whole
+     handle for list/describe/analyze/verify. Checkpoints ACCUMULATE,
+     they never overwrite)
+
+  20 loading_it_back (CREATED vs CACHED are two places a checkpoint can
+     live; flush_checkpoint() is SEAL-THEN-SHIP - one verb, two legs,
+     DIFFERENT GUARANTEES. THE REMOTE LEG IS LENIENT BY DEFAULT: "a
+     successful return does NOT prove the remote received anything". The
+     one deliberate exception to melder's never-substitute rule, and the
+     reason is sound - a network you do not control must not fail your
+     local checkpoint. SECOND WARNING: the cache is FIFO bounded, so a
+     flush CAN EVICT an older cached checkpoint as a side effect. "I
+     flushed it" is not "it is still there" - list_cached_checkpoint_ids
+     is the cheap check. Eviction is a SIDE EFFECT; deletion is a
+     DECISION, with its own verb)
+
+ARC E COMPLETE (lessons 19-20) - ADVANCED TIER PLAN FULLY AUTHORED
+
+CONFIG TERMINATOR DIVERGENCE (evidence for the uniformity epic)
+  AethericFrameConfiguration        freeze, finalize
+  AetherConfiguration               freeze, finalize, activate
+  AetherConfigurationBuilder        build
+  NexusConfiguration                freeze, finalize, build
+  RiftConfiguration                 freeze, finalize, build
+  CrystallizerConfiguration         finalize, activate
+  CrystallizerConfigurationBuilder  build, finalize, activate
+  MutationResearchConfiguration     finalize, activate
+  MutationResearchConfigurationBuilder build, finalize, activate
+  -> nine objects, five different terminator sets, all public.
+
+SUBSYSTEM ACTIVATION DIVERGENCE - IT IS 3 TO 1
+  Aether            caller activates the config, THEN aether.activate()
+  Crystallizer      same
+  MutationResearch  same
+  Nexus             enable() finalizes FOR the caller  <- lone exception
+  Caller-driven activation is the house rule. Owner note 2026-08-02:
+  "activate means something specific" - the divergence is Nexus, not the
+  verb.
+
 THE THROUGH-LINE (named at lesson 11, teach it forward)
   Melder NEVER conflates "this exists" with "this is live". Every
   subsystem splits it in two and only the names change:
@@ -141,5 +237,13 @@ PLANNED (per README ORANGE + AGENTS charter)
 
 NOT THIS TIER
   - ConduitCloud -> INTERMEDIATE (owner 2026-08-02, dynamic-mode basics)
+  - Scan -> INTERMEDIATE (owner 2026-08-02). Note a scan lesson existed
+    and was killed: _to_delete/_gone_05_scan_bind_decorator.py - it comes
+    back at intermediate, not here.
+  - SpellExaminer -> NO TIER. Owner ruling 2026-08-02: internal, "not for
+    users or agents". REJECTED CURATION CALL, reason recorded. Open
+    contradiction: it is still exported from melder.__all__ and the class
+    carries NO access marker at all (Scan carries AGENT_ACCESS markers;
+    SpellExaminer states nothing). Pinned in test_advanced_probes.
   - research sets / lanes / diff / impact / drift -> EXPERT
   - notch, codegen, crystallizer save+load, synthetic modules -> EXPERT

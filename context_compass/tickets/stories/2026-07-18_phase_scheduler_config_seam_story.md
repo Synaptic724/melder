@@ -5,7 +5,7 @@
 - Epic: EPIC-2026-07-18-parallel-restore-ulid-identity
 - Status: review (code + regressions landed; pending owner 3.14t run)
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p1
 - Created: 2026-07-18T22:30:00Z
 - Updated: 2026-07-18T22:30:00Z

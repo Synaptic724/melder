@@ -7,7 +7,7 @@
 - Story: UNKNOWN (no parent story; raised from TASK-2026-08-01-system-doc-recomposition)
 - Status: review
 - Owner:
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE. CARRIES AN UNANSWERED OWNER DECISION_REQUEST on applied source edits - see Notes)
 - Priority: p2
 - Created: 2026-08-02T21:40:00Z
 - Updated: 2026-08-02T23:10:00Z

@@ -1,13 +1,21 @@
 """
 TIER: advanced (13)
-GOAL: WHAT THE ROOM KIND ACTUALLY CHANGES. Lesson 12 showed the room's
-      shape is constant across kinds. Here is the one thing that is not.
+GOAL: WHAT THE ROOM KIND ACTUALLY CHANGES.
 
-      StaticRiftSpace and CapabilityRiftSpace each override EXACTLY ONE
-      property of RiftSpace: `command_system`. Everything else - viewer,
-      workstation, events, memory, hooks - is inherited unchanged. So the
-      whole difference between a static room and a capability room is
-      WHICH COMMAND SURFACE HANGS OFF IT.
+      StaticRiftSpace and CapabilityRiftSpace override exactly TWO
+      properties of RiftSpace, and they are the two that matter:
+
+        command_system   StaticCommandSystem / CapabilityCommandSystem
+        frame_viewer     StaticFrameViewer   / FrameViewer
+
+      THE DOING ONE AND THE SEEING ONE. workstation, event_system and
+      memory_system are inherited unchanged, so the room's storage and
+      signalling are constant while its AUTHORITY and its VISIBILITY both
+      narrow together.
+
+      That pairing is the design. A room you may not mutate is also a
+      room that shows you less - and melder does it the same way twice,
+      by handing you a different class rather than guarding a shared one.
 
       AND HERE IS THE DESIGN DECISION WORTH LEARNING FROM.
 
@@ -77,16 +85,20 @@ def main() -> None:
     print("capability room:", type(capability_room).__name__)
     assert type(static_room) is not type(capability_room)
 
-    # ...but the ONLY fixture that differs is the command system.
+    # TWO fixtures differ - and they are the DOING one and the SEEING one.
     static_commands = static_room.command_system
     capability_commands = capability_room.command_system
     print("static commands:    ", type(static_commands).__name__)
     print("capability commands:", type(capability_commands).__name__)
     assert type(static_commands) is not type(capability_commands)
 
-    # Every other fixture is the same class on both - inherited, untouched.
-    for fixture in ("frame_viewer", "workstation", "event_system",
-                    "memory_system"):
+    print("static viewer:      ", type(static_room.frame_viewer).__name__)
+    print("capability viewer:  ", type(capability_room.frame_viewer).__name__)
+    assert type(static_room.frame_viewer) is not type(
+        capability_room.frame_viewer)
+
+    # Everything else is the same class on both - inherited, untouched.
+    for fixture in ("workstation", "event_system", "memory_system"):
         static_kind = type(getattr(static_room, fixture)).__name__
         capability_kind = type(getattr(capability_room, fixture)).__name__
         assert static_kind == capability_kind, fixture

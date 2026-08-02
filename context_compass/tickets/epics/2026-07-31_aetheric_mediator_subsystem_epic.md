@@ -4,7 +4,7 @@
 - Epic ID: EPIC-2026-07-31-aetheric-mediator-subsystem
 - Status: in_progress (bootstrap started 2026-07-31 under owner directive)
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
 - Updated: 2026-07-31T23:00:41Z
