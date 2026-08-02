@@ -32,6 +32,7 @@ from melder._build_assets._system_documents import system_documents
 from melder.utilities.ai_native_support_tools.system_document_view import (
     Edge,
     Group,
+    Impact,
     SearchHit,
     Node,
     Section,
@@ -750,3 +751,240 @@ def test_node_at_returns_none_rather_than_guessing() -> None:
     """An unknown file or a line before every definition has no answer."""
     view = _available("__graph_details__")
     assert view.node_at("src/does/not/exist.py", 10) is None
+
+
+# ---------------------------------------------------------------------------
+# Why-lines
+# ---------------------------------------------------------------------------
+
+
+def test_authored_edges_carry_their_justification() -> None:
+    """
+    An authored edge without its why is an assertion with no support.
+
+    Purpose:
+        An authored `owns_lifecycle_of` claims ownership where the syntax tree
+        shows only a reference. The why-line IS the argument. Reaching it used
+        to mean slicing the whole section and eyeballing ~1,900 tokens of prose
+        for one sentence.
+    """
+    view = _available("__graph_network__")
+    authored = [
+        edge
+        for node_id in view.node_ids()[::20]
+        for edge in view.edges_from(node_id, relation="owns_lifecycle_of")
+        if edge.origin == "authored"
+    ]
+    assert authored
+    assert any(edge.why for edge in authored)
+    for edge in authored:
+        assert isinstance(edge.why, str)
+
+
+def test_derived_edges_need_no_justification() -> None:
+    """
+    `derived` edges have the syntax tree as their evidence.
+
+    Purpose:
+        A why-line on a mechanical edge would be someone explaining what the
+        AST already proves. Absence here is correct, not missing data.
+    """
+    view = _available("__graph_network__")
+    derived = [
+        edge
+        for node_id in view.node_ids()[::20]
+        for edge in view.edges_from(node_id)
+        if edge.origin == "derived"
+    ]
+    assert derived
+    assert all(edge.why == "" for edge in derived)
+
+
+def test_why_survives_the_reverse_direction() -> None:
+    """
+    The same edge carries the same justification from either side.
+
+    Purpose:
+        Inbound and outbound resolve through different tables. If only one
+        attached the why, an agent doing impact analysis would see unexplained
+        edges that look unauthored.
+    """
+    view = _available("__graph_network__")
+    for node_id in view.node_ids()[::30]:
+        for edge in view.edges_from(node_id):
+            assert edge in view.edges_to(edge.target)
+
+
+# ---------------------------------------------------------------------------
+# Impact
+# ---------------------------------------------------------------------------
+
+
+def test_impact_returns_files_not_edges() -> None:
+    """
+    "What breaks if I change this" is answered in files.
+
+    Purpose:
+        The walk yields edges; a caller needs something to open. Every returned
+        path must be a real section key so the answer is immediately readable.
+    """
+    view = _available("__graph_network__")
+    busiest = max(view.node_ids(), key=lambda n: len(view.edges_to(n)))
+    affected = view.impact(busiest, depth=2)
+    assert affected
+    details = system_documents.get("__graph_details__")
+    for item in affected:
+        assert isinstance(item, Impact)
+        assert item.source in details
+        assert item.nodes
+        assert item.edges >= 1
+
+
+def test_impact_is_ordered_nearest_first() -> None:
+    """
+    A direct dependent is far likelier to break than a third-hop one.
+
+    Purpose:
+        Ordering IS the triage. An unordered impact set makes the caller
+        re-derive proximity that the walk already knew.
+    """
+    view = _available("__graph_network__")
+    busiest = max(view.node_ids(), key=lambda n: len(view.edges_to(n)))
+    hops = [item.hops for item in view.impact(busiest, depth=3)]
+    assert hops == sorted(hops)
+    assert min(hops) == 1
+
+
+def test_impact_reports_the_shortest_path_to_each_file() -> None:
+    """
+    A file reachable at hop 1 and hop 3 is a hop-1 risk.
+
+    Purpose:
+        Recording the longer distance would understate the danger of exactly
+        the files most likely to break.
+    """
+    view = _available("__graph_network__")
+    busiest = max(view.node_ids(), key=lambda n: len(view.edges_to(n)))
+    direct = {
+        view.node(edge.source).source
+        for edge in view.edges_to(busiest)
+        if edge.source in view._graph().NODES
+    }
+    for item in view.impact(busiest, depth=3):
+        if item.source in direct:
+            assert item.hops == 1
+
+
+def test_impact_never_lists_the_changed_node_s_own_file_via_itself() -> None:
+    """A node is not its own dependent."""
+    view = _available("__graph_network__")
+    node_id = max(view.node_ids(), key=lambda n: len(view.edges_to(n)))
+    for item in view.impact(node_id, depth=2):
+        assert node_id not in item.nodes
+
+
+def test_impact_respects_the_trust_filter() -> None:
+    """Walking only authored dependents must not leak derived ones."""
+    view = _available("__graph_network__")
+    node_id = max(view.node_ids(), key=lambda n: len(view.edges_to(n)))
+    both = view.impact(node_id, depth=2)
+    authored = view.impact(node_id, depth=2, origin="authored")
+    assert len(authored) <= len(both)
+
+
+# ---------------------------------------------------------------------------
+# Citations
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", DOCUMENT_NAMES)
+def test_cite_produces_a_usable_evidence_reference(name: str) -> None:
+    """
+    Evidence is cited as `document:start-end` throughout this repository.
+
+    Purpose:
+        The numbers are already in the index. Making a caller format them by
+        hand on every claim is the friction that ends with nothing cited.
+    """
+    view = _available(name)
+    section = view.index()[3]
+    citation = view.cite(section.key)
+    assert citation.endswith(f":{section.start_line}-{section.end_line}")
+    assert citation.startswith(str(view._entry["document_file"]))
+
+
+def test_cite_can_point_at_a_single_line() -> None:
+    """A search hit should cite the match, not the section around it."""
+    view = _available("__components__")
+    hit = view.search("thread", limit=1)[0]
+    assert view.cite(hit.key, line=hit.first_line).endswith(f":{hit.first_line}")
+
+
+def test_cite_refuses_an_unknown_section() -> None:
+    """A citation to a section that does not exist is worse than none."""
+    with pytest.raises(KeyError):
+        _available("__architecture__").cite("not a real section")
+
+
+# ---------------------------------------------------------------------------
+# Cross-document search
+# ---------------------------------------------------------------------------
+
+
+def test_search_all_covers_every_document_in_one_call() -> None:
+    """
+    "What does melder say about X" is one question.
+
+    Purpose:
+        Asking per document made it four calls plus a manual merge, and an
+        agent that only thought to ask one document never learns another had
+        the better answer.
+    """
+    found = system_documents.search_all("conduit", limit=3)
+    assert found
+    assert len({item.document for item in found}) >= 1
+    assert all(item.citation for item in found)
+
+
+def test_search_all_does_not_double_count_the_shared_graph_document() -> None:
+    """
+    The two graph views address the same 25,291 lines.
+
+    Purpose:
+        Searching both returned every graph hit twice - pure noise in a ranked
+        list, and the caller asked one question.
+    """
+    found = system_documents.search_all("conduit", limit=5)
+    seen = [
+        (item.hit.key, item.hit.first_line)
+        for item in found
+        if item.document.startswith("__graph")
+    ]
+    assert len(seen) == len(set(seen))
+
+
+def test_search_all_ranks_across_documents_then_by_read_order() -> None:
+    """
+    The strongest match wins regardless of which document holds it.
+
+    Purpose:
+        Ties break toward `READ_ORDER`, which puts orientation ahead of lookup:
+        if architecture and the graph mention a term equally, architecture is
+        the one to read first.
+    """
+    found = system_documents.search_all("spell", limit=4)
+    assert [item.hit.hits for item in found] == sorted(
+        (item.hit.hits for item in found), reverse=True
+    )
+
+
+def test_search_all_can_be_restricted_and_rejects_bad_names() -> None:
+    """A caller narrowing the search should not silently get everything."""
+    found = system_documents.search_all(
+        "boot", documents=("__architecture__",), limit=2
+    )
+    assert all(item.document == "__architecture__" for item in found)
+    with pytest.raises(KeyError):
+        system_documents.search_all("boot", documents=("__nope__",))
+    with pytest.raises(ValueError):
+        system_documents.search_all("")

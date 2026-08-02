@@ -70,6 +70,19 @@ currently protect them with, what scope keys would express that, and what are it
   is 36 call sites / 18 distinct reason strings, all in restore_engine.py. The
   ticket told me to re-verify rather than trust, so this is the mechanism
   working.
+- 2026-08-02T18:05:00Z (bootstrap_0): CORRECTION filed against my own crystallizer
+  survey, Q4. I asserted that `ix` means "I will later escalate this to exclusive"
+  and used that to justify proposing NO `ix` anywhere. Both `ClaimMode`
+  definitions say otherwise and agree with each other: `ix` is the PARENT-SCOPE
+  MARKER for hierarchical claims (embargo_manager.py `ClaimMode`;
+  aetheric_mediator/claim_mode.py `ClaimMode`). Hold `ix` on the parent, `x` on
+  the child, and disjoint children proceed in parallel. One row changes: the
+  graft should claim `ix` on `spellbook:<id>` and `conduit:<id>` and keep `x` on
+  the index it actually mutates - otherwise a graft into one index needlessly
+  blocks a graft into a different index of the same book. `crystallizer:load:world`
+  stays `x`. The two CONFLICT findings are unaffected. ANY AGENT TAKING THE MR OR
+  NEXUS SURVEY SHOULD READ THAT CORRECTION FIRST so the same wrong premise does
+  not get re-derived twice more.
   Two surveys remain OPEN and UNASSIGNED: MR and Nexus. I did not claim them -
   the story's own DECISION note says these should run on FRESH context and I now
   carry the crystallizer read, so a different agent taking one of the remaining

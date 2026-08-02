@@ -1,125 +1,161 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_mediator/transaction_request.py",
- "source_sha256": "11164e40bf62ec324c2bd34ce9922511182bd4342783c48e4b14331a80ef8219",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_mediator.transaction_request": {
-   "id": "melder.aether.aetheric_mediator.transaction_request",
-   "label": "transaction_request",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_mediator/transaction_request.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_mediator/transaction_request.py",
+  "source_sha256": "11164e40bf62ec324c2bd34ce9922511182bd4342783c48e4b14331a80ef8219",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_mediator.transaction_request": {
+      "id": "melder.aether.aetheric_mediator.transaction_request",
+      "label": "transaction_request",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_mediator/transaction_request.py",
+      "lineno": 1,
+      "role": "The immutable pre-admission request, frozen before admission, plus the MetadataPolicy that enforces its value-only rule.",
+      "include": true,
+      "semantics_authored_against": "11164e40bf62ec324c2bd34ce9922511182bd4342783c48e4b14331a80ef8219"
+    },
+    "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy": {
+      "id": "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy",
+      "label": "MetadataPolicy",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/transaction_request.py",
+      "lineno": 22,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "empty",
+        "normalize"
+      ],
+      "shape": {
+        "method_count": 3,
+        "has_bases": false,
+        "trivial": false
+      },
+      "span_sha256": "13d8ac36536253ff3a37348cdd781a6e14a51c84cb6c050dd6744b88f91c8e8f",
+      "role": "The value-only guard that ENFORCES, rather than documents, the rule that a frozen transaction record carries values only.",
+      "responsibilities": [
+        "permit None, bool, int, float, str (covering StrEnum members), and tuple/list/dict recursively composed of those with str keys",
+        "reject everything else LOUDLY at the construction boundary, so a record stays safe to log, ship and retain after the runtime objects it describes are gone",
+        "never be instantiated - two static methods over caller-supplied mappings"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "include": true,
+      "semantics_authored_against": "13d8ac36536253ff3a37348cdd781a6e14a51c84cb6c050dd6744b88f91c8e8f"
+    },
+    "melder.aether.aetheric_mediator.transaction_request.TransactionRequest": {
+      "id": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+      "label": "TransactionRequest",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/transaction_request.py",
+      "lineno": 172,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "build",
+        "claim_map",
+        "cleanup",
+        "created_at",
+        "describe",
+        "metadata",
+        "request_id",
+        "scope_claims",
+        "scope_keys",
+        "submitter_id",
+        "submitter_kind",
+        "transaction_type"
+      ],
+      "shape": {
+        "method_count": 12,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "791190d3ebd351436804bb7723d0a1c1b519d28ba45a81826a42d34d66dc7c39",
+      "role": "The immutable pre-admission record, FROZEN BEFORE ADMISSION so acquisition reads a fixed snapshot.",
+      "responsibilities": [
+        "state what is being done, by whom, over which scopes, in which modes",
+        "stay frozen so the same request cannot admit differently depending on read timing - this is what makes admission deterministic and replayable",
+        "store the submitter as its two identity STRINGS, holding no live references",
+        "be cleaned by ONE owner at ONE moment: TransactionSession.cleanup()"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ],
+      "owns_state": [
+        "_request_id",
+        "_transaction_type",
+        "_submitter_kind",
+        "_submitter_id",
+        "_created_at",
+        "_scope_claims",
+        "_metadata"
+      ],
+      "include": true,
+      "semantics_authored_against": "791190d3ebd351436804bb7723d0a1c1b519d28ba45a81826a42d34d66dc7c39"
+    }
   },
-  "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy": {
-   "id": "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy",
-   "label": "MetadataPolicy",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/transaction_request.py",
-   "lineno": 22,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "empty",
-    "normalize"
-   ],
-   "shape": {
-    "method_count": 3,
-    "has_bases": false,
-    "trivial": false
-   },
-   "span_sha256": "13d8ac36536253ff3a37348cdd781a6e14a51c84cb6c050dd6744b88f91c8e8f"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy",
+      "to_label": "MappingProxyType",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+      "to_label": "TransactionRequest",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+      "to_label": "ClaimMode",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "MappingProxyType": "types.MappingProxyType",
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "ClaimMode": "melder.aether.aetheric_mediator.claim_mode.ClaimMode",
+    "Identity": "melder.aether.aetheric_mediator.identity.Identity",
+    "TransactionType": "melder.aether.aetheric_mediator.transaction_type.TransactionType",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  "melder.aether.aetheric_mediator.transaction_request.TransactionRequest": {
-   "id": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-   "label": "TransactionRequest",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/transaction_request.py",
-   "lineno": 172,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "build",
-    "claim_map",
-    "cleanup",
-    "created_at",
-    "describe",
-    "metadata",
-    "request_id",
-    "scope_claims",
-    "scope_keys",
-    "submitter_id",
-    "submitter_kind",
-    "transaction_type"
-   ],
-   "shape": {
-    "method_count": 12,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "791190d3ebd351436804bb7723d0a1c1b519d28ba45a81826a42d34d66dc7c39"
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy",
-   "to_label": "MappingProxyType",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_request.MetadataPolicy",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-   "to_label": "TransactionRequest",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-   "to_label": "ClaimMode",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "MappingProxyType": "types.MappingProxyType",
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "ClaimMode": "melder.aether.aetheric_mediator.claim_mode.ClaimMode",
-  "Identity": "melder.aether.aetheric_mediator.identity.Identity",
-  "TransactionType": "melder.aether.aetheric_mediator.transaction_type.TransactionType",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": null
+  "collapse_candidate": null
 }

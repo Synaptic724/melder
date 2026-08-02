@@ -476,6 +476,202 @@ def test_probe_rift_space_type_docstring_documents_a_member_that_is_gone():
     print("doc drift pinned: 'dynamic' documented, not defined")
 
 
+def test_probe_room_kind_changes_exactly_one_fixture():
+    """Lesson 13 claim: StaticRiftSpace and CapabilityRiftSpace override
+    EXACTLY ONE property - command_system. Every other fixture is the same
+    class on both. A red means the kinds diverged further, which would
+    make lesson 12's "shape is constant" promise false."""
+    nexus = _enabled_nexus()
+    static_room = _rift_with_room(
+        nexus, md.RiftSpaceType.static, "probe-auth-static").space
+    capability_room = _rift_with_room(
+        nexus, md.RiftSpaceType.capability, "probe-auth-capability").space
+
+    assert type(static_room.command_system) is not type(
+        capability_room.command_system)
+    for fixture in ("frame_viewer", "workstation", "event_system",
+                    "memory_system"):
+        assert type(getattr(static_room, fixture)) is type(
+            getattr(capability_room, fixture)), fixture
+    print("one-fixture-differs pinned: only command_system changes")
+
+
+def test_probe_authority_is_granted_by_absence_not_by_refusal():
+    """Lesson 13 HEADLINE. The static command surface does not DENY the
+    mutating verbs - it does not HAVE them. melder's own note says the
+    methods "live on the capability surface INSTEAD OF BEING DENIED AFTER
+    INHERITANCE".
+
+    This is the row that matters most in arc B. If a mutating verb ever
+    appears on StaticCommandSystem - even as an override that raises - the
+    design property this lesson teaches is gone: capability stops being
+    statically enumerable and hasattr stops being an honest question."""
+    nexus = _enabled_nexus()
+    static_commands = _rift_with_room(
+        nexus, md.RiftSpaceType.static, "probe-absent-static"
+    ).space.command_system
+    capability_commands = _rift_with_room(
+        nexus, md.RiftSpaceType.capability, "probe-absent-capability"
+    ).space.command_system
+
+    for verb in ("meld", "link", "sever_link", "create_lesser_conduit",
+                 "create_cluster", "delete_cluster", "join_cluster",
+                 "leave_cluster"):
+        assert not hasattr(static_commands, verb), (
+            f"{verb} appeared on the static surface - authority-by-absence "
+            f"is broken, even if it only raises"
+        )
+        assert hasattr(capability_commands, verb), verb
+    print("authority-by-absence pinned: 8 mutating verbs, static has none")
+
+
+def test_probe_reuse_is_available_to_static_but_creation_is_not():
+    """Lesson 13 claim: meld_existing_spell (REUSE) is on both surfaces;
+    meld (CREATION) is capability-only. The static room can hand back
+    something that already exists - it cannot bring anything into being."""
+    nexus = _enabled_nexus()
+    static_commands = _rift_with_room(
+        nexus, md.RiftSpaceType.static, "probe-reuse-static"
+    ).space.command_system
+    capability_commands = _rift_with_room(
+        nexus, md.RiftSpaceType.capability, "probe-reuse-capability"
+    ).space.command_system
+
+    assert hasattr(static_commands, "meld_existing_spell")
+    assert hasattr(capability_commands, "meld_existing_spell")
+    assert not hasattr(static_commands, "meld")
+    assert hasattr(capability_commands, "meld")
+    print("reuse/creation split pinned: static reuses, capability creates")
+
+
+def test_probe_rooms_enumerate_their_own_command_surface():
+    """Lesson 13 AIX claim: list_supported_command_methods() lets a caller
+    READ a room's authority instead of probing it by trying things, and
+    capability is the strictly broader surface."""
+    nexus = _enabled_nexus()
+    static_verbs = _rift_with_room(
+        nexus, md.RiftSpaceType.static, "probe-enum-static"
+    ).space.command_system.list_supported_command_methods()
+    capability_verbs = _rift_with_room(
+        nexus, md.RiftSpaceType.capability, "probe-enum-capability"
+    ).space.command_system.list_supported_command_methods()
+
+    assert len(static_verbs) > 0
+    assert len(capability_verbs) > len(static_verbs)
+    print("enumeration pinned: static", len(static_verbs),
+          "verbs, capability", len(capability_verbs))
+
+
+class _Greeter:
+    def greet(self) -> str:
+        return "hello from the canvas"
+
+
+def _workstation(nexus, name="probe-bench"):
+    return _rift_with_room(
+        nexus, md.RiftSpaceType.capability, name).space.workstation
+
+
+def test_probe_workstation_stores_are_independent_namespaces():
+    """Lesson 14 claim: objects / attributes / methods are SEPARATE
+    logical stores, so the same name in two stores is not a collision and
+    releasing from one leaves the other standing."""
+    workstation = _workstation(_enabled_nexus(), "probe-stores")
+    greeter = _Greeter()
+    workstation.bind_object("subject", greeter)
+    workstation.bind_method("subject", greeter.greet)
+
+    assert workstation.get("subject", store="objects") is greeter
+    assert workstation.get("subject", store="methods")() == (
+        "hello from the canvas")
+
+    released = workstation.release("subject", store="objects")
+    assert released is greeter
+    summary = workstation.describe_bindings()
+    assert "subject" not in summary["objects"]
+    assert "subject" in summary["methods"]
+    print("store independence pinned: same name, two stores, no collision")
+
+
+def test_probe_explicit_weak_binding_refuses_instead_of_degrading():
+    """Lesson 14 HEADLINE, and melder's honesty rule in miniature:
+
+        "Explicit weak binding raises when the supplied value cannot be
+         weak-referenced; it never silently degrades to strong storage."
+
+    A silent degrade would pin an object the caller believed was
+    collectable for the life of the room - a leak that reads as correct
+    code. This row pins BOTH halves: the refusal happens, AND nothing was
+    stored as a consolation prize."""
+    workstation = _workstation(_enabled_nexus(), "probe-weak")
+
+    # weak-referenceable: accepted
+    workstation.bind_object("ok", _Greeter(), weak_ref=True)
+    assert "ok" in workstation.describe_bindings()["objects"]
+
+    # not weak-referenceable: refused, and NOT stored strongly
+    with pytest.raises((TypeError, ValueError, RuntimeError)):
+        workstation.bind_object("nope", 42, weak_ref=True)
+    assert "nope" not in workstation.describe_bindings()["objects"]
+    print("no-silent-degrade pinned: refused AND not stored as fallback")
+
+
+def test_probe_workstation_holds_at_most_one_target():
+    """Lesson 14 claim: at most one active target, and clear_target()
+    deselects WITHOUT deleting the binding it pointed at."""
+    workstation = _workstation(_enabled_nexus(), "probe-target")
+    greeter = _Greeter()
+    workstation.bind_method("greet", greeter.greet)
+
+    workstation.set_target("greet", store="methods")
+    assert workstation.get_target() is not None
+    assert workstation.call_target() == "hello from the canvas"
+
+    workstation.clear_target()
+    assert workstation.get("greet", store="methods") is not None
+    print("target ceiling pinned: clear deselects, binding survives")
+
+
+def test_probe_describe_bindings_returns_five_keys_not_the_documented_four():
+    """FINDING (doc drift, 2026-08-02, lesson 14): describe_bindings()
+    documents "a FOUR-KEY summary - `objects`, `attributes`, `methods` and
+    `target_name` - always with all four keys present, so callers can
+    index". IT RETURNS FIVE - the implementation also emits
+    `target_store`.
+
+    This one has teeth: the docstring explicitly invites callers to rely
+    on the count. Second drift of this shape in arc B (RiftSpaceType's
+    documented-but-absent `dynamic`, lesson 12).
+
+    Green while the docs are wrong; red when either side is fixed."""
+    workstation = _workstation(_enabled_nexus(), "probe-drift")
+    summary = workstation.describe_bindings()
+    assert set(summary) == {
+        "objects", "attributes", "methods", "target_name", "target_store",
+    }
+    assert len(summary) == 5
+    doc = md.Workstation.describe_bindings.__doc__ or ""
+    assert "FOUR-KEY" in doc or "four keys" in doc, (
+        "docstring no longer claims four - delete this probe"
+    )
+    print("doc drift pinned: documented 4 keys, returns 5")
+
+
+def test_probe_workstation_is_not_a_resolver():
+    """Lesson 14 claim: the canvas STORES, it does not RESOLVE. It has no
+    discovery verbs - resolution belongs to the command system. If a
+    lookup verb ever lands here, the separation the lesson teaches is
+    gone and the two fixtures have started overlapping."""
+    workstation = _workstation(_enabled_nexus(), "probe-not-resolver")
+    for resolver_verb in ("meld", "find_spell_id", "get_conduit_by_name",
+                          "describe_spells_in_conduit", "get_nexus_frame"):
+        assert not hasattr(workstation, resolver_verb), (
+            f"{resolver_verb} appeared on the workstation - the canvas is "
+            f"not supposed to resolve anything"
+        )
+    print("separation pinned: canvas holds, command system resolves")
+
+
 def test_probe_rift_enabled_has_no_public_setter():
     """FINDING (2026-08-02, arc B): `rift_enabled` gates AR targeting
     (Nexus raises "AR requires rift_enabled on target frame") and there is

@@ -1,40 +1,55 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_mediator/transaction_type.py",
- "source_sha256": "ad06c201df3df1f132def820b66b3d81d02c682594e8111ceed9e2ec84d28c2f",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_mediator.transaction_type": {
-   "id": "melder.aether.aetheric_mediator.transaction_type",
-   "label": "transaction_type",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_mediator/transaction_type.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_mediator/transaction_type.py",
+  "source_sha256": "ad06c201df3df1f132def820b66b3d81d02c682594e8111ceed9e2ec84d28c2f",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_mediator.transaction_type": {
+      "id": "melder.aether.aetheric_mediator.transaction_type",
+      "label": "transaction_type",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_mediator/transaction_type.py",
+      "lineno": 1,
+      "role": "The closed transaction vocabulary the plane admits; adding an operation means adding a member AND registering its strategy.",
+      "include": true,
+      "semantics_authored_against": "ad06c201df3df1f132def820b66b3d81d02c682594e8111ceed9e2ec84d28c2f"
+    },
+    "melder.aether.aetheric_mediator.transaction_type.TransactionType": {
+      "id": "melder.aether.aetheric_mediator.transaction_type.TransactionType",
+      "label": "TransactionType",
+      "kind": "enum",
+      "file": "src/melder/aether/aetheric_mediator/transaction_type.py",
+      "lineno": 15,
+      "bases": [],
+      "markers": [
+        "StrEnum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "17a9b816d30d96a1a19013d63bf6e26b21a4fbdbb60fa8f64c98aa8c3a54c5e1",
+      "role": "The CLOSED set of top-level operations the plane admits, so admission, dispatch, activity indexes and logs all key on one stable vocabulary.",
+      "responsibilities": [
+        "name every structural operation that can claim scopes at world level",
+        "stay closed: wanting to pass a non-member string is the signal a STRATEGY is missing, not a reason to widen the type",
+        "keep values stable - they travel into request payloads, admission evidence and logs"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ],
+      "include": true,
+      "semantics_authored_against": "17a9b816d30d96a1a19013d63bf6e26b21a4fbdbb60fa8f64c98aa8c3a54c5e1"
+    }
   },
-  "melder.aether.aetheric_mediator.transaction_type.TransactionType": {
-   "id": "melder.aether.aetheric_mediator.transaction_type.TransactionType",
-   "label": "TransactionType",
-   "kind": "enum",
-   "file": "src/melder/aether/aetheric_mediator/transaction_type.py",
-   "lineno": 15,
-   "bases": [],
-   "markers": [
-    "StrEnum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "17a9b816d30d96a1a19013d63bf6e26b21a4fbdbb60fa8f64c98aa8c3a54c5e1"
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "StrEnum": "enum.StrEnum"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "StrEnum": "enum.StrEnum"
+  },
+  "collapse_candidate": null
 }

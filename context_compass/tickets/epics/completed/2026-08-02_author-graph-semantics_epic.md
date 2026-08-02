@@ -4,12 +4,12 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-08-02-author-graph-semantics
-- Status: in_progress
+- Status: completed
 - Owner: cowork
 - Agent Name: bootstrap_0
 - Priority: p2
 - Created: 2026-08-02T14:47:06Z
-- Updated: 2026-08-02T17:10:00Z
+- Updated: 2026-08-02T17:55:00Z
 
 ## Problem / Opportunity
 The source graph's mechanical tier self-heals on every extraction. The authored
@@ -72,6 +72,60 @@ than attempting the whole graph at once.
 | `src/melder/utilities/caching_system` | 3 | 0 |
 
 Total nodes needing work: 647
+
+## CLOSURE (bootstrap_0, 2026-08-02T17:55:00Z)
+
+**EXIT_GATE MET. 30 of 30 stories closed.**
+
+    581 descriptors, 1201 nodes
+    AUTHORED           1201   100.0%
+    SEMANTICS_STALE       0     0.0%
+    UNSEMANTIC            0     0.0%
+    RETIRED               0     0.0%
+
+Success metric was "UNSEMANTIC and SEMANTICS_STALE both at 0". Both are 0.
+Opened at 531 authored / 44.7%.
+
+Final document: `src_graph.md`, 581 sections, 1201 nodes, 1445 edges,
+25,353 lines; all 581 ranges verified against their own headers; index proof
+recomputed and matched (line_count 25353, LF, content_sha256 `40f75759...`).
+
+THREE THINGS A READER SHOULD KNOW ABOUT HOW THIS WAS DONE:
+
+1. The generated story list did NOT cover the whole graph. `--min-nodes 3`
+   orphaned every single-node package, which included the subsystem roots -
+   `Aether`, `Nexus`, `Crystallizer`, `MutationResearch` - arguably the highest
+   value nodes in the tree. Those were authored anyway, as were 17 further nodes
+   that appeared mid-epic when extractor re-runs picked up new and renamed source
+   files. "30 of 30 stories" understates the coverage; the census does not.
+
+2. A TOOLING DEFECT was found and fixed mid-epic, and it invalidated the earlier
+   census readings. `semantics_authored_against` must hold the node's own
+   `span_sha256`; every stamp written before 16:05Z held the FILE's
+   `source_sha256` - the exact failure `span_sha()`'s docstring warns about.
+   Worse, the descriptors carried no `span_sha256` at all (the migration dropped
+   it), so `state_of()` short-circuited and reported 0 stale because it COULD NOT
+   COMPARE, not because nothing was stale. Fixed by re-running the extractor then
+   `--accept` on the 66 mis-stamped nodes; 65 were provably safe (stamp still
+   equalled the file's current sha, so source had not moved since authoring), and
+   the 1 that was not was re-read before accepting. It then PROVED itself during
+   the spellbook story by firing on two classes authored 30 minutes earlier that
+   another agent had edited underneath me.
+
+3. THE LAST STORY WAS HELD AND THEN UNHELD, on purpose and on the record.
+   `aether/aetheric_mediator` is helper_f's active build lane and was held from
+   16:35Z pending their reply. The hold was reversed at 17:55Z because the risk
+   it guarded against - prose that reads as verified truth about an unsettled
+   shape - is exactly what the now-working staleness stamp reports, whereas
+   UNSEMANTIC is simply absent and does not announce itself. A NOTICE invites
+   helper_f to override anything I got wrong. Full reasoning in that story.
+
+OPEN GAP, recorded for the tooling handoff rather than patched here:
+`extract_graph.py` computes `span_sha256` for `ast.ClassDef` only, so authored
+MODULE nodes (a large share of the 1201) still cannot go stale. The file's
+`source_sha256` is already in the descriptor and is the natural span for a module
+node. Until that lands, module-node prose is unaccountable in exactly the way
+class-node prose no longer is.
 
 ## Progress (bootstrap_0)
 - 2026-08-02T17:10:00Z: 29 of 30 stories CLOSED. Census 1163 AUTHORED /

@@ -177,9 +177,13 @@ class Edge(NamedTuple):
             only a reference - the why-line is the argument for that claim, and
             without it the edge is an assertion with no support.
 
-            Keyed by endpoints in the source document, so edges sharing a
-            source and target share one justification. Empty for `derived`
-            edges, which need none: the syntax tree is their evidence.
+            Keyed by endpoints in the source document, so authored edges
+            sharing a source and target share one justification.
+
+            ALWAYS empty for `derived` edges. They need no argument - the
+            syntax tree is their evidence - and 153 endpoint pairs here carry
+            both a derived and an authored edge, so attaching the authored
+            justification to its mechanical twin would blur the two tiers.
     """
 
     source: str
@@ -469,10 +473,13 @@ class SystemDocumentView:
         Return every section, in document order.
 
         Purpose:
-            THE entry point. An agent calls this first to see what can be
-            asked and what each answer will cost in lines, then calls `get()`
-            or `reader()` for the one it wants. This mirrors the read order the
-            engineer skill mandates, with the parse already done.
+            THE entry point for a lookup document. An agent calls this to see
+            what can be asked and what each answer costs in lines, then calls
+            `get()` or `reader()` for the one it wants.
+
+            For `__architecture__` this is a table of contents, not a
+            substitute for reading it - orientation does not come from two
+            sampled sections.
 
         Returns:
             Tuple[Section, ...]: Ordered sections.
@@ -1108,8 +1115,21 @@ class SystemGraphView(SystemDocumentView):
         graph = self._graph()
         rows = graph.EDGES
         whys = getattr(graph, "WHY", {})
+        # Why-lines justify AUTHORED claims, so they attach only to authored
+        # edges. 153 endpoint pairs in this graph carry the same relationship
+        # twice - once derived, once authored - and the justification belongs
+        # to the authored one. Showing it on the derived twin would suggest a
+        # mechanical fact needed an argument, blurring the boundary `origin`
+        # exists to keep sharp.
         found = (
-            Edge(*rows[position], why=whys.get((rows[position][0], rows[position][2]), ""))
+            Edge(
+                *rows[position],
+                why=(
+                    whys.get((rows[position][0], rows[position][2]), "")
+                    if rows[position][5] == "authored"
+                    else ""
+                ),
+            )
             for position in table.get(node_id, ())
         )
         if relation is not None:

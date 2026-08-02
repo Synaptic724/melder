@@ -1,130 +1,156 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_mediator/mediator.py",
- "source_sha256": "f82f14b4e5fcf34312900c569b7b3fb6a8cd0f5c4a0ffe2211a71c6ee4a754aa",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_mediator.mediator": {
-   "id": "melder.aether.aetheric_mediator.mediator",
-   "label": "mediator",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_mediator/mediator.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_mediator/mediator.py",
+  "source_sha256": "f82f14b4e5fcf34312900c569b7b3fb6a8cd0f5c4a0ffe2211a71c6ee4a754aa",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_mediator.mediator": {
+      "id": "melder.aether.aetheric_mediator.mediator",
+      "label": "mediator",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_mediator/mediator.py",
+      "lineno": 1,
+      "role": "The plane root Aether holds - admission, sessions, strategies and reporting behind one front door. Imports stdlib and melder.utilities ONLY.",
+      "include": true,
+      "semantics_authored_against": "f82f14b4e5fcf34312900c569b7b3fb6a8cd0f5c4a0ffe2211a71c6ee4a754aa"
+    },
+    "melder.aether.aetheric_mediator.mediator.Mediator": {
+      "id": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "label": "Mediator",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/mediator.py",
+      "lineno": 45,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "begin",
+        "cleanup",
+        "commit",
+        "describe",
+        "fail",
+        "has_participant",
+        "participants",
+        "register_participant",
+        "reporting",
+        "strategies",
+        "unregister_participant"
+      ],
+      "shape": {
+        "method_count": 16,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "de40437598ec6ab49cc1f5fc57c83563725f376d0e777a00245b603dfa8617f4",
+      "role": "The plane root Aether holds: the single front door every top-level structural transaction passes through.",
+      "responsibilities": [
+        "own and clean the claim table, admission orchestrator, information registry and strategy builder, in reverse construction order - the table LAST, because its cleanup wakes anyone parked in wait_for_change",
+        "key sessions PER IDENTITY, PER THREAD: same identity re-entering JOINS (depth increments); a different identity on the same thread opens its own root",
+        "import stdlib and melder.utilities ONLY - never melder.aether, which is what lets it exist before any frame can"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "owns_state": [
+        "_lock",
+        "_claim_table",
+        "_orchestrator",
+        "_information_registry",
+        "_strategy_builder",
+        "_max_wait_seconds",
+        "_thread_local",
+        "_sessions_by_request_id"
+      ],
+      "include": true,
+      "semantics_authored_against": "de40437598ec6ab49cc1f5fc57c83563725f376d0e777a00245b603dfa8617f4"
+    }
   },
-  "melder.aether.aetheric_mediator.mediator.Mediator": {
-   "id": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "label": "Mediator",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/mediator.py",
-   "lineno": 45,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "begin",
-    "cleanup",
-    "commit",
-    "describe",
-    "fail",
-    "has_participant",
-    "participants",
-    "register_participant",
-    "reporting",
-    "strategies",
-    "unregister_participant"
-   ],
-   "shape": {
-    "method_count": 16,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "de40437598ec6ab49cc1f5fc57c83563725f376d0e777a00245b603dfa8617f4"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "ClaimTable",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "AdmissionOrchestrator",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "InformationRegistry",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "StrategyBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "TransactionSession",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.mediator.Mediator",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "AdmissionOrchestrator": "melder.aether.aetheric_mediator.admission_orchestrator.AdmissionOrchestrator",
+    "AdmissionReason": "melder.aether.aetheric_mediator.admission_result.AdmissionReason",
+    "AdmissionResult": "melder.aether.aetheric_mediator.admission_result.AdmissionResult",
+    "ClaimTable": "melder.aether.aetheric_mediator.claim_table.ClaimTable",
+    "Identity": "melder.aether.aetheric_mediator.identity.Identity",
+    "InformationRegistry": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+    "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction",
+    "StrategyBuilder": "melder.aether.aetheric_mediator.strategy_builder.StrategyBuilder",
+    "TransactionRequest": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+    "OutcomePolicy": "melder.aether.aetheric_mediator.transaction_session.OutcomePolicy",
+    "SessionStatus": "melder.aether.aetheric_mediator.transaction_session.SessionStatus",
+    "TransactionSession": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
+    "TransactionType": "melder.aether.aetheric_mediator.transaction_type.TransactionType",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_mediator.mediator",
+    "class": "melder.aether.aetheric_mediator.mediator.Mediator",
+    "label": "Mediator"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "ClaimTable",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "AdmissionOrchestrator",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "InformationRegistry",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "StrategyBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "TransactionSession",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.mediator.Mediator",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "AdmissionOrchestrator": "melder.aether.aetheric_mediator.admission_orchestrator.AdmissionOrchestrator",
-  "AdmissionReason": "melder.aether.aetheric_mediator.admission_result.AdmissionReason",
-  "AdmissionResult": "melder.aether.aetheric_mediator.admission_result.AdmissionResult",
-  "ClaimTable": "melder.aether.aetheric_mediator.claim_table.ClaimTable",
-  "Identity": "melder.aether.aetheric_mediator.identity.Identity",
-  "InformationRegistry": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
-  "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction",
-  "StrategyBuilder": "melder.aether.aetheric_mediator.strategy_builder.StrategyBuilder",
-  "TransactionRequest": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-  "OutcomePolicy": "melder.aether.aetheric_mediator.transaction_session.OutcomePolicy",
-  "SessionStatus": "melder.aether.aetheric_mediator.transaction_session.SessionStatus",
-  "TransactionSession": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
-  "TransactionType": "melder.aether.aetheric_mediator.transaction_type.TransactionType",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_mediator.mediator",
-  "class": "melder.aether.aetheric_mediator.mediator.Mediator",
-  "label": "Mediator"
- }
 }

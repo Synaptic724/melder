@@ -1,155 +1,217 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_mediator/transaction_session.py",
- "source_sha256": "cab8421c4800f72a4e13f5a1a2f4f2582f05710b8ba29521a2b4aba9b9609a49",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_mediator.transaction_session": {
-   "id": "melder.aether.aetheric_mediator.transaction_session",
-   "label": "transaction_session",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_mediator/transaction_session.py",
+  "source_sha256": "cab8421c4800f72a4e13f5a1a2f4f2582f05710b8ba29521a2b4aba9b9609a49",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_mediator.transaction_session": {
+      "id": "melder.aether.aetheric_mediator.transaction_session",
+      "label": "transaction_session",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
+      "lineno": 1,
+      "role": "The live transaction span: root ownership, same-thread joins, described rollback actions, and the UNWIND / LEAVE_BROKEN outcome policy.",
+      "include": true,
+      "semantics_authored_against": "cab8421c4800f72a4e13f5a1a2f4f2582f05710b8ba29521a2b4aba9b9609a49"
+    },
+    "melder.aether.aetheric_mediator.transaction_session.OutcomePolicy": {
+      "id": "melder.aether.aetheric_mediator.transaction_session.OutcomePolicy",
+      "label": "OutcomePolicy",
+      "kind": "enum",
+      "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
+      "lineno": 22,
+      "bases": [],
+      "markers": [
+        "StrEnum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "4b7ca53f4245fdd60f72983401ecbff1e26d814618e7539c6844a0d096d28a97",
+      "role": "What a transaction does to the world when it fails - an EXPLICIT per-transaction choice rather than an accident of whichever path raised.",
+      "responsibilities": [
+        "UNWIND: run registered rollback actions newest-first, then raise; the world is returned toward its prior shape",
+        "LEAVE_BROKEN: run NO rollback actions, record precisely what was left in place, and mark the session BROKEN - the half-built world is a WORK SURFACE for a repairing agent, not debris"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "include": true,
+      "semantics_authored_against": "4b7ca53f4245fdd60f72983401ecbff1e26d814618e7539c6844a0d096d28a97"
+    },
+    "melder.aether.aetheric_mediator.transaction_session.SessionStatus": {
+      "id": "melder.aether.aetheric_mediator.transaction_session.SessionStatus",
+      "label": "SessionStatus",
+      "kind": "enum",
+      "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
+      "lineno": 61,
+      "bases": [],
+      "markers": [
+        "StrEnum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "3d9974b7c7499d3740d62dc94cc148cf6c8556220abceb259d089aaae655059e",
+      "role": "The lifecycle state of one session, in which BROKEN is a DISTINCT TERMINAL STATE and deliberately not a flavour of ABORTED.",
+      "responsibilities": [
+        "separate aborted (world returned toward its prior shape) from broken (world knowingly left mid-flight for repair)",
+        "preserve the distinction an agent needs to know whether there is anything to go and fix"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "include": true,
+      "semantics_authored_against": "3d9974b7c7499d3740d62dc94cc148cf6c8556220abceb259d089aaae655059e"
+    },
+    "melder.aether.aetheric_mediator.transaction_session._RollbackAction": {
+      "id": "melder.aether.aetheric_mediator.transaction_session._RollbackAction",
+      "label": "_RollbackAction",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
+      "lineno": 90,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "012f898a723d7301660e77097aa10cf5d3ee5e002a53d83bce2c5595c803c102",
+      "role": "One registered inverse paired with a description - the owner of the single most dangerous reference in this package, a caller-supplied closure.",
+      "responsibilities": [
+        "make the DESCRIPTION mandatory: under LEAVE_BROKEN the action is never invoked, so the description is the ONLY record of what was left in place, and an undescribed action is invisible residue",
+        "release the closure at an exact chosen moment via cleanup",
+        "hold no lock - built and cleaned only while the owning session's lock is held"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ],
+      "owns_state": [
+        "action",
+        "description"
+      ],
+      "include": true,
+      "semantics_authored_against": "012f898a723d7301660e77097aa10cf5d3ee5e002a53d83bce2c5595c803c102"
+    },
+    "melder.aether.aetheric_mediator.transaction_session.TransactionSession": {
+      "id": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
+      "label": "TransactionSession",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
+      "lineno": 177,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "depth",
+        "describe",
+        "discard_inverses",
+        "fail",
+        "failure_reason",
+        "holder",
+        "join",
+        "leave",
+        "leave_broken_residue",
+        "mark_committed",
+        "mark_committing",
+        "outcome_policy",
+        "register_rollback_action",
+        "request",
+        "staged",
+        "status"
+      ],
+      "shape": {
+        "method_count": 18,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "2cae4270d38cd9da0fdccd43705b1d66f79d6a61d07530118ee7f9a8071d19ce",
+      "role": "One live transaction span owned by exactly one root thread: everything true about a transaction between admission and its terminal state.",
+      "responsibilities": [
+        "fail a FOREIGN-thread join FAST, naming the owning thread, rather than waiting - a cross-thread re-begin is a caller bug and blocking would turn it into a hang",
+        "depth-count same-thread joins so nested work by one actor is safe",
+        "NOT own or reference the claim table - releasing claims belongs to the orchestrator",
+        "drop the rollback action list on cleanup WITHOUT running it: a session being cleaned is not a session being aborted, and quietly firing inverses during teardown would be an invisible mutation"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ],
+      "owns_state": [
+        "_lock",
+        "_request",
+        "_staged",
+        "_holder",
+        "_owner_thread_id",
+        "_depth",
+        "_status",
+        "_failure_reason"
+      ],
+      "include": true,
+      "semantics_authored_against": "2cae4270d38cd9da0fdccd43705b1d66f79d6a61d07530118ee7f9a8071d19ce"
+    }
   },
-  "melder.aether.aetheric_mediator.transaction_session.OutcomePolicy": {
-   "id": "melder.aether.aetheric_mediator.transaction_session.OutcomePolicy",
-   "label": "OutcomePolicy",
-   "kind": "enum",
-   "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 22,
-   "bases": [],
-   "markers": [
-    "StrEnum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "4b7ca53f4245fdd60f72983401ecbff1e26d814618e7539c6844a0d096d28a97"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_session._RollbackAction",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "StrEnum": "enum.StrEnum",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "Identity": "melder.aether.aetheric_mediator.identity.Identity",
+    "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction",
+    "TransactionRequest": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  "melder.aether.aetheric_mediator.transaction_session.SessionStatus": {
-   "id": "melder.aether.aetheric_mediator.transaction_session.SessionStatus",
-   "label": "SessionStatus",
-   "kind": "enum",
-   "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 61,
-   "bases": [],
-   "markers": [
-    "StrEnum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "3d9974b7c7499d3740d62dc94cc148cf6c8556220abceb259d089aaae655059e"
-  },
-  "melder.aether.aetheric_mediator.transaction_session._RollbackAction": {
-   "id": "melder.aether.aetheric_mediator.transaction_session._RollbackAction",
-   "label": "_RollbackAction",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 90,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "012f898a723d7301660e77097aa10cf5d3ee5e002a53d83bce2c5595c803c102"
-  },
-  "melder.aether.aetheric_mediator.transaction_session.TransactionSession": {
-   "id": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
-   "label": "TransactionSession",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/transaction_session.py",
-   "lineno": 177,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "depth",
-    "describe",
-    "discard_inverses",
-    "fail",
-    "failure_reason",
-    "holder",
-    "join",
-    "leave",
-    "leave_broken_residue",
-    "mark_committed",
-    "mark_committing",
-    "outcome_policy",
-    "register_rollback_action",
-    "request",
-    "staged",
-    "status"
-   ],
-   "shape": {
-    "method_count": 18,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "2cae4270d38cd9da0fdccd43705b1d66f79d6a61d07530118ee7f9a8071d19ce"
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_session._RollbackAction",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.transaction_session.TransactionSession",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "StrEnum": "enum.StrEnum",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "Identity": "melder.aether.aetheric_mediator.identity.Identity",
-  "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction",
-  "TransactionRequest": "melder.aether.aetheric_mediator.transaction_request.TransactionRequest",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": null
+  "collapse_candidate": null
 }

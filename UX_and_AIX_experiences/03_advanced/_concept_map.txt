@@ -49,6 +49,28 @@ AUTHORED
      workstation, command_system, event_system, memory_system, plus
      action/category hooks. Shape is constant; AUTHORITY is not)
 
+  13 static_vs_capability_authority (the kinds override EXACTLY ONE
+     property: command_system. AUTHORITY IS GRANTED BY CLASS MEMBERSHIP,
+     NEVER DENIED BY GUARD - static does not refuse meld(), it does not
+     HAVE it. melder's own note: those methods "live on the capability
+     surface INSTEAD OF BEING DENIED AFTER INHERITANCE". Consequences:
+     capability is statically enumerable, hasattr stays honest, there is
+     no refusal path to test. static = reads + meld_existing_spell
+     (REUSE); capability adds meld, link/sever_link,
+     create_lesser_conduit, and the 5 cluster verbs. AIX door:
+     list_supported_command_methods() - read authority, do not probe it)
+
+  14 the_workstation_canvas (room-local binding canvas - it HOLDS, it
+     does not RESOLVE; resolution is the command system's job. Three
+     independent stores objects/attributes/methods so the same name in
+     two stores is no collision. AT MOST ONE active target;
+     clear_target() deselects without deleting. weak_ref True/False/None
+     - explicit weak RAISES on a non-weak-referenceable value and NEVER
+     degrades to strong, because a silent degrade pins an object the
+     caller thought was collectable)
+
+ARC B COMPLETE (lessons 10-14)
+
 THE THROUGH-LINE (named at lesson 11, teach it forward)
   Melder NEVER conflates "this exists" with "this is live". Every
   subsystem splits it in two and only the names change:
@@ -57,6 +79,15 @@ THE THROUGH-LINE (named at lesson 11, teach it forward)
       11  rift    is_registered / is_active
   When you meet an unfamiliar melder object, find its two bits first.
   Presence never implies liveness.
+
+SECOND THROUGH-LINE (visible by lesson 14) - MELDER NEVER SUBSTITUTES
+  When melder cannot do the thing you asked, it says so. It does not do
+  an adjacent thing quietly:
+      08  validate() RAISES rather than returning False
+      13  static has no meld() - authority by ABSENCE, not by refusal
+      14  weak binding RAISES rather than degrading to strong
+  Corollary for readers: a melder call that returns normally did the
+  thing you asked, not a near miss.
 
 FINDINGS (recorded for the owner's init/public-surface program)
   - NO PUBLIC DOOR for frame devops flags (disable_linking/bind/

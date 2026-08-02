@@ -363,3 +363,56 @@ Constraints sections.
 Read-only survey of Crystallizer feeding the AethericMediator wiring story. Answer the
 six questions with evidence; propose scope keys and modes; flag anything that
 cannot be expressed as a claim.
+
+## CORRECTION TO Q4 (bootstrap_0, 2026-08-02T18:05:00Z) - I GOT `ix` WRONG
+
+Filed after closing this task, on reading the actual `ClaimMode` definitions
+while authoring graph semantics for the mediator plane. **The Q4 section above
+contains a false statement and its conclusion is wrong. Do not carry the "no
+`ix` anywhere" recommendation into the wiring story.**
+
+WHAT I ASSERTED (Q4, final paragraph):
+> "`ix` in the frame's DevOps plane means 'I will later escalate this to
+> exclusive, block others from doing the same'."
+
+WHAT THE SOURCE ACTUALLY SAYS - both definitions agree, and neither says that:
+- `embargo_manager.py`, `ClaimMode`: "`INTENT` (\"ix\") is the parent-scope marker
+  for hierarchical claims and permits coexistence with other `INTENT` claims
+  only."
+- `aetheric_mediator/claim_mode.py`, `ClaimMode`: "`INTENT` (\"ix\"): ... It is the
+  HIERARCHICAL PARENT-SCOPE MARKER - hold `ix` on the parent while holding `x` on
+  the child, and disjoint children proceed in parallel."
+
+`ix` is not escalation. It is "I hold a PARENT scope while doing piece-work
+beneath it, so a whole-unit writer must be excluded but my peers need not be."
+I invented the escalation reading and then used it to justify a blanket refusal.
+That is the worse kind of error in a survey: not a missing fact, but a confident
+wrong one used as a premise.
+
+WHAT CHANGES. One row, and it is the graft row:
+
+| scope key | was | should be | why |
+| --- | --- | --- | --- |
+| `spellbook:<host_book_id>` (graft) | x | **ix** | A graft mutates ONE index inside the book. Exclusive on the book blocks a concurrent graft into a DIFFERENT index of the same book for no reason. Parent-marker is the correct posture. |
+| `conduit:<host_conduit_id>` (graft) | x | **ix** | Same argument, same level. |
+| `spell_index:<live_index_id>` | x | x (unchanged) | This IS the unit being mutated. |
+| `spell_index:<merge_into_index_id>` | x | x (unchanged) | Merge mode grows this target; it is a unit writer. |
+
+Everything else in the Q3/Q4 tables stands. `crystallizer:load:world` remains `x`
+and does NOT become `ix`: a world load is not piece-work beneath a parent, it IS
+the whole unit, and one-load-at-a-time is the existing LoadGate law.
+
+THE EVIDENCE WAS ALREADY IN FRONT OF ME. I authored
+`ClusterJoinTransactionStrategy` semantics earlier the same day and wrote:
+"seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT,
+mirroring the link pattern." That is the parent-marker pattern, correctly
+described, hours before I claimed in this survey that no Crystallizer mutation
+earns `ix`. Reading two subsystems on the same day and not connecting them is
+exactly the failure the AethericMediator epic exists to fix, so it is fitting
+that the survey feeding that epic committed it. Recorded rather than quietly
+patched.
+
+STATUS: this task stays `completed`. The six questions are answered and the two
+CONFLICT findings are unaffected - they concern frame creation and teardown, not
+claim modes. But the wiring story should read this section before using the Q4
+table.
