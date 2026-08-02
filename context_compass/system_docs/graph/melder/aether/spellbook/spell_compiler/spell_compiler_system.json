@@ -50,21 +50,7 @@
     "method_count": 23,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Compiler-owned orchestration facade over spell compilation phases.",
-   "responsibilities": [
-    "owns one instantiated SpellCompiler and SpellValidationSystem collaborator pair",
-    "runs phase-oriented compiler operations against the spell-owned SpellCompilerArtifact state",
-    "exposes convenience entrypoints for structural, rooted, validation, and change-control compiler phases"
-   ],
-   "owns_state": [
-    "_spell_compiler",
-    "_spell_validator"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -109,43 +95,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_compiler_system",
   "class": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
   "label": "SpellCompilerSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
-   "to": "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellCompilerSystem owns the instantiated SpellCompiler used to run phase work against spell artifacts.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
-   "to": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellCompilerSystem owns the SpellValidationSystem collaborator used for phase 4 spell validation.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "SpellCompilerSystem inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

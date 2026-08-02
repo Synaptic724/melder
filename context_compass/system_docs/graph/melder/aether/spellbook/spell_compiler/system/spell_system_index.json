@@ -33,21 +33,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-level Phase 5+ system index keyed by spell version id.",
-   "responsibilities": [
-    "stores spell-system nodes for a rooted frame view",
-    "merges node metadata and dependencies across Phase 5 assembly",
-    "feeds system validation and change-control analysis"
-   ],
-   "owns_state": [
-    "_nodes"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -88,20 +74,5 @@
   "module": "melder.aether.spellbook.spell_compiler.system.spell_system_index",
   "class": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
   "label": "SpellSystemIndex"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_node.SpellSystemNode",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellSystemIndex stores and cleans version-scoped SpellSystemNode entries for the rooted system view.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

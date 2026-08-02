@@ -59,28 +59,7 @@
     "method_count": 40,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "The overarching research network: every lane, one journal, one residence partition; the single agent-facing MR surface.",
-   "responsibilities": [
-    "verbs: create_lane, register_spell, attach/detach, join (divergence-aware; collapse/force dials), archive, walk/history/heads",
-    "version-controls its own organization (snapshot_network/restore_network); journal survives restore",
-    "guarantees the default lane; enforces single residence via the owned registry",
-    "fires the injected on_mutation callback after every mutating verb (persistence emission seam; set stays crystallizer-free)",
-    "group_history(group_id) = the subsystem-area journal gather (own lane + member ids + member lanes, journal order)"
-   ],
-   "owns_state": [
-    "_lanes_by_id",
-    "_lane_id_by_name",
-    "_journal",
-    "_residence",
-    "_versioner",
-    "_on_mutation"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -180,94 +159,5 @@
   "module": "melder.mutation_research.research_set.research_set",
   "class": "melder.mutation_research.research_set.research_set.ResearchSet",
   "label": "ResearchSet"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.research_set.research_set.ResearchSet",
-   "to": "melder.mutation_research.research_set.research_lane.ResearchLane",
-   "relation": "owns_lifecycle_of",
-   "why": "ResearchSet owns every lane in the network including the guaranteed default lane.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_set.ResearchSet",
-   "to": "melder.mutation_research.research_set.research_journal.ResearchJournal",
-   "relation": "owns_lifecycle_of",
-   "why": "ResearchSet owns the single set-level forward-only journal.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_set.ResearchSet",
-   "to": "melder.mutation_research.research_set.residence_registry.ResidenceRegistry",
-   "relation": "owns_lifecycle_of",
-   "why": "ResearchSet owns the single-residence partition enforcing one lane per spell identity.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_set.ResearchSet",
-   "to": "melder.mutation_research.research_set.network_versioner.NetworkVersioner",
-   "relation": "owns_lifecycle_of",
-   "why": "ResearchSet owns the content-addressed organization snapshot ring used by snapshot_network/restore_network.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_set.ResearchSet",
-   "to": "melder.mutation_research.research_set.research_node.ResearchNode",
-   "relation": "creates",
-   "why": "register_spell constructs the immutable version record before the lane takes ownership.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_set.ResearchSet",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_set.ResearchSet",
-   "to": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
-   "relation": "creates",
-   "why": "register_group/recompose_group mint composition records (members validated for residence like parents).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

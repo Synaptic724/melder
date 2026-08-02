@@ -30,16 +30,7 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Transaction strategy for bind and scan requests.",
-   "responsibilities": [
-    "builds pre-conjure and post-conjure bind admission plans from live topology",
-    "derives spellbook, conduit, conduit-ward, and cluster scopes for bind-family requests",
-    "runs Spellbook-local bind transaction start/end effects after admission and finalization"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -74,40 +65,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
   "label": "BindTransactionStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-   "relation": "specializes",
-   "why": "BindTransactionStrategy specializes the shared transaction strategy contract for bind-family requests.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-   "relation": "uses",
-   "why": "BindTransactionStrategy reads submitter and participant DevopsIdentity data to derive transaction-owner scopes.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "BindTransactionStrategy borrows the frame registry to resolve the paired root conduit, cluster memberships, and live spellbook objects for bind-family planning.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

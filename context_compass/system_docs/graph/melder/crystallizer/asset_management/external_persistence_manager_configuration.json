@@ -53,21 +53,7 @@
     "method_count": 26,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Separate user-facing configuration carrying upload/download/list callables plus posture knobs.",
-   "responsibilities": [
-    "fluent authoring then freeze; validate refuses upload_on_flush without a handler",
-    "describe_presence() is the record-safe surface (presence flags only)"
-   ],
-   "owns_state": [
-    "handlers",
-    "upload_on_flush",
-    "strict_uploads"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [

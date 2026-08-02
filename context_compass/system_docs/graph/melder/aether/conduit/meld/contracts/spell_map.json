@@ -31,23 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Declarative local DI descriptor.",
-   "responsibilities": [
-    "describes normal spellbook-local DI identity and optional override payload",
-    "lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking"
-   ],
-   "owns_state": [
-    "spell",
-    "spellframe",
-    "binding_name",
-    "spell_override"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

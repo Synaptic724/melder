@@ -59,15 +59,7 @@
     "method_count": 37,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Concurrent weak-reference set.",
-   "responsibilities": [
-    "stores weakly referenced items in a set-like concurrent container"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -133,19 +125,5 @@
   "module": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_set",
   "class": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_set.WeakConcurrentSet",
   "label": "WeakConcurrentSet"
- },
- "edges_authored": [
-  {
-   "from": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_set.WeakConcurrentSet",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "WeakConcurrentSet inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

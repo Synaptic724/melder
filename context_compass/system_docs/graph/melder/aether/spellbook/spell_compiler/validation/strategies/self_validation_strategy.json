@@ -9,15 +9,7 @@
    "label": "self_validation_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py",
-   "lineno": 1,
-   "role": "Spell validation strategy module for self-dependency checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy.SelfDependencyStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy.SelfDependencyStrategy",

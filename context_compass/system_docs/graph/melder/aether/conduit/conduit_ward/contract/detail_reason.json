@@ -26,20 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Reason enum for why one contract detail exists.",
-   "responsibilities": [
-    "labels root, dependency, manual, and other contract-detail causes"
-   ],
-   "owns_state": [
-    "root",
-    "dependency",
-    "manual",
-    "other"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

@@ -46,23 +46,7 @@
     "method_count": 43,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Room-local mediated command layer.",
-   "responsibilities": [
-    "resolves room-scoped records and runtime objects",
-    "executes allowed runtime actions",
-    "binds command results into the workstation when requested",
-    "enforces room and ACL posture on command paths"
-   ],
-   "owns_state": [
-    "_id",
-    "_space",
-    "_workstation"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -128,29 +112,5 @@
   "module": "melder.nexus.rift.command_system.command_system",
   "class": "melder.nexus.rift.command_system.command_system.CommandSystem",
   "label": "CommandSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "relation": "borrows",
-   "why": "CommandSystem is room-local and depends on the owning RiftSpace for room posture and supporting systems.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to": "melder.nexus.rift.rift_space.workstation.Workstation",
-   "relation": "borrows",
-   "why": "CommandSystem uses the workstation for bindings and result storage but does not own its lifecycle.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

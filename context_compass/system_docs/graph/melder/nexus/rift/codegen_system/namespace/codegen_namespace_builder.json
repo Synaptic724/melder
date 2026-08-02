@@ -29,25 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Builder for live codegen namespaces.",
-   "responsibilities": [
-    "owns namespace entry strategies for room workstation command target builtins and control surfaces",
-    "builds one live namespace from configuration and room collaborators",
-    "cleans owned strategies on teardown"
-   ],
-   "owns_state": [
-    "_room_objects_strategy",
-    "_workstation_strategy",
-    "_command_strategy",
-    "_target_strategy",
-    "_builtins_strategy",
-    "_control_strategy"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -134,90 +116,5 @@
   "module": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder",
   "class": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
   "label": "CodegenNamespaceBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to": "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace",
-   "relation": "creates",
-   "why": "CodegenNamespaceBuilder creates one live namespace for the current transaction.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenNamespaceBuilder owns the builtins exposure strategy used when building live namespaces.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy.CodegenCommandStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenNamespaceBuilder owns the command exposure strategy used when building live namespaces.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenNamespaceBuilder owns the control-surface exposure strategy used when building live namespaces.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy.CodegenRoomObjectsStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenNamespaceBuilder owns the room-object exposure strategy used when building live namespaces.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy.CodegenTargetStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenNamespaceBuilder owns the target exposure strategy used when building live namespaces.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-   "to": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy.CodegenWorkstationStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenNamespaceBuilder owns the workstation exposure strategy used when building live namespaces.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

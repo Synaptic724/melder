@@ -26,23 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Coarse validity gate enum for structural and resolution state.",
-   "responsibilities": [
-    "labels unknown, valid, gated, invalid, disabled, and cleaned validity states"
-   ],
-   "owns_state": [
-    "unknown",
-    "valid",
-    "gated",
-    "invalid",
-    "disabled",
-    "cleaned"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

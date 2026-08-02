@@ -39,21 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Minimal DAG implementation specialized for Melder resolution.",
-   "responsibilities": [
-    "tracks nodes and dependency edges",
-    "computes topological order and optional execution over DAG nodes"
-   ],
-   "owns_state": [
-    "_nodes",
-    "_socket_kinds"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -109,20 +95,5 @@
   "module": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph",
   "class": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
   "label": "DirectedAcyclicWorkGraph"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
-   "to": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
-   "relation": "owns_lifecycle_of",
-   "why": "DirectedAcyclicWorkGraph stores and cleans DagNode instances in its node map.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

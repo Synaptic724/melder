@@ -39,27 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-call codegen transaction context.",
-   "responsibilities": [
-    "carries code frame projection and namespace state for one request",
-    "stores a deterministic code hash and transaction id",
-    "shares request-local metadata across validation execution and monitoring"
-   ],
-   "owns_state": [
-    "_transaction_id",
-    "_frame_name",
-    "_code",
-    "_code_hash",
-    "_projection",
-    "_namespace_configuration",
-    "_namespace",
-    "_metadata"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

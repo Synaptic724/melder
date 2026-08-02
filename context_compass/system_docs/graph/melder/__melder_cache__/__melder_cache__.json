@@ -9,14 +9,7 @@
    "label": "__melder_cache__",
    "kind": "module",
    "file": "src/melder/__melder_cache__/__melder_cache__.py",
-   "lineno": 1,
-   "role": "Package-local marker module for the default Melder cache root.",
-   "responsibilities": [
-    "anchors the package-local cache-root fragment used by frame configuration defaults"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

@@ -31,16 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Abstract contract for mediator-registered transaction strategy classes.",
-   "responsibilities": [
-    "defines build_start_plan, on_start, and on_end hooks for transaction families",
-    "defines the default commit-delta stamping path for reported fact baselines",
-    "keeps transaction-family planning and side effects out of the mediator core"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

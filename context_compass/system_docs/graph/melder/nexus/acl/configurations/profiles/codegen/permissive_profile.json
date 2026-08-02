@@ -9,14 +9,7 @@
    "label": "permissive_profile",
    "kind": "module",
    "file": "src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py",
-   "lineno": 1,
-   "role": "Factory module for reusable permissive codegen ACL profile.",
-   "responsibilities": [
-    "constructs one reusable ACL profile variant"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.nexus.acl.configurations.profiles.codegen.permissive_profile.PermissiveCodegenProfileStrategy": {
    "id": "melder.nexus.acl.configurations.profiles.codegen.permissive_profile.PermissiveCodegenProfileStrategy",
@@ -52,29 +45,5 @@
   "PERMISSIVE_IMPORT_MODULE_ROOTS": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.PERMISSIVE_IMPORT_MODULE_ROOTS",
   "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.profiles.codegen.permissive_profile",
-   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
-   "relation": "creates",
-   "why": "This factory module constructs one reusable codegen ACL profile variant.",
-   "cardinality": "one_to_one",
-   "strength": "soft",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.configurations.profiles.codegen.permissive_profile",
-   "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
-   "relation": "uses",
-   "why": "The permissive codegen profile factory uses the shared stdlib import-root constants.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

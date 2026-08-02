@@ -34,24 +34,7 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Owned bundle of view, command, and codegen projections for one frame.",
-   "responsibilities": [
-    "holds the current projection family for one targeted frame",
-    "owns one generation marker for projection refresh",
-    "cleans the projection family as one unit"
-   ],
-   "owns_state": [
-    "_view_projection",
-    "_command_projection",
-    "_codegen_projection",
-    "_generation"
-   ],
-   "phases": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -85,46 +68,5 @@
   "module": "melder.nexus.rift.projection.frame_projection_set",
   "class": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
   "label": "FrameProjectionSet"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
-   "to": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameProjectionSet owns the codegen projection for its frame.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
-   "to": "melder.nexus.rift.projection.command_projection.CommandProjection",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameProjectionSet owns the command projection for its frame.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
-   "to": "melder.nexus.rift.projection.view_projection.ViewProjection",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameProjectionSet owns the view projection for its frame.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

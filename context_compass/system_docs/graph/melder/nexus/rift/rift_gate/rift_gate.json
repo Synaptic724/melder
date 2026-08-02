@@ -41,24 +41,7 @@
     "method_count": 15,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Rift-scoped admission and drain gate.",
-   "responsibilities": [
-    "blocks or admits Rift-scoped work",
-    "tracks in-flight tickets",
-    "supports terminal close-and-drain behavior"
-   ],
-   "owns_state": [
-    "_event",
-    "_tickets",
-    "_closed",
-    "enabled"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

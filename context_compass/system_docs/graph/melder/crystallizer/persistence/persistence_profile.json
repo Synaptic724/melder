@@ -50,21 +50,7 @@
     "method_count": 29,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "One recorded world: replace-on-emit twin stores plus the insertion-ordered emission journal.",
-   "responsibilities": [
-    "records every twin kind (root singletons, frames, books, conduits, indexes, contracts, clusters, spell custody)",
-    "journals (sequence, kind, key) per emission; tombstones on evictions",
-    "captures delta windows (capture_segment_since) with custody_location annotation"
-   ],
-   "owns_state": [
-    "twin stores",
-    "emission_log",
-    "last_checkpoint_sequence"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -126,18 +112,5 @@
   "module": "melder.crystallizer.persistence.persistence_profile",
   "class": "melder.crystallizer.persistence.persistence_profile.PersistenceProfile",
   "label": "PersistenceProfile"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.persistence.persistence_profile.PersistenceProfile",
-   "to": "melder.crystallizer.crystals",
-   "relation": "owns",
-   "why": "The profile holds the live twin stores per kind.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

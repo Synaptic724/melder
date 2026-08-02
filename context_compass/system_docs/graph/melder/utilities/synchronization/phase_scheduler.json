@@ -38,26 +38,7 @@
     "method_count": 17,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "One-shot multi-phase scheduler for spellbook work.",
-   "responsibilities": [
-    "owns the shared cancellation signal, queue, worker threads, and phase registry",
-    "runs registered phases in order with barriers, timeout, and cancellation semantics",
-    "creates UnitOfWork instances bound to its shared cancellation event"
-   ],
-   "owns_state": [
-    "_cancel_signal",
-    "_cancel_event",
-    "_queue",
-    "_threads",
-    "_phase_factories",
-    "_phase_order"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -169,88 +150,5 @@
   "module": "melder.utilities.synchronization.phase_scheduler",
   "class": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
   "label": "PhaseScheduler"
- },
- "edges_authored": [
-  {
-   "from": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "to": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
-   "relation": "uses",
-   "why": "PhaseScheduler uses PhaseExecutionError for unit execution failures.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "to": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",
-   "relation": "uses",
-   "why": "PhaseScheduler surfaces scheduler-specific failures through the PhaseSchedulerError family.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "to": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
-   "relation": "uses",
-   "why": "PhaseScheduler uses PhaseTimeoutError for phase barrier timeout failures.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "PhaseScheduler inherits the common explicit-cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "to": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
-   "relation": "owns_lifecycle_of",
-   "why": "PhaseScheduler owns the shared cancellation signal used across all units scheduled for one run.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "to": "melder.utilities.synchronization.phase_latch.PhaseLatch",
-   "relation": "creates",
-   "why": "PhaseScheduler creates one PhaseLatch per phase barrier to wait on all unit completions with fail-fast wake semantics.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "to": "melder.utilities.synchronization.unit_of_work.UnitOfWork",
-   "relation": "creates",
-   "why": "PhaseScheduler creates UnitOfWork instances that are pre-wired to its shared cancellation event.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

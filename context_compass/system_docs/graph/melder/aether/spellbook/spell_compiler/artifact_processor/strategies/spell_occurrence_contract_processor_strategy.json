@@ -29,16 +29,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Processor strategy fitting SpellContract routing and payload facts into the codegen model.",
-   "responsibilities": [
-    "compiles SpellContract override payload maps from analyzer-owned occurrence graph truth",
-    "publishes SpellOccurrenceContractAnalysis onto SpellCodegenModel",
-    "tracks contract payload counts and completeness for later planning"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -94,40 +85,5 @@
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy",
   "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy",
   "label": "SpellOccurrenceContractProcessorStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
-   "relation": "creates",
-   "why": "SpellOccurrenceContractProcessorStrategy builds and publishes SpellOccurrenceContractAnalysis.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "relation": "specializes",
-   "why": "SpellOccurrenceContractProcessorStrategy specializes the abstract processor-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellOccurrenceContractProcessorStrategy fits the contract-routing section directly onto SpellCodegenModel.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -29,21 +29,7 @@
     "method_count": 23,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Compiler from descriptor truth and typed ACL config into a consumer-facing access surface.",
-   "responsibilities": [
-    "compiles typed ACL configuration against descriptor truth",
-    "derives visible and enabled access sets",
-    "creates the consumer-facing compiled access surface"
-   ],
-   "owns_state": [
-    "_profile_builder"
-   ],
-   "phases": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -92,40 +78,5 @@
   "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
   "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler",
-   "to": "melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface",
-   "relation": "creates",
-   "why": "FrameACLCompiler creates the derived consumer-facing access surface for one frame.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler",
-   "to": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
-   "relation": "borrows",
-   "why": "FrameACLCompiler reads the typed ACL bundle while compiling derived access answers.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler",
-   "to": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-   "relation": "borrows",
-   "why": "FrameACLCompiler reads descriptor truth while compiling ACL access surfaces.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "refresh"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

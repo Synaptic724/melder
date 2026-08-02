@@ -39,25 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Phase 5 rooted deep-DAG blueprint for one spell.",
-   "responsibilities": [
-    "stores the rooted deep DAG and stable execution order for one root spell",
-    "owns socket references and the targeting index for override and component paths",
-    "hands off rooted structure to system validation, change-control, and later planning phases"
-   ],
-   "owns_state": [
-    "_root_spell_id",
-    "_dag",
-    "_ordered_node_ids",
-    "_socket_refs",
-    "_dag_index"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -104,33 +86,5 @@
   "module": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint",
   "class": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
   "label": "RootResolutionBlueprint"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "to": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
-   "relation": "owns_lifecycle_of",
-   "why": "RootResolutionBlueprint owns the DagIndex used for later override targeting.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "to": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
-   "relation": "owns_lifecycle_of",
-   "why": "RootResolutionBlueprint owns the rooted deep DAG for one root spell.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

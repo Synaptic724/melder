@@ -78,15 +78,7 @@
     "method_count": 52,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Capability-room specialization of the shared command surface.",
-   "responsibilities": [
-    "preserves the shared broad runtime command behavior for CapabilityRiftSpace",
-    "owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -115,29 +107,5 @@
   "module": "melder.nexus.rift.command_system.capability_command_system",
   "class": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
   "label": "CapabilityCommandSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-   "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "relation": "specializes",
-   "why": "CapabilityCommandSystem is the capability-room specialization of the shared command surface.",
-   "cardinality": "many_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-   "to": "melder.mutation_research.mutation_research.MutationResearch",
-   "relation": "borrows",
-   "why": "Capability rooms expose the twenty-one research reads (seven record incl. research_recent + eight foresight + six composition incl. the crystal-well module/part reads) through the same non-constructing peek; code-taking/producing verbs stay codegen-only. The family is ADVERTISED in list_supported_command_methods.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

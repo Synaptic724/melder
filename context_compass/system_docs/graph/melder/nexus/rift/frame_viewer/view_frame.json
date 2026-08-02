@@ -60,24 +60,7 @@
     "method_count": 51,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-scoped helper surface for one selected view projection.",
-   "responsibilities": [
-    "converts one descriptor and compiled ACL surface into visible target links and frame summaries",
-    "returns ACL-filtered frame payload and inventory views"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_frame_descriptor",
-    "_frame_acl_configuration",
-    "_compiled_access_surface",
-    "_default_detail_level"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -130,30 +113,5 @@
   "module": "melder.nexus.rift.frame_viewer.view_frame",
   "class": "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
   "label": "ViewFrame"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
-   "to": "melder.nexus.rift.frame_link.frame_link.FrameLink",
-   "relation": "creates",
-   "why": "ViewFrame creates FrameLink snapshots for the currently visible frame targets.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
-   "to": "melder.nexus.rift.frame_viewer.view_action_hooks",
-   "relation": "uses",
-   "why": "ViewFrame uses the shared view-action hook wrapper module for public helper actions.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -35,23 +35,7 @@
     "method_count": 26,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Resolution runtime orchestrator.",
-   "responsibilities": [
-    "resolves target spells",
-    "enforces validity and dirty-root gates",
-    "chooses reuse versus construction",
-    "dispatches execution into CreationContext"
-   ],
-   "owns_state": [
-    "_spellbook",
-    "_conduit",
-    "_creation_contexts_by_spell_id"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -150,62 +134,5 @@
   "ConduitResolutionState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
   "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.meld.meld.Meld",
-   "to": "melder.aether.conduit.creations.creations.Creations",
-   "relation": "borrows",
-   "why": "Meld borrows the conduit-owned Creations manager to check reuse and register live instances.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.meld.meld.Meld",
-   "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-   "relation": "creates",
-   "why": "Meld creates or retrieves per-spell CreationContext objects to execute spell resolution.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.meld.meld.Meld",
-   "to": "melder.aether.spellbook.existence.existence.Existence",
-   "relation": "uses",
-   "why": "Meld interprets Existence to decide reuse versus construction routes.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.meld.meld.Meld",
-   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
-   "relation": "creates",
-   "why": "Meld instantiates SpellCompilerSystem when lazy validation or resolution-phase reruns are required at meld time.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.meld.meld.Meld",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "borrows",
-   "why": "Meld borrows Spellbook lookup maps and spell metadata for resolution.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

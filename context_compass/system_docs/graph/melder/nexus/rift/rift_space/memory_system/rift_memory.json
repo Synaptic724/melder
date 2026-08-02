@@ -32,21 +32,7 @@
     "method_count": 7,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Immutable executed-step memory record emitted from RiftSpace.",
-   "responsibilities": [
-    "captures one immutable memory record for a completed Rift-level action"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_action_name",
-    "_step_counter",
-    "_epoch_counter",
-    "_metadata"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

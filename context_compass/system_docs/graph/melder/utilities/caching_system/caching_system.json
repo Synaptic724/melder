@@ -38,28 +38,7 @@
     "method_count": 16,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Conduit-scoped cache persistence utility.",
-   "responsibilities": [
-    "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
-    "loads, normalizes, mutates, and emits marshal-backed spell payload bundles",
-    "supports spell-payload transfer and persistence for the spellbook/runtime cache lane"
-   ],
-   "owns_state": [
-    "_id",
-    "_lock",
-    "_frame_name",
-    "_conduit_name",
-    "_cache_root_path",
-    "_bundle_path",
-    "_cache_data",
-    "_logger"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -109,56 +88,5 @@
   "module": "melder.utilities.caching_system.caching_system",
   "class": "melder.utilities.caching_system.caching_system.CachingSystem",
   "label": "CachingSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CachingSystem inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-   "to": "melder.utilities.helpers.id_builder.IDBuilder",
-   "relation": "uses",
-   "why": "CachingSystem uses IDBuilder for its stable runtime identity.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-   "to": "melder.utilities.helpers.init_helpers.InitHelpers",
-   "relation": "uses",
-   "why": "CachingSystem uses InitHelpers to resolve its logger surface when an explicit SafeLogger is not supplied.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.caching_system.caching_system.CachingSystem",
-   "to": "melder.utilities.logger.safe_logger.SafeLogger",
-   "relation": "uses",
-   "why": "CachingSystem stores and cleans a SafeLogger wrapper for cache lifecycle reporting.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

@@ -37,22 +37,7 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Content-addressed version control of the graph ORGANIZATION itself (objects are indestructible; arrangement is what restore recovers).",
-   "responsibilities": [
-    "canonical-JSON SHA256 addressing with dedupe; bounded FIFO retention ring",
-    "get() returns detached value copies; journal excluded from snapshots by design"
-   ],
-   "owns_state": [
-    "_canonical_by_sha",
-    "_order",
-    "_max_snapshots"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -95,20 +80,5 @@
   "module": "melder.mutation_research.research_set.network_versioner",
   "class": "melder.mutation_research.research_set.network_versioner.NetworkVersioner",
   "label": "NetworkVersioner"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.research_set.network_versioner.NetworkVersioner",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

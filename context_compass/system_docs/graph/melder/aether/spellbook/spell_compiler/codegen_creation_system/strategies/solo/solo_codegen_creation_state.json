@@ -24,28 +24,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Family-local mutable state for the solo creation strategy.",
-   "responsibilities": [
-    "carries solo-family intermediate compiler data across ordered solo steps",
-    "stores root-spell, route-key, emit-key, and executor scratch for later solo family steps",
-    "keeps the final SpellCodegenCreation artifact narrow and runtime-facing"
-   ],
-   "owns_state": [
-    "spell_codegen_model",
-    "spell_codegen_plan",
-    "spell_codegen_creation",
-    "root_spell",
-    "root_spell_id",
-    "resolve_route_key",
-    "solo_emit_key",
-    "fast_transient_no_overrides_enabled",
-    "no_overrides_executor",
-    "overrides_executor"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -64,29 +43,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
   "label": "SoloCodegenCreationState"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "borrows",
-   "why": "SoloCodegenCreationState borrows SpellCodegenModel as the fitted compiler truth for solo family work.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-   "relation": "borrows",
-   "why": "SoloCodegenCreationState borrows the SpellCodegenCreation output object it is populating.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

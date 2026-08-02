@@ -38,22 +38,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Immutable reference-based version record: spell_id IS the custody SpellCrystal id (no source pinning).",
-   "responsibilities": [
-    "carries spell_id + module_sha + parent ancestry + author/reason/campaign",
-    "multi-parent records express codegen-workshop composition (no merge machinery exists)"
-   ],
-   "owns_state": [
-    "_spell_id",
-    "_module_source_sha256",
-    "_parent_spell_ids"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -87,20 +72,5 @@
   "module": "melder.mutation_research.research_set.research_node",
   "class": "melder.mutation_research.research_set.research_node.ResearchNode",
   "label": "ResearchNode"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.research_set.research_node.ResearchNode",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

@@ -31,16 +31,7 @@
     "method_count": 6,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Many-only-local phase-11 helper surface.",
-   "responsibilities": [
-    "provides deterministic hashing and signature serialization for the many-only family",
-    "normalizes instance keys and arbitrary values into deterministic tuple-backed forms",
-    "builds no-overrides signature rows and override step rows without depending on generalized helpers"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

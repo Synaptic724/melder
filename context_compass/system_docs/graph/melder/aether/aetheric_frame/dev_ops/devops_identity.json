@@ -44,26 +44,7 @@
     "method_count": 17,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-local dev-ops identity record for runtime objects.",
-   "responsibilities": [
-    "stores stable owner identity, frame scope, metadata, and transaction capabilities",
-    "attaches runtime objects to the frame-owned dev-ops information registry",
-    "publishes conduit-link and cluster-membership relations through the registry"
-   ],
-   "owns_state": [
-    "_owner_kind",
-    "_owner_id",
-    "_aetheric_frame_name",
-    "_metadata",
-    "_available_transactions",
-    "_registry"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -116,18 +97,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.devops_identity",
   "class": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
   "label": "DevopsIdentity"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "DevopsIdentity attaches itself to the frame-local registry so runtime objects can publish identity and topology metadata.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

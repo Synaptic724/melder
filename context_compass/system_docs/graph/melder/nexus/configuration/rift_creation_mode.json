@@ -26,19 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "System-level policy enum for Rift creation/programming.",
-   "responsibilities": [
-    "labels open, token-required, and prebuilt-only Rift creation modes"
-   ],
-   "owns_state": [
-    "open",
-    "token_required",
-    "prebuilt_only"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

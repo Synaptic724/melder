@@ -34,16 +34,7 @@
     "method_count": 9,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Shared phase-11 helper surface for codegen-creation families.",
-   "responsibilities": [
-    "serializes deterministic signature parts and hashes phase-11 schema payloads",
-    "normalizes transient plans and instance keys into schema-safe forms",
-    "builds reusable phase-11 step IR rows and no-overrides compile signatures"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -60,29 +51,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
   "label": "CodegenCreationSchemaHelpers"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
-   "relation": "uses",
-   "why": "CodegenCreationSchemaHelpers reads SpellGeneralizedCodegenLanePlan steps, memoized phase-11 rows, and fast-transient payloads when exporting schema-only phase-11 data.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
-   "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
-   "relation": "uses",
-   "why": "CodegenCreationSchemaHelpers shapes deterministic IR/signature payloads later consumed by emitted executor compilation and caching.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

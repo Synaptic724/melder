@@ -28,16 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry-backed dev-ops information strategy for mirrored-map symmetry audits.",
-   "responsibilities": [
-    "checks forward and reverse registry maps for asymmetry across ownership, links, clusters, and transactions",
-    "returns detached consistency findings without mutating the registry",
-    "acts as a sampled control-plane bookkeeping audit over registry deltas"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -62,18 +53,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
   "label": "RegistryConsistencyAuditStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-   "relation": "specializes",
-   "why": "RegistryConsistencyAuditStrategy specializes the shared dev-ops information strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

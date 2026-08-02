@@ -9,15 +9,7 @@
    "label": "duplicate_spell_name_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
-   "lineno": 1,
-   "role": "Spell validation strategy module for duplicate spell-name checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",

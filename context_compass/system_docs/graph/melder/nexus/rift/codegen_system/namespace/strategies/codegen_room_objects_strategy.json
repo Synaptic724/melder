@@ -29,18 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Namespace exposure strategy for stable room/runtime objects.",
-   "responsibilities": [
-    "exposes stable room/runtime objects such as the viewer when enabled by configuration"
-   ],
-   "owns_state": [
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -78,30 +67,5 @@
   "module": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy",
   "class": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy.CodegenRoomObjectsStrategy",
   "label": "CodegenRoomObjectsStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy.CodegenRoomObjectsStrategy",
-   "to": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "relation": "borrows",
-   "why": "CodegenRoomObjectsStrategy exposes the room-owned viewer into the execution namespace when enabled.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy.CodegenRoomObjectsStrategy",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CodegenRoomObjectsStrategy inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

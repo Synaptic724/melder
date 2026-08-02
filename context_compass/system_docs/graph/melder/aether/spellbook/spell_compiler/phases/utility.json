@@ -26,16 +26,7 @@
     "method_count": 1,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Shared static helper surface for compiler phases.",
-   "responsibilities": [
-    "provides generic helper behavior reused across extracted compiler phase classes",
-    "raises through the shared cancellation event when phase execution is cancelled"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

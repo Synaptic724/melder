@@ -9,15 +9,7 @@
    "label": "precision_strategy",
    "kind": "module",
    "file": "src/melder/nexus/acl/validator/profiles/command/precision_strategy.py",
-   "lineno": 1,
-   "role": "Validator strategy module for precision command-profile configuration.",
-   "responsibilities": [
-    "provides one validator-side profile strategy or helper surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],
@@ -27,18 +19,5 @@
   "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
   "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.validator.profiles.command.precision_strategy",
-   "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-   "relation": "validates",
-   "why": "The precision command validator strategy validates precision command profile configuration.",
-   "cardinality": "many_to_one",
-   "strength": "soft",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

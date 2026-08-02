@@ -26,15 +26,7 @@
     "method_count": 1,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Strategy building resolution profiles from live spells.",
-   "responsibilities": [
-    "builds a SpellResolutionProfile from a bound spell and its phase artifacts"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -64,18 +56,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy",
   "class": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy.ResolutionProfileStrategy",
   "label": "ResolutionProfileStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy.ResolutionProfileStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile",
-   "relation": "creates",
-   "why": "ResolutionProfileStrategy builds spell resolution profiles from live spells.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

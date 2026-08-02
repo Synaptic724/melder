@@ -26,20 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Lifecycle status enum for incidents.",
-   "responsibilities": [
-    "labels open, acknowledged, resolved, and suppressed incident lifecycle states"
-   ],
-   "owns_state": [
-    "open",
-    "acknowledged",
-    "resolved",
-    "suppressed"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

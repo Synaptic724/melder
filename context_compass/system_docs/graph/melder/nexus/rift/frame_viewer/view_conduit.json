@@ -55,19 +55,7 @@
     "method_count": 37,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Conduit-scoped helper surface for one selected frame view.",
-   "responsibilities": [
-    "returns ACL-filtered conduit links and conduit-aware record views",
-    "provides conduit-to-spell traversal over the selected frame helper"
-   ],
-   "owns_state": [
-    "_frame_view"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -118,29 +106,5 @@
   "module": "melder.nexus.rift.frame_viewer.view_conduit",
   "class": "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit",
   "label": "ViewConduit"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit",
-   "to": "melder.nexus.rift.frame_viewer.view_action_hooks",
-   "relation": "uses",
-   "why": "ViewConduit uses the shared view-action hook wrapper module for public helper actions.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit",
-   "to": "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
-   "relation": "borrows",
-   "why": "ViewConduit borrows the selected-frame helper instead of owning descriptor or ACL state directly.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

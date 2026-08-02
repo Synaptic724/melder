@@ -33,25 +33,7 @@
     "method_count": 28,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Nexus-owned frame ACL container and profile manager.",
-   "responsibilities": [
-    "owns frame ACL containers by frame name",
-    "owns the frame ACL profile registry and profile builder",
-    "creates and resolves frame-local ACL builders and containers",
-    "assembles selected ACL configurations for frames"
-   ],
-   "owns_state": [
-    "_frame_acl_containers_by_name",
-    "_frame_acl_profiles_by_name",
-    "_frame_acl_profile_builder"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -114,33 +96,5 @@
   "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
   "FrameDescriptor": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.frame_acl_manager.FrameACLManager",
-   "to": "melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder.FrameACLProfileBuilder",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLManager owns the reusable ACL profile builder/library.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.frame_acl_manager.FrameACLManager",
-   "to": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLManager owns one frame-local ACL container per frame.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

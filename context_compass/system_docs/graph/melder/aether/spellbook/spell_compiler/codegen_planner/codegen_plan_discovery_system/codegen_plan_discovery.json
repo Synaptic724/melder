@@ -24,22 +24,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Discovery result for one codegen-plan selection pass.",
-   "responsibilities": [
-    "stores the selected planner strategy id and compact discovery provenance",
-    "stores the higher-level plan family selected from processor-owned truth",
-    "stores the bounded allow-list of codegen styles phase 11 may consider"
-   ],
-   "owns_state": [
-    "selected_strategy_id",
-    "discovery_reason",
-    "plan_family_id",
-    "candidate_codegen_style_ids"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

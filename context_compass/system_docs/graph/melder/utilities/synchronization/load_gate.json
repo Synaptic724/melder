@@ -35,20 +35,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Exclusive system-wide load-authority gate (holder-thread passthrough; teach-grade timeout; tombstoned teardown).",
-   "responsibilities": [
-    "grants one crystallizer load exclusive authority",
-    "parks foreign new-root transaction starts until release"
-   ],
-   "owns_state": [
-    "_condition",
-    "_holder_thread_id",
-    "_holder_label"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [

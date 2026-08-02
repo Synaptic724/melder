@@ -26,21 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Enum of supported change-control transaction kinds.",
-   "responsibilities": [
-    "labels bind, link, transfer ownership, mutation, and cluster link transactions"
-   ],
-   "owns_state": [
-    "BIND",
-    "LINK",
-    "TRANSFER_OWNERSHIP",
-    "MUTATION",
-    "CLUSTER_LINK"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
@@ -55,24 +41,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Immutable pre-admission transaction request payload.",
-   "responsibilities": [
-    "stores normalized scope, binding, and contract metadata for one mutation request",
-    "acts as the canonical request record used by admission and staging logic"
-   ],
-   "owns_state": [
-    "request_id",
-    "request_type",
-    "scope_keys",
-    "scope_hashes",
-    "binding_keys",
-    "contract_keys",
-    "metadata"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlAdmissionResult": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlAdmissionResult",
@@ -87,20 +56,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Immutable admission decision payload for one transaction request.",
-   "responsibilities": [
-    "stores the admitted verdict plus conflict and embargo evidence for one request"
-   ],
-   "owns_state": [
-    "admitted",
-    "reasons",
-    "conflicts",
-    "embargoes"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

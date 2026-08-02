@@ -26,18 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Perspective enum for contract detail entries.",
-   "responsibilities": [
-    "labels whether a contract detail is initiated or received from one ward perspective"
-   ],
-   "owns_state": [
-    "initiated",
-    "received"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

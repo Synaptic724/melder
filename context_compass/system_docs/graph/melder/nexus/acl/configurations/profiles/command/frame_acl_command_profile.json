@@ -44,23 +44,7 @@
     "method_count": 20,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Reusable typed command-profile ruleset bundle.",
-   "responsibilities": [
-    "owns frame, conduit, spell, and member command rulesets",
-    "carries one validator-owned strategy key for command-specific validation behavior"
-   ],
-   "owns_state": [
-    "_frame_ruleset",
-    "_conduit_ruleset",
-    "_spell_ruleset",
-    "_member_ruleset",
-    "_validation_strategy_name"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -140,19 +124,5 @@
   "PermissiveCommandProfileStrategy": "melder.nexus.acl.configurations.profiles.command.permissive_profile.PermissiveCommandProfileStrategy",
   "PrecisionCommandProfileStrategy": "melder.nexus.acl.configurations.profiles.command.precision.PrecisionCommandProfileStrategy"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLCommandProfile owns the reusable command-family rulesets.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

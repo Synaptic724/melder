@@ -35,22 +35,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "One-shot builder for mutation-research configuration assembly.",
-   "responsibilities": [
-    "owns one mutable MutationResearchConfiguration during assembly",
-    "applies default and unrestricted-module-mutations policy before handoff",
-    "transfers configuration ownership through build, finalize, or activate"
-   ],
-   "owns_state": [
-    "_configuration",
-    "_id"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -88,20 +73,5 @@
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.mutation_configuration_builder.MutationResearchConfigurationBuilder",
-   "to": "melder.mutation_research.mutation_configuration.MutationResearchConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "MutationResearchConfigurationBuilder owns one mutable configuration until handoff or cleanup.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

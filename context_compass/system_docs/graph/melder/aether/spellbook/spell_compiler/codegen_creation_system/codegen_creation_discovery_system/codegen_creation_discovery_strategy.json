@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Abstract contract for phase-11 codegen creation discovery strategies.",
-   "responsibilities": [
-    "defines the strategy_id contract for discovery strategies",
-    "defines the discover() seam over SpellCodegenModel and SpellCodegenPlan",
-    "keeps creation-strategy selection separate from the top-level creation facade"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

@@ -37,17 +37,7 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Declarative single-use load plan: scope (world|conduit|frame), profile, per-kind key counts, carried detached windows.",
-   "responsibilities": [
-    "describe() = counts + identity, never payload dumps"
-   ],
-   "owns_state": [
-    "detached chain windows"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [

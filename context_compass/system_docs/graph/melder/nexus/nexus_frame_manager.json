@@ -41,23 +41,7 @@
     "method_count": 31,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Nexus-owned manager for authored managed frames.",
-   "responsibilities": [
-    "stores authored Nexus-frame configurations by frame name",
-    "creates NexusFrameBuilder authoring surfaces",
-    "realizes rooted conduits for Nexus-managed frames",
-    "tracks live Nexus-managed frames and their metadata"
-   ],
-   "owns_state": [
-    "_nexus_frames_by_name",
-    "_frame_configurations_by_name",
-    "_nexus"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -136,30 +120,5 @@
   "module": "melder.nexus.nexus_frame_manager",
   "class": "melder.nexus.nexus_frame_manager.NexusFrameManager",
   "label": "NexusFrameManager"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
-   "to": "melder.nexus.nexus_frame_builder.NexusFrameBuilder",
-   "relation": "creates",
-   "why": "NexusFrameManager creates NexusFrameBuilder instances to stage authored managed-frame configuration.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
-   "to": "melder.nexus.nexus_frame_configuration.NexusFrameConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "NexusFrameManager stores and manages authored NexusFrameConfiguration objects by frame name.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

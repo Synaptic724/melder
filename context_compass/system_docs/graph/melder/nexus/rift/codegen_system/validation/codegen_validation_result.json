@@ -38,23 +38,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Validation-layer result for one codegen request.",
-   "responsibilities": [
-    "stores acceptance state reason and validation issues",
-    "serializes to the public validation payload shape"
-   ],
-   "owns_state": [
-    "_accepted",
-    "_frame_name",
-    "_reason",
-    "_validation_issues",
-    "_transaction_id"
-   ],
-   "phases": [
-    "validation",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

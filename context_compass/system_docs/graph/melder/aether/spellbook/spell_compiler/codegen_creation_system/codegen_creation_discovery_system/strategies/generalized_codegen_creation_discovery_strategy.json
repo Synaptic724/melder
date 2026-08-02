@@ -9,16 +9,7 @@
    "label": "generalized_codegen_creation_discovery_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_codegen_creation_discovery_strategy.py",
-   "lineno": 1,
-   "role": "Default generalized phase-11 discovery strategy.",
-   "responsibilities": [
-    "claims generalized planner output for the generalized creation family",
-    "selects one concrete codegen style from plan candidates",
-    "preserves the previous generalized selection behavior behind an explicit strategy contract"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy.GeneralizedCodegenCreationDiscoveryStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy.GeneralizedCodegenCreationDiscoveryStrategy",
@@ -69,40 +60,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy.GeneralizedCodegenCreationDiscoveryStrategy",
   "label": "GeneralizedCodegenCreationDiscoveryStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "GeneralizedCodegenCreationDiscoveryStrategy inspects the fitted SpellCodegenModel when deciding whether to claim the current pair.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-   "relation": "creates",
-   "why": "GeneralizedCodegenCreationDiscoveryStrategy returns a CodegenCreationDiscovery when it claims the current model/plan pair.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-   "relation": "specializes",
-   "why": "GeneralizedCodegenCreationDiscoveryStrategy specializes the abstract discovery-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

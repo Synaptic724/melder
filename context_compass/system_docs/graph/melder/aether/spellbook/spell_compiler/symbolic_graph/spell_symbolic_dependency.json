@@ -37,24 +37,7 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Phase 2 symbolic representation of one constructor socket.",
-   "responsibilities": [
-    "stores the DI shape and target intent for one parameter without resolving concrete spell ids"
-   ],
-   "owns_state": [
-    "_spell_id",
-    "_param_name",
-    "_di_shape",
-    "_target_annotation",
-    "_spellmap_default",
-    "_contract_key"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

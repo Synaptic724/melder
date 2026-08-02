@@ -28,18 +28,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Lower-risk static room specialization.",
-   "responsibilities": [
-    "fixes room kind to static",
-    "composes the static command posture",
-    "uses the static viewer overlay and weak-default workstation posture"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -72,19 +61,5 @@
   "module": "melder.nexus.rift.rift_space.static_rift_space",
   "class": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
   "label": "StaticRiftSpace"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
-   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "relation": "specializes",
-   "why": "StaticRiftSpace is the static-mode specialization of the base room.",
-   "cardinality": "many_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -28,15 +28,7 @@
     "method_count": 3,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Shared low-level helper surface for the spell examiner inspectors.",
-   "responsibilities": [
-    "provides safe repr, extension-module detection, and best-effort callable unwrapping"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

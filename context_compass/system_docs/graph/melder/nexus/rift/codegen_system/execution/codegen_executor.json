@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Owner of governed code execution for one codegen request.",
-   "responsibilities": [
-    "executes compiled code against the built namespace",
-    "returns execution-layer result objects for the request"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -81,18 +72,5 @@
   "module": "melder.nexus.rift.codegen_system.execution.codegen_executor",
   "class": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
   "label": "CodegenExecutor"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-   "to": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
-   "relation": "creates",
-   "why": "CodegenExecutor creates execution results for completed or failed codegen runs.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

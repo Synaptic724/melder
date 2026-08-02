@@ -56,27 +56,7 @@
     "method_count": 35,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-frame lineage and resolution state registry.",
-   "responsibilities": [
-    "owns lineage state by index id and spell id",
-    "tracks dirty lineages and local topologies",
-    "owns per-conduit resolution state buckets",
-    "provides targeted dependency and contract invalidation"
-   ],
-   "owns_state": [
-    "_states_by_index_id",
-    "_states_by_spell_id",
-    "_dirty_lineages",
-    "_local_topologies",
-    "_resolution_by_conduit_id"
-   ],
-   "phases": [
-    "init",
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -151,69 +131,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states",
   "class": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
   "label": "SpellSystemStates"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellSystemStates owns conduit-scoped ConduitResolutionState buckets for later resolution validation.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
-   "relation": "uses",
-   "why": "SpellSystemStates applies SpellState flags when marking lineages gated, impacted, or contract-unvalidated.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-   "relation": "uses",
-   "why": "SpellSystemStates records SpellStateChangeReason values as the coarse latest transition for lineage and resolution state changes.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellSystemStates owns one SpellSystemState per registered lineage.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
-   "relation": "uses",
-   "why": "SpellSystemStates uses SpellValidity to gate both structural and conduit-local resolution participation.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

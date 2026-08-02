@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Phase-10 discovery strategy for graphs made only of Existence.many spells.",
-   "responsibilities": [
-    "claims models whose visible spell set contains more than one spell and every spell is Existence.many",
-    "emits the many-only planner strategy id and many-only planning family",
-    "bounds phase-11 candidate codegen styles for the many-only family"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -69,29 +60,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
   "label": "ManyOnlyCodegenPlanDiscoveryStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-   "to": "melder.aether.spellbook.existence.existence.Existence",
-   "relation": "uses",
-   "why": "ManyOnlyCodegenPlanDiscoveryStrategy checks Existence.many counts when deciding whether to claim the current model.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
-   "relation": "specializes",
-   "why": "ManyOnlyCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

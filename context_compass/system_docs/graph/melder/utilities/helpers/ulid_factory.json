@@ -9,19 +9,7 @@
    "label": "ulid_factory",
    "kind": "module",
    "file": "src/melder/utilities/helpers/ulid_factory.py",
-   "lineno": 1,
-   "role": "Minimal internal ULID generator module.",
-   "responsibilities": [
-    "replaces the external ulid package for runtime ID generation",
-    "provides the lock-free new_ulid() helper used by runtime objects and helpers",
-    "keeps ULID generation import-light and cycle-safe"
-   ],
-   "owns_state": [
-    "_CROCKFORD32"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Phase-10 discovery strategy for the solo spell category.",
-   "responsibilities": [
-    "claims models whose visible spell count is exactly one",
-    "emits the solo planner strategy id and solo planning family",
-    "bounds phase-11 candidate codegen styles for the solo family"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -68,18 +59,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
   "label": "SoloCodegenPlanDiscoveryStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
-   "relation": "specializes",
-   "why": "SoloCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

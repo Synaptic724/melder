@@ -41,22 +41,7 @@
     "method_count": 16,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Central registry and control plane for Rift gates.",
-   "responsibilities": [
-    "registers RiftGate instances by Rift id",
-    "fans out enable and disable operations across Rift gates",
-    "provides drain and admission-mode control for one or many Rift gates"
-   ],
-   "owns_state": [
-    "_rift_gates_by_rift_id"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

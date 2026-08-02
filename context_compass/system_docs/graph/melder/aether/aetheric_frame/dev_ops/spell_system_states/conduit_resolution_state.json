@@ -45,25 +45,7 @@
     "method_count": 23,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-conduit resolution-validity container.",
-   "responsibilities": [
-    "tracks per-spell and per-root resolution validity for one conduit",
-    "stores conduit-scoped system diagnostics and dirty/validated markers"
-   ],
-   "owns_state": [
-    "_spell_validity",
-    "_root_validity",
-    "_diagnostics",
-    "_dirty",
-    "_last_validated_at",
-    "_last_change_reason"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -116,31 +98,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state",
   "class": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
   "label": "ConduitResolutionState"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-   "relation": "uses",
-   "why": "ConduitResolutionState stores SpellStateChangeReason as the latest resolution-state transition summary.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
-   "relation": "uses",
-   "why": "ConduitResolutionState stores SpellValidity verdicts for both spell and root resolution state.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

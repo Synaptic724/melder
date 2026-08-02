@@ -53,21 +53,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-thread active spellspace stack holder for one conduit.",
-   "responsibilities": [
-    "stores one independent active spellspace stack per thread",
-    "supports push/pop and top-of-stack validation for managed spellspace exit",
-    "drains or clears the current thread stack during cleanup and teardown"
-   ],
-   "owns_state": [
-    "_local"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -105,20 +91,5 @@
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "SpellSpaceThreadState inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

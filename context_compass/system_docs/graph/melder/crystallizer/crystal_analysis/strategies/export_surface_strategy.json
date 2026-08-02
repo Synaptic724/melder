@@ -9,14 +9,7 @@
    "label": "export_surface_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/strategies/export_surface_strategy.py",
-   "lineno": 1,
-   "role": "Static __all__ + public top-level names per module (MR impact-engine prerequisite; honest under-claim on dynamic __all__).",
-   "responsibilities": [
-    "implemented S1 (decomposition epic); see crystal_analysis component docs"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.crystallizer.crystal_analysis.strategies.export_surface_strategy.ExportSurfaceStrategy": {
    "id": "melder.crystallizer.crystal_analysis.strategies.export_surface_strategy.ExportSurfaceStrategy",

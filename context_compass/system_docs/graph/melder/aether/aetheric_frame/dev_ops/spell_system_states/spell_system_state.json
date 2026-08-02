@@ -47,26 +47,7 @@
     "method_count": 21,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "System-level state for a single spell lineage.",
-   "responsibilities": [
-    "stores direct topology, structural validity, flags, and latest change reason for one lineage",
-    "tracks last successful validation time and transitive dirt state"
-   ],
-   "owns_state": [
-    "_spell_index_id",
-    "_current_spell_id",
-    "_direct_dependencies",
-    "_direct_dependents",
-    "_validity",
-    "_flags",
-    "_change_reason"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -109,43 +90,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state",
   "class": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
   "label": "SpellSystemState"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
-   "relation": "uses",
-   "why": "SpellSystemState stores SpellState flags to explain why a lineage is gated, invalid, or otherwise notable.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-   "relation": "uses",
-   "why": "SpellSystemState stores the latest SpellStateChangeReason for the lineage.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
-   "relation": "uses",
-   "why": "SpellSystemState stores the coarse structural SpellValidity gate for one lineage.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

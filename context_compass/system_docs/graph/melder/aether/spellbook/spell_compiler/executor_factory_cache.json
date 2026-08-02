@@ -9,20 +9,7 @@
    "label": "executor_factory_cache",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py",
-   "lineno": 1,
-   "role": "Process-wide exec-time factory cache above the compiled executor code cache.",
-   "responsibilities": [
-    "wraps identity-free emitted executor source in shareable factory functions",
-    "deduplicates compile+exec of factory source by source hash",
-    "splits static helper globals from per-spell bindings for shared executor hydration"
-   ],
-   "owns_state": [
-    "_factory_by_source_hash",
-    "_max_entries"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

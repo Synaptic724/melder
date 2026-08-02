@@ -37,22 +37,7 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Detached compatibility-validation report for one ACL bundle.",
-   "responsibilities": [
-    "stores warning and error messages for one selected frame ACL configuration bundle"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_configuration_id",
-    "_warnings",
-    "_errors"
-   ],
-   "phases": [
-    "validation",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

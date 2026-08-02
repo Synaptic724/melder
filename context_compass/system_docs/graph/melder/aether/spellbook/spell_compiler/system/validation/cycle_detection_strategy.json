@@ -9,15 +9,7 @@
    "label": "cycle_detection_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for cycle detection.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",

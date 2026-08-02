@@ -29,16 +29,7 @@
     "method_count": 16,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Generalized family final output step.",
-   "responsibilities": [
-    "builds the final generalized override runtime callable from family-local scratch state",
-    "wraps the no-overrides and overrides executors in route-keyed CreationContext doors",
-    "finishes the narrow SpellCodegenCreation output for the generalized family"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -90,40 +81,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step.GeneralizedFinalizeCreationContextStep",
   "label": "GeneralizedFinalizeCreationContextStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step.GeneralizedFinalizeCreationContextStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "GeneralizedFinalizeCreationContextStep rebuilds the finalized generalized no-overrides executor from static plan truth through generalized_no_overrides_codegen_creation_compiler.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step.GeneralizedFinalizeCreationContextStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "GeneralizedFinalizeCreationContextStep builds shape-specialized and cached generalized override runtimes through generalized_overrides_codegen_creation_compiler.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step.GeneralizedFinalizeCreationContextStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
-   "relation": "uses",
-   "why": "GeneralizedFinalizeCreationContextStep reads SpellGeneralizedCodegenLanePlan rows and fast-transient payloads when finalizing generalized runtime doors.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

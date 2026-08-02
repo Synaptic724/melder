@@ -29,16 +29,7 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Part-grain text comparison between two version materials: per common module, top-level classes/functions compare as individual code regions (added/removed WITH full text, changed as unified diffs, module-body residue as its own region) - the class-code grain of the derived-diff family (owner ruling 2026-07-11: the agent chooses module or class grain).",
-   "responsibilities": [
-    "per-module part split incl. decorator spans; <module_body> residue region so imports/constants never escape comparison",
-    "parse errors report per module naming the failing side; text-less modules ride text_unavailable_modules"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -63,18 +54,5 @@
   "module": "melder.mutation_research.diff.strategies.part_diff_strategy",
   "class": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
   "label": "PartDiffStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
-   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-   "relation": "specializes",
-   "why": "Implements the DiffStrategy contract (name + diff over materials).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init"
-   ]
-  }
- ]
+ }
 }

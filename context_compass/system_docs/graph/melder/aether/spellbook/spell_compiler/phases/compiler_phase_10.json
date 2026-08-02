@@ -29,20 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Live compiler phase-10 wrapper over SpellCodegenPlanner.",
-   "responsibilities": [
-    "lazily imports and owns SpellCodegenPlanner",
-    "delegates phase-10 planning to the planner facade",
-    "publishes SpellCodegenPlan onto SpellCompilerArtifact as the live phase-10 output"
-   ],
-   "owns_state": [
-    "_codegen_planner"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -76,42 +63,5 @@
   "SpellCodegenPlanner": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner.SpellCodegenPlanner",
   "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_10.CompilerPhase10",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_planner.SpellCodegenPlanner",
-   "relation": "owns_lifecycle_of",
-   "why": "CompilerPhase10 lazily imports and owns SpellCodegenPlanner as its live phase-10 collaborator.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_10.CompilerPhase10",
-   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-   "relation": "uses",
-   "why": "CompilerPhase10 delegates plan publication onto the current SpellCompilerArtifact through the planner facade.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_10.CompilerPhase10",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CompilerPhase10 inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

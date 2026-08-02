@@ -29,16 +29,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Processor strategy fitting occurrence instance/sharedness facts into the codegen model.",
-   "responsibilities": [
-    "maps occurrence graph truth onto per-spell instance keys and canonical occurrences",
-    "publishes SpellOccurrenceInstanceAnalysis onto SpellCodegenModel",
-    "derives shared-node and unique-node counts for later planning"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -84,40 +75,5 @@
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy",
   "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy",
   "label": "SpellOccurrenceInstanceProcessorStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
-   "relation": "creates",
-   "why": "SpellOccurrenceInstanceProcessorStrategy builds and publishes SpellOccurrenceInstanceAnalysis.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "relation": "specializes",
-   "why": "SpellOccurrenceInstanceProcessorStrategy specializes the abstract processor-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellOccurrenceInstanceProcessorStrategy fits the instance/sharedness section directly onto SpellCodegenModel.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

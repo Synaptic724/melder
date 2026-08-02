@@ -26,30 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Fine-grained state-flag enum for one spell lineage.",
-   "responsibilities": [
-    "labels topology, contract, mutation, and ops state flags for a lineage"
-   ],
-   "owns_state": [
-    "new_lineage",
-    "structure_changed",
-    "dependencies_changed",
-    "impacted_by_dependency",
-    "contract_unvalidated",
-    "contract_violation",
-    "mutation_candidate",
-    "mutation_quarantined",
-    "mutation_failed",
-    "has_open_incident",
-    "anchored_component",
-    "config_missing",
-    "transfer_in_progress"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

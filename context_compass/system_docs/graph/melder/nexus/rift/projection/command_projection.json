@@ -33,23 +33,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Command-facing projection for one frame.",
-   "responsibilities": [
-    "holds descriptor truth for the command layer",
-    "owns detached ACL configuration for the command surface",
-    "owns detached compiled access surface for the command surface"
-   ],
-   "owns_state": [
-    "_frame_acl_configuration",
-    "_compiled_access_surface",
-    "_frame_descriptor"
-   ],
-   "phases": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -82,19 +66,5 @@
   "module": "melder.nexus.rift.projection.command_projection",
   "class": "melder.nexus.rift.projection.command_projection.CommandProjection",
   "label": "CommandProjection"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.projection.command_projection.CommandProjection",
-   "to": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-   "relation": "borrows",
-   "why": "CommandProjection references the live FrameDescriptor without owning descriptor cleanup.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  }
- ]
+ }
 }

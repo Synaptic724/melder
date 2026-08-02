@@ -39,19 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Disk clerk for checkpoints: profile-scoped JSON files under __crystallizer_cache__.",
-   "responsibilities": [
-    "atomic tmp+replace writes at {profile}/{checkpoint_id}.json (legacy flat reads tolerated)",
-    "FIFO file retention at the checkpoint limit (enforce_cache_retention)",
-    "per-profile listings feed reload_profile_from_cache"
-   ],
-   "owns_state": [
-    "cache root layout"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [

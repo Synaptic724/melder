@@ -48,22 +48,7 @@
     "method_count": 24,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-scoped registry of named conduits.",
-   "responsibilities": [
-    "stores conduit name to conduit mappings",
-    "resolves conduits by name or id within one frame",
-    "provides the frame-local named conduit lookup surface"
-   ],
-   "owns_state": [
-    "_registry",
-    "_name"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

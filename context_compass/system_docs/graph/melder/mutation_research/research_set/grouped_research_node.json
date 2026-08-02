@@ -40,26 +40,7 @@
     "method_count": 13,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Immutable COMPOSITION record - its OWN node type beside ResearchNode (owner ruling 2026-07-11): pins member spell_ids by reference; identity = content-addressed sha256 over the canonical member list; parent_group_ids = composition ancestry; PURELY INFORMATIONAL (no custody crystal, no gating). A lane of these is a subsystem timeline.",
-   "responsibilities": [
-    "content-addressed group_id (identical roster = same identity = rediscovery)",
-    "describe()/from_payload() exact inverses w/ node_type=\"group\" tag + recorded-id integrity refusal"
-   ],
-   "owns_state": [
-    "_group_id",
-    "_member_spell_ids",
-    "_parent_group_ids",
-    "_author",
-    "_reason",
-    "_campaign",
-    "_created_at",
-    "_metadata"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

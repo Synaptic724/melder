@@ -51,24 +51,7 @@
     "method_count": 24,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Typed frame-local ACL bundle.",
-   "responsibilities": [
-    "holds typed view, command, and codegen ACL configuration for one frame",
-    "preserves bundle identity and linked-history metadata"
-   ],
-   "owns_state": [
-    "_view_configuration",
-    "_command_configuration",
-    "_codegen_configuration",
-    "_configuration_id",
-    "_previous_configuration_id"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

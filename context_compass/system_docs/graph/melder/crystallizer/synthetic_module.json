@@ -106,24 +106,7 @@
     "method_count": 47,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Live in-memory module embodiment for crystallized source.",
-   "responsibilities": [
-    "stores live source text and dependency metadata for one managed module",
-    "supports sys.modules and importlib publication and execution",
-    "owns synthetic import registry and cleanup-aware module activation helpers"
-   ],
-   "owns_state": [
-    "_registered_modules_by_name",
-    "_source_text",
-    "_internal_dependency_names",
-    "_external_dependency_names"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

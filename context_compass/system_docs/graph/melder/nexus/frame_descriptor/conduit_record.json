@@ -28,23 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Canonical Nexus record for one published conduit.",
-   "responsibilities": [
-    "stores published conduit identity and lineage anchor data",
-    "owns one conduit descriptor payload"
-   ],
-   "owns_state": [
-    "conduit_id",
-    "root_conduit_id",
-    "frame_name",
-    "origin_spellbook_id",
-    "payload"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -86,19 +70,5 @@
   "module": "melder.nexus.frame_descriptor.conduit_record",
   "class": "melder.nexus.frame_descriptor.conduit_record.ConduitRecord",
   "label": "ConduitRecord"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.frame_descriptor.conduit_record.ConduitRecord",
-   "to": "melder.nexus.frame_descriptor.conduit_descriptor_payload.ConduitDescriptorPayload",
-   "relation": "owns_lifecycle_of",
-   "why": "ConduitRecord owns the published conduit payload object.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

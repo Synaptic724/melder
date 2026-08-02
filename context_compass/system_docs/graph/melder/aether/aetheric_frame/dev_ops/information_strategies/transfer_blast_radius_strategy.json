@@ -28,16 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry-backed dev-ops information strategy for ownership-transfer blast-radius views.",
-   "responsibilities": [
-    "enumerates spellbook, sibling conduit, borrower/provider, and cluster participants touched by one conduit transfer",
-    "returns detached impact-set ids before scopes are claimed",
-    "adds freshness views for the touched conduit and spellbook regions when requested"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -69,29 +60,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
   "label": "TransferBlastRadiusStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-   "relation": "specializes",
-   "why": "TransferBlastRadiusStrategy specializes the shared dev-ops information strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-   "relation": "uses",
-   "why": "TransferBlastRadiusStrategy uses InformationFreshnessInspector to report freshness for affected conduit and spellbook regions.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -32,23 +32,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Strategy-dispatched derived-diff engine over custody material (diffs are READS, never storage); source (whole-module text) / structural (AST shape) / parts (per-class code) register by default - the agent's grain choice; diff_materials() additionally accepts caller-supplied materials so unrecorded codegen candidates can be previewed.",
-   "responsibilities": [
-    "resolves both version identities through the injected material_resolver (custody-backed at the root; fakes in tests)",
-    "owns the named strategy registry with source and structural defaults; register_strategy extends the family open/closed",
-    "returns detached verdicts stamped with both spell_ids and the strategy name; resolver errors stay loud",
-    "diff_materials() = strategy dispatch over caller-supplied materials (candidate-preview entry; resolver untouched)"
-   ],
-   "owns_state": [
-    "_material_resolver",
-    "_strategies_by_name",
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -120,77 +104,5 @@
   "module": "melder.mutation_research.diff.diff_engine",
   "class": "melder.mutation_research.diff.diff_engine.DiffEngine",
   "label": "DiffEngine"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.diff.diff_engine.DiffEngine",
-   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "DiffEngine owns its registered strategies and cascades cleanup into the registry.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.diff.diff_engine.DiffEngine",
-   "to": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
-   "relation": "creates",
-   "why": "DiffEngine constructs and registers SourceDiffStrategy as a default when register_defaults is True.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.diff.diff_engine.DiffEngine",
-   "to": "melder.mutation_research.diff.strategies.structural_diff_strategy.StructuralDiffStrategy",
-   "relation": "creates",
-   "why": "DiffEngine constructs and registers StructuralDiffStrategy as a default when register_defaults is True.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.diff.diff_engine.DiffEngine",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "DiffEngine inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.diff.diff_engine.DiffEngine",
-   "to": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "Default-registered third strategy; engine cleanup cascades.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.diff.diff_engine.DiffEngine",
-   "to": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
-   "relation": "creates",
-   "why": "register_defaults births the parts strategy alongside source/structural.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init"
-   ]
-  }
- ]
+ }
 }

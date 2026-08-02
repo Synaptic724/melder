@@ -41,23 +41,7 @@
     "method_count": 25,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Room-local binding canvas.",
-   "responsibilities": [
-    "stores bound objects, attributes, and methods",
-    "tracks one active target",
-    "supports result rebinding for later room work"
-   ],
-   "owns_state": [
-    "_objects_by_name",
-    "_attributes_by_name",
-    "_methods_by_name",
-    "_active_target_name"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

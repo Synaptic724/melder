@@ -32,22 +32,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Spell-level validation strategy registry and runner.",
-   "responsibilities": [
-    "owns the default spell validation strategies",
-    "validates one spell across requirements, symbolic graph, and phase 3 summary",
-    "aggregates issues into a SpellValidationResult for the caller",
-    "cleans validation context and strategies after use"
-   ],
-   "owns_state": [
-    "_strategies"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -196,52 +181,5 @@
   "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
   "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
-   "relation": "creates",
-   "why": "SpellValidationSystem creates a SpellValidationContext for each spell validation run.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
-   "relation": "creates",
-   "why": "SpellValidationSystem returns a SpellValidationResult for each spell validation run.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellValidationSystem owns the registered spell validation strategies it runs.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
-   "to": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
-   "relation": "uses",
-   "why": "Spell validation flows use SpellbookValidationError for fatal validation failures.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

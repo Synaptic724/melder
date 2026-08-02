@@ -27,17 +27,7 @@
     "method_count": 7,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Compiler-owned phase-6 system validation surface.",
-   "responsibilities": [
-    "builds the canonical system-validation strategy pipeline",
-    "runs system validation over phase-5 artifacts and phase-4 results",
-    "publishes SpellSystemValidationState and conduit-scoped validity back through SpellSystemStates"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -252,41 +242,5 @@
   "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
   "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "relation": "uses",
-   "why": "CompilerPhase6 publishes conduit-scoped system-validation outcomes back through SpellSystemStates.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
-   "relation": "creates",
-   "why": "CompilerPhase6 records SpellSystemValidationState as the aggregated verdict for local or frame-wide phase-6 execution.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
-   "relation": "creates",
-   "why": "CompilerPhase6 builds the canonical system-validation runner from its fixed phase-6 strategy set.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

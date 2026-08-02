@@ -32,21 +32,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-local incident registry.",
-   "responsibilities": [
-    "creates and owns incident records",
-    "tracks incidents by id for one frame",
-    "filters and returns incident snapshots for tooling"
-   ],
-   "owns_state": [
-    "_incidents_by_id",
-    "_next_numeric_id"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -96,19 +82,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager",
   "class": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
   "label": "IncidentManager"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
-   "relation": "owns_lifecycle_of",
-   "why": "IncidentManager stores and cleans Incident records in its frame-local registry.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

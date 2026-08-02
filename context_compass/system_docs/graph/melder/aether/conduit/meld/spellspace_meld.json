@@ -31,25 +31,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Spellspace-facing meld front door.",
-   "responsibilities": [
-    "routes unique_per_spell_space storage through spellspace-local Creations",
-    "routes conduit-owned lifetimes through owner-conduit ConduitCreations",
-    "provides live-creation status over spellspace-local and owner-conduit storage"
-   ],
-   "owns_state": [
-    "_spellspace",
-    "_spellspace_creations",
-    "_owner_conduit_creations",
-    "_spellspace_id",
-    "_owner_conduit_id"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -91,53 +73,5 @@
   "Spell": "melder.aether.spellbook.spell.Spell",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-   "to": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-   "relation": "borrows",
-   "why": "SpellSpaceMeld borrows owner-conduit ConduitCreations for conduit-scoped lifetimes beneath the spellspace door.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-   "to": "melder.aether.conduit.creations.creations.Creations",
-   "relation": "borrows",
-   "why": "SpellSpaceMeld borrows spellspace-local Creations for unique_per_spell_space storage.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-   "to": "melder.aether.conduit.meld.meld.Meld",
-   "relation": "specializes",
-   "why": "SpellSpaceMeld specializes Meld with spellspace-local storage routing.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-   "to": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
-   "relation": "borrows",
-   "why": "SpellSpaceMeld keeps a direct reference to the owning spellspace for spellspace-local diagnostics and routing.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

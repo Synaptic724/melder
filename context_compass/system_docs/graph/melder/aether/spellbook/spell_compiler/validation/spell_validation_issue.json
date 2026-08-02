@@ -28,22 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Single spell-level validation issue.",
-   "responsibilities": [
-    "stores severity, code, message, source, and details for one spell validation finding"
-   ],
-   "owns_state": [
-    "severity",
-    "code",
-    "message",
-    "source",
-    "details"
-   ],
-   "phases": [
-    "validation",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

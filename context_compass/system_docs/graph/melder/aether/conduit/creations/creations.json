@@ -38,24 +38,7 @@
     "method_count": 13,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Conduit-owned live creation registry.",
-   "responsibilities": [
-    "stores live creation wrappers under spell and spellspace scopes",
-    "owns disposal stacks for tracked creations",
-    "supports extraction and restoration during ownership transfer"
-   ],
-   "owns_state": [
-    "_creations",
-    "_disposal_stack",
-    "_spellspace_disposal_stacks",
-    "_conduit"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

@@ -28,23 +28,7 @@
     "method_count": 17,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Bidirectional contract between two conduit wards.",
-   "responsibilities": [
-    "stores symmetric spell detail maps for both wards",
-    "tracks the two participating ward endpoints",
-    "owns the detail entries recorded for that contract"
-   ],
-   "owns_state": [
-    "_ward_a",
-    "_ward_b",
-    "_details_a",
-    "_details_b"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -104,52 +88,5 @@
   "module": "melder.aether.conduit.conduit_ward.contract.contract",
   "class": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
   "label": "Contract"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
-   "to": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
-   "relation": "uses",
-   "why": "Contract uses ContractTypes when granting or reconstructing detail entries from each ward perspective.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
-   "to": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
-   "relation": "uses",
-   "why": "Contract uses DetailReason when recording why a detail exists inside the peer relationship.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
-   "to": "melder.aether.conduit.conduit_ward.contract.details.Detail",
-   "relation": "owns_lifecycle_of",
-   "why": "Contract owns the spell-level detail entries stored on each side of the contract.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
-   "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-   "relation": "uses",
-   "why": "Contract uses Permissions to record granted capability levels for contracted spell details.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

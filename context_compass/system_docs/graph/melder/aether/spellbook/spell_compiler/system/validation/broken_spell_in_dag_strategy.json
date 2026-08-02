@@ -9,15 +9,7 @@
    "label": "broken_spell_in_dag_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for broken-spell-in-dag checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",

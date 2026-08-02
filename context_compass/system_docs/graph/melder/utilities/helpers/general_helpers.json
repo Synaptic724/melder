@@ -26,16 +26,7 @@
     "method_count": 1,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Stateless enum normalization helper.",
-   "responsibilities": [
-    "converts raw strings into concrete enum members",
-    "rejects invalid or incompatible enum inputs early"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ]
+   }
   },
   "melder.utilities.helpers.general_helpers.SpellInputUtils": {
    "id": "melder.utilities.helpers.general_helpers.SpellInputUtils",
@@ -56,19 +47,7 @@
     "method_count": 5,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Canonical spell-key normalization helper.",
-   "responsibilities": [
-    "normalizes frame keys and binding names into canonical lowercase lookup keys",
-    "builds spellbook and meld lookup tuples from spell and frame inputs"
-   ],
-   "owns_state": [
-    "DEFAULT_BINDING_NAME"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -98,43 +77,5 @@
   "Type": "typing.Type",
   "ClassVar": "typing.ClassVar"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.utilities.helpers.general_helpers.EnumHelpers",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "used_by",
-   "why": "Spellbook uses EnumHelpers to normalize raw permission, existence, and system-state inputs before binding and configuration decisions.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-   "to": "melder.aether.spellbook.spell.Spell",
-   "relation": "used_by",
-   "why": "Spell uses SpellInputUtils to derive its canonical `(frame_key, binding_key)` identity tuple at bind time.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "used_by",
-   "why": "Spellbook uses SpellInputUtils as the canonical source of spell lookup-key normalization.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

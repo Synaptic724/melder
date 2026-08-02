@@ -36,22 +36,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Room-local callback-driven event publisher.",
-   "responsibilities": [
-    "owns the callback registry for one RiftSpace",
-    "creates and synchronously emits RiftEvent objects"
-   ],
-   "owns_state": [
-    "_rift_id",
-    "_space_id",
-    "_space_kind",
-    "_callbacks_by_subscription_id"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -101,18 +86,5 @@
   "module": "melder.nexus.rift.rift_space.event_system.rift_event_system",
   "class": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
   "label": "RiftEventSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-   "to": "melder.nexus.rift.rift_space.event_system.rift_event.RiftEvent",
-   "relation": "creates",
-   "why": "RiftEventSystem creates immutable RiftEvent payloads before synchronous emission.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

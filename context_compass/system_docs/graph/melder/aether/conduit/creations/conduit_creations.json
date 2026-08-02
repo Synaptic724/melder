@@ -29,22 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Conduit/root specialization of the scoped live creation registry.",
-   "responsibilities": [
-    "collapses owner and scope identity onto one conduit id",
-    "extracts conduit-owned spell creations for transfer flows",
-    "restores conduit-owned spell creations after transfer or rollback"
-   ],
-   "owns_state": [
-    "owner_conduit_id",
-    "id"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -68,20 +53,5 @@
   "module": "melder.aether.conduit.creations.conduit_creations",
   "class": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
   "label": "ConduitCreations"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-   "to": "melder.aether.conduit.creations.creations.Creations",
-   "relation": "specializes",
-   "why": "ConduitCreations narrows the generic Creations store to one conduit/root runtime scope.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

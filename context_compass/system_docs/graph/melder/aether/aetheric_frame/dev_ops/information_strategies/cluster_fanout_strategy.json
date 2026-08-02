@@ -28,16 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry-backed dev-ops information strategy for cluster membership fan-out views.",
-   "responsibilities": [
-    "computes sibling or member conduit fan-out from mirrored cluster membership maps",
-    "returns detached conduit and cluster id sets without touching live runtime objects",
-    "adds freshness views for the touched conduit regions when requested"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -70,29 +61,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
   "label": "ClusterFanoutStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-   "relation": "specializes",
-   "why": "ClusterFanoutStrategy specializes the shared dev-ops information strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-   "relation": "uses",
-   "why": "ClusterFanoutStrategy uses InformationFreshnessInspector to report freshness for touched conduit regions.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

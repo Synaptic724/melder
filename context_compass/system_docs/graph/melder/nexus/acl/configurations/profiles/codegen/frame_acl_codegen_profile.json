@@ -42,23 +42,7 @@
     "method_count": 15,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Reusable typed codegen-profile ruleset bundle.",
-   "responsibilities": [
-    "owns frame, conduit, spell, and capability codegen rulesets",
-    "carries one validator-owned strategy key for codegen-specific validation behavior"
-   ],
-   "owns_state": [
-    "_frame_ruleset",
-    "_conduit_ruleset",
-    "_spell_ruleset",
-    "_capability_ruleset",
-    "_validation_strategy_name"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -126,19 +110,5 @@
   "FullAccessCodegenProfileStrategy": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy",
   "PrecisionCodegenProfileStrategy": "melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
-   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLCodegenProfile owns the reusable codegen-family rulesets.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

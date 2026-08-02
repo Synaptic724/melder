@@ -9,19 +9,7 @@
    "label": "generalized_runtime_library",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.py",
-   "lineno": 1,
-   "role": "Quarantined import manifest for the generalized family.",
-   "responsibilities": [
-    "centralizes the remaining bridged runtime helper imports for the generalized family",
-    "exposes a visible, auditable coupling surface instead of scattered private imports",
-    "re-exports shared runtime helpers, emitters, and targeting artifacts used by generalized runtime compilers and hydrators"
-   ],
-   "owns_state": [
-    "__all__"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],
@@ -48,62 +36,5 @@
   "SpellOverrideTargetingCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
   "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler",
-   "relation": "uses",
-   "why": "generalized_runtime_library re-exports shared runtime-door compiler helpers for generalized-family compilers and hydrators.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-   "relation": "uses",
-   "why": "generalized_runtime_library re-exports the generalized override targeting artifact through its audited helper surface.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "generalized_runtime_library re-exports generalized no-overrides compiler helpers through its audited runtime helper surface.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "generalized_runtime_library re-exports generalized override compiler helpers through its audited runtime helper surface.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
-   "relation": "uses",
-   "why": "generalized_runtime_library re-exports the generalized runtime row type through its audited helper surface.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

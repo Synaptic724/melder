@@ -30,16 +30,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Transaction strategy for cluster-owned share and unshare requests.",
-   "responsibilities": [
-    "resolves participant conduits and owning cluster identity for cluster-link requests",
-    "derives conduit, conduit-ward, spellbook, and cluster scopes for admission",
-    "normalizes affected identities and capabilities for cluster-driven contract mutation"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -80,40 +71,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
   "label": "ClusterLinkTransactionStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-   "relation": "specializes",
-   "why": "ClusterLinkTransactionStrategy specializes the shared transaction strategy contract for cluster-owned share/unshare requests.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-   "relation": "uses",
-   "why": "ClusterLinkTransactionStrategy reads cluster, conduit, and spellbook DevopsIdentity data while building cluster-link admission scopes.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "ClusterLinkTransactionStrategy borrows the frame registry to resolve cluster identities, participant conduits, and owning spellbooks.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

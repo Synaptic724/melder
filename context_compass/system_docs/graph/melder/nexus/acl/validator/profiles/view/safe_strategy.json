@@ -9,15 +9,7 @@
    "label": "safe_strategy",
    "kind": "module",
    "file": "src/melder/nexus/acl/validator/profiles/view/safe_strategy.py",
-   "lineno": 1,
-   "role": "Validator strategy module for safe view-profile configuration.",
-   "responsibilities": [
-    "provides one validator-side profile strategy or helper surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],
@@ -29,18 +21,5 @@
   "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
   "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.validator.profiles.view.safe_strategy",
-   "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-   "relation": "validates",
-   "why": "The safe view validator strategy validates safe view profile configuration.",
-   "cardinality": "many_to_one",
-   "strength": "soft",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

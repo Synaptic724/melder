@@ -9,14 +9,7 @@
    "label": "generalized_cache_runtime_rows_SCRATCH",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py",
-   "lineno": 1,
-   "role": "Scratch placeholder module for the replaced generalized cache runtime rows surface.",
-   "responsibilities": [
-    "marks the retired generalized cache runtime-rows surface as intentionally empty pending cleanup"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

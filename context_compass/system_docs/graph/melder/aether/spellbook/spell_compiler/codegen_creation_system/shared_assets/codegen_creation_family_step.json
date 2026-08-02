@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Shared internal step contract for codegen-creation families.",
-   "responsibilities": [
-    "defines the step_id contract for ordered family-local build steps",
-    "defines the apply() seam over one family-local state object",
-    "keeps ordered family steps out of the public SpellCodegenStrategy facade"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

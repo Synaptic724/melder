@@ -37,26 +37,7 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Stable index identity with a mutable selected-spell pointer.",
-   "responsibilities": [
-    "provides hash-stable index identity for spell registries",
-    "tracks selected and historical spell ids for one spell index",
-    "propagates selected-spell changes into owner and contracted spellbooks",
-    "stores owner and contract attachment metadata for one index"
-   ],
-   "owns_state": [
-    "_id",
-    "_selected_spell_id",
-    "_spells_in_index",
-    "_owner_spellbook",
-    "_contracted_spellbooks"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -92,41 +73,5 @@
   "module": "melder.aether.spellbook.bind.spell_index",
   "class": "melder.aether.spellbook.bind.spell_index.SpellIndex",
   "label": "SpellIndex"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-   "to": "melder.aether.spellbook.spell.Spell",
-   "relation": "holds",
-   "why": "SpellIndex keeps attachment metadata for the currently owned Spell while preserving a stable lineage identity.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "borrows",
-   "why": "SpellIndex stores owner and contract Spellbook attachments so version-pointer changes can update those lookup maps.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-   "to": "melder.utilities.helpers.ulid_factory",
-   "relation": "uses",
-   "why": "SpellIndex uses the internal ulid_factory module for stable lineage ids.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

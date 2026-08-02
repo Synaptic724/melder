@@ -28,19 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Lifecycle classification enum for conduit instances.",
-   "responsibilities": [
-    "distinguishes normal, lesser, and cleaned conduit states"
-   ],
-   "owns_state": [
-    "normal",
-    "lesser",
-    "cleaned"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

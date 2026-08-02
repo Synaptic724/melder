@@ -34,21 +34,7 @@
     "method_count": 10,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Packaged hardcopy system document object.",
-   "responsibilities": [
-    "stores one minified JSON hardcopy string for a system document",
-    "renders both JSON and markdown views for agent-facing queries"
-   ],
-   "owns_state": [
-    "_document_name",
-    "_document_json",
-    "_document_markdown"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

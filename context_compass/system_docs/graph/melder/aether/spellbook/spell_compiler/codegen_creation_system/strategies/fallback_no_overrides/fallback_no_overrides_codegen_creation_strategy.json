@@ -29,19 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Fallback public phase-11 strategy for no-overrides-only creation output.",
-   "responsibilities": [
-    "preserves the existing fallback discovery/result contract for no-overrides creation",
-    "routes actual work through the generalized no-overrides family step",
-    "populates SpellCodegenCreation through a minimal generalized family state"
-   ],
-   "owns_state": [
-    "_step"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -79,29 +67,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
   "label": "FallbackNoOverridesCodegenCreationStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-   "relation": "specializes",
-   "why": "FallbackNoOverridesCodegenCreationStrategy specializes the abstract SpellCodegenStrategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState",
-   "relation": "creates",
-   "why": "FallbackNoOverridesCodegenCreationStrategy creates GeneralizedCodegenCreationState as the minimal generalized family scratch state for no-overrides output.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

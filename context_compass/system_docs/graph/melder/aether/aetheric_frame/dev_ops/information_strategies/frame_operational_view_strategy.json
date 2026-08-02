@@ -28,16 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry-backed dev-ops information strategy for frame-wide operational rollups.",
-   "responsibilities": [
-    "summarizes identity, ownership, link, cluster, and transaction counts for one frame",
-    "aggregates fact-record baselines by family across the frame registry",
-    "returns one detached operational view with optional freshness verdicts"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -61,29 +52,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
   "label": "FrameOperationalViewStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-   "relation": "specializes",
-   "why": "FrameOperationalViewStrategy specializes the shared dev-ops information strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-   "relation": "uses",
-   "why": "FrameOperationalViewStrategy uses InformationFreshnessInspector to compute freshness over reported frame regions.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

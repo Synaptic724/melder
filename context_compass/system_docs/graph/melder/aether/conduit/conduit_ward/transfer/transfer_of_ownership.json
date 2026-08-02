@@ -30,24 +30,7 @@
     "method_count": 45,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Control-plane helper that migrates a spell lineage between conduit owners.",
-   "responsibilities": [
-    "preflights and executes dynamic spell ownership transfer between conduits",
-    "owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations"
-   ],
-   "owns_state": [
-    "source_conduit",
-    "target_conduit",
-    "spell",
-    "_preflight_summary",
-    "_change_control_manager",
-    "_incident_manager",
-    "_rollback_actions"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -120,62 +103,5 @@
   "module": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership",
   "class": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
   "label": "TransferOfOwnership"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-   "relation": "borrows",
-   "why": "TransferOfOwnership records and clears change intent through the frame change-control manager.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
-   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "relation": "borrows",
-   "why": "TransferOfOwnership uses the frame incident manager to report failed moves.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
-   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity",
-   "relation": "uses",
-   "why": "TransferOfOwnership uses IncidentSeverity when reporting failed transfer incidents.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
-   "to": "melder.aether.conduit.conduit.Conduit",
-   "relation": "uses",
-   "why": "TransferOfOwnership coordinates ownership migration between source and target conduits.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
-   "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-   "relation": "uses",
-   "why": "TransferOfOwnership resolves and migrates one spell lineage identified by SpellIndex.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

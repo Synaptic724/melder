@@ -29,24 +29,7 @@
     "method_count": 18,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Nexus-owned frame descriptor and canonical record manager.",
-   "responsibilities": [
-    "owns frame descriptors by frame name",
-    "publishes frame, conduit, and spell records",
-    "owns Nexus-managed frame record creation and lookup",
-    "refreshes frame posture cache from Aether"
-   ],
-   "owns_state": [
-    "_frame_descriptors_by_name",
-    "_aether"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -153,20 +136,5 @@
   "module": "melder.nexus.frame_descriptor_manager",
   "class": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
   "label": "FrameDescriptorManager"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-   "to": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameDescriptorManager owns the per-frame descriptor registry and the lifecycle of each FrameDescriptor.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

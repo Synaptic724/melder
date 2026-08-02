@@ -29,16 +29,7 @@
     "method_count": 4,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Stateless ULID and lineage-id helper.",
-   "responsibilities": [
-    "creates fresh ULID strings for runtime-owned identities",
-    "composes object-aware lineage ids from `_id` or `id` attributes"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -54,65 +45,5 @@
  "imports": {
   "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.utilities.helpers.id_builder.IDBuilder",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "used_by",
-   "why": "Spellbook uses IDBuilder to allocate its own id and other snapshot-style runtime identifiers.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.helpers.id_builder.IDBuilder",
-   "to": "melder.nexus.nexus.Nexus",
-   "relation": "used_by",
-   "why": "Nexus uses IDBuilder to allocate stable runtime identifiers for itself and created rifts.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.helpers.id_builder.IDBuilder",
-   "to": "melder.nexus.rift.rift.Rift",
-   "relation": "used_by",
-   "why": "Rift uses IDBuilder when no explicit rift id is supplied at creation time.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init"
-   ]
-  },
-  {
-   "from": "melder.utilities.helpers.id_builder.IDBuilder",
-   "to": "melder.utilities.helpers.ulid_factory",
-   "relation": "uses",
-   "why": "IDBuilder delegates ULID generation to the internal ulid_factory module.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.utilities.helpers.id_builder.IDBuilder",
-   "to": "melder.utilities.logger.safe_logger.SafeLogger",
-   "relation": "used_by",
-   "why": "SafeLogger uses IDBuilder to allocate its own runtime identity.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

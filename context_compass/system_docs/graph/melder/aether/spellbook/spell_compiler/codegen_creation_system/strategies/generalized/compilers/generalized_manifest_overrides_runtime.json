@@ -9,21 +9,7 @@
    "label": "generalized_manifest_overrides_runtime",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py",
-   "lineno": 1,
-   "role": "Family-owned override runtime for generalized shapes.",
-   "responsibilities": [
-    "builds shape-dispatching override executors over generalized plan rows",
-    "memoizes emitted override-shape source process-wide and bound executors per spell",
-    "hydrates override executors through the process-wide executor factory cache and override targeting data"
-   ],
-   "owns_state": [
-    "_OVERRIDES_STATIC_NAMESPACE",
-    "_SHAPE_SOURCE_CACHE_MAX_ENTRIES",
-    "_shape_source_cache"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],
@@ -55,62 +41,5 @@
   "get_or_build_executor_factory": "melder.aether.spellbook.spell_compiler.executor_factory_cache.get_or_build_executor_factory",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-   "relation": "uses",
-   "why": "generalized_manifest_overrides_runtime specializes override executors against the compiler-owned generalized override targeting artifact.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "generalized_manifest_overrides_runtime uses generalized_overrides_codegen_creation_compiler for shape-source emission, target-count prefiltering, and cached override code-object binding.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
-   "relation": "uses",
-   "why": "generalized_manifest_overrides_runtime uses the generalized runtime library for override-lane helpers, targeting, and emitted source support.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
-   "relation": "uses",
-   "why": "generalized_manifest_overrides_runtime binds runtime rows into shape-specialized override executors.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
-   "to": "melder.aether.spellbook.spell_compiler.executor_factory_cache",
-   "relation": "uses",
-   "why": "generalized_manifest_overrides_runtime uses the process-wide executor factory cache to compile and bind shared override-shape executor factories.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

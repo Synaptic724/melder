@@ -32,23 +32,7 @@
     "method_count": 32,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-scoped ACL validator against descriptor truth.",
-   "responsibilities": [
-    "validates typed ACL configuration for one frame",
-    "checks descriptor payload contracts against ACL requirements",
-    "validates selector-aware spell rules against published descriptor records"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_profile_builder",
-    "_last_validated_configuration_id"
-   ],
-   "phases": [
-    "validation",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -115,31 +99,5 @@
   "FrameACLRule": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
   "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
-   "to": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
-   "relation": "validates",
-   "why": "FrameACLValidator validates a typed ACL bundle for the frame.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
-   "to": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-   "relation": "validates",
-   "why": "FrameACLValidator validates descriptor record contracts and selector rules against descriptor truth.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "refresh"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

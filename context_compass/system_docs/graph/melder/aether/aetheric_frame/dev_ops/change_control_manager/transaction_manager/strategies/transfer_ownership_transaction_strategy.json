@@ -30,16 +30,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Transaction strategy for conduit ownership-transfer requests.",
-   "responsibilities": [
-    "resolves source and target conduits plus the transferred spell from live registry state",
-    "builds affected conduit, ward, spellbook, cluster, and borrower scope plans for transfer admission",
-    "reuses TransferOfOwnership preflight to discover borrower and dependency participants without mutating runtime state"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -73,51 +64,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy.TransferOwnershipTransactionStrategy",
   "label": "TransferOwnershipTransactionStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy.TransferOwnershipTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-   "relation": "specializes",
-   "why": "TransferOwnershipTransactionStrategy specializes the shared transaction strategy contract for ownership-transfer requests.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy.TransferOwnershipTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-   "relation": "uses",
-   "why": "TransferOwnershipTransactionStrategy reads conduit, spellbook, and cluster DevopsIdentity data to derive transfer admission scopes.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy.TransferOwnershipTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "TransferOwnershipTransactionStrategy borrows the frame registry to resolve source/target conduits, spellbooks, cluster memberships, and borrower participants.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy.TransferOwnershipTransactionStrategy",
-   "to": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
-   "relation": "uses",
-   "why": "TransferOwnershipTransactionStrategy uses TransferOfOwnership preflight to discover borrower and dependency participants without mutating runtime state.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

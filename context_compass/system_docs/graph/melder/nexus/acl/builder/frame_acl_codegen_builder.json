@@ -51,21 +51,7 @@
     "method_count": 26,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Fluent authoring surface for one active codegen-family ACL draft.",
-   "responsibilities": [
-    "borrows one active codegen draft from the generic ACL builder",
-    "mutates the borrowed typed codegen configuration in place through fluent capability and rule helpers",
-    "commits or discards the active codegen draft through the generic builder"
-   ],
-   "owns_state": [
-    "_id",
-    "_frame_acl_builder"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -122,41 +108,5 @@
   "FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
   "_FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
-   "to": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "relation": "borrows",
-   "why": "FrameACLCodegenBuilder borrows the generic FrameACLBuilder that owns the active codegen draft session.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
-   "to": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-   "relation": "borrows",
-   "why": "FrameACLCodegenBuilder borrows the active typed codegen configuration draft from the generic builder.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "FrameACLCodegenBuilder inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

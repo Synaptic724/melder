@@ -26,19 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Enum of supported override targeting modes.",
-   "responsibilities": [
-    "labels path, unique, and broadcast targeting semantics"
-   ],
-   "owns_state": [
-    "PATH",
-    "UNIQUE",
-    "BROADCAST"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec": {
    "id": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec",
@@ -55,20 +43,7 @@
     "method_count": 1,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Parsed representation of one override target key.",
-   "responsibilities": [
-    "stores parsed override path or parameter targeting data",
-    "parses raw override keys into normalized targeting specs"
-   ],
-   "owns_state": [
-    "kind",
-    "path",
-    "param_name"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -98,18 +73,5 @@
   "module": "melder.aether.spellbook.spell_compiler.dag.target_spec",
   "class": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec",
   "label": "TargetSpec"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec",
-   "to": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
-   "relation": "uses",
-   "why": "TargetSpec stores TargetSpecKind as its parsed targeting mode.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

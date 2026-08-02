@@ -9,18 +9,7 @@
    "label": "__author__",
    "kind": "module",
    "file": "src/melder/__author__.py",
-   "lineno": 1,
-   "role": "Top-level author metadata module.",
-   "responsibilities": [
-    "stores human-readable package author metadata"
-   ],
-   "owns_state": [
-    "CREATOR",
-    "GITHUB"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

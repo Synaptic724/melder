@@ -26,16 +26,7 @@
     "method_count": 1,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Compiler-owned phase-2 symbolic graph build surface.",
-   "responsibilities": [
-    "builds SpellSymbolicGraph from phase-1 requirements",
-    "creates SpellSymbolicDependency rows for constructor sockets",
-    "publishes the symbolic graph onto SpellCompilerArtifact for later phases"
-   ],
-   "phases": [
-    "validation"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -74,40 +65,5 @@
   "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
   "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_2.CompilerPhase2",
-   "to": "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility",
-   "relation": "uses",
-   "why": "CompilerPhase2 uses CompilerPhaseUtility for shared cancellation handling.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_2.CompilerPhase2",
-   "to": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
-   "relation": "uses",
-   "why": "CompilerPhase2 consumes phase-1 requirements as the source of constructor socket truth.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_2.CompilerPhase2",
-   "to": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
-   "relation": "creates",
-   "why": "CompilerPhase2 builds the spell-local symbolic dependency graph from phase-1 requirements.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

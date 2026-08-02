@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Internal compile stage for codegen execution.",
-   "responsibilities": [
-    "compiles generated Python into an executable code object",
-    "keeps execution and validation responsibilities out of the compile step"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

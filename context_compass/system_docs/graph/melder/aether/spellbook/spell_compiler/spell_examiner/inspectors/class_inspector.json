@@ -29,21 +29,7 @@
     "method_count": 16,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Inspector producing structured class inventories.",
-   "responsibilities": [
-    "inspects class metadata, provenance, members, protocol flags, and decoration state without invoking user code"
-   ],
-   "owns_state": [
-    "cls",
-    "dunders",
-    "max_repr",
-    "data"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -76,29 +62,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector",
   "class": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
   "label": "ClassInspector"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
-   "relation": "uses",
-   "why": "ClassInspector uses InspectorUtility for safe repr and extension-module checks.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile",
-   "relation": "creates",
-   "why": "ClassInspector emits structured ClassProfile objects from inspected class surfaces.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

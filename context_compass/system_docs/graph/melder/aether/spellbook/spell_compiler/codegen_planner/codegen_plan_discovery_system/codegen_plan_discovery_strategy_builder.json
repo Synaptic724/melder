@@ -31,20 +31,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry holder for phase-10 discovery strategies.",
-   "responsibilities": [
-    "owns the named discovery strategy registry",
-    "loads the built-in solo, many-only, and generalized discovery strategies",
-    "resolves ordered discovery strategy tuples for the planner discovery facade"
-   ],
-   "owns_state": [
-    "_strategies_by_name"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -95,63 +82,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder",
   "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder.CodegenPlanDiscoveryStrategyBuilder",
   "label": "CodegenPlanDiscoveryStrategyBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder.CodegenPlanDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
-   "relation": "uses",
-   "why": "CodegenPlanDiscoveryStrategyBuilder stores and resolves CodegenPlanDiscoveryStrategy objects by stable strategy id.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder.CodegenPlanDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
-   "relation": "uses",
-   "why": "CodegenPlanDiscoveryStrategyBuilder registers GeneralizedCodegenPlanDiscoveryStrategy in the default phase-10 discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder.CodegenPlanDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.many_only_codegen_plan_discovery_strategy.ManyOnlyCodegenPlanDiscoveryStrategy",
-   "relation": "uses",
-   "why": "CodegenPlanDiscoveryStrategyBuilder registers ManyOnlyCodegenPlanDiscoveryStrategy in the default phase-10 discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder.CodegenPlanDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.solo_codegen_plan_discovery_strategy.SoloCodegenPlanDiscoveryStrategy",
-   "relation": "uses",
-   "why": "CodegenPlanDiscoveryStrategyBuilder registers SoloCodegenPlanDiscoveryStrategy in the default phase-10 discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy_builder.CodegenPlanDiscoveryStrategyBuilder",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CodegenPlanDiscoveryStrategyBuilder inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

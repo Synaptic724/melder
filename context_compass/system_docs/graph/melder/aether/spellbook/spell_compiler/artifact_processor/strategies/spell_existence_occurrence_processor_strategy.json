@@ -29,16 +29,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Processor strategy publishing analyzer-owned existence-occurrence truth onto the codegen model.",
-   "responsibilities": [
-    "publishes phase-8 existence-occurrence truth onto SpellCodegenModel",
-    "moves analyzer-owned existence distribution into the processor-owned model surface",
-    "preserves immutable existence-occurrence payloads without extra cleanup ownership"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -71,18 +62,5 @@
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_existence_occurrence_processor_strategy",
   "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_existence_occurrence_processor_strategy.SpellExistenceOccurrenceProcessorStrategy",
   "label": "SpellExistenceOccurrenceProcessorStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_existence_occurrence_processor_strategy.SpellExistenceOccurrenceProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "relation": "specializes",
-   "why": "SpellExistenceOccurrenceProcessorStrategy specializes the abstract processor-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

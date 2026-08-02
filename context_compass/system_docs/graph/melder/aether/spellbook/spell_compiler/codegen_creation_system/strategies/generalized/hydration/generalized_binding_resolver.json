@@ -30,22 +30,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Live phase-11 binding resolver over generalized plan/model truth.",
-   "responsibilities": [
-    "resolves spells from runtime-shape records first and lane plan steps second",
-    "resolves the phase-5 path registry from analyzer graph-shape truth",
-    "owns only temporary reference maps for one hydration/build pass"
-   ],
-   "owns_state": [
-    "_records_by_spell_id",
-    "_spells_by_id",
-    "_path_registry"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
@@ -66,20 +51,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Cache-load binding resolver over the live Spellbook surface.",
-   "responsibilities": [
-    "resolves spells from the owning Spellbook spell-id pool during cache hydration",
-    "resolves the live phase-5 path registry from the root blueprint",
-    "raises explicit sequencing errors when hydration prerequisites are not live"
-   ],
-   "owns_state": [
-    "_spell"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -117,31 +89,5 @@
   "Optional": "typing.Optional",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.PlanBindingResolver",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "PlanBindingResolver inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "SpellbookBindingResolver inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

@@ -48,26 +48,7 @@
     "method_count": 24,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Reusable typed view-profile ruleset bundle.",
-   "responsibilities": [
-    "owns frame, conduit, spell, and member view rulesets",
-    "carries required Nexus dataset and minimum spell-payload floors"
-   ],
-   "owns_state": [
-    "_required_nexus_label",
-    "_required_nexus_version",
-    "_minimum_spell_payload_type",
-    "_minimum_spell_payload_version",
-    "_frame_ruleset",
-    "_conduit_ruleset",
-    "_spell_ruleset",
-    "_member_ruleset"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -147,19 +128,5 @@
   "PermissiveViewProfileStrategy": "melder.nexus.acl.configurations.profiles.view.permissive_profile.PermissiveViewProfileStrategy",
   "PrecisionViewProfileStrategy": "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLViewProfile owns the reusable view-family rulesets.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

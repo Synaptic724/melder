@@ -29,18 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Namespace exposure strategy for the current room target.",
-   "responsibilities": [
-    "exposes the current workstation target into the namespace while keeping missing-target behavior non-fatal"
-   ],
-   "owns_state": [
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -77,30 +66,5 @@
   "module": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy",
   "class": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy.CodegenTargetStrategy",
   "label": "CodegenTargetStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy.CodegenTargetStrategy",
-   "to": "melder.nexus.rift.rift_space.workstation.Workstation",
-   "relation": "borrows",
-   "why": "CodegenTargetStrategy reads the current workstation target and exposes it into the execution namespace when enabled.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy.CodegenTargetStrategy",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CodegenTargetStrategy inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

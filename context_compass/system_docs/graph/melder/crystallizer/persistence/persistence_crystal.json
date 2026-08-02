@@ -38,20 +38,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "One sealed checkpoint: journal window + captured payloads; the durable unit.",
-   "responsibilities": [
-    "replay_data() feeds the restore engine",
-    "to_cached_item()/from_cached_item() is the JSON codec for cache/DB transport"
-   ],
-   "owns_state": [
-    "journal_segment",
-    "captured_payloads",
-    "sequence_range"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -85,18 +72,5 @@
   "module": "melder.crystallizer.persistence.persistence_crystal",
   "class": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
   "label": "PersistenceCrystal"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-   "to": "melder.crystallizer.persistence.record_version.RecordVersion",
-   "relation": "uses",
-   "why": "to_cached_item stamps; from_cached_item gates on the recorded major.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

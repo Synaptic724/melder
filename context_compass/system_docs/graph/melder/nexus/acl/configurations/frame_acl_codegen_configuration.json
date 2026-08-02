@@ -51,24 +51,7 @@
     "method_count": 25,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Applied codegen-side ACL configuration revision.",
-   "responsibilities": [
-    "stores reusable codegen-profile identity plus override rulesets",
-    "carries revision metadata for container-owned configuration chains"
-   ],
-   "owns_state": [
-    "_profile_name",
-    "_frame_override_ruleset",
-    "_conduit_override_ruleset",
-    "_spell_override_ruleset",
-    "_capability_override_ruleset"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -123,32 +106,5 @@
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
   "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
-   "relation": "borrows",
-   "why": "FrameACLCodegenConfiguration borrows the reusable codegen profile identity it was built from.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLCodegenConfiguration owns detached override rulesets for one applied codegen revision.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

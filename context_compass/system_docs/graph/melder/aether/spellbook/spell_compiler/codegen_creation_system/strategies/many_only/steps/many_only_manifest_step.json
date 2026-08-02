@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Manifest build step for the many_only family.",
-   "responsibilities": [
-    "builds the many-only family manifest from model and plan truth",
-    "publishes the manifest onto family-local state and final output metadata",
-    "resolves the live root spell needed by later many-only lazy-door hydration"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -68,40 +59,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step.ManyOnlyManifestStep",
   "label": "ManyOnlyManifestStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step.ManyOnlyManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "why": "ManyOnlyManifestStep specializes the shared family-step contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step.ManyOnlyManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest",
-   "relation": "uses",
-   "why": "ManyOnlyManifestStep delegates family manifest construction to many_only_manifest.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step.ManyOnlyManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state.ManyOnlyCodegenCreationState",
-   "relation": "uses",
-   "why": "ManyOnlyManifestStep mutates the family-local many-only state while publishing the manifest and root spell.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

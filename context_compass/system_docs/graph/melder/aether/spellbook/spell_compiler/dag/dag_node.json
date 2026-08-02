@@ -38,23 +38,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Node in the spellbook directed acyclic work graph.",
-   "responsibilities": [
-    "stores node identity, payload, dependency links, and param metadata for one DAG node"
-   ],
-   "owns_state": [
-    "_dependencies",
-    "_dependents",
-    "_children_by_param",
-    "_incoming_params",
-    "_payload"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -93,19 +77,5 @@
   "module": "melder.aether.spellbook.spell_compiler.dag.dag_node",
   "class": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
   "label": "DagNode"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
-   "to": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-   "relation": "uses",
-   "why": "DagNode edge metadata uses SocketKind to classify param sockets.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

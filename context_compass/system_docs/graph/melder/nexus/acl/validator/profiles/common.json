@@ -9,15 +9,7 @@
    "label": "common",
    "kind": "module",
    "file": "src/melder/nexus/acl/validator/profiles/common.py",
-   "lineno": 1,
-   "role": "Shared no-op helper module for ACL profile validators.",
-   "responsibilities": [
-    "provides one validator-side profile strategy or helper surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

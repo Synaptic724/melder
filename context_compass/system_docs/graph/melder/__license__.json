@@ -9,17 +9,7 @@
    "label": "__license__",
    "kind": "module",
    "file": "src/melder/__license__.py",
-   "lineno": 1,
-   "role": "Top-level license metadata module.",
-   "responsibilities": [
-    "stores the package license label and embedded license context"
-   ],
-   "owns_state": [
-    "__license__"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

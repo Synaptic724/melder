@@ -26,19 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "System-level policy enum for direct Rift retrieval.",
-   "responsibilities": [
-    "labels open, token-required, and system-only Rift access modes"
-   ],
-   "owns_state": [
-    "open",
-    "token_required",
-    "system_only"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

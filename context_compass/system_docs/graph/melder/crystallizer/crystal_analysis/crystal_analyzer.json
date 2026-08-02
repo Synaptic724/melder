@@ -9,22 +9,7 @@
    "label": "crystal_analyzer",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/crystal_analyzer.py",
-   "lineno": 1,
-   "role": "Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).",
-   "responsibilities": [
-    "walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves)",
-    "classifies via the first-match custody chain (synthetic/user_source/site_package/fallback)",
-    "runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)",
-    "analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)",
-    "public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths"
-   ],
-   "owns_state": [
-    "custody strategy chain",
-    "fact strategy list"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer": {
    "id": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
@@ -192,40 +177,5 @@
   "module": "melder.crystallizer.crystal_analysis.crystal_analyzer",
   "class": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer",
   "label": "CrystalAnalyzer"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-   "to": "melder.crystallizer.crystal_analysis.crystal_analysis_result",
-   "relation": "creates",
-   "why": "Every analysis pass produces one detached result.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-   "to": "melder.crystallizer.crystal_analysis.custody",
-   "relation": "owns_lifecycle_of",
-   "why": "The analyzer owns its custody strategy chain (per-analysis instances).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystal_analysis.crystal_analyzer",
-   "to": "melder.crystallizer.crystal_analysis.strategies.base_strategy",
-   "relation": "owns_lifecycle_of",
-   "why": "The analyzer owns its fact strategy list (per-analysis instances).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

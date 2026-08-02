@@ -30,21 +30,7 @@
     "method_count": 20,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Builder for the Phase 1 spell requirements artifact.",
-   "responsibilities": [
-    "inspects one spell call target and classifies its parameters into DI requirement objects",
-    "builds and caches one SpellRequirements artifact for a spell version"
-   ],
-   "owns_state": [
-    "_spell",
-    "_requirements"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -113,29 +99,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder",
   "class": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
   "label": "SpellRequirementsFinder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-   "relation": "uses",
-   "why": "SpellRequirementsFinder classifies parameters into ParameterDIShape values during Phase 1.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
-   "relation": "creates",
-   "why": "SpellRequirementsFinder creates SpellParameterRequirement objects while building Phase 1 requirements.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

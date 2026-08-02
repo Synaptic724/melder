@@ -9,15 +9,7 @@
    "label": "view_action_hooks",
    "kind": "module",
    "file": "src/melder/nexus/rift/frame_viewer/view_action_hooks.py",
-   "lineno": 1,
-   "role": "Shared public view-action hook wrapper surface.",
-   "responsibilities": [
-    "wraps public viewer methods in a shared action-hook boundary",
-    "provides a no-op action scope when no hook owner is available"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

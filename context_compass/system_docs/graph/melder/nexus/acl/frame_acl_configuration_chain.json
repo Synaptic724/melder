@@ -45,24 +45,7 @@
     "method_count": 19,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Named revision chain for one ACL configuration family.",
-   "responsibilities": [
-    "owns one family/name lineage of configuration revisions",
-    "tracks head and current configuration selection across retained history"
-   ],
-   "owns_state": [
-    "_family_name",
-    "_contract_name",
-    "_head_configuration_id",
-    "_current_configuration_id",
-    "_configurations_by_id"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -111,46 +94,5 @@
   "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
   "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "Codegen-family ACL configuration chains own their retained configuration revisions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "Command-family ACL configuration chains own their retained configuration revisions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "View-family ACL configuration chains own their retained configuration revisions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

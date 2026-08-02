@@ -29,16 +29,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Processor strategy fitting runtime spell facts into the codegen model.",
-   "responsibilities": [
-    "captures static spell facts needed by planner strategies",
-    "publishes SpellRuntimeAnalysis onto SpellCodegenModel",
-    "scopes runtime spell records by occurrence order or graph-visible spell ids"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -84,40 +75,5 @@
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy",
   "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
   "label": "SpellRuntimeProcessorStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
-   "relation": "creates",
-   "why": "SpellRuntimeProcessorStrategy builds and publishes SpellRuntimeAnalysis.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "relation": "specializes",
-   "why": "SpellRuntimeProcessorStrategy specializes the abstract processor-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellRuntimeProcessorStrategy fits the runtime spell section directly onto SpellCodegenModel.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

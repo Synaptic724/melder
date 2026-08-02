@@ -34,27 +34,7 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Fluent authored-frame builder for Nexus-managed frames.",
-   "responsibilities": [
-    "stages one Nexus-managed frame configuration",
-    "defaults authored posture to dynamic AI-native Rift-enabled",
-    "builds detached NexusFrameConfiguration objects",
-    "delegates rooted creation into NexusFrameManager"
-   ],
-   "owns_state": [
-    "_manager",
-    "_frame_name",
-    "_system_state",
-    "_ai_native_enabled",
-    "_rift_enabled",
-    "_metadata",
-    "_root_conduit_name"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -100,29 +80,5 @@
   "module": "melder.nexus.nexus_frame_builder",
   "class": "melder.nexus.nexus_frame_builder.NexusFrameBuilder",
   "label": "NexusFrameBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.nexus_frame_builder.NexusFrameBuilder",
-   "to": "melder.nexus.nexus_frame_configuration.NexusFrameConfiguration",
-   "relation": "creates",
-   "why": "NexusFrameBuilder creates authored NexusFrameConfiguration snapshots from the staged builder posture.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.nexus_frame_builder.NexusFrameBuilder",
-   "to": "melder.nexus.nexus_frame_manager.NexusFrameManager",
-   "relation": "borrows",
-   "why": "NexusFrameBuilder borrows its owning manager for final rooted frame realization.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

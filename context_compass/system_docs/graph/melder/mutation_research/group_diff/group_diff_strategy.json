@@ -30,15 +30,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Base contract of the MIRRORED grouped strategy family (beside DiffStrategy; duplication accepted by ruling): one way of comparing two composition materials.",
-   "responsibilities": [
-    "name registry key + diff(left_material, right_material) over composition materials"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

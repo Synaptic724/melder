@@ -27,22 +27,7 @@
     "method_count": 2,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Immutable record describing one staged change-control mutation.",
-   "responsibilities": [
-    "captures admitted request identity plus normalized scope metadata",
-    "acts as the shared payload across commit and abort hook boundaries"
-   ],
-   "owns_state": [
-    "request_id",
-    "request_type",
-    "scope_keys",
-    "binding_keys",
-    "contract_keys"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -66,18 +51,5 @@
   "ClassVar": "typing.ClassVar",
   "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
-   "relation": "uses",
-   "why": "ChangeControlStagedMutation is derived from request metadata after admission and preserves request identity fields.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

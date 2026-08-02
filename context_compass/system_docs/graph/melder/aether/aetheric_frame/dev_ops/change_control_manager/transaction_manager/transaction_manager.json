@@ -45,21 +45,7 @@
     "method_count": 19,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Transaction-bookkeeping root for change-control admission.",
-   "responsibilities": [
-    "builds immutable transaction requests before admission",
-    "tracks admitted in-flight requests and scope-key bookkeeping"
-   ],
-   "owns_state": [
-    "_in_flight",
-    "_link_mirror",
-    "_audit_log_fn"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -120,18 +106,5 @@
   "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
   "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
-   "relation": "creates",
-   "why": "ChangeControlTransactionManager builds immutable ChangeControlTransactionRequest payloads before admission.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

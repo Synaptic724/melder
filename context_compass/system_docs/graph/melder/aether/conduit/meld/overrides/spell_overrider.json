@@ -46,20 +46,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Runtime helper that resolves raw spell overrides into socket-targeted override maps.",
-   "responsibilities": [
-    "applies TargetSpec precedence over rooted blueprint sockets",
-    "returns a concrete socket-to-value override map for runtime execution"
-   ],
-   "owns_state": [
-    "_blueprint",
-    "_engine"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -108,18 +95,5 @@
   "module": "melder.aether.conduit.meld.overrides.spell_overrider",
   "class": "melder.aether.conduit.meld.overrides.spell_overrider.SpellOverrider",
   "label": "SpellOverrider"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.meld.overrides.spell_overrider.SpellOverrider",
-   "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "relation": "borrows",
-   "why": "SpellOverrider borrows a rooted blueprint as the targeting surface for spell override resolution.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

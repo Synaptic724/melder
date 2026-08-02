@@ -28,23 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Descriptor-safe published conduit payload.",
-   "responsibilities": [
-    "stores published conduit posture and lineage summary values"
-   ],
-   "owns_state": [
-    "conduit_name",
-    "conduit_state",
-    "policy",
-    "peer_conduit_ids",
-    "parent_conduit_id",
-    "lineage_depth"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

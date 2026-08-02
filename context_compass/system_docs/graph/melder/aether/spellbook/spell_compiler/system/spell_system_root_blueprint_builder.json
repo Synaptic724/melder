@@ -27,17 +27,7 @@
     "method_count": 7,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Phase 5 structural rooted-blueprint builder.",
-   "responsibilities": [
-    "builds rooted deep DAG blueprints from a frame-wide adjacency snapshot",
-    "computes reachable spell ids and deterministic topological order per root",
-    "overlays socket refs and dag-index state from local topologies"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -98,40 +88,5 @@
   "module": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder",
   "class": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
   "label": "SpellSystemRootBlueprintBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "relation": "creates",
-   "why": "SpellSystemRootBlueprintBuilder constructs RootResolutionBlueprint objects for structural roots or targeted spell ids.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
-   "relation": "borrows",
-   "why": "SpellSystemRootBlueprintBuilder consumes the frame-wide adjacency snapshot as its structural source of reachable spell ids and roots.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-   "relation": "uses",
-   "why": "SpellSystemRootBlueprintBuilder overlays socket refs and dag-index data from spell-local topologies onto rooted blueprints.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

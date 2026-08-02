@@ -66,21 +66,7 @@
     "method_count": 42,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Process-wide configuration for Nexus.",
-   "responsibilities": [
-    "stores typed process-wide Rift creation/access and frame-topology policy",
-    "freezes into the active Nexus governance surface"
-   ],
-   "owns_state": [
-    "_properties",
-    "available_properties"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -153,40 +139,5 @@
   "module": "melder.nexus.configuration.nexus_configuration",
   "class": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
   "label": "NexusConfiguration"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
-   "to": "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode",
-   "relation": "uses",
-   "why": "NexusConfiguration stores NexusFrameMode as the topology posture for internal Nexus frames.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
-   "to": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
-   "relation": "uses",
-   "why": "NexusConfiguration stores RiftSpaceType as the default room type for newly created Rifts.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
-   "to": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
-   "relation": "uses",
-   "why": "NexusConfiguration stores RiftValidationMode as the default validation posture for new Rifts.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

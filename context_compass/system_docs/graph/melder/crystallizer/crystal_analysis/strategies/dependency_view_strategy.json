@@ -9,14 +9,7 @@
    "label": "dependency_view_strategy",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
-   "lineno": 1,
-   "role": "Deterministic topological module load order over walked edges; cycle-tolerant with an honesty walk error.",
-   "responsibilities": [
-    "implemented S1 (decomposition epic); see crystal_analysis component docs"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy": {
    "id": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",

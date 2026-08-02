@@ -9,17 +9,7 @@
    "label": "__version__",
    "kind": "module",
    "file": "src/melder/__version__.py",
-   "lineno": 1,
-   "role": "Top-level version metadata module.",
-   "responsibilities": [
-    "stores the canonical package version string"
-   ],
-   "owns_state": [
-    "__version__"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

@@ -31,16 +31,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry holder for phase-11 codegen creation discovery strategies.",
-   "responsibilities": [
-    "owns the named discovery strategy registry",
-    "loads the default solo, many_only, generalized, generalized_cache, and fallback discovery strategies",
-    "returns deterministic ordered discovery strategy tuples for the discovery facade"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -98,85 +89,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
   "label": "CodegenCreationDiscoveryStrategyBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-   "relation": "uses",
-   "why": "CodegenCreationDiscoveryStrategyBuilder stores and resolves CodegenCreationDiscoveryStrategy objects by stable strategy id.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy",
-   "relation": "uses",
-   "why": "CodegenCreationDiscoveryStrategyBuilder registers FallbackNoOverridesCodegenCreationDiscoveryStrategy in the default discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
-   "relation": "uses",
-   "why": "CodegenCreationDiscoveryStrategyBuilder registers GeneralizedCacheCodegenCreationDiscoveryStrategy in the default discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy",
-   "relation": "uses",
-   "why": "CodegenCreationDiscoveryStrategyBuilder registers GeneralizedCodegenCreationDiscoveryStrategy in the default discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
-   "relation": "uses",
-   "why": "CodegenCreationDiscoveryStrategyBuilder registers ManyOnlyCodegenCreationDiscoveryStrategy in the default discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy",
-   "relation": "uses",
-   "why": "CodegenCreationDiscoveryStrategyBuilder registers SoloCodegenCreationDiscoveryStrategy in the default discovery chain.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CodegenCreationDiscoveryStrategyBuilder inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

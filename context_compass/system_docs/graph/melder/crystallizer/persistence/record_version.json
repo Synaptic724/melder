@@ -29,15 +29,7 @@
     "method_count": 4,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Static record-schema version authority (stamp 1.0.0; readers gate on MAJOR; absent stamps read 0.0.0).",
-   "responsibilities": [
-    "stamps cached items, formation records, and emission-tap envelopes",
-    "refuses newer-major payloads at the read gates"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

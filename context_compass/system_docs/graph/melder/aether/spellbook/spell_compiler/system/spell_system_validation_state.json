@@ -32,23 +32,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-level verdict returned by system validation.",
-   "responsibilities": [
-    "stores validity plus error and warning diagnostics for one validation pass",
-    "retains a snapshot of system nodes as validation context"
-   ],
-   "owns_state": [
-    "_is_valid",
-    "_errors",
-    "_warnings",
-    "_nodes"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -75,31 +59,5 @@
   "module": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state",
   "class": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
   "label": "SpellSystemValidationState"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_node.SpellSystemNode",
-   "relation": "borrows",
-   "why": "SpellSystemValidationState carries a node snapshot from the system index as contextual validation state without owning node lifecycle.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
-   "to": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellSystemValidationState owns the collected diagnostics for a validation pass and cleans them during teardown.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

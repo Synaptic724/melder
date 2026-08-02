@@ -29,20 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Manifest-first phase-11 family for many-only planner output.",
-   "responsibilities": [
-    "routes many-only planner output through the many-only family state and ordered family steps",
-    "publishes a manifest-first lazy-door runtime shape for many-only output",
-    "writes final family metadata onto SpellCodegenCreation after step execution"
-   ],
-   "owns_state": [
-    "_steps"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -89,62 +76,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy.ManyOnlyCodegenCreationStrategy",
   "label": "ManyOnlyCodegenCreationStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy.ManyOnlyCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-   "relation": "specializes",
-   "why": "ManyOnlyCodegenCreationStrategy specializes the abstract SpellCodegenStrategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy.ManyOnlyCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state.ManyOnlyCodegenCreationState",
-   "relation": "creates",
-   "why": "ManyOnlyCodegenCreationStrategy creates the family-local many-only state object before running its ordered steps.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy.ManyOnlyCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state.ManyOnlyCodegenCreationState",
-   "relation": "creates",
-   "why": "ManyOnlyCodegenCreationStrategy creates the family-local many-only state object before executing its ordered steps.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy.ManyOnlyCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step.ManyOnlyLazyDoorStep",
-   "relation": "uses",
-   "why": "ManyOnlyCodegenCreationStrategy executes ManyOnlyLazyDoorStep as the second ordered family step.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy.ManyOnlyCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step.ManyOnlyManifestStep",
-   "relation": "uses",
-   "why": "ManyOnlyCodegenCreationStrategy executes ManyOnlyManifestStep as the first ordered family step.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

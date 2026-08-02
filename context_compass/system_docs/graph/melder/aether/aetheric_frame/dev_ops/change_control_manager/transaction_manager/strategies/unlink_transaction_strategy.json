@@ -30,16 +30,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Transaction strategy that resolves conduit unlink requests into mediator-ready change-control plans.",
-   "responsibilities": [
-    "normalizes participant conduits and owning spellbooks for unlink operations",
-    "builds scope keys and intent claims for unlink transactions",
-    "preserves caller-supplied binding and contract keys for sever-link work"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -80,51 +71,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy.UnlinkTransactionStrategy",
   "label": "UnlinkTransactionStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy.UnlinkTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
-   "relation": "uses",
-   "why": "UnlinkTransactionStrategy emits ClaimMode values when shaping spellbook intent claims for sever-link work.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy.UnlinkTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-   "relation": "specializes",
-   "why": "UnlinkTransactionStrategy specializes the shared transaction-strategy contract for sever-link work.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy.UnlinkTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-   "relation": "uses",
-   "why": "UnlinkTransactionStrategy uses DevopsIdentity as the initiating owner and capability source for unlink requests.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy.UnlinkTransactionStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "uses",
-   "why": "UnlinkTransactionStrategy reads DevopsInformationRegistry to resolve participant conduits and owning spellbooks for unlink planning.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

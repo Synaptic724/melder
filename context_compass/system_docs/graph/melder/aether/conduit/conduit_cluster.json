@@ -52,24 +52,7 @@
     "method_count": 31,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Cluster-local conduit membership and shared-root manager.",
-   "responsibilities": [
-    "tracks conduit membership by cluster",
-    "tracks shareable root spell lineages per owner",
-    "coordinates automatic sharing and teardown between cluster members"
-   ],
-   "owns_state": [
-    "members",
-    "shared_spells",
-    "auto_link_dependencies",
-    "_devops_identity",
-    "_devops_information_registry"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -139,31 +122,5 @@
   "module": "melder.aether.conduit.conduit_cluster",
   "class": "melder.aether.conduit.conduit_cluster.ConduitCluster",
   "label": "ConduitCluster"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-   "relation": "owns_lifecycle_of",
-   "why": "ConduitCluster creates and owns one cluster-scoped DevopsIdentity for membership reporting.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "ConduitCluster borrows the frame dev-ops information registry to publish cluster membership relations.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -39,24 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Mutable incident record owned by IncidentManager.",
-   "responsibilities": [
-    "stores one incident payload plus controlled lifecycle status",
-    "supports acknowledge, resolve, and suppress transitions"
-   ],
-   "owns_state": [
-    "_kind",
-    "_severity",
-    "_status",
-    "_spell_index_id",
-    "_root_ids",
-    "_details"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -99,29 +82,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident",
   "class": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
   "label": "Incident"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
-   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity",
-   "relation": "uses",
-   "why": "Incident stores IncidentSeverity as its urgency classification.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
-   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus",
-   "relation": "uses",
-   "why": "Incident stores IncidentStatus as its operational lifecycle state.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

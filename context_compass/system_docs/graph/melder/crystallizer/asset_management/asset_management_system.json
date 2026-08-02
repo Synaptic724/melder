@@ -48,21 +48,7 @@
     "method_count": 21,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Bytes-at-rest custody (S3): cache files, formation files, and the ExternalPersistenceManager DB seam over a borrowed record.",
-   "responsibilities": [
-    "flush_checkpoint = seal-then-ship (cache write, FIFO retention at the record's live cap, lenient upload leg; one feedstock pull)",
-    "reload lanes (cache/remote) feed the record's insert sink insert-if-absent",
-    "formation file store/load/list",
-    "EPM configure/describe/reload_from_external"
-   ],
-   "owns_state": [
-    "CrystallizerCache",
-    "optional ExternalPersistenceManager"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -137,51 +123,5 @@
   "module": "melder.crystallizer.asset_management.asset_management_system",
   "class": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
   "label": "AssetManagementSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
-   "to": "melder.crystallizer.asset_management.crystallizer_cache.CrystallizerCache",
-   "relation": "owns_lifecycle_of",
-   "why": "Disk custody moved from the ledger to the asset system (S3).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
-   "to": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "relation": "owns_lifecycle_of",
-   "why": "The DB seam is asset-owned since S3 (was crystallizer-direct).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
-   "to": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-   "relation": "borrows",
-   "why": "Reads flush feedstock + retention cap; lands reloads in the insert sink (public verbs only).",
-   "cardinality": "one_to_one",
-   "strength": "soft",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
-   "to": "melder.crystallizer.persistence.record_version.RecordVersion",
-   "relation": "uses",
-   "why": "Emission-tap envelopes stamp; load_formation_record gates on the recorded major.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

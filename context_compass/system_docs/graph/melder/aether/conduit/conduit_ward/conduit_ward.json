@@ -30,24 +30,7 @@
     "method_count": 64,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Contract and lineage graph manager for a conduit.",
-   "responsibilities": [
-    "manages peer contracts",
-    "manages lesser-conduit lineage",
-    "applies policy to link creation and severing",
-    "updates contracted spell visibility"
-   ],
-   "owns_state": [
-    "_contracts",
-    "_lesser_conduits",
-    "_parent_conduit",
-    "_root_conduit"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -157,52 +140,5 @@
   "module": "melder.aether.conduit.conduit_ward.conduit_ward",
   "class": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
   "label": "ConduitWard"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-   "relation": "uses",
-   "why": "ConduitWard uses ConduitState to interpret lineage mode and enforce lesser-versus-normal contract behavior.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
-   "relation": "owns_lifecycle_of",
-   "why": "ConduitWard owns the active contract objects linked to the conduit.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-   "relation": "uses",
-   "why": "ConduitWard checks and propagates Permissions when deciding whether a lineage may be contracted or borrowed.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
-   "relation": "uses",
-   "why": "ConduitWard uses Policies to govern dynamic contracting direction and whitelist/block overrides.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -9,15 +9,7 @@
    "label": "lineage_version_conflict_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for lineage version conflict checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy.LineageVersionConflictStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy.LineageVersionConflictStrategy",

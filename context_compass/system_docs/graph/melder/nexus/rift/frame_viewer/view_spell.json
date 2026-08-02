@@ -66,20 +66,7 @@
     "method_count": 57,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Spell-scoped helper surface for one selected frame view.",
-   "responsibilities": [
-    "returns ACL-filtered spell links and spell descriptions",
-    "surfaces spell payload, lineage, and comparison behavior through the selected frame helper",
-    "describe_spell_research joins viewer truth with the research record (residency payload or honest research_available=False)"
-   ],
-   "owns_state": [
-    "_frame_view"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -132,40 +119,5 @@
   "module": "melder.nexus.rift.frame_viewer.view_spell",
   "class": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",
   "label": "ViewSpell"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",
-   "to": "melder.nexus.rift.frame_viewer.view_action_hooks",
-   "relation": "uses",
-   "why": "ViewSpell uses the shared view-action hook wrapper module for public helper actions.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",
-   "to": "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
-   "relation": "borrows",
-   "why": "ViewSpell borrows the selected-frame helper instead of owning descriptor or ACL state directly.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",
-   "to": "melder.mutation_research.mutation_research.MutationResearch",
-   "relation": "borrows",
-   "why": "ViewSpell.describe_spell_research and describe_spell_source annotate visible spells with research residency and recorded module source via the same Aether._instance peek (honest mutation_research_not_active arm).",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

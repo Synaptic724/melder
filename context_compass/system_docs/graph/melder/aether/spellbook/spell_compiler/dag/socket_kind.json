@@ -26,20 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Enum classifying the kind of socket represented by a DAG edge.",
-   "responsibilities": [
-    "labels normal, spell-contract, and mutation-contract socket kinds"
-   ],
-   "owns_state": [
-    "NORMAL",
-    "SPELL_CONTRACT",
-    "MUTATION_CONTRACT"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

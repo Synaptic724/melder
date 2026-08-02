@@ -31,23 +31,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "AST-guided source composition over two recorded version texts: pick named top-level functions/classes from a donor and splice them into a base (replace same-named, append new, decorators travel) - the SELECTION+SYNTHESIS half of the May surgical-mutation flow (the diff family is the report half). Pure text-in/text-out; never touches custody, never executes, never records.",
-   "responsibilities": [
-    "synthesize(base, donor, take_functions/take_classes) -> composed source + per-selection provenance",
-    "unknown selections refuse loudly naming available donor parts; parse errors answer honestly per side",
-    "stateless between calls; owned lazily by the MutationResearch root",
-    "extract_part(source, name, kind=None) = the query companion (part span/text lookup; misses answer None, unparseable source is loud)",
-    "list_parts(source) = the inventory companion (every top-level part with code, source order)",
-    "part FINGERPRINTS: list_parts rows carry sha256 over exact part text (depth-3 change index - inventories compare part-by-part without pulling texts)"
-   ],
-   "owns_state": [
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

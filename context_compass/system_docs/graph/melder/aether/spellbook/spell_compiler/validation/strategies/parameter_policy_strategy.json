@@ -9,15 +9,7 @@
    "label": "parameter_policy_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
-   "lineno": 1,
-   "role": "Spell validation strategy module for parameter policy checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",

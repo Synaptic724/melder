@@ -31,22 +31,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Cross-family ACL bundle compatibility validator.",
-   "responsibilities": [
-    "validates whether selected view, command, and codegen ACL policies are internally coherent",
-    "produces compatibility reports for one frame ACL bundle"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_profile_builder",
-    "_last_report"
-   ],
-   "phases": [
-    "validation",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -97,31 +82,5 @@
   "FrameACLConfiguration": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
   "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
-   "to": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
-   "relation": "validates",
-   "why": "FrameACLSetCompatibilityValidator validates whether a selected ACL bundle is internally coherent across view, command, and codegen families.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
-   "to": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report.FrameACLSetCompatibilityReport",
-   "relation": "creates",
-   "why": "FrameACLSetCompatibilityValidator creates detached compatibility reports for validated ACL bundles.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "refresh"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

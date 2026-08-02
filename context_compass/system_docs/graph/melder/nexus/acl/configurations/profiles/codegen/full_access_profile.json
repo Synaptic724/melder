@@ -9,16 +9,7 @@
    "label": "full_access_profile",
    "kind": "module",
    "file": "src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py",
-   "lineno": 1,
-   "role": "Factory module for the reusable full_access codegen ACL profile.",
-   "responsibilities": [
-    "constructs the unconstrained top-end codegen profile variant",
-    "enables broad conduit, spell, and capability operations including recursive codegen",
-    "returns fresh FrameACLCodegenProfile instances through its strategy class"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy": {
    "id": "melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy",

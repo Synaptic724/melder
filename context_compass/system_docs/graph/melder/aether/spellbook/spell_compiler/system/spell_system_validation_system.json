@@ -29,21 +29,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "System-level validation orchestrator over rooted spell graphs.",
-   "responsibilities": [
-    "runs configured system-validation strategies over Phase 5 artifacts and Phase 4 outcomes",
-    "aggregates SystemDiagnostic results into a SpellSystemValidationState",
-    "updates per-conduit resolution validity in SpellSystemStates when a conduit scope is provided"
-   ],
-   "owns_state": [
-    "_strategies"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -102,63 +88,5 @@
   "module": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system",
   "class": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
   "label": "SpellSystemValidationSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "relation": "borrows",
-   "why": "SpellSystemValidationSystem records per-conduit validity and diagnostics back into SpellSystemStates when validating a conduit-scoped rooted graph.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "relation": "borrows",
-   "why": "SpellSystemValidationSystem validates the rooted blueprint set produced in Phase 5 without owning blueprint lifecycle.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-   "relation": "borrows",
-   "why": "SpellSystemValidationSystem validates the frame-level system index built above the rooted blueprint layer.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
-   "relation": "creates",
-   "why": "SpellSystemValidationSystem returns a SpellSystemValidationState as the aggregated verdict for one system-validation pass.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-   "relation": "creates",
-   "why": "System-level validation strategies emit SystemDiagnostic objects that the orchestrator aggregates into validation state.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

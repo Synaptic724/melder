@@ -26,14 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Exception raised when a phase unit fails during execution.",
-   "responsibilities": [
-    "specializes PhaseSchedulerError for unit execution failures"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [

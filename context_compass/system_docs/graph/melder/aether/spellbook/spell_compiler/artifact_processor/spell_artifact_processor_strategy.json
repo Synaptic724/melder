@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Abstract contract for processor strategies that fit sections of SpellCodegenModel.",
-   "responsibilities": [
-    "defines the strategy_id provenance contract for processor strategies",
-    "defines the process() seam over Spell, SpellCompilerArtifact, and SpellCodegenModel",
-    "keeps strategy-specific model fitting separate from processor orchestration"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -53,29 +44,5 @@
   "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
   "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellArtifactProcessorStrategy implementations write directly onto the shared SpellCodegenModel during processor fitting.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-   "relation": "uses",
-   "why": "SpellArtifactProcessorStrategy implementations read spell-owned compiler artifacts when fitting bounded model sections.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

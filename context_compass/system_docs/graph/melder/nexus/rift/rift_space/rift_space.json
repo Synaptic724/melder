@@ -44,26 +44,7 @@
     "method_count": 25,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Room-local workspace object.",
-   "responsibilities": [
-    "owns the room-local viewer asset",
-    "owns the workstation",
-    "owns the room-local command system",
-    "owns room-local event and memory systems"
-   ],
-   "owns_state": [
-    "_frame_viewer",
-    "_workstation",
-    "_command_system",
-    "_event_system",
-    "_memory_system"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -155,70 +136,5 @@
   "module": "melder.nexus.rift.rift_space.rift_space",
   "class": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
   "label": "RiftSpace"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "RiftSpace constructs and owns the room-local command layer.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "relation": "owns_lifecycle_of",
-   "why": "RiftSpace owns the durable viewer asset used for room-local visible state.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "RiftSpace owns the room-local callback-driven event system.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
-   "relation": "owns_lifecycle_of",
-   "why": "RiftSpace owns the room-local memory sequencing and snapshot system.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to": "melder.nexus.rift.rift_space.workstation.Workstation",
-   "relation": "owns_lifecycle_of",
-   "why": "RiftSpace constructs and owns the room-local workstation.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

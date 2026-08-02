@@ -27,21 +27,7 @@
     "method_count": 3,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Runtime wrapper for the internal codegen namespace object.",
-   "responsibilities": [
-    "exposes recursive validate and execute entrypoints without leaking the raw CodegenSystem object",
-    "applies recursive-codegen permission checks at runtime",
-    "returns public payload dictionaries instead of internal result objects"
-   ],
-   "owns_state": [
-    "_codegen_system",
-    "_default_frame_name",
-    "_recursive_codegen_allowed"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -66,18 +52,5 @@
   "module": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface",
   "class": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
   "label": "CodegenControlSurface"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
-   "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "relation": "borrows",
-   "why": "CodegenControlSurface wraps the room-owned CodegenSystem instead of exposing it directly.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

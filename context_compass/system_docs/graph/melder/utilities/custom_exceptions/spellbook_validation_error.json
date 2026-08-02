@@ -26,15 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Exception raised for spellbook validation failures.",
-   "responsibilities": [
-    "signals fatal spellbook validation failures"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

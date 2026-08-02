@@ -31,24 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Spell-level permission entry stored inside a contract.",
-   "responsibilities": [
-    "stores lineage identity, version-at-contract time, permission, and direction metadata",
-    "tracks source root spell ids for reversible dependency-linked sharing"
-   ],
-   "owns_state": [
-    "spell_index",
-    "spell_id",
-    "permissions",
-    "contract_type",
-    "reason",
-    "sources"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   },
   "melder.aether.conduit.conduit_ward.contract.details.IndexDetail": {
    "id": "melder.aether.conduit.conduit_ward.contract.details.IndexDetail",
@@ -128,40 +111,5 @@
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
   "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
-   "to": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
-   "relation": "uses",
-   "why": "Detail stores ContractTypes to mark whether the entry is initiated or received from the owning ward perspective.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
-   "to": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
-   "relation": "uses",
-   "why": "Detail stores DetailReason to explain why the contract entry exists.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
-   "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-   "relation": "uses",
-   "why": "Detail stores Permissions as the granted capability level for one contracted lineage entry.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

@@ -50,23 +50,7 @@
     "method_count": 17,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Conduit-local risk aggregator for validation gating.",
-   "responsibilities": [
-    "tracks structural and resolution risk per conduit",
-    "reacts to validity changes from spell-system state",
-    "pushes validation-required flags back onto spellbooks"
-   ],
-   "owns_state": [
-    "_conduit_states",
-    "_lineage_conduits",
-    "_spell_system_states"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -107,18 +91,5 @@
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "relation": "borrows",
-   "why": "RiskManager reads and reacts to SpellSystemStates without owning the registry lifecycle.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

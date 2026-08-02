@@ -33,26 +33,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.",
-   "responsibilities": [
-    "marks one active spellspace scope on a conduit",
-    "enforces active-scope usage for spellspace-bound meld calls",
-    "clears spellspace-scoped instances on reset or cleanup"
-   ],
-   "owns_state": [
-    "_id",
-    "_owner_conduit_id",
-    "_meld",
-    "_creations",
-    "_owner_conduit_creations",
-    "_spellspace_pool",
-    "_spellspace_stack_state"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -104,31 +85,5 @@
   "module": "melder.aether.conduit.spell_space.spell_space",
   "class": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
   "label": "SpellSpace"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
-   "to": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellSpace owns SpellSpaceMeld as its request-local meld front door.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
-   "to": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
-   "relation": "borrows",
-   "why": "SpellSpace borrows the conduit-owned per-thread stack holder to validate managed enter/exit order.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

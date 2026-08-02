@@ -9,15 +9,7 @@
    "label": "topology_dependency_mismatch_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for topology dependency mismatch checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy.TopologyDependencyMismatchStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy.TopologyDependencyMismatchStrategy",

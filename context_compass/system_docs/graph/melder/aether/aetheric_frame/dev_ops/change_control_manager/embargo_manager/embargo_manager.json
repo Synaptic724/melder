@@ -26,20 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Enum of scope-key claim strengths for admission gating.",
-   "responsibilities": [
-    "classifies how strongly one transaction claims one scope key",
-    "lets the admission gate admit share-compatible work in parallel while serializing true structural overlap"
-   ],
-   "owns_state": [
-    "EXCLUSIVE",
-    "SHARED",
-    "INTENT"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord": {
    "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord",
@@ -102,20 +89,7 @@
     "method_count": 19,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Scope-key embargo registry for transaction-driven gating.",
-   "responsibilities": [
-    "tracks temporary embargoes opened by admitted requests",
-    "answers whether requested scope is currently embargoed"
-   ],
-   "owns_state": [
-    "_embargoes_by_scope",
-    "_embargoes_by_owner"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

@@ -24,19 +24,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "One visible spell-id to existence row captured during the phase-8 spell walk.",
-   "responsibilities": [
-    "stores one visible spell id, existence, and disposal-flag row for analyzer occurrence work"
-   ],
-   "owns_state": [
-    "spell_id",
-    "existence",
-    "has_disposal_methods"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis": {
    "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
@@ -51,24 +39,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Phase-8 existence-occurrence capture.",
-   "responsibilities": [
-    "holds raw spell-id to existence rows for one analyzer pass",
-    "stores aggregate existence and disposal histograms with no live spell references",
-    "supplies cheap occurrence-level existence truth to later analyzer and planner stages"
-   ],
-   "owns_state": [
-    "root_existence",
-    "total_spell_count",
-    "spell_existence_rows",
-    "existence_counts",
-    "disposal_enabled_spell_count",
-    "existence_disposal_counts"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -80,18 +51,5 @@
   "Tuple": "typing.Tuple",
   "Existence": "melder.aether.spellbook.existence.existence.Existence"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
-   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrence",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellExistenceOccurrenceAnalysis stores the raw SpellExistenceOccurrence rows for the analyzer spell walk.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

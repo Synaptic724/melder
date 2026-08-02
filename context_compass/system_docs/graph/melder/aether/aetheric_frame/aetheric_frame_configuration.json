@@ -69,23 +69,7 @@
     "method_count": 44,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Narrow frame-level runtime posture object for AR-facing behavior.",
-   "responsibilities": [
-    "stores frame-level system state, ai-native, and rift posture",
-    "carries provenance for the spellbook that first derived the frame posture"
-   ],
-   "owns_state": [
-    "_origin_spellbook_id",
-    "_system_state",
-    "_ai_native_enabled",
-    "_rift_enabled"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -168,18 +152,5 @@
   "module": "melder.aether.aetheric_frame.aetheric_frame_configuration",
   "class": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
   "label": "AethericFrameConfiguration"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
-   "to": "melder.__melder_cache__.__melder_cache__",
-   "relation": "uses",
-   "why": "AethericFrameConfiguration anchors its default system-cache root to the package-local __melder_cache__ fragment.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

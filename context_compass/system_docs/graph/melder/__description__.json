@@ -9,17 +9,7 @@
    "label": "__description__",
    "kind": "module",
    "file": "src/melder/__description__.py",
-   "lineno": 1,
-   "role": "Top-level package description metadata module.",
-   "responsibilities": [
-    "stores the one-line human-readable package description"
-   ],
-   "owns_state": [
-    "__description__"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

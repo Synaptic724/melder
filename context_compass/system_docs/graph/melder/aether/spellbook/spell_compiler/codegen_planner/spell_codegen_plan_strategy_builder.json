@@ -31,20 +31,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry holder for codegen-plan strategies.",
-   "responsibilities": [
-    "owns the named planner strategy registry",
-    "loads the built-in solo, many-only, and generalized planner strategies",
-    "resolves deterministic ordered strategy tuples for planner chaining"
-   ],
-   "owns_state": [
-    "_strategies_by_name"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -95,63 +82,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder",
   "class": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder.SpellCodegenPlanStrategyBuilder",
   "label": "SpellCodegenPlanStrategyBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder.SpellCodegenPlanStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-   "relation": "uses",
-   "why": "SpellCodegenPlanStrategyBuilder stores and resolves SpellCodegenPlanStrategy objects by stable strategy id.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder.SpellCodegenPlanStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_codegen_plan_strategy.SpellGeneralizedCodegenPlanStrategy",
-   "relation": "uses",
-   "why": "SpellCodegenPlanStrategyBuilder registers SpellGeneralizedCodegenPlanStrategy in the default planner strategy registry.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder.SpellCodegenPlanStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_solo_codegen_plan_strategy.SpellGeneralizedSoloCodegenPlanStrategy",
-   "relation": "uses",
-   "why": "SpellCodegenPlanStrategyBuilder registers SpellGeneralizedSoloCodegenPlanStrategy in the default planner strategy registry.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder.SpellCodegenPlanStrategyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_many_only_codegen_plan_strategy.SpellManyOnlyCodegenPlanStrategy",
-   "relation": "uses",
-   "why": "SpellCodegenPlanStrategyBuilder registers SpellManyOnlyCodegenPlanStrategy in the default planner strategy registry.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy_builder.SpellCodegenPlanStrategyBuilder",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "SpellCodegenPlanStrategyBuilder inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

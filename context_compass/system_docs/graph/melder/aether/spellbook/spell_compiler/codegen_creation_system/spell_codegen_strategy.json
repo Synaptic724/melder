@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Abstract contract for codegen creation strategies.",
-   "responsibilities": [
-    "defines the stable strategy_id contract for codegen creation strategies",
-    "defines the apply() seam over SpellCodegenModel, plan truth, and SpellCodegenCreation",
-    "keeps codegen-creation strategy behavior separate from the top-level facade"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -51,29 +42,5 @@
   "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
   "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellCodegenStrategy implementations read the fitted SpellCodegenModel when populating the final creation artifact.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-   "relation": "uses",
-   "why": "SpellCodegenStrategy implementations mutate the supplied SpellCodegenCreation output directly.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

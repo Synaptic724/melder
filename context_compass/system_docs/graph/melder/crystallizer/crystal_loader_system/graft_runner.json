@@ -29,25 +29,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only.",
-   "responsibilities": [
-    "gates the versioned graft record (RecordVersion MAJOR + graft_kind)",
-    "refuses unconjured hosts via the public Spellbook.conduit accessor",
-    "applies the overlap rule per member via frame.find_index_for_spell (refuse-by-default; skip_resident skips with shortfall; never mutates existing indexes)",
-    "hydrates members via the import lane with a rebuild-then-retry arc through user_world_rebuild",
-    "binds the selected member ACTIVE (fresh index) and parks the rest via bind_inactive",
-    "emits a detached report with recorded-to-live identity mapping"
-   ],
-   "owns_state": [
-    "_record",
-    "_host_spellbook",
-    "_skip_resident"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -93,29 +75,5 @@
   "module": "melder.crystallizer.crystal_loader_system.graft_runner",
   "class": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
   "label": "GraftRunner"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "borrows",
-   "why": "the runner drives the host book's public verbs only: conduit accessor, bind (selected member, fresh index), bind_inactive (parked members).",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
-   "to": "melder.crystallizer.crystal_loader_system.user_world_rebuild",
-   "relation": "delegates_to",
-   "why": "member hydration failures retry once after rebuilding absent user modules through the shared retained-text lane.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

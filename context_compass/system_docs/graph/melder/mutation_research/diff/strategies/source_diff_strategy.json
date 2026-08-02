@@ -29,15 +29,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-module source-text comparison strategy (the transport layer of the diff family).",
-   "responsibilities": [
-    "reports added/removed/changed/identical modules over the union of both sides' sources and fingerprints",
-    "emits unified diffs where text exists on both sides and honest fingerprint-only verdicts (text_unavailable) where it does not"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -60,18 +52,5 @@
   "module": "melder.mutation_research.diff.strategies.source_diff_strategy",
   "class": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
   "label": "SourceDiffStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
-   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-   "relation": "specializes",
-   "why": "SourceDiffStrategy specializes the abstract diff-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

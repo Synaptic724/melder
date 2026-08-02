@@ -26,20 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Severity enum for incident records.",
-   "responsibilities": [
-    "labels informational through critical incident urgency levels"
-   ],
-   "owns_state": [
-    "info",
-    "warning",
-    "error",
-    "critical"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

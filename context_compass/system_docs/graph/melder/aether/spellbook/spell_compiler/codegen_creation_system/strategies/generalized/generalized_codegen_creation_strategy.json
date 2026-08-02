@@ -29,19 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Manifest-first phase-11 strategy for generalized planner output.",
-   "responsibilities": [
-    "routes generalized planner output through manifest-first creation assembly",
-    "populates SpellCodegenCreation through ordered internal generalized family steps",
-    "publishes generalized manifest metadata for the family cache codec"
-   ],
-   "owns_state": [
-    "_steps"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -88,29 +76,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
   "label": "GeneralizedCodegenCreationStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-   "relation": "specializes",
-   "why": "GeneralizedCodegenCreationStrategy specializes the abstract SpellCodegenStrategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state.GeneralizedManifestState",
-   "relation": "creates",
-   "why": "GeneralizedCodegenCreationStrategy creates GeneralizedManifestState as the scratch state for its ordered family steps.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

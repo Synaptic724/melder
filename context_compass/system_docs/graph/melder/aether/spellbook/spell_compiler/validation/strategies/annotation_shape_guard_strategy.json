@@ -9,15 +9,7 @@
    "label": "annotation_shape_guard_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
-   "lineno": 1,
-   "role": "Spell validation strategy module for annotation shape guards.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",

@@ -9,16 +9,7 @@
    "label": "solo_codegen_creation_discovery_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/solo_codegen_creation_discovery_strategy.py",
-   "lineno": 1,
-   "role": "Phase-11 discovery strategy for solo plan-family output.",
-   "responsibilities": [
-    "claims solo planner output",
-    "routes it to the dedicated solo creation family",
-    "selects one concrete codegen style from plan candidates"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy.SoloCodegenCreationDiscoveryStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy.SoloCodegenCreationDiscoveryStrategy",
@@ -69,40 +60,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy.SoloCodegenCreationDiscoveryStrategy",
   "label": "SoloCodegenCreationDiscoveryStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SoloCodegenCreationDiscoveryStrategy inspects the fitted SpellCodegenModel when deciding whether to claim the current pair.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-   "relation": "creates",
-   "why": "SoloCodegenCreationDiscoveryStrategy returns a CodegenCreationDiscovery when it claims the current model/plan pair.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-   "relation": "specializes",
-   "why": "SoloCodegenCreationDiscoveryStrategy specializes the abstract discovery-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

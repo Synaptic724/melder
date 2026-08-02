@@ -9,17 +9,7 @@
    "label": "user_world_rebuild",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py",
-   "lineno": 1,
-   "role": "Shared retained-text rebuild lane: reconstructs absent user modules from a custody crystal through the SyntheticModule lifecycle.",
-   "responsibilities": [
-    "rebuilds ABSENT user-module files only (the live file always wins)",
-    "skips sys.modules residents and orders parents-first by dot depth",
-    "routes every rebuild through the normal SyntheticModule register/publish/execute verbs",
-    "reports honest shortfalls through caller callbacks (engine built-stack vs runner no-op)"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

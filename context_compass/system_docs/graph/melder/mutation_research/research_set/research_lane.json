@@ -79,26 +79,7 @@
     "method_count": 24,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).",
-   "responsibilities": [
-    "holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)",
-    "carries the ancestry anchor (organization only, never content)",
-    "detach_nodes powers the join transfer; terminal states refuse further work"
-   ],
-   "owns_state": [
-    "_nodes_by_spell_id",
-    "_node_order",
-    "_tip_spell_id",
-    "_state",
-    "_anchor_lane_id",
-    "_anchor_spell_id"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -164,44 +145,5 @@
   "module": "melder.mutation_research.research_set.research_lane",
   "class": "melder.mutation_research.research_set.research_lane.ResearchLane",
   "label": "ResearchLane"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-   "to": "melder.mutation_research.research_set.research_node.ResearchNode",
-   "relation": "owns_lifecycle_of",
-   "why": "A lane holds its version records in registration order and cleans them on teardown; join transfers ownership between lanes.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.research_set.research_lane.ResearchLane",
-   "to": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
-   "relation": "owns_lifecycle_of",
-   "why": "Lanes hold BOTH node families via the module-level node_identity() dispatch; cleanup cascades.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

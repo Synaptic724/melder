@@ -9,14 +9,7 @@
    "label": "permissive_profile",
    "kind": "module",
    "file": "src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py",
-   "lineno": 1,
-   "role": "Factory module for reusable permissive view ACL profile.",
-   "responsibilities": [
-    "constructs one reusable ACL profile variant"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.nexus.acl.configurations.profiles.view.permissive_profile.PermissiveViewProfileStrategy": {
    "id": "melder.nexus.acl.configurations.profiles.view.permissive_profile.PermissiveViewProfileStrategy",
@@ -50,18 +43,5 @@
  "imports": {
   "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.profiles.view.permissive_profile",
-   "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-   "relation": "creates",
-   "why": "This factory module constructs one reusable view ACL profile variant.",
-   "cardinality": "one_to_one",
-   "strength": "soft",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

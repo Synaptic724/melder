@@ -31,23 +31,7 @@
     "method_count": 8,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Registry-backed resolver for change-control transaction strategy classes.",
-   "responsibilities": [
-    "registers built-in transaction strategies by normalized transaction kind",
-    "resolves strategy classes for mediator start/end/commit-delta dispatch",
-    "shares the live transaction manager and dev-ops information registry with resolved strategies"
-   ],
-   "owns_state": [
-    "_transaction_manager",
-    "_devops_information_registry",
-    "_strategies_by_transaction_name"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -103,40 +87,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder",
   "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
   "label": "TransactionStrategyBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-   "relation": "uses",
-   "why": "TransactionStrategyBuilder stores and resolves TransactionStrategy classes by normalized transaction kind.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager",
-   "relation": "borrows",
-   "why": "TransactionStrategyBuilder borrows the live transaction manager as the scope-key and request helper surface shared with resolved strategies.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "TransactionStrategyBuilder borrows the frame-local dev-ops information registry and passes it into resolved strategies.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

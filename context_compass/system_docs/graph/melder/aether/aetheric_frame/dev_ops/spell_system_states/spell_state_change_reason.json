@@ -26,42 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Coarse latest-transition reason enum for one lineage.",
-   "responsibilities": [
-    "labels the latest event that changed a lineage state or validity posture"
-   ],
-   "owns_state": [
-    "new_lineage",
-    "register_or_rebind",
-    "structure_changed",
-    "dependencies_changed",
-    "dependency_changed",
-    "impacted_by_dependency",
-    "contract_unvalidated",
-    "contract_violation",
-    "mutation_promoted",
-    "mutation_rolled_back",
-    "mutation_contract_set",
-    "mutation_contract_cleared",
-    "mutation_failed",
-    "mutation_candidate",
-    "mutation_quarantined",
-    "validation_passed",
-    "validation_failed",
-    "incident_opened",
-    "incident_resolved",
-    "config_missing",
-    "config_supplied",
-    "anchored_component",
-    "transfer_in_progress",
-    "explicit_mark",
-    "other"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

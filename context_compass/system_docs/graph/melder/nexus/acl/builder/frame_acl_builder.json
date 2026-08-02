@@ -41,23 +41,7 @@
     "method_count": 18,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-local mutable ACL authoring surface.",
-   "responsibilities": [
-    "owns one family-scoped ACL draft session for a frame",
-    "creates and installs family-specific ACL configurations through the owning container"
-   ],
-   "owns_state": [
-    "_container",
-    "_draft_family_name",
-    "_draft_contract_name",
-    "_draft_configuration"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -128,88 +112,5 @@
   "FrameACLProfile": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
   "FrameACLContainer": "melder.nexus.acl.frame_acl_container.FrameACLContainer"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to": "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
-   "relation": "creates",
-   "why": "FrameACLBuilder begins one codegen-family draft and returns a fluent FrameACLCodegenBuilder over that active draft.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-   "relation": "creates",
-   "why": "FrameACLBuilder begins one command-family draft and returns a fluent FrameACLCommandBuilder over that active draft.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to": "melder.nexus.acl.builder.frame_acl_view_builder.FrameACLViewBuilder",
-   "relation": "creates",
-   "why": "FrameACLBuilder begins one view-family draft and returns a fluent FrameACLViewBuilder over that active draft.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-   "relation": "creates",
-   "why": "FrameACLBuilder creates or clones codegen-family ACL configuration revisions during draft sessions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-   "relation": "creates",
-   "why": "FrameACLBuilder creates or clones command-family ACL configuration revisions during draft sessions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
-   "relation": "creates",
-   "why": "FrameACLBuilder creates or clones view-family ACL configuration revisions during draft sessions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
-   "relation": "borrows",
-   "why": "FrameACLBuilder borrows its owning FrameACLContainer as the install and chain-management authority.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

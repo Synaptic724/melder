@@ -29,16 +29,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Processor strategy fitting override-targeting truth into the codegen model.",
-   "responsibilities": [
-    "derives normalized override-target targeting from rooted blueprint socket truth",
-    "publishes SpellOverrideTargetingAnalysis onto SpellCodegenModel",
-    "derives override-targeting family and target-depth selectors for planning"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -88,40 +79,5 @@
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy",
   "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
   "label": "SpellOverrideTargetingProcessorStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
-   "relation": "creates",
-   "why": "SpellOverrideTargetingProcessorStrategy builds and publishes SpellOverrideTargetingAnalysis.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "relation": "specializes",
-   "why": "SpellOverrideTargetingProcessorStrategy specializes the abstract processor-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellOverrideTargetingProcessorStrategy fits the override-targeting section directly onto SpellCodegenModel.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

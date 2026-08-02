@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Abstract contract for one spell-analyzer strategy.",
-   "responsibilities": [
-    "defines the stable strategy_id contract for analyzer strategies",
-    "defines the analyze seam over Spell and SpellCompilerArtifact",
-    "keeps bounded analysis artifact enrichment separate from the top-level analyzer facade"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -55,18 +46,5 @@
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-   "relation": "uses",
-   "why": "SpellAnalyzerStrategy implementations read and enrich SpellCompilerArtifact with bounded analysis artifacts.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

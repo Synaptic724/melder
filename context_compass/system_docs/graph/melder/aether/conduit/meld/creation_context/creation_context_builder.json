@@ -26,16 +26,7 @@
     "method_count": 4,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Stateless builder for spell-shaped CreationContext instances.",
-   "responsibilities": [
-    "builds CreationContext objects from spell-static data",
-    "selects route and override lane configuration for one spell context"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [],

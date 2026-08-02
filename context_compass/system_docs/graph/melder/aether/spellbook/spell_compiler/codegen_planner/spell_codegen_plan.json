@@ -28,26 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Planner-owned codegen plan container for one spell.",
-   "responsibilities": [
-    "stores the planner output lanes for no-overrides and overrides",
-    "stores planner provenance, plan-family selection, and candidate codegen style ids",
-    "lives on SpellCompilerArtifact as the generic phase-10 codegen output"
-   ],
-   "owns_state": [
-    "processor_strategy_ids",
-    "plan_strategy_ids",
-    "plan_family_id",
-    "candidate_codegen_style_ids",
-    "no_overrides_plan",
-    "overrides_plan",
-    "metadata"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -71,19 +52,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan",
   "class": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
   "label": "SpellCodegenPlan"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "SpellCodegenPlan inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

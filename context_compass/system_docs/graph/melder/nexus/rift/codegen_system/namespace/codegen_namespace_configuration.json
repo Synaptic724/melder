@@ -39,32 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Namespace exposure policy for one codegen request.",
-   "responsibilities": [
-    "defines which stable room names are exposed",
-    "stores import and builtin policy for the namespace",
-    "keeps policy separate from the live namespace object"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_include_viewer",
-    "_include_workstation",
-    "_include_command",
-    "_include_codegen",
-    "_imports_enabled",
-    "_allowed_import_module_roots",
-    "_denied_import_module_roots",
-    "_denied_builtin_names",
-    "_allow_unsafe_reflection",
-    "_allow_dunder_access",
-    "_allow_recursive_codegen",
-    "_metadata"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

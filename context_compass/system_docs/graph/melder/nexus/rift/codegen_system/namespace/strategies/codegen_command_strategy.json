@@ -29,18 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Namespace exposure strategy for the room-facing command surface.",
-   "responsibilities": [
-    "exposes the room-local command object into the codegen namespace when enabled by configuration"
-   ],
-   "owns_state": [
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -77,30 +66,5 @@
   "module": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy",
   "class": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy.CodegenCommandStrategy",
   "label": "CodegenCommandStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy.CodegenCommandStrategy",
-   "to": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-   "relation": "borrows",
-   "why": "CodegenCommandStrategy exposes the room-owned CodegenCommandSystem into the execution namespace when enabled.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy.CodegenCommandStrategy",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CodegenCommandStrategy inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

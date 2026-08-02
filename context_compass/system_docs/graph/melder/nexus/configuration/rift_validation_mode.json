@@ -26,19 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Validation posture enum for Rift execution.",
-   "responsibilities": [
-    "labels strict, relaxed, and unsafe Rift validation modes"
-   ],
-   "owns_state": [
-    "strict",
-    "relaxed",
-    "unsafe"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

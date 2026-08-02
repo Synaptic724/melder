@@ -42,27 +42,7 @@
     "method_count": 15,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-level DevOps and admission-control hub.",
-   "responsibilities": [
-    "exposes incident, change-control, and risk management through one frame-local hub",
-    "owns the frame-local creation gate controller",
-    "provides conduit and lineage gate control entrypoints",
-    "provides dirty-root revalidation entrypoints"
-   ],
-   "owns_state": [
-    "_incident_manager",
-    "_change_control_manager",
-    "_risk_manager",
-    "_creation_gate_controller",
-    "_spell_system_states",
-    "_devops_information_registry"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -138,69 +118,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager",
   "class": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
   "label": "DevOpsManager"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-   "relation": "owns_lifecycle_of",
-   "why": "DevOpsManager owns the frame-local change-control registry and admission surface.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "DevOpsManager borrows the frame-owned dev-ops information registry for reporting and control-plane coordination.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "relation": "owns_lifecycle_of",
-   "why": "DevOpsManager owns the frame-local incident registry.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
-   "relation": "owns_lifecycle_of",
-   "why": "DevOpsManager owns the risk aggregator that feeds validation-required state back to spellbooks.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "relation": "uses",
-   "why": "DevOpsManager operates over SpellSystemStates as the frame-local control-plane state registry.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

@@ -28,23 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-spell context passed to validation strategies.",
-   "responsibilities": [
-    "holds one spell plus its already-built validation artifacts and shared issue list"
-   ],
-   "owns_state": [
-    "spell",
-    "spellbook",
-    "requirements",
-    "symbolic_graph",
-    "resolution_frame",
-    "issues"
-   ],
-   "phases": [
-    "validation",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -84,18 +68,5 @@
   "module": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context",
   "class": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
   "label": "SpellValidationContext"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
-   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-   "relation": "uses",
-   "why": "SpellValidationContext carries the shared issue list that spell validation strategies append to.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

@@ -57,23 +57,7 @@
     "method_count": 42,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
-   "responsibilities": [
-    "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",
-    "canonical stage order: aether -> crystallizer policy (report) -> MR (report) -> nexus -> frames -> books/binds/conjure/staged/selections -> links -> clusters -> contracts",
-    "configuration rebuilds ride the reload verbs (recorded truth, never defaults)",
-    "M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration",
-    "fresh identities always (old->new in the report); failure tears down in reverse order"
-   ],
-   "owns_state": [
-    "folded stores",
-    "built_stack",
-    "report"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -216,40 +200,5 @@
   "rebuild_absent_user_modules": "melder.crystallizer.crystal_loader_system.user_world_rebuild.rebuild_absent_user_modules",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
-   "to": "melder.crystallizer.synthetic_module.SyntheticModule",
-   "relation": "creates",
-   "why": "Loader chain M3: recorded synthetic sources rebuild as live modules before target hydration.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
-   "to": "melder.crystallizer.crystal_analysis.preflight",
-   "relation": "uses",
-   "why": "The folded-bundle preflight runs inside restore() before any replay (authoritative admission truth).",
-   "cardinality": "one_to_one",
-   "strength": "soft",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
-   "to": "melder.crystallizer.crystal_loader_system.user_world_rebuild",
-   "relation": "delegates_to",
-   "why": "_rebuild_user_world delegates the S2 rebuild mechanics via callbacks so the rebuild laws live in exactly one place.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

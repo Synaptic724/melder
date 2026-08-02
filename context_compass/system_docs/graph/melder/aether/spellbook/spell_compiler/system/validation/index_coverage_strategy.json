@@ -9,15 +9,7 @@
    "label": "index_coverage_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for index coverage checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy.IndexCoverageStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy.IndexCoverageStrategy",

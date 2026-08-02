@@ -29,27 +29,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Root validation orchestrator for one codegen request.",
-   "responsibilities": [
-    "parses generated Python into a syntax tree",
-    "runs the ordered codegen validation strategy family",
-    "returns validation results for the request"
-   ],
-   "owns_state": [
-    "_ast_structure_strategy",
-    "_import_policy_strategy",
-    "_builtin_policy_strategy",
-    "_name_resolution_strategy",
-    "_attribute_access_strategy",
-    "_reflection_policy_strategy",
-    "_recursive_control_strategy"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -135,102 +115,5 @@
   "module": "melder.nexus.rift.codegen_system.validation.codegen_validator",
   "class": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
   "label": "CodegenValidator"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
-   "relation": "creates",
-   "why": "CodegenValidator creates validation results for accepted or rejected requests.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy.CodegenAstStructureStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenValidator owns the structural AST validation strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy.CodegenAttributeAccessStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenValidator owns the attribute-access validation strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy.CodegenBuiltinPolicyStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenValidator owns the builtins-policy validation strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenValidator owns the import-policy validation strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenValidator owns the name-resolution validation strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy.CodegenRecursiveControlStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenValidator owns the recursive-codegen validation strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenValidator owns the reflection-policy validation strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

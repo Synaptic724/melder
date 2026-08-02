@@ -26,14 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Runtime exception for meld execution failures.",
-   "responsibilities": [
-    "captures spell/runtime context for meld execution errors"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

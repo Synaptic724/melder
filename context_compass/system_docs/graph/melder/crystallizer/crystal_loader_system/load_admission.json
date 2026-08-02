@@ -31,17 +31,7 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Small admission plane for loads (owner design; renamed from BootMediator 2026-07-11): plan -> gated engine -> scope adjudication; no fold duplication.",
-   "responsibilities": [
-    "plan_checkpoint_load via the record's detach_profile_chain",
-    "plan_formation_load mints the canonical-kind-order synthetic window (moved from the ledger)",
-    "execute_plan runs the engine with refuse_on_blockers=True always",
-    "adjudicates conduit/frame scopes (frame_posture warnings -> expected_for_scope in the additive admission view)"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -101,29 +91,5 @@
   "module": "melder.crystallizer.crystal_loader_system.load_admission",
   "class": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
   "label": "LoadAdmission"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
-   "relation": "creates",
-   "why": "Plans are minted per load (checkpoint chains and formation windows).",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
-   "relation": "creates",
-   "why": "LoadAdmission constructs the gated engine (refuse_on_blockers=True) per load.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

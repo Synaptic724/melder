@@ -31,19 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Base class for spell validation strategies.",
-   "responsibilities": [
-    "defines the validate(context) contract for spell-level validation strategies"
-   ],
-   "owns_state": [
-    "_name",
-    "_description"
-   ],
-   "phases": [
-    "validation",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

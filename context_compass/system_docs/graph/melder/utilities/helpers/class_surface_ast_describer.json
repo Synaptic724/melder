@@ -81,15 +81,7 @@
     "method_count": 18,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Helper for extracting structural class-surface descriptions via AST.",
-   "responsibilities": [
-    "describes class surfaces structurally for tooling/AI use"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -126,19 +118,5 @@
   "module": "melder.utilities.helpers.class_surface_ast_describer",
   "class": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber",
   "label": "ClassSurfaceAstDescriber"
- },
- "edges_authored": [
-  {
-   "from": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile",
-   "relation": "uses",
-   "why": "ClassSurfaceAstDescriber operates over class-surface/profile-style structural data.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

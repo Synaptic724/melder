@@ -26,14 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Exception for dereferencing a dead weak reference.",
-   "responsibilities": [
-    "signals attempts to access a dead weak reference"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [

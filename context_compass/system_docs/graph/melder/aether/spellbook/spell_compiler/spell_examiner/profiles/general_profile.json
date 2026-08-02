@@ -31,21 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Combined general spell profile with binding and resolution halves.",
-   "responsibilities": [
-    "holds a binding profile and optional resolution profile for one spell",
-    "completes the same profile object once a real Spell exists"
-   ],
-   "owns_state": [
-    "binding_profile",
-    "resolution_profile"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -86,33 +72,5 @@
   "SpellBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
   "SpellResolutionProfile": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-   "to": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellGeneralProfile owns the optional resolution profile once phase 2 completion has happened.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellGeneralProfile owns the binding profile artifact for the spell candidate.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

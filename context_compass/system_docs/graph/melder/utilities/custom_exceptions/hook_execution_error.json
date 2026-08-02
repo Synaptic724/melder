@@ -26,14 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Exception for lifecycle hook failures.",
-   "responsibilities": [
-    "signals failures while running configured hooks"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

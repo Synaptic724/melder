@@ -32,21 +32,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Room-event publisher for codegen lifecycle signals.",
-   "responsibilities": [
-    "reuses the owning room RiftEventSystem for codegen lifecycle publication",
-    "emits lightweight validation and execution lifecycle events without retaining history",
-    "keeps full code bodies out of room events"
-   ],
-   "owns_state": [
-    "_lock",
-    "_space"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -85,30 +71,5 @@
   "module": "melder.nexus.rift.codegen_system.observability.codegen_event_publisher",
   "class": "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher",
   "label": "CodegenEventPublisher"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher",
-   "to": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-   "relation": "borrows",
-   "why": "CodegenEventPublisher reuses the room-owned RiftEventSystem for codegen lifecycle events.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CodegenEventPublisher inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

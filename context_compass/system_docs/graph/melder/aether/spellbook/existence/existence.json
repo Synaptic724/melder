@@ -26,22 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Lifecycle mode enum for a spell binding.",
-   "responsibilities": [
-    "labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes"
-   ],
-   "owns_state": [
-    "unique",
-    "unique_per_conduit",
-    "many",
-    "unique_per_conduit_cluster",
-    "unique_per_conduit_lineage",
-    "unique_per_spell_space"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

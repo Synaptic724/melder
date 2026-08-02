@@ -26,20 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Enum of supported top-level Rift room types.",
-   "responsibilities": [
-    "labels static, capability, codegen, and legacy dynamic room types"
-   ],
-   "owns_state": [
-    "static",
-    "capability",
-    "codegen",
-    "dynamic"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

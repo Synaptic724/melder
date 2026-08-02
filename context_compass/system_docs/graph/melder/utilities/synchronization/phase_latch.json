@@ -30,22 +30,7 @@
     "method_count": 5,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Per-phase countdown latch used by PhaseScheduler barriers.",
-   "responsibilities": [
-    "tracks remaining unit completions for one phase barrier",
-    "records failed units and wakes the control thread immediately on error",
-    "provides timeout-bounded wait plus copied error snapshots for control flow"
-   ],
-   "owns_state": [
-    "_event",
-    "_remaining",
-    "_errors"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [],

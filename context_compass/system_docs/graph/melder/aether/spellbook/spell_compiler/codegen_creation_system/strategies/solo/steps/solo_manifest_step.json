@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Manifest build step for the solo family.",
-   "responsibilities": [
-    "builds the solo family manifest from model and plan truth",
-    "publishes root-spell, route-key, emit-key, and transient facts onto family-local solo state",
-    "stores the manifest under the shared manifest metadata key on the output artifact"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -61,40 +52,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
   "label": "SoloManifestStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "why": "SoloManifestStep specializes the shared family-step contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest",
-   "relation": "uses",
-   "why": "SoloManifestStep delegates family manifest construction to solo_manifest.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
-   "relation": "uses",
-   "why": "SoloManifestStep mutates the family-local solo state while publishing the manifest and root-spell facts.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

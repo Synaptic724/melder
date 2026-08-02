@@ -31,22 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Compiled execution context for one spell.",
-   "responsibilities": [
-    "holds compiled execution lanes",
-    "dispatches no-override and override execution paths",
-    "registers or reuses instances through Creations"
-   ],
-   "owns_state": [
-    "_spell",
-    "_compiled_no_override_lane",
-    "_compiled_override_lane"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

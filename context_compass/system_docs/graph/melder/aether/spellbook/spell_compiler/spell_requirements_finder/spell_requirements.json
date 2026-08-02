@@ -38,26 +38,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-spell Phase 1 DI requirements artifact.",
-   "responsibilities": [
-    "records spell identity, spellframe, existence, and binding metadata",
-    "stores ordered parameter requirements for the primary call target",
-    "separates DI-resolved sockets from plain caller-supplied holes",
-    "feeds later symbolic-graph and validation phases"
-   ],
-   "owns_state": [
-    "_spell_id",
-    "_spell_type",
-    "_existence",
-    "_spellframe",
-    "_parameters"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

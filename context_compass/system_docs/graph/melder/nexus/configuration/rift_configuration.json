@@ -45,21 +45,7 @@
     "method_count": 19,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-Rift configuration object used to build one live Rift.",
-   "responsibilities": [
-    "stores typed room/runtime defaults for one Rift",
-    "freezes into a consumed configuration during Rift creation"
-   ],
-   "owns_state": [
-    "_properties",
-    "available_properties"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -113,29 +99,5 @@
   "module": "melder.nexus.configuration.rift_configuration",
   "class": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
   "label": "RiftConfiguration"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
-   "to": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
-   "relation": "uses",
-   "why": "RiftConfiguration stores RiftSpaceType as the selected top-level room type.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
-   "to": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
-   "relation": "uses",
-   "why": "RiftConfiguration stores RiftValidationMode as the selected per-Rift validation posture.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -52,24 +52,7 @@
     "method_count": 26,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Applied command-side ACL configuration revision.",
-   "responsibilities": [
-    "stores reusable command-profile identity plus override rulesets",
-    "carries revision metadata for container-owned configuration chains"
-   ],
-   "owns_state": [
-    "_profile_name",
-    "_frame_override_ruleset",
-    "_conduit_override_ruleset",
-    "_spell_override_ruleset",
-    "_member_override_ruleset"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -124,32 +107,5 @@
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-   "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-   "relation": "borrows",
-   "why": "FrameACLCommandConfiguration borrows the reusable command profile identity it was built from.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLCommandConfiguration owns detached override rulesets for one applied command revision.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

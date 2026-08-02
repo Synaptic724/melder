@@ -53,27 +53,7 @@
     "method_count": 26,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Derived consumer-facing ACL access surface for one frame.",
-   "responsibilities": [
-    "stores derived visibility and command enablement answers",
-    "stores visible conduit and spell payload-section maps",
-    "carries the compiled profile/config identity for one frame"
-   ],
-   "owns_state": [
-    "_allowed_kinds",
-    "_allowed_commands",
-    "_frame_payload_fields",
-    "_visible_conduit_ids",
-    "_visible_spell_keys",
-    "_enabled_conduit_ids",
-    "_enabled_spell_index_ids"
-   ],
-   "phases": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

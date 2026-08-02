@@ -29,24 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Canonical Nexus record for one published spell.",
-   "responsibilities": [
-    "stores published spell identity, lineage, and provenance",
-    "owns one spell descriptor payload"
-   ],
-   "owns_state": [
-    "origin_spellbook_id",
-    "owner_conduit_id",
-    "spell_id",
-    "spell_index_id",
-    "spell_name",
-    "payload"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -92,19 +75,5 @@
   "module": "melder.nexus.frame_descriptor.spell_record",
   "class": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
   "label": "SpellRecord"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
-   "to": "melder.nexus.frame_descriptor.spell_descriptor_payload.SpellDescriptorPayload",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellRecord owns the published spell payload object.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

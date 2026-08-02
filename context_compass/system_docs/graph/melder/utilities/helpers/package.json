@@ -50,15 +50,7 @@
     "method_count": 28,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Packaged callable/result helper wrapper.",
-   "responsibilities": [
-    "wraps a callable and its result metadata in one reusable helper object"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

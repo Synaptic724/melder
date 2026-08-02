@@ -26,30 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Canonical runtime binding-family classification enum for bound spells.",
-   "responsibilities": [
-    "labels class, existing-creation, method, and lambda spell families"
-   ],
-   "owns_state": [
-    "SPELL",
-    "SPELL_WITH_SPELLFRAME",
-    "SPELL_WITH_BINDING_NAME",
-    "SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME",
-    "EXISTING_CREATION",
-    "EXISTING_CREATION_WITH_SPELLFRAME",
-    "EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME",
-    "METHOD",
-    "METHOD_WITH_BINDING_NAME",
-    "METHOD_WITH_SPELLFRAME",
-    "METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME",
-    "LAMBDA_METHOD_WITH_BINDING_NAME",
-    "LAMBDA_METHOD_WITH_SPELLFRAME",
-    "LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

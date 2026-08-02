@@ -45,24 +45,7 @@
     "method_count": 18,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Locked source of truth for RiftSpace memory sequencing and shared context.",
-   "responsibilities": [
-    "owns step and epoch counters plus shared context metadata",
-    "produces immutable RiftMemory snapshots for room actions"
-   ],
-   "owns_state": [
-    "_rift_id",
-    "_space_type",
-    "_step_counter",
-    "_epoch_counter",
-    "_metadata",
-    "_memory_callbacks_by_subscription_id"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -112,18 +95,5 @@
   "module": "melder.nexus.rift.rift_space.memory_system.rift_memory_system",
   "class": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
   "label": "RiftMemorySystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
-   "to": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
-   "relation": "creates",
-   "why": "RiftMemorySystem creates immutable RiftMemory snapshots for room-level actions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

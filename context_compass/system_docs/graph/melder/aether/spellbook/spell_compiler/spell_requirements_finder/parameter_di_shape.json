@@ -26,24 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Enum classifying how one parameter is satisfied during resolution.",
-   "responsibilities": [
-    "labels ignore, plain, single, collection, spellmap, spell-contract, and mutation-contract parameter shapes"
-   ],
-   "owns_state": [
-    "IGNORE",
-    "PLAIN",
-    "SINGLE_BY_ANNOTATION",
-    "COLLECTION_BY_ANNOTATION",
-    "SPELLMAP_DEFAULT",
-    "SPELL_CONTRACT",
-    "MUTATION_CONTRACT"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

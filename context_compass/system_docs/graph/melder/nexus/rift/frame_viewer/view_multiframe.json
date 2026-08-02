@@ -78,19 +78,7 @@
     "method_count": 69,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Cross-frame descriptor helper surface for FrameViewer.",
-   "responsibilities": [
-    "reuses FrameViewer utilities for multi-frame inventory and comparison behavior",
-    "holds only a borrowed viewer reference"
-   ],
-   "owns_state": [
-    "_viewer"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -133,29 +121,5 @@
   "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
   "FrameViewer": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame",
-   "to": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "relation": "borrows",
-   "why": "ViewMultiFrame borrows the parent viewer and reuses its descriptor utilities for cross-frame behavior.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame",
-   "to": "melder.nexus.rift.frame_viewer.view_action_hooks",
-   "relation": "uses",
-   "why": "ViewMultiFrame uses the shared view-action hook wrapper module for public helper actions.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

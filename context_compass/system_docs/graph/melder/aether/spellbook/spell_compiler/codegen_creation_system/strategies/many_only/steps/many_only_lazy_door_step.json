@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Lazy-door publication step for the many_only family.",
-   "responsibilities": [
-    "publishes cold many-only runtime doors without compile or exec work at phase 11",
-    "hydrates through the shared many-only hydrator on first meld",
-    "mirrors lazy-door metadata parity keys onto the final codegen creation output"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -68,40 +59,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step.ManyOnlyLazyDoorStep",
   "label": "ManyOnlyLazyDoorStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step.ManyOnlyLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "why": "ManyOnlyLazyDoorStep specializes the shared family-step contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step.ManyOnlyLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
-   "relation": "uses",
-   "why": "ManyOnlyLazyDoorStep publishes cold runtime doors through many_only_hydrator.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step.ManyOnlyLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state.ManyOnlyCodegenCreationState",
-   "relation": "uses",
-   "why": "ManyOnlyLazyDoorStep mutates the family-local many-only state while publishing cold runtime doors.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

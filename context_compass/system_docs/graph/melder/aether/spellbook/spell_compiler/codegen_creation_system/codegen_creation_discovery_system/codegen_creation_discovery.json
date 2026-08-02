@@ -24,16 +24,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Immutable discovery result for one phase-11 codegen creation selection pass.",
-   "responsibilities": [
-    "stores the ordered creation strategy chain for one discovery result",
-    "stores the selected concrete codegen style for the current plan family",
-    "stores compact provenance for the phase-11 selection decision"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

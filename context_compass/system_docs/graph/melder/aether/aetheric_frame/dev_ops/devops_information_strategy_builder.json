@@ -31,24 +31,7 @@
     "method_count": 8,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Registry-backed resolver and executor for dev-ops information strategies.",
-   "responsibilities": [
-    "registers built-in dev-ops information strategy classes by normalized name",
-    "resolves strategy names against the live frame registry",
-    "executes one named strategy against the attached dev-ops information registry",
-    "tracks successful execution counts by strategy name"
-   ],
-   "owns_state": [
-    "_devops_information_registry",
-    "_strategies_by_name",
-    "_execution_counts_by_name"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -90,89 +73,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder",
   "class": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
   "label": "DevopsInformationStrategyBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-   "relation": "borrows",
-   "why": "DevopsInformationStrategyBuilder borrows the live registry it will pass into resolved information strategies.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-   "relation": "uses",
-   "why": "DevopsInformationStrategyBuilder stores and resolves DevopsInformationStrategy classes by normalized strategy name.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
-   "relation": "uses",
-   "why": "DevopsInformationStrategyBuilder registers ClusterFanoutStrategy as a built-in information strategy.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
-   "relation": "uses",
-   "why": "DevopsInformationStrategyBuilder registers FrameOperationalViewStrategy as a built-in information strategy.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
-   "relation": "uses",
-   "why": "DevopsInformationStrategyBuilder registers RegistryConsistencyAuditStrategy as a built-in information strategy.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-   "relation": "uses",
-   "why": "DevopsInformationStrategyBuilder registers TransactionActivityViewStrategy as a built-in information strategy.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-   "relation": "uses",
-   "why": "DevopsInformationStrategyBuilder registers TransferBlastRadiusStrategy as a built-in information strategy.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

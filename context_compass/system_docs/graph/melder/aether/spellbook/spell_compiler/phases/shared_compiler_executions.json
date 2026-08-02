@@ -55,17 +55,7 @@
     "method_count": 30,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Shared static execution helper surface for compiler phases.",
-   "responsibilities": [
-    "owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases",
-    "captures and resets phase2_5 and phase8_11 codegen IR on SpellCompilerArtifact",
-    "builds normalized schema rows for phase-5 DAG/socket, phase-8 occurrence, phase-9 injection, and phase-11 step payloads"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -89,19 +79,5 @@
   "module": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions",
   "class": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
   "label": "SharedCompilerExecutions"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
-   "relation": "uses",
-   "why": "SharedCompilerExecutions reads SpellGeneralizedCodegenLanePlan fast-transient payloads while exporting compiler-owned codegen IR.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

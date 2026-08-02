@@ -34,22 +34,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Standalone builder for crystallizer root configuration assembly.",
-   "responsibilities": [
-    "owns one mutable CrystallizerConfiguration during assembly",
-    "applies defaults and user-source-root policy before handoff",
-    "transfers configuration ownership through build, finalize, or activate"
-   ],
-   "owns_state": [
-    "_configuration",
-    "_id"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -94,20 +79,5 @@
   "module": "melder.crystallizer.configuration.crystallizer_configuration_builder",
   "class": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
   "label": "CrystallizerConfigurationBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-   "to": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "CrystallizerConfigurationBuilder owns one mutable configuration until handoff or cleanup.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

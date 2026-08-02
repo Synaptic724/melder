@@ -33,27 +33,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Version-id keyed Phase 5-7 system node.",
-   "responsibilities": [
-    "stores one spell version id plus its lineage id",
-    "stores direct dependency spell ids and optional runtime metadata",
-    "acts as the node payload stored inside SpellSystemIndex"
-   ],
-   "owns_state": [
-    "_spell_id",
-    "_lineage_id",
-    "_dependencies",
-    "existence",
-    "spell_type",
-    "conduit_id",
-    "ward_id"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

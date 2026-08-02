@@ -9,15 +9,7 @@
    "label": "contracted_version_drift_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for contracted version drift checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy.ContractedVersionDriftStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy.ContractedVersionDriftStrategy",

@@ -31,21 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Strategy-dispatched derived-diff engine over composition material - the grouped mirror of DiffEngine: resolver-injected, registry-dispatched, open/closed; \"members\" registers by default.",
-   "responsibilities": [
-    "diff(left_group_id, right_group_id, strategy=\"members\") -> stamped detached verdict",
-    "register_strategy open/closed; unknown names teach-grade"
-   ],
-   "owns_state": [
-    "_material_resolver",
-    "_strategies_by_name",
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -102,31 +88,5 @@
   "module": "melder.mutation_research.group_diff.group_diff_engine",
   "class": "melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine",
   "label": "GroupDiffEngine"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine",
-   "to": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
-   "relation": "owns_lifecycle_of",
-   "why": "Default-registered grouped strategy; engine cleanup cascades.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine",
-   "to": "melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
-   "relation": "creates",
-   "why": "register_defaults births the members strategy.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init"
-   ]
-  }
- ]
+ }
 }

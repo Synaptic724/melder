@@ -79,20 +79,7 @@
     "method_count": 55,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Codegen-room command facade over the internal engine.",
-   "responsibilities": [
-    "preserves the selected runtime-helper subset for codegen rooms",
-    "delegates validate and execute requests into the attached CodegenSystem",
-    "emits full-source codegen room-memory records for top-level codegen actions",
-    "owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal"
-   ],
-   "owns_state": [
-    "_codegen_system"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -149,40 +136,5 @@
   "module": "melder.nexus.rift.command_system.codegen_command_system",
   "class": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
   "label": "CodegenCommandSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-   "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "relation": "borrows",
-   "why": "CodegenCommandSystem holds the attached room-owned CodegenSystem and delegates validate/execute requests into it.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-   "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "relation": "specializes",
-   "why": "CodegenCommandSystem is the codegen-room specialization of the shared command surface.",
-   "cardinality": "many_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-   "to": "melder.mutation_research.mutation_research.MutationResearch",
-   "relation": "borrows",
-   "why": "Codegen rooms expose the full 34-command research family - record reads, organization (typed create_lane), campaign context, nine foresight commands (incl. the crystal-well module dossier / part reads / part diff w/ radius and research_preview), the three synthesis verbs, and the eight composition commands (register/recompose + view/diff/impact/footprint/drift/history) - through a non-constructing peek; ADVERTISED in list_supported_command_methods.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

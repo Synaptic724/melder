@@ -30,16 +30,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Abstract contract for one derived-diff computation over two version material payloads.",
-   "responsibilities": [
-    "defines the stable registry name plus diff(left_material, right_material) seam",
-    "strategies receive detached {spell_id, sources, fingerprints} payloads and return value-typed verdicts without retaining material"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -68,19 +59,5 @@
   "module": "melder.mutation_research.diff.diff_strategy",
   "class": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
   "label": "DiffStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "DiffStrategy inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

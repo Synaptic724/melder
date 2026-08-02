@@ -61,26 +61,7 @@
     "method_count": 41,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-local ACL subsystem container.",
-   "responsibilities": [
-    "owns separate named ACL chains for view, command, and codegen",
-    "owns frame-local ACL builder and validator services",
-    "assembles selected ACL bundle snapshots for one frame"
-   ],
-   "owns_state": [
-    "_view_configuration_chains_by_name",
-    "_command_configuration_chains_by_name",
-    "_codegen_configuration_chains_by_name",
-    "_frame_acl_validator",
-    "_frame_acl_set_compatibility_validator",
-    "_frame_acl_builder"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -172,71 +153,5 @@
   "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
-   "to": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLContainer owns the mutable family-scoped builder used for ACL authoring.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
-   "to": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
-   "relation": "creates",
-   "why": "FrameACLContainer assembles selected ACL bundle snapshots for one frame.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
-   "to": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLContainer owns one revision chain per ACL family contract name.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
-   "to": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLContainer owns the cross-family ACL compatibility validator.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
-   "to": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLContainer owns the frame-scoped ACL validator.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "refresh",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

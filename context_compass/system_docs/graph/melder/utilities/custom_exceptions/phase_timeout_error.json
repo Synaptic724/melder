@@ -26,14 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Exception raised when a scheduler phase times out.",
-   "responsibilities": [
-    "specializes PhaseSchedulerError for barrier timeout failures"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [

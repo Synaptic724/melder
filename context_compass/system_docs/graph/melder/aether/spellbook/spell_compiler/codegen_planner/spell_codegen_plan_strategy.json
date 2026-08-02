@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Abstract contract for one codegen-plan shaping strategy.",
-   "responsibilities": [
-    "defines the stable strategy_id contract for planner strategies",
-    "defines the apply seam that mutates SpellCodegenPlan from assessed model and artifact truth",
-    "keeps planner strategy behavior separate from the top-level planner facade"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -53,29 +44,5 @@
   "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
   "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellCodegenPlanStrategy implementations read the assessed SpellCodegenModel when shaping planner output.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-   "relation": "uses",
-   "why": "SpellCodegenPlanStrategy implementations mutate the planner-owned SpellCodegenPlan in place.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

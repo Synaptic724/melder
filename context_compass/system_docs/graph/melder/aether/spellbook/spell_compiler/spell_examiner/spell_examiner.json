@@ -33,20 +33,7 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry-backed front door for spell examination profiles.",
-   "responsibilities": [
-    "routes profile requests to named profile builders",
-    "seeds and owns the built-in general and detailed profile builders"
-   ],
-   "owns_state": [
-    "_profile_builders_by_name"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -87,29 +74,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner",
   "class": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
   "label": "SpellExaminer"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-   "relation": "creates",
-   "why": "SpellExaminer can build detailed spell profiles through its named builder registry.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-   "relation": "creates",
-   "why": "SpellExaminer can build general spell profiles through its named builder registry.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

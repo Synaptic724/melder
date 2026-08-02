@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Lazy-door publication step for the generalized creation family.",
-   "responsibilities": [
-    "publishes cold runtime doors over the manifest without hydrating at phase-11 time",
-    "resolves the root spell through plan truth for lazy-door publication",
-    "mirrors lane metadata onto SpellCodegenCreation while deferring hydration to first meld"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -74,51 +65,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep",
   "label": "GeneralizedLazyDoorStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "why": "GeneralizedLazyDoorStep specializes the shared family-step contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state.GeneralizedManifestState",
-   "relation": "uses",
-   "why": "GeneralizedLazyDoorStep mutates the family-local GeneralizedManifestState.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.PlanBindingResolver",
-   "relation": "uses",
-   "why": "GeneralizedLazyDoorStep resolves the root spell from plan truth through PlanBindingResolver.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator",
-   "relation": "uses",
-   "why": "GeneralizedLazyDoorStep publishes lazy runtime doors through generalized_hydrator.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

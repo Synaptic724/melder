@@ -30,23 +30,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-spell Phase 2 symbolic constructor graph.",
-   "responsibilities": [
-    "records constructor sockets as symbolic dependencies",
-    "preserves DI shape, optionality, and contract metadata per parameter",
-    "stays independent from Spellbook resolution and concrete DAG state",
-    "feeds Phase 3 local-frame and later plan generation"
-   ],
-   "owns_state": [
-    "_spell_id",
-    "_dependencies"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -83,20 +67,5 @@
   "module": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph",
   "class": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
   "label": "SpellSymbolicGraph"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
-   "to": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_dependency.SpellSymbolicDependency",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellSymbolicGraph owns the symbolic dependency edges for one spell version.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

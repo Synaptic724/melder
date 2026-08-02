@@ -30,21 +30,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Codegen-oriented room specialization.",
-   "responsibilities": [
-    "fixes room kind to codegen",
-    "owns the internal codegen engine for the room",
-    "attaches the internal engine to the codegen command facade"
-   ],
-   "owns_state": [
-    "_codegen_system"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -85,44 +71,5 @@
   "module": "melder.nexus.rift.rift_space.codegen_rift_space",
   "class": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
   "label": "CodegenRiftSpace"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-   "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenRiftSpace owns the internal codegen engine for the room.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-   "to": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "CodegenRiftSpace owns the codegen-room specialization of the command surface.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "relation": "specializes",
-   "why": "CodegenRiftSpace is the codegen-mode specialization of the base room.",
-   "cardinality": "many_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

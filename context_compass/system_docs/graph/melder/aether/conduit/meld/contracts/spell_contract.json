@@ -31,23 +31,7 @@
     "method_count": 4,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Declarative late-binding contract socket descriptor.",
-   "responsibilities": [
-    "describes cross-conduit dependency identity and optional override payload",
-    "marks late-bound contract holes without performing linking or resolution itself"
-   ],
-   "owns_state": [
-    "spell",
-    "spellframe",
-    "binding_name",
-    "spell_override"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

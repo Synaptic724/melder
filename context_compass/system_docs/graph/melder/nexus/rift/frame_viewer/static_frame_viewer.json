@@ -30,21 +30,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Static-room viewer specialization.",
-   "responsibilities": [
-    "filters spell-facing visibility down to already-live spells",
-    "rebuilds filtered compiled access surfaces from the base view surface"
-   ],
-   "owns_state": [
-    "_base_compiled_access_surfaces_by_frame_name",
-    "_filtered_compiled_access_surfaces_by_frame_name"
-   ],
-   "phases": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -93,19 +79,5 @@
   "module": "melder.nexus.rift.frame_viewer.static_frame_viewer",
   "class": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
   "label": "StaticFrameViewer"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
-   "to": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "relation": "specializes",
-   "why": "StaticFrameViewer is the static-room specialization of the base viewer asset.",
-   "cardinality": "many_to_one",
-   "strength": "hard",
-   "phase": [
-    "refresh",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

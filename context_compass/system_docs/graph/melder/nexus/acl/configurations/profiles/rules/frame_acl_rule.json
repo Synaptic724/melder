@@ -36,21 +36,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Typed ACL rule object.",
-   "responsibilities": [
-    "stores one rule name, operation, effect, and detached conditions payload"
-   ],
-   "owns_state": [
-    "_rule_name",
-    "_operation",
-    "_effect",
-    "_conditions"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

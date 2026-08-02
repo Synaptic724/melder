@@ -52,24 +52,7 @@
     "method_count": 29,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Mutable build-time configuration surface for one spellbook/runtime context.",
-   "responsibilities": [
-    "stores typed runtime posture properties and idempotent keys",
-    "owns hook registration for meld, conduit, link, and contract events"
-   ],
-   "owns_state": [
-    "_aether_frame",
-    "_properties",
-    "available_properties",
-    "_idempotent_keys",
-    "_hooks"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -144,18 +127,5 @@
   "module": "melder.aether.spellbook.configuration.spellbook_configuration",
   "class": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
   "label": "SpellbookConfiguration"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-   "to": "melder.aether.spellbook.configuration.system_state.SystemState",
-   "relation": "uses",
-   "why": "Configuration stores SystemState as the high-level runtime posture flag.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

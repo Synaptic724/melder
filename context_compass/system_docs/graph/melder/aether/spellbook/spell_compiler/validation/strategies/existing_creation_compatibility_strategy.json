@@ -9,15 +9,7 @@
    "label": "existing_creation_compatibility_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py",
-   "lineno": 1,
-   "role": "Spell validation strategy module for existing-creation compatibility checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy.ExistingCreationCompatibilityStrategy",

@@ -32,20 +32,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Aggregate spell validation result.",
-   "responsibilities": [
-    "stores the ordered issue list and exposes error/warning summary flags for one spell validation run"
-   ],
-   "owns_state": [
-    "spell_id",
-    "spell_name",
-    "issues"
-   ],
-   "phases": [
-    "validation",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -76,19 +63,5 @@
   "module": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result",
   "class": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
   "label": "SpellValidationResult"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
-   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellValidationResult owns the SpellValidationIssue objects collected for one spell.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

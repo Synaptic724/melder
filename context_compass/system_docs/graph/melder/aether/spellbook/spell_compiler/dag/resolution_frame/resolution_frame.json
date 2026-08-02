@@ -39,23 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-meld runtime value frame.",
-   "responsibilities": [
-    "stores caller overrides for one meld run",
-    "stores resolved node results and per-node errors",
-    "resets and reuses per-execution storage without graph semantics"
-   ],
-   "owns_state": [
-    "_overrides",
-    "_results",
-    "_errors",
-    "_id"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

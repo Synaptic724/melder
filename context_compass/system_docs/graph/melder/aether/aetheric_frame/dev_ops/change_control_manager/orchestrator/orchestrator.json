@@ -37,22 +37,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Serialized control-plane coordinator for change-control requests.",
-   "responsibilities": [
-    "serializes admission, staging, commit, and abort flows",
-    "owns staged mutation records and commit/abort hooks"
-   ],
-   "owns_state": [
-    "_staged",
-    "_commit_validator",
-    "_commit_hook",
-    "_abort_hook"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -96,63 +81,5 @@
   "ChangeControlConflictManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager",
   "ChangeControlEmbargoManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager",
-   "relation": "borrows",
-   "why": "ChangeControlOrchestrator borrows the conflict manager to detect overlapping in-flight scope.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-   "relation": "borrows",
-   "why": "ChangeControlOrchestrator borrows the embargo manager to enforce staged scope embargoes.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
-   "relation": "owns_lifecycle_of",
-   "why": "ChangeControlOrchestrator stores staged mutation records for admitted requests.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager",
-   "relation": "borrows",
-   "why": "ChangeControlOrchestrator borrows the transaction manager during admission and cleanup flows.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlAdmissionResult",
-   "relation": "creates",
-   "why": "ChangeControlOrchestrator returns ChangeControlAdmissionResult payloads when evaluating admission.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

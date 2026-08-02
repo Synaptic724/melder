@@ -29,18 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Namespace exposure strategy for the room-owned codegen object.",
-   "responsibilities": [
-    "exposes a CodegenControlSurface as the codegen namespace object when enabled by configuration"
-   ],
-   "owns_state": [
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -84,30 +73,5 @@
   "module": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy",
   "class": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
   "label": "CodegenControlStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "to": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
-   "relation": "creates",
-   "why": "CodegenControlStrategy creates the namespace-facing CodegenControlSurface when recursive codegen exposure is enabled.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CodegenControlStrategy inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

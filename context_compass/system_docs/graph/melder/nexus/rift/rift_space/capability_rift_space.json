@@ -28,18 +28,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Broad manual non-codegen room specialization.",
-   "responsibilities": [
-    "fixes room kind to capability",
-    "composes the capability command posture",
-    "preserves the generic viewer posture and strong-default workstation mode"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -72,31 +61,5 @@
   "module": "melder.nexus.rift.rift_space.capability_rift_space",
   "class": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
   "label": "CapabilityRiftSpace"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
-   "to": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "CapabilityRiftSpace owns the capability-room specialization of the command surface.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
-   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "relation": "specializes",
-   "why": "CapabilityRiftSpace is the capability-mode specialization of the base room.",
-   "cardinality": "many_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

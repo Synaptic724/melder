@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Validation payload formatter for codegen results.",
-   "responsibilities": [
-    "formats validator-owned results into the public payload shape",
-    "does not perform validation itself"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

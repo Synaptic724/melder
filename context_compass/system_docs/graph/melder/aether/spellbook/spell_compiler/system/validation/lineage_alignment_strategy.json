@@ -9,15 +9,7 @@
    "label": "lineage_alignment_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for lineage alignment checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",

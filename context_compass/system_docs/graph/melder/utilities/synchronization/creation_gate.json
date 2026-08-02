@@ -39,22 +39,7 @@
     "method_count": 12,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Reusable admission and drain gate for creation work.",
-   "responsibilities": [
-    "blocks or releases entry to guarded creation paths",
-    "tracks in-flight tickets and supports terminal drain waits"
-   ],
-   "owns_state": [
-    "enabled",
-    "_event",
-    "_tickets",
-    "_closed"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -95,19 +80,5 @@
   "module": "melder.utilities.synchronization.creation_gate",
   "class": "melder.utilities.synchronization.creation_gate.CreationGate",
   "label": "CreationGate"
- },
- "edges_authored": [
-  {
-   "from": "melder.utilities.synchronization.creation_gate.CreationGate",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "CreationGate inherits the common explicit-cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

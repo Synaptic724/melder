@@ -9,22 +9,7 @@
    "label": "executor_code_cache",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/executor_code_cache.py",
-   "lineno": 1,
-   "role": "Process-wide compiled-executor code-object cache for identity-free emitted source.",
-   "responsibilities": [
-    "deduplicates compile() of identity-free emitted executor source by source hash",
-    "keeps the cache bounded with lock-light FIFO eviction",
-    "provides observability and maintenance helpers for cached compiled code objects"
-   ],
-   "owns_state": [
-    "_code_by_source_hash",
-    "_max_entries",
-    "_hit_count",
-    "_miss_count"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

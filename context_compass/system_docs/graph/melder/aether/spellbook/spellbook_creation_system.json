@@ -54,25 +54,7 @@
     "method_count": 65,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Conjure-only orchestration helper for Spellbook.",
-   "responsibilities": [
-    "prepares spellbook configuration and structural phase execution before conjure",
-    "runs conduit-scoped resolution phases and policy gating for conjure",
-    "builds and activates the root conduit for one conjure run",
-    "wires conduit ownership into local spells and fires conjure hooks"
-   ],
-   "owns_state": [
-    "_spellbook",
-    "_policy",
-    "_automatic",
-    "_conduit_cls",
-    "_phase_scheduler_cls"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -198,74 +180,5 @@
   "module": "melder.aether.spellbook.spellbook_creation_system",
   "class": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
   "label": "SpellbookCreationSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "to": "melder.aether.conduit.conduit.Conduit",
-   "relation": "creates",
-   "why": "SpellbookCreationSystem builds and activates the root Conduit during conjure.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "to": "melder.aether.spellbook.spell.Spell",
-   "relation": "uses",
-   "why": "SpellbookCreationSystem stamps conduit ownership into local Spell records and runs post-conjure structural passes against them.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
-   "relation": "creates",
-   "why": "SpellbookCreationSystem instantiates SpellCompilerSystem as the front-facing phase orchestration surface during conjure and local revalidation work.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "borrows",
-   "why": "SpellbookCreationSystem delegates structural and resolution work back into the owning Spellbook instead of owning registries itself.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "to": "melder.utilities.caching_system.caching_system.CachingSystem",
-   "relation": "uses",
-   "why": "SpellbookCreationSystem loads and emits cached spell payloads through the Spellbook-owned CachingSystem during conjure.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "to": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-   "relation": "uses",
-   "why": "SpellbookCreationSystem delegates structural and resolution phase orchestration to PhaseScheduler instances.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

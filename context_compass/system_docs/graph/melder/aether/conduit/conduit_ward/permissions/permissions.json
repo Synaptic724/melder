@@ -26,19 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Capability ceiling enum for spell lineage exposure.",
-   "responsibilities": [
-    "labels read, create, and block capability levels for local and contracted lineages"
-   ],
-   "owns_state": [
-    "read",
-    "create",
-    "block"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

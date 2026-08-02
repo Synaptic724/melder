@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Manifest build step for the generalized creation family.",
-   "responsibilities": [
-    "converts phase-9 model and phase-10 plan truth into the family's manifest",
-    "publishes the manifest onto family-local state",
-    "mirrors the manifest into SpellCodegenCreation metadata for cache export"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -61,40 +52,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step.GeneralizedManifestStep",
   "label": "GeneralizedManifestStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step.GeneralizedManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "why": "GeneralizedManifestStep specializes the shared family-step contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step.GeneralizedManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state.GeneralizedManifestState",
-   "relation": "uses",
-   "why": "GeneralizedManifestStep mutates the family-local GeneralizedManifestState.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step.GeneralizedManifestStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest",
-   "relation": "uses",
-   "why": "GeneralizedManifestStep uses the generalized_manifest module to build the marshal-safe family manifest.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

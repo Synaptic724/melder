@@ -31,23 +31,7 @@
     "method_count": 11,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Richer detailed spell profile as a superset of general.",
-   "responsibilities": [
-    "extends the general profile with class, callable, instance-member, and dynamic-access inspection payloads"
-   ],
-   "owns_state": [
-    "class_profile",
-    "callable_profile",
-    "metadata",
-    "instance_members",
-    "dynamic_access"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -111,45 +95,5 @@
   "SpellResolutionProfile": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile",
   "SpellBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellDetailedProfile owns the optional class inspection profile payload.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile.MethodProfile",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellDetailedProfile owns the optional callable inspection profile payload.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
-   "relation": "specializes",
-   "why": "SpellDetailedProfile is the richer detailed specialization of the general spell profile.",
-   "cardinality": "many_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

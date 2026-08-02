@@ -61,30 +61,7 @@
     "method_count": 6,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Compiler-owned override targeting artifact for the many-only family.",
-   "responsibilities": [
-    "replaces runtime patch-map dependency with compiler-owned many-only override targeting truth",
-    "stores resolved targets and specificity for raw override keys",
-    "builds deterministic socket-shape rows for override specialization and runtime dispatch"
-   ],
-   "owns_state": [
-    "_root_spell_id",
-    "_targets_by_spec",
-    "_specificity_by_spec",
-    "_resolved_targets_by_raw_key",
-    "_last_single_raw_key",
-    "_last_single_value",
-    "_last_single_override_map",
-    "_last_single_socket_shape",
-    "_last_multi_signature",
-    "_last_multi_override_map",
-    "_last_multi_socket_shape"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -128,41 +105,5 @@
   "TargetSpecKind": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-   "to": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec",
-   "relation": "uses",
-   "why": "Many-only SpellOverrideTargetingCodegenCreation parses raw override keys through TargetSpec before resolving compiler-owned socket targets.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-   "to": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
-   "relation": "uses",
-   "why": "Many-only SpellOverrideTargetingCodegenCreation uses TargetSpecKind to rank and validate override targeting modes.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "Many-only SpellOverrideTargetingCodegenCreation inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

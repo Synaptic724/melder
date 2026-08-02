@@ -29,19 +29,7 @@
     "method_count": 3,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Conflict detector for scope overlap between change-control requests.",
-   "responsibilities": [
-    "compares incoming requests against in-flight scope overlap",
-    "returns conflicting request ids for admission decisions"
-   ],
-   "owns_state": [
-    "_lock"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

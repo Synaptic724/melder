@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Lazy-door publication step for the solo family.",
-   "responsibilities": [
-    "publishes cold solo runtime doors without compile or exec work at phase 11",
-    "hydrates through the shared solo hydrator on first meld",
-    "mirrors lazy-door metadata parity keys onto the final codegen creation output"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -68,40 +59,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
   "label": "SoloLazyDoorStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "why": "SoloLazyDoorStep specializes the shared family-step contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator",
-   "relation": "uses",
-   "why": "SoloLazyDoorStep publishes cold runtime doors through solo_hydrator.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
-   "relation": "uses",
-   "why": "SoloLazyDoorStep mutates the family-local solo state while publishing cold runtime doors.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

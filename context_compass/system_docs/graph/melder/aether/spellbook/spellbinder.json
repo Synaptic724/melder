@@ -47,28 +47,7 @@
     "method_count": 24,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Fluent registration helper for Spellbook bind operations.",
-   "responsibilities": [
-    "accumulates bind-time choices for one pending registration and delegates them to Spellbook.bind on finalize"
-   ],
-   "owns_state": [
-    "_weak_spellbook",
-    "_default_existence",
-    "_default_permissions",
-    "_default_profile",
-    "_spell",
-    "_existence",
-    "_permissions",
-    "_profile",
-    "_spellframe",
-    "_binding_name",
-    "_kwargs"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -128,18 +107,5 @@
   "module": "melder.aether.spellbook.spellbinder",
   "class": "melder.aether.spellbook.spellbinder.SpellBinder",
   "label": "SpellBinder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spellbinder.SpellBinder",
-   "to": "melder.aether.spellbook.spellbook.Spellbook",
-   "relation": "borrows",
-   "why": "SpellBinder keeps a weak non-owning pointer to the target Spellbook and delegates final registration into it.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

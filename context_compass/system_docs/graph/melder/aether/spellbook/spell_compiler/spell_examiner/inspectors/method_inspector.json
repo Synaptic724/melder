@@ -29,20 +29,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Inspector producing structured callable inventories.",
-   "responsibilities": [
-    "inspects callable metadata, provenance, signature, traits, closure, and decoration state without invoking the callable"
-   ],
-   "owns_state": [
-    "fn",
-    "max_repr",
-    "data"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -75,29 +62,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector",
   "class": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector",
   "label": "MethodInspector"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
-   "relation": "uses",
-   "why": "MethodInspector uses InspectorUtility for safe repr and callable unwrapping.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile.MethodProfile",
-   "relation": "creates",
-   "why": "MethodInspector emits structured MethodProfile objects from inspected callable surfaces.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

@@ -9,20 +9,7 @@
    "label": "many_only_overrides_codegen_creation_compiler",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py",
-   "lineno": 1,
-   "role": "Spell-scoped overrides compiler for the many-only family.",
-   "responsibilities": [
-    "hydrates override-aware many-only executors from plan objects or schema rows",
-    "emits override-specialized executor source and binds specialization namespaces from static plan rows",
-    "uses the process-wide executor code cache for override specialization code objects"
-   ],
-   "owns_state": [
-    "_MISSING",
-    "_EMPTY_OVERRIDE_VALUES"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],
@@ -42,29 +29,5 @@
   "ManyOnlyCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "many_only_overrides_codegen_creation_compiler reuses ManyOnlyCodegenPlanTargetKind from the many-only no-overrides compiler module.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler",
-   "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
-   "relation": "uses",
-   "why": "many_only_overrides_codegen_creation_compiler uses the process-wide executor code cache for override specialization code objects.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

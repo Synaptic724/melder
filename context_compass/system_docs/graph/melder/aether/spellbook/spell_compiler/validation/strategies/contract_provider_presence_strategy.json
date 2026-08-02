@@ -9,15 +9,7 @@
    "label": "contract_provider_presence_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
-   "lineno": 1,
-   "role": "Spell validation strategy module for contract provider presence checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",

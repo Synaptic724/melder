@@ -43,23 +43,7 @@
     "method_count": 16,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Mutable-to-frozen configuration surface for the mutation-research root. DOCKING-LOOP LAW (2026-07-12 live-bug fix): activation is the emission factor AND carries the recorded composition FORWARD into its twin (replace-on-emit would otherwise wipe the record moments before virgin hydration reads it - config activation necessarily precedes root activation); the configuration owns only its property payload, the composition is carried, never authored.",
-   "responsibilities": [
-    "stores mutation-research-wide policy inputs before root activation",
-    "validates required properties before freeze and activation",
-    "owns unrestricted-module-mutations policy state",
-    "activate() reads describe_mutation_research_record and re-emits the prior composition_payload on its twin (carry-forward, not authorship)"
-   ],
-   "owns_state": [
-    "_properties",
-    "available_properties"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

@@ -85,22 +85,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-spell Phase 3 ordered resolution summary.",
-   "responsibilities": [
-    "stores the owning spell id plus topological node order",
-    "captures the concrete local-frame resolution order for one spell",
-    "feeds Phase 4 validation and later rooted plan phases"
-   ],
-   "owns_state": [
-    "spell_id",
-    "ordered_node_ids"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationIssue": {
    "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationIssue",
@@ -157,27 +142,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Canonical in-memory representation of how to resolve one spell.",
-   "responsibilities": [
-    "composes the phase 1-4 artifacts (requirements, symbolic graph, resolution frame, validation) for one spell",
-    "carries the semantic payload for DI and DAG resolution independent of execution model"
-   ],
-   "owns_state": [
-    "spell_id",
-    "existence",
-    "spellframe",
-    "binding_name",
-    "requirements",
-    "symbolic_graph",
-    "resolution_frame",
-    "validation"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

@@ -9,15 +9,7 @@
    "label": "strategy_base",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py",
-   "lineno": 1,
-   "role": "Base module for system validation strategy contracts.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",

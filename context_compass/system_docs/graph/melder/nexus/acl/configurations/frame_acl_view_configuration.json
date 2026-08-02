@@ -55,26 +55,7 @@
     "method_count": 30,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Applied view-side ACL configuration revision.",
-   "responsibilities": [
-    "stores reusable view-profile identity plus override rulesets",
-    "carries revision metadata for container-owned configuration chains"
-   ],
-   "owns_state": [
-    "_profile_name",
-    "_required_nexus_label",
-    "_minimum_spell_payload_type",
-    "_frame_override_ruleset",
-    "_conduit_override_ruleset",
-    "_spell_override_ruleset",
-    "_member_override_ruleset"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -129,32 +110,5 @@
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
   "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
-   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameACLViewConfiguration owns detached override rulesets for one applied view revision.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
-   "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-   "relation": "borrows",
-   "why": "FrameACLViewConfiguration borrows the reusable view profile identity and floors it was built from.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime",
-    "refresh"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

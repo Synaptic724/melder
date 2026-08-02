@@ -179,24 +179,7 @@
     "method_count": 168,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Projection-backed room viewer asset.",
-   "responsibilities": [
-    "holds the current per-frame projection-set references for the room",
-    "owns the helper cache for frame, conduit, and spell view surfaces",
-    "provides the visible frame-local query surface"
-   ],
-   "owns_state": [
-    "_projection_sets_by_frame_name",
-    "_view_multiframe",
-    "_helper_surfaces_by_frame_name",
-    "_default_view_frame_name"
-   ],
-   "phases": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -291,78 +274,5 @@
   "module": "melder.nexus.rift.frame_viewer.frame_viewer",
   "class": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
   "label": "FrameViewer"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "to": "melder.nexus.rift.frame_viewer.view_action_hooks",
-   "relation": "uses",
-   "why": "FrameViewer uses the shared view-action hook wrapper module for public viewer actions and the no-op action scope fallback.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "to": "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameViewer owns the conduit-scoped helper surface built over the selected frame helper.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "to": "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameViewer owns the selected-frame helper surface for one active frame projection.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "to": "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameViewer owns the cross-frame helper surface for descriptor inventory and comparisons.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "to": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameViewer owns the spell-scoped helper surface built over the selected frame helper.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-   "to": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
-   "relation": "borrows",
-   "why": "FrameViewer holds borrowed projection-set references from the owning Rift instead of owning projection lifecycle itself.",
-   "cardinality": "one_to_many",
-   "strength": "borrowed",
-   "phase": [
-    "refresh",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

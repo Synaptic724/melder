@@ -9,18 +9,7 @@
    "label": "__graph_network__",
    "kind": "module",
    "file": "src/melder/__graph_network__.py",
-   "lineno": 1,
-   "role": "Top-level packaged graph-network hardcopy module.",
-   "responsibilities": [
-    "publishes the top-level packaged graph-network document object"
-   ],
-   "owns_state": [
-    "__graph_network__"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],
@@ -29,19 +18,5 @@
  "imports": {
   "get": "melder._build_assets._system_documents.system_documents.get"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.__graph_network__",
-   "to": "melder.system_document.StaticSystemDocument",
-   "relation": "creates",
-   "why": "The packaged graph-network module instantiates one top-level StaticSystemDocument for graph-network hardcopy access.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

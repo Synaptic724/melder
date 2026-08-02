@@ -32,19 +32,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Protocol mirror of the cleanup lifecycle contract.",
-   "responsibilities": [
-    "defines the public cleaned-state and cleanup surface expected across runtime objects"
-   ],
-   "owns_state": [
-    "_cleaned"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [],

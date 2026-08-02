@@ -9,15 +9,7 @@
    "label": "visibility_gap_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for visibility gap checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy",

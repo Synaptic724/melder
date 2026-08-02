@@ -9,19 +9,7 @@
    "label": "generalized_creation_cache",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_creation_cache.py",
-   "lineno": 1,
-   "role": "Cache codec for the generalized codegen-creation family.",
-   "responsibilities": [
-    "builds the marshal-safe generalized manifest package for one spell",
-    "publishes lazy or eager CreationContext rebuilds from generalized manifest packages",
-    "routes generalized family reload through manifest validation and shared hydrators"
-   ],
-   "owns_state": [
-    "PACKAGE_VERSION"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],
@@ -38,73 +26,5 @@
   "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.MANIFEST_METADATA_KEY",
   "validate_generalized_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.validate_generalized_manifest"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
-   "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-   "relation": "creates",
-   "why": "generalized_creation_cache publishes lazy or eager CreationContext instances from generalized manifest packages.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-   "relation": "uses",
-   "why": "generalized_creation_cache builds and reloads packages from generalized-family SpellCodegenCreation artifacts.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
-   "relation": "uses",
-   "why": "generalized_creation_cache uses the shared manifest cache envelope for generalized-family package export and reload.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
-   "relation": "uses",
-   "why": "generalized_creation_cache constructs SpellbookBindingResolver for eager and lazy generalized cache reload.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator",
-   "relation": "uses",
-   "why": "generalized_creation_cache delegates generalized family hydration and lazy-door publication to generalized_hydrator.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest",
-   "relation": "uses",
-   "why": "generalized_creation_cache validates and interprets the generalized family manifest module during cache export and reload.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

@@ -9,14 +9,7 @@
    "label": "class_wraps",
    "kind": "module",
    "file": "src/melder/utilities/helpers/class_wraps.py",
-   "lineno": 1,
-   "role": "Helper module for class-wrapping utilities.",
-   "responsibilities": [
-    "provides helper wrapping behavior for class utilities"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   }
  },
  "edges_out": [],

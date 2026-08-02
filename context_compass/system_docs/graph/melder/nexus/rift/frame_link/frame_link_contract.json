@@ -36,22 +36,7 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-frame ACL contract selection for one Rift.",
-   "responsibilities": [
-    "stores selected view, command, and codegen contract names for one frame",
-    "owns the per-frame contract identity for one Rift/frame pair"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_selected_contract_names",
-    "_rift_id"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

@@ -31,23 +31,7 @@
     "method_count": 10,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Spell registration gateway for one Spellbook.",
-   "responsibilities": [
-    "examines binding targets into canonical binding profiles",
-    "fingerprints binding metadata into structural spell ids",
-    "validates binding policy and spellframe semantics",
-    "creates canonical Spell records for Spellbook registration"
-   ],
-   "owns_state": [
-    "_spellbook",
-    "_spell_examiner"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -127,91 +111,5 @@
   "module": "melder.aether.spellbook.bind.bind",
   "class": "melder.aether.spellbook.bind.bind.Bind",
   "label": "Bind"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-   "relation": "uses",
-   "why": "Bind accepts and carries Permissions as the access policy for newly registered spells.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-   "relation": "creates",
-   "why": "Bind creates a SpellIndex lineage key from the structural fingerprint before constructing the Spell record.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.aether.spellbook.existence.existence.Existence",
-   "relation": "uses",
-   "why": "Bind accepts Existence as the lifecycle policy for newly registered spells.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.aether.spellbook.spell.Spell",
-   "relation": "creates",
-   "why": "Bind turns one examined binding target into the canonical Spell runtime record for Spellbook registration.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
-   "relation": "owns_lifecycle_of",
-   "why": "Bind owns the SpellExaminer used to build registration profiles.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.aether.spellbook.spell_types.spell_types.SpellType",
-   "relation": "uses",
-   "why": "Bind resolves and stores SpellType to classify each registered spell family.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
-   "relation": "creates",
-   "why": "Bind.assert_allowed raises InternalRegistrationError when a candidate's (module, qualname) is in the generated INTERNAL_MANIFEST.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -9,15 +9,7 @@
    "label": "contract_graph_cycle_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py",
-   "lineno": 1,
-   "role": "System validation strategy module for contract graph cycle checks.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy.ContractGraphCycleStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy.ContractGraphCycleStrategy",

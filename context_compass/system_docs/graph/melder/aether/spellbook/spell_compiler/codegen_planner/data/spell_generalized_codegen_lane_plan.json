@@ -24,19 +24,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Planner-owned generalized lane variant labels.",
-   "responsibilities": [
-    "labels generalized no-overrides and overrides lane selection",
-    "keeps planner variant identity stable across generalized, solo, and generalized-many-only builders"
-   ],
-   "owns_state": [
-    "NO_OVERRIDES",
-    "OVERRIDES"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind",
@@ -51,20 +39,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Planner-owned creations-target kind labels for generalized lane output.",
-   "responsibilities": [
-    "labels CALLER, OWNER, and SPELLSPACE creations routing for generalized planner steps",
-    "keeps generalized planner payloads aligned with runtime creations-target semantics without a legacy enum dependency"
-   ],
-   "owns_state": [
-    "CALLER",
-    "OWNER",
-    "SPELLSPACE"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode",
@@ -79,27 +54,7 @@
     "method_count": 0,
     "has_bases": false,
     "trivial": true
-   },
-   "role": "Planner-owned call-mode labels for the generalized no-overrides fast path.",
-   "responsibilities": [
-    "labels CALL0 through CALL8 and CALLN for generalized fast-path packing",
-    "preserves planner-side fixed-arity call semantics for emitted executor compilation"
-   ],
-   "owns_state": [
-    "CALL0",
-    "CALL1",
-    "CALL2",
-    "CALL3",
-    "CALL4",
-    "CALL5",
-    "CALL6",
-    "CALL7",
-    "CALL8",
-    "CALLN"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep",
@@ -142,45 +97,7 @@
     "method_count": 27,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Reusable generalized planner step object for one execution occurrence.",
-   "responsibilities": [
-    "stores generalized spell, occurrence, dependency, override, and contract payload metadata for one step",
-    "stores runtime lock, spellspace, owner-conduit, registration, and disposal metadata for later phase-11 compilation",
-    "preserves the old execution-plan step semantics in planner-owned form"
-   ],
-   "owns_state": [
-    "_instance_key",
-    "_occurrence",
-    "_spell",
-    "_existence",
-    "_creations_target_kind",
-    "_shared_instance",
-    "_inject_spec",
-    "_dependency_keys",
-    "_dependency_keys_by_param",
-    "_dependency_resolution_order",
-    "_override_keys",
-    "_override_match_prefix",
-    "_override_match_prefix_len",
-    "_expects_overrides",
-    "_contract_keys",
-    "_allow_list_aggregation",
-    "_uses_positional_override",
-    "_contract_payload",
-    "_contract_positional_override",
-    "_has_contract_payload",
-    "_lock_hint",
-    "_use_spell_lock_hint",
-    "_requires_spellspace",
-    "_owner_conduit_required",
-    "_must_register",
-    "_disposal_method_names"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
@@ -211,34 +128,7 @@
     "method_count": 13,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Planner-owned generalized lane-plan carrier with fast-path and phase-11 row-cache state.",
-   "responsibilities": [
-    "stores ordered generalized planner steps plus spell-step indexes and optimistic object references",
-    "stores fast-path arrays and transient plan payloads for generalized no-overrides execution",
-    "memoizes phase-11 schema rows with and without override metadata for downstream phase-11 consumers"
-   ],
-   "owns_state": [
-    "_lane_id",
-    "_root_spell_id",
-    "_root_instance_key",
-    "_steps",
-    "_spell_id_step_index",
-    "_optimistic_object_refs_by_spell_id",
-    "_available_param_by_spell_id",
-    "_fast_dep_indices",
-    "_fast_call_modes",
-    "_fast_transient_plan",
-    "_fast_has_contract_payloads",
-    "_fast_has_existing_creations",
-    "_metadata",
-    "_phase11_rows_no_meta",
-    "_phase11_rows_with_meta"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
@@ -256,20 +146,7 @@
     "method_count": 13,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Base generalized lane-plan builder from SpellCodegenModel.",
-   "responsibilities": [
-    "builds generalized lane-plan steps from graph, order, instance, injection, and runtime model sections",
-    "derives generalized fast-path arrays and transient-only plans for no-overrides lanes when eligible",
-    "creates the planner-owned generalized lane-plan carrier for the selected lane variant"
-   ],
-   "owns_state": [
-    "_state",
-    "_plan_variant"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellSoloCodegenPlanBuilder": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellSoloCodegenPlanBuilder",
@@ -288,15 +165,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Solo-specialized builder over the generalized lane-plan base.",
-   "responsibilities": [
-    "enforces single-visible-spell preconditions before reusing generalized lane synthesis",
-    "stamps solo family metadata onto the resulting generalized lane-plan payload"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   },
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder",
@@ -315,15 +184,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Many-only-specialized builder over the generalized lane-plan base.",
-   "responsibilities": [
-    "enforces all-visible-spells-are-Existence.many preconditions before reusing generalized lane synthesis",
-    "builds generalized-family fast-path arrays for many-only lanes and stamps many-only family metadata"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -405,128 +266,5 @@
   "SpellRuntimeRecord": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
   "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel"
  },
- "collapse_candidate": null,
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep",
-   "relation": "owns_lifecycle_of",
-   "why": "SpellGeneralizedCodegenLanePlan owns the ordered SpellGeneralizedCodegenPlanStep rows backing one generalized planner lane.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "SpellGeneralizedCodegenLanePlan inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "borrows",
-   "why": "SpellGeneralizedCodegenPlanBuilder reads SpellCodegenModel as the fitted compiler truth for generalized lane planning.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
-   "relation": "creates",
-   "why": "SpellGeneralizedCodegenPlanBuilder creates SpellGeneralizedCodegenLanePlan as the planner-owned generalized lane payload.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode",
-   "relation": "uses",
-   "why": "SpellGeneralizedCodegenPlanBuilder derives fixed-arity no-overrides call modes through SpellGeneralizedCodegenPlanCallMode.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep",
-   "relation": "creates",
-   "why": "SpellGeneralizedCodegenPlanBuilder creates SpellGeneralizedCodegenPlanStep objects while walking the ordered visible spell set.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind",
-   "relation": "uses",
-   "why": "SpellGeneralizedCodegenPlanBuilder derives creations-target routing through SpellGeneralizedCodegenPlanTargetKind.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanVariant",
-   "relation": "uses",
-   "why": "SpellGeneralizedCodegenPlanBuilder selects no-overrides versus overrides synthesis through SpellGeneralizedCodegenPlanVariant.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep",
-   "to": "melder.aether.spellbook.existence.existence.Existence",
-   "relation": "uses",
-   "why": "SpellGeneralizedCodegenPlanStep stores Existence as the runtime reuse and registration policy for one generalized step.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "relation": "specializes",
-   "why": "SpellManyOnlyCodegenPlanBuilder specializes the shared generalized lane-plan builder contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellSoloCodegenPlanBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder",
-   "relation": "specializes",
-   "why": "SpellSoloCodegenPlanBuilder specializes the shared generalized lane-plan builder contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ "collapse_candidate": null
 }

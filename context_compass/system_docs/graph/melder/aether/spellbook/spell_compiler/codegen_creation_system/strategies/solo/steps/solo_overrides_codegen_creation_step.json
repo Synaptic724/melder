@@ -29,16 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Solo family overrides executor build step.",
-   "responsibilities": [
-    "compiles the root-only solo overrides executor",
-    "publishes the overrides executor and code object onto family state and output metadata",
-    "mirrors override-lane metadata onto the final codegen creation output"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -60,40 +51,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step.SoloOverridesCodegenCreationStep",
   "label": "SoloOverridesCodegenCreationStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step.SoloOverridesCodegenCreationStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "why": "SoloOverridesCodegenCreationStep specializes the shared family-step contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step.SoloOverridesCodegenCreationStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "SoloOverridesCodegenCreationStep delegates root-only overrides executor compilation to solo_overrides_codegen_creation_compiler.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step.SoloOverridesCodegenCreationStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
-   "relation": "uses",
-   "why": "SoloOverridesCodegenCreationStep mutates the family-local solo state while publishing the overrides executor.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

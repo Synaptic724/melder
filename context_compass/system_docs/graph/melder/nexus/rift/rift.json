@@ -50,27 +50,7 @@
     "method_count": 36,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Live AR session object.",
-   "responsibilities": [
-    "owns exactly one primary room",
-    "stores frame-link contracts for engaged frames",
-    "owns one RiftGate",
-    "refreshes room assets from current projection state"
-   ],
-   "owns_state": [
-    "_space",
-    "_frame_link_contracts_by_name",
-    "_rift_gate",
-    "_configuration",
-    "_projection_sets_by_frame_name"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -169,82 +149,5 @@
   "module": "melder.nexus.rift.rift",
   "class": "melder.nexus.rift.rift.Rift",
   "label": "Rift"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
-   "relation": "uses",
-   "why": "Rift uses RiftConfiguration as its per-instance runtime default source.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to": "melder.nexus.nexus.Nexus",
-   "relation": "borrows",
-   "why": "Rift depends on the owning Nexus for policy checks, frame access, and projection refresh coordination without owning the Nexus lifecycle.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to": "melder.nexus.rift.frame_link.frame_link_contract.FrameLinkContract",
-   "relation": "owns_lifecycle_of",
-   "why": "Rift owns the per-frame contract entries for its engaged frames.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
-   "relation": "owns_lifecycle_of",
-   "why": "Rift owns the current projection-set registry for its engaged frames.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "refresh",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-   "relation": "owns_lifecycle_of",
-   "why": "Rift owns one RiftGate for admission, drain, and refresh coordination.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "relation": "owns_lifecycle_of",
-   "why": "Rift owns exactly one primary room and is responsible for cleaning it before clearing its own state.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

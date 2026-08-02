@@ -26,15 +26,7 @@
     "method_count": 6,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Strategy building binding profiles from raw candidates.",
-   "responsibilities": [
-    "builds the correct binding-profile variant from a raw candidate surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -90,18 +82,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy",
   "class": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
   "label": "BindingProfileStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
-   "relation": "creates",
-   "why": "BindingProfileStrategy builds binding-profile variants from raw candidates.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

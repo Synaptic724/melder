@@ -28,22 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Descriptor-safe published frame payload.",
-   "responsibilities": [
-    "stores published frame posture and topology summary values"
-   ],
-   "owns_state": [
-    "system_state",
-    "ai_native_enabled",
-    "rift_enabled",
-    "root_conduit_ids",
-    "cluster_names"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

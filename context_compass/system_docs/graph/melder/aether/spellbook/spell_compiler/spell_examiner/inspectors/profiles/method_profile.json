@@ -28,24 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Structured callable inspection profile.",
-   "responsibilities": [
-    "stores serializable callable-inspection results for AI profile consumption"
-   ],
-   "owns_state": [
-    "name",
-    "qualname",
-    "signature",
-    "parameters",
-    "closure",
-    "decorated"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

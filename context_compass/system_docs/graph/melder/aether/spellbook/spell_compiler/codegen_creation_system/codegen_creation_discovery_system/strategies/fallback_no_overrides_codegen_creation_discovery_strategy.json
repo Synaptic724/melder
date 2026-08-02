@@ -9,16 +9,7 @@
    "label": "fallback_no_overrides_codegen_creation_discovery_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/fallback_no_overrides_codegen_creation_discovery_strategy.py",
-   "lineno": 1,
-   "role": "Fallback phase-11 discovery strategy.",
-   "responsibilities": [
-    "preserves the current fallback no-overrides discovery result when no earlier strategy claims the pair",
-    "returns a generalized no-overrides creation-family selection",
-    "acts as the terminal catch-all in the discovery chain"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy.FallbackNoOverridesCodegenCreationDiscoveryStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy.FallbackNoOverridesCodegenCreationDiscoveryStrategy",
@@ -68,40 +59,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy.FallbackNoOverridesCodegenCreationDiscoveryStrategy",
   "label": "FallbackNoOverridesCodegenCreationDiscoveryStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "FallbackNoOverridesCodegenCreationDiscoveryStrategy inspects the fitted SpellCodegenModel when deciding whether to claim the current pair.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-   "relation": "creates",
-   "why": "FallbackNoOverridesCodegenCreationDiscoveryStrategy returns a CodegenCreationDiscovery when it claims the current model/plan pair.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-   "relation": "specializes",
-   "why": "FallbackNoOverridesCodegenCreationDiscoveryStrategy specializes the abstract discovery-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

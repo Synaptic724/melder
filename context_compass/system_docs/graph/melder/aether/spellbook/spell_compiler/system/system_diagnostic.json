@@ -52,26 +52,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "System-level validation diagnostic.",
-   "responsibilities": [
-    "stores diagnostic code, message, and severity",
-    "attaches optional spell, root, and source attribution",
-    "carries structured diagnostic details for tooling and validation state"
-   ],
-   "owns_state": [
-    "_code",
-    "_message",
-    "_severity",
-    "_spell_id",
-    "_root_id",
-    "_details"
-   ],
-   "phases": [
-    "validation",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

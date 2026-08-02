@@ -34,24 +34,7 @@
     "method_count": 9,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Immutable emitted event object for RiftSpace.",
-   "responsibilities": [
-    "captures one structured runtime event with copied payload and metadata",
-    "does not own cleanup or orchestration behavior"
-   ],
-   "owns_state": [
-    "_event_type",
-    "_rift_id",
-    "_space_id",
-    "_space_kind",
-    "_frame_name",
-    "_payload",
-    "_metadata"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

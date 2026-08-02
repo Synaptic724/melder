@@ -28,22 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Canonical Nexus record for one published frame.",
-   "responsibilities": [
-    "stores published frame identity and frame-level posture",
-    "owns one frame descriptor payload"
-   ],
-   "owns_state": [
-    "frame_name",
-    "frame_id",
-    "config_origin_spellbook_id",
-    "payload"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -85,19 +70,5 @@
   "module": "melder.nexus.frame_descriptor.frame_record",
   "class": "melder.nexus.frame_descriptor.frame_record.FrameRecord",
   "label": "FrameRecord"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.frame_descriptor.frame_record.FrameRecord",
-   "to": "melder.nexus.frame_descriptor.frame_descriptor_payload.FrameDescriptorPayload",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameRecord owns the published frame payload object.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

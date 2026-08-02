@@ -39,22 +39,7 @@
     "method_count": 13,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Process-wide utility and logger provider host.",
-   "responsibilities": [
-    "stores the channel-logger resolver",
-    "stores the default logger fallback",
-    "resolves SafeLogger-compatible providers for runtime objects"
-   ],
-   "owns_state": [
-    "_channel_logger_resolver",
-    "_default_logger"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

@@ -29,16 +29,7 @@
     "method_count": 28,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
-   "responsibilities": [
-    "expands rooted blueprint truth plus topology and contract context into an occurrence graph",
-    "publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact",
-    "owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -116,62 +107,5 @@
   "module": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy",
   "class": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
   "label": "SpellOccurrenceGraphAnalyzerStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-   "to": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
-   "relation": "uses",
-   "why": "SpellOccurrenceGraphAnalyzerStrategy inspects SpellContract defaults when adding contracted dependency edges to the occurrence graph.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
-   "relation": "uses",
-   "why": "SpellOccurrenceGraphAnalyzerStrategy uses SharedCompilerExecutions for deterministic schema freezing and signature hashing.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
-   "relation": "creates",
-   "why": "SpellOccurrenceGraphAnalyzerStrategy creates SpellExistenceOccurrenceAnalysis while walking the visible spell set for phase-8 occurrence work.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis",
-   "relation": "creates",
-   "why": "SpellOccurrenceGraphAnalyzerStrategy creates SpellOccurrenceGraphAnalysis as its primary phase-8 output artifact.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
-   "relation": "specializes",
-   "why": "SpellOccurrenceGraphAnalyzerStrategy specializes the abstract analyzer strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

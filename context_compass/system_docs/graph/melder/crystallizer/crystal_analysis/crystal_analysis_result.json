@@ -9,18 +9,7 @@
    "label": "crystal_analysis_result",
    "kind": "module",
    "file": "src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py",
-   "lineno": 1,
-   "role": "Value-only carrier of one analysis pass (the payload crystals CARRY per the V3 carrier law).",
-   "responsibilities": [
-    "holds manifest maps, synthetic sources, physical SHA256 fingerprints, export surfaces, topological load order, walk errors",
-    "describe() is the persistence-facing analysis payload (superset of the pre-decomposition SpellCrystal manifest keys)"
-   ],
-   "owns_state": [
-    "analysis maps (detached, value-only)"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   "lineno": 1
   },
   "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult": {
    "id": "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult",

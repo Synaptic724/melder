@@ -33,23 +33,7 @@
     "method_count": 8,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "One-shot builder for Aether root configuration assembly.",
-   "responsibilities": [
-    "owns a mutable AetherConfiguration during fluent assembly",
-    "applies default and explicit logger-policy builder steps",
-    "finalizes and hands off configuration ownership to the caller"
-   ],
-   "owns_state": [
-    "_id",
-    "_configuration",
-    "_finalized"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -96,45 +80,5 @@
   "module": "melder.aether.aether_configuration_builder",
   "class": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
   "label": "AetherConfigurationBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
-   "to": "melder.aether.aether_configuration.AetherConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "AetherConfigurationBuilder owns a mutable AetherConfiguration until it finalizes and hands it off.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
-   "to": "melder.utilities.general_base.cleanable.Cleanable",
-   "relation": "specializes",
-   "why": "AetherConfigurationBuilder inherits the explicit cleanup lifecycle from Cleanable.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
-   "to": "melder.utilities.helpers.id_builder.IDBuilder",
-   "relation": "uses",
-   "why": "AetherConfigurationBuilder uses IDBuilder for its stable builder identifier.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "init",
-    "runtime"
-   ]
-  }
- ]
+ }
 }

@@ -29,16 +29,7 @@
     "method_count": 16,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Many-only family final output step.",
-   "responsibilities": [
-    "builds the final many-only override runtime callable from family-local scratch state",
-    "wraps the no-overrides and overrides executors in route-keyed CreationContext doors",
-    "finishes the narrow SpellCodegenCreation output for the many-only family"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -90,29 +81,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step.ManyOnlyFinalizeCreationContextStep",
   "label": "ManyOnlyFinalizeCreationContextStep"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step.ManyOnlyFinalizeCreationContextStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "ManyOnlyFinalizeCreationContextStep uses the many-only no-overrides compiler module when rebuilding the base no-overrides executor from lane plans.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step.ManyOnlyFinalizeCreationContextStep",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "ManyOnlyFinalizeCreationContextStep uses the many-only overrides compiler module when specializing the final override runtime from static plan rows.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

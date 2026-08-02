@@ -26,17 +26,7 @@
     "method_count": 1,
     "has_bases": false,
     "trivial": false
-   },
-   "role": "Builder from SpellSystemStates into an adjacency snapshot.",
-   "responsibilities": [
-    "reads direct dependency and topology state from SpellSystemStates",
-    "derives reverse dependencies and structural roots",
-    "produces a frame-wide SpellSystemAdjacencySnapshot"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],
@@ -69,30 +59,5 @@
   "module": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder",
   "class": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
   "label": "SpellSystemAdjacencyBuilder"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "relation": "borrows",
-   "why": "SpellSystemAdjacencyBuilder reads direct dependency and topology state from SpellSystemStates without owning that service.",
-   "cardinality": "many_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "validation",
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
-   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
-   "relation": "creates",
-   "why": "SpellSystemAdjacencyBuilder produces the frame-wide adjacency snapshot used by later Phase 5 rooted builders.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "validation"
-   ]
-  }
- ]
+ }
 }

@@ -44,26 +44,7 @@
     "method_count": 20,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Per-frame Nexus metadata aggregate.",
-   "responsibilities": [
-    "owns frame, conduit, and spell records for one frame",
-    "stores descriptor-local secondary indexes",
-    "holds non-owned references to the runtime frame and frame configuration"
-   ],
-   "owns_state": [
-    "_frame_overview",
-    "_nexus_frame_record",
-    "_conduit_records_by_id",
-    "_spell_records_by_key",
-    "_spell_keys_by_conduit_id",
-    "_spell_keys_by_spellbook_id"
-   ],
-   "phases": [
-    "runtime",
-    "refresh",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -101,43 +82,5 @@
   "module": "melder.nexus.frame_descriptor.frame_descriptor",
   "class": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
   "label": "FrameDescriptor"
- },
- "edges_authored": [
-  {
-   "from": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-   "to": "melder.nexus.frame_descriptor.conduit_record.ConduitRecord",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameDescriptor owns the published conduit records keyed under the frame.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-   "to": "melder.nexus.frame_descriptor.frame_record.FrameRecord",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameDescriptor owns the optional published frame overview record for the frame.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-   "to": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
-   "relation": "owns_lifecycle_of",
-   "why": "FrameDescriptor owns the published spell records keyed under the frame.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  }
- ]
+ }
 }

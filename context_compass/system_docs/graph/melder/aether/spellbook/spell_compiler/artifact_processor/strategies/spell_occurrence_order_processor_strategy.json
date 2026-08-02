@@ -29,16 +29,7 @@
     "method_count": 5,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Processor strategy fitting deterministic execution order into the codegen model.",
-   "responsibilities": [
-    "derives dependency-safe spell execution order from analyzer-owned occurrence graph truth",
-    "publishes SpellOccurrenceOrderAnalysis onto SpellCodegenModel",
-    "falls back to stable first-seen order when graph topology is incomplete or cyclic"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -82,40 +73,5 @@
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy",
   "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy.SpellOccurrenceOrderProcessorStrategy",
   "label": "SpellOccurrenceOrderProcessorStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy.SpellOccurrenceOrderProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis.SpellOccurrenceOrderAnalysis",
-   "relation": "creates",
-   "why": "SpellOccurrenceOrderProcessorStrategy builds and publishes SpellOccurrenceOrderAnalysis.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy.SpellOccurrenceOrderProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-   "relation": "specializes",
-   "why": "SpellOccurrenceOrderProcessorStrategy specializes the abstract processor-strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy.SpellOccurrenceOrderProcessorStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "relation": "uses",
-   "why": "SpellOccurrenceOrderProcessorStrategy fits the occurrence-order section directly onto SpellCodegenModel.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

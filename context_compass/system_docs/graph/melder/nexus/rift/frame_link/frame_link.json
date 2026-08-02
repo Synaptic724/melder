@@ -36,23 +36,7 @@
     "method_count": 9,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "View-safe frame target entry.",
-   "responsibilities": [
-    "stores stable identity and metadata for one visible frame-scoped target",
-    "avoids exposing raw runtime objects through viewer helper surfaces"
-   ],
-   "owns_state": [
-    "_frame_name",
-    "_source_kind",
-    "_source_id",
-    "_display_name",
-    "_metadata"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

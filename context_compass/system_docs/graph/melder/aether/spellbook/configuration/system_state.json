@@ -26,18 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "High-level runtime posture enum for a spellbook/system.",
-   "responsibilities": [
-    "labels automatic and dynamic runtime posture modes"
-   ],
-   "owns_state": [
-    "automatic",
-    "dynamic"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

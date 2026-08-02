@@ -34,23 +34,7 @@
     "method_count": 7,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Live namespace payload for one codegen request.",
-   "responsibilities": [
-    "stores the globals and locals dictionaries used for execution",
-    "keeps namespace metadata separate from raw execution mappings",
-    "preserves the configuration that shaped the namespace"
-   ],
-   "owns_state": [
-    "_configuration",
-    "_globals_dict",
-    "_locals_dict",
-    "_metadata"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

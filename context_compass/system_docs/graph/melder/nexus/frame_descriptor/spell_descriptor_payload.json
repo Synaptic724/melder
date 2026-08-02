@@ -29,24 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Descriptor-safe published spell payload.",
-   "responsibilities": [
-    "stores published spell-facing detail without live runtime object references"
-   ],
-   "owns_state": [
-    "binding_payload",
-    "resolution_payload",
-    "class_profile",
-    "callable_profile",
-    "metadata",
-    "instance_members",
-    "dynamic_access"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [

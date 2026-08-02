@@ -61,27 +61,7 @@
     "method_count": 43,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Frame-level change-control registry and admission surface.",
-   "responsibilities": [
-    "tracks pending changes and dirty roots by conduit",
-    "owns change-control transaction, conflict, embargo, and orchestrator managers",
-    "coordinates revalidation hooks for dirty roots"
-   ],
-   "owns_state": [
-    "_pending_changes",
-    "_component_of_by_conduit",
-    "_dirty_roots_by_conduit",
-    "_transaction_manager",
-    "_conflict_manager",
-    "_embargo_manager",
-    "_orchestrator"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -178,66 +158,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager",
   "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
   "label": "ChangeControlManager"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager",
-   "relation": "owns_lifecycle_of",
-   "why": "ChangeControlManager owns the scope-overlap conflict detector used during admission.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoManager",
-   "relation": "owns_lifecycle_of",
-   "why": "ChangeControlManager owns the scope-key embargo registry used during admission and staging.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator",
-   "relation": "owns_lifecycle_of",
-   "why": "ChangeControlManager owns the serialized orchestrator for admission, staging, commit, and abort flows.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager",
-   "relation": "owns_lifecycle_of",
-   "why": "ChangeControlManager owns the transaction-bookkeeping root used to build and track requests.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "relation": "borrows",
-   "why": "ChangeControlManager operates over SpellSystemStates but does not own its lifecycle.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

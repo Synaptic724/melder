@@ -26,21 +26,7 @@
     "method_count": 0,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Runtime policy mode enum for conduit-to-conduit contracting.",
-   "responsibilities": [
-    "labels default, whitelist-all, block-all, inbound-only, and outbound-only contracting modes"
-   ],
-   "owns_state": [
-    "default",
-    "whitelist_all",
-    "block_all",
-    "inbound_only",
-    "outbound_only"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [],

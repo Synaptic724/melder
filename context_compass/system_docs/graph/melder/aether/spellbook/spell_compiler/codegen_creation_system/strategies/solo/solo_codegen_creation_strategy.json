@@ -29,20 +29,7 @@
     "method_count": 2,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Manifest-first phase-11 family for solo planner output.",
-   "responsibilities": [
-    "routes solo planner output through solo family state and ordered steps",
-    "publishes a manifest-first lazy-door runtime shape for solo output",
-    "writes final family metadata onto SpellCodegenCreation after step execution"
-   ],
-   "owns_state": [
-    "_steps"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -89,51 +76,5 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
   "label": "SoloCodegenCreationStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-   "relation": "specializes",
-   "why": "SoloCodegenCreationStrategy specializes the abstract SpellCodegenStrategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
-   "relation": "creates",
-   "why": "SoloCodegenCreationStrategy creates the family-local solo state object before executing its ordered steps.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
-   "relation": "uses",
-   "why": "SoloCodegenCreationStrategy executes SoloLazyDoorStep as the second ordered family step.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
-   "relation": "uses",
-   "why": "SoloCodegenCreationStrategy executes SoloManifestStep as the first ordered family step.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

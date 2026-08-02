@@ -91,24 +91,7 @@
     "method_count": 69,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Hosted singleton crystallizer root.",
-   "responsibilities": [
-    "owns installed crystallizer configuration and activation state",
-    "builds SpellCrystal manifests from live spells under installed policy",
-    "anchors crystallizer policy above retained and live module-world surfaces"
-   ],
-   "owns_state": [
-    "_configuration",
-    "_configured",
-    "_activated",
-    "_aether"
-   ],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -240,96 +223,5 @@
   "module": "melder.crystallizer.crystallizer",
   "class": "melder.crystallizer.crystallizer.Crystallizer",
   "label": "Crystallizer"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
-   "relation": "owns_lifecycle_of",
-   "why": "Crystallizer installs and cleans one active crystallizer configuration instance.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
-   "relation": "uses",
-   "why": "Crystallizer is configured through the standalone builder path even though it does not expose a root-owned builder method.",
-   "cardinality": "one_to_many",
-   "strength": "soft",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
-   "relation": "creates",
-   "why": "Crystallizer creates SpellCrystal manifests from live spells under the installed policy.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-   "relation": "owns",
-   "why": "The crystallizer owns the persistence system; all record verbs facade through it.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "S3 decomposition: the asset system is a same-rank child; cleaned before the record it borrows.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
-   "relation": "owns_lifecycle_of",
-   "why": "S4 decomposition: the loader is the third same-rank child; cleaned first (borrower).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.crystal_analysis.impact_engine.ImpactEngine",
-   "relation": "creates",
-   "why": "analyze_impact builds a per-call engine over describe_spell_crystals payloads and cleans it after answering.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.crystallizer.Crystallizer",
-   "to": "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner",
-   "relation": "creates",
-   "why": "graft_index facade constructs one single-use GraftRunner per invocation (activation-gated; live-object facade precedent).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

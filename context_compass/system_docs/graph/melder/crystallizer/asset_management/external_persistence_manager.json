@@ -42,20 +42,7 @@
     "method_count": 15,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Crystallizer-owned remote transport (the DB opt-in) built on USER callables.",
-   "responsibilities": [
-    "uploads flushed cached items (lenient default posture with failure diagnostics; strict optional)",
-    "downloads single checkpoints and whole profiles (loud refusals on missing handlers/inconsistent remotes)",
-    "records as presence flags only (callables never enter the record)"
-   ],
-   "owns_state": [
-    "configuration",
-    "upload_failure_count"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -107,18 +94,5 @@
   "module": "melder.crystallizer.asset_management.external_persistence_manager",
   "class": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
   "label": "ExternalPersistenceManager"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "to": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
-   "relation": "owns",
-   "why": "The manager consumes one frozen handler configuration (cleanup cleans it).",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

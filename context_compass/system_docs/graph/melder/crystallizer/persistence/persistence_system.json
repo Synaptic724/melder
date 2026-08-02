@@ -65,25 +65,7 @@
     "method_count": 41,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Owns ALL persistence stores: profiles, the checkpoint ledger, and the cache.",
-   "responsibilities": [
-    "routes twin emissions to the ACTIVE profile",
-    "seals checkpoints (per-profile numbers minted highest+1)",
-    "verifies chain fold-safety (verify_checkpoint_chain)",
-    "flushes/reloads the profile-scoped cache and enforces its FIFO cap",
-    "constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)",
-    "inserts cached items insert-if-absent (cache and external-manager import sinks)"
-   ],
-   "owns_state": [
-    "profiles_by_name",
-    "checkpoint_crystals_by_id",
-    "crystallizer_cache",
-    "max_persistence_crystals"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -143,40 +125,5 @@
   "module": "melder.crystallizer.persistence.persistence_system",
   "class": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
   "label": "PersistenceSystem"
- },
- "edges_authored": [
-  {
-   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-   "to": "melder.crystallizer.persistence.persistence_profile.PersistenceProfile",
-   "relation": "owns",
-   "why": "The system owns every profile; exactly one is ACTIVE for emissions.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-   "to": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-   "relation": "owns",
-   "why": "The checkpoint ledger, FIFO-capped at max_persistence_crystals.",
-   "cardinality": "one_to_many",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-   "to": "melder.crystallizer.persistence.record_version.RecordVersion",
-   "relation": "uses",
-   "why": "capture_formation_record stamps the assembled formation record.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }

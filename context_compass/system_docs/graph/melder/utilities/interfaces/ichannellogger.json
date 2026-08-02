@@ -63,18 +63,7 @@
     "method_count": 52,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Protocol for channel-backed logger implementations.",
-   "responsibilities": [
-    "defines the channel logger surface SafeLogger can wrap with channel-aware metadata behavior"
-   ],
-   "owns_state": [
-    "_id"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ]
+   }
   }
  },
  "edges_out": [],

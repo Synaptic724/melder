@@ -28,16 +28,7 @@
     "method_count": 1,
     "has_bases": true,
     "trivial": false
-   },
-   "role": "Registry-backed dev-ops information strategy for live transaction activity views.",
-   "responsibilities": [
-    "queries in-flight transaction ids by identity, scope, or transaction type",
-    "returns detached transaction-activity views without live object references",
-    "adds freshness views for the touched regions when requested"
-   ],
-   "phases": [
-    "runtime"
-   ]
+   }
   }
  },
  "edges_out": [
@@ -69,29 +60,5 @@
   "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy",
   "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
   "label": "TransactionActivityViewStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-   "relation": "specializes",
-   "why": "TransactionActivityViewStrategy specializes the shared dev-ops information strategy contract.",
-   "cardinality": "one_to_one",
-   "strength": "hard",
-   "phase": [
-    "runtime"
-   ]
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-   "relation": "uses",
-   "why": "TransactionActivityViewStrategy uses InformationFreshnessInspector to normalize regions and compute freshness for activity views.",
-   "cardinality": "one_to_one",
-   "strength": "borrowed",
-   "phase": [
-    "runtime"
-   ]
-  }
- ]
+ }
 }
