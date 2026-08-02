@@ -7,7 +7,7 @@ GOAL: OPENING A RIFT - and meeting melder's most repeated law for the
         nexus = md.Nexus()
         nexus.enable(nexus.create_system_configuration())    # lesson 10
         rift_config = nexus.create_rift_configuration()
-        rift_config.with_space_type(md.RiftSpaceType.static)
+        rift_config.with_space_type("static")
         rift = nexus.create_rift(configuration=rift_config, rift_name="ops")
 
       THE RIFT CONFIGURATION IS CONSUMED.
@@ -57,7 +57,7 @@ def main() -> None:
     # verbs that mutate and return self, ending in a terminator.
     rift_config = nexus.create_rift_configuration()
     assert isinstance(rift_config, md.RiftConfiguration)
-    rift_config.with_space_type(md.RiftSpaceType.static)
+    rift_config.with_space_type("static")
     rift_config.with_space_name("health")
     print("rift configuration staged: static room named 'health'")
 

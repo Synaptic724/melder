@@ -74,7 +74,7 @@ def main() -> None:
     # Blind spots are the point of this lesson, so pick the room that has
     # more of them.
     rift_config = nexus.create_rift_configuration()
-    rift_config.with_space_type(md.RiftSpaceType.static)
+    rift_config.with_space_type("static")
     rift = nexus.create_rift(configuration=rift_config, rift_name="restricted")
     rift.mark_active()
 

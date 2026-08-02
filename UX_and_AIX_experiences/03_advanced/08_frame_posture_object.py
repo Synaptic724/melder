@@ -48,12 +48,12 @@ def main() -> None:
     #    no owning book yet. It gets attributed at freeze time by the frame.
     posture = md.AethericFrameConfiguration(
         origin_spellbook_id=None,
-        system_state=md.SystemState.automatic,
+        system_state="automatic",
         ai_native_enabled=False,
         rift_enabled=False,
     )
     print("constructed:", posture.system_state)
-    assert posture.system_state is md.SystemState.automatic
+    assert posture.system_state.value == "automatic"
     assert posture.ai_native_enabled is False
     assert posture.rift_enabled is False
 
@@ -75,7 +75,7 @@ def main() -> None:
         print("validate refused:", error)
 
     # Satisfy the rule the honest way - move the world to dynamic.
-    posture.with_system_state(md.SystemState.dynamic)
+    posture.with_system_state("dynamic")
     assert posture.validate() is True
     print("validate passed once the state matched the capability")
 
@@ -83,12 +83,12 @@ def main() -> None:
     #    the same mutate-and-return-self law.
     preset = md.AethericFrameConfiguration(
         origin_spellbook_id=None,
-        system_state=md.SystemState.automatic,
+        system_state="automatic",
         ai_native_enabled=False,
         rift_enabled=False,
     )
     assert preset.dynamic_defaults() is preset
-    assert preset.system_state is md.SystemState.dynamic
+    assert preset.system_state.value == "dynamic"
     print("dynamic_defaults() set the mode and returned self")
 
     # 5. finalize() - the fluent terminator. Freezes, returns THIS instance.
@@ -100,13 +100,13 @@ def main() -> None:
 
     # 6. THE FREEZE LAW. One world, one law book, decided before first use.
     try:
-        posture.with_system_state(md.SystemState.automatic)
+        posture.with_system_state("automatic")
         raise AssertionError("expected RuntimeError on a frozen posture")
     except RuntimeError as error:
         print("frozen posture refused the edit:", error)
 
     # The values survive the freeze - it seals, it does not clear.
-    assert posture.system_state is md.SystemState.dynamic
+    assert posture.system_state.value == "dynamic"
     assert posture.ai_native_enabled is True
 
     print()

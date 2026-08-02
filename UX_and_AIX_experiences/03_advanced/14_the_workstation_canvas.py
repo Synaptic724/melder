@@ -77,7 +77,7 @@ def main() -> None:
     nexus.enable(system_config)
 
     rift_config = nexus.create_rift_configuration()
-    rift_config.with_space_type(md.RiftSpaceType.capability)
+    rift_config.with_space_type("capability")
     rift = nexus.create_rift(configuration=rift_config, rift_name="bench")
     rift.mark_active()
 

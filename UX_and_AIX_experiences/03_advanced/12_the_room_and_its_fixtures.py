@@ -57,7 +57,7 @@ def main() -> None:
     nexus.enable(system_config)
 
     rift_config = nexus.create_rift_configuration()
-    rift_config.with_space_type(md.RiftSpaceType.static)
+    rift_config.with_space_type("static")
     rift_config.with_space_name("health")
     rift = nexus.create_rift(configuration=rift_config, rift_name="ops")
     rift.mark_active()
@@ -98,8 +98,8 @@ def main() -> None:
 
     # The room kind matches what the configuration asked for, and that is
     # the ONLY place it was ever decided.
-    assert room.space_kind == md.RiftSpaceType.static.value
-    print("configured kind:", md.RiftSpaceType.static.value,
+    assert room.space_kind == "static"
+    print("configured kind: static ->",
           "-> room kind:", room.space_kind)
 
     # THE DOC DRIFT, made visible rather than described. The docstring

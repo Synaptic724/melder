@@ -66,8 +66,8 @@ def main() -> None:
 
     # Frame mode is one of three, and it is a real enum rather than a
     # string - so a typo is a ValueError instead of a silent default.
-    config.with_nexus_frame_mode(md.NexusFrameMode.single)
-    print("frame mode set:", md.NexusFrameMode.single.value)
+    config.with_nexus_frame_mode("single")
+    print("frame mode set:", "single")
     print("available modes:",
           [mode.value for mode in md.NexusFrameMode])
 

@@ -7,6 +7,8 @@ Probes print ground truth for lessons not yet authored - the crystallizer
 acquisition path and the dynamic config-before-bind law (whose error text
 we captured verbatim from a live traceback this session).
 """
+import sys
+
 import melder as md
 import pytest
 
@@ -768,3 +770,102 @@ def test_probe_switch_is_refused_after_posture_freeze():
         book._aetheric_frame_configuration.\
             with_shared_framewide_spellbook_configuration(True)
     print("switch refused after posture freeze - flip it before first conjure")
+
+
+# ---------------------------------------------------------------------------
+# Lesson 37 - the frame-owned ConduitCloud
+# ---------------------------------------------------------------------------
+
+class _Ledger:
+    pass
+
+
+def test_probe_conduit_cloud_is_frame_owned_and_shared():
+    """Lesson 37 HEADLINE: get_conduit_cloud() is a REACH, not a factory.
+    melder's contract: "Reaches THROUGH the aetheric frame to the
+    frame-owned cloud, so the returned object is SHARED by every conduit
+    on the frame."
+
+    Two conduits on one frame must hand back THE SAME OBJECT - identity,
+    not equality. If this ever became per-conduit, "what conduits exist
+    here?" would stop having one answer."""
+    book = Spellbook(aetheric_frame="probe-cloud")
+    book.bind(spell=_Ledger, existence="unique")
+    root = book.conjure(name="probe-cloud-root")
+    peer = Spellbook(aetheric_frame="probe-cloud").conjure(
+        name="probe-cloud-peer")
+
+    cloud = root.get_conduit_cloud()
+    assert isinstance(cloud, md.ConduitCloud)
+    assert peer.get_conduit_cloud() is cloud
+    assert root.get_conduit_cloud() is cloud
+    assert cloud.frame_name == "probe-cloud"
+    print("frame-owned cloud pinned: one object per frame, shared")
+
+
+def test_probe_a_different_frame_gets_a_different_cloud():
+    """Lesson 37 claim: frames are worlds (advanced 03) and the cloud is a
+    world-level object, so the frame wall holds here too."""
+    first = Spellbook(aetheric_frame="probe-cloud-a")
+    first.bind(spell=_Ledger, existence="unique")
+    second = Spellbook(aetheric_frame="probe-cloud-b")
+    second.bind(spell=_Ledger, existence="unique")
+
+    cloud_a = first.conjure(name="a-root").get_conduit_cloud()
+    cloud_b = second.conjure(name="b-root").get_conduit_cloud()
+    assert cloud_a is not cloud_b
+    assert cloud_a.frame_name == "probe-cloud-a"
+    assert cloud_b.frame_name == "probe-cloud-b"
+    print("frame wall pinned: separate worlds, separate clouds")
+
+
+def test_probe_cloud_reads_agree_and_a_miss_is_none():
+    """Lesson 37 claim: counts agree with the lists they count, and
+    find_conduit_id_by_name returns Optional rather than raising - a
+    lookup that can legitimately miss should not need a try block."""
+    book = Spellbook(aetheric_frame="probe-cloud-reads")
+    book.bind(spell=_Ledger, existence="unique")
+    root = book.conjure(name="reads-root")
+    cloud = root.get_conduit_cloud()
+
+    assert cloud.count_conduits() == len(cloud.list_conduit_ids())
+    assert cloud.has_conduit_name("reads-root")
+
+    found = cloud.find_conduit_id_by_name("reads-root")
+    assert found is not None
+    assert cloud.has_conduit_id(found)
+    assert cloud.get_conduit_by_id(found) is root
+    assert cloud.get_conduit_by_name("reads-root") is root
+
+    assert cloud.find_conduit_id_by_name("nope") is None
+    assert cloud.has_conduit_name("nope") is False
+    print("cloud reads pinned: count agrees, miss is None not an exception")
+
+
+# ---------------------------------------------------------------------------
+# scan - the module door, and only the module door
+# ---------------------------------------------------------------------------
+
+@md.scan_bind(existence=md.Existence.unique, permissions=md.Permissions.create)
+class _ProbeTrail:
+    pass
+
+
+@md.scan_bind(existence=md.Existence.many, permissions=md.Permissions.create)
+class _ProbeEntry:
+    pass
+
+
+def test_probe_book_scan_binds_a_module_and_keeps_the_lifecycles():
+    """The scan API is `book.scan(module)`. It binds every scan_bind-marked
+    object that ORIGINATES in that module, and the decorated existence
+    survives the scan - unique stays one per frame, many stays fresh per
+    meld. (Lesson 01 is the authored version; this row pins it.)"""
+    book = Spellbook(aetheric_frame="probe-scan-module")
+    bound = book.scan(sys.modules[__name__])
+    assert {"_ProbeTrail", "_ProbeEntry"} <= set(bound)
+
+    conduit = book.conjure(name="probe-scan-root")
+    assert conduit.meld(spell=_ProbeTrail) is conduit.meld(spell=_ProbeTrail)
+    assert conduit.meld(spell=_ProbeEntry) is not conduit.meld(spell=_ProbeEntry)
+    print("module scan pinned:", sorted(set(bound)))

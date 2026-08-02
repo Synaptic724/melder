@@ -124,11 +124,11 @@ def test_probe_frame_posture_is_constructor_first():
         md.AethericFrameConfiguration()
     posture = md.AethericFrameConfiguration(
         origin_spellbook_id=None,
-        system_state=md.SystemState.automatic,
+        system_state="automatic",
         ai_native_enabled=False,
         rift_enabled=False,
     )
-    assert posture.system_state is md.SystemState.automatic
+    assert posture.system_state.value == "automatic"
     print("constructor-first pinned: 4 required kw-only values")
 
 
@@ -139,7 +139,7 @@ def test_probe_frame_posture_with_star_mutates_and_returns_self():
     would be silently harmful rather than merely surprising."""
     posture = md.AethericFrameConfiguration(
         origin_spellbook_id=None,
-        system_state=md.SystemState.automatic,
+        system_state="automatic",
         ai_native_enabled=False,
         rift_enabled=False,
     )
@@ -148,7 +148,7 @@ def test_probe_frame_posture_with_star_mutates_and_returns_self():
     assert posture.system_caching_enabled is False
     # presets follow the same law
     assert posture.dynamic_defaults() is posture
-    assert posture.system_state is md.SystemState.dynamic
+    assert posture.system_state.value == "dynamic"
     print("with_* and presets pinned: mutate-and-return-self, no clones")
 
 
@@ -159,14 +159,14 @@ def test_probe_frame_posture_validate_raises_rather_than_returning_false():
     ai_native_enabled requires system_state dynamic."""
     posture = md.AethericFrameConfiguration(
         origin_spellbook_id=None,
-        system_state=md.SystemState.automatic,
+        system_state="automatic",
         ai_native_enabled=False,
         rift_enabled=False,
     )
     posture.with_ai_native(True)
     with pytest.raises(ValueError, match="dynamic"):
         posture.validate()
-    posture.with_system_state(md.SystemState.dynamic)
+    posture.with_system_state("dynamic")
     assert posture.validate() is True
     print("validate pinned: raises on ai_native-without-dynamic, True after")
 
@@ -176,15 +176,15 @@ def test_probe_frame_posture_finalize_seals_same_instance():
     instance, and the freeze seals rather than clears - values survive."""
     posture = md.AethericFrameConfiguration(
         origin_spellbook_id=None,
-        system_state=md.SystemState.dynamic,
+        system_state="dynamic",
         ai_native_enabled=True,
         rift_enabled=False,
     )
     finalized = posture.finalize()
     assert finalized is posture
     with pytest.raises(RuntimeError, match="frozen"):
-        posture.with_system_state(md.SystemState.automatic)
-    assert posture.system_state is md.SystemState.dynamic
+        posture.with_system_state("automatic")
+    assert posture.system_state.value == "dynamic"
     assert posture.ai_native_enabled is True
     print("finalize pinned: same instance, frozen, values intact")
 
@@ -329,7 +329,7 @@ def test_probe_nexus_frame_mode_is_a_real_enum():
     modes = {mode.value for mode in md.NexusFrameMode}
     assert modes == {"single", "indexed", "one_per_workspace"}
     config = Nexus().create_system_configuration()
-    config.with_nexus_frame_mode(md.NexusFrameMode.single)
+    config.with_nexus_frame_mode("single")
     print("frame modes pinned:", sorted(modes))
 
 
@@ -355,7 +355,7 @@ def test_probe_rift_configuration_is_consumed_by_create_rift():
     "already been consumed" - the same one-shot law build() follows."""
     nexus = _enabled_nexus()
     rift_config = nexus.create_rift_configuration()
-    rift_config.with_space_type(md.RiftSpaceType.static)
+    rift_config.with_space_type("static")
     rift = nexus.create_rift(configuration=rift_config, rift_name="probe-ops")
     assert isinstance(rift, md.Rift)
     with pytest.raises(ValueError, match="consumed"):
@@ -373,7 +373,7 @@ def test_probe_rift_registered_and_active_are_separate_bits():
     on any of the three means the pattern the curriculum teaches broke."""
     nexus = _enabled_nexus()
     config = nexus.create_rift_configuration()
-    config.with_space_type(md.RiftSpaceType.static)
+    config.with_space_type("static")
     rift = nexus.create_rift(configuration=config, rift_name="probe-bits")
 
     assert rift.is_registered is True
@@ -389,7 +389,7 @@ def test_probe_created_rift_is_findable_on_the_nexus_registry():
     rift is discoverable by id without a second registration step."""
     nexus = _enabled_nexus()
     config = nexus.create_rift_configuration()
-    config.with_space_type(md.RiftSpaceType.static)
+    config.with_space_type("static")
     rift = nexus.create_rift(configuration=config, rift_name="probe-registry")
     assert nexus.has_rift(rift.id) is True
     assert rift.id in nexus.list_rift_ids()
@@ -410,7 +410,7 @@ def test_probe_a_rift_owns_exactly_one_room_by_identity():
     """Lesson 12 claim: `rift.space` is THE room, not a lookup or factory.
     Identity on every read, and no verb exists to swap or re-type it."""
     nexus = _enabled_nexus()
-    rift = _rift_with_room(nexus, md.RiftSpaceType.static, "probe-one-room")
+    rift = _rift_with_room(nexus, "static", "probe-one-room")
     room = rift.space
     assert rift.space is room
     assert room.owner_rift_id == rift.id
@@ -427,9 +427,9 @@ def test_probe_every_room_carries_the_same_fixture_set_by_name():
     the other three are literally the same classes."""
     nexus = _enabled_nexus()
     static_room = _rift_with_room(
-        nexus, md.RiftSpaceType.static, "probe-fixtures-static").space
+        nexus, "static", "probe-fixtures-static").space
     capability_room = _rift_with_room(
-        nexus, md.RiftSpaceType.capability, "probe-fixtures-capability").space
+        nexus, "capability", "probe-fixtures-capability").space
 
     for room in (static_room, capability_room):
         for fixture in ("frame_viewer", "workstation", "command_system",
@@ -444,7 +444,7 @@ def test_probe_configured_space_type_becomes_the_room_kind():
     """Lesson 12 claim: RiftSpaceType is the single input that fixes the
     room kind, and the room reports back exactly what was configured."""
     nexus = _enabled_nexus()
-    for space_type in (md.RiftSpaceType.static, md.RiftSpaceType.capability):
+    for space_type in ("static", "capability"):
         rift = _rift_with_room(
             nexus, space_type, f"probe-kind-{space_type.value}")
         assert rift.space.space_kind == space_type.value
@@ -496,9 +496,9 @@ def test_probe_room_kind_changes_exactly_two_fixtures():
     workstation / event_system / memory_system remain shared."""
     nexus = _enabled_nexus()
     static_room = _rift_with_room(
-        nexus, md.RiftSpaceType.static, "probe-auth-static").space
+        nexus, "static", "probe-auth-static").space
     capability_room = _rift_with_room(
-        nexus, md.RiftSpaceType.capability, "probe-auth-capability").space
+        nexus, "capability", "probe-auth-capability").space
 
     # the two that DIVERGE
     assert type(static_room.command_system) is not type(
@@ -527,10 +527,10 @@ def test_probe_authority_is_granted_by_absence_not_by_refusal():
     statically enumerable and hasattr stops being an honest question."""
     nexus = _enabled_nexus()
     static_commands = _rift_with_room(
-        nexus, md.RiftSpaceType.static, "probe-absent-static"
+        nexus, "static", "probe-absent-static"
     ).space.command_system
     capability_commands = _rift_with_room(
-        nexus, md.RiftSpaceType.capability, "probe-absent-capability"
+        nexus, "capability", "probe-absent-capability"
     ).space.command_system
 
     for verb in ("meld", "link", "sever_link", "create_lesser_conduit",
@@ -550,10 +550,10 @@ def test_probe_reuse_is_available_to_static_but_creation_is_not():
     something that already exists - it cannot bring anything into being."""
     nexus = _enabled_nexus()
     static_commands = _rift_with_room(
-        nexus, md.RiftSpaceType.static, "probe-reuse-static"
+        nexus, "static", "probe-reuse-static"
     ).space.command_system
     capability_commands = _rift_with_room(
-        nexus, md.RiftSpaceType.capability, "probe-reuse-capability"
+        nexus, "capability", "probe-reuse-capability"
     ).space.command_system
 
     assert hasattr(static_commands, "meld_existing_spell")
@@ -569,10 +569,10 @@ def test_probe_rooms_enumerate_their_own_command_surface():
     capability is the strictly broader surface."""
     nexus = _enabled_nexus()
     static_verbs = _rift_with_room(
-        nexus, md.RiftSpaceType.static, "probe-enum-static"
+        nexus, "static", "probe-enum-static"
     ).space.command_system.list_supported_command_methods()
     capability_verbs = _rift_with_room(
-        nexus, md.RiftSpaceType.capability, "probe-enum-capability"
+        nexus, "capability", "probe-enum-capability"
     ).space.command_system.list_supported_command_methods()
 
     assert len(static_verbs) > 0
@@ -588,7 +588,7 @@ class _Greeter:
 
 def _workstation(nexus, name="probe-bench"):
     return _rift_with_room(
-        nexus, md.RiftSpaceType.capability, name).space.workstation
+        nexus, "capability", name).space.workstation
 
 
 def test_probe_workstation_stores_are_independent_namespaces():
@@ -698,7 +698,7 @@ def test_probe_workstation_is_not_a_resolver():
 
 def _viewer(nexus, name="probe-observatory"):
     return _rift_with_room(
-        nexus, md.RiftSpaceType.capability, name).space.frame_viewer
+        nexus, "capability", name).space.frame_viewer
 
 
 def test_probe_view_accessors_split_into_host_and_frame_scoped():
@@ -850,7 +850,7 @@ def test_probe_host_scoped_reads_answer_on_an_empty_world():
     the list it counts, so you can size a world before paying to read
     it."""
     nexus = _enabled_nexus()
-    rift = _rift_with_room(nexus, md.RiftSpaceType.capability, "probe-empty-rd")
+    rift = _rift_with_room(nexus, "capability", "probe-empty-rd")
     assert rift.list_assigned_frame_names() == ()
 
     viewer = rift.space.frame_viewer
@@ -907,7 +907,7 @@ def test_probe_blind_spot_report_refuses_when_no_frame_is_bound():
 
     The never-substitute rule (08/13/14/18) reaches the read surface."""
     nexus = _enabled_nexus()
-    rift = _rift_with_room(nexus, md.RiftSpaceType.static, "probe-nf-missing")
+    rift = _rift_with_room(nexus, "static", "probe-nf-missing")
     assert rift.list_assigned_frame_names() == ()
     viewer = rift.space.frame_viewer
     for verb in ("describe_visible_surface", "describe_missing_surface"):
@@ -927,7 +927,7 @@ def test_probe_frame_name_is_an_assertion_not_a_selector():
     This is melder's never-substitute rule (lessons 08/13/14) applied to
     the read surface."""
     nexus = _enabled_nexus()
-    rift = _rift_with_room(nexus, md.RiftSpaceType.static, "probe-assertion")
+    rift = _rift_with_room(nexus, "static", "probe-assertion")
     assert rift.list_assigned_frame_names() == ()
     viewer = rift.space.frame_viewer
     with pytest.raises(Exception) as refused:
@@ -966,9 +966,9 @@ def test_probe_policy_accepts_both_the_enum_and_the_string():
     the lesson's claim goes red rather than the docs quietly becoming
     right by accident."""
     _, root = _dynamic_root("probe-ward-both", "probe-both-root")
-    root.set_new_policy(md.Policies.outbound_only)
+    root.set_new_policy("outbound_only")
     root.set_new_policy("inbound_only")
-    root.set_new_policy(md.Policies.default.name)
+    root.set_new_policy("default")
     print("both forms pinned: enum and string are equally accepted")
 
 

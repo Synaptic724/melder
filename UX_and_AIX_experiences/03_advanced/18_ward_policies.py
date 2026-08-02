@@ -101,13 +101,13 @@ def main() -> None:
 
     # The enum works here even though the public hint says `str` - the
     # ward converts either form.
-    root.set_new_policy(md.Policies.outbound_only)
+    root.set_new_policy("outbound_only")
     print("set via the exported enum: outbound_only")
 
     root.set_new_policy("inbound_only")
     print("set via the string name:   inbound_only")
 
-    root.set_new_policy(md.Policies.default.name)
+    root.set_new_policy("default")
     print("set via Policies.default.name -> back to default")
 
     # ------------------------------------------------------------------

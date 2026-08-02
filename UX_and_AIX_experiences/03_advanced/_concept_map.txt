@@ -3,9 +3,21 @@ CONCEPT MAP - 03_advanced (README tier: ORANGE Advanced)
 Multi-tenant / multi-world systems: frame isolation, read-only rooms,
 clusters at scale, deep overrides. Mostly UNAUTHORED - two seeds exist.
 
+HOUSE RULE - STRINGS, NOT ENUMS
+  Demos pass STRINGS for every enum-shaped argument: existence="unique",
+  with_space_type("static"), with_system_state("dynamic"),
+  set_new_policy("outbound_only"), with_nexus_frame_mode("single").
+  Every one of those setters is typed Union[Enum, str] and normalizes
+  through EnumHelpers.convert_enum_and_check. Measured convention across
+  the corpus: 113 string uses vs 8 enum uses. Enum references survive ONLY
+  where the enum itself is the subject (the RiftSpaceType doc-drift check
+  at lesson 12, the Policies auto()/.value footgun at lesson 18).
+
 AUTHORED
-  01 existence_unique_per_conduit_cluster (declaration seed; the LIVED
-     version currently sits at 02_intermediate/25 per owner syllabus)
+  01 DELETED 2026-08-02 (owner): was a declaration-only stub for
+     existence="unique_per_conduit_cluster". Cluster material is taught
+     at INTERMEDIATE, and users do not need to set up a conduit cluster.
+     Do not refill the number.
   02 deep_spell_override_paths ("transport>credentials" path form;
      flat form is intermediate 08)
   03 frames_as_worlds (categories arc ACT 3: aetheric_frame= births an

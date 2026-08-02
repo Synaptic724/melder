@@ -77,8 +77,8 @@ def main() -> None:
     system_config.with_rift_creation_enabled(True)
     nexus.enable(system_config)
 
-    static_room = _room(nexus, md.RiftSpaceType.static, "ops-static")
-    capability_room = _room(nexus, md.RiftSpaceType.capability, "ops-capability")
+    static_room = _room(nexus, "static", "ops-static")
+    capability_room = _room(nexus, "capability", "ops-capability")
 
     # The rooms themselves are different classes...
     print("static room:    ", type(static_room).__name__)

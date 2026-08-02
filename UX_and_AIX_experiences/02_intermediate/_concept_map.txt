@@ -118,8 +118,36 @@ CONFIGURATION, KNOB BY KNOB (owner-directed wave, 2026-07-26)
      pin posture-shared-by-default, rich-per-book, switch-alone-does-
      nothing, and switch+publish adoption)
 
+  37 the_frame_conduit_cloud (get_conduit_cloud() is a REACH, not a
+     factory - melder's contract: "reaches THROUGH the aetheric frame to
+     the frame-owned cloud, so the returned object is SHARED BY EVERY
+     CONDUIT ON THE FRAME". Two conduits, one object, by identity. A
+     different frame gets a different cloud - the frame wall holds.
+     Read surface: count/list agree; has_* is the cheap membership
+     question; find_conduit_id_by_name returns OPTIONAL rather than
+     raising, because a lookup that can legitimately miss should not
+     need a try block. Cluster verbs named, not exercised)
+  38 WITHDRAWN 2026-08-02 (owner). It taught `md.Scan(book)` constructed
+     directly as a "second door" - IT IS NOT ONE. Spellbook.scan applies
+     a POSTURE GATE and wraps the work in a BIND TRANSACTION before it
+     ever builds the scanner; constructing Scan yourself skips both.
+     `book.scan(module)` is the API and lesson 01 already teaches it.
+     Scan the CLASS is not user surface - same category as SpellExaminer.
+     One probe survives, pinning book.scan(module) only.
+
+TIER SCOPE CORRECTIONS (owner)
+  IN  2026-08-02: ConduitCloud (dynamic-mode basics). Scan's BEHAVIOUR
+      was already taught at lesson 01; the class needs no lesson.
+  OUT 2026-08-01 -> ADVANCED: SpellIndex membership verbs,
+      AetherConfiguration(+Builder), crystallizer activation/checkpoint
+  STAYS: SpellContract (lesson 36)
+  With 37 and 38 authored, this tier owes NO further public-root names.
+
 KNOWN GAPS INSIDE THE FENCE (remaining)
   live link policies (whitelist_all/block_all/inbound_only/outbound_only)
+    - NOTE: the policy SURFACE is now taught at advanced 18 (ward
+      policies, three refusals). What remains here is the LIVE LINK
+      behaviour under each mode, which is a different lesson.
 
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)

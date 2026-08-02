@@ -966,9 +966,87 @@ restore_engine.py:1654; melder/__init__.py:68, :198.
     only two public-root names this tier still owes a lesson - every other
     name in `melder.__all__` is now either authored, assigned to advanced or
     expert, or curated off the root.
-  NEXT: author Scan and ConduitCloud lessons in 02_intermediate.
+  NEXT: DONE - authored same session as lessons 37 and 38.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-08-02T19:30:00Z
+  TYPE: DECISION
+  CLAIM: LESSON 38 WITHDRAWN, AND THE FINDING UNDER IT WAS WRONG-HEADED.
+    I authored `38_the_scanner_behind_the_door.py` teaching `md.Scan(book)`
+    constructed directly as a "second door" beside `book.scan(module)`. IT IS
+    NOT A DOOR. `Spellbook.scan` applies a POSTURE GATE ("Scan is disabled
+    after conjure for the current frame posture") and wraps the work in a BIND
+    TRANSACTION before it ever constructs the scanner. Building `Scan`
+    yourself skips both guards.
+    Owner: "scan is not meant to be user surfaced" and "your job is to just
+    use scan for modules". Lesson deleted; the three probes replaced with one
+    that exercises `book.scan(module)` only.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py - posture gate then Scan(self)
+    then the bind transaction, in that order
+  - owner directive 2026-08-02
+  IMPACT: TWO PROCESS FAILURES ON MY SIDE, both worth recording.
+    (1) I authored an anti-pattern and dressed it as a design insight - the
+        "who owns cleanup" framing made bypassing two guards read as
+        deliberate API symmetry.
+    (2) I then went to PATCH `Spellbook.scan` over the unrun-cleanup finding.
+        That is source work in the transaction path, far outside an examples
+        lane. spellbook.py was never modified - verified by hash - but I had
+        the file open to edit it.
+    ROOT CAUSE: I did not read the existing corpus before authoring. Lesson
+    01 already taught scan correctly.
+  NEXT: `Scan` needs no lesson at any tier. Whether it should stay in
+    `__all__` is an OPEN CURATION QUESTION for the owner - it is the same
+    shape as SpellExaminer, which was removed this session.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-08-02T19:00:00Z
+  TYPE: MEASURE
+  CLAIM: [CORRECTED - 38 was withdrawn, see above.] ONE INBOUND NAME IS
+    AUTHORED: `02_intermediate/37_the_frame_conduit_cloud.py`, plus three
+    ConduitCloud probe rows and one scan row (27 rows total). THIS TIER NOW
+    OWES NO FURTHER PUBLIC-ROOT NAMES.
+  EVIDENCE: the two lesson files + probes
+    test_probe_conduit_cloud_is_frame_owned_and_shared,
+    test_probe_a_different_frame_gets_a_different_cloud,
+    test_probe_cloud_reads_agree_and_a_miss_is_none,
+    test_probe_both_scan_doors_produce_the_same_result,
+    test_probe_scanner_cleanup_drops_the_book_and_closes_the_object,
+    test_probe_spellbook_scan_never_cleans_its_scanner.
+  IMPACT: `Scan`'s BEHAVIOUR was already taught at intermediate 01 via
+    `scan_bind` + `book.scan(...)`. What was missing was the CLASS - and it
+    turned out to be worth its own lesson, because the two doors differ in
+    who owns the scanner's lifecycle.
+  NEXT: unrun. Rides the owner's 3.14t like everything else.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T19:00:00Z
+  TYPE: FACT
+  CLAIM: FINDING - `Spellbook.scan` CONSTRUCTS A `Cleanable` AND NEVER CLEANS
+    IT. The body is `scanner = Scan(self)` followed by two return paths
+    (`scanner.scan_module(module)` inside and outside a bind transaction).
+    Neither calls `scanner.cleanup()`; neither is wrapped in try/finally.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5177 (construction) and the two
+    returns immediately below it
+  - src/melder/aether/spellbook/bind/scan.py:303-317 (cleanup drops the strong
+    `_spellbook` reference and closes the object)
+  - src/melder/aether/spellbook/bind/scan.py:46 (`__slots__` is exactly
+    `Cleanable.__slots__ + ("_spellbook",)`)
+  IMPACT: NOT a memory leak - nothing holds the scanner after the return, so
+    refcounting frees it and the spellbook reference goes with it. What it is:
+    A CLEANUP CONTRACT THAT NEVER EXECUTES, in a codebase where every other
+    Cleanable is cleaned deliberately. `md.Scan(book)` used directly is
+    currently the only path on which `Scan.cleanup()` ever runs. Low severity,
+    but it is an inconsistency in the discipline rather than a considered
+    exception - and nothing in the code says it was considered.
+  NEXT: owner call - add a try/finally to Spellbook.scan, or document why the
+    scanner is deliberately left to refcounting. Pinned by
+    test_probe_spellbook_scan_never_cleans_its_scanner, which inspects the
+    source (the effect is invisible at runtime) and goes RED when a cleanup
+    lands.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
 - DATETIME: 2026-08-02T18:40:00Z
   TYPE: FACT
   CLAIM: PUBLIC-ROOT COVERAGE CONTEXT for this tier. `melder.__all__` is now
