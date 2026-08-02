@@ -1,5 +1,5 @@
 """
-TIER: advanced (15)
+TIER: advanced (13)
 GOAL: THE FRAME VIEWER - the room's read surface, and the first place in
       melder where the AIX claim stops being a design philosophy and
       becomes methods you can call.
@@ -52,7 +52,7 @@ GOAL: THE FRAME VIEWER - the room's read surface, and the first place in
 
       For a human that is a curiosity. For an agent it is the difference
       between guessing a surface and reading it - and it is the same idea
-      as list_supported_command_methods() in lesson 13. Twice now, melder
+      as list_supported_command_methods() in lesson 11. Twice now, melder
       has answered "what may I do here?" with a method instead of a
       manual.
 SURFACE EXERCISED: room.frame_viewer, get_view_* accessors,

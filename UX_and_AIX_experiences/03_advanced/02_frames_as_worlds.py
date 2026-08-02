@@ -1,5 +1,5 @@
 """
-TIER: advanced (03)
+TIER: advanced (02)
 GOAL: Aetheric frames are WORLDS - the categories arc, act three.
       Act 1 (beginner 25): spellframes categorize spells WITHIN a world.
       Act 2 (intermediate 26): conduits categorize worlds of resolution.

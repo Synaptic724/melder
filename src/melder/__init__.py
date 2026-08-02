@@ -15,7 +15,7 @@ Quickstart:
     service = conduit.meld(spell=MyService)
 
 Workflow map - every name below is importable from this root:
-- BIND: Spellbook, SpellBinder, Scan, scan_bind (decorator), Spell,
+- BIND: Spellbook, SpellBinder, scan_bind (decorator), Spell,
   SpellIndex; vocabulary Existence, Permissions, Policies, SystemState.
 - RESOLVE: Conduit (meld, lesser conduits, link/sever), SpellSpace,
   declarative descriptors SpellMap and SpellContract, ConduitCloud.
@@ -81,7 +81,7 @@ from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
-from melder.aether.spellbook.bind.scan import Scan, scan_bind
+from melder.aether.spellbook.bind.scan import scan_bind
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
@@ -227,7 +227,6 @@ __all__ = [
     "RiftConfiguration",
     "RiftSpace",
     "RiftSpaceType",
-    "Scan",
     "Spell",
     "SpellBinder",
     "SpellContract",

@@ -1,5 +1,5 @@
 """
-TIER: advanced (14)
+TIER: advanced (12)
 GOAL: THE WORKSTATION - the room's binding canvas, and the last fixture
       in arc B. Every RiftSpace owns one, whatever its kind.
 
@@ -11,7 +11,7 @@ GOAL: THE WORKSTATION - the room's binding canvas, and the last fixture
 
       The workstation is NOT a resolver, NOT a registry, and NOT a second
       spellbook. It holds what you hand it. If you want something out of
-      melder you get it through the command system (lesson 13) and then
+      melder you get it through the command system (lesson 11) and then
       park it here. Keeping those two jobs apart is why the canvas can be
       wiped without touching the world.
 
@@ -41,7 +41,7 @@ GOAL: THE WORKSTATION - the room's binding canvas, and the last fixture
         "Explicit weak binding RAISES when the supplied value cannot be
          weak-referenced; IT NEVER SILENTLY DEGRADES TO STRONG STORAGE."
 
-      That is the same honesty you met at validate() in lesson 08, which
+      That is the same honesty you met at validate() in lesson 06, which
       raises instead of returning False. Melder would rather fail loudly
       than quietly give you something adjacent to what you asked for. A
       silent degrade here would mean an object you believed was
@@ -57,7 +57,7 @@ summary - `objects`, `attributes`, `methods` and `target_name` - always
 with all four keys present, so callers can index". IT RETURNS FIVE. The
 implementation also emits `target_store`. A caller who trusts the stated
 count breaks. Second drift of this shape in arc B (see RiftSpaceType's
-documented-but-absent `dynamic` member, lesson 12). Pinned in
+documented-but-absent `dynamic` member, lesson 10). Pinned in
 test_advanced_probes.
 """
 import melder as md

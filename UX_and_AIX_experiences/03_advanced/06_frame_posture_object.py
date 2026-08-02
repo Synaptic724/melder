@@ -1,6 +1,6 @@
 """
-TIER: advanced (08)
-GOAL: THE POSTURE OBJECT ITSELF. Lesson 07 mapped the 15 knobs; this one
+TIER: advanced (06)
+GOAL: THE POSTURE OBJECT ITSELF. Lesson 05 mapped the 15 knobs; this one
       picks the object up and handles it. The headline: this config is
       CONSTRUCTOR-FIRST, not fluent-first - alone among melder's configs.
 

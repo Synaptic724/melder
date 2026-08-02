@@ -2584,6 +2584,90 @@ and logging.
             aetheric_frame_name = self._aetheric_frame_name
         return bool(self._aether._check_for_spell(spell_id, aetheric_frame_name))
 
+    def _spell_id_integrity_checker(self) -> None:
+        """
+        Internal
+
+        Refuse conjure when any spell_id this Spellbook owns is already
+        registered in the aetheric frame.
+
+        Purpose:
+            Close the pre-conjure blind spot in the frame existence aggregate.
+            `bind` already checks one id at a time against the frame, but a
+            Spellbook's owned-id set is only handed to the frame when its
+            Conduit is constructed (`Conduit._configure_conduit_state` ->
+            `_add_spells_to_aether` -> `_register_conduit_spells_in_aether`).
+            Two Spellbooks that bind before either conjures therefore both pass
+            every bind-time check, because neither is visible to the other yet.
+            This sweeps the whole owned set against the frame in one pass, at
+            the last moment before the Conduit is built.
+
+        Contract:
+            - Compares by SET INTERSECTION, not per-id lookup: one frame read
+              instead of one per owned spell.
+            - Reads `_spell_ids`, which is the EXISTENCE set (active AND parked
+              owned ids), so a spell staged by `bind_inactive` still reserves
+              its id. A dormant candidate's spell_id is allocated.
+            - No-op for a Spellbook that owns nothing.
+            - PREFLIGHT, NOT A GUARANTEE. It runs under the Spellbook lock while
+              the frame write happens later under the FRAME lock, so two
+              concurrent conjures can both pass it. Its job is to fail fast with
+              a good message before phases 1-11 and Conduit construction are
+              paid for. The authoritative check-and-set belongs in
+              `AethericFrame.register_conduit_spells`, under the lock that
+              guards the registry itself.
+            - SELF-MATCH WARNING. This is safe today ONLY because a Spellbook
+              has no entry in the frame registry until its Conduit is
+              constructed, so its own ids cannot be in the aggregate yet. If the
+              owned-id set is ever registered earlier - for example at Spellbook
+              construction, to close the bind-time hole - this method will match
+              its own ids on every conjure and MUST then exclude its own entry.
+              The frame stores the live `_spell_ids` reference, so identity
+              (`other_ids is self._spell_ids`) is the cheapest way to do that.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If any owned spell_id is already registered in the
+                frame by another Spellbook.
+
+        Threading:
+            - Acquires the Spellbook lock to snapshot the owned set before
+              reading the frame. The lock is reentrant and the conjure preflight
+              already holds it.
+        """
+        with self._lock:
+            owned_spell_ids = set(self._spell_ids)
+
+        if not owned_spell_ids:
+            return
+
+        frame_spell_ids = self._aether._get_all_spell_ids(self._aetheric_frame_name)
+        collisions = owned_spell_ids & frame_spell_ids
+        if not collisions:
+            return
+
+        sample = ", ".join(sorted(collisions)[:3])
+        self._logger.error(
+            f"Conjure refused: {len(collisions)} owned spell_id(s) already registered "
+            f"in frame '{self._aetheric_frame_name}'.",
+            "_spell_id_integrity_checker",
+            exc_info=True,
+        )
+        raise RuntimeError(
+            f"[SPELLBOOK] Conjure refused: {len(collisions)} spell_id(s) owned by this \n"
+            f"Spellbook are already registered in aetheric frame "
+            f"'{self._aetheric_frame_name}' by \n"
+            "another Spellbook. A spell_id is computed from the bind-time fingerprint \n"
+            "(structural profile, lookup signature, existence, and resolved disposal \n"
+            "metadata), so two Spellbooks binding the same target with the same bind \n"
+            "parameters mint the same id. spell_id is unique per frame, and that includes \n"
+            "spells staged inactive by bind_inactive - a parked spell still holds its id. \n"
+            "Fix: conjure into a different aetheric frame, or differentiate the binding \n"
+            f"with a distinct spellframe or binding_name. Colliding ids: {sample}"
+        )
+
     def _get_spell_by_id_via_aether(
             self,
             spell_id: str,
@@ -6249,6 +6333,14 @@ and logging.
                         raise RuntimeError(
                             "Spell disposal flags are inconsistent before conjure."
                         )
+
+            # Frame-wide spell_id integrity, checked BEFORE any conduit work.
+            # Registration into the frame happens inside Conduit.__init__
+            # (`_configure_conduit_state` -> `_add_spells_to_aether`), so a
+            # collision detected there would surface after phases 1-11 have run
+            # and a Conduit object exists, leaving a half-built conduit to
+            # unwind. This refuses at the cheapest possible moment instead.
+            self._spell_id_integrity_checker()
 
             spellbook_creation_system = SpellbookCreationSystem(
                 spellbook=self,

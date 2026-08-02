@@ -1,7 +1,7 @@
 """
-TIER: advanced (10)
+TIER: advanced (08)
 GOAL: TURNING THE NEXUS ON - and discovering that it does NOT climb the
-      same ladder Aether does. Lesson 09 taught Aether's rule: freeze,
+      same ladder Aether does. Lesson 07 taught Aether's rule: freeze,
       then activate, then bring the subsystem up, in that order, or it
       refuses. Nexus reaches the same destination by a different route,
       and knowing which subsystem you are talking to is the whole lesson.
@@ -35,7 +35,7 @@ GOAL: TURNING THE NEXUS ON - and discovering that it does NOT climb the
       TWO BITS AGAIN, DIFFERENT NAMES
         nexus.is_configured  - a configuration is installed
         nexus.is_enabled     - the subsystem is up
-      Same shape as frozen/activated in lesson 09. Configuration presence
+      Same shape as frozen/activated in lesson 07. Configuration presence
       and subsystem liveness are always separate questions in melder.
 SURFACE EXERCISED: md.Nexus, md.NexusConfiguration,
                    create_system_configuration, enable, disable

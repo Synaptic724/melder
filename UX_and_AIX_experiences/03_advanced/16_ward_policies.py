@@ -1,5 +1,5 @@
 """
-TIER: advanced (18)
+TIER: advanced (16)
 GOAL: WARD POLICIES - how permissive a conduit is about contracting with
       other conduits, and the three refusals that come with the door.
 
@@ -38,7 +38,7 @@ GOAL: WARD POLICIES - how permissive a conduit is about contracting with
          says they should not exist. It refuses and makes you tear the
          contracts down yourself.
 
-         That is the never-substitute rule (lessons 08/13/14/17) applied
+         That is the never-substitute rule (lessons 06/13/14/17) applied
          to authority: a policy change that cannot be honestly applied is
          an error, never a partial application.
 SURFACE EXERCISED: md.Policies, Conduit.set_new_policy, the dynamic-only

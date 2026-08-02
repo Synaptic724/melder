@@ -20,10 +20,10 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "c186c3d2d00742b409b18782fb9daf79083fc34f4e394b5148d981618dd46118"
+SOURCE_SHA256 = "edf08f5b6df95f7ccfcb5391175990b64dd092d00adbc32fd887a205caca6607"
 MARKED_COUNT = 430
 EXEMPT_COUNT = 163
-PENDING_COUNT = 20
+PENDING_COUNT = 21
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -629,6 +629,7 @@ PENDING = (
     ('melder.utilities.ai_native_support_tools.agent_text_reader', 'TextChunk'),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Edge'),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Group'),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Impact'),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Node'),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'SearchHit'),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Section'),
@@ -1119,6 +1120,7 @@ CLASS_BASES = {
     ('melder.utilities.ai_native_support_tools.protocol_crafter', 'ProtocolCrafter'): ('Cleanable',),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Edge'): ('NamedTuple',),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Group'): ('NamedTuple',),
+    ('melder.utilities.ai_native_support_tools.system_document_view', 'Impact'): ('NamedTuple',),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Node'): ('NamedTuple',),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'SearchHit'): ('NamedTuple',),
     ('melder.utilities.ai_native_support_tools.system_document_view', 'Section'): ('NamedTuple',),

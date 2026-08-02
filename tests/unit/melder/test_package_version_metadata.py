@@ -43,31 +43,43 @@ def test_generated_build_assets_are_stamped_for_the_live_version() -> None:
     import melder
     from melder.__version__ import __version__
 
-    # Generated manifests live at `_build_assets/<asset>/manifest/<asset>_manifest.py`,
-    # and stamp BARE constants - the annotations moved out when the loaders were
-    # split from the data. Both details have moved once already, and each time the
+    # Generated manifests live under `_build_assets/<asset>/manifest/` and stamp
+    # BARE constants - the annotations moved out when the loaders were split
+    # from the data. Both details have moved once already, and each time the
     # glob or the pattern silently matched NOTHING, turning this gate into a
     # no-op that still reported green. Hence the explicit emptiness assertion
     # below: this test must fail loudly when it stops finding assets, not pass
     # vacuously.
+    #
+    # Keyed by FILE, not by asset directory. An asset may emit more than one
+    # manifest module - `_system_documents` emits three, splitting the eager
+    # navigable surface from its deferred index and graph adjacency - and
+    # keying by directory collapsed those into a single entry while the
+    # comparison counted files. That made the gate read "3 of 5 stamped" when
+    # all five were stamped, and would equally have hidden ONE unstamped file
+    # behind a stamped sibling in the same directory.
     assets_root = Path(melder.__file__).parent / "_build_assets"
+    manifests = sorted(assets_root.glob("*/manifest/*.py"))
     stamped = {}
-    for generated in sorted(assets_root.glob("*/manifest/*.py")):
+    for generated in manifests:
         match = re.search(
             r'^BUILT_FOR_VERSION\s*=\s*"([^"]+)"',
             generated.read_text(encoding="utf-8"),
             re.MULTILINE,
         )
         if match:
-            stamped[generated.parent.parent.name] = match.group(1)
+            stamped[generated.relative_to(assets_root).as_posix()] = match.group(1)
 
     assert stamped, (
         "no generated build assets carried a BUILT_FOR_VERSION stamp - the glob or "
         "the pattern has drifted from the generated layout, so this gate is inert"
     )
-    assert len(stamped) == len(list(assets_root.glob("*/manifest/*.py"))), (
-        f"only {len(stamped)} of the discovered manifests were stamped: {stamped}"
-    )
+    unstamped = [
+        generated.relative_to(assets_root).as_posix()
+        for generated in manifests
+        if generated.relative_to(assets_root).as_posix() not in stamped
+    ]
+    assert not unstamped, f"generated manifests carrying no version stamp: {unstamped}"
     drifted = {name: v for name, v in stamped.items() if v != __version__}
     assert not drifted, f"assets stamped for the wrong version: {drifted} (package is {__version__})"
 

@@ -21,7 +21,7 @@ def reset_aether_world() -> None:
     are process-wide flips; without the reset they would leak forward and
     make later rows pass or fail depending on collection order.
 
-    Crystallizer joined the reset with arc E (lessons 19-20): checkpoint
+    Crystallizer joined the reset with arc E (lessons 17-18): checkpoint
     ids and cached checkpoints are process-wide, so without it one row's
     checkpoints show up in the next row's list_checkpoint_ids().
 
@@ -49,7 +49,7 @@ class Payload:
 
 
 def test_probe_frames_isolate_names_and_singletons():
-    """Lesson 03 contract (README claim, pinned): two frames bind the
+    """Lesson 02 contract (README claim, pinned): two frames bind the
     SAME class with zero collision, and unique = one singleton PER
     FRAME. A red here is a finding against the README."""
     book_a = Spellbook(aetheric_frame="probe-tenant-a")
@@ -63,7 +63,7 @@ def test_probe_frames_isolate_names_and_singletons():
 
 
 def test_probe_posture_public_door_then_freeze():
-    """Lesson 04 contract: configure_aether_frame(system_state="dynamic")
+    """Lesson 03 contract: configure_aether_frame(system_state="dynamic")
     before any conjure -> plain conjures inherit and link; after the
     first conjure froze the posture, reconfiguring refuses."""
     book = Spellbook(aetheric_frame="probe-ops")
@@ -99,7 +99,7 @@ def test_probe_devops_flags_gate_via_retained_posture_seam():
 
 
 def test_probe_attach_logger_lifecycle():
-    """Lesson 05 contract: melder boots silent; attach_logger attaches a
+    """Lesson 04 contract: melder boots silent; attach_logger attaches a
     real logger post-boot; None detaches back to the null wrapper;
     enable_logging(explicit) is the same attachment."""
     import logging
@@ -113,11 +113,11 @@ def test_probe_attach_logger_lifecycle():
 
 
 # ---------------------------------------------------------------------------
-# Lesson 08 - AethericFrameConfiguration is CONSTRUCTOR-FIRST
+# Lesson 06 - AethericFrameConfiguration is CONSTRUCTOR-FIRST
 # ---------------------------------------------------------------------------
 
 def test_probe_frame_posture_is_constructor_first():
-    """Lesson 08 claim #1: this config cannot be built empty. Four values
+    """Lesson 06 claim #1: this config cannot be built empty. Four values
     are REQUIRED keyword-only arguments. If a bare constructor ever starts
     working, the lesson's headline is wrong and this row goes red first."""
     with pytest.raises(TypeError):
@@ -133,7 +133,7 @@ def test_probe_frame_posture_is_constructor_first():
 
 
 def test_probe_frame_posture_with_star_mutates_and_returns_self():
-    """Lesson 08 claim #2: with_* is fluent in SHAPE ONLY. It mutates this
+    """Lesson 06 claim #2: with_* is fluent in SHAPE ONLY. It mutates this
     object and returns SELF - never a clone. The frame's settlement law
     requires the RETAINED posture to be the bound one, so a copying with_*
     would be silently harmful rather than merely surprising."""
@@ -153,7 +153,7 @@ def test_probe_frame_posture_with_star_mutates_and_returns_self():
 
 
 def test_probe_frame_posture_validate_raises_rather_than_returning_false():
-    """Lesson 08 claim #3: validate() RAISES. The bool return is a
+    """Lesson 06 claim #3: validate() RAISES. The bool return is a
     convention, not a verdict channel - a caller who writes
     `if not cfg.validate()` never runs. The semantic rule it enforces:
     ai_native_enabled requires system_state dynamic."""
@@ -172,7 +172,7 @@ def test_probe_frame_posture_validate_raises_rather_than_returning_false():
 
 
 def test_probe_frame_posture_finalize_seals_same_instance():
-    """Lesson 08 claim #4: finalize() freezes and returns THE SAME
+    """Lesson 06 claim #4: finalize() freezes and returns THE SAME
     instance, and the freeze seals rather than clears - values survive."""
     posture = md.AethericFrameConfiguration(
         origin_spellbook_id=None,
@@ -190,7 +190,7 @@ def test_probe_frame_posture_finalize_seals_same_instance():
 
 
 def test_probe_frame_posture_has_no_public_install_door():
-    """FINDING (2026-08-02, lesson 08): md.AethericFrameConfiguration is
+    """FINDING (2026-08-02, lesson 06): md.AethericFrameConfiguration is
     EXPORTED FROM THE PUBLIC ROOT AND CANNOT BE INSTALLED FROM IT.
     Spellbook.__init__ takes (aetheric_frame, configuration, logger) where
     `configuration` is a SpellbookConfiguration. This row pins the gap by
@@ -214,11 +214,11 @@ def test_probe_frame_posture_has_no_public_install_door():
 
 
 # ---------------------------------------------------------------------------
-# Lesson 09 - two doors, and the frozen/activated split
+# Lesson 07 - two doors, and the frozen/activated split
 # ---------------------------------------------------------------------------
 
 def test_probe_both_config_doors_land_frozen_not_activated():
-    """Lesson 09 claim: create_configuration().finalize() and
+    """Lesson 07 claim: create_configuration().finalize() and
     create_configuration_builder().build() land on the SAME rung - frozen,
     NOT activated. If either door ever auto-activates, the ladder the
     lesson teaches is wrong."""
@@ -238,7 +238,7 @@ def test_probe_both_config_doors_land_frozen_not_activated():
 
 
 def test_probe_config_activate_is_a_second_distinct_bit():
-    """Lesson 09 headline: frozen and activated are TWO bits. Freezing
+    """Lesson 07 headline: frozen and activated are TWO bits. Freezing
     sets one. activate() sets the other. Nothing sets both at once."""
     aether = Aether()
     config = aether.create_configuration().with_defaults().finalize()
@@ -249,7 +249,7 @@ def test_probe_config_activate_is_a_second_distinct_bit():
 
 
 def test_probe_aether_refuses_frozen_but_inactive_configuration():
-    """Lesson 09 ORDERING RULE, pinned where it is safe to pin it.
+    """Lesson 07 ORDERING RULE, pinned where it is safe to pin it.
     Aether's contract: "THE CONFIGURATION MUST BE ACTIVATED BEFORE AETHER
     CAN BE." This lives in the probe rather than the lesson because Aether
     is a process-wide singleton AND activate() installs the config BEFORE
@@ -275,11 +275,11 @@ def test_probe_aether_comes_up_once_the_rungs_are_climbed_in_order():
 
 
 # ---------------------------------------------------------------------------
-# Lesson 10 - Nexus enablement, and the asymmetry with Aether
+# Lesson 08 - Nexus enablement, and the asymmetry with Aether
 # ---------------------------------------------------------------------------
 
 def test_probe_nexus_factory_builds_but_never_installs():
-    """Lesson 10 claim: create_system_configuration() returns a NEW
+    """Lesson 08 claim: create_system_configuration() returns a NEW
     pre-defaulted config each call and installs nothing. If it ever starts
     installing, the lesson's "factories never wire" sentence is wrong."""
     nexus = Nexus()
@@ -294,14 +294,13 @@ def test_probe_nexus_factory_builds_but_never_installs():
 
 
 def test_probe_nexus_enable_finalizes_the_configuration_for_you():
-    """Lesson 10 HEADLINE, and the asymmetry that makes the lesson worth
+    """Lesson 08 HEADLINE, and the asymmetry that makes the lesson worth
     existing: Nexus.enable() finalizes the installed configuration on its
     way through. The caller never seals it. This is the OPPOSITE of
     Aether, which refuses a config the caller has not activated.
 
     A red here means the two subsystems converged - which would be good
-    news for the configuration-uniformity program, and would mean lesson
-    10's contrast section needs rewriting rather than the code."""
+    news for the configuration-uniformity program, and would mean lesson 08's contrast section needs rewriting rather than the code."""
     nexus = Nexus()
     config = nexus.create_system_configuration()
     assert config.frozen is False
@@ -313,7 +312,7 @@ def test_probe_nexus_enable_finalizes_the_configuration_for_you():
 
 
 def test_probe_nexus_disable_drops_liveness_not_configuration():
-    """Lesson 10 claim: configured and enabled are separate bits, so
+    """Lesson 08 claim: configured and enabled are separate bits, so
     disable() takes the subsystem down and leaves the config installed."""
     nexus = Nexus()
     nexus.enable(nexus.create_system_configuration())
@@ -324,7 +323,7 @@ def test_probe_nexus_disable_drops_liveness_not_configuration():
 
 
 def test_probe_nexus_frame_mode_is_a_real_enum():
-    """Lesson 10 claim: NexusFrameMode is an enum with exactly three
+    """Lesson 08 claim: NexusFrameMode is an enum with exactly three
     members, so a typo raises instead of silently defaulting."""
     modes = {mode.value for mode in md.NexusFrameMode}
     assert modes == {"single", "indexed", "one_per_workspace"}
@@ -335,7 +334,7 @@ def test_probe_nexus_frame_mode_is_a_real_enum():
 
 def test_probe_rift_space_type_is_a_real_enum():
     """Arc B foundation: RiftSpaceType names the three room kinds. Static
-    and capability are ADVANCED (lessons 12-13); codegen is EXPERT."""
+    and capability are ADVANCED (lessons 10-11); codegen is EXPERT."""
     kinds = {kind.value for kind in md.RiftSpaceType}
     assert kinds == {"static", "capability", "codegen"}
     print("rift space types pinned:", sorted(kinds))
@@ -350,7 +349,7 @@ def _enabled_nexus() -> "Nexus":
 
 
 def test_probe_rift_configuration_is_consumed_by_create_rift():
-    """Lesson 11 claim: create_rift() CONSUMES the configuration. One
+    """Lesson 09 claim: create_rift() CONSUMES the configuration. One
     config, one rift. A second call with the same object refuses with
     "already been consumed" - the same one-shot law build() follows."""
     nexus = _enabled_nexus()
@@ -364,7 +363,7 @@ def test_probe_rift_configuration_is_consumed_by_create_rift():
 
 
 def test_probe_rift_registered_and_active_are_separate_bits():
-    """Lesson 11 HEADLINE - the third appearance of melder's most repeated
+    """Lesson 09 HEADLINE - the third appearance of melder's most repeated
     law. Creation REGISTERS; it does not make live. mark_inactive() drops
     liveness and leaves registration standing.
 
@@ -385,7 +384,7 @@ def test_probe_rift_registered_and_active_are_separate_bits():
 
 
 def test_probe_created_rift_is_findable_on_the_nexus_registry():
-    """Lesson 11 claim: create_rift registers through add_rift, so the
+    """Lesson 09 claim: create_rift registers through add_rift, so the
     rift is discoverable by id without a second registration step."""
     nexus = _enabled_nexus()
     config = nexus.create_rift_configuration()
@@ -407,7 +406,7 @@ def _rift_with_room(nexus, space_type, name="probe-room"):
 
 
 def test_probe_a_rift_owns_exactly_one_room_by_identity():
-    """Lesson 12 claim: `rift.space` is THE room, not a lookup or factory.
+    """Lesson 10 claim: `rift.space` is THE room, not a lookup or factory.
     Identity on every read, and no verb exists to swap or re-type it."""
     nexus = _enabled_nexus()
     rift = _rift_with_room(nexus, "static", "probe-one-room")
@@ -421,9 +420,9 @@ def test_probe_a_rift_owns_exactly_one_room_by_identity():
 
 
 def test_probe_every_room_carries_the_same_fixture_set_by_name():
-    """Lesson 12 claim, sharpened by the owner's run: every room carries
+    """Lesson 10 claim, sharpened by the owner's run: every room carries
     the same fixtures BY NAME whatever its kind. Two of them differ BY
-    TYPE (command_system, frame_viewer - see the corrected lesson 13);
+    TYPE (command_system, frame_viewer - see the corrected lesson 11);
     the other three are literally the same classes."""
     nexus = _enabled_nexus()
     static_room = _rift_with_room(
@@ -441,7 +440,7 @@ def test_probe_every_room_carries_the_same_fixture_set_by_name():
 
 
 def test_probe_configured_space_type_becomes_the_room_kind():
-    """Lesson 12 claim: RiftSpaceType is the single input that fixes the
+    """Lesson 10 claim: RiftSpaceType is the single input that fixes the
     room kind, and the room reports back exactly what was configured."""
     nexus = _enabled_nexus()
     for space_type in ("static", "capability"):
@@ -452,7 +451,7 @@ def test_probe_configured_space_type_becomes_the_room_kind():
 
 
 def test_probe_rift_space_type_docstring_documents_a_member_that_is_gone():
-    """FINDING (doc drift, 2026-08-02, lesson 12): RiftSpaceType's
+    """FINDING (doc drift, 2026-08-02, lesson 10): RiftSpaceType's
     docstring documents a FOURTH member -
 
         "dynamic: Legacy alias for `codegen`. Retained temporarily so
@@ -479,7 +478,7 @@ def test_probe_rift_space_type_docstring_documents_a_member_that_is_gone():
 
 
 def test_probe_room_kind_changes_exactly_two_fixtures():
-    """Lesson 13, CORRECTED by the owner's run 2026-08-02.
+    """Lesson 11, CORRECTED by the owner's run 2026-08-02.
 
     My original claim was that the room kinds override EXACTLY ONE
     property, command_system. THAT WAS WRONG. They override TWO:
@@ -516,7 +515,7 @@ def test_probe_room_kind_changes_exactly_two_fixtures():
 
 
 def test_probe_authority_is_granted_by_absence_not_by_refusal():
-    """Lesson 13 HEADLINE. The static command surface does not DENY the
+    """Lesson 11 HEADLINE. The static command surface does not DENY the
     mutating verbs - it does not HAVE them. melder's own note says the
     methods "live on the capability surface INSTEAD OF BEING DENIED AFTER
     INHERITANCE".
@@ -545,7 +544,7 @@ def test_probe_authority_is_granted_by_absence_not_by_refusal():
 
 
 def test_probe_reuse_is_available_to_static_but_creation_is_not():
-    """Lesson 13 claim: meld_existing_spell (REUSE) is on both surfaces;
+    """Lesson 11 claim: meld_existing_spell (REUSE) is on both surfaces;
     meld (CREATION) is capability-only. The static room can hand back
     something that already exists - it cannot bring anything into being."""
     nexus = _enabled_nexus()
@@ -564,7 +563,7 @@ def test_probe_reuse_is_available_to_static_but_creation_is_not():
 
 
 def test_probe_rooms_enumerate_their_own_command_surface():
-    """Lesson 13 AIX claim: list_supported_command_methods() lets a caller
+    """Lesson 11 AIX claim: list_supported_command_methods() lets a caller
     READ a room's authority instead of probing it by trying things, and
     capability is the strictly broader surface."""
     nexus = _enabled_nexus()
@@ -592,7 +591,7 @@ def _workstation(nexus, name="probe-bench"):
 
 
 def test_probe_workstation_stores_are_independent_namespaces():
-    """Lesson 14 claim: objects / attributes / methods are SEPARATE
+    """Lesson 12 claim: objects / attributes / methods are SEPARATE
     logical stores, so the same name in two stores is not a collision and
     releasing from one leaves the other standing."""
     workstation = _workstation(_enabled_nexus(), "probe-stores")
@@ -613,7 +612,7 @@ def test_probe_workstation_stores_are_independent_namespaces():
 
 
 def test_probe_explicit_weak_binding_refuses_instead_of_degrading():
-    """Lesson 14 HEADLINE, and melder's honesty rule in miniature:
+    """Lesson 12 HEADLINE, and melder's honesty rule in miniature:
 
         "Explicit weak binding raises when the supplied value cannot be
          weak-referenced; it never silently degrades to strong storage."
@@ -641,7 +640,7 @@ def test_probe_explicit_weak_binding_refuses_instead_of_degrading():
 
 
 def test_probe_workstation_holds_at_most_one_target():
-    """Lesson 14 claim: at most one active target, and clear_target()
+    """Lesson 12 claim: at most one active target, and clear_target()
     deselects WITHOUT deleting the binding it pointed at."""
     workstation = _workstation(_enabled_nexus(), "probe-target")
     greeter = _Greeter()
@@ -657,7 +656,7 @@ def test_probe_workstation_holds_at_most_one_target():
 
 
 def test_probe_describe_bindings_returns_five_keys_not_the_documented_four():
-    """FINDING (doc drift, 2026-08-02, lesson 14): describe_bindings()
+    """FINDING (doc drift, 2026-08-02, lesson 12): describe_bindings()
     documents "a FOUR-KEY summary - `objects`, `attributes`, `methods` and
     `target_name` - always with all four keys present, so callers can
     index". IT RETURNS FIVE - the implementation also emits
@@ -665,7 +664,7 @@ def test_probe_describe_bindings_returns_five_keys_not_the_documented_four():
 
     This one has teeth: the docstring explicitly invites callers to rely
     on the count. Second drift of this shape in arc B (RiftSpaceType's
-    documented-but-absent `dynamic`, lesson 12).
+    documented-but-absent `dynamic`, lesson 10).
 
     Green while the docs are wrong; red when either side is fixed."""
     workstation = _workstation(_enabled_nexus(), "probe-drift")
@@ -682,7 +681,7 @@ def test_probe_describe_bindings_returns_five_keys_not_the_documented_four():
 
 
 def test_probe_workstation_is_not_a_resolver():
-    """Lesson 14 claim: the canvas STORES, it does not RESOLVE. It has no
+    """Lesson 12 claim: the canvas STORES, it does not RESOLVE. It has no
     discovery verbs - resolution belongs to the command system. If a
     lookup verb ever lands here, the separation the lesson teaches is
     gone and the two fixtures have started overlapping."""
@@ -702,7 +701,7 @@ def _viewer(nexus, name="probe-observatory"):
 
 
 def test_probe_view_accessors_split_into_host_and_frame_scoped():
-    """Lesson 15, CORRECTED by the owner's run 2026-08-02.
+    """Lesson 13, CORRECTED by the owner's run 2026-08-02.
 
     get_view_multiframe() is HOST-SCOPED and works with nothing bound.
     get_view_frame / get_view_conduit / get_view_spell are FRAME-SCOPED
@@ -744,7 +743,7 @@ def test_probe_frame_scoped_accessors_default_to_an_invalid_value():
 
 
 def test_probe_frame_viewer_holds_no_snapshot():
-    """Lesson 15 claim: the facade resolves PER INVOCATION - melder's own
+    """Lesson 13 claim: the facade resolves PER INVOCATION - melder's own
     docstrings say it builds "a ViewMultiFrame per invocation against a
     freshly resolved" source. So two calls give two objects and a viewer
     held for an hour cannot serve an hour-old world.
@@ -757,7 +756,7 @@ def test_probe_frame_viewer_holds_no_snapshot():
 
 
 def test_probe_frame_viewer_reads_are_coherent_on_an_empty_world():
-    """Lesson 15 claim: the read surface works on a fresh rift with no
+    """Lesson 13 claim: the read surface works on a fresh rift with no
     assigned frames - honest zeros, not errors - and count agrees with
     the list it counts."""
     viewer = _viewer(_enabled_nexus(), "probe-empty")
@@ -769,14 +768,14 @@ def test_probe_frame_viewer_reads_are_coherent_on_an_empty_world():
 
 
 def test_probe_viewer_onboards_agents_in_valid_json():
-    """Lesson 15 HEADLINE and arc C's AIX claim: the viewer carries a
+    """Lesson 13 HEADLINE and arc C's AIX claim: the viewer carries a
     surface built FOR AGENTS by name - describe_agent_onboarding_json(),
     describe_viewer_agent_purpose_json() - and both must be PARSEABLE, not
     merely present. A method that returns malformed JSON is worse than no
     method, because a caller has no way to tell the difference until it
     breaks mid-parse.
 
-    Same idea as list_supported_command_methods() in lesson 13: melder
+    Same idea as list_supported_command_methods() in lesson 11: melder
     answers "what may I do here?" with a method instead of a manual."""
     import json
     viewer = _viewer(_enabled_nexus(), "probe-aix")
@@ -795,7 +794,7 @@ def test_probe_viewer_onboards_agents_in_valid_json():
 
 
 def test_probe_viewer_clone_is_independent_but_agrees():
-    """Lesson 15 claim: clone() returns a separate facade over the same
+    """Lesson 13 claim: clone() returns a separate facade over the same
     world - a different object that reads the same numbers."""
     viewer = _viewer(_enabled_nexus(), "probe-clone")
     twin = viewer.clone()
@@ -806,7 +805,7 @@ def test_probe_viewer_clone_is_independent_but_agrees():
 
 
 def test_probe_the_spell_describe_ladder_exists_rung_by_rung():
-    """Lesson 16 claim: ViewSpell offers GRADED RESOLUTION - brief,
+    """Lesson 14 claim: ViewSpell offers GRADED RESOLUTION - brief,
     normal, detail, payload - plus nine per-facet verbs. The ladder is a
     context budget control: survey 400 spells at brief, pay full price for
     the three that matter. A missing rung collapses that trade."""
@@ -825,7 +824,7 @@ def test_probe_the_spell_describe_ladder_exists_rung_by_rung():
 
 
 def test_probe_the_conduit_view_follows_the_same_plan():
-    """Lesson 16 claim: ViewConduit is built to the same shape, and its
+    """Lesson 14 claim: ViewConduit is built to the same shape, and its
     narrowing filters sit on the CHEAP rung so a caller can reduce the
     set before paying to describe it."""
     for verb in ("describe_conduit_brief", "describe_conduit",
@@ -840,10 +839,10 @@ def test_probe_the_conduit_view_follows_the_same_plan():
 
 
 def test_probe_host_scoped_reads_answer_on_an_empty_world():
-    """Lesson 16, CORRECTED by the owner's run. My original claim was
+    """Lesson 14, CORRECTED by the owner's run. My original claim was
     that ALL reads answer with honest empties on a frameless rift. Only
     the HOST-SCOPED ones do - the frame-scoped views refuse, and refusing
-    is right (see lesson 17).
+    is right (see lesson 15).
 
     What survives, and it is the part that mattered: the SURVEY entry
     point works before you have committed to anything. count agrees with
@@ -867,12 +866,12 @@ def view_list(value) -> bool:
 
 
 def test_probe_every_view_can_report_its_own_blind_spots():
-    """Lesson 17 claim: the withheld-section probe exists at EVERY level
+    """Lesson 15 claim: the withheld-section probe exists at EVERY level
     of the view family, so a caller never has to wonder whether this
     particular view can tell it what it is hiding.
 
     Checked on the TYPES - the frame-scoped views cannot be instantiated
-    without an assigned frame (lesson 15), and the probe's EXISTENCE is a
+    without an assigned frame (lesson 13), and the probe's EXISTENCE is a
     property of the class either way."""
     assert hasattr(md.ViewSpell, "describe_spell_missing_sections")
     assert hasattr(md.ViewConduit, "describe_conduit_missing_sections")
@@ -882,7 +881,7 @@ def test_probe_every_view_can_report_its_own_blind_spots():
 
 
 def test_probe_visible_and_missing_are_complements():
-    """Lesson 17 claim: describe_visible_surface() and
+    """Lesson 15 claim: describe_visible_surface() and
     describe_missing_surface() are a PAIR - "what I can see" and "what I
     cannot". Either alone is half an answer, so both must exist wherever
     one does."""
@@ -893,7 +892,7 @@ def test_probe_visible_and_missing_are_complements():
 
 
 def test_probe_blind_spot_report_refuses_when_no_frame_is_bound():
-    """Lesson 17, CORRECTED by the owner's run 2026-08-02.
+    """Lesson 15, CORRECTED by the owner's run 2026-08-02.
 
     I predicted this row might go red and said so in its docstring: "if
     it raises on an unbound frame, the lesson needs a bound frame". It
@@ -917,14 +916,14 @@ def test_probe_blind_spot_report_refuses_when_no_frame_is_bound():
 
 
 def test_probe_frame_name_is_an_assertion_not_a_selector():
-    """Lesson 17's anti-footgun: frame_name on these reads is a GUARD, not
+    """Lesson 15's anti-footgun: frame_name on these reads is a GUARD, not
     a filter - "when supplied it must match the bound frame or the call
     raises". You cannot accidentally read a different frame than the one
     you believe you are holding.
 
     A rift with no assigned frames cannot match ANY name, so supplying one
     must be refused rather than quietly answered about something else.
-    This is melder's never-substitute rule (lessons 08/13/14) applied to
+    This is melder's never-substitute rule (lessons 06/13/14) applied to
     the read surface."""
     nexus = _enabled_nexus()
     rift = _rift_with_room(nexus, "static", "probe-assertion")
@@ -945,7 +944,7 @@ def _dynamic_root(frame: str, conduit_name: str):
 
 
 def test_probe_policy_door_is_dynamic_mode_only():
-    """Lesson 18 refusal #1: set_new_policy on an AUTOMATIC frame raises.
+    """Lesson 16 refusal #1: set_new_policy on an AUTOMATIC frame raises.
     Wards only form and sever contracts at runtime in dynamic mode, so
     outside it the setting would be decoration."""
     book = Spellbook(aetheric_frame="probe-ward-automatic")
@@ -957,7 +956,7 @@ def test_probe_policy_door_is_dynamic_mode_only():
 
 
 def test_probe_policy_accepts_both_the_enum_and_the_string():
-    """Lesson 18 FINDING: Conduit.set_new_policy is annotated `policy:
+    """Lesson 16 FINDING: Conduit.set_new_policy is annotated `policy:
     str`, but it delegates to a ward method typed `str | Policies` that
     runs EnumHelpers.convert_enum_and_check. So the exported md.Policies
     enum works - the public hint under-sells the code.
@@ -973,7 +972,7 @@ def test_probe_policy_accepts_both_the_enum_and_the_string():
 
 
 def test_probe_policies_value_is_an_int_not_the_mode_name():
-    """Lesson 18 FINDING: Policies uses auto(), so `.value` is an INT.
+    """Lesson 16 FINDING: Policies uses auto(), so `.value` is an INT.
     Anyone reaching for `.value` to build the string argument gets a
     number. `.name` is the string form."""
     assert {p.name for p in md.Policies} == {
@@ -987,7 +986,7 @@ def test_probe_policies_value_is_an_int_not_the_mode_name():
 
 
 def test_probe_lesser_conduits_cannot_hold_a_policy():
-    """Lesson 18 refusal #2: policy belongs to the owner of a lineage, not
+    """Lesson 16 refusal #2: policy belongs to the owner of a lineage, not
     to a borrower. A lesser conduit is told to convert first."""
     _, root = _dynamic_root("probe-ward-lesser", "probe-lesser-root")
     lesser = root.create_lesser_conduit()
@@ -997,7 +996,7 @@ def test_probe_lesser_conduits_cannot_hold_a_policy():
 
 
 def test_probe_no_retroactive_lockdown_while_contracts_exist():
-    """Lesson 18 refusal #3, and the one worth the lesson. Setting
+    """Lesson 16 refusal #3, and the one worth the lesson. Setting
     block_all or whitelist_all WHILE CONTRACTS EXIST raises.
 
     Melder will not silently sever what you already granted, and it will
@@ -1027,7 +1026,7 @@ def test_probe_no_retroactive_lockdown_while_contracts_exist():
 
 
 def test_probe_policy_is_write_only_on_the_public_surface():
-    """Lesson 18 FINDING: set_new_policy is public; there is NO public way
+    """Lesson 16 FINDING: set_new_policy is public; there is NO public way
     to read a conduit's current policy back. Write-only authority - you
     can change it and cannot audit it from outside.
 
@@ -1056,7 +1055,7 @@ def _active_crystallizer() -> "Crystallizer":
 
 
 def test_probe_crystallizer_follows_aethers_ladder_not_nexuss():
-    """Lesson 19 HEADLINE. Three subsystems, two ladders:
+    """Lesson 17 HEADLINE. Three subsystems, two ladders:
 
         Aether       caller finalizes AND activates the config, then
                      subsystem.activate() - a merely-frozen config raises
@@ -1065,8 +1064,7 @@ def test_probe_crystallizer_follows_aethers_ladder_not_nexuss():
 
     Two against one, so caller-driven activation is the house rule and
     Nexus is the exception. A red here means they converged - good news
-    for the configuration-uniformity program, and it would mean lessons
-    10 and 19 need their contrast sections rewritten."""
+    for the configuration-uniformity program, and it would mean lessons 08 and 19 need their contrast sections rewritten."""
     crystallizer = Crystallizer()
     assert crystallizer.activated is False
 
@@ -1084,7 +1082,7 @@ def test_probe_crystallizer_follows_aethers_ladder_not_nexuss():
 
 
 def test_probe_crystallizer_builder_offers_a_terminator_per_rung():
-    """Lesson 19 claim: CrystallizerConfigurationBuilder is the most
+    """Lesson 17 claim: CrystallizerConfigurationBuilder is the most
     generous builder in the library - build / finalize / activate, one
     exit per rung - while AetherConfigurationBuilder offers only build()
     and leaves rung 2 to the caller.
@@ -1103,7 +1101,7 @@ def test_probe_crystallizer_builder_offers_a_terminator_per_rung():
 
 
 def test_probe_create_checkpoint_returns_an_id_that_lists_and_describes():
-    """Lesson 19 claim: create_checkpoint hands back an ID and the ID is
+    """Lesson 17 claim: create_checkpoint hands back an ID and the ID is
     the whole handle - list_checkpoint_ids finds it, describe_checkpoint
     reads it."""
     crystallizer = _active_crystallizer()
@@ -1123,7 +1121,7 @@ def test_probe_create_checkpoint_returns_an_id_that_lists_and_describes():
 
 
 def test_probe_checkpoints_accumulate_rather_than_overwrite():
-    """Lesson 19 claim: a second checkpoint is a NEW id, not a
+    """Lesson 17 claim: a second checkpoint is a NEW id, not a
     replacement. If checkpoints ever started overwriting, every restore
     story in arc E changes."""
     crystallizer = _active_crystallizer()
@@ -1136,7 +1134,7 @@ def test_probe_checkpoints_accumulate_rather_than_overwrite():
 
 
 def test_probe_flush_moves_a_checkpoint_from_created_to_cached():
-    """Lesson 20 claim: a checkpoint lives in two places - CREATED (an id
+    """Lesson 18 claim: a checkpoint lives in two places - CREATED (an id
     in the running crystallizer) and CACHED (sealed locally).
     flush_checkpoint is the verb that moves it."""
     crystallizer = _active_crystallizer()
@@ -1150,7 +1148,7 @@ def test_probe_flush_moves_a_checkpoint_from_created_to_cached():
 
 
 def test_probe_the_cached_read_path_round_trips():
-    """Lesson 20 claim: the id stays the whole handle across the seal -
+    """Lesson 18 claim: the id stays the whole handle across the seal -
     a cached checkpoint reads back as a dict.
 
     Guarded on presence rather than assumed, because the cache is FIFO
@@ -1168,7 +1166,7 @@ def test_probe_the_cached_read_path_round_trips():
 
 
 def test_probe_checkpoint_chain_verification_answers():
-    """Lesson 20 claim: checkpoints form a CHAIN, not a pile, and the
+    """Lesson 18 claim: checkpoints form a CHAIN, not a pile, and the
     crystallizer can report on that lineage."""
     crystallizer = _active_crystallizer()
     crystallizer.create_checkpoint(description="probe-chain-1")
@@ -1179,7 +1177,7 @@ def test_probe_checkpoint_chain_verification_answers():
 
 
 def test_probe_deletion_is_explicit_and_removes_from_the_cache():
-    """Lesson 20 claim: EVICTION is a side effect of a bounded cache;
+    """Lesson 18 claim: EVICTION is a side effect of a bounded cache;
     DELETION is a decision. The two must not be confused, so deletion has
     its own verb and its effect is observable."""
     crystallizer = _active_crystallizer()
@@ -1199,10 +1197,10 @@ def test_probe_caller_driven_activation_is_the_house_rule_three_to_one():
     program. FOUR subsystems, and only ONE activates the configuration on
     the caller's behalf:
 
-        Aether           caller activates the config   (lesson 09)
-        Crystallizer     caller activates the config   (lesson 19)
+        Aether           caller activates the config   (lesson 07)
+        Crystallizer     caller activates the config   (lesson 17)
         MutationResearch caller activates the config   (expert tier)
-        Nexus            enable() does it FOR you      (lesson 10)
+        Nexus            enable() does it FOR you      (lesson 08)
 
     Their configuration BUILDERS diverge the same way: crystallizer and
     mutation-research offer build/finalize/activate; aether offers only
@@ -1254,7 +1252,7 @@ def test_probe_rift_enabled_has_no_public_setter():
     NO PUBLIC DOOR TO SET IT. It is not a parameter of
     Spellbook.configure_aether_frame, and the frame posture that owns
     with_rift_enabled() cannot be installed from the public root
-    (lesson 08 finding). Rifts themselves ARE reachable - Nexus.enable and
+    (lesson 06 finding). Rifts themselves ARE reachable - Nexus.enable and
     create_rift are public - but AR targeting is not.
 
     Pinned so the gap is a test rather than a memory. Goes red the day a

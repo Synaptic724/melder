@@ -6,7 +6,7 @@ from the files themselves, which is the only reason it can be trusted.
 | field | value |
 | --- | --- |
 | manifest_version | 1.0.0 |
-| package_version | 2.15.1 |
+| package_version | 2.15.2 |
 | files | 445 |
 
 ## Lane policy

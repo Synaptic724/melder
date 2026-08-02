@@ -262,6 +262,14 @@ def test_internal_depths_stay_off_the_root():
         # extension API was unusable from outside. Curated off the root
         # rather than left as half a feature.
         "SpellExaminer",
+        # Owner ruling 2026-08-02: Scan is not user surface either.
+        # `Spellbook.scan(module)` is the API - it applies the frame POSTURE
+        # GATE and wraps the work in a BIND TRANSACTION before it constructs
+        # a Scan. Building `Scan(book)` yourself skips both guards, so
+        # exporting the class only advertised a way around them.
+        # `scan_bind` (the decorator) STAYS exported - it is the user-facing
+        # half and every scan lesson uses it.
+        "Scan",
     ):
         assert name not in melder.__all__
         assert name not in vars(melder)

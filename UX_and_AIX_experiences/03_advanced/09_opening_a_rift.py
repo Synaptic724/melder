@@ -1,11 +1,11 @@
 """
-TIER: advanced (11)
+TIER: advanced (09)
 GOAL: OPENING A RIFT - and meeting melder's most repeated law for the
       third time in three lessons.
 
       THE PATH (each step needs the one above it)
         nexus = md.Nexus()
-        nexus.enable(nexus.create_system_configuration())    # lesson 10
+        nexus.enable(nexus.create_system_configuration())    # lesson 08
         rift_config = nexus.create_rift_configuration()
         rift_config.with_space_type("static")
         rift = nexus.create_rift(configuration=rift_config, rift_name="ops")
@@ -14,16 +14,16 @@ GOAL: OPENING A RIFT - and meeting melder's most repeated law for the
       create_rift() takes ownership. Hand the same configuration to a
       second create_rift() and it refuses with "RiftConfiguration has
       already been consumed." One configuration, one rift - the same
-      one-shot law AetherConfigurationBuilder.build() follows (lesson 09).
+      one-shot law AetherConfigurationBuilder.build() follows (lesson 07).
       If you want two rifts, you ask the factory twice.
 
       THE LAW YOU HAVE NOW SEEN THREE TIMES
       Melder never conflates "this exists" with "this is live". Every
       subsystem splits it into two bits, and only the names change:
 
-        lesson 09  config   frozen         / activated
-        lesson 10  nexus    is_configured  / is_enabled
-        lesson 11  rift     is_registered  / is_active
+        lesson 07  config   frozen         / activated
+        lesson 08  nexus    is_configured  / is_enabled
+        lesson 09  rift     is_registered  / is_active
 
       Once you have seen it three times it stops being trivia and starts
       being the thing you predict. When you meet a melder object you have
@@ -45,7 +45,7 @@ import melder as md
 def main() -> None:
     nexus = md.Nexus()
 
-    # A rift needs a live nexus underneath it - lesson 10's ladder.
+    # A rift needs a live nexus underneath it - lesson 08's ladder.
     system_config = nexus.create_system_configuration()
     system_config.with_rift_creation_enabled(True)
     nexus.enable(system_config)
@@ -62,7 +62,7 @@ def main() -> None:
     print("rift configuration staged: static room named 'health'")
 
     # create_rift finalizes the configuration on the way through - the same
-    # courtesy Nexus.enable() extended in lesson 10, and still the opposite
+    # courtesy Nexus.enable() extended in lesson 08, and still the opposite
     # of what Aether does.
     rift = nexus.create_rift(configuration=rift_config, rift_name="ops")
     assert isinstance(rift, md.Rift)
@@ -93,7 +93,7 @@ def main() -> None:
           "active:", rift.is_active)
 
     # The rift owns a concrete room and a gate. The room's kind came from
-    # the configuration; the gate is the entry control (lesson 12 uses it).
+    # the configuration; the gate is the entry control (lesson 10 uses it).
     assert rift.space is not None
     assert rift.rift_gate is not None
     print("room:", type(rift.space).__name__,

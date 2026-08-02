@@ -1,16 +1,16 @@
 """
-TIER: advanced (19)
+TIER: advanced (17)
 GOAL: TAKING A CHECKPOINT - and settling which configuration ladder is
       the house rule.
 
       YOU HAVE NOW SEEN THREE SUBSYSTEMS COME UP.
 
-        lesson 09  Aether       you finalize, you activate the config,
+        lesson 07  Aether       you finalize, you activate the config,
                                 THEN aether.activate() - and handing it a
                                 merely-frozen config raises
-        lesson 10  Nexus        you hand over a config and enable()
+        lesson 08  Nexus        you hand over a config and enable()
                                 finalizes it FOR you
-        lesson 19  Crystallizer ...follows AETHER.
+        lesson 17  Crystallizer ...follows AETHER.
 
       The Crystallizer contract says it in the same capitals Aether used:
 
@@ -43,7 +43,7 @@ GOAL: TAKING A CHECKPOINT - and settling which configuration ladder is
         describe_checkpoint(id)      what is in one
         analyze_checkpoint(id)       a deeper read
         verify_checkpoint_chain(...) is the lineage intact
-      Lesson 20 does the loading half.
+      Lesson 18 does the loading half.
 
       TWO BITS, FIFTH APPEARANCE: activated / is_activated on the
       Crystallizer, and `activated` on its configuration. By now you
@@ -61,7 +61,7 @@ def main() -> None:
     print("crystallizer activated at start:", crystallizer.activated)
     assert crystallizer.activated is False
 
-    # THE CONFIG. Bare constructor - unlike the frame posture in lesson 08,
+    # THE CONFIG. Bare constructor - unlike the frame posture in lesson 06,
     # this one you build empty and fill in.
     config = md.CrystallizerConfiguration()
     config.with_defaults()
@@ -109,7 +109,7 @@ def main() -> None:
     print("checkpoints before:", len(before))
 
     checkpoint_id = crystallizer.create_checkpoint(
-        description="advanced lesson 19 - first checkpoint",
+        description="advanced lesson 17 - first checkpoint",
     )
     assert isinstance(checkpoint_id, str) and checkpoint_id
     print("created checkpoint:", checkpoint_id)

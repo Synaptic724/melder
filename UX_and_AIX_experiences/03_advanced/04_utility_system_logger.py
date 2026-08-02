@@ -1,5 +1,5 @@
 """
-TIER: advanced (05)
+TIER: advanced (04)
 GOAL: Logging through the AetherUtilitySystem - the process-wide
       provider host every runtime object resolves its logger from.
       THE BOOT LAW: melder boots SILENT. Aether starts with a null

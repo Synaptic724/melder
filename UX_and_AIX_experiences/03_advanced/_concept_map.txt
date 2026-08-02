@@ -1,7 +1,8 @@
 CONCEPT MAP - 03_advanced (README tier: ORANGE Advanced)
 ==========================================================
-Multi-tenant / multi-world systems: frame isolation, read-only rooms,
-clusters at scale, deep overrides. Mostly UNAUTHORED - two seeds exist.
+Isolation + AR: frame posture and configuration surfaces, Nexus and rifts,
+rooms by kind (STATIC and CAPABILITY), the View* read family, ward
+policies, and checkpoint/load. 18 lessons authored, 01-18 sequential.
 
 HOUSE RULE - STRINGS, NOT ENUMS
   Demos pass STRINGS for every enum-shaped argument: existence="unique",
@@ -11,7 +12,7 @@ HOUSE RULE - STRINGS, NOT ENUMS
   through EnumHelpers.convert_enum_and_check. Measured convention across
   the corpus: 113 string uses vs 8 enum uses. Enum references survive ONLY
   where the enum itself is the subject (the RiftSpaceType doc-drift check
-  at lesson 12, the auto()/.value footgun at lesson 18).
+  at lesson 10, the auto()/.value footgun at lesson 16).
 
   AND HERE IS THE REASON IT IS A RULE AND NOT A STYLE (measured
   2026-08-02, after `.value` assertions went red on the owner's run):
@@ -26,55 +27,58 @@ HOUSE RULE - STRINGS, NOT ENUMS
   Reading a property back? Use `.name`. Passing one in? Use a literal.
   Never reach for `.value` unless you have checked which kind it is.
 
-AUTHORED
-  01 DELETED 2026-08-02 (owner): was a declaration-only stub for
-     existence="unique_per_conduit_cluster". Cluster material is taught
-     at INTERMEDIATE, and users do not need to set up a conduit cluster.
-     Do not refill the number.
-  02 deep_spell_override_paths ("transport>credentials" path form;
+RETIRED LESSONS (numbers RECLAIMED by the 2026-08-02 renumber - these
+titles no longer correspond to any slot, they are kept as history)
+  - existence_unique_per_conduit_cluster: DELETED 2026-08-02 (owner). A
+    declaration-only stub. Cluster material is taught at INTERMEDIATE and
+    users do not need to set up a conduit cluster.
+  - frame_caching_knob: RETIRED 2026-07-26 (owner). A turn-off-the-cache
+    lesson is useless; cache teaching belongs with the crystallizer arc
+    and must name WHERE the cache lives on disk. File parked at
+    _to_delete/adv06_frame_caching_knob.py.
+
+AUTHORED (01-18, sequential, no gaps - renumbered 2026-08-02)
+  01 deep_spell_override_paths ("transport>credentials" path form;
      flat form is intermediate 08)
-  03 frames_as_worlds (categories arc ACT 3: aetheric_frame= births an
+  02 frames_as_worlds (categories arc ACT 3: aetheric_frame= births an
      isolated world; same class + same name in two frames, zero
      collision; unique = one singleton PER FRAME)
-  04 frame_posture_public_door (configure_aether_frame sets the world's
+  03 frame_posture_public_door (configure_aether_frame sets the world's
      system_state BEFORE conjure; plain conjures inherit; the posture
      freezes at first conjure - reconfigure refuses)
-  05 utility_system_logger (boots-silent law; attach_logger /
+  04 utility_system_logger (boots-silent law; attach_logger /
      enable_logging are the public post-boot doors; None detaches)
 
-  06 RETIRED (owner ruling 2026-07-26: a turn-off-the-cache lesson is
-     useless; cache teaching belongs with the crystallizer arc and must
-     name WHERE the cache lives on disk)
-  07 frame_posture_cheatsheet (ALL 15 posture knobs mapped: mode, AR
+  05 frame_posture_cheatsheet (ALL 15 posture knobs mapped: mode, AR
      eligibility, sharing, caching, the 7 devops brakes, transaction
      patience, the 3 presets, the freeze law)
-  08 frame_posture_object (the object itself: CONSTRUCTOR-FIRST, 4
+  06 frame_posture_object (the object itself: CONSTRUCTOR-FIRST, 4
      required kw-only values; with_* mutates and returns SELF never a
      copy; validate() RAISES rather than returning False - ai_native
      requires dynamic; finalize() seals and returns THE SAME instance)
-  09 aether_config_two_doors (create_configuration().finalize() vs
+  07 aether_config_two_doors (create_configuration().finalize() vs
      create_configuration_builder().build() - same destination, different
      ownership; build() is one-shot and CONSUMING. THE LADDER: frozen and
      activated are TWO BITS. finalize/build -> frozen. activate -> in
      force. config.activate() BEFORE aether.activate() or it raises)
-  10 nexus_enablement (md.Nexus() -> create_system_configuration() ->
+  08 nexus_enablement (md.Nexus() -> create_system_configuration() ->
      enable(config). THREE ASYMMETRIES WITH AETHER: the nexus factory
      PRE-DEFAULTS, enable() FINALIZES FOR YOU (aether makes the caller
      activate first), and neither factory installs. is_configured vs
      is_enabled = the two-bit split again under different names;
      disable() drops liveness and keeps the configuration)
-  11 opening_a_rift (create_rift_configuration -> with_space_type ->
+  09 opening_a_rift (create_rift_configuration -> with_space_type ->
      create_rift. THE CONFIG IS CONSUMED - one config, one rift, second
      use raises "already been consumed". is_registered vs is_active is
      the THIRD two-bit split; creation registers but does not make live)
 
-  12 the_room_and_its_fixtures (ONE RIFT = ONE ROOM, kind chosen once at
+  10 the_room_and_its_fixtures (ONE RIFT = ONE ROOM, kind chosen once at
      creation and NEVER switched - no room registry, no active-space, no
      re-type verb. Fixtures identical on every kind: frame_viewer,
      workstation, command_system, event_system, memory_system, plus
      action/category hooks. Shape is constant; AUTHORITY is not)
 
-  13 static_vs_capability_authority (the kinds override EXACTLY ONE
+  11 static_vs_capability_authority (the kinds override EXACTLY ONE
      property: command_system. AUTHORITY IS GRANTED BY CLASS MEMBERSHIP,
      NEVER DENIED BY GUARD - static does not refuse meld(), it does not
      HAVE it. melder's own note: those methods "live on the capability
@@ -85,7 +89,7 @@ AUTHORED
      create_lesser_conduit, and the 5 cluster verbs. AIX door:
      list_supported_command_methods() - read authority, do not probe it)
 
-  14 the_workstation_canvas (room-local binding canvas - it HOLDS, it
+  12 the_workstation_canvas (room-local binding canvas - it HOLDS, it
      does not RESOLVE; resolution is the command system's job. Three
      independent stores objects/attributes/methods so the same name in
      two stores is no collision. AT MOST ONE active target;
@@ -94,9 +98,9 @@ AUTHORED
      degrades to strong, because a silent degrade pins an object the
      caller thought was collectable)
 
-ARC B COMPLETE (lessons 10-14)
+ARC B COMPLETE (lessons 08-12)
 
-  15 the_frame_viewer_facade (FrameViewer is an EXPLICIT facade - its own
+  13 the_frame_viewer_facade (FrameViewer is an EXPLICIT facade - its own
      docstrings say "FACADE PASS-THROUGH to ViewMultiFrame..." and build
      a fresh view PER INVOCATION, so there is NO CACHED SNAPSHOT and
      nothing to go stale. Four views behind it: get_view_frame /
@@ -105,9 +109,9 @@ ARC B COMPLETE (lessons 10-14)
      describe_viewer_agent_purpose_json(), describe_viewer_method_surface(),
      list_viewer_method_names_ast_json(). The object onboards its own
      caller in JSON at runtime instead of assuming the reader found the
-     docs - same idea as list_supported_command_methods() at lesson 13)
+     docs - same idea as list_supported_command_methods() at lesson 11)
 
-  16 the_describe_ladder (GRADED RESOLUTION as a CONTEXT BUDGET CONTROL.
+  14 the_describe_ladder (GRADED RESOLUTION as a CONTEXT BUDGET CONTROL.
      ViewSpell: brief / describe / detail / payload, PLUS nine per-facet
      verbs (identity, source, origin, binding, index, resolution,
      metadata, research, class_profile). ViewConduit follows the same
@@ -118,7 +122,7 @@ ARC B COMPLETE (lessons 10-14)
      still answers with honest empties - a read surface that throws on an
      empty world cannot be surveyed with)
 
-  17 what_you_cannot_see (THE READ SURFACE REPORTS ITS OWN BLIND SPOTS.
+  15 what_you_cannot_see (THE READ SURFACE REPORTS ITS OWN BLIND SPOTS.
      Absence is AMBIGUOUS - melder says so: "absence means 'not visible
      to this rift' OR 'not present', INDISTINGUISHABLE FROM OUTSIDE". So
      it ships the disambiguator: describe_spell_missing_sections /
@@ -132,9 +136,9 @@ ARC B COMPLETE (lessons 10-14)
      else. For an agent this is the difference between "no source
      binding exists" and "I was not shown the source binding")
 
-ARC C COMPLETE (lessons 15-17)
+ARC C COMPLETE (lessons 13-15)
 
-  18 ward_policies (5 modes over THREE control surfaces: outbound grants,
+  16 ward_policies (5 modes over THREE control surfaces: outbound grants,
      inbound borrowing, and whether per-spell permission/whitelist checks
      apply at all. THREE REFUSALS: dynamic-mode only; normal conduits
      only (a lesser is told to convert first); and NO RETROACTIVE
@@ -143,9 +147,9 @@ ARC C COMPLETE (lessons 15-17)
      standing under a policy that forbids them. Directional modes stay
      available since they do not invalidate past grants)
 
-ARC D COMPLETE (lesson 18)
+ARC D COMPLETE (lesson 16)
 
-  19 taking_a_checkpoint (CRYSTALLIZER FOLLOWS AETHER'S LADDER, NOT
+  17 taking_a_checkpoint (CRYSTALLIZER FOLLOWS AETHER'S LADDER, NOT
      NEXUS'S - same "ORDERING RULE: THE CONFIGURATION MUST BE ACTIVATED
      FIRST" in the same capitals. So it is 2 vs 1: caller-driven
      activation is the HOUSE RULE and Nexus is the exception. Guess
@@ -157,7 +161,7 @@ ARC D COMPLETE (lesson 18)
      handle for list/describe/analyze/verify. Checkpoints ACCUMULATE,
      they never overwrite)
 
-  20 loading_it_back (CREATED vs CACHED are two places a checkpoint can
+  18 loading_it_back (CREATED vs CACHED are two places a checkpoint can
      live; flush_checkpoint() is SEAL-THEN-SHIP - one verb, two legs,
      DIFFERENT GUARANTEES. THE REMOTE LEG IS LENIENT BY DEFAULT: "a
      successful return does NOT prove the remote received anything". The
@@ -169,7 +173,7 @@ ARC D COMPLETE (lesson 18)
      is the cheap check. Eviction is a SIDE EFFECT; deletion is a
      DECISION, with its own verb)
 
-ARC E COMPLETE (lessons 19-20) - ADVANCED TIER PLAN FULLY AUTHORED
+ARC E COMPLETE (lessons 17-18) - ADVANCED TIER PLAN FULLY AUTHORED
 
 CONFIG TERMINATOR DIVERGENCE (evidence for the uniformity epic)
   AethericFrameConfiguration        freeze, finalize
@@ -192,7 +196,7 @@ SUBSYSTEM ACTIVATION DIVERGENCE - IT IS 3 TO 1
   "activate means something specific" - the divergence is Nexus, not the
   verb.
 
-THE THROUGH-LINE (named at lesson 11, teach it forward)
+THE THROUGH-LINE (named at lesson 09, teach it forward)
   Melder NEVER conflates "this exists" with "this is live". Every
   subsystem splits it in two and only the names change:
       09  config  frozen        / activated
@@ -201,7 +205,7 @@ THE THROUGH-LINE (named at lesson 11, teach it forward)
   When you meet an unfamiliar melder object, find its two bits first.
   Presence never implies liveness.
 
-SECOND THROUGH-LINE (visible by lesson 14) - MELDER NEVER SUBSTITUTES
+SECOND THROUGH-LINE (visible by lesson 12) - MELDER NEVER SUBSTITUTES
   When melder cannot do the thing you asked, it says so. It does not do
   an adjacent thing quietly:
       08  validate() RAISES rather than returning False
@@ -215,7 +219,7 @@ FINDINGS (recorded for the owner's init/public-surface program)
     cluster/transfer/contract_mutation/all_transactions): staging goes
     through the PRIVATE retained posture only. Probe pins the gate via
     the seam (test_advanced_probes).
-  - WIDER THAN THAT (2026-08-02, lesson 08): md.AethericFrameConfiguration
+  - WIDER THAN THAT (2026-08-02, lesson 06): md.AethericFrameConfiguration
     is EXPORTED FROM THE ROOT AND CANNOT BE INSTALLED FROM IT. Spellbook
     __init__ takes (aetheric_frame, configuration, logger) where
     `configuration` is a SpellbookConfiguration. Every path to the live
@@ -228,12 +232,12 @@ FINDINGS (recorded for the owner's init/public-surface program)
     alongside StaticRiftSpace and CodegenRiftSpace, selected by
     RiftSpaceType. No missing feature; arc B teaches it.
   - AR TARGETING IS UNREACHABLE FROM THE PUBLIC ROOT (2026-08-02,
-    lesson 11). Nexus raises "AR requires rift_enabled on target frame"
+    lesson 09). Nexus raises "AR requires rift_enabled on target frame"
     (nexus.py:2957) and NOTHING PUBLIC SETS rift_enabled - not
     configure_aether_frame, and the posture object owning
     with_rift_enabled() has no install door. Rifts/rooms/workstations ARE
     reachable; dynamic AR targeting is not. Pinned as a probe.
-  - DOC DRIFT (2026-08-02, lesson 12): RiftSpaceType's docstring
+  - DOC DRIFT (2026-08-02, lesson 10): RiftSpaceType's docstring
     documents a "dynamic" member as a legacy alias for codegen. NO SUCH
     MEMBER EXISTS and there is no _missing_ handler, so
     RiftSpaceType("dynamic") raises. Same shape as the false

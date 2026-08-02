@@ -1,5 +1,5 @@
 """
-TIER: advanced (12)
+TIER: advanced (10)
 GOAL: THE ROOM. Every Rift owns exactly one, and the law around it is
       stricter than people expect:
 
@@ -20,7 +20,7 @@ GOAL: THE ROOM. Every Rift owns exactly one, and the law around it is
       THE FIXTURES - every room carries the same SET, whatever its kind:
         space_id / space_name / owner_rift_id / space_kind / metadata
         frame_viewer     - the read surface (TYPE VARIES BY KIND)
-        workstation      - the binding canvas (lesson 14)
+        workstation      - the binding canvas (lesson 12)
         command_system   - the verb surface (TYPE VARIES BY KIND)
         event_system     - rift-local publish/subscribe
         memory_system    - rift-local command/execution records
@@ -30,7 +30,7 @@ GOAL: THE ROOM. Every Rift owns exactly one, and the law around it is
       BY TYPE: command_system and frame_viewer - what you may DO and what
       you may SEE. The other three are literally the same classes.
 
-      Lesson 13 takes that pair apart. (An earlier draft of these lessons
+      Lesson 11 takes that pair apart. (An earlier draft of these lessons
       claimed only command_system varied; the owner's 3.14t run proved
       frame_viewer varies too, and the corrected version is the better
       story - authority and visibility narrow TOGETHER.)
@@ -79,7 +79,7 @@ def main() -> None:
 
     # THE FIXTURES. Same set BY NAME on every room regardless of kind.
     # Two of them differ BY TYPE - command_system and frame_viewer, what
-    # you may DO and what you may SEE (lesson 13 takes that pair apart).
+    # you may DO and what you may SEE (lesson 11 takes that pair apart).
     fixtures = {
         "frame_viewer": room.frame_viewer,
         "workstation": room.workstation,

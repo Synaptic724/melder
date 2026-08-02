@@ -1,5 +1,5 @@
 """
-TIER: advanced (17)
+TIER: advanced (15)
 GOAL: THE READ SURFACE REPORTS ITS OWN BLIND SPOTS. Arc C closes on the
       most unusual thing in the viewer family, and the most useful one if
       you are an agent.
@@ -70,7 +70,7 @@ def main() -> None:
     system_config.with_rift_creation_enabled(True)
     nexus.enable(system_config)
 
-    # A STATIC room on purpose - the lower-authority kind (lesson 13).
+    # A STATIC room on purpose - the lower-authority kind (lesson 11).
     # Blind spots are the point of this lesson, so pick the room that has
     # more of them.
     rift_config = nexus.create_rift_configuration()
@@ -83,7 +83,7 @@ def main() -> None:
     # THE FAMILY EXISTS AT EVERY LEVEL. That consistency is the point -
     # you never have to wonder whether this particular view can tell you
     # what it is hiding. Checked on the TYPES, because the frame-scoped
-    # views cannot be built without an assigned frame (lesson 15).
+    # views cannot be built without an assigned frame (lesson 13).
     print("the withheld-section probes:")
     probes = {
         "ViewSpell.describe_spell_missing_sections":

@@ -1,5 +1,5 @@
 """
-TIER: advanced (07)
+TIER: advanced (05)
 GOAL: THE FRAME POSTURE CHEATSHEET - every AethericFrameConfiguration
       knob and what it does, in one runnable page (the advanced twin of
       beginner 37). The posture is the WORLD's law book: set before the
@@ -15,7 +15,7 @@ GOAL: THE FRAME POSTURE CHEATSHEET - every AethericFrameConfiguration
         shared_framewide_spellbook_configuration - one rich config
           shared by every book on the frame instead of per-book copies.
       CACHING
-        system_caching_enabled - conjure-artifact caching (lesson 06).
+        system_caching_enabled - conjure-artifact caching.
         system_cache_root_path - where cached artifacts live.
       DEVOPS BRAKES (each one turns OFF a structural verb, world-wide)
         disable_linking / disable_bind / disable_conduit_cluster /

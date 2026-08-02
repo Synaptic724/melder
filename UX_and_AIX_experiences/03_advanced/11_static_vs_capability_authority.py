@@ -1,5 +1,5 @@
 """
-TIER: advanced (13)
+TIER: advanced (11)
 GOAL: WHAT THE ROOM KIND ACTUALLY CHANGES.
 
       StaticRiftSpace and CapabilityRiftSpace override exactly TWO

@@ -1,5 +1,5 @@
 """
-TIER: advanced (20)
+TIER: advanced (18)
 GOAL: THE LOADING HALF - and the one place in melder where a successful
       return deliberately does NOT mean what you would assume.
 
@@ -26,7 +26,7 @@ GOAL: THE LOADING HALF - and the one place in melder where a successful
           actually get]."
 
          Everywhere else in this tier melder refuses rather than
-         substituting (lessons 08/13/14/17/18). HERE IT IS DELIBERATELY
+         substituting (lessons 06/13/14/17/18). HERE IT IS DELIBERATELY
          LENIENT, and the reason is sound: a network you do not control
          should not be able to fail your local checkpoint. But it means
          flush() returning cleanly guarantees the LOCAL SEAL and nothing
@@ -69,7 +69,7 @@ def main() -> None:
 
     # CREATED, not yet sealed.
     checkpoint_id = crystallizer.create_checkpoint(
-        description="advanced lesson 20 - to be flushed",
+        description="advanced lesson 18 - to be flushed",
     )
     print()
     print("created:", checkpoint_id)

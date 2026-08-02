@@ -1,5 +1,5 @@
 """
-TIER: advanced (09)
+TIER: advanced (07)
 GOAL: TWO DOORS TO ONE CONFIG, AND THE LADDER BEHIND THEM.
 
       Aether hands you two ways to build its root configuration:

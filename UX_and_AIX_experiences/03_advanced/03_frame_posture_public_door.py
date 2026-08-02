@@ -1,5 +1,5 @@
 """
-TIER: advanced (04)
+TIER: advanced (03)
 GOAL: Frame POSTURE through the public door. configure_aether_frame()
       is the manual fluent path: set the world's system_state BEFORE
       anyone conjures, and every conjure then INHERITS it - no

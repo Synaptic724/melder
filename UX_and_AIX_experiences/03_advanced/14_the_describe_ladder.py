@@ -1,5 +1,5 @@
 """
-TIER: advanced (16)
+TIER: advanced (14)
 GOAL: THE DESCRIBE LADDER - why the read surface is not one fat
       describe() per thing, and why that shape is aimed at agents.
 
@@ -37,7 +37,7 @@ GOAL: THE DESCRIBE LADDER - why the read surface is not one fat
       Names and ids first. Descriptions only for what survives the filter.
 
       A NOTE ON THIS LESSON'S WORLD
-      ViewSpell and ViewConduit are FRAME-SCOPED (lesson 15), and a
+      ViewSpell and ViewConduit are FRAME-SCOPED (lesson 13), and a
       freshly opened rift is contracted to no frames - so this lesson
       maps the ladder off the EXPORTED TYPES rather than off instances.
       That is not a workaround: THE LADDER IS A PROPERTY OF THE CLASS.
@@ -97,7 +97,7 @@ def main() -> None:
 
     viewer = rift.space.frame_viewer
 
-    # THE VIEWS ARE FRAME-SCOPED (lesson 15) and this rift is contracted
+    # THE VIEWS ARE FRAME-SCOPED (lesson 13) and this rift is contracted
     # to none, so we map the surface off the EXPORTED TYPES rather than
     # off instances. The ladder is a property of the class - you do not
     # need a populated world to see its shape.
