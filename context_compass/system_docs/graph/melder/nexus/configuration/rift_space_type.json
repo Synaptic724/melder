@@ -1,39 +1,52 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/configuration/rift_space_type.py",
- "source_sha256": "d114e2940962e945a84e7c555d74669e376f417327f086d473422206396ca1f0",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.configuration.rift_space_type": {
-   "id": "melder.nexus.configuration.rift_space_type",
-   "label": "rift_space_type",
-   "kind": "module",
-   "file": "src/melder/nexus/configuration/rift_space_type.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/configuration/rift_space_type.py",
+  "source_sha256": "d114e2940962e945a84e7c555d74669e376f417327f086d473422206396ca1f0",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.configuration.rift_space_type": {
+      "id": "melder.nexus.configuration.rift_space_type",
+      "label": "rift_space_type",
+      "kind": "module",
+      "file": "src/melder/nexus/configuration/rift_space_type.py",
+      "lineno": 1
+    },
+    "melder.nexus.configuration.rift_space_type.RiftSpaceType": {
+      "id": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+      "label": "RiftSpaceType",
+      "kind": "enum",
+      "file": "src/melder/nexus/configuration/rift_space_type.py",
+      "lineno": 5,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Enum of supported top-level Rift room types.",
+      "responsibilities": [
+        "labels static, capability, codegen, and legacy dynamic room types"
+      ],
+      "owns_state": [
+        "static",
+        "capability",
+        "codegen",
+        "dynamic"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.nexus.configuration.rift_space_type.RiftSpaceType": {
-   "id": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
-   "label": "RiftSpaceType",
-   "kind": "enum",
-   "file": "src/melder/nexus/configuration/rift_space_type.py",
-   "lineno": 5,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum"
+  },
+  "collapse_candidate": null
 }

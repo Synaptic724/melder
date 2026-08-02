@@ -1,139 +1,264 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/codegen_system/codegen_system.py",
- "source_sha256": "0177a50f5ebafd5db58f6671edf68936d16ed8d61f00c96f4d3b3511dbf919a6",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.codegen_system.codegen_system": {
-   "id": "melder.nexus.rift.codegen_system.codegen_system",
-   "label": "codegen_system",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/codegen_system/codegen_system.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/codegen_system/codegen_system.py",
+  "source_sha256": "0177a50f5ebafd5db58f6671edf68936d16ed8d61f00c96f4d3b3511dbf919a6",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.codegen_system.codegen_system": {
+      "id": "melder.nexus.rift.codegen_system.codegen_system",
+      "label": "codegen_system",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/codegen_system/codegen_system.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem": {
+      "id": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "label": "CodegenSystem",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/codegen_system/codegen_system.py",
+      "lineno": 46,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "codegen_system_id",
+        "execute_codegen",
+        "execute_codegen_request",
+        "owner_space_id",
+        "report_validation_result",
+        "validate_codegen",
+        "validate_codegen_request"
+      ],
+      "shape": {
+        "method_count": 12,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Room-owned internal codegen engine.",
+      "responsibilities": [
+        "builds per-call transaction contexts",
+        "owns validation namespace execution and monitor collaborators",
+        "validates before execution",
+        "delegates compile and execute stages for accepted requests"
+      ],
+      "owns_state": [
+        "_rift",
+        "_space",
+        "_validator",
+        "_validation_reporter",
+        "_namespace_builder",
+        "_compiler",
+        "_executor",
+        "_monitor"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem": {
-   "id": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "label": "CodegenSystem",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/codegen_system/codegen_system.py",
-   "lineno": 46,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "codegen_system_id",
-    "execute_codegen",
-    "execute_codegen_request",
-    "owner_space_id",
-    "report_validation_result",
-    "validate_codegen",
-    "validate_codegen_request"
-   ],
-   "shape": {
-    "method_count": 12,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "CodegenValidator",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "CodegenValidationReporter",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "CodegenNamespaceBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "CodegenCompiler",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "CodegenExecutor",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "CodegenMonitor",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "CodegenTransactionContext",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
+    "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
+    "CodegenCompiler": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
+    "CodegenExecutor": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+    "CodegenNamespace": "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace",
+    "CodegenNamespaceBuilder": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
+    "CodegenNamespaceConfiguration": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
+    "CodegenMonitor": "melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor",
+    "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+    "CodegenValidationReporter": "melder.nexus.rift.codegen_system.validation.codegen_validation_reporter.CodegenValidationReporter",
+    "CodegenValidator": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+    "CodegenProjection": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "Rift": "melder.nexus.rift.rift.Rift",
+    "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "CodegenValidator",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.codegen_system.codegen_system",
+    "class": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+    "label": "CodegenSystem"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "CodegenValidationReporter",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "CodegenNamespaceBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "CodegenCompiler",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "CodegenExecutor",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "CodegenMonitor",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "CodegenTransactionContext",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
-  "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
-  "CodegenCompiler": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
-  "CodegenExecutor": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-  "CodegenNamespace": "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace",
-  "CodegenNamespaceBuilder": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
-  "CodegenNamespaceConfiguration": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
-  "CodegenMonitor": "melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor",
-  "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
-  "CodegenValidationReporter": "melder.nexus.rift.codegen_system.validation.codegen_validation_reporter.CodegenValidationReporter",
-  "CodegenValidator": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-  "CodegenProjection": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "Rift": "melder.nexus.rift.rift.Rift",
-  "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.codegen_system.codegen_system",
-  "class": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-  "label": "CodegenSystem"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
+      "relation": "creates",
+      "why": "CodegenSystem creates one transaction context for each validate or execute request.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenSystem owns the compiler used after accepted validation.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenSystem owns the executor that runs compiled code against the built namespace.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenSystem owns the namespace builder used to assemble live codegen namespaces.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
+      "relation": "creates",
+      "why": "CodegenSystem builds the default namespace configuration for the current request.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenSystem owns the monitor that publishes room-local codegen lifecycle events.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.validation.codegen_validation_reporter.CodegenValidationReporter",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenSystem owns the validation reporter that formats validation results for the public command surface.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "to": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenSystem owns the validator used for every codegen request.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "validation",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

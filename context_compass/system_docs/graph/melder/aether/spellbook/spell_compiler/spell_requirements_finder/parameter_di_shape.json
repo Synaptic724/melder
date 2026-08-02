@@ -1,40 +1,57 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
- "source_sha256": "20f6e8da36cda8be8be0235550b8c25a58ee164879dd8f1f99358d0da764cb6c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape",
-   "label": "parameter_di_shape",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
+  "source_sha256": "20f6e8da36cda8be8be0235550b8c25a58ee164879dd8f1f99358d0da764cb6c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape",
+      "label": "parameter_di_shape",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+      "label": "ParameterDIShape",
+      "kind": "enum",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
+      "lineno": 3,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Enum classifying how one parameter is satisfied during resolution.",
+      "responsibilities": [
+        "labels ignore, plain, single, collection, spellmap, spell-contract, and mutation-contract parameter shapes"
+      ],
+      "owns_state": [
+        "IGNORE",
+        "PLAIN",
+        "SINGLE_BY_ANNOTATION",
+        "COLLECTION_BY_ANNOTATION",
+        "SPELLMAP_DEFAULT",
+        "SPELL_CONTRACT",
+        "MUTATION_CONTRACT"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-   "label": "ParameterDIShape",
-   "kind": "enum",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py",
-   "lineno": 3,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum",
+    "auto": "enum.auto"
+  },
+  "collapse_candidate": null
 }

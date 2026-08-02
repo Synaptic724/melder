@@ -1,41 +1,50 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/phases/utility.py",
- "source_sha256": "4c655e5a7a38d9c22b649a516d4bbaeae4a6f51f37f05eaac0063de3f7bb64ce",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.phases.utility": {
-   "id": "melder.aether.spellbook.spell_compiler.phases.utility",
-   "label": "utility",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/phases/utility.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/phases/utility.py",
+  "source_sha256": "4c655e5a7a38d9c22b649a516d4bbaeae4a6f51f37f05eaac0063de3f7bb64ce",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.phases.utility": {
+      "id": "melder.aether.spellbook.spell_compiler.phases.utility",
+      "label": "utility",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/phases/utility.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility": {
+      "id": "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility",
+      "label": "CompilerPhaseUtility",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/phases/utility.py",
+      "lineno": 12,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "throw_if_cancelled"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Shared static helper surface for compiler phases.",
+      "responsibilities": [
+        "provides generic helper behavior reused across extracted compiler phase classes",
+        "raises through the shared cancellation event when phase execution is cancelled"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility": {
-   "id": "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility",
-   "label": "CompilerPhaseUtility",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/phases/utility.py",
-   "lineno": 12,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "throw_if_cancelled"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Optional": "typing.Optional",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Optional": "typing.Optional",
+    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+  },
+  "collapse_candidate": null
 }

@@ -1,23 +1,44 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/acl/validator/profiles/command/precision_strategy.py",
- "source_sha256": "bcfafe0edc570722d2fd6cd873aae9223131b70375618c04712619f5127b559c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.acl.validator.profiles.command.precision_strategy": {
-   "id": "melder.nexus.acl.validator.profiles.command.precision_strategy",
-   "label": "precision_strategy",
-   "kind": "module",
-   "file": "src/melder/nexus/acl/validator/profiles/command/precision_strategy.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/nexus/acl/validator/profiles/command/precision_strategy.py",
+  "source_sha256": "bcfafe0edc570722d2fd6cd873aae9223131b70375618c04712619f5127b559c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.acl.validator.profiles.command.precision_strategy": {
+      "id": "melder.nexus.acl.validator.profiles.command.precision_strategy",
+      "label": "precision_strategy",
+      "kind": "module",
+      "file": "src/melder/nexus/acl/validator/profiles/command/precision_strategy.py",
+      "lineno": 1,
+      "role": "Validator strategy module for precision command-profile configuration.",
+      "responsibilities": [
+        "provides one validator-side profile strategy or helper surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+    "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.nexus.acl.validator.profiles.command.precision_strategy",
+      "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+      "relation": "validates",
+      "why": "The precision command validator strategy validates precision command profile configuration.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "soft"
+    }
+  ]
 }

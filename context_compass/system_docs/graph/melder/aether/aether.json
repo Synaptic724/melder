@@ -1,180 +1,305 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aether.py",
- "source_sha256": "ccbeb9e6a042e1bb02ceddbdffd083574bd3eb0a98fb34289ce13ee02f47002c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aether": {
-   "id": "melder.aether.aether",
-   "label": "aether",
-   "kind": "module",
-   "file": "src/melder/aether/aether.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aether.py",
+  "source_sha256": "ccbeb9e6a042e1bb02ceddbdffd083574bd3eb0a98fb34289ce13ee02f47002c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aether": {
+      "id": "melder.aether.aether",
+      "label": "aether",
+      "kind": "module",
+      "file": "src/melder/aether/aether.py",
+      "lineno": 1
+    },
+    "melder.aether.aether.Aether": {
+      "id": "melder.aether.aether.Aether",
+      "label": "Aether",
+      "kind": "class",
+      "file": "src/melder/aether/aether.py",
+      "lineno": 34,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "acquire_load_authority",
+        "activate",
+        "activated",
+        "attach_logger",
+        "cleanup",
+        "cleanup_aetheric_frames",
+        "configuration",
+        "configure",
+        "configured",
+        "count_conduits",
+        "create_configuration",
+        "create_configuration_builder",
+        "enable_logging",
+        "enroll_load_worker",
+        "find_conduit_id_by_name",
+        "get_conduit_by_id",
+        "get_conduit_by_name",
+        "get_conduit_cloud",
+        "has_conduit_id",
+        "has_conduit_name",
+        "list_conduit_ids",
+        "list_conduit_names",
+        "logger",
+        "logger",
+        "mutation_research",
+        "release_load_authority",
+        "withdraw_load_worker"
+      ],
+      "shape": {
+        "method_count": 52,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Global Melder substrate root.",
+      "responsibilities": [
+        "owns frames and frame registries",
+        "hosts hidden support roots",
+        "binds frame configuration",
+        "registers conduits and spell lineage state"
+      ],
+      "owns_state": [
+        "_aetheric_frames",
+        "_default_frame",
+        "_logger"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.aether.Aether": {
-   "id": "melder.aether.aether.Aether",
-   "label": "Aether",
-   "kind": "class",
-   "file": "src/melder/aether/aether.py",
-   "lineno": 34,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "acquire_load_authority",
-    "activate",
-    "activated",
-    "attach_logger",
-    "cleanup",
-    "cleanup_aetheric_frames",
-    "configuration",
-    "configure",
-    "configured",
-    "count_conduits",
-    "create_configuration",
-    "create_configuration_builder",
-    "enable_logging",
-    "enroll_load_worker",
-    "find_conduit_id_by_name",
-    "get_conduit_by_id",
-    "get_conduit_by_name",
-    "get_conduit_cloud",
-    "has_conduit_id",
-    "has_conduit_name",
-    "list_conduit_ids",
-    "list_conduit_names",
-    "logger",
-    "logger",
-    "mutation_research",
-    "release_load_authority",
-    "withdraw_load_worker"
-   ],
-   "shape": {
-    "method_count": 52,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "AetherConfiguration",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "AetherConfigurationBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "AethericFrame",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "Crystallizer",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "AetherUtilitySystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "LoadGate",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "Nexus",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to_label": "MutationResearch",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "RLock": "threading.RLock",
+    "TracebackType": "types.TracebackType",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Optional": "typing.Optional",
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Set": "typing.Set",
+    "Tuple": "typing.Tuple",
+    "ClassVar": "typing.ClassVar",
+    "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
+    "AetherUtilitySystem": "melder.aether.aether_utility_system.AetherUtilitySystem",
+    "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",
+    "AetherConfigurationBuilder": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+    "Nexus": "melder.nexus.nexus.Nexus",
+    "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+    "IChannelLogger": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
+    "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
+    "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+    "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
+    "LoadGate": "melder.utilities.synchronization.load_gate.LoadGate",
+    "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
+    "Conduit": "melder.aether.conduit.conduit.Conduit",
+    "ChangeControlManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+    "ConduitCloud": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+    "DevOpsManager": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+    "IncidentManager": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+    "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration"
   },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "AetherConfiguration",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.aether",
+    "class": "melder.aether.aether.Aether",
+    "label": "Aether"
   },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "AetherConfigurationBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "AethericFrame",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "Crystallizer",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "AetherUtilitySystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "LoadGate",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "Nexus",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aether.Aether",
-   "to_label": "MutationResearch",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "RLock": "threading.RLock",
-  "TracebackType": "types.TracebackType",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Optional": "typing.Optional",
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Set": "typing.Set",
-  "Tuple": "typing.Tuple",
-  "ClassVar": "typing.ClassVar",
-  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
-  "AetherUtilitySystem": "melder.aether.aether_utility_system.AetherUtilitySystem",
-  "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",
-  "AetherConfigurationBuilder": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
-  "Nexus": "melder.nexus.nexus.Nexus",
-  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-  "IChannelLogger": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
-  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
-  "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
-  "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
-  "LoadGate": "melder.utilities.synchronization.load_gate.LoadGate",
-  "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
-  "Conduit": "melder.aether.conduit.conduit.Conduit",
-  "ChangeControlManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-  "ConduitCloud": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-  "DevOpsManager": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-  "IncidentManager": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aether",
-  "class": "melder.aether.aether.Aether",
-  "label": "Aether"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.aether.aether_configuration.AetherConfiguration",
+      "relation": "owns_lifecycle_of",
+      "why": "Aether installs and retains one root AetherConfiguration as its process-wide policy surface.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+      "relation": "creates",
+      "why": "Aether creates AetherConfigurationBuilder instances as the fluent assembly path for root configuration.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.aether.aether_utility_system.AetherUtilitySystem",
+      "relation": "owns_lifecycle_of",
+      "why": "Aether hosts the utility system as one hidden support root inside the global runtime lifecycle.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
+      "relation": "owns_lifecycle_of",
+      "why": "Aether owns the frame registry and creates frame containers for the runtime substrate.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.crystallizer.crystallizer.Crystallizer",
+      "relation": "owns_lifecycle_of",
+      "why": "Aether hosts the crystallizer singleton root as one private runtime subsystem.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.mutation_research.mutation_research.MutationResearch",
+      "relation": "owns_lifecycle_of",
+      "why": "Aether lazily hosts the process-wide MutationResearch singleton root.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.nexus.nexus.Nexus",
+      "relation": "owns_lifecycle_of",
+      "why": "Aether hosts Nexus as a hidden support root inside the global substrate lifecycle.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.utilities.helpers.ulid_factory",
+      "relation": "uses",
+      "why": "Aether uses the internal ulid_factory module when minting its runtime identifier.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aether.Aether",
+      "to": "melder.utilities.synchronization.load_gate.LoadGate",
+      "relation": "creates",
+      "why": "Aether constructs and owns the LoadGate BEFORE any frame can exist and drives acquire/release_load_authority (drain over live mediators)."
+    }
+  ]
 }

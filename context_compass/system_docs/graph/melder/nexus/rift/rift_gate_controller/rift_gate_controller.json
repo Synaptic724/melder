@@ -1,87 +1,102 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py",
- "source_sha256": "40b07667a04a35c69d63544a2a66d6abb62a55924a8b99429533616ed2d32752",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.rift_gate_controller.rift_gate_controller": {
-   "id": "melder.nexus.rift.rift_gate_controller.rift_gate_controller",
-   "label": "rift_gate_controller",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py",
+  "source_sha256": "40b07667a04a35c69d63544a2a66d6abb62a55924a8b99429533616ed2d32752",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.rift_gate_controller.rift_gate_controller": {
+      "id": "melder.nexus.rift.rift_gate_controller.rift_gate_controller",
+      "label": "rift_gate_controller",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController": {
+      "id": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+      "label": "RiftGateController",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py",
+      "lineno": 8,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "close_and_wait_until_rift_free",
+        "count_active_threads_for_rift",
+        "count_active_threads_total",
+        "create_rift_gate",
+        "disable_all",
+        "disable_all_rift_gates",
+        "enable_all",
+        "enable_all_rift_gates",
+        "get_rift_gate",
+        "register_rift_gate",
+        "set_all_rift_gate_entry_mode",
+        "set_rift_gate_entry_mode",
+        "unregister_rift_gate"
+      ],
+      "shape": {
+        "method_count": 16,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Central registry and control plane for Rift gates.",
+      "responsibilities": [
+        "registers RiftGate instances by Rift id",
+        "fans out enable and disable operations across Rift gates",
+        "provides drain and admission-mode control for one or many Rift gates"
+      ],
+      "owns_state": [
+        "_rift_gates_by_rift_id"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "refresh",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController": {
-   "id": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
-   "label": "RiftGateController",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py",
-   "lineno": 8,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "close_and_wait_until_rift_free",
-    "count_active_threads_for_rift",
-    "count_active_threads_total",
-    "create_rift_gate",
-    "disable_all",
-    "disable_all_rift_gates",
-    "enable_all",
-    "enable_all_rift_gates",
-    "get_rift_gate",
-    "register_rift_gate",
-    "set_all_rift_gate_entry_mode",
-    "set_rift_gate_entry_mode",
-    "unregister_rift_gate"
-   ],
-   "shape": {
-    "method_count": 16,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+      "to_label": "RiftGate",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  {
-   "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
-   "to_label": "RiftGate",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.rift_gate_controller.rift_gate_controller",
+    "class": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+    "label": "RiftGateController"
   }
- ],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.rift_gate_controller.rift_gate_controller",
-  "class": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
-  "label": "RiftGateController"
- }
 }

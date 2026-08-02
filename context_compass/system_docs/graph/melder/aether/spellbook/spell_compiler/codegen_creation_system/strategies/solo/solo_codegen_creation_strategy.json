@@ -1,80 +1,139 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py",
- "source_sha256": "a370097502a5b0b9b4f6ffa00142c639bbdbf75f8e433348aaeb620d27563ba3",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy",
-   "label": "solo_codegen_creation_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py",
+  "source_sha256": "a370097502a5b0b9b4f6ffa00142c639bbdbf75f8e433348aaeb620d27563ba3",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy",
+      "label": "solo_codegen_creation_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "label": "SoloCodegenCreationStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py",
+      "lineno": 29,
+      "bases": [
+        "SpellCodegenStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "apply",
+        "strategy_id"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Manifest-first phase-11 family for solo planner output.",
+      "responsibilities": [
+        "routes solo planner output through solo family state and ordered steps",
+        "publishes a manifest-first lazy-door runtime shape for solo output",
+        "writes final family metadata onto SpellCodegenCreation after step execution"
+      ],
+      "owns_state": [
+        "_steps"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "label": "SoloCodegenCreationStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py",
-   "lineno": 29,
-   "bases": [
-    "SpellCodegenStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "apply",
-    "strategy_id"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to_label": "SpellCodegenStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to_label": "SoloCodegenCreationState",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to_label": "SpellCodegenStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to_label": "SoloCodegenCreationState",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to_label": "SoloManifestStep",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to_label": "SoloLazyDoorStep",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Tuple": "typing.Tuple",
+    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+    "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+    "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
+    "SpellCodegenStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+    "SoloCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
+    "SoloLazyDoorStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
+    "SoloManifestStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
+    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to_label": "SoloManifestStep",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+    "label": "SoloCodegenCreationStrategy"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-   "to_label": "SoloLazyDoorStep",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Tuple": "typing.Tuple",
-  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-  "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-  "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-  "SpellCodegenStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-  "SoloCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
-  "SoloLazyDoorStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
-  "SoloManifestStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
-  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
-  "label": "SoloCodegenCreationStrategy"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+      "relation": "specializes",
+      "why": "SoloCodegenCreationStrategy specializes the abstract SpellCodegenStrategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
+      "relation": "creates",
+      "why": "SoloCodegenCreationStrategy creates the family-local solo state object before executing its ordered steps.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
+      "relation": "uses",
+      "why": "SoloCodegenCreationStrategy executes SoloLazyDoorStep as the second ordered family step.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy.SoloCodegenCreationStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step.SoloManifestStep",
+      "relation": "uses",
+      "why": "SoloCodegenCreationStrategy executes SoloManifestStep as the first ordered family step.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

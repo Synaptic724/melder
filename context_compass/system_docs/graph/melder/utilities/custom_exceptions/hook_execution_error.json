@@ -1,41 +1,48 @@
 {
- "schema_version": 1,
- "source": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
- "source_sha256": "d8170768017cad173977444e41b8637f7b26bcd205a36bc43cd67bb88f68603e",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.utilities.custom_exceptions.hook_execution_error": {
-   "id": "melder.utilities.custom_exceptions.hook_execution_error",
-   "label": "hook_execution_error",
-   "kind": "module",
-   "file": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
+  "source_sha256": "d8170768017cad173977444e41b8637f7b26bcd205a36bc43cd67bb88f68603e",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.custom_exceptions.hook_execution_error": {
+      "id": "melder.utilities.custom_exceptions.hook_execution_error",
+      "label": "hook_execution_error",
+      "kind": "module",
+      "file": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
+      "lineno": 1
+    },
+    "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError": {
+      "id": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
+      "label": "HookExecutionError",
+      "kind": "class",
+      "file": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
+      "lineno": 1,
+      "bases": [],
+      "markers": [
+        "Exception"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Exception for lifecycle hook failures.",
+      "responsibilities": [
+        "signals failures while running configured hooks"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError": {
-   "id": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
-   "label": "HookExecutionError",
-   "kind": "class",
-   "file": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
-   "lineno": 1,
-   "bases": [],
-   "markers": [
-    "Exception"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {},
+  "collapse_candidate": {
+    "module": "melder.utilities.custom_exceptions.hook_execution_error",
+    "class": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
+    "label": "HookExecutionError"
   }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {},
- "collapse_candidate": {
-  "module": "melder.utilities.custom_exceptions.hook_execution_error",
-  "class": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
-  "label": "HookExecutionError"
- }
 }

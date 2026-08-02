@@ -1,64 +1,108 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py",
- "source_sha256": "8a6940ad2be4b246fddc775d19e0ae73fb6e792e88519df0d0a1b9c13538189a",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
-   "label": "many_only_codegen_creation_discovery_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py",
+  "source_sha256": "8a6940ad2be4b246fddc775d19e0ae73fb6e792e88519df0d0a1b9c13538189a",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
+      "label": "many_only_codegen_creation_discovery_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py",
+      "lineno": 1,
+      "role": "Phase-11 discovery strategy for many_only plan-family output.",
+      "responsibilities": [
+        "claims many_only planner output",
+        "routes it to the dedicated many_only creation family",
+        "selects one concrete codegen style from plan candidates"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
+      "label": "ManyOnlyCodegenCreationDiscoveryStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py",
+      "lineno": 17,
+      "bases": [
+        "CodegenCreationDiscoveryStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "discover",
+        "strategy_id"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      }
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
-   "label": "ManyOnlyCodegenCreationDiscoveryStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py",
-   "lineno": 17,
-   "bases": [
-    "CodegenCreationDiscoveryStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "discover",
-    "strategy_id"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
-   "to_label": "CodegenCreationDiscoveryStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
-   "to_label": "CodegenCreationDiscovery",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Optional": "typing.Optional",
-  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-  "CodegenCreationDiscovery": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
-  "CodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
-  "label": "ManyOnlyCodegenCreationDiscoveryStrategy"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
+      "to_label": "CodegenCreationDiscoveryStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
+      "to_label": "CodegenCreationDiscovery",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Optional": "typing.Optional",
+    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+    "CodegenCreationDiscovery": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
+    "CodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
+    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
+    "label": "ManyOnlyCodegenCreationDiscoveryStrategy"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "relation": "uses",
+      "why": "ManyOnlyCodegenCreationDiscoveryStrategy inspects the fitted SpellCodegenModel when deciding whether to claim the current pair.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery",
+      "relation": "creates",
+      "why": "ManyOnlyCodegenCreationDiscoveryStrategy returns a CodegenCreationDiscovery when it claims the current model/plan pair.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
+      "relation": "specializes",
+      "why": "ManyOnlyCodegenCreationDiscoveryStrategy specializes the abstract discovery-strategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

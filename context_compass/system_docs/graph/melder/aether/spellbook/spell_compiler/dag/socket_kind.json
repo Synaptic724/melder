@@ -1,40 +1,53 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
- "source_sha256": "63de1d5e8c58f6618aafd6e3b9d555a955a664857d9c008c245c5e6525ef7637",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.dag.socket_kind": {
-   "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind",
-   "label": "socket_kind",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
+  "source_sha256": "63de1d5e8c58f6618aafd6e3b9d555a955a664857d9c008c245c5e6525ef7637",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.dag.socket_kind": {
+      "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind",
+      "label": "socket_kind",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind": {
+      "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+      "label": "SocketKind",
+      "kind": "enum",
+      "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
+      "lineno": 5,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Enum classifying the kind of socket represented by a DAG edge.",
+      "responsibilities": [
+        "labels normal, spell-contract, and mutation-contract socket kinds"
+      ],
+      "owns_state": [
+        "NORMAL",
+        "SPELL_CONTRACT",
+        "MUTATION_CONTRACT"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind": {
-   "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-   "label": "SocketKind",
-   "kind": "enum",
-   "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
-   "lineno": 5,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum",
+    "auto": "enum.auto"
+  },
+  "collapse_candidate": null
 }

@@ -1,45 +1,54 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py",
- "source_sha256": "fa5f939da8b500b6e1a6753951d6bf7fa13b1983b088ccf826efe06b12d32edb",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.devops_information_strategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy",
-   "label": "devops_information_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py",
+  "source_sha256": "fa5f939da8b500b6e1a6753951d6bf7fa13b1983b088ccf826efe06b12d32edb",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.devops_information_strategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy",
+      "label": "devops_information_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+      "label": "DevopsInformationStrategy",
+      "kind": "abstract",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py",
+      "lineno": 10,
+      "bases": [],
+      "markers": [
+        "ABC"
+      ],
+      "public_methods": [
+        "execute"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Abstract strategy contract for registry-backed dev-ops information queries.",
+      "responsibilities": [
+        "defines the execute contract for dev-ops information strategies",
+        "accepts the live DevopsInformationRegistry plus caller metadata",
+        "returns detached result payloads without owning long-lived runtime state"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-   "label": "DevopsInformationStrategy",
-   "kind": "abstract",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py",
-   "lineno": 10,
-   "bases": [],
-   "markers": [
-    "ABC"
-   ],
-   "public_methods": [
-    "execute"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "ABC": "abc.ABC",
-  "abstractmethod": "abc.abstractmethod",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "ABC": "abc.ABC",
+    "abstractmethod": "abc.abstractmethod",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+  },
+  "collapse_candidate": null
 }

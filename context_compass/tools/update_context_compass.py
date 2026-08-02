@@ -235,11 +235,25 @@ def main() -> int:
     # manifest and stays invisible forever. Walking the tree finds it either way.
     # Found by upgrading a real install that still carried `policy_router.md`
     # from the retired dual-router era.
+    # A case-insensitive filesystem makes `SKILLS.md` and `SKILLS.MD` one file.
+    # The manifest lists the uppercase name, so a lowercase copy looks retired -
+    # and unlinking it destroys the file the manifest name also resolves to.
+    # This is not hypothetical: it deleted a real install's role registry, and
+    # the upgrade had just written the correct content into that same inode.
+    #
+    # So a path whose case-insensitive twin is in the manifest is never swept. On
+    # a case-sensitive filesystem this skips a genuinely stale duplicate, which
+    # costs one leftover file. The other way costs the registry.
+    incoming_ci = {k.lower() for k in incoming}
+    case_twins: list[str] = []
     for p in sorted(install.rglob("*")):
         if not p.is_file() or any(x in {"__pycache__", ".git"} for x in p.parts):
             continue
         rel = p.relative_to(install).as_posix()
         if rel in incoming or is_permissive(rel) or rel == MANIFEST_NAME:
+            continue
+        if rel.lower() in incoming_ci:
+            case_twins.append(rel)
             continue
         gone.append(rel)
 
@@ -255,6 +269,13 @@ def main() -> int:
     print(f"  sweep    {len(gone):>5}  in a strict lane, not in the new version"
           f"{' (KEPT: --keep-retired)' if args.keep_retired else ' - will be REMOVED'}")
     print(f"  blocks   {len(blocks):>5}  managed blocks to swap in live files")
+    if case_twins:
+        print(f"  CASE     {len(case_twins):>5}  differ from a manifest path only by case - NOT swept")
+        for rel in case_twins[:5]:
+            match = next(k for k in incoming if k.lower() == rel.lower())
+            print(f"    {rel}  vs manifest `{match}`")
+        print("           On a case-insensitive filesystem these are ONE file and sweeping")
+        print("           it would delete the real one. Rename by hand, then re-run.")
     if cfg:
         print(f"  config   {len(cfg[2])} keys to add, {len(cfg[3])} dropped upstream")
     for rel in conflict[:15]:

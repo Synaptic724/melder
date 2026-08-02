@@ -1,249 +1,375 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/nexus.py",
- "source_sha256": "9b8ad52e4f1709dde861fb00877b610e82383e581ccab663f44918ddc4dbd689",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.nexus": {
-   "id": "melder.nexus.nexus",
-   "label": "nexus",
-   "kind": "module",
-   "file": "src/melder/nexus/nexus.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/nexus.py",
+  "source_sha256": "9b8ad52e4f1709dde861fb00877b610e82383e581ccab663f44918ddc4dbd689",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.nexus": {
+      "id": "melder.nexus.nexus",
+      "label": "nexus",
+      "kind": "module",
+      "file": "src/melder/nexus/nexus.py",
+      "lineno": 1
+    },
+    "melder.nexus.nexus.Nexus": {
+      "id": "melder.nexus.nexus.Nexus",
+      "label": "Nexus",
+      "kind": "class",
+      "file": "src/melder/nexus/nexus.py",
+      "lineno": 61,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "add_rift",
+        "authorize_frame_link_for_rift",
+        "check_for_aetheric_frame",
+        "cleanup",
+        "close_and_wait_rift",
+        "configuration",
+        "count_active_rift_threads",
+        "count_active_rift_threads_total",
+        "create_frame_projection_sets",
+        "create_frame_projection_sets_for_rift",
+        "create_nexus_frame_for_rift",
+        "create_rift",
+        "create_rift_configuration",
+        "create_system_configuration",
+        "disable",
+        "disable_all_rift_gates",
+        "disable_rift_gate",
+        "enable",
+        "enable_all_rift_gates",
+        "enable_rift_gate",
+        "frame_manager",
+        "get_current_codegen_frame_acl_configuration",
+        "get_current_command_frame_acl_configuration",
+        "get_current_frame_acl_configuration",
+        "get_current_view_frame_acl_configuration",
+        "get_frame_acl_builder",
+        "get_frame_acl_profile",
+        "get_frame_acl_version",
+        "get_named_frame_acl_configuration",
+        "get_nexus_frame_for_rift",
+        "get_rift",
+        "get_rift_by_name",
+        "get_rift_gate",
+        "has_rift",
+        "id",
+        "insert_head_frame_acl_configuration",
+        "is_configured",
+        "is_enabled",
+        "list_accessible_nexus_frame_names",
+        "list_accessible_non_nexus_frame_names",
+        "list_frame_acl_profile_names",
+        "list_named_frame_acl_configuration_names",
+        "list_rift_ids",
+        "register_frame_acl_profile",
+        "register_named_frame_acl_configuration",
+        "register_rift_profile",
+        "remove_frame_acl_profile",
+        "remove_rift",
+        "rift_gate_controller",
+        "set_all_rift_gate_entry_mode",
+        "set_rift_gate_entry_mode"
+      ],
+      "shape": {
+        "method_count": 91,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Public AR root.",
+      "responsibilities": [
+        "creates and registers live Rift instances",
+        "owns managed Nexus-frame authoring and realization policy",
+        "owns descriptor publication",
+        "owns frame ACL management",
+        "coordinates projection refresh across affected Rifts"
+      ],
+      "owns_state": [
+        "_rifts_by_id",
+        "_frame_descriptor_manager",
+        "_frame_acl_manager",
+        "_frame_manager",
+        "_rift_gate_controller",
+        "_configuration"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "refresh",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.nexus.Nexus": {
-   "id": "melder.nexus.nexus.Nexus",
-   "label": "Nexus",
-   "kind": "class",
-   "file": "src/melder/nexus/nexus.py",
-   "lineno": 61,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "add_rift",
-    "authorize_frame_link_for_rift",
-    "check_for_aetheric_frame",
-    "cleanup",
-    "close_and_wait_rift",
-    "configuration",
-    "count_active_rift_threads",
-    "count_active_rift_threads_total",
-    "create_frame_projection_sets",
-    "create_frame_projection_sets_for_rift",
-    "create_nexus_frame_for_rift",
-    "create_rift",
-    "create_rift_configuration",
-    "create_system_configuration",
-    "disable",
-    "disable_all_rift_gates",
-    "disable_rift_gate",
-    "enable",
-    "enable_all_rift_gates",
-    "enable_rift_gate",
-    "frame_manager",
-    "get_current_codegen_frame_acl_configuration",
-    "get_current_command_frame_acl_configuration",
-    "get_current_frame_acl_configuration",
-    "get_current_view_frame_acl_configuration",
-    "get_frame_acl_builder",
-    "get_frame_acl_profile",
-    "get_frame_acl_version",
-    "get_named_frame_acl_configuration",
-    "get_nexus_frame_for_rift",
-    "get_rift",
-    "get_rift_by_name",
-    "get_rift_gate",
-    "has_rift",
-    "id",
-    "insert_head_frame_acl_configuration",
-    "is_configured",
-    "is_enabled",
-    "list_accessible_nexus_frame_names",
-    "list_accessible_non_nexus_frame_names",
-    "list_frame_acl_profile_names",
-    "list_named_frame_acl_configuration_names",
-    "list_rift_ids",
-    "register_frame_acl_profile",
-    "register_named_frame_acl_configuration",
-    "register_rift_profile",
-    "remove_frame_acl_profile",
-    "remove_rift",
-    "rift_gate_controller",
-    "set_all_rift_gate_entry_mode",
-    "set_rift_gate_entry_mode"
-   ],
-   "shape": {
-    "method_count": 91,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "CompiledFrameACLAccessSurface",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "FrameACLCompiler",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "FrameProjectionSet",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "RiftConfiguration",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "ViewProjection",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "CommandProjection",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "CodegenProjection",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "RiftGateController",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "FrameACLManager",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "FrameDescriptorManager",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "NexusFrameManager",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "NexusConfiguration",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to_label": "Rift",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "ClassVar": "typing.ClassVar",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "Union": "typing.Union",
+    "RecordedUnitState": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
+    "FrameACLCompiler": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler",
+    "CompiledFrameACLAccessSurface": "melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface",
+    "FrameACLConfiguration": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
+    "FrameACLManager": "melder.nexus.frame_acl_manager.FrameACLManager",
+    "FrameDescriptorManager": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+    "NexusFrameManager": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+    "RiftConfiguration": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
+    "NexusConfiguration": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+    "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+    "RiftValidationMode": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
+    "CodegenProjection": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
+    "CommandProjection": "melder.nexus.rift.projection.command_projection.CommandProjection",
+    "FrameProjectionSet": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
+    "ViewProjection": "melder.nexus.rift.projection.view_projection.ViewProjection",
+    "RiftGateController": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+    "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+    "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
+    "Aether": "melder.aether.aether.Aether",
+    "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+    "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+    "Conduit": "melder.aether.conduit.conduit.Conduit",
+    "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+    "FrameDescriptor": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
+    "Rift": "melder.nexus.rift.rift.Rift",
+    "FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+    "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+    "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+    "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
+    "FrameACLProfile": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile"
   },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "CompiledFrameACLAccessSurface",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.nexus",
+    "class": "melder.nexus.nexus.Nexus",
+    "label": "Nexus"
   },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "FrameACLCompiler",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "FrameProjectionSet",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "RiftConfiguration",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "ViewProjection",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "CommandProjection",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "CodegenProjection",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "RiftGateController",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "FrameACLManager",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "FrameDescriptorManager",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "NexusFrameManager",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "NexusConfiguration",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
-   "to_label": "Rift",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "ClassVar": "typing.ClassVar",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Union": "typing.Union",
-  "RecordedUnitState": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
-  "FrameACLCompiler": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler",
-  "CompiledFrameACLAccessSurface": "melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface",
-  "FrameACLConfiguration": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
-  "FrameACLManager": "melder.nexus.frame_acl_manager.FrameACLManager",
-  "FrameDescriptorManager": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
-  "NexusFrameManager": "melder.nexus.nexus_frame_manager.NexusFrameManager",
-  "RiftConfiguration": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
-  "NexusConfiguration": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
-  "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
-  "RiftValidationMode": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
-  "CodegenProjection": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
-  "CommandProjection": "melder.nexus.rift.projection.command_projection.CommandProjection",
-  "FrameProjectionSet": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
-  "ViewProjection": "melder.nexus.rift.projection.view_projection.ViewProjection",
-  "RiftGateController": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
-  "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
-  "Aether": "melder.aether.aether.Aether",
-  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-  "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
-  "Conduit": "melder.aether.conduit.conduit.Conduit",
-  "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
-  "FrameDescriptor": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
-  "Rift": "melder.nexus.rift.rift.Rift",
-  "FrameACLBuilder": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-  "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
-  "FrameACLProfile": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.nexus",
-  "class": "melder.nexus.nexus.Nexus",
-  "label": "Nexus"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.aether.aether.Aether",
+      "relation": "borrows",
+      "why": "Nexus holds a hidden Aether reference for frame realization, disposal, and other substrate-facing AR operations.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+      "relation": "uses",
+      "why": "Nexus uses NexusConfiguration as its process-wide governance source.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.nexus.frame_acl_manager.FrameACLManager",
+      "relation": "owns_lifecycle_of",
+      "why": "Nexus owns the frame ACL manager and its frame-local ACL container registry.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+      "relation": "owns_lifecycle_of",
+      "why": "Nexus owns the frame descriptor and canonical record manager.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+      "relation": "owns_lifecycle_of",
+      "why": "Nexus owns the manager responsible for authored Nexus-managed frame state and rooted realization.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.nexus.rift.rift.Rift",
+      "relation": "creates",
+      "why": "Nexus is responsible for constructing and registering live Rift instances.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.nexus.rift.rift.Rift",
+      "relation": "owns_lifecycle_of",
+      "why": "Nexus is the top-level owner of the live Rift registry and cleans registered Rifts on teardown.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.nexus.Nexus",
+      "to": "melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController",
+      "relation": "owns_lifecycle_of",
+      "why": "Nexus owns the central Rift gate control plane for live AR sessions.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

@@ -1,22 +1,47 @@
 {
- "schema_version": 1,
- "source": "src/melder/__graph_network__.py",
- "source_sha256": "73ea5cfb92697fdcf1ec78bd5e677c6e5ac955565324a1f9829833544dbec6c7",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.__graph_network__": {
-   "id": "melder.__graph_network__",
-   "label": "__graph_network__",
-   "kind": "module",
-   "file": "src/melder/__graph_network__.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "get": "melder._build_assets._system_documents.system_documents.get"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/__graph_network__.py",
+  "source_sha256": "73ea5cfb92697fdcf1ec78bd5e677c6e5ac955565324a1f9829833544dbec6c7",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.__graph_network__": {
+      "id": "melder.__graph_network__",
+      "label": "__graph_network__",
+      "kind": "module",
+      "file": "src/melder/__graph_network__.py",
+      "lineno": 1,
+      "role": "Top-level packaged graph-network hardcopy module.",
+      "responsibilities": [
+        "publishes the top-level packaged graph-network document object"
+      ],
+      "owns_state": [
+        "__graph_network__"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "get": "melder._build_assets._system_documents.system_documents.get"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.__graph_network__",
+      "to": "melder.system_document.StaticSystemDocument",
+      "relation": "creates",
+      "why": "The packaged graph-network module instantiates one top-level StaticSystemDocument for graph-network hardcopy access.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

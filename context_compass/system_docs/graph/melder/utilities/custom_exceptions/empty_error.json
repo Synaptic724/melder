@@ -1,37 +1,44 @@
 {
- "schema_version": 1,
- "source": "src/melder/utilities/custom_exceptions/empty_error.py",
- "source_sha256": "f8375cdac9adf19ca4c5948738cfa1a9b6ad50fbb8192c9f140cc8d71bd8b7f1",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.utilities.custom_exceptions.empty_error": {
-   "id": "melder.utilities.custom_exceptions.empty_error",
-   "label": "empty_error",
-   "kind": "module",
-   "file": "src/melder/utilities/custom_exceptions/empty_error.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/utilities/custom_exceptions/empty_error.py",
+  "source_sha256": "f8375cdac9adf19ca4c5948738cfa1a9b6ad50fbb8192c9f140cc8d71bd8b7f1",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.custom_exceptions.empty_error": {
+      "id": "melder.utilities.custom_exceptions.empty_error",
+      "label": "empty_error",
+      "kind": "module",
+      "file": "src/melder/utilities/custom_exceptions/empty_error.py",
+      "lineno": 1
+    },
+    "melder.utilities.custom_exceptions.empty_error.Empty": {
+      "id": "melder.utilities.custom_exceptions.empty_error.Empty",
+      "label": "Empty",
+      "kind": "class",
+      "file": "src/melder/utilities/custom_exceptions/empty_error.py",
+      "lineno": 1,
+      "bases": [],
+      "markers": [
+        "Exception"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Generic empty-state exception.",
+      "responsibilities": [
+        "signals unexpected empty-state conditions"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.utilities.custom_exceptions.empty_error.Empty": {
-   "id": "melder.utilities.custom_exceptions.empty_error.Empty",
-   "label": "Empty",
-   "kind": "class",
-   "file": "src/melder/utilities/custom_exceptions/empty_error.py",
-   "lineno": 1,
-   "bases": [],
-   "markers": [
-    "Exception"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {},
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {},
+  "collapse_candidate": null
 }

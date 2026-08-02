@@ -6,7 +6,7 @@ from the files themselves, which is the only reason it can be trusted.
 | field | value |
 | --- | --- |
 | manifest_version | 1.0.0 |
-| package_version | 2.3.0 |
+| package_version | 2.3.1 |
 | files | 438 |
 
 ## Lane policy
@@ -474,6 +474,6 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `tools/system_documents/index_document.py` | PACKAGE | `fe0894d1677e3ec342db183419bbb84999c9d236d58d7d1a95382bc60effd36d` |
 | `tools/system_documents/python/assemble_graph.py` | PACKAGE | `5f986909273c6815662682adfedc6a9e2e31abc4fe4cb57b8fbaf1842f8f5252` |
 | `tools/system_documents/python/extract_graph.py` | PACKAGE | `f739ea7d71332b60f0eb238688ec93668a89819008ba63592e3f4d6a4fe924c5` |
-| `tools/update_context_compass.py` | PACKAGE | `fa3f134f5d49deacf5c3548c2a248216953f6b69d430fd8f2586cf57c08bb898` |
+| `tools/update_context_compass.py` | PACKAGE | `08b2247956076c6008212bede4b658e9c863557ae4ce270fb5213c628f6f3f58` |
 | `user_defined/.gitkeep` | INSTANCE | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `user_defined/README.md` | INSTANCE | `f58639058dabcaafed2f3b589ca12b7eb94ddd45dd356a807b39f2304b90ab33` |

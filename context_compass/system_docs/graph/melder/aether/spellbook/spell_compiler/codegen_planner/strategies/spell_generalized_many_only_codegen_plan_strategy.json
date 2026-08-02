@@ -1,65 +1,98 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py",
- "source_sha256": "3a3afdfe6548ce174fdb235f4ecd5249cae7e3c1a1fdcb89c90209e8f16480c6",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy",
-   "label": "spell_generalized_many_only_codegen_plan_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py",
+  "source_sha256": "3a3afdfe6548ce174fdb235f4ecd5249cae7e3c1a1fdcb89c90209e8f16480c6",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy",
+      "label": "spell_generalized_many_only_codegen_plan_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
+      "label": "SpellGeneralizedManyOnlyCodegenPlanStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py",
+      "lineno": 19,
+      "bases": [
+        "SpellCodegenPlanStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "apply",
+        "strategy_id"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Residual generalized many-only planner strategy.",
+      "responsibilities": [
+        "builds no-overrides and overrides planner lanes through the dedicated many-only builder surface",
+        "publishes generalized-many-only planner output from fitted model truth",
+        "records many-only discovery provenance on the planner-owned plan"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
-   "label": "SpellGeneralizedManyOnlyCodegenPlanStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py",
-   "lineno": 19,
-   "bases": [
-    "SpellCodegenPlanStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "apply",
-    "strategy_id"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
-   "to_label": "SpellCodegenPlanStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
-   "to_label": "SpellManyOnlyCodegenPlanBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-  "SpellManyOnlyCodegenPlanBuilder": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder",
-  "SpellGeneralizedCodegenPlanVariant": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanVariant",
-  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
-  "SpellCodegenPlanStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
-  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
-  "label": "SpellGeneralizedManyOnlyCodegenPlanStrategy"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
+      "to_label": "SpellCodegenPlanStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
+      "to_label": "SpellManyOnlyCodegenPlanBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+    "SpellManyOnlyCodegenPlanBuilder": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder",
+    "SpellGeneralizedCodegenPlanVariant": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanVariant",
+    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan",
+    "SpellCodegenPlanStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
+    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
+    "label": "SpellGeneralizedManyOnlyCodegenPlanStrategy"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder",
+      "relation": "uses",
+      "why": "SpellGeneralizedManyOnlyCodegenPlanStrategy delegates generalized-many-only planner payload construction to SpellManyOnlyCodegenPlanBuilder.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_many_only_codegen_plan_strategy.SpellGeneralizedManyOnlyCodegenPlanStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan_strategy.SpellCodegenPlanStrategy",
+      "relation": "specializes",
+      "why": "SpellGeneralizedManyOnlyCodegenPlanStrategy specializes the abstract planner strategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

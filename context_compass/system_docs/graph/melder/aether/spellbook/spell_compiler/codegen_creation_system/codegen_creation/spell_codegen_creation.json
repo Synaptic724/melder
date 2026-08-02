@@ -1,57 +1,90 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py",
- "source_sha256": "a07ecff1db2bb5fe3cb037cbfeba25a44804cab50950f6f6826dfc996f780848",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation",
-   "label": "spell_codegen_creation",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py",
+  "source_sha256": "a07ecff1db2bb5fe3cb037cbfeba25a44804cab50950f6f6826dfc996f780848",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation",
+      "label": "spell_codegen_creation",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+      "label": "SpellCodegenCreation",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py",
+      "lineno": 6,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Artifact-owned final codegen creation container for one spell.",
+      "responsibilities": [
+        "stores the selected strategy provenance and discovery reason for one spell",
+        "stores the runtime-facing no-overrides and overrides executors plus their compiled code objects",
+        "stores mutable metadata for diagnostics and cache/export provenance"
+      ],
+      "owns_state": [
+        "selected_strategy_ids",
+        "discovery_reason",
+        "no_overrides_executor",
+        "no_overrides_code_object",
+        "overrides_executor",
+        "overrides_code_object",
+        "metadata"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-   "label": "SpellCodegenCreation",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py",
-   "lineno": 6,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-  "label": "SpellCodegenCreation"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+    "label": "SpellCodegenCreation"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "SpellCodegenCreation inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

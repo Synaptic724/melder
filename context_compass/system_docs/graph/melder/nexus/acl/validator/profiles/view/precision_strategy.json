@@ -1,23 +1,44 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/acl/validator/profiles/view/precision_strategy.py",
- "source_sha256": "494dd81f28e5166ac4c07043cb5b22de4e209a805a3006e69e57db263616f14c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.acl.validator.profiles.view.precision_strategy": {
-   "id": "melder.nexus.acl.validator.profiles.view.precision_strategy",
-   "label": "precision_strategy",
-   "kind": "module",
-   "file": "src/melder/nexus/acl/validator/profiles/view/precision_strategy.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
-  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/nexus/acl/validator/profiles/view/precision_strategy.py",
+  "source_sha256": "494dd81f28e5166ac4c07043cb5b22de4e209a805a3006e69e57db263616f14c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.acl.validator.profiles.view.precision_strategy": {
+      "id": "melder.nexus.acl.validator.profiles.view.precision_strategy",
+      "label": "precision_strategy",
+      "kind": "module",
+      "file": "src/melder/nexus/acl/validator/profiles/view/precision_strategy.py",
+      "lineno": 1,
+      "role": "Validator strategy module for precision view-profile configuration.",
+      "responsibilities": [
+        "provides one validator-side profile strategy or helper surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+    "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.nexus.acl.validator.profiles.view.precision_strategy",
+      "to": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+      "relation": "validates",
+      "why": "The precision view validator strategy validates precision view profile configuration.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "soft"
+    }
+  ]
 }

@@ -1,95 +1,125 @@
 {
- "schema_version": 1,
- "source": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
- "source_sha256": "d2fe9bae071dedd0f8780e7a641ec0128f9f74c9e323a6192ae00a3345a0e1b7",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.crystallizer.crystal_loader_system.load_admission": {
-   "id": "melder.crystallizer.crystal_loader_system.load_admission",
-   "label": "load_admission",
-   "kind": "module",
-   "file": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
+  "source_sha256": "d2fe9bae071dedd0f8780e7a641ec0128f9f74c9e323a6192ae00a3345a0e1b7",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.crystallizer.crystal_loader_system.load_admission": {
+      "id": "melder.crystallizer.crystal_loader_system.load_admission",
+      "label": "load_admission",
+      "kind": "module",
+      "file": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
+      "lineno": 1
+    },
+    "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission": {
+      "id": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "label": "LoadAdmission",
+      "kind": "class",
+      "file": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
+      "lineno": 35,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "execute_plan",
+        "plan_checkpoint_load",
+        "plan_formation_load"
+      ],
+      "shape": {
+        "method_count": 7,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Small admission plane for loads (owner design; renamed from BootMediator 2026-07-11): plan -> gated engine -> scope adjudication; no fold duplication.",
+      "responsibilities": [
+        "plan_checkpoint_load via the record's detach_profile_chain",
+        "plan_formation_load mints the canonical-kind-order synthetic window (moved from the ledger)",
+        "execute_plan runs the engine with refuse_on_blockers=True always",
+        "adjudicates conduit/frame scopes (frame_posture warnings -> expected_for_scope in the additive admission view)"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission": {
-   "id": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "label": "LoadAdmission",
-   "kind": "class",
-   "file": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
-   "lineno": 35,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "execute_plan",
-    "plan_checkpoint_load",
-    "plan_formation_load"
-   ],
-   "shape": {
-    "method_count": 7,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to_label": "LoadPlan",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to_label": "LoadPlan",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to_label": "RestoreEngine",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "LoadPlan": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
+    "Aether": "melder.aether.aether.Aether",
+    "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
+    "PersistenceSystem": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
+    "RestoreEngine": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine"
   },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to_label": "RestoreEngine",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.crystallizer.crystal_loader_system.load_admission",
+    "class": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+    "label": "LoadAdmission"
   },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "LoadPlan": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
-  "Aether": "melder.aether.aether.Aether",
-  "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
-  "PersistenceSystem": "melder.crystallizer.persistence.persistence_system.PersistenceSystem",
-  "RestoreEngine": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine"
- },
- "collapse_candidate": {
-  "module": "melder.crystallizer.crystal_loader_system.load_admission",
-  "class": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
-  "label": "LoadAdmission"
- }
+  "edges_authored": [
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
+      "relation": "creates",
+      "why": "Plans are minted per load (checkpoint chains and formation windows).",
+      "cardinality": "N",
+      "phase": "runtime",
+      "strength": "hard"
+    },
+    {
+      "from": "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+      "to": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+      "relation": "creates",
+      "why": "LoadAdmission constructs the gated engine (refuse_on_blockers=True) per load.",
+      "cardinality": "N",
+      "phase": "runtime",
+      "strength": "hard"
+    }
+  ]
 }

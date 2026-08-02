@@ -1,119 +1,236 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/codegen_system/validation/codegen_validator.py",
- "source_sha256": "3bfe28361d5b29c4435baef8c52af9bdbe1203b58e11b0ed4f226c5e9b7bf4c9",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.codegen_system.validation.codegen_validator": {
-   "id": "melder.nexus.rift.codegen_system.validation.codegen_validator",
-   "label": "codegen_validator",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/codegen_system/validation/codegen_validator.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/codegen_system/validation/codegen_validator.py",
+  "source_sha256": "3bfe28361d5b29c4435baef8c52af9bdbe1203b58e11b0ed4f226c5e9b7bf4c9",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.codegen_system.validation.codegen_validator": {
+      "id": "melder.nexus.rift.codegen_system.validation.codegen_validator",
+      "label": "codegen_validator",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/codegen_system/validation/codegen_validator.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator": {
+      "id": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "label": "CodegenValidator",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/codegen_system/validation/codegen_validator.py",
+      "lineno": 36,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "validate"
+      ],
+      "shape": {
+        "method_count": 4,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Root validation orchestrator for one codegen request.",
+      "responsibilities": [
+        "parses generated Python into a syntax tree",
+        "runs the ordered codegen validation strategy family",
+        "returns validation results for the request"
+      ],
+      "owns_state": [
+        "_ast_structure_strategy",
+        "_import_policy_strategy",
+        "_builtin_policy_strategy",
+        "_name_resolution_strategy",
+        "_attribute_access_strategy",
+        "_reflection_policy_strategy",
+        "_recursive_control_strategy"
+      ],
+      "phases": [
+        "validation",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator": {
-   "id": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "label": "CodegenValidator",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/codegen_system/validation/codegen_validator.py",
-   "lineno": 36,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "validate"
-   ],
-   "shape": {
-    "method_count": 4,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "CodegenAstStructureStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "CodegenImportPolicyStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "CodegenBuiltinPolicyStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "CodegenNameResolutionStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "CodegenAttributeAccessStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "CodegenReflectionPolicyStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "CodegenRecursiveControlStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Optional": "typing.Optional",
+    "CodegenAstStructureStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy.CodegenAstStructureStrategy",
+    "CodegenAttributeAccessStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy.CodegenAttributeAccessStrategy",
+    "CodegenBuiltinPolicyStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy.CodegenBuiltinPolicyStrategy",
+    "CodegenImportPolicyStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+    "CodegenNameResolutionStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy",
+    "CodegenRecursiveControlStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy.CodegenRecursiveControlStrategy",
+    "CodegenReflectionPolicyStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+    "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "CodegenAstStructureStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.codegen_system.validation.codegen_validator",
+    "class": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+    "label": "CodegenValidator"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "CodegenImportPolicyStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "CodegenBuiltinPolicyStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "CodegenNameResolutionStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "CodegenAttributeAccessStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "CodegenReflectionPolicyStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "CodegenRecursiveControlStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Optional": "typing.Optional",
-  "CodegenAstStructureStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy.CodegenAstStructureStrategy",
-  "CodegenAttributeAccessStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy.CodegenAttributeAccessStrategy",
-  "CodegenBuiltinPolicyStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy.CodegenBuiltinPolicyStrategy",
-  "CodegenImportPolicyStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
-  "CodegenNameResolutionStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy",
-  "CodegenRecursiveControlStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy.CodegenRecursiveControlStrategy",
-  "CodegenReflectionPolicyStrategy": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
-  "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.codegen_system.validation.codegen_validator",
-  "class": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
-  "label": "CodegenValidator"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+      "relation": "creates",
+      "why": "CodegenValidator creates validation results for accepted or rejected requests.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy.CodegenAstStructureStrategy",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenValidator owns the structural AST validation strategy.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy.CodegenAttributeAccessStrategy",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenValidator owns the attribute-access validation strategy.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy.CodegenBuiltinPolicyStrategy",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenValidator owns the builtins-policy validation strategy.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenValidator owns the import-policy validation strategy.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenValidator owns the name-resolution validation strategy.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy.CodegenRecursiveControlStrategy",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenValidator owns the recursive-codegen validation strategy.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator",
+      "to": "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy",
+      "relation": "owns_lifecycle_of",
+      "why": "CodegenValidator owns the reflection-policy validation strategy.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

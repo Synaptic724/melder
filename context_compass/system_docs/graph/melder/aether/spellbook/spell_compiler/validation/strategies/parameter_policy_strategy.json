@@ -1,65 +1,73 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
- "source_sha256": "5969b2dd7d5d18e5cd0030e5f0e090ddc97f5e8c67f8b62628227342112201f7",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy",
-   "label": "parameter_policy_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
+  "source_sha256": "5969b2dd7d5d18e5cd0030e5f0e090ddc97f5e8c67f8b62628227342112201f7",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy",
+      "label": "parameter_policy_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
+      "lineno": 1,
+      "role": "Spell validation strategy module for parameter policy checks.",
+      "responsibilities": [
+        "provides one validation or examination strategy/support surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    },
+    "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
+      "label": "ParameterPolicyStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
+      "lineno": 24,
+      "bases": [
+        "SpellValidationStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "validate"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      }
+    }
   },
-  "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
-   "label": "ParameterPolicyStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py",
-   "lineno": 24,
-   "bases": [
-    "SpellValidationStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "validate"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
+      "to_label": "SpellValidationStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
+      "to_label": "SpellValidationIssue",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "annotations": "__future__.annotations",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
+    "label": "ParameterPolicyStrategy"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
-   "to_label": "SpellValidationStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
-   "to_label": "SpellValidationIssue",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "annotations": "__future__.annotations",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy.ParameterPolicyStrategy",
-  "label": "ParameterPolicyStrategy"
- }
 }

@@ -1,116 +1,215 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/acl/builder/frame_acl_builder.py",
- "source_sha256": "1568bb8eb24d32e652e1ba6d3d569610c8fd0b2dd64d2d2d2e1183c60c7fd772",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.acl.builder.frame_acl_builder": {
-   "id": "melder.nexus.acl.builder.frame_acl_builder",
-   "label": "frame_acl_builder",
-   "kind": "module",
-   "file": "src/melder/nexus/acl/builder/frame_acl_builder.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/acl/builder/frame_acl_builder.py",
+  "source_sha256": "1568bb8eb24d32e652e1ba6d3d569610c8fd0b2dd64d2d2d2e1183c60c7fd772",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.acl.builder.frame_acl_builder": {
+      "id": "melder.nexus.acl.builder.frame_acl_builder",
+      "label": "frame_acl_builder",
+      "kind": "module",
+      "file": "src/melder/nexus/acl/builder/frame_acl_builder.py",
+      "lineno": 1
+    },
+    "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder": {
+      "id": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "label": "FrameACLBuilder",
+      "kind": "class",
+      "file": "src/melder/nexus/acl/builder/frame_acl_builder.py",
+      "lineno": 49,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "apply_frame_acl_profile",
+        "begin_change",
+        "begin_codegen_change",
+        "begin_command_change",
+        "begin_view_change",
+        "change_active",
+        "cleanup",
+        "commit_change",
+        "discard_change",
+        "draft_contract_name",
+        "draft_family_name",
+        "load_json_configuration_string",
+        "set_precision_profile_name",
+        "set_profile_name"
+      ],
+      "shape": {
+        "method_count": 18,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Frame-local mutable ACL authoring surface.",
+      "responsibilities": [
+        "owns one family-scoped ACL draft session for a frame",
+        "creates and installs family-specific ACL configurations through the owning container"
+      ],
+      "owns_state": [
+        "_container",
+        "_draft_family_name",
+        "_draft_contract_name",
+        "_draft_configuration"
+      ],
+      "phases": [
+        "runtime",
+        "refresh",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder": {
-   "id": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "label": "FrameACLBuilder",
-   "kind": "class",
-   "file": "src/melder/nexus/acl/builder/frame_acl_builder.py",
-   "lineno": 49,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "apply_frame_acl_profile",
-    "begin_change",
-    "begin_codegen_change",
-    "begin_command_change",
-    "begin_view_change",
-    "change_active",
-    "cleanup",
-    "commit_change",
-    "discard_change",
-    "draft_contract_name",
-    "draft_family_name",
-    "load_json_configuration_string",
-    "set_precision_profile_name",
-    "set_profile_name"
-   ],
-   "shape": {
-    "method_count": 18,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "FrameACLViewBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "FrameACLCommandBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "FrameACLCodegenBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Optional": "typing.Optional",
+    "Union": "typing.Union",
+    "FrameACLCommandBuilder": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+    "FrameACLCodegenBuilder": "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
+    "FrameACLViewBuilder": "melder.nexus.acl.builder.frame_acl_view_builder.FrameACLViewBuilder",
+    "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+    "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+    "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "FrameACLProfile": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
+    "FrameACLContainer": "melder.nexus.acl.frame_acl_container.FrameACLContainer"
   },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "FrameACLViewBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "FrameACLCommandBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "FrameACLCodegenBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Optional": "typing.Optional",
-  "Union": "typing.Union",
-  "FrameACLCommandBuilder": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
-  "FrameACLCodegenBuilder": "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
-  "FrameACLViewBuilder": "melder.nexus.acl.builder.frame_acl_view_builder.FrameACLViewBuilder",
-  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-  "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "FrameACLProfile": "melder.nexus.acl.configurations.profiles.frame_acl_profile.FrameACLProfile",
-  "FrameACLContainer": "melder.nexus.acl.frame_acl_container.FrameACLContainer"
- },
- "collapse_candidate": null
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to": "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
+      "relation": "creates",
+      "why": "FrameACLBuilder begins one codegen-family draft and returns a fluent FrameACLCodegenBuilder over that active draft.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to": "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+      "relation": "creates",
+      "why": "FrameACLBuilder begins one command-family draft and returns a fluent FrameACLCommandBuilder over that active draft.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to": "melder.nexus.acl.builder.frame_acl_view_builder.FrameACLViewBuilder",
+      "relation": "creates",
+      "why": "FrameACLBuilder begins one view-family draft and returns a fluent FrameACLViewBuilder over that active draft.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+      "relation": "creates",
+      "why": "FrameACLBuilder creates or clones codegen-family ACL configuration revisions during draft sessions.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "refresh"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+      "relation": "creates",
+      "why": "FrameACLBuilder creates or clones command-family ACL configuration revisions during draft sessions.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "refresh"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
+      "relation": "creates",
+      "why": "FrameACLBuilder creates or clones view-family ACL configuration revisions during draft sessions.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "refresh"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+      "to": "melder.nexus.acl.frame_acl_container.FrameACLContainer",
+      "relation": "borrows",
+      "why": "FrameACLBuilder borrows its owning FrameACLContainer as the install and chain-management authority.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime",
+        "refresh"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

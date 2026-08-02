@@ -1,77 +1,178 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py",
- "source_sha256": "d609c3eb03ce5df32434c89d6e33a205bb01aaf222b78dd261f3b87a60b49904",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder": {
-   "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder",
-   "label": "devops_information_strategy_builder",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py",
+  "source_sha256": "d609c3eb03ce5df32434c89d6e33a205bb01aaf222b78dd261f3b87a60b49904",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder": {
+      "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder",
+      "label": "devops_information_strategy_builder",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder": {
+      "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "label": "DevopsInformationStrategyBuilder",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py",
+      "lineno": 28,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "execute",
+        "get_execution_count",
+        "list_execution_counts",
+        "list_registered_strategy_names",
+        "register_strategy",
+        "resolve"
+      ],
+      "shape": {
+        "method_count": 8,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Registry-backed resolver and executor for dev-ops information strategies.",
+      "responsibilities": [
+        "registers built-in dev-ops information strategy classes by normalized name",
+        "resolves strategy names against the live frame registry",
+        "executes one named strategy against the attached dev-ops information registry",
+        "tracks successful execution counts by strategy name"
+      ],
+      "owns_state": [
+        "_devops_information_registry",
+        "_strategies_by_name",
+        "_execution_counts_by_name"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder": {
-   "id": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "label": "DevopsInformationStrategyBuilder",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py",
-   "lineno": 28,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "execute",
-    "get_execution_count",
-    "list_execution_counts",
-    "list_registered_strategy_names",
-    "register_strategy",
-    "resolve"
-   ],
-   "shape": {
-    "method_count": 8,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to_label": "NotImplementedError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Tuple": "typing.Tuple",
+    "Type": "typing.Type",
+    "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+    "ClusterFanoutStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+    "FrameOperationalViewStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
+    "RegistryConsistencyAuditStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
+    "TransactionActivityViewStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+    "TransferBlastRadiusStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to_label": "NotImplementedError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder",
+    "class": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+    "label": "DevopsInformationStrategyBuilder"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Tuple": "typing.Tuple",
-  "Type": "typing.Type",
-  "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-  "ClusterFanoutStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
-  "FrameOperationalViewStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
-  "RegistryConsistencyAuditStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
-  "TransactionActivityViewStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
-  "TransferBlastRadiusStrategy": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder",
-  "class": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
-  "label": "DevopsInformationStrategyBuilder"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+      "relation": "borrows",
+      "why": "DevopsInformationStrategyBuilder borrows the live registry it will pass into resolved information strategies.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+      "relation": "uses",
+      "why": "DevopsInformationStrategyBuilder stores and resolves DevopsInformationStrategy classes by normalized strategy name.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+      "relation": "uses",
+      "why": "DevopsInformationStrategyBuilder registers ClusterFanoutStrategy as a built-in information strategy.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
+      "relation": "uses",
+      "why": "DevopsInformationStrategyBuilder registers FrameOperationalViewStrategy as a built-in information strategy.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
+      "relation": "uses",
+      "why": "DevopsInformationStrategyBuilder registers RegistryConsistencyAuditStrategy as a built-in information strategy.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy.TransactionActivityViewStrategy",
+      "relation": "uses",
+      "why": "DevopsInformationStrategyBuilder registers TransactionActivityViewStrategy as a built-in information strategy.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy.TransferBlastRadiusStrategy",
+      "relation": "uses",
+      "why": "DevopsInformationStrategyBuilder registers TransferBlastRadiusStrategy as a built-in information strategy.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

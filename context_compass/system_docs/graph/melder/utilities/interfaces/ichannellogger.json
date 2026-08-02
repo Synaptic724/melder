@@ -1,90 +1,101 @@
 {
- "schema_version": 1,
- "source": "src/melder/utilities/interfaces/ichannellogger.py",
- "source_sha256": "880e897b813de05a290df04fe85e39df8576102cd89169a90405dbbfec6a76c6",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.utilities.interfaces.ichannellogger": {
-   "id": "melder.utilities.interfaces.ichannellogger",
-   "label": "ichannellogger",
-   "kind": "module",
-   "file": "src/melder/utilities/interfaces/ichannellogger.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/utilities/interfaces/ichannellogger.py",
+  "source_sha256": "880e897b813de05a290df04fe85e39df8576102cd89169a90405dbbfec6a76c6",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.interfaces.ichannellogger": {
+      "id": "melder.utilities.interfaces.ichannellogger",
+      "label": "ichannellogger",
+      "kind": "module",
+      "file": "src/melder/utilities/interfaces/ichannellogger.py",
+      "lineno": 1
+    },
+    "melder.utilities.interfaces.ichannellogger.IChannelLogger": {
+      "id": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
+      "label": "IChannelLogger",
+      "kind": "interface",
+      "file": "src/melder/utilities/interfaces/ichannellogger.py",
+      "lineno": 6,
+      "bases": [],
+      "markers": [
+        "Protocol"
+      ],
+      "public_methods": [
+        "add_channel",
+        "add_group",
+        "add_metadata",
+        "clear_groups",
+        "clear_override_enabled",
+        "clear_override_min_level",
+        "clear_properties",
+        "critical",
+        "debug",
+        "error",
+        "exception",
+        "get_effective_enabled",
+        "get_enabled",
+        "get_groups_snapshot",
+        "get_min_level",
+        "get_override_enabled",
+        "get_override_min_level",
+        "get_properties_snapshot",
+        "id",
+        "info",
+        "last_log_time",
+        "mask_log",
+        "name",
+        "refresh_properties",
+        "remove_channel",
+        "remove_group",
+        "remove_metadata",
+        "remove_property",
+        "setLevel",
+        "set_enabled",
+        "set_min_level",
+        "set_override_enabled",
+        "set_override_min_level",
+        "set_properties",
+        "set_property",
+        "warning"
+      ],
+      "shape": {
+        "method_count": 52,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Protocol for channel-backed logger implementations.",
+      "responsibilities": [
+        "defines the channel logger surface SafeLogger can wrap with channel-aware metadata behavior"
+      ],
+      "owns_state": [
+        "_id"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.utilities.interfaces.ichannellogger.IChannelLogger": {
-   "id": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
-   "label": "IChannelLogger",
-   "kind": "interface",
-   "file": "src/melder/utilities/interfaces/ichannellogger.py",
-   "lineno": 6,
-   "bases": [],
-   "markers": [
-    "Protocol"
-   ],
-   "public_methods": [
-    "add_channel",
-    "add_group",
-    "add_metadata",
-    "clear_groups",
-    "clear_override_enabled",
-    "clear_override_min_level",
-    "clear_properties",
-    "critical",
-    "debug",
-    "error",
-    "exception",
-    "get_effective_enabled",
-    "get_enabled",
-    "get_groups_snapshot",
-    "get_min_level",
-    "get_override_enabled",
-    "get_override_min_level",
-    "get_properties_snapshot",
-    "id",
-    "info",
-    "last_log_time",
-    "mask_log",
-    "name",
-    "refresh_properties",
-    "remove_channel",
-    "remove_group",
-    "remove_metadata",
-    "remove_property",
-    "setLevel",
-    "set_enabled",
-    "set_min_level",
-    "set_override_enabled",
-    "set_override_min_level",
-    "set_properties",
-    "set_property",
-    "warning"
-   ],
-   "shape": {
-    "method_count": 52,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "LogRecord": "logging.LogRecord",
+    "TracebackType": "types.TracebackType",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "Iterable": "typing.Iterable",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Protocol": "typing.Protocol",
+    "Union": "typing.Union",
+    "runtime_checkable": "typing.runtime_checkable"
+  },
+  "collapse_candidate": {
+    "module": "melder.utilities.interfaces.ichannellogger",
+    "class": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
+    "label": "IChannelLogger"
   }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "LogRecord": "logging.LogRecord",
-  "TracebackType": "types.TracebackType",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Iterable": "typing.Iterable",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Protocol": "typing.Protocol",
-  "Union": "typing.Union",
-  "runtime_checkable": "typing.runtime_checkable"
- },
- "collapse_candidate": {
-  "module": "melder.utilities.interfaces.ichannellogger",
-  "class": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
-  "label": "IChannelLogger"
- }
 }

@@ -1,29 +1,37 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/frame_viewer/view_action_hooks.py",
- "source_sha256": "81e432b9720524ae3df4e8c1fd107fb012f81350697d6dcbc236d79283ae5503",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.frame_viewer.view_action_hooks": {
-   "id": "melder.nexus.rift.frame_viewer.view_action_hooks",
-   "label": "view_action_hooks",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/frame_viewer/view_action_hooks.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "contextmanager": "contextlib.contextmanager",
-  "wraps": "functools.wraps",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Concatenate": "typing.Concatenate",
-  "Generator": "typing.Generator",
-  "ParamSpec": "typing.ParamSpec",
-  "TypeVar": "typing.TypeVar"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/frame_viewer/view_action_hooks.py",
+  "source_sha256": "81e432b9720524ae3df4e8c1fd107fb012f81350697d6dcbc236d79283ae5503",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.frame_viewer.view_action_hooks": {
+      "id": "melder.nexus.rift.frame_viewer.view_action_hooks",
+      "label": "view_action_hooks",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/frame_viewer/view_action_hooks.py",
+      "lineno": 1,
+      "role": "Shared public view-action hook wrapper surface.",
+      "responsibilities": [
+        "wraps public viewer methods in a shared action-hook boundary",
+        "provides a no-op action scope when no hook owner is available"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "contextmanager": "contextlib.contextmanager",
+    "wraps": "functools.wraps",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Concatenate": "typing.Concatenate",
+    "Generator": "typing.Generator",
+    "ParamSpec": "typing.ParamSpec",
+    "TypeVar": "typing.TypeVar"
+  },
+  "collapse_candidate": null
 }

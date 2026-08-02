@@ -1,65 +1,79 @@
 {
- "schema_version": 1,
- "source": "src/melder/system_document.py",
- "source_sha256": "4f2603a9377ed53ab5cbf998fa3533bf5efe6fb8c25697c7e1da26137c52e6de",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.system_document": {
-   "id": "melder.system_document",
-   "label": "system_document",
-   "kind": "module",
-   "file": "src/melder/system_document.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/system_document.py",
+  "source_sha256": "4f2603a9377ed53ab5cbf998fa3533bf5efe6fb8c25697c7e1da26137c52e6de",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.system_document": {
+      "id": "melder.system_document",
+      "label": "system_document",
+      "kind": "module",
+      "file": "src/melder/system_document.py",
+      "lineno": 1
+    },
+    "melder.system_document.StaticSystemDocument": {
+      "id": "melder.system_document.StaticSystemDocument",
+      "label": "StaticSystemDocument",
+      "kind": "class",
+      "file": "src/melder/system_document.py",
+      "lineno": 19,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "char_count",
+        "document_name",
+        "head",
+        "line_count",
+        "lines",
+        "reader",
+        "render_json",
+        "render_markdown",
+        "tail"
+      ],
+      "shape": {
+        "method_count": 10,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Packaged hardcopy system document object.",
+      "responsibilities": [
+        "stores one minified JSON hardcopy string for a system document",
+        "renders both JSON and markdown views for agent-facing queries"
+      ],
+      "owns_state": [
+        "_document_name",
+        "_document_json",
+        "_document_markdown"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ]
+    }
   },
-  "melder.system_document.StaticSystemDocument": {
-   "id": "melder.system_document.StaticSystemDocument",
-   "label": "StaticSystemDocument",
-   "kind": "class",
-   "file": "src/melder/system_document.py",
-   "lineno": 19,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "char_count",
-    "document_name",
-    "head",
-    "line_count",
-    "lines",
-    "reader",
-    "render_json",
-    "render_markdown",
-    "tail"
-   ],
-   "shape": {
-    "method_count": 10,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.system_document.StaticSystemDocument",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.system_document.StaticSystemDocument",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.system_document.StaticSystemDocument",
+      "to_label": "IndexedText",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "ClassVar": "typing.ClassVar",
+    "Optional": "typing.Optional",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "AgentTextReader": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
+    "IndexedText": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+    "TextChunk": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk"
   },
-  {
-   "from": "melder.system_document.StaticSystemDocument",
-   "to_label": "IndexedText",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "ClassVar": "typing.ClassVar",
-  "Optional": "typing.Optional",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "AgentTextReader": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
-  "IndexedText": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
-  "TextChunk": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk"
- },
- "collapse_candidate": null
+  "collapse_candidate": null
 }

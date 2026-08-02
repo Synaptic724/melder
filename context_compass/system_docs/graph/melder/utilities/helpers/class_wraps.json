@@ -1,26 +1,33 @@
 {
- "schema_version": 1,
- "source": "src/melder/utilities/helpers/class_wraps.py",
- "source_sha256": "eb76a5a009e5b2fc1dfd63d708080b76812a9bbc0bcb56f2eea5b0fb04726816",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.utilities.helpers.class_wraps": {
-   "id": "melder.utilities.helpers.class_wraps",
-   "label": "class_wraps",
-   "kind": "module",
-   "file": "src/melder/utilities/helpers/class_wraps.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "update_wrapper": "functools.update_wrapper",
-  "Type": "typing.Type",
-  "Callable": "typing.Callable",
-  "Optional": "typing.Optional",
-  "Any": "typing.Any"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/utilities/helpers/class_wraps.py",
+  "source_sha256": "eb76a5a009e5b2fc1dfd63d708080b76812a9bbc0bcb56f2eea5b0fb04726816",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.helpers.class_wraps": {
+      "id": "melder.utilities.helpers.class_wraps",
+      "label": "class_wraps",
+      "kind": "module",
+      "file": "src/melder/utilities/helpers/class_wraps.py",
+      "lineno": 1,
+      "role": "Helper module for class-wrapping utilities.",
+      "responsibilities": [
+        "provides helper wrapping behavior for class utilities"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "update_wrapper": "functools.update_wrapper",
+    "Type": "typing.Type",
+    "Callable": "typing.Callable",
+    "Optional": "typing.Optional",
+    "Any": "typing.Any"
+  },
+  "collapse_candidate": null
 }

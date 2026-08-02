@@ -1,77 +1,113 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py",
- "source_sha256": "63132bfcd3a64f5bd3a19b1af355718c58c66e8c5eb0a43bbc8bf721d4d97f01",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy": {
-   "id": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy",
-   "label": "codegen_control_strategy",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py",
+  "source_sha256": "63132bfcd3a64f5bd3a19b1af355718c58c66e8c5eb0a43bbc8bf721d4d97f01",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy": {
+      "id": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy",
+      "label": "codegen_control_strategy",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy": {
+      "id": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+      "label": "CodegenControlStrategy",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py",
+      "lineno": 16,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "build_namespace_entries",
+        "cleanup"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Namespace exposure strategy for the room-owned codegen object.",
+      "responsibilities": [
+        "exposes a CodegenControlSurface as the codegen namespace object when enabled by configuration"
+      ],
+      "owns_state": [
+        "_lock"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy": {
-   "id": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "label": "CodegenControlStrategy",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py",
-   "lineno": 16,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "build_namespace_entries",
-    "cleanup"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+      "to_label": "CodegenControlSurface",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "CodegenControlSurface": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "CodegenNamespaceConfiguration": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
+    "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy",
+    "class": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+    "label": "CodegenControlStrategy"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-   "to_label": "CodegenControlSurface",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "CodegenControlSurface": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "CodegenNamespaceConfiguration": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
-  "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy",
-  "class": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
-  "label": "CodegenControlStrategy"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+      "to": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
+      "relation": "creates",
+      "why": "CodegenControlStrategy creates the namespace-facing CodegenControlSurface when recursive codegen exposure is enabled.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "CodegenControlStrategy inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

@@ -1,81 +1,140 @@
 {
- "schema_version": 1,
- "source": "src/melder/utilities/helpers/general_helpers.py",
- "source_sha256": "61cd84fb30852d41f3428bb67d8b6e6ecc1f8517581e05b612b34257012281b1",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.utilities.helpers.general_helpers": {
-   "id": "melder.utilities.helpers.general_helpers",
-   "label": "general_helpers",
-   "kind": "module",
-   "file": "src/melder/utilities/helpers/general_helpers.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/utilities/helpers/general_helpers.py",
+  "source_sha256": "61cd84fb30852d41f3428bb67d8b6e6ecc1f8517581e05b612b34257012281b1",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.helpers.general_helpers": {
+      "id": "melder.utilities.helpers.general_helpers",
+      "label": "general_helpers",
+      "kind": "module",
+      "file": "src/melder/utilities/helpers/general_helpers.py",
+      "lineno": 1
+    },
+    "melder.utilities.helpers.general_helpers.EnumHelpers": {
+      "id": "melder.utilities.helpers.general_helpers.EnumHelpers",
+      "label": "EnumHelpers",
+      "kind": "class",
+      "file": "src/melder/utilities/helpers/general_helpers.py",
+      "lineno": 10,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "convert_enum_and_check"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Stateless enum normalization helper.",
+      "responsibilities": [
+        "converts raw strings into concrete enum members",
+        "rejects invalid or incompatible enum inputs early"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ]
+    },
+    "melder.utilities.helpers.general_helpers.SpellInputUtils": {
+      "id": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+      "label": "SpellInputUtils",
+      "kind": "class",
+      "file": "src/melder/utilities/helpers/general_helpers.py",
+      "lineno": 109,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "make_spell_key_from_parts",
+        "normalize_binding_name",
+        "normalize_frame_key",
+        "normalize_spell_key",
+        "normalize_spell_name"
+      ],
+      "shape": {
+        "method_count": 5,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Canonical spell-key normalization helper.",
+      "responsibilities": [
+        "normalizes frame keys and binding names into canonical lowercase lookup keys",
+        "builds spellbook and meld lookup tuples from spell and frame inputs"
+      ],
+      "owns_state": [
+        "DEFAULT_BINDING_NAME"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ]
+    }
   },
-  "melder.utilities.helpers.general_helpers.EnumHelpers": {
-   "id": "melder.utilities.helpers.general_helpers.EnumHelpers",
-   "label": "EnumHelpers",
-   "kind": "class",
-   "file": "src/melder/utilities/helpers/general_helpers.py",
-   "lineno": 10,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "convert_enum_and_check"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": false,
-    "trivial": false
-   }
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.utilities.helpers.general_helpers.EnumHelpers",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum",
+    "lru_cache": "functools.lru_cache",
+    "Any": "typing.Any",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "Union": "typing.Union",
+    "TypeVar": "typing.TypeVar",
+    "Type": "typing.Type",
+    "ClassVar": "typing.ClassVar"
   },
-  "melder.utilities.helpers.general_helpers.SpellInputUtils": {
-   "id": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-   "label": "SpellInputUtils",
-   "kind": "class",
-   "file": "src/melder/utilities/helpers/general_helpers.py",
-   "lineno": 109,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "make_spell_key_from_parts",
-    "normalize_binding_name",
-    "normalize_frame_key",
-    "normalize_spell_key",
-    "normalize_spell_name"
-   ],
-   "shape": {
-    "method_count": 5,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.utilities.helpers.general_helpers.EnumHelpers",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum",
-  "lru_cache": "functools.lru_cache",
-  "Any": "typing.Any",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "Union": "typing.Union",
-  "TypeVar": "typing.TypeVar",
-  "Type": "typing.Type",
-  "ClassVar": "typing.ClassVar"
- },
- "collapse_candidate": null
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.utilities.helpers.general_helpers.EnumHelpers",
+      "to": "melder.aether.spellbook.spellbook.Spellbook",
+      "relation": "used_by",
+      "why": "Spellbook uses EnumHelpers to normalize raw permission, existence, and system-state inputs before binding and configuration decisions.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+      "to": "melder.aether.spellbook.spell.Spell",
+      "relation": "used_by",
+      "why": "Spell uses SpellInputUtils to derive its canonical `(frame_key, binding_key)` identity tuple at bind time.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+      "to": "melder.aether.spellbook.spellbook.Spellbook",
+      "relation": "used_by",
+      "why": "Spellbook uses SpellInputUtils as the canonical source of spell lookup-key normalization.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

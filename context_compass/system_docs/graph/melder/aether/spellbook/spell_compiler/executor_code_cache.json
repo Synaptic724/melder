@@ -1,23 +1,38 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/executor_code_cache.py",
- "source_sha256": "8b28bc45ad0427cde971db15068a5cfad6e5e86e52b10936a854b0a0969b1f05",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.executor_code_cache": {
-   "id": "melder.aether.spellbook.spell_compiler.executor_code_cache",
-   "label": "executor_code_cache",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/executor_code_cache.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "CodeType": "types.CodeType",
-  "Dict": "typing.Dict"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/executor_code_cache.py",
+  "source_sha256": "8b28bc45ad0427cde971db15068a5cfad6e5e86e52b10936a854b0a0969b1f05",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.executor_code_cache": {
+      "id": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+      "label": "executor_code_cache",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/executor_code_cache.py",
+      "lineno": 1,
+      "role": "Process-wide compiled-executor code-object cache for identity-free emitted source.",
+      "responsibilities": [
+        "deduplicates compile() of identity-free emitted executor source by source hash",
+        "keeps the cache bounded with lock-light FIFO eviction",
+        "provides observability and maintenance helpers for cached compiled code objects"
+      ],
+      "owns_state": [
+        "_code_by_source_hash",
+        "_max_entries",
+        "_hit_count",
+        "_miss_count"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "CodeType": "types.CodeType",
+    "Dict": "typing.Dict"
+  },
+  "collapse_candidate": null
 }

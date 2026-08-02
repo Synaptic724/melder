@@ -1,91 +1,142 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py",
- "source_sha256": "75e04910d3a1377b14ef153cfbd8a691032ba8318a201f67b2042fc1948174b1",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder": {
-   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder",
-   "label": "transaction_strategy_builder",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py",
+  "source_sha256": "75e04910d3a1377b14ef153cfbd8a691032ba8318a201f67b2042fc1948174b1",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder": {
+      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder",
+      "label": "transaction_strategy_builder",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder": {
+      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+      "label": "TransactionStrategyBuilder",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py",
+      "lineno": 103,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "apply_commit_delta",
+        "build_start_plan",
+        "on_end",
+        "on_start",
+        "register_strategy",
+        "resolve"
+      ],
+      "shape": {
+        "method_count": 8,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Registry-backed resolver for change-control transaction strategy classes.",
+      "responsibilities": [
+        "registers built-in transaction strategies by normalized transaction kind",
+        "resolves strategy classes for mediator start/end/commit-delta dispatch",
+        "shares the live transaction manager and dev-ops information registry with resolved strategies"
+      ],
+      "owns_state": [
+        "_transaction_manager",
+        "_devops_information_registry",
+        "_strategies_by_transaction_name"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder": {
-   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-   "label": "TransactionStrategyBuilder",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py",
-   "lineno": 103,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "apply_commit_delta",
-    "build_start_plan",
-    "on_end",
-    "on_start",
-    "register_strategy",
-    "resolve"
-   ],
-   "shape": {
-    "method_count": 8,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-   "to_label": "NotImplementedError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+      "to_label": "NotImplementedError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Type": "typing.Type",
+    "Union": "typing.Union",
+    "BindTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+    "ConjureTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy.ConjureTransactionStrategy",
+    "AddSpellOrIndexToContractTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy.AddSpellOrIndexToContractTransactionStrategy",
+    "RemoveSpellOrIndexFromContractTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy.RemoveSpellOrIndexFromContractTransactionStrategy",
+    "ClusterLinkTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+    "LinkTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
+    "TransferOwnershipTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy.TransferOwnershipTransactionStrategy",
+    "UnlinkTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy.UnlinkTransactionStrategy",
+    "NotchTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
+    "AddToIndexTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy.AddToIndexTransactionStrategy",
+    "RemoveFromIndexTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy.RemoveFromIndexTransactionStrategy",
+    "ElectConduitClusterLeaderTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy.ElectConduitClusterLeaderTransactionStrategy",
+    "UnelectConduitClusterLeaderTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy.UnelectConduitClusterLeaderTransactionStrategy",
+    "ClusterJoinTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_join_transaction_strategy.ClusterJoinTransactionStrategy",
+    "ClusterLeaveTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_leave_transaction_strategy.ClusterLeaveTransactionStrategy",
+    "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+    "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+    "ChangeControlStagedMutation": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
+    "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder",
+    "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+    "label": "TransactionStrategyBuilder"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Type": "typing.Type",
-  "Union": "typing.Union",
-  "BindTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-  "ConjureTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy.ConjureTransactionStrategy",
-  "AddSpellOrIndexToContractTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy.AddSpellOrIndexToContractTransactionStrategy",
-  "RemoveSpellOrIndexFromContractTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy.RemoveSpellOrIndexFromContractTransactionStrategy",
-  "ClusterLinkTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
-  "LinkTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.link_transaction_strategy.LinkTransactionStrategy",
-  "TransferOwnershipTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy.TransferOwnershipTransactionStrategy",
-  "UnlinkTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy.UnlinkTransactionStrategy",
-  "NotchTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy.NotchTransactionStrategy",
-  "AddToIndexTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy.AddToIndexTransactionStrategy",
-  "RemoveFromIndexTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy.RemoveFromIndexTransactionStrategy",
-  "ElectConduitClusterLeaderTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy.ElectConduitClusterLeaderTransactionStrategy",
-  "UnelectConduitClusterLeaderTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy.UnelectConduitClusterLeaderTransactionStrategy",
-  "ClusterJoinTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_join_transaction_strategy.ClusterJoinTransactionStrategy",
-  "ClusterLeaveTransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_leave_transaction_strategy.ClusterLeaveTransactionStrategy",
-  "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-  "ChangeControlStagedMutation": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation",
-  "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder",
-  "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
-  "label": "TransactionStrategyBuilder"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+      "relation": "uses",
+      "why": "TransactionStrategyBuilder stores and resolves TransactionStrategy classes by normalized transaction kind.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager",
+      "relation": "borrows",
+      "why": "TransactionStrategyBuilder borrows the live transaction manager as the scope-key and request helper surface shared with resolved strategies.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+      "relation": "borrows",
+      "why": "TransactionStrategyBuilder borrows the frame-local dev-ops information registry and passes it into resolved strategies.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

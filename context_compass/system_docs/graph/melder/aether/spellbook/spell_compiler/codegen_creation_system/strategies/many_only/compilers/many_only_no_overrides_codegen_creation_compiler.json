@@ -1,62 +1,98 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
- "source_sha256": "fda2acddafc04f632c39e37fafbba57eb373cff4b1a50a0cd65d7f5697b49291",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
-   "label": "many_only_no_overrides_codegen_creation_compiler",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
+  "source_sha256": "fda2acddafc04f632c39e37fafbba57eb373cff4b1a50a0cd65d7f5697b49291",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
+      "label": "many_only_no_overrides_codegen_creation_compiler",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
+      "lineno": 1,
+      "role": "Spell-scoped no-overrides compiler for the many-only family.",
+      "responsibilities": [
+        "hydrates many-only no-overrides executors from plan objects or schema rows",
+        "builds transient unrolled or emitted step-plan source for many-only no-overrides execution",
+        "uses the process-wide executor code cache for emitted no-overrides executors"
+      ],
+      "owns_state": [
+        "_TRANSIENT_SCHEMA_SEQUENCE_FIELDS"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind",
+      "label": "ManyOnlyCodegenPlanTargetKind",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
+      "lineno": 52,
+      "bases": [],
+      "markers": [],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": false,
+        "trivial": true
+      }
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode",
+      "label": "ManyOnlyCodegenPlanCallMode",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
+      "lineno": 63,
+      "bases": [],
+      "markers": [],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": false,
+        "trivial": true
+      }
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind",
-   "label": "ManyOnlyCodegenPlanTargetKind",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
-   "lineno": 52,
-   "bases": [],
-   "markers": [],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": false,
-    "trivial": true
-   }
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "SimpleNamespace": "types.SimpleNamespace",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "Union": "typing.Union",
+    "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code",
+    "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+    "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode",
-   "label": "ManyOnlyCodegenPlanCallMode",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
-   "lineno": 63,
-   "bases": [],
-   "markers": [],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": false,
-    "trivial": true
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "SimpleNamespace": "types.SimpleNamespace",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Union": "typing.Union",
-  "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code",
-  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
-  "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
- },
- "collapse_candidate": null
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode",
+      "relation": "uses",
+      "why": "many_only_no_overrides_codegen_creation_compiler mirrors ManyOnlyCodegenPlanCallMode when compiling many-only no-overrides executor shapes.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+      "relation": "uses",
+      "why": "many_only_no_overrides_codegen_creation_compiler uses the process-wide executor code cache for emitted no-overrides executors.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

@@ -1,30 +1,110 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_creation_cache.py",
- "source_sha256": "ce1e12f039b3a5b347448519f611c8ddb591c08342ff28a945ecf6870bcec6d8",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
-   "label": "generalized_creation_cache",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_creation_cache.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-  "SpellbookBindingResolver": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
-  "build_lazy_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.build_lazy_creation_executors",
-  "hydrate_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.hydrate_creation_executors",
-  "FAMILY_ID": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.FAMILY_ID",
-  "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.MANIFEST_METADATA_KEY",
-  "validate_generalized_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.validate_generalized_manifest"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_creation_cache.py",
+  "source_sha256": "ce1e12f039b3a5b347448519f611c8ddb591c08342ff28a945ecf6870bcec6d8",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
+      "label": "generalized_creation_cache",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_creation_cache.py",
+      "lineno": 1,
+      "role": "Cache codec for the generalized codegen-creation family.",
+      "responsibilities": [
+        "builds the marshal-safe generalized manifest package for one spell",
+        "publishes lazy or eager CreationContext rebuilds from generalized manifest packages",
+        "routes generalized family reload through manifest validation and shared hydrators"
+      ],
+      "owns_state": [
+        "PACKAGE_VERSION"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+    "SpellbookBindingResolver": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
+    "build_lazy_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.build_lazy_creation_executors",
+    "hydrate_creation_executors": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.hydrate_creation_executors",
+    "FAMILY_ID": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.FAMILY_ID",
+    "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.MANIFEST_METADATA_KEY",
+    "validate_generalized_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.validate_generalized_manifest"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
+      "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+      "relation": "creates",
+      "why": "generalized_creation_cache publishes lazy or eager CreationContext instances from generalized manifest packages.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+      "relation": "uses",
+      "why": "generalized_creation_cache builds and reloads packages from generalized-family SpellCodegenCreation artifacts.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+      "relation": "uses",
+      "why": "generalized_creation_cache uses the shared manifest cache envelope for generalized-family package export and reload.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
+      "relation": "uses",
+      "why": "generalized_creation_cache constructs SpellbookBindingResolver for eager and lazy generalized cache reload.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator",
+      "relation": "uses",
+      "why": "generalized_creation_cache delegates generalized family hydration and lazy-door publication to generalized_hydrator.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest",
+      "relation": "uses",
+      "why": "generalized_creation_cache validates and interprets the generalized family manifest module during cache export and reload.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

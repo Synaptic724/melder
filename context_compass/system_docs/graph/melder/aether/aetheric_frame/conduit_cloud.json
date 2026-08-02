@@ -1,118 +1,133 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/conduit_cloud.py",
- "source_sha256": "b1dca6e5d726e1d8e6e01129643b9a071df798f7e8be7316e1f9c7c742ebfbca",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.conduit_cloud": {
-   "id": "melder.aether.aetheric_frame.conduit_cloud",
-   "label": "conduit_cloud",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/conduit_cloud.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/conduit_cloud.py",
+  "source_sha256": "b1dca6e5d726e1d8e6e01129643b9a071df798f7e8be7316e1f9c7c742ebfbca",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.conduit_cloud": {
+      "id": "melder.aether.aetheric_frame.conduit_cloud",
+      "label": "conduit_cloud",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/conduit_cloud.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud": {
+      "id": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+      "label": "ConduitCloud",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/conduit_cloud.py",
+      "lineno": 23,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "add_conduit_to_cluster",
+        "cleanup",
+        "count_conduits",
+        "create_cluster",
+        "delete_cluster",
+        "find_conduit_id_by_name",
+        "frame_name",
+        "get_cluster",
+        "get_clusters_for_conduit",
+        "get_conduit",
+        "get_conduit_by_id",
+        "get_conduit_by_name",
+        "has_cluster_name",
+        "has_conduit_id",
+        "has_conduit_name",
+        "list_cloud_names",
+        "list_cluster_names",
+        "list_conduit_ids",
+        "list_conduit_names",
+        "refresh_cluster_shares_for_conduit",
+        "remove_conduit_from_cluster"
+      ],
+      "shape": {
+        "method_count": 24,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Frame-scoped registry of named conduits.",
+      "responsibilities": [
+        "stores conduit name to conduit mappings",
+        "resolves conduits by name or id within one frame",
+        "provides the frame-local named conduit lookup surface"
+      ],
+      "owns_state": [
+        "_registry",
+        "_name"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud": {
-   "id": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-   "label": "ConduitCloud",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/conduit_cloud.py",
-   "lineno": 23,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "add_conduit_to_cluster",
-    "cleanup",
-    "count_conduits",
-    "create_cluster",
-    "delete_cluster",
-    "find_conduit_id_by_name",
-    "frame_name",
-    "get_cluster",
-    "get_clusters_for_conduit",
-    "get_conduit",
-    "get_conduit_by_id",
-    "get_conduit_by_name",
-    "has_cluster_name",
-    "has_conduit_id",
-    "has_conduit_name",
-    "list_cloud_names",
-    "list_cluster_names",
-    "list_conduit_ids",
-    "list_conduit_names",
-    "refresh_cluster_shares_for_conduit",
-    "remove_conduit_from_cluster"
-   ],
-   "shape": {
-    "method_count": 24,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+      "to_label": "DevopsIdentity",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+      "to_label": "ConduitCluster",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "ClassVar": "typing.ClassVar",
+    "TracebackType": "types.TracebackType",
+    "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
+    "ConduitCluster": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+    "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
+    "Conduit": "melder.aether.conduit.conduit.Conduit"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.conduit_cloud",
+    "class": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+    "label": "ConduitCloud"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-   "to_label": "DevopsIdentity",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-   "to_label": "ConduitCluster",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "ClassVar": "typing.ClassVar",
-  "TracebackType": "types.TracebackType",
-  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
-  "ConduitCluster": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-  "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
-  "Conduit": "melder.aether.conduit.conduit.Conduit"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.conduit_cloud",
-  "class": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-  "label": "ConduitCloud"
- }
 }

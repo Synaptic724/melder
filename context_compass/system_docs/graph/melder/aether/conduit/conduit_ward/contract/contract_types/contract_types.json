@@ -1,40 +1,51 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
- "source_sha256": "6c49b5f5f23b33e1aa19028a3d17c4ddd4aed93a8b464f3402bee6ab86cf59e0",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types": {
-   "id": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types",
-   "label": "contract_types",
-   "kind": "module",
-   "file": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
+  "source_sha256": "6c49b5f5f23b33e1aa19028a3d17c4ddd4aed93a8b464f3402bee6ab86cf59e0",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types": {
+      "id": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types",
+      "label": "contract_types",
+      "kind": "module",
+      "file": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
+      "lineno": 1
+    },
+    "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes": {
+      "id": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
+      "label": "ContractTypes",
+      "kind": "enum",
+      "file": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
+      "lineno": 3,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Perspective enum for contract detail entries.",
+      "responsibilities": [
+        "labels whether a contract detail is initiated or received from one ward perspective"
+      ],
+      "owns_state": [
+        "initiated",
+        "received"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes": {
-   "id": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
-   "label": "ContractTypes",
-   "kind": "enum",
-   "file": "src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py",
-   "lineno": 3,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum",
+    "auto": "enum.auto"
+  },
+  "collapse_candidate": null
 }

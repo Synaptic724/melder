@@ -1,57 +1,87 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/conduit/creations/conduit_creations.py",
- "source_sha256": "ab3b069fa9eb493799ac415ea3deff39310648370c85c57e19b3c229517088e4",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.conduit.creations.conduit_creations": {
-   "id": "melder.aether.conduit.creations.conduit_creations",
-   "label": "conduit_creations",
-   "kind": "module",
-   "file": "src/melder/aether/conduit/creations/conduit_creations.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/conduit/creations/conduit_creations.py",
+  "source_sha256": "ab3b069fa9eb493799ac415ea3deff39310648370c85c57e19b3c229517088e4",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.conduit.creations.conduit_creations": {
+      "id": "melder.aether.conduit.creations.conduit_creations",
+      "label": "conduit_creations",
+      "kind": "module",
+      "file": "src/melder/aether/conduit/creations/conduit_creations.py",
+      "lineno": 1
+    },
+    "melder.aether.conduit.creations.conduit_creations.ConduitCreations": {
+      "id": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+      "label": "ConduitCreations",
+      "kind": "class",
+      "file": "src/melder/aether/conduit/creations/conduit_creations.py",
+      "lineno": 8,
+      "bases": [
+        "Creations"
+      ],
+      "markers": [],
+      "public_methods": [
+        "extract_spell_creations",
+        "restore_spell_creations"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Conduit/root specialization of the scoped live creation registry.",
+      "responsibilities": [
+        "collapses owner and scope identity onto one conduit id",
+        "extracts conduit-owned spell creations for transfer flows",
+        "restores conduit-owned spell creations after transfer or rollback"
+      ],
+      "owns_state": [
+        "owner_conduit_id",
+        "id"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.conduit.creations.conduit_creations.ConduitCreations": {
-   "id": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-   "label": "ConduitCreations",
-   "kind": "class",
-   "file": "src/melder/aether/conduit/creations/conduit_creations.py",
-   "lineno": 8,
-   "bases": [
-    "Creations"
-   ],
-   "markers": [],
-   "public_methods": [
-    "extract_spell_creations",
-    "restore_spell_creations"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-   "to_label": "Creations",
-   "relation": "specializes",
-   "to": "melder.aether.conduit.creations.creations.Creations"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "ClassVar": "typing.ClassVar",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Creations": "melder.aether.conduit.creations.creations.Creations"
- },
- "collapse_candidate": {
-  "module": "melder.aether.conduit.creations.conduit_creations",
-  "class": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-  "label": "ConduitCreations"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+      "to_label": "Creations",
+      "relation": "specializes",
+      "to": "melder.aether.conduit.creations.creations.Creations"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "ClassVar": "typing.ClassVar",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Creations": "melder.aether.conduit.creations.creations.Creations"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.conduit.creations.conduit_creations",
+    "class": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+    "label": "ConduitCreations"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+      "to": "melder.aether.conduit.creations.creations.Creations",
+      "relation": "specializes",
+      "why": "ConduitCreations narrows the generic Creations store to one conduit/root runtime scope.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

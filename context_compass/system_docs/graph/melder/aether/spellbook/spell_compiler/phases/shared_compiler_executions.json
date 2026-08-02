@@ -1,83 +1,107 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
- "source_sha256": "50cded410bf442da4d76bff7be9148b24b6f99c7b5af635bfbe68beafcb22aa2",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions": {
-   "id": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions",
-   "label": "shared_compiler_executions",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
+  "source_sha256": "50cded410bf442da4d76bff7be9148b24b6f99c7b5af635bfbe68beafcb22aa2",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions": {
+      "id": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions",
+      "label": "shared_compiler_executions",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions": {
+      "id": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+      "label": "SharedCompilerExecutions",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
+      "lineno": 16,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "build_fast_transient_schema",
+        "build_fast_transient_signature",
+        "build_injection_instance_rows",
+        "build_no_overrides_codegen_creation_step_signature_row",
+        "build_occurrence_canonical_rows",
+        "build_occurrence_contract_override_rows",
+        "build_occurrence_contract_override_spell_rows",
+        "build_occurrence_graph_rows",
+        "build_occurrence_instance_key_rows",
+        "build_override_target_rows",
+        "build_phase11_injection_spec_signature_row",
+        "build_phase11_spell_signature_row",
+        "build_phase11_step_ir_row",
+        "build_phase11_variant_ir_payload",
+        "build_phase5_dag_edge_rows",
+        "build_phase5_socket_rows",
+        "capture_phase2_5_codegen_ir",
+        "capture_phase8_11_codegen_ir",
+        "capture_phase8_11_codegen_ir_if_dirty",
+        "ensure_codegen_ir",
+        "freeze_phase11_schema_value",
+        "hash_codegen_signature",
+        "instance_key_sort_key",
+        "normalize_instance_key",
+        "normalize_occurrence_key",
+        "occurrence_key_sort_key",
+        "reset_phase2_5_codegen_ir",
+        "reset_phase8_11_codegen_ir",
+        "serialize_codegen_signature_part",
+        "socket_row_sort_key"
+      ],
+      "shape": {
+        "method_count": 30,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Shared static execution helper surface for compiler phases.",
+      "responsibilities": [
+        "owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases",
+        "captures and resets phase2_5 and phase8_11 codegen IR on SpellCompilerArtifact",
+        "builds normalized schema rows for phase-5 DAG/socket, phase-8 occurrence, phase-9 injection, and phase-11 step payloads"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions": {
-   "id": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
-   "label": "SharedCompilerExecutions",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
-   "lineno": 16,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "build_fast_transient_schema",
-    "build_fast_transient_signature",
-    "build_injection_instance_rows",
-    "build_no_overrides_codegen_creation_step_signature_row",
-    "build_occurrence_canonical_rows",
-    "build_occurrence_contract_override_rows",
-    "build_occurrence_contract_override_spell_rows",
-    "build_occurrence_graph_rows",
-    "build_occurrence_instance_key_rows",
-    "build_override_target_rows",
-    "build_phase11_injection_spec_signature_row",
-    "build_phase11_spell_signature_row",
-    "build_phase11_step_ir_row",
-    "build_phase11_variant_ir_payload",
-    "build_phase5_dag_edge_rows",
-    "build_phase5_socket_rows",
-    "capture_phase2_5_codegen_ir",
-    "capture_phase8_11_codegen_ir",
-    "capture_phase8_11_codegen_ir_if_dirty",
-    "ensure_codegen_ir",
-    "freeze_phase11_schema_value",
-    "hash_codegen_signature",
-    "instance_key_sort_key",
-    "normalize_instance_key",
-    "normalize_occurrence_key",
-    "occurrence_key_sort_key",
-    "reset_phase2_5_codegen_ir",
-    "reset_phase8_11_codegen_ir",
-    "serialize_codegen_signature_part",
-    "socket_row_sort_key"
-   ],
-   "shape": {
-    "method_count": 30,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions",
-  "class": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
-  "label": "SharedCompilerExecutions"
- }
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions",
+    "class": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+    "label": "SharedCompilerExecutions"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
+      "relation": "uses",
+      "why": "SharedCompilerExecutions reads SpellGeneralizedCodegenLanePlan fast-transient payloads while exporting compiler-owned codegen IR.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

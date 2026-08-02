@@ -1,72 +1,80 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
- "source_sha256": "63acc81852ee24fe25257f1aaaebb3cb1aee329b3be1c6b2a2f40e3622eb4446",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy",
-   "label": "broken_spell_in_dag_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
+  "source_sha256": "63acc81852ee24fe25257f1aaaebb3cb1aee329b3be1c6b2a2f40e3622eb4446",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy",
+      "label": "broken_spell_in_dag_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
+      "lineno": 1,
+      "role": "System validation strategy module for broken-spell-in-dag checks.",
+      "responsibilities": [
+        "provides one validation or examination strategy/support surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    },
+    "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
+      "label": "BrokenSpellInDagStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
+      "lineno": 28,
+      "bases": [
+        "SpellSystemValidationStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "run"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      }
+    }
   },
-  "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
-   "label": "BrokenSpellInDagStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py",
-   "lineno": 28,
-   "bases": [
-    "SpellSystemValidationStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "run"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
+      "to_label": "SpellSystemValidationStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
+      "to_label": "SystemDiagnostic",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Set": "typing.Set",
+    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+    "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+    "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
+    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
+    "label": "BrokenSpellInDagStrategy"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
-   "to_label": "SpellSystemValidationStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
-   "to_label": "SystemDiagnostic",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Set": "typing.Set",
-  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-  "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
-  "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
-  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
-  "label": "BrokenSpellInDagStrategy"
- }
 }

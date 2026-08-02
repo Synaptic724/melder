@@ -1,126 +1,169 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/conduit/conduit_cluster.py",
- "source_sha256": "530bffc062bf4d79d1aeb85552f50b3ee92c8adc95af37b48e379836a767c77c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.conduit.conduit_cluster": {
-   "id": "melder.aether.conduit.conduit_cluster",
-   "label": "conduit_cluster",
-   "kind": "module",
-   "file": "src/melder/aether/conduit/conduit_cluster.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/conduit/conduit_cluster.py",
+  "source_sha256": "530bffc062bf4d79d1aeb85552f50b3ee92c8adc95af37b48e379836a767c77c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.conduit.conduit_cluster": {
+      "id": "melder.aether.conduit.conduit_cluster",
+      "label": "conduit_cluster",
+      "kind": "module",
+      "file": "src/melder/aether/conduit/conduit_cluster.py",
+      "lineno": 1
+    },
+    "melder.aether.conduit.conduit_cluster.ConduitCluster": {
+      "id": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "label": "ConduitCluster",
+      "kind": "class",
+      "file": "src/melder/aether/conduit/conduit_cluster.py",
+      "lineno": 26,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "add_and_share_spell",
+        "add_member",
+        "add_shared_spell",
+        "bind_elected_leader",
+        "bind_member",
+        "cleanup",
+        "describe",
+        "elect_leader",
+        "get_members",
+        "get_shared_spells",
+        "handle_join",
+        "handle_leave",
+        "id",
+        "name",
+        "refresh_member_shares",
+        "refresh_shareable_roots",
+        "remove_and_strip_spell",
+        "remove_member",
+        "remove_shared_from_borrower",
+        "remove_shared_spell",
+        "set_auto_link_dependencies",
+        "share_to_borrower",
+        "unbind_elected_leader",
+        "unbind_member",
+        "unelect_leader"
+      ],
+      "shape": {
+        "method_count": 31,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Cluster-local conduit membership and shared-root manager.",
+      "responsibilities": [
+        "tracks conduit membership by cluster",
+        "tracks shareable root spell lineages per owner",
+        "coordinates automatic sharing and teardown between cluster members"
+      ],
+      "owns_state": [
+        "members",
+        "shared_spells",
+        "auto_link_dependencies",
+        "_devops_identity",
+        "_devops_information_registry"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.conduit.conduit_cluster.ConduitCluster": {
-   "id": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "label": "ConduitCluster",
-   "kind": "class",
-   "file": "src/melder/aether/conduit/conduit_cluster.py",
-   "lineno": 26,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "add_and_share_spell",
-    "add_member",
-    "add_shared_spell",
-    "bind_elected_leader",
-    "bind_member",
-    "cleanup",
-    "describe",
-    "elect_leader",
-    "get_members",
-    "get_shared_spells",
-    "handle_join",
-    "handle_leave",
-    "id",
-    "name",
-    "refresh_member_shares",
-    "refresh_shareable_roots",
-    "remove_and_strip_spell",
-    "remove_member",
-    "remove_shared_from_borrower",
-    "remove_shared_spell",
-    "set_auto_link_dependencies",
-    "share_to_borrower",
-    "unbind_elected_leader",
-    "unbind_member",
-    "unelect_leader"
-   ],
-   "shape": {
-    "method_count": 31,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to_label": "DevopsIdentity",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to_label": "Crystallizer",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to_label": "ClusterCrystal",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "nullcontext": "contextlib.nullcontext",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Set": "typing.Set",
+    "Optional": "typing.Optional",
+    "List": "typing.List",
+    "ClassVar": "typing.ClassVar",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+    "ClusterCrystal": "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
+    "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
+    "Conduit": "melder.aether.conduit.conduit.Conduit",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex"
   },
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to_label": "DevopsIdentity",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.conduit.conduit_cluster",
+    "class": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+    "label": "ConduitCluster"
   },
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to_label": "Crystallizer",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-   "to_label": "ClusterCrystal",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "nullcontext": "contextlib.nullcontext",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Set": "typing.Set",
-  "Optional": "typing.Optional",
-  "List": "typing.List",
-  "ClassVar": "typing.ClassVar",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-  "ClusterCrystal": "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
-  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
-  "Conduit": "melder.aether.conduit.conduit.Conduit",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex"
- },
- "collapse_candidate": {
-  "module": "melder.aether.conduit.conduit_cluster",
-  "class": "melder.aether.conduit.conduit_cluster.ConduitCluster",
-  "label": "ConduitCluster"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+      "relation": "owns_lifecycle_of",
+      "why": "ConduitCluster creates and owns one cluster-scoped DevopsIdentity for membership reporting.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_cluster.ConduitCluster",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+      "relation": "borrows",
+      "why": "ConduitCluster borrows the frame dev-ops information registry to publish cluster membership relations.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

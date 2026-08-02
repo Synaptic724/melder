@@ -1,76 +1,97 @@
 {
- "schema_version": 1,
- "source": "src/melder/crystallizer/persistence/persistence_crystal.py",
- "source_sha256": "b2dd590d62b1cc83317a7fd2630da84f29485f544dd99b52acbf34a8362b20d8",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.crystallizer.persistence.persistence_crystal": {
-   "id": "melder.crystallizer.persistence.persistence_crystal",
-   "label": "persistence_crystal",
-   "kind": "module",
-   "file": "src/melder/crystallizer/persistence/persistence_crystal.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/crystallizer/persistence/persistence_crystal.py",
+  "source_sha256": "b2dd590d62b1cc83317a7fd2630da84f29485f544dd99b52acbf34a8362b20d8",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.crystallizer.persistence.persistence_crystal": {
+      "id": "melder.crystallizer.persistence.persistence_crystal",
+      "label": "persistence_crystal",
+      "kind": "module",
+      "file": "src/melder/crystallizer/persistence/persistence_crystal.py",
+      "lineno": 1
+    },
+    "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal": {
+      "id": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
+      "label": "PersistenceCrystal",
+      "kind": "class",
+      "file": "src/melder/crystallizer/persistence/persistence_crystal.py",
+      "lineno": 10,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "checkpoint_number",
+        "cleanup",
+        "created_at",
+        "describe",
+        "description",
+        "from_cached_item",
+        "id",
+        "profile_name",
+        "replay_data",
+        "sequence_range",
+        "to_cached_item"
+      ],
+      "shape": {
+        "method_count": 11,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "One sealed checkpoint: journal window + captured payloads; the durable unit.",
+      "responsibilities": [
+        "replay_data() feeds the restore engine",
+        "to_cached_item()/from_cached_item() is the JSON codec for cache/DB transport"
+      ],
+      "owns_state": [
+        "journal_segment",
+        "captured_payloads",
+        "sequence_range"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal": {
-   "id": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-   "label": "PersistenceCrystal",
-   "kind": "class",
-   "file": "src/melder/crystallizer/persistence/persistence_crystal.py",
-   "lineno": 10,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "checkpoint_number",
-    "cleanup",
-    "created_at",
-    "describe",
-    "description",
-    "from_cached_item",
-    "id",
-    "profile_name",
-    "replay_data",
-    "sequence_range",
-    "to_cached_item"
-   ],
-   "shape": {
-    "method_count": 11,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "datetime": "datetime.datetime",
-  "timezone": "datetime.timezone",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "RecordVersion": "melder.crystallizer.persistence.record_version.RecordVersion"
- },
- "collapse_candidate": {
-  "module": "melder.crystallizer.persistence.persistence_crystal",
-  "class": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
-  "label": "PersistenceCrystal"
- }
+  "edges_out": [
+    {
+      "from": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "datetime": "datetime.datetime",
+    "timezone": "datetime.timezone",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "RecordVersion": "melder.crystallizer.persistence.record_version.RecordVersion"
+  },
+  "collapse_candidate": {
+    "module": "melder.crystallizer.persistence.persistence_crystal",
+    "class": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
+    "label": "PersistenceCrystal"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal",
+      "to": "melder.crystallizer.persistence.record_version.RecordVersion",
+      "relation": "uses",
+      "why": "to_cached_item stamps; from_cached_item gates on the recorded major."
+    }
+  ]
 }

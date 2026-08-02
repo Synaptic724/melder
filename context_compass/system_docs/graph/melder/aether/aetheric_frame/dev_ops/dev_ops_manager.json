@@ -1,122 +1,206 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py",
- "source_sha256": "9984f1426364c2c08b254f8fa8b25e98bd10682a196968859006e1238f74e439",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.dev_ops_manager": {
-   "id": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager",
-   "label": "dev_ops_manager",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py",
+  "source_sha256": "9984f1426364c2c08b254f8fa8b25e98bd10682a196968859006e1238f74e439",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.dev_ops_manager": {
+      "id": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager",
+      "label": "dev_ops_manager",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager": {
+      "id": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "label": "DevOpsManager",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py",
+      "lineno": 24,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "change_control_manager",
+        "cleanup",
+        "close_and_wait_conduit",
+        "close_and_wait_conduit_lineage",
+        "conduit_lineage_gate_ops",
+        "creation_gate_controller",
+        "devops_information_registry",
+        "disable_conduit_gate",
+        "disable_conduit_lineage",
+        "enable_conduit_gate",
+        "enable_conduit_lineage",
+        "incident_manager",
+        "revalidate_dirty_roots",
+        "risk_manager",
+        "spell_system_states"
+      ],
+      "shape": {
+        "method_count": 15,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Frame-level DevOps and admission-control hub.",
+      "responsibilities": [
+        "exposes incident, change-control, and risk management through one frame-local hub",
+        "owns the frame-local creation gate controller",
+        "provides conduit and lineage gate control entrypoints",
+        "provides dirty-root revalidation entrypoints"
+      ],
+      "owns_state": [
+        "_incident_manager",
+        "_change_control_manager",
+        "_risk_manager",
+        "_creation_gate_controller",
+        "_spell_system_states",
+        "_devops_information_registry"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager": {
-   "id": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "label": "DevOpsManager",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py",
-   "lineno": 24,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "change_control_manager",
-    "cleanup",
-    "close_and_wait_conduit",
-    "close_and_wait_conduit_lineage",
-    "conduit_lineage_gate_ops",
-    "creation_gate_controller",
-    "devops_information_registry",
-    "disable_conduit_gate",
-    "disable_conduit_lineage",
-    "enable_conduit_gate",
-    "enable_conduit_lineage",
-    "incident_manager",
-    "revalidate_dirty_roots",
-    "risk_manager",
-    "spell_system_states"
-   ],
-   "shape": {
-    "method_count": 15,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "IncidentManager",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "ChangeControlManager",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "RiskManager",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "CreationGateController",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "ConduitLineageGateOps",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "RLock": "threading.RLock",
+    "Optional": "typing.Optional",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "ClassVar": "typing.ClassVar",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "ChangeControlManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+    "IncidentManager": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+    "RiskManager": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
+    "ConduitLineageGateOps": "melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops.ConduitLineageGateOps",
+    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+    "LoadGate": "melder.utilities.synchronization.load_gate.LoadGate"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "IncidentManager",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager",
+    "class": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+    "label": "DevOpsManager"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "ChangeControlManager",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "RiskManager",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "CreationGateController",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "ConduitLineageGateOps",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "RLock": "threading.RLock",
-  "Optional": "typing.Optional",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "ClassVar": "typing.ClassVar",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "ChangeControlManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
-  "IncidentManager": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-  "RiskManager": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
-  "ConduitLineageGateOps": "melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops.ConduitLineageGateOps",
-  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
-  "LoadGate": "melder.utilities.synchronization.load_gate.LoadGate"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager",
-  "class": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
-  "label": "DevOpsManager"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+      "relation": "owns_lifecycle_of",
+      "why": "DevOpsManager owns the frame-local change-control registry and admission surface.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+      "relation": "borrows",
+      "why": "DevOpsManager borrows the frame-owned dev-ops information registry for reporting and control-plane coordination.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+      "relation": "owns_lifecycle_of",
+      "why": "DevOpsManager owns the frame-local incident registry.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
+      "relation": "owns_lifecycle_of",
+      "why": "DevOpsManager owns the risk aggregator that feeds validation-required state back to spellbooks.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "relation": "uses",
+      "why": "DevOpsManager operates over SpellSystemStates as the frame-local control-plane state registry.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

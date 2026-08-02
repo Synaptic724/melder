@@ -1,135 +1,219 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "6082f4989d586893f47e3b267caea7f36175c5cb9fbef28aa723dace245070a5",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
-   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states",
-   "label": "spell_system_states",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+  "source_sha256": "6082f4989d586893f47e3b267caea7f36175c5cb9fbef28aa723dace245070a5",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
+      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states",
+      "label": "spell_system_states",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates": {
+      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "label": "SpellSystemStates",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+      "lineno": 42,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "bulk_set_conduit_root_validity",
+        "bulk_set_conduit_spell_validity",
+        "cleanup",
+        "clear_conduit_diagnostics",
+        "clear_conduit_dirty",
+        "compute_impact_closure",
+        "consume_dirty_indexes",
+        "devops_information_registry",
+        "drop_conduit_resolution_state",
+        "get_by_index_id",
+        "get_by_spell_id",
+        "get_conduit_resolution_state",
+        "get_local_topology",
+        "get_local_topology_by_id",
+        "get_or_create_conduit_resolution_state",
+        "iter_conduit_resolution_states",
+        "iter_states",
+        "mark_collection_dependents_dirty",
+        "mark_conduit_dirty",
+        "mark_contract_dependents_dirty",
+        "mark_structural_change",
+        "record_conduit_diagnostics",
+        "register_index",
+        "register_local_topology",
+        "set_conduit_root_validity",
+        "set_conduit_spell_validity",
+        "set_risk_manager",
+        "unregister_index",
+        "update_dependencies"
+      ],
+      "shape": {
+        "method_count": 35,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Per-frame lineage and resolution state registry.",
+      "responsibilities": [
+        "owns lineage state by index id and spell id",
+        "tracks dirty lineages and local topologies",
+        "owns per-conduit resolution state buckets",
+        "provides targeted dependency and contract invalidation"
+      ],
+      "owns_state": [
+        "_states_by_index_id",
+        "_states_by_spell_id",
+        "_dirty_lineages",
+        "_local_topologies",
+        "_resolution_by_conduit_id"
+      ],
+      "phases": [
+        "init",
+        "validation",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates": {
-   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "label": "SpellSystemStates",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
-   "lineno": 42,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "bulk_set_conduit_root_validity",
-    "bulk_set_conduit_spell_validity",
-    "cleanup",
-    "clear_conduit_diagnostics",
-    "clear_conduit_dirty",
-    "compute_impact_closure",
-    "consume_dirty_indexes",
-    "devops_information_registry",
-    "drop_conduit_resolution_state",
-    "get_by_index_id",
-    "get_by_spell_id",
-    "get_conduit_resolution_state",
-    "get_local_topology",
-    "get_local_topology_by_id",
-    "get_or_create_conduit_resolution_state",
-    "iter_conduit_resolution_states",
-    "iter_states",
-    "mark_collection_dependents_dirty",
-    "mark_conduit_dirty",
-    "mark_contract_dependents_dirty",
-    "mark_structural_change",
-    "record_conduit_diagnostics",
-    "register_index",
-    "register_local_topology",
-    "set_conduit_root_validity",
-    "set_conduit_spell_validity",
-    "set_risk_manager",
-    "unregister_index",
-    "update_dependencies"
-   ],
-   "shape": {
-    "method_count": 35,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to_label": "SpellSystemState",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to_label": "ConduitResolutionState",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "Iterable": "typing.Iterable",
+    "Iterator": "typing.Iterator",
+    "List": "typing.List",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Set": "typing.Set",
+    "Tuple": "typing.Tuple",
+    "ClassVar": "typing.ClassVar",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "ConduitResolutionState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+    "SpellState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
+    "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+    "SpellSystemState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
+    "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+    "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
+    "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+    "RiskManager": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
+    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+    "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states",
+    "class": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+    "label": "SpellSystemStates"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to_label": "SpellSystemState",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-   "to_label": "ConduitResolutionState",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Iterable": "typing.Iterable",
-  "Iterator": "typing.Iterator",
-  "List": "typing.List",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Set": "typing.Set",
-  "Tuple": "typing.Tuple",
-  "ClassVar": "typing.ClassVar",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "ConduitResolutionState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
-  "SpellState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
-  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-  "SpellSystemState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
-  "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
-  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
-  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-  "RiskManager": "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
-  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states",
-  "class": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "label": "SpellSystemStates"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellSystemStates owns conduit-scoped ConduitResolutionState buckets for later resolution validation.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
+      "relation": "uses",
+      "why": "SpellSystemStates applies SpellState flags when marking lineages gated, impacted, or contract-unvalidated.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+      "relation": "uses",
+      "why": "SpellSystemStates records SpellStateChangeReason values as the coarse latest transition for lineage and resolution state changes.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellSystemStates owns one SpellSystemState per registered lineage.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+      "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+      "relation": "uses",
+      "why": "SpellSystemStates uses SpellValidity to gate both structural and conduit-local resolution participation.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

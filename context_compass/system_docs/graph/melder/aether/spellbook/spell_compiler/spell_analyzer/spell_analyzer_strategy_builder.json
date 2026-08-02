@@ -1,72 +1,121 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py",
- "source_sha256": "7f728dd70a1dddfc8860c9a840bdf4bf2aef58aa13e750357f5565610de6cf33",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder",
-   "label": "spell_analyzer_strategy_builder",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py",
+  "source_sha256": "7f728dd70a1dddfc8860c9a840bdf4bf2aef58aa13e750357f5565610de6cf33",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder",
+      "label": "spell_analyzer_strategy_builder",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+      "label": "SpellAnalyzerStrategyBuilder",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py",
+      "lineno": 12,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "get_strategies",
+        "get_strategy",
+        "registered_strategy_names"
+      ],
+      "shape": {
+        "method_count": 5,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Registry holder for analyzer strategies.",
+      "responsibilities": [
+        "owns the named analyzer strategy registry",
+        "loads the built-in occurrence graph analyzer strategy",
+        "resolves deterministic ordered analyzer strategy tuples for analyzer chaining"
+      ],
+      "owns_state": [
+        "_strategies_by_name"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
-   "label": "SpellAnalyzerStrategyBuilder",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py",
-   "lineno": 12,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "get_strategies",
-    "get_strategy",
-    "registered_strategy_names"
-   ],
-   "shape": {
-    "method_count": 5,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
-   "to_label": "SpellOccurrenceGraphAnalyzerStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+      "to_label": "SpellOccurrenceGraphAnalyzerStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "Tuple": "typing.Tuple",
+    "SpellAnalyzerStrategy": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
+    "SpellOccurrenceGraphAnalyzerStrategy": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "Tuple": "typing.Tuple",
-  "SpellAnalyzerStrategy": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
-  "SpellOccurrenceGraphAnalyzerStrategy": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder",
-  "class": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
-  "label": "SpellAnalyzerStrategyBuilder"
- }
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder",
+    "class": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+    "label": "SpellAnalyzerStrategyBuilder"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
+      "relation": "uses",
+      "why": "SpellAnalyzerStrategyBuilder stores and resolves SpellAnalyzerStrategy objects by stable strategy id.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy",
+      "relation": "uses",
+      "why": "SpellAnalyzerStrategyBuilder registers SpellOccurrenceGraphAnalyzerStrategy as the built-in analyzer strategy.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder.SpellAnalyzerStrategyBuilder",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "SpellAnalyzerStrategyBuilder inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

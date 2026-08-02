@@ -1,90 +1,114 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/bind/scan.py",
- "source_sha256": "6cbb2802397dff4ad3094b11e3db1a4dedb8981611680184c3e143a0cfd35a26",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.bind.scan": {
-   "id": "melder.aether.spellbook.bind.scan",
-   "label": "scan",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/bind/scan.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/bind/scan.py",
+  "source_sha256": "6cbb2802397dff4ad3094b11e3db1a4dedb8981611680184c3e143a0cfd35a26",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.bind.scan": {
+      "id": "melder.aether.spellbook.bind.scan",
+      "label": "scan",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/bind/scan.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.bind.scan.ScanBindMetadata": {
+      "id": "melder.aether.spellbook.bind.scan.ScanBindMetadata",
+      "label": "ScanBindMetadata",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/bind/scan.py",
+      "lineno": 55,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "to_bind_kwargs"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": false,
+        "trivial": false
+      }
+    },
+    "melder.aether.spellbook.bind.scan.Scan": {
+      "id": "melder.aether.spellbook.bind.scan.Scan",
+      "label": "Scan",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/bind/scan.py",
+      "lineno": 239,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "scan_module"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Module-only scanner for scan_bind metadata.",
+      "responsibilities": [
+        "reads scan_bind metadata from one module",
+        "delegates actual registration to Spellbook.bind during scan time"
+      ],
+      "owns_state": [
+        "_spellbook"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.bind.scan.ScanBindMetadata": {
-   "id": "melder.aether.spellbook.bind.scan.ScanBindMetadata",
-   "label": "ScanBindMetadata",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/bind/scan.py",
-   "lineno": 55,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "to_bind_kwargs"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": false,
-    "trivial": false
-   }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.bind.scan.Scan",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.bind.scan.Scan",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.bind.scan.Scan",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "dataclass": "dataclasses.dataclass",
+    "ModuleType": "types.ModuleType",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "ClassVar": "typing.ClassVar",
+    "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
   },
-  "melder.aether.spellbook.bind.scan.Scan": {
-   "id": "melder.aether.spellbook.bind.scan.Scan",
-   "label": "Scan",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/bind/scan.py",
-   "lineno": 239,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "scan_module"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.bind.scan.Scan",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.bind.scan.Scan",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.bind.scan.Scan",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "dataclass": "dataclasses.dataclass",
-  "ModuleType": "types.ModuleType",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "ClassVar": "typing.ClassVar",
-  "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
- },
- "collapse_candidate": null
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.bind.scan.Scan",
+      "to": "melder.aether.spellbook.spellbook.Spellbook",
+      "relation": "borrows",
+      "why": "Scan borrows its owning Spellbook and delegates actual registration through Spellbook.bind.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

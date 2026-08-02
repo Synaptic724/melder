@@ -1,57 +1,64 @@
 {
- "schema_version": 1,
- "source": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
- "source_sha256": "ccacce3bdba95a9e7e46f4e4c99df7709c108dc4d8615fbcda92b060450f73a3",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy": {
-   "id": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy",
-   "label": "dependency_view_strategy",
-   "kind": "module",
-   "file": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
+  "source_sha256": "ccacce3bdba95a9e7e46f4e4c99df7709c108dc4d8615fbcda92b060450f73a3",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy": {
+      "id": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy",
+      "label": "dependency_view_strategy",
+      "kind": "module",
+      "file": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
+      "lineno": 1,
+      "role": "Deterministic topological module load order over walked edges; cycle-tolerant with an honesty walk error.",
+      "responsibilities": [
+        "implemented S1 (decomposition epic); see crystal_analysis component docs"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    },
+    "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy": {
+      "id": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",
+      "label": "DependencyViewStrategy",
+      "kind": "class",
+      "file": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
+      "lineno": 22,
+      "bases": [
+        "CrystalFactStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "finalize",
+        "name"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      }
+    }
   },
-  "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy": {
-   "id": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",
-   "label": "DependencyViewStrategy",
-   "kind": "class",
-   "file": "src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py",
-   "lineno": 22,
-   "bases": [
-    "CrystalFactStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "finalize",
-    "name"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [
+    {
+      "from": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",
+      "to_label": "CrystalFactStrategy",
+      "relation": "specializes",
+      "to": "melder.crystallizer.crystal_analysis.strategies.base_strategy.CrystalFactStrategy"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Set": "typing.Set",
+    "CrystalAnalysisResult": "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult",
+    "CrystalFactStrategy": "melder.crystallizer.crystal_analysis.strategies.base_strategy.CrystalFactStrategy"
+  },
+  "collapse_candidate": {
+    "module": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy",
+    "class": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",
+    "label": "DependencyViewStrategy"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",
-   "to_label": "CrystalFactStrategy",
-   "relation": "specializes",
-   "to": "melder.crystallizer.crystal_analysis.strategies.base_strategy.CrystalFactStrategy"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Set": "typing.Set",
-  "CrystalAnalysisResult": "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult",
-  "CrystalFactStrategy": "melder.crystallizer.crystal_analysis.strategies.base_strategy.CrystalFactStrategy"
- },
- "collapse_candidate": {
-  "module": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy",
-  "class": "melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy.DependencyViewStrategy",
-  "label": "DependencyViewStrategy"
- }
 }

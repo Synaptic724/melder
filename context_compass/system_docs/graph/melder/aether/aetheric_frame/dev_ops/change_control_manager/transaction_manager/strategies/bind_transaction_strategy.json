@@ -1,69 +1,113 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py",
- "source_sha256": "2a480b37dc64b03baf02218ef4e068fb3a0a2b548c300334922177d8d82fe54d",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy",
-   "label": "bind_transaction_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py",
+  "source_sha256": "2a480b37dc64b03baf02218ef4e068fb3a0a2b548c300334922177d8d82fe54d",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy",
+      "label": "bind_transaction_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+      "label": "BindTransactionStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py",
+      "lineno": 22,
+      "bases": [
+        "TransactionStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "build_start_plan",
+        "on_end",
+        "on_start"
+      ],
+      "shape": {
+        "method_count": 7,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Transaction strategy for bind and scan requests.",
+      "responsibilities": [
+        "builds pre-conjure and post-conjure bind admission plans from live topology",
+        "derives spellbook, conduit, conduit-ward, and cluster scopes for bind-family requests",
+        "runs Spellbook-local bind transaction start/end effects after admission and finalization"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-   "label": "BindTransactionStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py",
-   "lineno": 22,
-   "bases": [
-    "TransactionStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "build_start_plan",
-    "on_end",
-    "on_start"
-   ],
-   "shape": {
-    "method_count": 7,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-   "to_label": "TransactionStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Set": "typing.Set",
-  "Tuple": "typing.Tuple",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
-  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-  "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
-  "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy",
-  "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
-  "label": "BindTransactionStrategy"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+      "to_label": "TransactionStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Set": "typing.Set",
+    "Tuple": "typing.Tuple",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+    "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
+    "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy",
+    "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+    "label": "BindTransactionStrategy"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+      "relation": "specializes",
+      "why": "BindTransactionStrategy specializes the shared transaction strategy contract for bind-family requests.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+      "relation": "uses",
+      "why": "BindTransactionStrategy reads submitter and participant DevopsIdentity data to derive transaction-owner scopes.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy.BindTransactionStrategy",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+      "relation": "borrows",
+      "why": "BindTransactionStrategy borrows the frame registry to resolve the paired root conduit, cluster memberships, and live spellbook objects for bind-family planning.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

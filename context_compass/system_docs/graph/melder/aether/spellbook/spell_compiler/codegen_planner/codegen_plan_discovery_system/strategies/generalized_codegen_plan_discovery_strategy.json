@@ -1,62 +1,84 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py",
- "source_sha256": "73d5245044ff90bc30fe8b615e89fd1adb89a530af4ae395ef6637947d9868ee",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy",
-   "label": "generalized_codegen_plan_discovery_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py",
+  "source_sha256": "73d5245044ff90bc30fe8b615e89fd1adb89a530af4ae395ef6637947d9868ee",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy",
+      "label": "generalized_codegen_plan_discovery_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
+      "label": "GeneralizedCodegenPlanDiscoveryStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py",
+      "lineno": 10,
+      "bases": [
+        "CodegenPlanDiscoveryStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "discover",
+        "strategy_id"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Default generalized phase-10 discovery strategy.",
+      "responsibilities": [
+        "claims the current model by default",
+        "emits the generalized planner strategy id and generalized planning family",
+        "bounds phase-11 candidate codegen styles for the generalized family"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
-   "label": "GeneralizedCodegenPlanDiscoveryStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py",
-   "lineno": 10,
-   "bases": [
-    "CodegenPlanDiscoveryStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "discover",
-    "strategy_id"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
-   "to_label": "CodegenPlanDiscoveryStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
-   "to_label": "CodegenPlanDiscovery",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-  "CodegenPlanDiscovery": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery",
-  "CodegenPlanDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
-  "label": "GeneralizedCodegenPlanDiscoveryStrategy"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
+      "to_label": "CodegenPlanDiscoveryStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
+      "to_label": "CodegenPlanDiscovery",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+    "CodegenPlanDiscovery": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery",
+    "CodegenPlanDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
+    "label": "GeneralizedCodegenPlanDiscoveryStrategy"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies.generalized_codegen_plan_discovery_strategy.GeneralizedCodegenPlanDiscoveryStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_strategy.CodegenPlanDiscoveryStrategy",
+      "relation": "specializes",
+      "why": "GeneralizedCodegenPlanDiscoveryStrategy specializes the abstract phase-10 discovery-strategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

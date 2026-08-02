@@ -1,55 +1,88 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
- "source_sha256": "87ffb37ee0f25049acda9141b85d6f2349c998a08aa7e15604812a9fe48898ef",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers",
-   "label": "codegen_creation_schema_helpers",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
+  "source_sha256": "87ffb37ee0f25049acda9141b85d6f2349c998a08aa7e15604812a9fe48898ef",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers",
+      "label": "codegen_creation_schema_helpers",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+      "label": "CodegenCreationSchemaHelpers",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
+      "lineno": 6,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "build_fast_transient_schema",
+        "build_fast_transient_signature",
+        "build_no_overrides_codegen_creation_step_signature_row",
+        "build_phase11_step_ir_row",
+        "freeze_phase11_schema_value",
+        "get_phase11_step_ir_rows",
+        "hash_codegen_signature",
+        "normalize_instance_key",
+        "serialize_codegen_signature_part"
+      ],
+      "shape": {
+        "method_count": 9,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Shared phase-11 helper surface for codegen-creation families.",
+      "responsibilities": [
+        "serializes deterministic signature parts and hashes phase-11 schema payloads",
+        "normalizes transient plans and instance keys into schema-safe forms",
+        "builds reusable phase-11 step IR rows and no-overrides compile signatures"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
-   "label": "CodegenCreationSchemaHelpers",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
-   "lineno": 6,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "build_fast_transient_schema",
-    "build_fast_transient_signature",
-    "build_no_overrides_codegen_creation_step_signature_row",
-    "build_phase11_step_ir_row",
-    "freeze_phase11_schema_value",
-    "get_phase11_step_ir_rows",
-    "hash_codegen_signature",
-    "normalize_instance_key",
-    "serialize_codegen_signature_part"
-   ],
-   "shape": {
-    "method_count": 9,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
-  "label": "CodegenCreationSchemaHelpers"
- }
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+    "label": "CodegenCreationSchemaHelpers"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
+      "relation": "uses",
+      "why": "CodegenCreationSchemaHelpers reads SpellGeneralizedCodegenLanePlan steps, memoized phase-11 rows, and fast-transient payloads when exporting schema-only phase-11 data.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+      "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+      "relation": "uses",
+      "why": "CodegenCreationSchemaHelpers shapes deterministic IR/signature payloads later consumed by emitted executor compilation and caching.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

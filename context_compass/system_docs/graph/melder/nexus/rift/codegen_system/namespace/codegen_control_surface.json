@@ -1,56 +1,83 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py",
- "source_sha256": "790d38f2740742afda465adc6157c476b1b150e3985bc69ed655ca94583a6cea",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.codegen_system.namespace.codegen_control_surface": {
-   "id": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface",
-   "label": "codegen_control_surface",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py",
+  "source_sha256": "790d38f2740742afda465adc6157c476b1b150e3985bc69ed655ca94583a6cea",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.codegen_system.namespace.codegen_control_surface": {
+      "id": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface",
+      "label": "codegen_control_surface",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface": {
+      "id": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
+      "label": "CodegenControlSurface",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py",
+      "lineno": 13,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "execute_codegen",
+        "validate_codegen"
+      ],
+      "shape": {
+        "method_count": 3,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Runtime wrapper for the internal codegen namespace object.",
+      "responsibilities": [
+        "exposes recursive validate and execute entrypoints without leaking the raw CodegenSystem object",
+        "applies recursive-codegen permission checks at runtime",
+        "returns public payload dictionaries instead of internal result objects"
+      ],
+      "owns_state": [
+        "_codegen_system",
+        "_default_frame_name",
+        "_recursive_codegen_allowed"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface": {
-   "id": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
-   "label": "CodegenControlSurface",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py",
-   "lineno": 13,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "execute_codegen",
-    "validate_codegen"
-   ],
-   "shape": {
-    "method_count": 3,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "CodegenSystem": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
-  "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
-  "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface",
-  "class": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
-  "label": "CodegenControlSurface"
- }
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "CodegenSystem": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+    "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
+    "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult"
+  },
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface",
+    "class": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
+    "label": "CodegenControlSurface"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
+      "to": "melder.nexus.rift.codegen_system.codegen_system.CodegenSystem",
+      "relation": "borrows",
+      "why": "CodegenControlSurface wraps the room-owned CodegenSystem instead of exposing it directly.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

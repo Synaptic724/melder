@@ -1,65 +1,90 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/rift_space/static_rift_space.py",
- "source_sha256": "093da31e16cb88fd150558cc9fc305435aeb4b69df348331fa57e73917953371",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.rift_space.static_rift_space": {
-   "id": "melder.nexus.rift.rift_space.static_rift_space",
-   "label": "static_rift_space",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/rift_space/static_rift_space.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/rift_space/static_rift_space.py",
+  "source_sha256": "093da31e16cb88fd150558cc9fc305435aeb4b69df348331fa57e73917953371",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.rift_space.static_rift_space": {
+      "id": "melder.nexus.rift.rift_space.static_rift_space",
+      "label": "static_rift_space",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/rift_space/static_rift_space.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace": {
+      "id": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
+      "label": "StaticRiftSpace",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/rift_space/static_rift_space.py",
+      "lineno": 15,
+      "bases": [
+        "RiftSpace"
+      ],
+      "markers": [],
+      "public_methods": [
+        "command_system"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Lower-risk static room specialization.",
+      "responsibilities": [
+        "fixes room kind to static",
+        "composes the static command posture",
+        "uses the static viewer overlay and weak-default workstation posture"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace": {
-   "id": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
-   "label": "StaticRiftSpace",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/rift_space/static_rift_space.py",
-   "lineno": 15,
-   "bases": [
-    "RiftSpace"
-   ],
-   "markers": [],
-   "public_methods": [
-    "command_system"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
-   "to_label": "RiftSpace",
-   "relation": "specializes",
-   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
-   "to_label": "StaticCommandSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "StaticCommandSystem": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
-  "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-  "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-  "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.rift_space.static_rift_space",
-  "class": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
-  "label": "StaticRiftSpace"
- }
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
+      "to_label": "RiftSpace",
+      "relation": "specializes",
+      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
+      "to_label": "StaticCommandSystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "StaticCommandSystem": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+    "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+    "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+    "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
+  },
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.rift_space.static_rift_space",
+    "class": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
+    "label": "StaticRiftSpace"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
+      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "relation": "specializes",
+      "why": "StaticRiftSpace is the static-mode specialization of the base room.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

@@ -1,103 +1,141 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
- "source_sha256": "dfe4017f6d9efc66d8e95abbeaaee86ab0280dc23a20bc27779a95d90895988b",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder",
-   "label": "spell_requirements_finder",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
+  "source_sha256": "dfe4017f6d9efc66d8e95abbeaaee86ab0280dc23a20bc27779a95d90895988b",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder",
+      "label": "spell_requirements_finder",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "label": "SpellRequirementsFinder",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
+      "lineno": 30,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "build_requirements",
+        "cleanup",
+        "spell"
+      ],
+      "shape": {
+        "method_count": 20,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Builder for the Phase 1 spell requirements artifact.",
+      "responsibilities": [
+        "inspects one spell call target and classifies its parameters into DI requirement objects",
+        "builds and caches one SpellRequirements artifact for a spell version"
+      ],
+      "owns_state": [
+        "_spell",
+        "_requirements"
+      ],
+      "phases": [
+        "validation",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "label": "SpellRequirementsFinder",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
-   "lineno": 30,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "build_requirements",
-    "cleanup",
-    "spell"
-   ],
-   "shape": {
-    "method_count": 20,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to_label": "SpellRequirements",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to_label": "SpellParameterRequirement",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "Union": "typing.Union",
+    "get_args": "typing.get_args",
+    "get_origin": "typing.get_origin",
+    "ClassVar": "typing.ClassVar",
+    "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+    "SpellParameterRequirement": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
+    "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+    "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
+    "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
+    "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to_label": "SpellRequirements",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder",
+    "class": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+    "label": "SpellRequirementsFinder"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-   "to_label": "SpellParameterRequirement",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "Union": "typing.Union",
-  "get_args": "typing.get_args",
-  "get_origin": "typing.get_origin",
-  "ClassVar": "typing.ClassVar",
-  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-  "SpellParameterRequirement": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
-  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
-  "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
-  "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
-  "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder",
-  "class": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
-  "label": "SpellRequirementsFinder"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+      "relation": "uses",
+      "why": "SpellRequirementsFinder classifies parameters into ParameterDIShape values during Phase 1.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+      "to": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
+      "relation": "creates",
+      "why": "SpellRequirementsFinder creates SpellParameterRequirement objects while building Phase 1 requirements.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

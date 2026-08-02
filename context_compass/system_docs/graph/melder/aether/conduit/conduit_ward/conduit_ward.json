@@ -1,144 +1,208 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "1c4641a5fe86188eff43da8ea23d40298ef4b837214ed7c0ab36dbaa78c7cc59",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.conduit.conduit_ward.conduit_ward": {
-   "id": "melder.aether.conduit.conduit_ward.conduit_ward",
-   "label": "conduit_ward",
-   "kind": "module",
-   "file": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+  "source_sha256": "1c4641a5fe86188eff43da8ea23d40298ef4b837214ed7c0ab36dbaa78c7cc59",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.conduit.conduit_ward.conduit_ward": {
+      "id": "melder.aether.conduit.conduit_ward.conduit_ward",
+      "label": "conduit_ward",
+      "kind": "module",
+      "file": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+      "lineno": 1
+    },
+    "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard": {
+      "id": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "label": "ConduitWard",
+      "kind": "class",
+      "file": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
+      "lineno": 54,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "cleanup_all_lesser_conduits",
+        "root_conduit"
+      ],
+      "shape": {
+        "method_count": 64,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Contract and lineage graph manager for a conduit.",
+      "responsibilities": [
+        "manages peer contracts",
+        "manages lesser-conduit lineage",
+        "applies policy to link creation and severing",
+        "updates contracted spell visibility"
+      ],
+      "owns_state": [
+        "_contracts",
+        "_lesser_conduits",
+        "_parent_conduit",
+        "_root_conduit"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard": {
-   "id": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "label": "ConduitWard",
-   "kind": "class",
-   "file": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
-   "lineno": 54,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "cleanup_all_lesser_conduits",
-    "root_conduit"
-   ],
-   "shape": {
-    "method_count": 64,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "Detail",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "TransferOfOwnership",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "DevopsIdentity",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "SafeGuard",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "IndexDetail",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to_label": "Contract",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TracebackType": "types.TracebackType",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "List": "typing.List",
+    "Any": "typing.Any",
+    "Tuple": "typing.Tuple",
+    "Dict": "typing.Dict",
+    "Iterable": "typing.Iterable",
+    "Type": "typing.Type",
+    "Optional": "typing.Optional",
+    "ClassVar": "typing.ClassVar",
+    "SafeGuard": "melder.utilities.synchronization.safeguard.SafeGuard",
+    "ContractTypes": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+    "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+    "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+    "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+    "Detail": "melder.aether.conduit.conduit_ward.contract.contract.Detail",
+    "IndexDetail": "melder.aether.conduit.conduit_ward.contract.contract.IndexDetail",
+    "Contract": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
+    "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
+    "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+    "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+    "TransferOfOwnership": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+    "Conduit": "melder.aether.conduit.conduit.Conduit",
+    "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
+    "ConduitCloud": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+    "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger"
   },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "Detail",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.conduit.conduit_ward.conduit_ward",
+    "class": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+    "label": "ConduitWard"
   },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "TransferOfOwnership",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "DevopsIdentity",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "SafeGuard",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "IndexDetail",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-   "to_label": "Contract",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TracebackType": "types.TracebackType",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "List": "typing.List",
-  "Any": "typing.Any",
-  "Tuple": "typing.Tuple",
-  "Dict": "typing.Dict",
-  "Iterable": "typing.Iterable",
-  "Type": "typing.Type",
-  "Optional": "typing.Optional",
-  "ClassVar": "typing.ClassVar",
-  "SafeGuard": "melder.utilities.synchronization.safeguard.SafeGuard",
-  "ContractTypes": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
-  "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
-  "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
-  "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
-  "Detail": "melder.aether.conduit.conduit_ward.contract.contract.Detail",
-  "IndexDetail": "melder.aether.conduit.conduit_ward.contract.contract.IndexDetail",
-  "Contract": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
-  "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
-  "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
-  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
-  "TransferOfOwnership": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
-  "Conduit": "melder.aether.conduit.conduit.Conduit",
-  "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
-  "ConduitCloud": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
-  "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger"
- },
- "collapse_candidate": {
-  "module": "melder.aether.conduit.conduit_ward.conduit_ward",
-  "class": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
-  "label": "ConduitWard"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+      "relation": "uses",
+      "why": "ConduitWard uses ConduitState to interpret lineage mode and enforce lesser-versus-normal contract behavior.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to": "melder.aether.conduit.conduit_ward.contract.contract.Contract",
+      "relation": "owns_lifecycle_of",
+      "why": "ConduitWard owns the active contract objects linked to the conduit.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+      "relation": "uses",
+      "why": "ConduitWard checks and propagates Permissions when deciding whether a lineage may be contracted or borrowed.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+      "to": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+      "relation": "uses",
+      "why": "ConduitWard uses Policies to govern dynamic contracting direction and whitelist/block overrides.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

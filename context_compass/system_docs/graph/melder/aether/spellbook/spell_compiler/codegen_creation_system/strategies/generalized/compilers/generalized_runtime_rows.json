@@ -1,54 +1,94 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py",
- "source_sha256": "7294319384ab3da7d5b19ee5100d42d81dc457aff5104a0def18fb0dd62294a7",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows",
-   "label": "generalized_runtime_rows",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py",
+  "source_sha256": "7294319384ab3da7d5b19ee5100d42d81dc457aff5104a0def18fb0dd62294a7",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows",
+      "label": "generalized_runtime_rows",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+      "label": "CodegenStepRuntimeRow",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py",
+      "lineno": 44,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Slotted hydrated runtime step row for the generalized family.",
+      "responsibilities": [
+        "replaces SimpleNamespace-style plan-step adapters with an explicit slotted runtime row",
+        "stores exactly the runtime step attributes consumed by emitted source and shared helpers",
+        "owns cleanup of the hydrated row reference surface"
+      ],
+      "owns_state": [
+        "instance_key",
+        "spell",
+        "existence",
+        "creations_target_kind",
+        "dependency_resolution_order",
+        "uses_positional_override",
+        "contract_positional_override",
+        "has_contract_payload",
+        "contract_payload",
+        "use_spell_lock_hint",
+        "must_register",
+        "shared_instance",
+        "override_match_prefix",
+        "override_match_prefix_len"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
-   "label": "CodegenStepRuntimeRow",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py",
-   "lineno": 44,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": null
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "CodegenStepRuntimeRow inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

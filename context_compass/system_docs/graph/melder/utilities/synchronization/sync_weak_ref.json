@@ -1,100 +1,134 @@
 {
- "schema_version": 1,
- "source": "src/melder/utilities/synchronization/sync_weak_ref.py",
- "source_sha256": "4c6a60ac05412483ca121201372870bc3bb4b4e37462e2cd91c6ae1db3219dac",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.utilities.synchronization.sync_weak_ref": {
-   "id": "melder.utilities.synchronization.sync_weak_ref",
-   "label": "sync_weak_ref",
-   "kind": "module",
-   "file": "src/melder/utilities/synchronization/sync_weak_ref.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/utilities/synchronization/sync_weak_ref.py",
+  "source_sha256": "4c6a60ac05412483ca121201372870bc3bb4b4e37462e2cd91c6ae1db3219dac",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.synchronization.sync_weak_ref": {
+      "id": "melder.utilities.synchronization.sync_weak_ref",
+      "label": "sync_weak_ref",
+      "kind": "module",
+      "file": "src/melder/utilities/synchronization/sync_weak_ref.py",
+      "lineno": 1
+    },
+    "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef": {
+      "id": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+      "label": "SyncWeakRef",
+      "kind": "class",
+      "file": "src/melder/utilities/synchronization/sync_weak_ref.py",
+      "lineno": 17,
+      "bases": [
+        "Sync"
+      ],
+      "markers": [
+        "Generic"
+      ],
+      "public_methods": [
+        "cas",
+        "check_cleaned",
+        "cleaned",
+        "cleanup",
+        "disable_auto_cleanup",
+        "enable_auto_cleanup",
+        "get",
+        "has_fired",
+        "is_alive",
+        "is_cleaned",
+        "locked",
+        "map",
+        "register_on_collect",
+        "set",
+        "snapshot",
+        "swap",
+        "transform",
+        "try_get"
+      ],
+      "shape": {
+        "method_count": 21,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Synchronized weak reference wrapper.",
+      "responsibilities": [
+        "wraps a weak reference with synchronization and optional collection callbacks"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef": {
-   "id": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
-   "label": "SyncWeakRef",
-   "kind": "class",
-   "file": "src/melder/utilities/synchronization/sync_weak_ref.py",
-   "lineno": 17,
-   "bases": [
-    "Sync"
-   ],
-   "markers": [
-    "Generic"
-   ],
-   "public_methods": [
-    "cas",
-    "check_cleaned",
-    "cleaned",
-    "cleanup",
-    "disable_auto_cleanup",
-    "enable_auto_cleanup",
-    "get",
-    "has_fired",
-    "is_alive",
-    "is_cleaned",
-    "locked",
-    "map",
-    "register_on_collect",
-    "set",
-    "snapshot",
-    "swap",
-    "transform",
-    "try_get"
-   ],
-   "shape": {
-    "method_count": 21,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
-   "to_label": "Sync",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.sync.Sync"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+      "to_label": "Sync",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.sync.Sync"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+      "to_label": "ReferenceError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Generic": "typing.Generic",
+    "Iterator": "typing.Iterator",
+    "Optional": "typing.Optional",
+    "TypeVar": "typing.TypeVar",
+    "Union": "typing.Union",
+    "ClassVar": "typing.ClassVar",
+    "contextmanager": "contextlib.contextmanager",
+    "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
+    "Sync": "melder.utilities.general_base.sync.Sync"
   },
-  {
-   "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.utilities.synchronization.sync_weak_ref",
+    "class": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+    "label": "SyncWeakRef"
   },
-  {
-   "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
-   "to_label": "ReferenceError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Generic": "typing.Generic",
-  "Iterator": "typing.Iterator",
-  "Optional": "typing.Optional",
-  "TypeVar": "typing.TypeVar",
-  "Union": "typing.Union",
-  "ClassVar": "typing.ClassVar",
-  "contextmanager": "contextlib.contextmanager",
-  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
-  "Sync": "melder.utilities.general_base.sync.Sync"
- },
- "collapse_candidate": {
-  "module": "melder.utilities.synchronization.sync_weak_ref",
-  "class": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
-  "label": "SyncWeakRef"
- }
+  "edges_authored": [
+    {
+      "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "SyncWeakRef inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.utilities.synchronization.sync_weak_ref.SyncWeakRef",
+      "to": "melder.utilities.general_base.sync.ISync",
+      "relation": "implements",
+      "why": "SyncWeakRef fulfills the lightweight synchronization marker contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

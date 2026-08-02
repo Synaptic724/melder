@@ -1,140 +1,224 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/rift_space/rift_space.py",
- "source_sha256": "89b358dfe5d7cf904754d07e1a12b31c254161648d1a5ed0ace5d9c13442dd99",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.rift_space.rift_space": {
-   "id": "melder.nexus.rift.rift_space.rift_space",
-   "label": "rift_space",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/rift_space/rift_space.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/rift_space/rift_space.py",
+  "source_sha256": "89b358dfe5d7cf904754d07e1a12b31c254161648d1a5ed0ace5d9c13442dd99",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.rift_space.rift_space": {
+      "id": "melder.nexus.rift.rift_space.rift_space",
+      "label": "rift_space",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/rift_space/rift_space.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.rift_space.rift_space.RiftSpace": {
+      "id": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "label": "RiftSpace",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/rift_space/rift_space.py",
+      "lineno": 25,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "command_system",
+        "event_system",
+        "frame_viewer",
+        "memory_system",
+        "metadata",
+        "owner_rift_id",
+        "register_action_post_hook",
+        "register_action_pre_hook",
+        "register_category_post_hook",
+        "register_category_pre_hook",
+        "rift_gate",
+        "space_id",
+        "space_kind",
+        "space_name",
+        "unregister_action_hook",
+        "workstation"
+      ],
+      "shape": {
+        "method_count": 25,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Room-local workspace object.",
+      "responsibilities": [
+        "owns the room-local viewer asset",
+        "owns the workstation",
+        "owns the room-local command system",
+        "owns room-local event and memory systems"
+      ],
+      "owns_state": [
+        "_frame_viewer",
+        "_workstation",
+        "_command_system",
+        "_event_system",
+        "_memory_system"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.rift_space.rift_space.RiftSpace": {
-   "id": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "label": "RiftSpace",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/rift_space/rift_space.py",
-   "lineno": 25,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "command_system",
-    "event_system",
-    "frame_viewer",
-    "memory_system",
-    "metadata",
-    "owner_rift_id",
-    "register_action_post_hook",
-    "register_action_pre_hook",
-    "register_category_post_hook",
-    "register_category_pre_hook",
-    "rift_gate",
-    "space_id",
-    "space_kind",
-    "space_name",
-    "unregister_action_hook",
-    "workstation"
-   ],
-   "shape": {
-    "method_count": 25,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "RiftMemorySystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "RiftEventSystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "Workstation",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "CommandSystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "StaticFrameViewer",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to_label": "FrameViewer",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "contextmanager": "contextlib.contextmanager",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Tuple": "typing.Tuple",
+    "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+    "FrameViewer": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+    "RiftEventSystem": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+    "RiftMemorySystem": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+    "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem",
+    "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation",
+    "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "Rift": "melder.nexus.rift.rift.Rift",
+    "StaticFrameViewer": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer"
   },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "RiftMemorySystem",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.rift_space.rift_space",
+    "class": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+    "label": "RiftSpace"
   },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "RiftEventSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "Workstation",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "CommandSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "StaticFrameViewer",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-   "to_label": "FrameViewer",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "contextmanager": "contextlib.contextmanager",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Tuple": "typing.Tuple",
-  "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
-  "FrameViewer": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-  "RiftEventSystem": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
-  "RiftMemorySystem": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
-  "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem",
-  "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation",
-  "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "Rift": "melder.nexus.rift.rift.Rift",
-  "StaticFrameViewer": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.rift_space.rift_space",
-  "class": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-  "label": "RiftSpace"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "relation": "owns_lifecycle_of",
+      "why": "RiftSpace constructs and owns the room-local command layer.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+      "relation": "owns_lifecycle_of",
+      "why": "RiftSpace owns the durable viewer asset used for room-local visible state.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to": "melder.nexus.rift.rift_space.event_system.rift_event_system.RiftEventSystem",
+      "relation": "owns_lifecycle_of",
+      "why": "RiftSpace owns the room-local callback-driven event system.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+      "relation": "owns_lifecycle_of",
+      "why": "RiftSpace owns the room-local memory sequencing and snapshot system.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "to": "melder.nexus.rift.rift_space.workstation.Workstation",
+      "relation": "owns_lifecycle_of",
+      "why": "RiftSpace constructs and owns the room-local workstation.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

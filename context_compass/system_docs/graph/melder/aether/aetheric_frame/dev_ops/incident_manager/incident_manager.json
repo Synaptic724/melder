@@ -1,86 +1,114 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py",
- "source_sha256": "8b3b71796dc37deecf2294a9f0db1bc1250763a3163888fdaecf72ded1d3bcea",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager": {
-   "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager",
-   "label": "incident_manager",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py",
+  "source_sha256": "8b3b71796dc37deecf2294a9f0db1bc1250763a3163888fdaecf72ded1d3bcea",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager": {
+      "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager",
+      "label": "incident_manager",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager": {
+      "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+      "label": "IncidentManager",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py",
+      "lineno": 18,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "create_incident",
+        "devops_information_registry",
+        "get_incident",
+        "list_incidents"
+      ],
+      "shape": {
+        "method_count": 6,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Frame-local incident registry.",
+      "responsibilities": [
+        "creates and owns incident records",
+        "tracks incidents by id for one frame",
+        "filters and returns incident snapshots for tooling"
+      ],
+      "owns_state": [
+        "_incidents_by_id",
+        "_next_numeric_id"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager": {
-   "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "label": "IncidentManager",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py",
-   "lineno": 18,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "create_incident",
-    "devops_information_registry",
-    "get_incident",
-    "list_incidents"
-   ],
-   "shape": {
-    "method_count": 6,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+      "to_label": "Incident",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Any": "typing.Any",
+    "Iterable": "typing.Iterable",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "ClassVar": "typing.ClassVar",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+    "Incident": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IncidentStatus": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus",
+    "IncidentSeverity": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager",
+    "class": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+    "label": "IncidentManager"
   },
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-   "to_label": "Incident",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Any": "typing.Any",
-  "Iterable": "typing.Iterable",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "ClassVar": "typing.ClassVar",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
-  "Incident": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IncidentStatus": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_status.IncidentStatus",
-  "IncidentSeverity": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager",
-  "class": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
-  "label": "IncidentManager"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+      "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
+      "relation": "owns_lifecycle_of",
+      "why": "IncidentManager stores and cleans Incident records in its frame-local registry.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

@@ -1,25 +1,46 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/acl/validator/profiles/command/safe_strategy.py",
- "source_sha256": "38c216735600f6425ca2909e42ba87990f02c671fdfda68ccb7024ee3939c0c6",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.acl.validator.profiles.command.safe_strategy": {
-   "id": "melder.nexus.acl.validator.profiles.command.safe_strategy",
-   "label": "safe_strategy",
-   "kind": "module",
-   "file": "src/melder/nexus/acl/validator/profiles/command/safe_strategy.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Set": "typing.Set",
-  "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/nexus/acl/validator/profiles/command/safe_strategy.py",
+  "source_sha256": "38c216735600f6425ca2909e42ba87990f02c671fdfda68ccb7024ee3939c0c6",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.acl.validator.profiles.command.safe_strategy": {
+      "id": "melder.nexus.acl.validator.profiles.command.safe_strategy",
+      "label": "safe_strategy",
+      "kind": "module",
+      "file": "src/melder/nexus/acl/validator/profiles/command/safe_strategy.py",
+      "lineno": 1,
+      "role": "Validator strategy module for safe command-profile configuration.",
+      "responsibilities": [
+        "provides one validator-side profile strategy or helper surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Set": "typing.Set",
+    "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+    "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+    "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.nexus.acl.validator.profiles.command.safe_strategy",
+      "to": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+      "relation": "validates",
+      "why": "The safe command validator strategy validates safe command profile configuration.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "soft"
+    }
+  ]
 }

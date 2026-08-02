@@ -1,111 +1,143 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/command_system/capability_command_system.py",
- "source_sha256": "17ff1d1e87853cfd27e9178ff2ab1fda3f32616c9a23faa0a2278d9623442e1d",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.command_system.capability_command_system": {
-   "id": "melder.nexus.rift.command_system.capability_command_system",
-   "label": "capability_command_system",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/command_system/capability_command_system.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/command_system/capability_command_system.py",
+  "source_sha256": "17ff1d1e87853cfd27e9178ff2ab1fda3f32616c9a23faa0a2278d9623442e1d",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.command_system.capability_command_system": {
+      "id": "melder.nexus.rift.command_system.capability_command_system",
+      "label": "capability_command_system",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/command_system/capability_command_system.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem": {
+      "id": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "label": "CapabilityCommandSystem",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/command_system/capability_command_system.py",
+      "lineno": 6,
+      "bases": [
+        "CommandSystem"
+      ],
+      "markers": [],
+      "public_methods": [
+        "count_conduits",
+        "create_cluster",
+        "create_lesser_conduit",
+        "delete_cluster",
+        "find_conduit_id_by_name",
+        "get_conduit_by_id",
+        "get_conduit_by_name",
+        "get_conduit_cloud",
+        "get_contracted_conduits",
+        "get_initiated_conduit",
+        "get_initiated_conduits",
+        "get_lesser_conduit",
+        "get_links",
+        "get_provider_conduit",
+        "get_provider_conduits",
+        "get_spell_in_contracts",
+        "get_spells_in_contract_by_conduit",
+        "get_spells_in_contract_by_conduit_name",
+        "has_conduit_id",
+        "has_conduit_name",
+        "join_cluster",
+        "leave_cluster",
+        "link",
+        "list_clusters",
+        "list_conduit_ids",
+        "list_conduit_names",
+        "list_supported_command_methods",
+        "meld",
+        "meld_existing_spell",
+        "research_campaign_view",
+        "research_diff",
+        "research_group_diff",
+        "research_group_drift",
+        "research_group_footprint",
+        "research_group_history",
+        "research_group_impact",
+        "research_group_view",
+        "research_heads",
+        "research_history",
+        "research_impact",
+        "research_module",
+        "research_module_graph",
+        "research_part",
+        "research_part_diff",
+        "research_parts",
+        "research_recent",
+        "research_residency",
+        "research_source",
+        "research_source_drift",
+        "research_walk",
+        "sever_link"
+      ],
+      "shape": {
+        "method_count": 52,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Capability-room specialization of the shared command surface.",
+      "responsibilities": [
+        "preserves the shared broad runtime command behavior for CapabilityRiftSpace",
+        "owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem": {
-   "id": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-   "label": "CapabilityCommandSystem",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/command_system/capability_command_system.py",
-   "lineno": 6,
-   "bases": [
-    "CommandSystem"
-   ],
-   "markers": [],
-   "public_methods": [
-    "count_conduits",
-    "create_cluster",
-    "create_lesser_conduit",
-    "delete_cluster",
-    "find_conduit_id_by_name",
-    "get_conduit_by_id",
-    "get_conduit_by_name",
-    "get_conduit_cloud",
-    "get_contracted_conduits",
-    "get_initiated_conduit",
-    "get_initiated_conduits",
-    "get_lesser_conduit",
-    "get_links",
-    "get_provider_conduit",
-    "get_provider_conduits",
-    "get_spell_in_contracts",
-    "get_spells_in_contract_by_conduit",
-    "get_spells_in_contract_by_conduit_name",
-    "has_conduit_id",
-    "has_conduit_name",
-    "join_cluster",
-    "leave_cluster",
-    "link",
-    "list_clusters",
-    "list_conduit_ids",
-    "list_conduit_names",
-    "list_supported_command_methods",
-    "meld",
-    "meld_existing_spell",
-    "research_campaign_view",
-    "research_diff",
-    "research_group_diff",
-    "research_group_drift",
-    "research_group_footprint",
-    "research_group_history",
-    "research_group_impact",
-    "research_group_view",
-    "research_heads",
-    "research_history",
-    "research_impact",
-    "research_module",
-    "research_module_graph",
-    "research_part",
-    "research_part_diff",
-    "research_parts",
-    "research_recent",
-    "research_residency",
-    "research_source",
-    "research_source_drift",
-    "research_walk",
-    "sever_link"
-   ],
-   "shape": {
-    "method_count": 52,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-   "to_label": "CommandSystem",
-   "relation": "specializes",
-   "to": "melder.nexus.rift.command_system.command_system.CommandSystem"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.command_system.capability_command_system",
-  "class": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-  "label": "CapabilityCommandSystem"
- }
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "to_label": "CommandSystem",
+      "relation": "specializes",
+      "to": "melder.nexus.rift.command_system.command_system.CommandSystem"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
+  },
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.command_system.capability_command_system",
+    "class": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+    "label": "CapabilityCommandSystem"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "relation": "specializes",
+      "why": "CapabilityCommandSystem is the capability-room specialization of the shared command surface.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "to": "melder.mutation_research.mutation_research.MutationResearch",
+      "relation": "borrows",
+      "why": "Capability rooms expose the twenty-one research reads (seven record incl. research_recent + eight foresight + six composition incl. the crystal-well module/part reads) through the same non-constructing peek; code-taking/producing verbs stay codegen-only. The family is ADVERTISED in list_supported_command_methods.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

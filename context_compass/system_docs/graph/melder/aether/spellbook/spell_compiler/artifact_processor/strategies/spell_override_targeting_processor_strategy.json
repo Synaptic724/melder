@@ -1,83 +1,127 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py",
- "source_sha256": "2d89f456e760db7b25bdc05b413994e48412a325d38a1629c6fc7a138ef55594",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy",
-   "label": "spell_override_targeting_processor_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py",
+  "source_sha256": "2d89f456e760db7b25bdc05b413994e48412a325d38a1629c6fc7a138ef55594",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy",
+      "label": "spell_override_targeting_processor_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "label": "SpellOverrideTargetingProcessorStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py",
+      "lineno": 24,
+      "bases": [
+        "SpellArtifactProcessorStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "process",
+        "strategy_id"
+      ],
+      "shape": {
+        "method_count": 5,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Processor strategy fitting override-targeting truth into the codegen model.",
+      "responsibilities": [
+        "derives normalized override-target targeting from rooted blueprint socket truth",
+        "publishes SpellOverrideTargetingAnalysis onto SpellCodegenModel",
+        "derives override-targeting family and target-depth selectors for planning"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "label": "SpellOverrideTargetingProcessorStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py",
-   "lineno": 24,
-   "bases": [
-    "SpellArtifactProcessorStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "process",
-    "strategy_id"
-   ],
-   "shape": {
-    "method_count": 5,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "to_label": "SpellArtifactProcessorStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "to_label": "SpellOverrideTargetingAnalysis",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "to_label": "SpellArtifactProcessorStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "to_label": "SpellOverrideTargetingAnalysis",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "to_label": "SpellOverrideTargetRef",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "SpellOverrideTargetRef": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef",
+    "SpellOverrideTargetingAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
+    "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
+    "TargetSpecKind": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+    "label": "SpellOverrideTargetingProcessorStrategy"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-   "to_label": "SpellOverrideTargetRef",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "SpellOverrideTargetRef": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef",
-  "SpellOverrideTargetingAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
-  "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
-  "TargetSpecKind": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-  "label": "SpellOverrideTargetingProcessorStrategy"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
+      "relation": "creates",
+      "why": "SpellOverrideTargetingProcessorStrategy builds and publishes SpellOverrideTargetingAnalysis.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
+      "relation": "specializes",
+      "why": "SpellOverrideTargetingProcessorStrategy specializes the abstract processor-strategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "relation": "uses",
+      "why": "SpellOverrideTargetingProcessorStrategy fits the override-targeting section directly onto SpellCodegenModel.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

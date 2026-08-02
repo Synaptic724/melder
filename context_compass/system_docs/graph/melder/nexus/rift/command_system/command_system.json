@@ -1,116 +1,156 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/command_system/command_system.py",
- "source_sha256": "52fbd6cd5097d9c91b459c394a5aeb9bcac21750a2c8659e92635853d3f51bce",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.command_system.command_system": {
-   "id": "melder.nexus.rift.command_system.command_system",
-   "label": "command_system",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/command_system/command_system.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/command_system/command_system.py",
+  "source_sha256": "52fbd6cd5097d9c91b459c394a5aeb9bcac21750a2c8659e92635853d3f51bce",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.command_system.command_system": {
+      "id": "melder.nexus.rift.command_system.command_system",
+      "label": "command_system",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/command_system/command_system.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.command_system.command_system.CommandSystem": {
+      "id": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "label": "CommandSystem",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/command_system/command_system.py",
+      "lineno": 18,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "command_system_id",
+        "describe_spells_in_conduit",
+        "execute_target_method",
+        "find_spell_id",
+        "find_spell_key",
+        "get_active_spellspace",
+        "get_nexus_frame",
+        "get_resolution_state",
+        "get_spell_by_id",
+        "get_spell_by_index_id",
+        "get_spell_by_source_id",
+        "get_spell_permissions",
+        "get_target_attribute",
+        "get_target_method",
+        "link_frame",
+        "list_supported_command_methods",
+        "owner_space_id",
+        "snapshot_state"
+      ],
+      "shape": {
+        "method_count": 43,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Room-local mediated command layer.",
+      "responsibilities": [
+        "resolves room-scoped records and runtime objects",
+        "executes allowed runtime actions",
+        "binds command results into the workstation when requested",
+        "enforces room and ACL posture on command paths"
+      ],
+      "owns_state": [
+        "_id",
+        "_space",
+        "_workstation"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.command_system.command_system.CommandSystem": {
-   "id": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "label": "CommandSystem",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/command_system/command_system.py",
-   "lineno": 18,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "command_system_id",
-    "describe_spells_in_conduit",
-    "execute_target_method",
-    "find_spell_id",
-    "find_spell_key",
-    "get_active_spellspace",
-    "get_nexus_frame",
-    "get_resolution_state",
-    "get_spell_by_id",
-    "get_spell_by_index_id",
-    "get_spell_by_source_id",
-    "get_spell_permissions",
-    "get_target_attribute",
-    "get_target_method",
-    "link_frame",
-    "list_supported_command_methods",
-    "owner_space_id",
-    "snapshot_state"
-   ],
-   "shape": {
-    "method_count": 43,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to_label": "Aether",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to_label": "Aether",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "contextmanager": "contextlib.contextmanager",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "Aether": "melder.aether.aether.Aether",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "Conduit": "melder.aether.conduit.conduit.Conduit",
+    "CompiledFrameACLAccessSurface": "melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface",
+    "Rift": "melder.nexus.rift.rift.Rift",
+    "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+    "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation"
   },
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.command_system.command_system",
+    "class": "melder.nexus.rift.command_system.command_system.CommandSystem",
+    "label": "CommandSystem"
   },
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "contextmanager": "contextlib.contextmanager",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "Aether": "melder.aether.aether.Aether",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "Conduit": "melder.aether.conduit.conduit.Conduit",
-  "CompiledFrameACLAccessSurface": "melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface",
-  "Rift": "melder.nexus.rift.rift.Rift",
-  "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-  "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.command_system.command_system",
-  "class": "melder.nexus.rift.command_system.command_system.CommandSystem",
-  "label": "CommandSystem"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "relation": "borrows",
+      "why": "CommandSystem is room-local and depends on the owning RiftSpace for room posture and supporting systems.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "to": "melder.nexus.rift.rift_space.workstation.Workstation",
+      "relation": "borrows",
+      "why": "CommandSystem uses the workstation for bindings and result storage but does not own its lifecycle.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

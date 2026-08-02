@@ -1,56 +1,77 @@
 {
- "schema_version": 1,
- "source": "src/melder/mutation_research/diff/strategies/source_diff_strategy.py",
- "source_sha256": "0ec91dfbb37900814cf2d03d3bd023921435d99d75f690672151f0f435a61620",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.mutation_research.diff.strategies.source_diff_strategy": {
-   "id": "melder.mutation_research.diff.strategies.source_diff_strategy",
-   "label": "source_diff_strategy",
-   "kind": "module",
-   "file": "src/melder/mutation_research/diff/strategies/source_diff_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/mutation_research/diff/strategies/source_diff_strategy.py",
+  "source_sha256": "0ec91dfbb37900814cf2d03d3bd023921435d99d75f690672151f0f435a61620",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.mutation_research.diff.strategies.source_diff_strategy": {
+      "id": "melder.mutation_research.diff.strategies.source_diff_strategy",
+      "label": "source_diff_strategy",
+      "kind": "module",
+      "file": "src/melder/mutation_research/diff/strategies/source_diff_strategy.py",
+      "lineno": 1
+    },
+    "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy": {
+      "id": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
+      "label": "SourceDiffStrategy",
+      "kind": "class",
+      "file": "src/melder/mutation_research/diff/strategies/source_diff_strategy.py",
+      "lineno": 7,
+      "bases": [
+        "DiffStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "diff",
+        "name"
+      ],
+      "shape": {
+        "method_count": 3,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Per-module source-text comparison strategy (the transport layer of the diff family).",
+      "responsibilities": [
+        "reports added/removed/changed/identical modules over the union of both sides' sources and fingerprints",
+        "emits unified diffs where text exists on both sides and honest fingerprint-only verdicts (text_unavailable) where it does not"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy": {
-   "id": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
-   "label": "SourceDiffStrategy",
-   "kind": "class",
-   "file": "src/melder/mutation_research/diff/strategies/source_diff_strategy.py",
-   "lineno": 7,
-   "bases": [
-    "DiffStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "diff",
-    "name"
-   ],
-   "shape": {
-    "method_count": 3,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
-   "to_label": "DiffStrategy",
-   "relation": "specializes",
-   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "ClassVar": "typing.ClassVar",
-  "DiffStrategy": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
- },
- "collapse_candidate": {
-  "module": "melder.mutation_research.diff.strategies.source_diff_strategy",
-  "class": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
-  "label": "SourceDiffStrategy"
- }
+  "edges_out": [
+    {
+      "from": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
+      "to_label": "DiffStrategy",
+      "relation": "specializes",
+      "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "ClassVar": "typing.ClassVar",
+    "DiffStrategy": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
+  },
+  "collapse_candidate": {
+    "module": "melder.mutation_research.diff.strategies.source_diff_strategy",
+    "class": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
+    "label": "SourceDiffStrategy"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.mutation_research.diff.strategies.source_diff_strategy.SourceDiffStrategy",
+      "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+      "relation": "specializes",
+      "why": "SourceDiffStrategy specializes the abstract diff-strategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

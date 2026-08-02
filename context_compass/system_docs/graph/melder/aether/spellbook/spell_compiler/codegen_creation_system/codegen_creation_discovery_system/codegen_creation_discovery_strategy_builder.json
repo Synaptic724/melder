@@ -1,93 +1,182 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py",
- "source_sha256": "6633c8bcff3028136f2144645291b2fddd3d43a9a8dd4122c8dc6e782d43070a",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder",
-   "label": "codegen_creation_discovery_strategy_builder",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py",
+  "source_sha256": "6633c8bcff3028136f2144645291b2fddd3d43a9a8dd4122c8dc6e782d43070a",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder",
+      "label": "codegen_creation_discovery_strategy_builder",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "label": "CodegenCreationDiscoveryStrategyBuilder",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py",
+      "lineno": 22,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "get_strategies",
+        "get_strategy",
+        "registered_strategy_names"
+      ],
+      "shape": {
+        "method_count": 5,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Registry holder for phase-11 codegen creation discovery strategies.",
+      "responsibilities": [
+        "owns the named discovery strategy registry",
+        "loads the default solo, many_only, generalized, generalized_cache, and fallback discovery strategies",
+        "returns deterministic ordered discovery strategy tuples for the discovery facade"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "label": "CodegenCreationDiscoveryStrategyBuilder",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py",
-   "lineno": 22,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "get_strategies",
-    "get_strategy",
-    "registered_strategy_names"
-   ],
-   "shape": {
-    "method_count": 5,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to_label": "SoloCodegenCreationDiscoveryStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to_label": "SoloCodegenCreationDiscoveryStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to_label": "ManyOnlyCodegenCreationDiscoveryStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to_label": "GeneralizedCodegenCreationDiscoveryStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to_label": "FallbackNoOverridesCodegenCreationDiscoveryStrategy",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "Tuple": "typing.Tuple",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "CodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
+    "FallbackNoOverridesCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy.FallbackNoOverridesCodegenCreationDiscoveryStrategy",
+    "GeneralizedCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy.GeneralizedCodegenCreationDiscoveryStrategy",
+    "ManyOnlyCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
+    "SoloCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy.SoloCodegenCreationDiscoveryStrategy"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to_label": "ManyOnlyCodegenCreationDiscoveryStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+    "label": "CodegenCreationDiscoveryStrategyBuilder"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to_label": "GeneralizedCodegenCreationDiscoveryStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to_label": "FallbackNoOverridesCodegenCreationDiscoveryStrategy",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "Tuple": "typing.Tuple",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "CodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
-  "FallbackNoOverridesCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy.FallbackNoOverridesCodegenCreationDiscoveryStrategy",
-  "GeneralizedCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy.GeneralizedCodegenCreationDiscoveryStrategy",
-  "ManyOnlyCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy.ManyOnlyCodegenCreationDiscoveryStrategy",
-  "SoloCodegenCreationDiscoveryStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy.SoloCodegenCreationDiscoveryStrategy"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
-  "label": "CodegenCreationDiscoveryStrategyBuilder"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy.CodegenCreationDiscoveryStrategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder stores and resolves CodegenCreationDiscoveryStrategy objects by stable strategy id.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder registers FallbackNoOverridesCodegenCreationDiscoveryStrategy in the default discovery chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder registers GeneralizedCacheCodegenCreationDiscoveryStrategy in the default discovery chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder registers GeneralizedCodegenCreationDiscoveryStrategy in the default discovery chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder registers ManyOnlyCodegenCreationDiscoveryStrategy in the default discovery chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder registers SoloCodegenCreationDiscoveryStrategy in the default discovery chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "CodegenCreationDiscoveryStrategyBuilder inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

@@ -1,111 +1,190 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
- "source_sha256": "e820efc40b990ae1ca3abb0442949c90034e4fe950628ad5039019de5e53c70d",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5": {
-   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5",
-   "label": "compiler_phase_5",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
+  "source_sha256": "e820efc40b990ae1ca3abb0442949c90034e4fe950628ad5039019de5e53c70d",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5": {
+      "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5",
+      "label": "compiler_phase_5",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5": {
+      "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "label": "CompilerPhase5",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
+      "lineno": 49,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "run_frame_wide",
+        "run_local"
+      ],
+      "shape": {
+        "method_count": 13,
+        "has_bases": false,
+        "trivial": false
+      },
+      "role": "Compiler-owned phase-5 rooted-blueprint build surface.",
+      "responsibilities": [
+        "builds SpellSystemAdjacencySnapshot and SpellSystemIndex from visible spell state",
+        "builds root and per-spell RootResolutionBlueprint artifacts for visible roots and local scopes",
+        "rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5": {
-   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "label": "CompilerPhase5",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
-   "lineno": 49,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "run_frame_wide",
-    "run_local"
-   ],
-   "shape": {
-    "method_count": 13,
-    "has_bases": false,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "SpellSystemIndex",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "SpellSystemIndex",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "SpellSystemAdjacencySnapshot",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "SpellSystemAdjacencyBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "SpellSystemRootBlueprintBuilder",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "SpellSystemNode",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to_label": "SpellCompilerSystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Collection": "typing.Collection",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Set": "typing.Set",
+    "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "SpellSystemAdjacencyBuilder": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+    "SpellSystemAdjacencySnapshot": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
+    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+    "SpellSystemNode": "melder.aether.spellbook.spell_compiler.system.spell_system_node.SpellSystemNode",
+    "SpellSystemRootBlueprintBuilder": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+    "SpellSystemState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
+    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+    "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+    "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+    "SpellCompilerSystem": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "SpellSystemAdjacencySnapshot",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "SpellSystemAdjacencyBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "SpellSystemRootBlueprintBuilder",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "SpellSystemNode",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
-   "to_label": "SpellCompilerSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Collection": "typing.Collection",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Set": "typing.Set",
-  "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "SpellSystemAdjacencyBuilder": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
-  "SpellSystemAdjacencySnapshot": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
-  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-  "SpellSystemNode": "melder.aether.spellbook.spell_compiler.system.spell_system_node.SpellSystemNode",
-  "SpellSystemRootBlueprintBuilder": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
-  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
-  "SpellSystemState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState",
-  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
-  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
-  "SpellCompilerSystem": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem"
- },
- "collapse_candidate": null
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+      "relation": "uses",
+      "why": "CompilerPhase5 rebuilds component-of mappings and conduit revalidators through ChangeControlManager.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+      "relation": "creates",
+      "why": "CompilerPhase5 builds root and per-spell RootResolutionBlueprint artifacts for visible roots and local scopes.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+      "relation": "uses",
+      "why": "CompilerPhase5 uses the shared compiler execution helper surface for codegen-IR invalidation and schema support.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+      "relation": "creates",
+      "why": "CompilerPhase5 builds SpellSystemAdjacencyBuilder when materializing visible spell state into an adjacency snapshot.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+      "relation": "creates",
+      "why": "CompilerPhase5 builds SpellSystemIndex from the scoped adjacency snapshot and visible spell pool.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+      "to": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+      "relation": "creates",
+      "why": "CompilerPhase5 builds SpellSystemRootBlueprintBuilder when producing rooted blueprints for visible roots and local scopes.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

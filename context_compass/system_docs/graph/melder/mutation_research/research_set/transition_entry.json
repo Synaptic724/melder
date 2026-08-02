@@ -1,101 +1,134 @@
 {
- "schema_version": 1,
- "source": "src/melder/mutation_research/research_set/transition_entry.py",
- "source_sha256": "a9d0e76bc78c048cca1a0a0fab5fd2eb8cbb6e6f723e4d0d45c35559587690c2",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.mutation_research.research_set.transition_entry": {
-   "id": "melder.mutation_research.research_set.transition_entry",
-   "label": "transition_entry",
-   "kind": "module",
-   "file": "src/melder/mutation_research/research_set/transition_entry.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/mutation_research/research_set/transition_entry.py",
+  "source_sha256": "a9d0e76bc78c048cca1a0a0fab5fd2eb8cbb6e6f723e4d0d45c35559587690c2",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.mutation_research.research_set.transition_entry": {
+      "id": "melder.mutation_research.research_set.transition_entry",
+      "label": "transition_entry",
+      "kind": "module",
+      "file": "src/melder/mutation_research/research_set/transition_entry.py",
+      "lineno": 1
+    },
+    "melder.mutation_research.research_set.transition_entry.TransitionAct": {
+      "id": "melder.mutation_research.research_set.transition_entry.TransitionAct",
+      "label": "TransitionAct",
+      "kind": "enum",
+      "file": "src/melder/mutation_research/research_set/transition_entry.py",
+      "lineno": 9,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      }
+    },
+    "melder.mutation_research.research_set.transition_entry.TransitionEntry": {
+      "id": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
+      "label": "TransitionEntry",
+      "kind": "class",
+      "file": "src/melder/mutation_research/research_set/transition_entry.py",
+      "lineno": 83,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "act",
+        "actor",
+        "campaign",
+        "cleanup",
+        "created_at",
+        "describe",
+        "from_payload",
+        "from_spell_id",
+        "lane_id",
+        "metadata",
+        "reason",
+        "sequence",
+        "to_spell_id",
+        "touches_spell_id"
+      ],
+      "shape": {
+        "method_count": 14,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Immutable forward-only journal event; TransitionAct vocabulary is world-entry only (no checkout/rollback acts).",
+      "responsibilities": [
+        "records act, subject lane, from/to identity, actor, campaign stamp, reason",
+        "describe()/from_payload() exact-inverse persistence seam"
+      ],
+      "owns_state": [
+        "_sequence",
+        "_act",
+        "_lane_id",
+        "_from_spell_id",
+        "_to_spell_id",
+        "_campaign"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.mutation_research.research_set.transition_entry.TransitionAct": {
-   "id": "melder.mutation_research.research_set.transition_entry.TransitionAct",
-   "label": "TransitionAct",
-   "kind": "enum",
-   "file": "src/melder/mutation_research/research_set/transition_entry.py",
-   "lineno": 9,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [
+    {
+      "from": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
+      "to_label": "TransitionAct",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "datetime": "datetime.datetime",
+    "timezone": "datetime.timezone",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "ClassVar": "typing.ClassVar",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  "melder.mutation_research.research_set.transition_entry.TransitionEntry": {
-   "id": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
-   "label": "TransitionEntry",
-   "kind": "class",
-   "file": "src/melder/mutation_research/research_set/transition_entry.py",
-   "lineno": 83,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "act",
-    "actor",
-    "campaign",
-    "cleanup",
-    "created_at",
-    "describe",
-    "from_payload",
-    "from_spell_id",
-    "lane_id",
-    "metadata",
-    "reason",
-    "sequence",
-    "to_spell_id",
-    "touches_spell_id"
-   ],
-   "shape": {
-    "method_count": 14,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.mutation_research.research_set.transition_entry",
+    "class": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
+    "label": "TransitionEntry"
   },
-  {
-   "from": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
-   "to_label": "TransitionAct",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "datetime": "datetime.datetime",
-  "timezone": "datetime.timezone",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "ClassVar": "typing.ClassVar",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.mutation_research.research_set.transition_entry",
-  "class": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
-  "label": "TransitionEntry"
- }
+  "edges_authored": [
+    {
+      "from": "melder.mutation_research.research_set.transition_entry.TransitionEntry",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

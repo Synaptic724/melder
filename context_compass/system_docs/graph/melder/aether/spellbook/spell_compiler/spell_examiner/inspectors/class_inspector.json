@@ -1,66 +1,104 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py",
- "source_sha256": "167139b6132876584454b9b4bce2efad1879ab08cc941e5aa40a5c0921a780e4",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector",
-   "label": "class_inspector",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py",
+  "source_sha256": "167139b6132876584454b9b4bce2efad1879ab08cc941e5aa40a5c0921a780e4",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector",
+      "label": "class_inspector",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
+      "label": "ClassInspector",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py",
+      "lineno": 15,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "inspect"
+      ],
+      "shape": {
+        "method_count": 16,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Inspector producing structured class inventories.",
+      "responsibilities": [
+        "inspects class metadata, provenance, members, protocol flags, and decoration state without invoking user code"
+      ],
+      "owns_state": [
+        "cls",
+        "dunders",
+        "max_repr",
+        "data"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
-   "label": "ClassInspector",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py",
-   "lineno": 15,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "inspect"
-   ],
-   "shape": {
-    "method_count": 16,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Parameter": "inspect.Parameter",
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Type": "typing.Type",
-  "ClassVar": "typing.ClassVar",
-  "InspectorUtility": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector",
-  "class": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
-  "label": "ClassInspector"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Parameter": "inspect.Parameter",
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Type": "typing.Type",
+    "ClassVar": "typing.ClassVar",
+    "InspectorUtility": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector",
+    "class": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
+    "label": "ClassInspector"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
+      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+      "relation": "uses",
+      "why": "ClassInspector uses InspectorUtility for safe repr and extension-module checks.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector",
+      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile",
+      "relation": "creates",
+      "why": "ClassInspector emits structured ClassProfile objects from inspected class surfaces.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

@@ -1,40 +1,75 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
- "source_sha256": "24e60a9186eac62d891562942b78e60fe361fe00839249c3133e7d0a27e49edd",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason": {
-   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason",
-   "label": "spell_state_change_reason",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
+  "source_sha256": "24e60a9186eac62d891562942b78e60fe361fe00839249c3133e7d0a27e49edd",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason": {
+      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason",
+      "label": "spell_state_change_reason",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason": {
+      "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+      "label": "SpellStateChangeReason",
+      "kind": "enum",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
+      "lineno": 3,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Coarse latest-transition reason enum for one lineage.",
+      "responsibilities": [
+        "labels the latest event that changed a lineage state or validity posture"
+      ],
+      "owns_state": [
+        "new_lineage",
+        "register_or_rebind",
+        "structure_changed",
+        "dependencies_changed",
+        "dependency_changed",
+        "impacted_by_dependency",
+        "contract_unvalidated",
+        "contract_violation",
+        "mutation_promoted",
+        "mutation_rolled_back",
+        "mutation_contract_set",
+        "mutation_contract_cleared",
+        "mutation_failed",
+        "mutation_candidate",
+        "mutation_quarantined",
+        "validation_passed",
+        "validation_failed",
+        "incident_opened",
+        "incident_resolved",
+        "config_missing",
+        "config_supplied",
+        "anchored_component",
+        "transfer_in_progress",
+        "explicit_mark",
+        "other"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason": {
-   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
-   "label": "SpellStateChangeReason",
-   "kind": "enum",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py",
-   "lineno": 3,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum",
+    "auto": "enum.auto"
+  },
+  "collapse_candidate": null
 }

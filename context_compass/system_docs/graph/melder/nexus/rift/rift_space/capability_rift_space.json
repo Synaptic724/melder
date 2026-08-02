@@ -1,65 +1,102 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/rift_space/capability_rift_space.py",
- "source_sha256": "2300d24392b725bf3611e79b69d2764d0124b75528b23713a67da4c89d867086",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.rift_space.capability_rift_space": {
-   "id": "melder.nexus.rift.rift_space.capability_rift_space",
-   "label": "capability_rift_space",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/rift_space/capability_rift_space.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/rift_space/capability_rift_space.py",
+  "source_sha256": "2300d24392b725bf3611e79b69d2764d0124b75528b23713a67da4c89d867086",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.rift_space.capability_rift_space": {
+      "id": "melder.nexus.rift.rift_space.capability_rift_space",
+      "label": "capability_rift_space",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/rift_space/capability_rift_space.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace": {
+      "id": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
+      "label": "CapabilityRiftSpace",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/rift_space/capability_rift_space.py",
+      "lineno": 15,
+      "bases": [
+        "RiftSpace"
+      ],
+      "markers": [],
+      "public_methods": [
+        "command_system"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Broad manual non-codegen room specialization.",
+      "responsibilities": [
+        "fixes room kind to capability",
+        "composes the capability command posture",
+        "preserves the generic viewer posture and strong-default workstation mode"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace": {
-   "id": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
-   "label": "CapabilityRiftSpace",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/rift_space/capability_rift_space.py",
-   "lineno": 15,
-   "bases": [
-    "RiftSpace"
-   ],
-   "markers": [],
-   "public_methods": [
-    "command_system"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
-   "to_label": "RiftSpace",
-   "relation": "specializes",
-   "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
-   "to_label": "CapabilityCommandSystem",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "CapabilityCommandSystem": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
-  "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-  "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-  "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.rift_space.capability_rift_space",
-  "class": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
-  "label": "CapabilityRiftSpace"
- }
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
+      "to_label": "RiftSpace",
+      "relation": "specializes",
+      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
+      "to_label": "CapabilityCommandSystem",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "CapabilityCommandSystem": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+    "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+    "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+    "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem"
+  },
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.rift_space.capability_rift_space",
+    "class": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
+    "label": "CapabilityRiftSpace"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
+      "to": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "relation": "owns_lifecycle_of",
+      "why": "CapabilityRiftSpace owns the capability-room specialization of the command surface.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
+      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "relation": "specializes",
+      "why": "CapabilityRiftSpace is the capability-mode specialization of the base room.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

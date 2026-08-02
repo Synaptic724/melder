@@ -1,40 +1,54 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
- "source_sha256": "09f29e929db6324aad6611ce033af273e83b8c2929d583fb597ef655d875dc3d",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.conduit.conduit_ward.policies.policies": {
-   "id": "melder.aether.conduit.conduit_ward.policies.policies",
-   "label": "policies",
-   "kind": "module",
-   "file": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
+  "source_sha256": "09f29e929db6324aad6611ce033af273e83b8c2929d583fb597ef655d875dc3d",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.conduit.conduit_ward.policies.policies": {
+      "id": "melder.aether.conduit.conduit_ward.policies.policies",
+      "label": "policies",
+      "kind": "module",
+      "file": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
+      "lineno": 1
+    },
+    "melder.aether.conduit.conduit_ward.policies.policies.Policies": {
+      "id": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+      "label": "Policies",
+      "kind": "enum",
+      "file": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
+      "lineno": 3,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Runtime policy mode enum for conduit-to-conduit contracting.",
+      "responsibilities": [
+        "labels default, whitelist-all, block-all, inbound-only, and outbound-only contracting modes"
+      ],
+      "owns_state": [
+        "default",
+        "whitelist_all",
+        "block_all",
+        "inbound_only",
+        "outbound_only"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.conduit.conduit_ward.policies.policies.Policies": {
-   "id": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
-   "label": "Policies",
-   "kind": "enum",
-   "file": "src/melder/aether/conduit/conduit_ward/policies/policies.py",
-   "lineno": 3,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum",
+    "auto": "enum.auto"
+  },
+  "collapse_candidate": null
 }

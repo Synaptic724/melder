@@ -1,80 +1,116 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py",
- "source_sha256": "eea182b45b672aaab8117e4db59fb67d68774cb088b92bb847d25ae4a3a97149",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy",
-   "label": "generalized_codegen_creation_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py",
+  "source_sha256": "eea182b45b672aaab8117e4db59fb67d68774cb088b92bb847d25ae4a3a97149",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy",
+      "label": "generalized_codegen_creation_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+      "label": "GeneralizedCodegenCreationStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py",
+      "lineno": 29,
+      "bases": [
+        "SpellCodegenStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "apply",
+        "strategy_id"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Manifest-first phase-11 strategy for generalized planner output.",
+      "responsibilities": [
+        "routes generalized planner output through manifest-first creation assembly",
+        "populates SpellCodegenCreation through ordered internal generalized family steps",
+        "publishes generalized manifest metadata for the family cache codec"
+      ],
+      "owns_state": [
+        "_steps"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-   "label": "GeneralizedCodegenCreationStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py",
-   "lineno": 29,
-   "bases": [
-    "SpellCodegenStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "apply",
-    "strategy_id"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-   "to_label": "SpellCodegenStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-   "to_label": "GeneralizedManifestState",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+      "to_label": "SpellCodegenStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+      "to_label": "GeneralizedManifestState",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+      "to_label": "GeneralizedManifestStep",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+      "to_label": "GeneralizedLazyDoorStep",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Tuple": "typing.Tuple",
+    "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+    "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+    "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
+    "SpellCodegenStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+    "GeneralizedManifestState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state.GeneralizedManifestState",
+    "GeneralizedLazyDoorStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep",
+    "GeneralizedManifestStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step.GeneralizedManifestStep",
+    "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-   "to_label": "GeneralizedManifestStep",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+    "label": "GeneralizedCodegenCreationStrategy"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-   "to_label": "GeneralizedLazyDoorStep",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Tuple": "typing.Tuple",
-  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-  "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
-  "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-  "SpellCodegenStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
-  "GeneralizedManifestState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state.GeneralizedManifestState",
-  "GeneralizedLazyDoorStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep",
-  "GeneralizedManifestStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step.GeneralizedManifestStep",
-  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
-  "label": "GeneralizedCodegenCreationStrategy"
- }
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+      "relation": "specializes",
+      "why": "GeneralizedCodegenCreationStrategy specializes the abstract SpellCodegenStrategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy.GeneralizedCodegenCreationStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state.GeneralizedManifestState",
+      "relation": "creates",
+      "why": "GeneralizedCodegenCreationStrategy creates GeneralizedManifestState as the scratch state for its ordered family steps.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

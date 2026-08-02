@@ -1,56 +1,89 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py",
- "source_sha256": "620c7ec5987577dfe3ac4078a6bdd4fbd1dc88252e3be8472ec6406204702712",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy",
-   "label": "frame_operational_view_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py",
+  "source_sha256": "620c7ec5987577dfe3ac4078a6bdd4fbd1dc88252e3be8472ec6406204702712",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy",
+      "label": "frame_operational_view_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py",
+      "lineno": 1
+    },
+    "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy": {
+      "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
+      "label": "FrameOperationalViewStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py",
+      "lineno": 16,
+      "bases": [
+        "DevopsInformationStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "execute"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Registry-backed dev-ops information strategy for frame-wide operational rollups.",
+      "responsibilities": [
+        "summarizes identity, ownership, link, cluster, and transaction counts for one frame",
+        "aggregates fact-record baselines by family across the frame registry",
+        "returns one detached operational view with optional freshness verdicts"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy": {
-   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
-   "label": "FrameOperationalViewStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py",
-   "lineno": 16,
-   "bases": [
-    "DevopsInformationStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "execute"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
-   "to_label": "DevopsInformationStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
-  "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
-  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
- },
- "collapse_candidate": {
-  "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy",
-  "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
-  "label": "FrameOperationalViewStrategy"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
+      "to_label": "DevopsInformationStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+    "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+    "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy",
+    "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
+    "label": "FrameOperationalViewStrategy"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
+      "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+      "relation": "specializes",
+      "why": "FrameOperationalViewStrategy specializes the shared dev-ops information strategy contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy.FrameOperationalViewStrategy",
+      "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+      "relation": "uses",
+      "why": "FrameOperationalViewStrategy uses InformationFreshnessInspector to compute freshness over reported frame regions.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

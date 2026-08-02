@@ -1,98 +1,156 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
- "source_sha256": "ade54198cf6b22641a375b4a2a8a3e83dd047d1b8a086556c2c0f70a8c0c738c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.acl.frame_acl_configuration_chain": {
-   "id": "melder.nexus.acl.frame_acl_configuration_chain",
-   "label": "frame_acl_configuration_chain",
-   "kind": "module",
-   "file": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
+  "source_sha256": "ade54198cf6b22641a375b4a2a8a3e83dd047d1b8a086556c2c0f70a8c0c738c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.acl.frame_acl_configuration_chain": {
+      "id": "melder.nexus.acl.frame_acl_configuration_chain",
+      "label": "frame_acl_configuration_chain",
+      "kind": "module",
+      "file": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
+      "lineno": 1
+    },
+    "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain": {
+      "id": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "label": "FrameACLConfigurationChain",
+      "kind": "class",
+      "file": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
+      "lineno": 23,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "contract_name",
+        "count_configurations",
+        "create_new_from_acl_configuration",
+        "current_configuration_id",
+        "family_name",
+        "get_configuration",
+        "get_current_configuration",
+        "get_head_configuration",
+        "has_configuration",
+        "head_configuration_id",
+        "history_limit",
+        "insert_head_configuration",
+        "list_configuration_ids",
+        "list_configurations",
+        "rollback_to_configuration",
+        "select_current_configuration",
+        "trim_tail"
+      ],
+      "shape": {
+        "method_count": 19,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Named revision chain for one ACL configuration family.",
+      "responsibilities": [
+        "owns one family/name lineage of configuration revisions",
+        "tracks head and current configuration selection across retained history"
+      ],
+      "owns_state": [
+        "_family_name",
+        "_contract_name",
+        "_head_configuration_id",
+        "_current_configuration_id",
+        "_configurations_by_id"
+      ],
+      "phases": [
+        "runtime",
+        "refresh",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain": {
-   "id": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "label": "FrameACLConfigurationChain",
-   "kind": "class",
-   "file": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
-   "lineno": 23,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "contract_name",
-    "count_configurations",
-    "create_new_from_acl_configuration",
-    "current_configuration_id",
-    "family_name",
-    "get_configuration",
-    "get_current_configuration",
-    "get_head_configuration",
-    "has_configuration",
-    "head_configuration_id",
-    "history_limit",
-    "insert_head_configuration",
-    "list_configuration_ids",
-    "list_configurations",
-    "rollback_to_configuration",
-    "select_current_configuration",
-    "trim_tail"
-   ],
-   "shape": {
-    "method_count": 19,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to_label": "KeyError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Union": "typing.Union",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+    "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+    "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
   },
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
-   "to_label": "KeyError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Union": "typing.Union",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
-  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
-  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
- },
- "collapse_candidate": null
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+      "relation": "owns_lifecycle_of",
+      "why": "Codegen-family ACL configuration chains own their retained configuration revisions.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+      "relation": "owns_lifecycle_of",
+      "why": "Command-family ACL configuration chains own their retained configuration revisions.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain",
+      "to": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
+      "relation": "owns_lifecycle_of",
+      "why": "View-family ACL configuration chains own their retained configuration revisions.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

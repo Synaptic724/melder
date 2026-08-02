@@ -1,72 +1,80 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
- "source_sha256": "d0f44827aa381880fe65aa3261f6f86786b534a20dbcee1c4f12f7574a38723b",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy",
-   "label": "index_dependency_sanity_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
+  "source_sha256": "d0f44827aa381880fe65aa3261f6f86786b534a20dbcee1c4f12f7574a38723b",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy",
+      "label": "index_dependency_sanity_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
+      "lineno": 1,
+      "role": "System validation strategy module for index dependency sanity checks.",
+      "responsibilities": [
+        "provides one validation or examination strategy/support surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ]
+    },
+    "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
+      "label": "IndexDependencySanityStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
+      "lineno": 30,
+      "bases": [
+        "SpellSystemValidationStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "run"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      }
+    }
   },
-  "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
-   "label": "IndexDependencySanityStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
-   "lineno": 30,
-   "bases": [
-    "SpellSystemValidationStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "run"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
+      "to_label": "SpellSystemValidationStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
+      "to_label": "SystemDiagnostic",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Mapping": "typing.Mapping",
+    "Optional": "typing.Optional",
+    "Set": "typing.Set",
+    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+    "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+    "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
+    "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+    "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+    "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
+    "label": "IndexDependencySanityStrategy"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
-   "to_label": "SpellSystemValidationStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
-   "to_label": "SystemDiagnostic",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Mapping": "typing.Mapping",
-  "Optional": "typing.Optional",
-  "Set": "typing.Set",
-  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
-  "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
-  "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
-  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
-  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
-  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
-  "label": "IndexDependencySanityStrategy"
- }
 }

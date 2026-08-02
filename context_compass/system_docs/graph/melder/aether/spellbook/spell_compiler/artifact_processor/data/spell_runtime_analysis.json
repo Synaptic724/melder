@@ -1,68 +1,107 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
- "source_sha256": "19c1e83736157f19a8822843cef48628d4cf61042354dce6c18c020d25de4141",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis": {
-   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis",
-   "label": "spell_runtime_analysis",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
+  "source_sha256": "19c1e83736157f19a8822843cef48628d4cf61042354dce6c18c020d25de4141",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis": {
+      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis",
+      "label": "spell_runtime_analysis",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord": {
+      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
+      "label": "SpellRuntimeRecord",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
+      "lineno": 7,
+      "bases": [],
+      "markers": [],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": false,
+        "trivial": true
+      }
+    },
+    "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis": {
+      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+      "label": "SpellRuntimeAnalysis",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
+      "lineno": 94,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup"
+      ],
+      "shape": {
+        "method_count": 1,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Processor-owned runtime spell section for one codegen model.",
+      "responsibilities": [
+        "stores per-spell static runtime facts needed by planner strategies",
+        "holds runtime spell records keyed by spell id for one fitted model",
+        "owns cleanup of the fitted runtime spell section state"
+      ],
+      "owns_state": [
+        "records_by_spell_id",
+        "spell_count"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord": {
-   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
-   "label": "SpellRuntimeRecord",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
-   "lineno": 7,
-   "bases": [],
-   "markers": [],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": false,
-    "trivial": true
-   }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Tuple": "typing.Tuple",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis": {
-   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
-   "label": "SpellRuntimeAnalysis",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py",
-   "lineno": 94,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup"
-   ],
-   "shape": {
-    "method_count": 1,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Tuple": "typing.Tuple",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": null
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+      "to": "melder.aether.spellbook.existence.existence.Existence",
+      "relation": "uses",
+      "why": "SpellRuntimeAnalysis stores Existence values on its runtime spell records.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "SpellRuntimeAnalysis inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

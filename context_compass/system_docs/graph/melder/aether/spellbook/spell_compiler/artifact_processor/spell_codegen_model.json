@@ -1,69 +1,180 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
- "source_sha256": "1909c50695f84e2589ee1ae184741124142ceff02e11f89eb0e180618d601de3",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model": {
-   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model",
-   "label": "spell_codegen_model",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
+  "source_sha256": "1909c50695f84e2589ee1ae184741124142ceff02e11f89eb0e180618d601de3",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model": {
+      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model",
+      "label": "spell_codegen_model",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel": {
+      "id": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "label": "SpellCodegenModel",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
+      "lineno": 33,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "section_names",
+        "snapshot_applied_strategy_ids"
+      ],
+      "shape": {
+        "method_count": 3,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Processor-owned codegen model for one spell.",
+      "responsibilities": [
+        "stores the fitted processor output that later planner strategies consume",
+        "holds borrowed analyzer graph truth plus processor-owned fitted sections",
+        "tracks assessment data and applied strategy provenance for one spell model"
+      ],
+      "owns_state": [
+        "build_kind",
+        "existence",
+        "route_family",
+        "graph_shape",
+        "order_shape",
+        "instance_shape",
+        "contract_shape",
+        "injection_shape",
+        "override_targeting_shape",
+        "spell_runtime_shape",
+        "existence_occurrence_shape",
+        "assessment",
+        "applied_strategy_ids"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel": {
-   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "label": "SpellCodegenModel",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
-   "lineno": 33,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "section_names",
-    "snapshot_applied_strategy_ids"
-   ],
-   "shape": {
-    "method_count": 3,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "SpellInjectionAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis",
-  "SpellOccurrenceContractAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
-  "SpellOccurrenceInstanceAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
-  "SpellOccurrenceOrderAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis.SpellOccurrenceOrderAnalysis",
-  "SpellOverrideTargetingAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
-  "SpellRuntimeAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
-  "SpellExistenceOccurrenceAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
-  "SpellOccurrenceGraphAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model",
-  "class": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
-  "label": "SpellCodegenModel"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "SpellInjectionAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis",
+    "SpellOccurrenceContractAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
+    "SpellOccurrenceInstanceAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
+    "SpellOccurrenceOrderAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis.SpellOccurrenceOrderAnalysis",
+    "SpellOverrideTargetingAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
+    "SpellRuntimeAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+    "SpellExistenceOccurrenceAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
+    "SpellOccurrenceGraphAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model",
+    "class": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+    "label": "SpellCodegenModel"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellCodegenModel owns the fitted injection section for its spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellCodegenModel owns the fitted occurrence contract-routing section for its spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellCodegenModel owns the fitted occurrence instance/sharedness section for its spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis.SpellOccurrenceOrderAnalysis",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellCodegenModel owns the fitted occurrence-order section for its spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellCodegenModel owns the fitted override-targeting section for its spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellCodegenModel owns the fitted runtime spell section for its spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.utilities.general_base.cleanable.Cleanable",
+      "relation": "specializes",
+      "why": "SpellCodegenModel inherits the explicit cleanup lifecycle from Cleanable.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

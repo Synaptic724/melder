@@ -1,81 +1,111 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/dag/dag_node.py",
- "source_sha256": "9da74f7e2ad1457fa5d0c0df062e0caeda283d12073eea2a719d6058b267832e",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.dag.dag_node": {
-   "id": "melder.aether.spellbook.spell_compiler.dag.dag_node",
-   "label": "dag_node",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_node.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/dag/dag_node.py",
+  "source_sha256": "9da74f7e2ad1457fa5d0c0df062e0caeda283d12073eea2a719d6058b267832e",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.dag.dag_node": {
+      "id": "melder.aether.spellbook.spell_compiler.dag.dag_node",
+      "label": "dag_node",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_node.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode": {
+      "id": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
+      "label": "DagNode",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_node.py",
+      "lineno": 8,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "add_dependency",
+        "add_task",
+        "children_by_param",
+        "cleanup",
+        "dependencies",
+        "dependents",
+        "id",
+        "incoming_params",
+        "payload",
+        "payload",
+        "run_tasks"
+      ],
+      "shape": {
+        "method_count": 11,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Node in the spellbook directed acyclic work graph.",
+      "responsibilities": [
+        "stores node identity, payload, dependency links, and param metadata for one DAG node"
+      ],
+      "owns_state": [
+        "_dependencies",
+        "_dependents",
+        "_children_by_param",
+        "_incoming_params",
+        "_payload"
+      ],
+      "phases": [
+        "validation",
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode": {
-   "id": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
-   "label": "DagNode",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_node.py",
-   "lineno": 8,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "add_dependency",
-    "add_task",
-    "children_by_param",
-    "cleanup",
-    "dependencies",
-    "dependents",
-    "id",
-    "incoming_params",
-    "payload",
-    "payload",
-    "run_tasks"
-   ],
-   "shape": {
-    "method_count": 11,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Set": "typing.Set",
+    "ClassVar": "typing.ClassVar",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Set": "typing.Set",
-  "ClassVar": "typing.ClassVar",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.dag.dag_node",
-  "class": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
-  "label": "DagNode"
- }
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.dag.dag_node",
+    "class": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
+    "label": "DagNode"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.dag.dag_node.DagNode",
+      "to": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+      "relation": "uses",
+      "why": "DagNode edge metadata uses SocketKind to classify param sockets.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

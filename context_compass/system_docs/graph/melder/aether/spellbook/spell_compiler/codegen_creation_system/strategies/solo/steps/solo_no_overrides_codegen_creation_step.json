@@ -1,55 +1,99 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py",
- "source_sha256": "a062264e0073d87fddfbf7dd67ff06397b272aa0fba4d82ef23a861af72dad5e",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step",
-   "label": "solo_no_overrides_codegen_creation_step",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py",
+  "source_sha256": "a062264e0073d87fddfbf7dd67ff06397b272aa0fba4d82ef23a861af72dad5e",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step",
+      "label": "solo_no_overrides_codegen_creation_step",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py",
+      "lineno": 1
+    },
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
+      "label": "SoloNoOverridesCodegenCreationStep",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py",
+      "lineno": 12,
+      "bases": [
+        "CodegenCreationFamilyStep"
+      ],
+      "markers": [],
+      "public_methods": [
+        "apply",
+        "step_id"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Solo family no-overrides executor build step.",
+      "responsibilities": [
+        "compiles the root-only solo no-overrides executor",
+        "publishes the no-overrides executor and code object onto family state and output metadata",
+        "derives deterministic solo no-overrides executor signature data"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
-   "label": "SoloNoOverridesCodegenCreationStep",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py",
-   "lineno": 12,
-   "bases": [
-    "CodegenCreationFamilyStep"
-   ],
-   "markers": [],
-   "public_methods": [
-    "apply",
-    "step_id"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
-   "to_label": "CodegenCreationFamilyStep",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
-  }
- ],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "compile_solo_no_overrides_codegen_creation_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler.compile_solo_no_overrides_codegen_creation_executor",
-  "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
-  "SoloCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step",
-  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
-  "label": "SoloNoOverridesCodegenCreationStep"
- }
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
+      "to_label": "CodegenCreationFamilyStep",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
+    }
+  ],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "compile_solo_no_overrides_codegen_creation_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler.compile_solo_no_overrides_codegen_creation_executor",
+    "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
+    "SoloCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step",
+    "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
+    "label": "SoloNoOverridesCodegenCreationStep"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
+      "relation": "specializes",
+      "why": "SoloNoOverridesCodegenCreationStep specializes the shared family-step contract.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler",
+      "relation": "uses",
+      "why": "SoloNoOverridesCodegenCreationStep delegates root-only no-overrides executor compilation to solo_no_overrides_codegen_creation_compiler.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step.SoloNoOverridesCodegenCreationStep",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState",
+      "relation": "uses",
+      "why": "SoloNoOverridesCodegenCreationStep mutates the family-local solo state while publishing the no-overrides executor.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

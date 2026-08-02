@@ -1,35 +1,94 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py",
- "source_sha256": "ec970ceb8308c8d0c77c21c08ef1c4b39865b74b0087bdb315b4ff7eb897209f",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
-   "label": "generalized_no_overrides_codegen_creation_compiler",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "SimpleNamespace": "types.SimpleNamespace",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Union": "typing.Union",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code",
-  "SpellGeneralizedCodegenPlanCallMode": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode",
-  "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind",
-  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
-  "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py",
+  "source_sha256": "ec970ceb8308c8d0c77c21c08ef1c4b39865b74b0087bdb315b4ff7eb897209f",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "label": "generalized_no_overrides_codegen_creation_compiler",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py",
+      "lineno": 1,
+      "role": "Spell-scoped no-overrides executor compiler for generalized lane plans and schema rows.",
+      "responsibilities": [
+        "compiles generalized no-overrides executors from lane plans or schema rows",
+        "emits transient-unrolled and step-plan no-overrides source for generalized runtime lanes",
+        "reuses the process-wide emitted-executor code cache while preserving creations reuse and registration semantics"
+      ],
+      "owns_state": [
+        "_MISSING",
+        "_TRANSIENT_SCHEMA_SEQUENCE_FIELDS"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "SimpleNamespace": "types.SimpleNamespace",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "Union": "typing.Union",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code",
+    "SpellGeneralizedCodegenPlanCallMode": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode",
+    "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind",
+    "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+    "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.existence.existence.Existence",
+      "relation": "uses",
+      "why": "generalized_no_overrides_codegen_creation_compiler routes reuse and registration semantics through the Existence enum while compiling emitted no-overrides executors.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode",
+      "relation": "uses",
+      "why": "generalized_no_overrides_codegen_creation_compiler uses SpellGeneralizedCodegenPlanCallMode when emitting transient generalized no-overrides call expressions.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind",
+      "relation": "uses",
+      "why": "generalized_no_overrides_codegen_creation_compiler uses SpellGeneralizedCodegenPlanTargetKind when emitting generalized no-overrides creations routing.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+      "relation": "uses",
+      "why": "generalized_no_overrides_codegen_creation_compiler uses the process-wide executor code cache for emitted no-overrides executor source.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

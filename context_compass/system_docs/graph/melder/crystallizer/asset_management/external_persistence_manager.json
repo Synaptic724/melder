@@ -1,98 +1,124 @@
 {
- "schema_version": 1,
- "source": "src/melder/crystallizer/asset_management/external_persistence_manager.py",
- "source_sha256": "7a576442c1ad532132a57dc587116b9561f64af164b51635e68941e52ef4ba9e",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.crystallizer.asset_management.external_persistence_manager": {
-   "id": "melder.crystallizer.asset_management.external_persistence_manager",
-   "label": "external_persistence_manager",
-   "kind": "module",
-   "file": "src/melder/crystallizer/asset_management/external_persistence_manager.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/crystallizer/asset_management/external_persistence_manager.py",
+  "source_sha256": "7a576442c1ad532132a57dc587116b9561f64af164b51635e68941e52ef4ba9e",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.crystallizer.asset_management.external_persistence_manager": {
+      "id": "melder.crystallizer.asset_management.external_persistence_manager",
+      "label": "external_persistence_manager",
+      "kind": "module",
+      "file": "src/melder/crystallizer/asset_management/external_persistence_manager.py",
+      "lineno": 1
+    },
+    "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager": {
+      "id": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "label": "ExternalPersistenceManager",
+      "kind": "class",
+      "file": "src/melder/crystallizer/asset_management/external_persistence_manager.py",
+      "lineno": 11,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "delete_unit",
+        "describe",
+        "download_checkpoint",
+        "download_profile",
+        "fetch_unit",
+        "has_store_handler",
+        "list_units",
+        "store_enabled",
+        "store_failure_count",
+        "store_unit",
+        "stream_emissions_enabled",
+        "upload_checkpoint",
+        "upload_enabled",
+        "upload_failure_count"
+      ],
+      "shape": {
+        "method_count": 15,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Crystallizer-owned remote transport (the DB opt-in) built on USER callables.",
+      "responsibilities": [
+        "uploads flushed cached items (lenient default posture with failure diagnostics; strict optional)",
+        "downloads single checkpoints and whole profiles (loud refusals on missing handlers/inconsistent remotes)",
+        "records as presence flags only (callables never enter the record)"
+      ],
+      "owns_state": [
+        "configuration",
+        "upload_failure_count"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
   },
-  "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager": {
-   "id": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "label": "ExternalPersistenceManager",
-   "kind": "class",
-   "file": "src/melder/crystallizer/asset_management/external_persistence_manager.py",
-   "lineno": 11,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "delete_unit",
-    "describe",
-    "download_checkpoint",
-    "download_profile",
-    "fetch_unit",
-    "has_store_handler",
-    "list_units",
-    "store_enabled",
-    "store_failure_count",
-    "store_unit",
-    "stream_emissions_enabled",
-    "upload_checkpoint",
-    "upload_enabled",
-    "upload_failure_count"
-   ],
-   "shape": {
-    "method_count": 15,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "ClassVar": "typing.ClassVar",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  {
-   "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.crystallizer.asset_management.external_persistence_manager",
+    "class": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+    "label": "ExternalPersistenceManager"
   },
-  {
-   "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "ClassVar": "typing.ClassVar",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": {
-  "module": "melder.crystallizer.asset_management.external_persistence_manager",
-  "class": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
-  "label": "ExternalPersistenceManager"
- }
+  "edges_authored": [
+    {
+      "from": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "to": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
+      "relation": "owns",
+      "why": "The manager consumes one frozen handler configuration (cleanup cleans it).",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

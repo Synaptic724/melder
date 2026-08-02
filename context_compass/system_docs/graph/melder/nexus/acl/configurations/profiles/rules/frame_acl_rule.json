@@ -1,79 +1,93 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py",
- "source_sha256": "281d5443de0b4b44c47327f64cd0cb2bae249e48e6f5fcb0f85cbcf6b65d205c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule": {
-   "id": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule",
-   "label": "frame_acl_rule",
-   "kind": "module",
-   "file": "src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py",
+  "source_sha256": "281d5443de0b4b44c47327f64cd0cb2bae249e48e6f5fcb0f85cbcf6b65d205c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule": {
+      "id": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule",
+      "label": "frame_acl_rule",
+      "kind": "module",
+      "file": "src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py",
+      "lineno": 1
+    },
+    "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule": {
+      "id": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+      "label": "FrameACLRule",
+      "kind": "class",
+      "file": "src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py",
+      "lineno": 8,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "clone",
+        "conditions",
+        "effect",
+        "from_json_dict",
+        "id",
+        "operation",
+        "rule_name",
+        "to_json_dict"
+      ],
+      "shape": {
+        "method_count": 9,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Typed ACL rule object.",
+      "responsibilities": [
+        "stores one rule name, operation, effect, and detached conditions payload"
+      ],
+      "owns_state": [
+        "_rule_name",
+        "_operation",
+        "_effect",
+        "_conditions"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule": {
-   "id": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
-   "label": "FrameACLRule",
-   "kind": "class",
-   "file": "src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py",
-   "lineno": 8,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "clone",
-    "conditions",
-    "effect",
-    "from_json_dict",
-    "id",
-    "operation",
-    "rule_name",
-    "to_json_dict"
-   ],
-   "shape": {
-    "method_count": 9,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
   },
-  {
-   "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
- },
- "collapse_candidate": null
+  "collapse_candidate": null
 }

@@ -1,26 +1,36 @@
 {
- "schema_version": 1,
- "source": "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py",
- "source_sha256": "e97de4390170ff5ec0a2c111dcc79537086f1e10d2f8b7981e73c95b21227cfe",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.crystallizer.crystal_loader_system.user_world_rebuild": {
-   "id": "melder.crystallizer.crystal_loader_system.user_world_rebuild",
-   "label": "user_world_rebuild",
-   "kind": "module",
-   "file": "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Path": "pathlib.Path",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py",
+  "source_sha256": "e97de4390170ff5ec0a2c111dcc79537086f1e10d2f8b7981e73c95b21227cfe",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.crystallizer.crystal_loader_system.user_world_rebuild": {
+      "id": "melder.crystallizer.crystal_loader_system.user_world_rebuild",
+      "label": "user_world_rebuild",
+      "kind": "module",
+      "file": "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py",
+      "lineno": 1,
+      "role": "Shared retained-text rebuild lane: reconstructs absent user modules from a custody crystal through the SyntheticModule lifecycle.",
+      "responsibilities": [
+        "rebuilds ABSENT user-module files only (the live file always wins)",
+        "skips sys.modules residents and orders parents-first by dot depth",
+        "routes every rebuild through the normal SyntheticModule register/publish/execute verbs",
+        "reports honest shortfalls through caller callbacks (engine built-stack vs runner no-op)"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Path": "pathlib.Path",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule"
+  },
+  "collapse_candidate": null
 }

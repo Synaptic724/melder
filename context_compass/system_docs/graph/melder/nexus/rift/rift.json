@@ -1,153 +1,250 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/rift.py",
- "source_sha256": "9ed9fe25c9993458b03a6462aee266098a27ec730a5f2ab40c5d38431614c8bd",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.rift": {
-   "id": "melder.nexus.rift.rift",
-   "label": "rift",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/rift.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/rift.py",
+  "source_sha256": "9ed9fe25c9993458b03a6462aee266098a27ec730a5f2ab40c5d38431614c8bd",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.rift": {
+      "id": "melder.nexus.rift.rift",
+      "label": "rift",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/rift.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.rift.Rift": {
+      "id": "melder.nexus.rift.rift.Rift",
+      "label": "Rift",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/rift.py",
+      "lineno": 26,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "configuration",
+        "create_frame_link",
+        "create_nexus_frame",
+        "get_frame_link_contract",
+        "get_frame_viewer",
+        "get_nexus_frame",
+        "get_selected_contract_names",
+        "id",
+        "is_active",
+        "is_registered",
+        "list_accessible_nexus_frame_names",
+        "list_accessible_non_nexus_frame_names",
+        "list_assigned_frame_names",
+        "mark_active",
+        "mark_inactive",
+        "mark_registered",
+        "metadata",
+        "on_nexus_frame_disposed",
+        "refresh_runtime_projections",
+        "rift_gate",
+        "rift_name",
+        "space"
+      ],
+      "shape": {
+        "method_count": 36,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Live AR session object.",
+      "responsibilities": [
+        "owns exactly one primary room",
+        "stores frame-link contracts for engaged frames",
+        "owns one RiftGate",
+        "refreshes room assets from current projection state"
+      ],
+      "owns_state": [
+        "_space",
+        "_frame_link_contracts_by_name",
+        "_rift_gate",
+        "_configuration",
+        "_projection_sets_by_frame_name"
+      ],
+      "phases": [
+        "init",
+        "runtime",
+        "refresh",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.rift.Rift": {
-   "id": "melder.nexus.rift.rift.Rift",
-   "label": "Rift",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/rift.py",
-   "lineno": 26,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "configuration",
-    "create_frame_link",
-    "create_nexus_frame",
-    "get_frame_link_contract",
-    "get_frame_viewer",
-    "get_nexus_frame",
-    "get_selected_contract_names",
-    "id",
-    "is_active",
-    "is_registered",
-    "list_accessible_nexus_frame_names",
-    "list_accessible_non_nexus_frame_names",
-    "list_assigned_frame_names",
-    "mark_active",
-    "mark_inactive",
-    "mark_registered",
-    "metadata",
-    "on_nexus_frame_disposed",
-    "refresh_runtime_projections",
-    "rift_gate",
-    "rift_name",
-    "space"
-   ],
-   "shape": {
-    "method_count": 36,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "RiftGate",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "FrameLinkContract",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "CodegenRiftSpace",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "CapabilityRiftSpace",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to_label": "StaticRiftSpace",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+    "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+    "FrameLinkContract": "melder.nexus.rift.frame_link.frame_link_contract.FrameLinkContract",
+    "CapabilityRiftSpace": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
+    "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+    "StaticRiftSpace": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+    "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
+    "Conduit": "melder.aether.conduit.conduit.Conduit",
+    "Nexus": "melder.nexus.nexus.Nexus",
+    "RiftConfiguration": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
+    "FrameViewer": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+    "CodegenProjection": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
+    "CommandProjection": "melder.nexus.rift.projection.command_projection.CommandProjection",
+    "FrameProjectionSet": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
+    "ViewProjection": "melder.nexus.rift.projection.view_projection.ViewProjection",
+    "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+    "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger"
   },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.rift",
+    "class": "melder.nexus.rift.rift.Rift",
+    "label": "Rift"
   },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "RiftGate",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "FrameLinkContract",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "CodegenRiftSpace",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "CapabilityRiftSpace",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.rift.rift.Rift",
-   "to_label": "StaticRiftSpace",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
-  "RiftGate": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
-  "FrameLinkContract": "melder.nexus.rift.frame_link.frame_link_contract.FrameLinkContract",
-  "CapabilityRiftSpace": "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace",
-  "CodegenRiftSpace": "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
-  "StaticRiftSpace": "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
-  "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
-  "Conduit": "melder.aether.conduit.conduit.Conduit",
-  "Nexus": "melder.nexus.nexus.Nexus",
-  "RiftConfiguration": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
-  "FrameViewer": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
-  "CodegenProjection": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
-  "CommandProjection": "melder.nexus.rift.projection.command_projection.CommandProjection",
-  "FrameProjectionSet": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
-  "ViewProjection": "melder.nexus.rift.projection.view_projection.ViewProjection",
-  "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
-  "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.rift",
-  "class": "melder.nexus.rift.rift.Rift",
-  "label": "Rift"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
+      "relation": "uses",
+      "why": "Rift uses RiftConfiguration as its per-instance runtime default source.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to": "melder.nexus.nexus.Nexus",
+      "relation": "borrows",
+      "why": "Rift depends on the owning Nexus for policy checks, frame access, and projection refresh coordination without owning the Nexus lifecycle.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to": "melder.nexus.rift.frame_link.frame_link_contract.FrameLinkContract",
+      "relation": "owns_lifecycle_of",
+      "why": "Rift owns the per-frame contract entries for its engaged frames.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to": "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
+      "relation": "owns_lifecycle_of",
+      "why": "Rift owns the current projection-set registry for its engaged frames.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "refresh",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to": "melder.nexus.rift.rift_gate.rift_gate.RiftGate",
+      "relation": "owns_lifecycle_of",
+      "why": "Rift owns one RiftGate for admission, drain, and refresh coordination.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "refresh",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.nexus.rift.rift.Rift",
+      "to": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "relation": "owns_lifecycle_of",
+      "why": "Rift owns exactly one primary room and is responsible for cleaning it before clearing its own state.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

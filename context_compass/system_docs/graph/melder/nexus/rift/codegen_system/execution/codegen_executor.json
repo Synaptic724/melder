@@ -1,76 +1,98 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
- "source_sha256": "a37f76730b269c329ddd5f26f3d502602ee31a8aba62f15f515a79c9c49c1ffd",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.codegen_system.execution.codegen_executor": {
-   "id": "melder.nexus.rift.codegen_system.execution.codegen_executor",
-   "label": "codegen_executor",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
+  "source_sha256": "a37f76730b269c329ddd5f26f3d502602ee31a8aba62f15f515a79c9c49c1ffd",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.codegen_system.execution.codegen_executor": {
+      "id": "melder.nexus.rift.codegen_system.execution.codegen_executor",
+      "label": "codegen_executor",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor": {
+      "id": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+      "label": "CodegenExecutor",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
+      "lineno": 16,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "execute"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Owner of governed code execution for one codegen request.",
+      "responsibilities": [
+        "executes compiled code against the built namespace",
+        "returns execution-layer result objects for the request"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor": {
-   "id": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-   "label": "CodegenExecutor",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/codegen_system/execution/codegen_executor.py",
-   "lineno": 16,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "execute"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "CodeType": "types.CodeType",
+    "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-   "to_label": "TypeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.codegen_system.execution.codegen_executor",
+    "class": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+    "label": "CodegenExecutor"
   },
-  {
-   "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "CodeType": "types.CodeType",
-  "CodegenExecutionResult": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.codegen_system.execution.codegen_executor",
-  "class": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
-  "label": "CodegenExecutor"
- }
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor",
+      "to": "melder.nexus.rift.codegen_system.execution.codegen_execution_result.CodegenExecutionResult",
+      "relation": "creates",
+      "why": "CodegenExecutor creates execution results for completed or failed codegen runs.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

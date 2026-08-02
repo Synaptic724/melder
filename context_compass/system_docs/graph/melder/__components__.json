@@ -1,22 +1,47 @@
 {
- "schema_version": 1,
- "source": "src/melder/__components__.py",
- "source_sha256": "6088aaacec9b14c377bdac0a3376bfef45b3efb397f4651324b3f691c1481651",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.__components__": {
-   "id": "melder.__components__",
-   "label": "__components__",
-   "kind": "module",
-   "file": "src/melder/__components__.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "get": "melder._build_assets._system_documents.system_documents.get"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/__components__.py",
+  "source_sha256": "6088aaacec9b14c377bdac0a3376bfef45b3efb397f4651324b3f691c1481651",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.__components__": {
+      "id": "melder.__components__",
+      "label": "__components__",
+      "kind": "module",
+      "file": "src/melder/__components__.py",
+      "lineno": 1,
+      "role": "Top-level packaged components hardcopy module.",
+      "responsibilities": [
+        "publishes the top-level packaged components document object"
+      ],
+      "owns_state": [
+        "__components__"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "get": "melder._build_assets._system_documents.system_documents.get"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.__components__",
+      "to": "melder.system_document.StaticSystemDocument",
+      "relation": "creates",
+      "why": "The packaged components module instantiates one top-level StaticSystemDocument for components hardcopy access.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

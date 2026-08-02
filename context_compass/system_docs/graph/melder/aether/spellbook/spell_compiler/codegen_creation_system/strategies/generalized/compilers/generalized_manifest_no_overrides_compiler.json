@@ -1,41 +1,91 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
- "source_sha256": "a0836f99e5c28bd2f7285f3c0fb2a93b9044c35bcf857e6d2eecb02c5ee55230",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler",
-   "label": "generalized_manifest_no_overrides_compiler",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.SpellGeneralizedCodegenPlanTargetKind",
-  "build_transient_no_overrides_source": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_transient_no_overrides_source",
-  "construct_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.construct_spell_instance",
-  "normalize_transient_schema": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.normalize_transient_schema",
-  "raise_meld_construction_error": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.raise_meld_construction_error",
-  "register_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance",
-  "register_spell_instance_prebound": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance_prebound",
-  "CodegenStepRuntimeRow": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
-  "build_runtime_rows": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.build_runtime_rows",
-  "build_executor_factory_source": "melder.aether.spellbook.spell_compiler.executor_factory_cache.build_executor_factory_source",
-  "get_or_build_executor_factory": "melder.aether.spellbook.spell_compiler.executor_factory_cache.get_or_build_executor_factory",
-  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
-  "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
- },
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
+  "source_sha256": "a0836f99e5c28bd2f7285f3c0fb2a93b9044c35bcf857e6d2eecb02c5ee55230",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler": {
+      "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler",
+      "label": "generalized_manifest_no_overrides_compiler",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
+      "lineno": 1,
+      "role": "Family-owned no-overrides lane compiler for the generalized family.",
+      "responsibilities": [
+        "emits no-overrides executor source from generalized manifest rows",
+        "builds flat runtime bindings and transient unrolled lanes for no-overrides execution",
+        "hydrates inner no-overrides executors through the process-wide executor factory cache"
+      ],
+      "owns_state": [
+        "EXECUTOR_NAME",
+        "_STEP_STATIC_NAMESPACE",
+        "_TRANSIENT_STATIC_NAMESPACE",
+        "_TRANSIENT_SCHEMA_SEQUENCE_FIELDS"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "Dict": "typing.Dict",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.SpellGeneralizedCodegenPlanTargetKind",
+    "build_transient_no_overrides_source": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_transient_no_overrides_source",
+    "construct_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.construct_spell_instance",
+    "normalize_transient_schema": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.normalize_transient_schema",
+    "raise_meld_construction_error": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.raise_meld_construction_error",
+    "register_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance",
+    "register_spell_instance_prebound": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance_prebound",
+    "CodegenStepRuntimeRow": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+    "build_runtime_rows": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.build_runtime_rows",
+    "build_executor_factory_source": "melder.aether.spellbook.spell_compiler.executor_factory_cache.build_executor_factory_source",
+    "get_or_build_executor_factory": "melder.aether.spellbook.spell_compiler.executor_factory_cache.get_or_build_executor_factory",
+    "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+    "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
+  },
+  "collapse_candidate": null,
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
+      "relation": "uses",
+      "why": "generalized_manifest_no_overrides_compiler uses the generalized runtime library for emitted no-overrides source builders and shared runtime helpers.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+      "relation": "uses",
+      "why": "generalized_manifest_no_overrides_compiler hydrates CodegenStepRuntimeRow bindings before emitting or binding no-overrides executors.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.executor_factory_cache",
+      "relation": "uses",
+      "why": "generalized_manifest_no_overrides_compiler uses the process-wide executor factory cache to compile and bind shared no-overrides executor factories.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

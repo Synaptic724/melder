@@ -1,79 +1,101 @@
 {
- "schema_version": 1,
- "source": "src/melder/nexus/rift/command_system/static_command_system.py",
- "source_sha256": "7c70af7a30ac45666d5fb1541b6ee8ed9833f7cf26a81919e0b235dd51ec4f8c",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.nexus.rift.command_system.static_command_system": {
-   "id": "melder.nexus.rift.command_system.static_command_system",
-   "label": "static_command_system",
-   "kind": "module",
-   "file": "src/melder/nexus/rift/command_system/static_command_system.py",
-   "lineno": 1
+  "schema_version": 1,
+  "source": "src/melder/nexus/rift/command_system/static_command_system.py",
+  "source_sha256": "7c70af7a30ac45666d5fb1541b6ee8ed9833f7cf26a81919e0b235dd51ec4f8c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.nexus.rift.command_system.static_command_system": {
+      "id": "melder.nexus.rift.command_system.static_command_system",
+      "label": "static_command_system",
+      "kind": "module",
+      "file": "src/melder/nexus/rift/command_system/static_command_system.py",
+      "lineno": 1
+    },
+    "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem": {
+      "id": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+      "label": "StaticCommandSystem",
+      "kind": "class",
+      "file": "src/melder/nexus/rift/command_system/static_command_system.py",
+      "lineno": 12,
+      "bases": [
+        "CommandSystem"
+      ],
+      "markers": [],
+      "public_methods": [
+        "describe_spell_status_by_id",
+        "describe_spell_status_by_index_id",
+        "describe_spell_status_by_source_id",
+        "get_conduit_by_id",
+        "get_conduit_by_name",
+        "get_conduit_cloud",
+        "get_spell_by_id",
+        "get_spell_by_index_id",
+        "get_spell_by_source_id",
+        "list_supported_command_methods",
+        "meld_existing_spell"
+      ],
+      "shape": {
+        "method_count": 14,
+        "has_bases": true,
+        "trivial": false
+      },
+      "role": "Static-room command specialization.",
+      "responsibilities": [
+        "preserves the shared command API while denying topology mutation and direct create-path spell activation",
+        "restricts spell retrieval to already-live static-compatible spell lifecycles"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ]
+    }
   },
-  "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem": {
-   "id": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
-   "label": "StaticCommandSystem",
-   "kind": "class",
-   "file": "src/melder/nexus/rift/command_system/static_command_system.py",
-   "lineno": 12,
-   "bases": [
-    "CommandSystem"
-   ],
-   "markers": [],
-   "public_methods": [
-    "describe_spell_status_by_id",
-    "describe_spell_status_by_index_id",
-    "describe_spell_status_by_source_id",
-    "get_conduit_by_id",
-    "get_conduit_by_name",
-    "get_conduit_cloud",
-    "get_spell_by_id",
-    "get_spell_by_index_id",
-    "get_spell_by_source_id",
-    "list_supported_command_methods",
-    "meld_existing_spell"
-   ],
-   "shape": {
-    "method_count": 14,
-    "has_bases": true,
-    "trivial": false
-   }
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
-   "to_label": "CommandSystem",
-   "relation": "specializes",
-   "to": "melder.nexus.rift.command_system.command_system.CommandSystem"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
-   "to_label": "AttributeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+      "to_label": "CommandSystem",
+      "relation": "specializes",
+      "to": "melder.nexus.rift.command_system.command_system.CommandSystem"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+      "to_label": "AttributeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Optional": "typing.Optional",
+    "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord"
   },
-  {
-   "from": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Optional": "typing.Optional",
-  "CommandSystem": "melder.nexus.rift.command_system.command_system.CommandSystem",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord"
- },
- "collapse_candidate": {
-  "module": "melder.nexus.rift.command_system.static_command_system",
-  "class": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
-  "label": "StaticCommandSystem"
- }
+  "collapse_candidate": {
+    "module": "melder.nexus.rift.command_system.static_command_system",
+    "class": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+    "label": "StaticCommandSystem"
+  },
+  "edges_authored": [
+    {
+      "from": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+      "to": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "relation": "specializes",
+      "why": "StaticCommandSystem is the static-room specialization of the shared command surface.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

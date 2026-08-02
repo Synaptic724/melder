@@ -1,20 +1,30 @@
 {
- "schema_version": 1,
- "source": "src/melder/__version__.py",
- "source_sha256": "102e41233d9a796dc1e93e4e42742e43bf74c0c6039f2dc0ca2dd0097aad7c02",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.__version__": {
-   "id": "melder.__version__",
-   "label": "__version__",
-   "kind": "module",
-   "file": "src/melder/__version__.py",
-   "lineno": 1
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {},
- "collapse_candidate": null
+  "schema_version": 1,
+  "source": "src/melder/__version__.py",
+  "source_sha256": "102e41233d9a796dc1e93e4e42742e43bf74c0c6039f2dc0ca2dd0097aad7c02",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.__version__": {
+      "id": "melder.__version__",
+      "label": "__version__",
+      "kind": "module",
+      "file": "src/melder/__version__.py",
+      "lineno": 1,
+      "role": "Top-level version metadata module.",
+      "responsibilities": [
+        "stores the canonical package version string"
+      ],
+      "owns_state": [
+        "__version__"
+      ],
+      "phases": [
+        "runtime"
+      ]
+    }
+  },
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {},
+  "collapse_candidate": null
 }
