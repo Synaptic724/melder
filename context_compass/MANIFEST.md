@@ -6,8 +6,24 @@ from the files themselves, which is the only reason it can be trusted.
 | field | value |
 | --- | --- |
 | manifest_version | 1.0.0 |
-| package_version | 2.0.0 |
-| files | 436 |
+| package_version | 2.3.0 |
+| files | 438 |
+
+## Lane policy
+
+Lanes where the install may keep files the package does not ship.
+Everything outside them is STRICT: an upgrade sweeps what is not listed here.
+
+| lane | policy |
+| --- | --- |
+| `tickets/` | permissive |
+| `artifacts/` | permissive |
+| `system_docs/` | permissive |
+| `context_management/` | permissive |
+| `special_instructions/` | permissive |
+| `user_defined/` | permissive |
+| `agent_onboarding/user_defined/` | permissive |
+| everything else | strict - swept on upgrade |
 
 ## Ownership classes
 
@@ -15,7 +31,7 @@ from the files themselves, which is the only reason it can be trusted.
 | --- | --- | --- | --- |
 | PACKAGE | 335 | restore | replace |
 | RESET | 26 | keep listed, remove unlisted | leave alone |
-| INSTANCE | 71 | never touched | never touched |
+| INSTANCE | 73 | never touched | never touched |
 | LIVE | 3 | reset managed block | swap managed block |
 | CONFIG | 1 | restore missing keys | merge keys |
 
@@ -453,9 +469,11 @@ from the files themselves, which is the only reason it can be trusted.
 | `tickets/tasks/backlog/.gitkeep` | RESET | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `tickets/tasks/completed/.gitkeep` | RESET | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `tickets/tasks/README.md` | RESET | `05f35c092fde41fe576f9e716f9965d7b60b1ec44090f0e7003976d7088e6e3a` |
-| `tools/cleanup_context_compass.py` | PACKAGE | `94b0dcd0b88259429a2a1cf883c0b3c285ffd7753b5bd35e524f406e69022590` |
-| `tools/package_manifest.py` | PACKAGE | `99226a8164e6fb907f7dedba635f704dc5dceea1c667640b6f3556cb2d0d4bd6` |
+| `tools/cleanup_context_compass.py` | PACKAGE | `6704e9be4b2afec7746b2617b85b91fab40778e1f44ff884db277feb248f2431` |
+| `tools/package_manifest.py` | PACKAGE | `52042f4d414c3e60f8693194bc92ab0944ad493256e54d64e2567aa6a2b17ccc` |
 | `tools/system_documents/index_document.py` | PACKAGE | `fe0894d1677e3ec342db183419bbb84999c9d236d58d7d1a95382bc60effd36d` |
 | `tools/system_documents/python/assemble_graph.py` | PACKAGE | `5f986909273c6815662682adfedc6a9e2e31abc4fe4cb57b8fbaf1842f8f5252` |
 | `tools/system_documents/python/extract_graph.py` | PACKAGE | `f739ea7d71332b60f0eb238688ec93668a89819008ba63592e3f4d6a4fe924c5` |
-| `tools/update_context_compass.py` | PACKAGE | `6a43d2ba84359ea74700d882eec96f0aed97ab870578f2b5c56fd5464df38def` |
+| `tools/update_context_compass.py` | PACKAGE | `fa3f134f5d49deacf5c3548c2a248216953f6b69d430fd8f2586cf57c08bb898` |
+| `user_defined/.gitkeep` | INSTANCE | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `user_defined/README.md` | INSTANCE | `f58639058dabcaafed2f3b589ca12b7eb94ddd45dd356a807b39f2304b90ab33` |

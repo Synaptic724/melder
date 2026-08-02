@@ -26,11 +26,16 @@ OWNERSHIP CLASSES
               are. Update never touches the contents.
 
     INSTANCE  the project's own work, listed so both tools know to leave it
-              alone. `agent_onboarding/user_defined/` is the case: role overlays
-              belong to whoever wrote them. Neither tool restores, replaces or
-              removes anything here, in any mode. Listing it explicitly is safer
-              than relying on absence, because a file missing from the manifest
-              is indistinguishable from one that was never meant to be there.
+              alone. Two directories: `agent_onboarding/user_defined/` for role
+              overlays, and top-level `user_defined/` for anything else. Neither
+              tool restores, replaces or removes anything in either, in any mode.
+              Listing them explicitly is safer than relying on absence, because a
+              file missing from the manifest is indistinguishable from one that
+              was never meant to be there.
+
+              These exist so an upgrade never has to choose between the user's
+              work and the new version. Package files are conformed; if you need
+              something different, it lives here instead.
 
     LIVE      one file holding a package-owned block plus instance-owned body.
               The boards. Update swaps only the block between MANAGED markers.
@@ -63,6 +68,7 @@ CLASS_RULES: tuple[tuple[str, str], ...] = (
     ("context_management/", "RESET"),
     ("special_instructions/", "RESET"),
     ("agent_onboarding/user_defined/", "INSTANCE"),
+    ("user_defined/", "INSTANCE"),
     ("attention_board.md", "LIVE"),
     ("artifact_board.md", "LIVE"),
     ("mailbox_board.md", "LIVE"),
@@ -70,6 +76,33 @@ CLASS_RULES: tuple[tuple[str, str], ...] = (
 )
 
 SKIP_DIRS = {"__pycache__", ".git"}
+
+# Lanes where the install may hold files the package does not ship. Everything
+# outside them is STRICT: an upgrade sweeps whatever is not in the manifest.
+#
+# The asymmetry is the point. A ticket the package never heard of is the whole
+# purpose of `tickets/`; a skill the package never heard of sitting in
+# `agent_onboarding/default/` is a document retired versions ago that agents are
+# still reading. Reporting it is not enough - it was reported for two upgrades
+# and stayed, because nobody hand-deletes from a list.
+#
+# Observed on a real install: a `scripts/` directory left over from before the
+# rename to `tools/`, a root `router.md` from the retired dual-router era, and a
+# lowercase `SKILLS.md` beside the real one. All silently readable, all wrong.
+PERMISSIVE_LANES: tuple[str, ...] = (
+    "tickets/",
+    "artifacts/",
+    "system_docs/",
+    "context_management/",
+    "special_instructions/",
+    "user_defined/",
+    "agent_onboarding/user_defined/",
+)
+
+
+def is_permissive(rel: str) -> bool:
+    """True if the install may keep unmanifested files at this path."""
+    return rel.startswith(PERMISSIVE_LANES)
 
 
 def classify(rel: str) -> str:
@@ -120,6 +153,16 @@ def build(root: pathlib.Path, version: str) -> str:
         f"| manifest_version | {MANIFEST_VERSION} |",
         f"| package_version | {version} |",
         f"| files | {len(rows)} |",
+        "",
+        "## Lane policy",
+        "",
+        "Lanes where the install may keep files the package does not ship.",
+        "Everything outside them is STRICT: an upgrade sweeps what is not listed here.",
+        "",
+        "| lane | policy |",
+        "| --- | --- |",
+        *[f"| `{L}` | permissive |" for L in PERMISSIVE_LANES],
+        "| everything else | strict - swept on upgrade |",
         "",
         "## Ownership classes",
         "",

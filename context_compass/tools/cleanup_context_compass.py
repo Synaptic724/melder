@@ -206,7 +206,7 @@ def main() -> int:
 
     instance_roots = sorted({p.rsplit('/', 1)[0] + '/' if '/' in p else p
                              for p, (c, _) in manifest.items() if c == 'INSTANCE'} |
-                            {'agent_onboarding/user_defined/'})
+                            {'agent_onboarding/user_defined/', 'user_defined/'})
 
     foreign_roles: list[str] = []
     for rel in sorted(on_disk - set(manifest)):
@@ -329,12 +329,30 @@ def main() -> int:
                               (reference / rel).read_text(encoding="utf-8"))
         p.write_bytes(new.encode("utf-8"))
 
-    pruned = 0
-    for d in sorted((p for p in target.rglob("*") if p.is_dir()),
-                    key=lambda x: len(x.parts), reverse=True):
-        if not any(d.iterdir()):
-            d.rmdir()
-            pruned += 1
+    # Prune only where this run actually removed something, and never fail the
+    # whole operation on one undeletable directory.
+    #
+    # Two faults found by running it on a real install. The walk covered the
+    # entire tree including lanes the tool has no business touching, and a single
+    # PermissionError killed the process mid-repair - three of six files restored,
+    # no summary, no indication of what had happened. A tool that deletes must
+    # not partially complete on an exception.
+    prune_roots = set()
+    if reset_mode:
+        prune_roots |= {r.rstrip("/") for r in reset_roots}
+    for rel in remove:
+        prune_roots.add(rel.split("/")[0])
+
+    pruned, unpruned = 0, []
+    candidates = [p for root in sorted(prune_roots) if (target / root).is_dir()
+                  for p in (target / root).rglob("*") if p.is_dir()]
+    for d in sorted(candidates, key=lambda x: len(x.parts), reverse=True):
+        try:
+            if not any(d.iterdir()):
+                d.rmdir()
+                pruned += 1
+        except OSError as exc:
+            unpruned.append(f"{d.relative_to(target)}: {exc.strerror or exc}")
 
     recreated = 0
     for rel in manifest:
@@ -347,6 +365,12 @@ def main() -> int:
     print()
     print(f"APPLIED: removed {len(remove)}, restored {len(restore)}, repaired {len(repair)},"
           f" blocks reset {len(blocks)}, pruned {pruned} empty dirs, recreated {recreated}")
+    if unpruned:
+        print(f"         {len(unpruned)} empty directories could not be removed and were"
+              f" left in place:")
+        for u in unpruned[:5]:
+            print(f"           {u}")
+        print("         Nothing else was affected - the file work above completed.")
     return 0
 
 
