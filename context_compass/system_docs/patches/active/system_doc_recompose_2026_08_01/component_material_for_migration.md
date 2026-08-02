@@ -238,82 +238,12 @@ Evidence list (non-exhaustive):
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Glossary and Core Terms
-- Aether: Global singleton that owns AethericFrames and global registries.
-- AethericFrame: Per-frame container for conduits, registries, and dev-ops state.
-- Dependency Graph Runtime (DGR): Runtime that builds and executes dependency
-  graphs at resolution time, supports late binding via contracts/links, and
-  enforces runtime validation gates before activation.
-- Spellbook: User-facing binding and conjure surface for the DGR.
-- Spell: Bound object metadata (spellframe, spell_id, existence, permissions).
-- SpellIndex: Stable index (ULID) that categorizes and targets spells and holds
-  the active selected spell. Version history is owned by MutationResearch.
-- Conduit: Runtime scope and activation host for resolving spells via Meld.
-- ConduitWard: Relationship manager for contracts, policies, and lineage links.
-- Creations: Instance registry for a conduit; enforces existence semantics.
-- SpellSpace: Scoped handle for unique_per_spell_space instances.
-- SpellCompiler: Per-spell pipeline for requirements, graph, frame, validation.
-- SpellSystemStates: Per-frame control plane for lineage topology and validity.
-- ChangeControlManager: DevOps tracker for dirty roots and pending changes.
-- AetherUtilitySystem: Process-wide utility host for shared providers,
-  currently logger resolver/fallback registration.
-- Nexus: Public singleton AR root over hidden Aether substrate state.
-- FrameDescriptorManager: Nexus-owned manager for frame-scoped descriptors,
-  passive publication, and Nexus-managed frame-record ownership.
-- FrameACLManager: Nexus-owned manager for frame-local ACL containers,
-  profile registries, and frame-level ACL change fan-out.
-- NexusFrameBuilder: fluent authored-frame builder created by
-  `NexusFrameManager.begin(...)` to stage one Nexus-managed frame
-  configuration before rooted creation.
-- FrameACLBuilder: frame-local mutable ACL authoring surface that owns one
-  active view/command/codegen draft session for a `FrameACLContainer`.
-- Rift: Live AR runtime object that attaches to Nexus-managed frames and
-  userland target frames.
-- RiftSpace: Room/workspace object owned by a Rift.
-- FrameLinkContract: Rift-local frame selection contract storing the selected
-  view, command, and codegen ACL family names per frame.
-- FrameViewer: Rift-backed public viewer host that reads current view
-  projections on demand and requires explicit `frame_name` for frame-local
-  operations.
-- ViewMultiFrame / ViewFrame / ViewConduit / ViewSpell: on-demand viewer helper
-  surfaces above the current Rift projection state.
-- Workstation: Room-local strong/weak binding canvas for saved objects,
-  attributes, methods, and one active target.
-- CommandSystem: Room-local mediated command layer above the
-  viewer/workstation split, specialized by room mode.
-- CodegenSystem: room-owned internal codegen engine that builds transaction
-  contexts, validates code, builds namespaces, compiles/executes code, and
-  publishes codegen lifecycle events for one `CodegenRiftSpace`.
-- StaticFrameViewer: Static-room viewer overlay that filters spell-facing
-  query/projection paths down to already-live spell surfaces.
-- SpellExaminer profile layer: registry-backed `general` and `detailed`
-  examination profiles used for richer inspection over raw candidates and live
-  spells.
-- Aetheric Mediator Plane: standalone, NOT-YET-WIRED top-level transaction
-  plane under `aether/aetheric_mediator/`. Serializes above-frame structural
-  work by scope. Imports `melder.utilities` only, never `melder.aether`.
-- Mediator: the aetheric plane's root - admission, per-identity sessions,
-  strategy dispatch, outcome policy, and reporting in one object.
-- ClaimTable: atomic all-or-nothing, mode-aware scope-claim table. A LEAF -
-  it never calls another plane component, which is what makes the plane's
-  lock order provably one-way.
-- ClaimMode: `x` exclusive / `s` shared / `ix` intent. DevOps' vocabulary
-  verbatim. `ix` is the hierarchical parent marker: hold `ix` on the parent
-  and `x` on the child, and disjoint children proceed in parallel while a
-  whole-parent `x` still excludes every one of them.
-- ScopeKey / ScopePrefix: canonical builders and the closed namespace
-  vocabulary (`world`, `frame:<name>`, `subsystem:<name>`) for plane scope
-  keys. The hierarchy is expressed by MODE, not by key shape.
-- OutcomePolicy: per-transaction failure posture - `UNWIND` (run inverses and
-  raise) or `LEAVE_BROKEN` (run nothing, record a residue ledger for a
-  repairing agent).
-- Policies: Conduit link/visibility rules used in dynamic mode.
-- Permissions: Spell access levels across conduits (read/create/block).
-- SpellMap: Declarative DI placeholder for explicit spell/frame/binding targets.
-- SpellContract: Late-bound contract socket for dynamic linking across conduits.
-- Mutation override overlay: `Spell.apply_mutation_override(...)` /
-  `clear_mutation_override()`, emitting the `mutation_contract_set` /
-  `mutation_contract_cleared` change reasons.
-- ParameterDIShape: Phase 1 classification of how a parameter should resolve.
+
+RE-ABSORBED into `context_compass/system_docs/src_architecture.md` on
+2026-08-02, ahead of `## System Boundary and External Interfaces`. The body was
+removed from this file deliberately: two copies of a glossary drift, and the
+canonical document is the one that gets maintained. All 42 terms were verified
+against `src/` before re-absorption. Nothing was lost - see that section.
 
 ## Spellbook Root Responsibilities
 - Owns local spell registries and lookup maps.
@@ -1692,3 +1622,265 @@ completed epics/stories of 2026-07-11/12).
   (:647) (activation-gated; live-object facade per create_spell_crystal
   precedent).
 
+
+## Test surfaces evicted from src_components.md (2026-08-02)
+
+Destination: `context_compass/system_docs/tests_components.md`.
+
+`src_components_instructions.md` now states that `Key Files (C1)` cites
+in-scope SOURCE paths only, because the graph is built from the source tree
+and a test path is a guaranteed miss against it, not a near miss. The two
+citations below were the only test paths in the source-side document and
+were the only two unresolved entries in the 167-path join. They are removed
+from `src_components.md` and recorded here verbatim; they are not deleted,
+and until `tests_components.md` is recomposed they live in neither canonical
+document.
+
+Removed from `Key Files (C1)` of `Subcomponent: DevOps Change Control
+Manager (Transaction Ownership)`:
+
+- `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
+
+Removed from `Key Files (C1)` of `Subcomponent: DevOps Information
+Strategies`:
+
+- `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
+
+Removed from `## C1 Code Map (Core)`, measured ranges retained so the
+test-side recomposition does not have to remeasure:
+
+- path: `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
+  start_line: 1
+  end_line: 662
+  loc: 662
+  verified_at: 2026-08-01T20:05:00Z
+- path: `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
+  start_line: 1
+  end_line: 541
+  loc: 541
+  verified_at: 2026-08-01T20:05:00Z
+
+Both paths remain cited in `## Information Sources` of `src_components.md`.
+That is deliberate: they were read as evidence during the build, and
+Information Sources records what was consulted rather than what the
+component claims as its own.
+
+
+## Measured C1 records evicted from `src_components.md` Core (2026-08-02)
+
+Destination: back into `## C1 Code Map (Core)` if and only if a component ever
+claims one of these in its `Key Files (C1)` list.
+
+`src_components_instructions.md` defines Core as the DEDUPLICATED UNION OF EVERY
+`Key Files (C1)` LIST, so membership is decided by a component's own claim and
+nothing else. These 40 `nexus/acl/**` modules are the ACL profile, validator and
+configuration depth, and the Frame ACL entries state explicitly that they are
+NOT key files of those components. They were therefore not Core, and Core had
+been carrying them anyway.
+
+The modules themselves remain catalogued with purpose text in
+`### Full Package Inventory (exhaustive, retained)` in `src_components.md`. That
+inventory carries no line ranges, which is why the measured records are kept
+here - a later pass promoting any of these to core should not have to remeasure.
+Ranges re-measured from disk at eviction; whole-file, so `start_line: 1`.
+
+- path: `src/melder/nexus/acl/builder/frame_acl_codegen_builder.py`
+  start_line: 1
+  end_line: 650
+  loc: 650
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/builder/frame_acl_command_builder.py`
+  start_line: 1
+  end_line: 585
+  loc: 585
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/builder/frame_acl_view_builder.py`
+  start_line: 1
+  end_line: 696
+  loc: 696
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py`
+  start_line: 1
+  end_line: 681
+  loc: 681
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/frame_acl_command_configuration.py`
+  start_line: 1
+  end_line: 710
+  loc: 710
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/frame_acl_view_configuration.py`
+  start_line: 1
+  end_line: 871
+  loc: 871
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py`
+  start_line: 1
+  end_line: 841
+  loc: 841
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile.py`
+  start_line: 1
+  end_line: 314
+  loc: 314
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile_builder.py`
+  start_line: 1
+  end_line: 213
+  loc: 213
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py`
+  start_line: 1
+  end_line: 172
+  loc: 172
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py`
+  start_line: 1
+  end_line: 152
+  loc: 152
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py`
+  start_line: 1
+  end_line: 128
+  loc: 128
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/precision.py`
+  start_line: 1
+  end_line: 144
+  loc: 144
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py`
+  start_line: 1
+  end_line: 125
+  loc: 125
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py`
+  start_line: 1
+  end_line: 99
+  loc: 99
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py`
+  start_line: 1
+  end_line: 348
+  loc: 348
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile_builder.py`
+  start_line: 1
+  end_line: 204
+  loc: 204
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py`
+  start_line: 1
+  end_line: 96
+  loc: 96
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py`
+  start_line: 1
+  end_line: 95
+  loc: 95
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/precision.py`
+  start_line: 1
+  end_line: 93
+  loc: 93
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/safe_profile.py`
+  start_line: 1
+  end_line: 96
+  loc: 96
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py`
+  start_line: 1
+  end_line: 227
+  loc: 227
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py`
+  start_line: 1
+  end_line: 262
+  loc: 262
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_ruleset.py`
+  start_line: 1
+  end_line: 297
+  loc: 297
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py`
+  start_line: 1
+  end_line: 465
+  loc: 465
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile_builder.py`
+  start_line: 1
+  end_line: 204
+  loc: 204
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py`
+  start_line: 1
+  end_line: 105
+  loc: 105
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py`
+  start_line: 1
+  end_line: 103
+  loc: 103
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/precision.py`
+  start_line: 1
+  end_line: 98
+  loc: 98
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/safe_profile.py`
+  start_line: 1
+  end_line: 112
+  loc: 112
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_report.py`
+  start_line: 1
+  end_line: 242
+  loc: 242
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py`
+  start_line: 1
+  end_line: 636
+  loc: 636
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/frame_acl_validator.py`
+  start_line: 1
+  end_line: 1493
+  loc: 1493
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py`
+  start_line: 1
+  end_line: 24
+  loc: 24
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py`
+  start_line: 1
+  end_line: 120
+  loc: 120
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/profiles/command/precision_strategy.py`
+  start_line: 1
+  end_line: 21
+  loc: 21
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/profiles/command/safe_strategy.py`
+  start_line: 1
+  end_line: 49
+  loc: 49
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/profiles/common.py`
+  start_line: 1
+  end_line: 47
+  loc: 47
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/profiles/view/precision_strategy.py`
+  start_line: 1
+  end_line: 23
+  loc: 23
+  verified_at: 2026-08-02T14:29:36Z
+- path: `src/melder/nexus/acl/validator/profiles/view/safe_strategy.py`
+  start_line: 1
+  end_line: 71
+  loc: 71
+  verified_at: 2026-08-02T14:29:36Z

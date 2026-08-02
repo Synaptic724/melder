@@ -59,6 +59,50 @@ import sys
 MANIFEST_NAME = "MANIFEST.md"
 MANIFEST_VERSION = "1.0.0"
 
+# Manifest FORMAT majors these tools can read. Distinct from `package_version`,
+# which is the content: the package moves 2.3 -> 2.5 without the format changing.
+#
+# Read on every load, because the alternative is the failure this file was
+# written to avoid. A tool from an older release meeting a format it does not
+# understand will parse SOMETHING - a subset of rows, or none - and then act on
+# it: conform files it misread as package-owned, sweep paths it failed to see.
+# Refusing on an unknown major turns a silent wrong action into a clear stop.
+#
+# Forward compatibility is one-directional and cannot be otherwise. A new tool
+# reads an old manifest fine; an old tool cannot be taught a format that did not
+# exist when it shipped. So bumping this major is a breaking change for every
+# install still on an older package, and the error says exactly that.
+SUPPORTED_MANIFEST_MAJORS = frozenset({"1"})
+
+
+def manifest_version_of(text: str) -> str | None:
+    """The manifest FORMAT version recorded in a manifest, if it declares one."""
+    for line in text.splitlines():
+        if line.startswith("| manifest_version |"):
+            return line.split("|")[2].strip()
+    return None
+
+
+def check_manifest_compatible(text: str, source: str) -> str | None:
+    """None if this manifest is readable, else a message explaining why not.
+
+    A manifest with no `manifest_version` predates the field and is accepted:
+    the format was 1.x throughout, so refusing would break installs over a
+    stamp that was missing rather than wrong.
+    """
+    version = manifest_version_of(text)
+    if version is None:
+        return None
+    major = version.split(".")[0]
+    if major in SUPPORTED_MANIFEST_MAJORS:
+        return None
+    return (f"{source} declares manifest format {version}, and these tools read "
+            f"format {'/'.join(sorted(SUPPORTED_MANIFEST_MAJORS))}.x only.\n"
+            f"  This package is older than the manifest it was pointed at. Upgrade "
+            f"the tools rather than\n  the install: an older tool cannot be taught a "
+            f"newer format, and guessing would mean\n  acting on a partial reading of "
+            f"what the install owns.")
+
 # Longest matching prefix wins. Order here is for reading, not for matching.
 CLASS_RULES: tuple[tuple[str, str], ...] = (
     ("", "PACKAGE"),                        # default

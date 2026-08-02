@@ -97,7 +97,7 @@ Full format specification:
 6. `## C3 Components Catalog`
 7. `## C2 Subcomponents Catalog`
 8. `## Method-Level Call Flows (C1)`
-9. `## C1 Code Map (Key Paths)`
+9. `## C1 Code Map (Core)`
 10. `## Diagrams`
 11. `## Information Sources`
 12. `## Context / Handoff Summary`
@@ -105,9 +105,11 @@ Full format specification:
 ### Sections not in the contract
 
 The contract is a **minimum in a fixed relative order**, not a whitelist. Other
-sections are permitted and are common: real documents run 44 H2 sections against
-a 17-section contract. Read literally as "only these sections", a recomposition
-deletes roughly 1,200 lines per document.
+sections are permitted and are common. Measured on one real architecture
+document: 44 H2 sections against its 17-section contract - read literally as
+"only these sections", a recomposition deletes roughly 1,200 lines. That figure
+is from the source side; the ratio is what carries over. The contract above
+lists twelve, and a mature test components document will exceed it too.
 
 If material genuinely does not belong here, it is **moved, never deleted**:
 
@@ -124,11 +126,11 @@ If material genuinely does not belong here, it is **moved, never deleted**:
 **Core is the deduplicated union of every `Key Files (C1)` list in the C3
 catalog.** A file a component claims as its own is core by that component's own
 claim, and the set maintains itself: change a component's key files and the core
-set follows. It is also already the join `system_document_build.md` depends on,
-so nothing new has to be tracked.
+set follows, so nothing new has to be tracked.
 
-On a 574-module package that resolved to 170 paths - a scope an agent can
-actually verify, against an inventory it cannot.
+Measured on the source side of one real package: 574 modules resolved to 170
+core paths - a scope an agent can actually verify, against an inventory it
+cannot. The same reduction is what makes this tractable for a test tree.
 
 An exhaustive inventory is still useful. Keep it, do not let the rename delete
 it: put it beneath as `### Full Package Inventory (exhaustive, retained)`.
@@ -149,20 +151,38 @@ Each C3 test component must include:
 - `Extension Points`
 - `Key Files (C1)`
 
-**`Key Files (C1)` cites in-scope SOURCE paths only.** The graph is built from
-the source tree, so a test path can never resolve against it - it is not a near
-miss, it is a guaranteed miss. Test surfaces belong in the test-side mirror.
-Measured on a real recomposition: 165 of 167 cited paths resolved, and both
-misses were test files sitting in a component's key files.
+**`Key Files (C1)` cites in-scope TEST paths only.** This is the mirror of the
+source-side rule, and it runs the other way: `src_components.md` cites source
+paths because that is what its graph is keyed by, and this document cites test
+paths because test surfaces are its subject. A source path here is the same
+category error as a test path there. If a test component needs to name the code
+it exercises, name it in `Purpose` or `Responsibilities` as the thing under test,
+not in `Key Files`.
 
-Verify the join rather than assuming it:
+**There is no graph to join against on this side, and that is the asymmetry.**
+The source-side skill can hand you a `comm -23` recipe because every source file
+has a row in `src_graph_index.md`. No equivalent index exists for the test tree,
+so nothing will tell you a path here has rotted. Verify by existence and
+remeasure every range on every pass:
 
 ```bash
-# every cited path should appear as a section in the graph index
-rg -o '`(src/[^`]+)`' -r '$1' context_compass/system_docs/src_components.md | sort -u > /tmp/cited.txt
-rg -o '`(src/[^`]+)`' -r '$1' context_compass/system_docs/src_graph_index.md | sort -u > /tmp/graph.txt
-comm -23 /tmp/cited.txt /tmp/graph.txt   # anything here does not resolve
+DOC=context_compass/system_docs/tests_components.md
+
+# Same extraction the source-side skill uses: the two contract fields that hold
+# paths, not every backtick - code-fence tags are backticked too, and a check
+# that reports `bash` as a missing file gets ignored by its second run.
+{ grep -o 'Key Files (C1):.*' "$DOC"; grep -o '^- path: .*' "$DOC"; } \
+  | grep -o '`[^`]*`' | tr -d '`' | grep -v '[*?]' | sort -u \
+  | while read -r p; do [ -e "$p" ] || echo "MISSING $p"; done
 ```
+
+Match `` `[^`]*` `` **including both backticks**: a lookahead form like
+`` `\K[^`]+(?=`) `` resumes at the closing backtick, treats it as an opening
+one, and reports the `, ` between two cited paths as a path. `grep -v '[*?]'`
+drops globs - a glob is a statement about a set, not a citation that resolves to
+one file. Existence is the weaker check; it catches a deleted file but not a
+range that has drifted inside a file that still exists, which is why ranges here
+are remeasured rather than trusted.
 
 This is the same twelve-field minimum `src_components_instructions.md` requires.
 Test components are components. If a field genuinely does not apply, say so in
@@ -178,36 +198,40 @@ look identical to a reader, and only one of them is a decision.
   - `loc`
   - `verified_at` (UTC DateTime `YYYY-MM-DDTHH:MM:SSZ`)
 
-**Directories are not valid C1 entries.** A directory has no line range, and the
-join to `src_graph.md` is keyed by source file, so a directory citation can never
-resolve. Expand it into its constituent non-`__init__` modules and measure each.
-Do not write `UNKNOWN` for a directory: `UNKNOWN` means "not yet verified and
-here is the investigation target", and a directory is unverifiable in principle -
-the marker would sit there forever with nothing to resolve it.
+**Directories are not valid C1 entries.** A directory has no line range, so a
+citation to one carries no evidence and cannot be verified or remeasured. Expand
+it into its constituent test files - excluding whatever the test scope already
+excludes - and measure each. Do not write `UNKNOWN` for a directory: `UNKNOWN`
+means "not yet verified and here is the investigation target", and a directory is
+unverifiable in principle - the marker would sit there forever with nothing to
+resolve it.
 
 Ranges are measured, never estimated. If the exact range is not verified, keep
 the claim `UNKNOWN` and add an investigation target in `## Unknowns` rather than
 writing a plausible number.
 
 ## Build Sequence (Bottom-Up, Required)
-2a. Unwrap any heading spanning more than one physical line. A reflowed
-    heading parses as several sections; the first wins "narrowest match"
-    and `--slice` returns a stub. `index_document.py` warns on unclosed
-    brackets, which is the usual tell, but it cannot catch every wrap -
-    scan the heading list once before you trust it.
-
 1. Confirm active ticket route and test component scope.
-2. Read required example documents and extract reusable C3/C2/C1 patterns.
-3. Re-read tests architecture boundaries and terminology.
-4. Draft/refresh metadata, scope, unknowns gate, and unknowns inventory.
-5. Build C3 test component catalog with entry-contract fields.
-6. Build C2 subcomponents and wiring/dependency notes.
-7. Capture method-level C1 flows (fixtures, harnesses, execution paths).
-8. Build C1 key-path map with ranges, LOC, and verification timestamps.
-9. Add diagrams aligned to terminology and flow.
-10. If patch lane is active, confirm the component patch has not moved a
+2. If the document already exists, capture the Content Preservation baseline
+   now, before the first edit. Captured later it proves nothing.
+3. Read required example documents and extract reusable C3/C2/C1 patterns.
+4. Re-read tests architecture boundaries and terminology.
+5. Unwrap any heading spanning more than one physical line. A reflowed heading
+   parses as several sections; the first wins "narrowest match" and `--slice`
+   returns a stub. `index_document.py` warns on unclosed brackets, which is the
+   usual tell, but it cannot catch every wrap - scan the heading list once
+   before you trust it.
+6. Draft/refresh metadata, scope, unknowns gate, and unknowns inventory.
+7. Build C3 test component catalog with entry-contract fields.
+8. Build C2 subcomponents and wiring/dependency notes.
+9. Capture method-level C1 flows (fixtures, harnesses, execution paths).
+10. Build the C1 core map with ranges, LOC, and verification timestamps.
+11. Add diagrams aligned to terminology and flow.
+12. If patch lane is active, confirm the component patch has not moved a
     boundary this document still describes the old way.
-11. Refresh `Information Sources` and `Context / Handoff Summary`.
+13. Refresh `Information Sources` and `Context / Handoff Summary`.
+14. Rebuild the index in this same pass, then satisfy the Content Preservation
+    Gate and the Quality Gate.
 
 If a test component claim conflicts with `tests_architecture.md` or with the
 component it verifies in `src_components.md`, log `CONFLICT` in ticket notes and
@@ -237,16 +261,32 @@ So, before the first transform:
    the resulting document or in a **named migration target** you can point at.
 
 ```bash
-# before
+# BEFORE the first transform
 grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/before.txt
-# after
-grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/after.txt
+
+# AFTER - the document PLUS every target you moved material into
+cat DOC.md MIGRATION_TARGET.md ... | grep -v '^[[:space:]]*$' \
+  | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/after.txt
+
 diff /tmp/before.txt /tmp/after.txt
 ```
+
+**The `after` capture must span the document and its migration targets.**
+Comparing the document against itself contradicts the rule above: relocation is
+explicitly allowed, so every legitimately moved line reports as loss. That fires
+hardest on a recomposition that moves material - the exact case this gate exists
+for - and a gate that cries wolf is disabled by the second person who hits it.
 
 **The baseline must be captured BEFORE the first edit.** Captured afterwards it
 proves nothing - it describes the document you already built, which is the exact
 trap that makes "I verified it" feel true while content is gone.
+
+**Reformatting reads as loss under a line comparison.** Rewrapping prose or
+changing a record's shape leaves the content intact and the line text different,
+so this recipe flags it. When a pass deliberately reshapes entries, compare
+extracted content - the paths, the field values, the claims - rather than raw
+lines, or the gate fails on work that lost nothing. Do not respond by relaxing
+the gate; respond by comparing the right thing.
 
 A line legitimately removed is fine. A line you cannot account for is a defect,
 and this gate fails until you can name where it went.
@@ -261,6 +301,15 @@ Pass only when all checks are true:
 - [ ] C1 map entries include path, range, LOC, and verified_at.
 - [ ] Terminology aligns with `tests_architecture.md`.
 - [ ] Information Sources support promoted FACT claims.
+
+Passing this gate means the document is structurally sound, not that it is good.
+Every check above is binary: an entry reading "Runs the suite" satisfies the
+contract fields and names no behaviour it protects. Score the document with
+`agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md`
+(tests_components profile - Depth is scored per entry and averaged) and record
+the total in the active ticket. Below 60 it is not usable as evidence
+downstream. Expect a lower score here than on the source side on a first pass;
+that gap is the finding, not an excuse.
 
 ## Validation Commands
 - `rg -n '^#{1,6} .*[([][^)\]]*$' context_compass/system_docs/tests_components.md` - headings with an unclosed bracket, the usual sign of a wrap

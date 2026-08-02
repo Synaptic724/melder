@@ -66,8 +66,39 @@ import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from package_manifest import MANIFEST_NAME, parse, is_permissive  # noqa: E402
-from cleanup_context_compass import swap_managed   # noqa: E402
+from package_manifest import (  # noqa: E402
+    MANIFEST_NAME, parse, is_permissive, check_manifest_compatible,
+)
+from cleanup_context_compass import (  # noqa: E402
+    swap_managed, carry_user_regions, orphaned_user_regions, user_regions,
+)
+
+
+def conform_text(new_bytes: bytes, install_path: pathlib.Path) -> tuple[bytes, list[str], list[str]]:
+    """The new version's file, with the install's user regions carried across.
+
+    Returns (bytes_to_write, carried_names, orphaned_names).
+
+    Binary or undecodable files, and files with no user region on either side,
+    pass through untouched - the fast path is also the common one.
+    """
+    if not install_path.is_file():
+        return new_bytes, [], []
+    try:
+        incoming = new_bytes.decode("utf-8")
+        current = install_path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, ValueError):
+        return new_bytes, [], []
+    try:
+        if not user_regions(current):
+            return new_bytes, [], []
+        merged, carried = carry_user_regions(incoming, current)
+        orphaned = orphaned_user_regions(incoming, current)
+    except ValueError:
+        # An unterminated region means we cannot tell where the install's text
+        # ends. Conform the file rather than splice blindly, and say so.
+        return new_bytes, [], ["(malformed region - not carried)"]
+    return merged.encode("utf-8"), carried, orphaned
 
 
 def sha_bytes(b: bytes) -> str:
@@ -135,6 +166,12 @@ def main() -> int:
     ap.add_argument("--keep-retired", action="store_true",
                     help="do NOT sweep files in strict lanes that the new version does "
                          "not ship. They are reported either way")
+    ap.add_argument("--seed-instance", action="store_true",
+                    help="also create INSTANCE files the manifest lists but that are "
+                         "missing from disk. Repairs installs upgraded before 2.5.0, "
+                         "where a new instance lane was recorded but never written. "
+                         "Existing files are still never replaced; this only creates "
+                         "absent ones, so pass it only if you did not delete them")
     ap.add_argument("--preserve-local", action="store_true",
                     help="do NOT conform package files you have edited; report them as "
                          "conflicts and leave them alone. Use when you deliberately "
@@ -156,15 +193,27 @@ def main() -> int:
         print("Refusing to act without --apply. Use --check to see the plan.")
         return 2
 
-    incoming = parse((new / MANIFEST_NAME).read_text(encoding="utf-8"))
+    incoming_text = (new / MANIFEST_NAME).read_text(encoding="utf-8")
+    problem = check_manifest_compatible(incoming_text, f"--new {new}")
+    if problem:
+        print(f"ERROR: {problem}")
+        return 2
+    incoming = parse(incoming_text)
 
     # An install predating the manifest has no shipped hashes, so for every file
     # that differs we cannot tell a local edit from an upstream change. Every
     # difference lands in the conform bucket and is named, so the user sees
     # exactly what the upgrade brought into line. `--preserve-local` stops it.
     first_adoption = not (install / MANIFEST_NAME).is_file()
-    shipped = {} if first_adoption else parse(
-        (install / MANIFEST_NAME).read_text(encoding="utf-8"))
+    if not first_adoption:
+        installed_text = (install / MANIFEST_NAME).read_text(encoding="utf-8")
+        problem = check_manifest_compatible(installed_text, f"--install {install}")
+        if problem:
+            print(f"ERROR: {problem}")
+            return 2
+        shipped = parse(installed_text)
+    else:
+        shipped = {}
     if first_adoption:
         print(f"NOTE: {install} has no {MANIFEST_NAME}, so this is its first")
         print("      manifest-aware upgrade. Without shipped hashes a local edit and an")
@@ -186,13 +235,38 @@ def main() -> int:
 
     replace, skip, keep, conflict, added, gone = [], [], [], [], [], []
     blocks, cfg = [], None
+    live_conform: list[str] = []       # boards with regions: whole file updates
+    unmigrated_live: list[str] = []    # boards without: managed block only
 
     for rel, (cls, new_sha) in sorted(incoming.items()):
         p = install / rel
         old_sha = shipped.get(rel, (None, None))[1]
 
-        if cls in ("RESET", "INSTANCE"):
+        if cls == "RESET":
             continue                                   # the install owns these
+        if cls == "INSTANCE":
+            # Never replaced, never removed - but a lane the package introduces
+            # has to arrive once, or it never exists. Skipping INSTANCE outright
+            # meant `user_defined/` was listed in the manifest of installs that
+            # did not have the directory at all: a manifest describing a lane
+            # nobody could find, and a free space the docs told you to use.
+            #
+            # `rel not in shipped` is what makes seeding safe, and it is the
+            # three-hash rule doing the same job it does everywhere else. A file
+            # the PREVIOUS version also shipped, now missing, was deleted by the
+            # install - restoring it would resurrect something someone removed on
+            # purpose. A file only the NEW version ships has never existed here,
+            # so creating it takes nothing away.
+            #
+            # `--seed-instance` exists for one specific repair. Before 2.5.0 the
+            # updater skipped INSTANCE entirely, so a lane could be recorded in
+            # the install's manifest while never having been written to disk.
+            # Such a file is absent AND in `shipped`, which is indistinguishable
+            # from a deliberate deletion - so the flag makes the operator assert
+            # which it is, rather than the tool guessing.
+            if not p.exists() and (rel not in shipped or args.seed_instance):
+                added.append(rel)
+            continue
         if cls == "CONFIG":
             if p.is_file():
                 merged, a, d = merge_config(p.read_text(encoding="utf-8"),
@@ -207,10 +281,29 @@ def main() -> int:
 
         cur_sha = sha_bytes(p.read_bytes())
         if cls == "LIVE":
+            # A board carrying USER-DEFINED regions can be conformed whole: the
+            # package owns the headings, the table headers and the contract
+            # prose, and `conform_text` carries the install's regions across. So
+            # a board's SHAPE can finally be updated, which swapping only the
+            # managed block never allowed - that is why an install could end up
+            # with the managed block sitting above its own H1 and a duplicated
+            # directive underneath, with no way for an upgrade to fix it.
+            #
+            # A board WITHOUT regions has all its rows outside any protected
+            # area. Conforming it would delete them, so it stays on the old
+            # managed-block-only path and is named as needing migration.
+            try:
+                migrated = bool(user_regions(p.read_text(encoding="utf-8")))
+            except (UnicodeDecodeError, ValueError):
+                migrated = False
+            if migrated:
+                (live_conform if cur_sha != new_sha else skip).append(rel)
+                continue
             _, ch = swap_managed(p.read_text(encoding="utf-8"),
                                  (new / rel).read_text(encoding="utf-8"))
             if ch:
                 blocks.append((rel, ch))
+            unmigrated_live.append(rel)
             continue
         if cur_sha == new_sha:
             skip.append(rel)
@@ -257,6 +350,20 @@ def main() -> int:
             continue
         gone.append(rel)
 
+    # Computed before printing so --check can show it. An upgrade that only
+    # reveals what it preserved AFTER writing is an upgrade you have to trust
+    # rather than review.
+    would_carry: list[tuple[str, list[str]]] = []
+    would_orphan: list[tuple[str, list[str]]] = []
+    for rel in replace + added + conflict + live_conform:
+        if not (install / rel).is_file() or not (new / rel).is_file():
+            continue
+        _, c, o = conform_text((new / rel).read_bytes(), install / rel)
+        if c:
+            would_carry.append((rel, c))
+        if o:
+            would_orphan.append((rel, o))
+
     print(f"install {install}  (version {version_of(install)})")
     print(f"new     {new}  (version {version_of(new)})")
     print()
@@ -269,6 +376,17 @@ def main() -> int:
     print(f"  sweep    {len(gone):>5}  in a strict lane, not in the new version"
           f"{' (KEPT: --keep-retired)' if args.keep_retired else ' - will be REMOVED'}")
     print(f"  blocks   {len(blocks):>5}  managed blocks to swap in live files")
+    if live_conform:
+        print(f"  boards   {len(live_conform):>5}  live files updated whole, USER-DEFINED "
+              f"content carried")
+    if unmigrated_live:
+        print(f"  MIGRATE  {len(unmigrated_live):>5}  live files with no USER-DEFINED region "
+              f"- managed block only")
+        for rel in unmigrated_live:
+            print(f"    migrate  {rel}")
+        print("           Their rows sit outside any protected area, so the board's shape")
+        print("           cannot be updated without risking them. To migrate:")
+        print("             python tools/migrate_boards.py --install <dir> --new <dir> --check")
     if case_twins:
         print(f"  CASE     {len(case_twins):>5}  differ from a manifest path only by case - NOT swept")
         for rel in case_twins[:5]:
@@ -278,6 +396,16 @@ def main() -> int:
         print("           it would delete the real one. Rename by hand, then re-run.")
     if cfg:
         print(f"  config   {len(cfg[2])} keys to add, {len(cfg[3])} dropped upstream")
+    if would_carry:
+        print(f"  regions  {len(would_carry):>5}  files whose USER-DEFINED content is carried "
+              f"across")
+        for rel, names in would_carry[:8]:
+            print(f"    keep     {rel}: {', '.join(names)}")
+    if would_orphan:
+        print(f"  ORPHAN   {len(would_orphan):>5}  user regions this version no longer offers "
+              f"- NOT carried")
+        for rel, names in would_orphan[:8]:
+            print(f"    orphan   {rel}: {', '.join(names)}")
     for rel in conflict[:15]:
         print(f"    conform  {rel}")
     for rel in keep[:10]:
@@ -308,10 +436,17 @@ def main() -> int:
         return 0
 
     conform = not args.preserve_local
-    for rel in replace + added + (conflict if conform else []):
+    carried_report: list[tuple[str, list[str]]] = []
+    orphan_report: list[tuple[str, list[str]]] = []
+    for rel in replace + added + live_conform + (conflict if conform else []):
         src, dst = new / rel, install / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_bytes(src.read_bytes())
+        payload, carried, orphaned = conform_text(src.read_bytes(), dst)
+        if carried:
+            carried_report.append((rel, carried))
+        if orphaned:
+            orphan_report.append((rel, orphaned))
+        dst.write_bytes(payload)
 
     for rel, _ in blocks:
         p = install / rel
@@ -351,6 +486,17 @@ def main() -> int:
           f"kept {len(keep)} local edits, "
           f"{'conformed' if conform else 'left'} {len(conflict)} edited package files, "
           f"swept {swept} retired")
+    if carried_report:
+        print(f"         user regions carried across in {len(carried_report)} file(s):")
+        for rel, names in carried_report[:10]:
+            print(f"           {rel}: {', '.join(names)}")
+        print("         The package text around them was updated; your content was not.")
+    if orphan_report:
+        print(f"         {len(orphan_report)} file(s) hold a user region this version no")
+        print("         longer offers. NOT carried, and the old file is gone - recover from")
+        print("         version control if you need it:")
+        for rel, names in orphan_report[:10]:
+            print(f"           {rel}: {', '.join(names)}")
     if conflict and not conform:
         print("         Edited package files were NOT changed (--preserve-local).")
         print("         Each one is a divergence you will re-resolve on every future")

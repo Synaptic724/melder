@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-01T18:44:22Z |
-| line_count | 1806 |
+| generated_at | 2026-08-02T14:01:50Z |
+| line_count | 2029 |
 | line_ending | lf |
-| content_sha256 | `00d32feba079e43707b220bd5ee435b7d4465d0aeafb68268a22cfbd3896831c` |
-| sections | 37 |
+| content_sha256 | `6cc09cda0b6c0e02849f00d4a52cf0eafe48046672a16058e2a1d617bab39b86` |
+| sections | 39 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -29,38 +29,40 @@ which you did.
 | --- | --- | --- |
 | 3-9 | 2 | Metadata |
 | 10-32 | 2 | Scope and Intent |
-| 33-70 | 2 | Indexing |
-| 71-94 | 2 | DO NOT ASSUME / Unknowns Gate |
-| 95-144 | 2 | Unknowns |
-| 145-160 | 2 | System Context (C4) |
-| 161-301 | 2 | System Boundary and External Interfaces |
-| 302-332 | 2 | Architecture Summary (C4) |
-| 333-375 | 2 | Entrypoints and Runtime Guardrails |
-| 376-442 | 2 | Boot and Configuration Sequence |
-| 443-575 | 2 | Data Flows and Sequences |
-| 444-450 | 3 | Data Flows and Sequences > Sequence: Import to Ready |
-| 451-457 | 3 | Data Flows and Sequences > Sequence: Spellbook Initialization |
-| 458-464 | 3 | Data Flows and Sequences > Sequence: Bind Spell |
-| 465-477 | 3 | Data Flows and Sequences > Sequence: Conjure Conduit |
-| 478-488 | 3 | Data Flows and Sequences > Sequence: Meld Resolution |
-| 489-497 | 3 | Data Flows and Sequences > Sequence: Meld-Time Validation Gate |
-| 498-504 | 3 | Data Flows and Sequences > Sequence: Create Lesser Conduit |
-| 505-513 | 3 | Data Flows and Sequences > Sequence: Upgrade Lesser to Normal |
-| 514-523 | 3 | Data Flows and Sequences > Sequence: Link and Sever Conduits |
-| 524-533 | 3 | Data Flows and Sequences > Sequence: Transfer Spell Ownership |
-| 534-559 | 3 | Data Flows and Sequences > Sequence: SpellIndex Mutation Entry |
-| 560-565 | 3 | Data Flows and Sequences > Sequence: Change-Control Revalidation |
-| 566-570 | 3 | Data Flows and Sequences > Sequence: SpellSpace Usage |
-| 571-575 | 3 | Data Flows and Sequences > Sequence: Cleanup |
-| 576-639 | 2 | Operational Invariants |
-| 640-669 | 2 | Failure Modes and Error Paths |
-| 670-1537 | 2 | C1 Code Map (Core Only) |
-| 1538-1621 | 2 | Diagrams |
-| 1539-1555 | 3 | Diagrams > ASCII Context Diagram (C4) |
-| 1556-1572 | 3 | Diagrams > Mermaid Context Diagram (C4) |
-| 1573-1584 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
-| 1585-1602 | 3 | Diagrams > Mermaid Meld Flow |
-| 1603-1621 | 3 | Diagrams > Mermaid Conduit Upgrade |
-| 1622-1733 | 2 | Information Sources |
-| 1734-1806 | 2 | Context / Handoff Summary |
-| 1771-1806 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |
+| 33-108 | 2 | Indexing |
+| 50-108 | 3 | Indexing > Verifying the `path:line` citations in this document |
+| 109-132 | 2 | DO NOT ASSUME / Unknowns Gate |
+| 133-196 | 2 | Unknowns |
+| 197-212 | 2 | System Context (C4) |
+| 213-297 | 2 | Glossary and Core Terms |
+| 298-446 | 2 | System Boundary and External Interfaces |
+| 447-477 | 2 | Architecture Summary (C4) |
+| 478-521 | 2 | Entrypoints and Runtime Guardrails |
+| 522-588 | 2 | Boot and Configuration Sequence |
+| 589-722 | 2 | Data Flows and Sequences |
+| 590-596 | 3 | Data Flows and Sequences > Sequence: Import to Ready |
+| 597-603 | 3 | Data Flows and Sequences > Sequence: Spellbook Initialization |
+| 604-610 | 3 | Data Flows and Sequences > Sequence: Bind Spell |
+| 611-623 | 3 | Data Flows and Sequences > Sequence: Conjure Conduit |
+| 624-634 | 3 | Data Flows and Sequences > Sequence: Meld Resolution |
+| 635-643 | 3 | Data Flows and Sequences > Sequence: Meld-Time Validation Gate |
+| 644-650 | 3 | Data Flows and Sequences > Sequence: Create Lesser Conduit |
+| 651-659 | 3 | Data Flows and Sequences > Sequence: Upgrade Lesser to Normal |
+| 660-669 | 3 | Data Flows and Sequences > Sequence: Link and Sever Conduits |
+| 670-679 | 3 | Data Flows and Sequences > Sequence: Transfer Spell Ownership |
+| 680-706 | 3 | Data Flows and Sequences > Sequence: SpellIndex Mutation Entry |
+| 707-712 | 3 | Data Flows and Sequences > Sequence: Change-Control Revalidation |
+| 713-717 | 3 | Data Flows and Sequences > Sequence: SpellSpace Usage |
+| 718-722 | 3 | Data Flows and Sequences > Sequence: Cleanup |
+| 723-823 | 2 | Operational Invariants |
+| 824-858 | 2 | Failure Modes and Error Paths |
+| 859-1726 | 2 | C1 Code Map (Core Only) |
+| 1727-1810 | 2 | Diagrams |
+| 1728-1744 | 3 | Diagrams > ASCII Context Diagram (C4) |
+| 1745-1761 | 3 | Diagrams > Mermaid Context Diagram (C4) |
+| 1762-1773 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
+| 1774-1791 | 3 | Diagrams > Mermaid Meld Flow |
+| 1792-1810 | 3 | Diagrams > Mermaid Conduit Upgrade |
+| 1811-1922 | 2 | Information Sources |
+| 1923-2029 | 2 | Context / Handoff Summary |
+| 1994-2029 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |

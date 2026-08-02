@@ -63,7 +63,7 @@ Keep unresolved test assumptions as UNKNOWN.
 - `scan_files -> resolve_targets -> emit_findings`
 - `triage_findings -> gate_release`
 
-## C1 Code Map (Key Paths)
+## C1 Code Map (Core)
 - path: `examples/example_graph_details/src/example/core/resource.py`
   start_line: 1
   end_line: 15

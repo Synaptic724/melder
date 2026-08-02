@@ -47,6 +47,7 @@ Required baseline skills
 - `agent_onboarding/default/design_engineer/policies/design_quality_policy.md`
 - `agent_onboarding/default/design_engineer/policies/decision_record_policy.md`
 - `agent_onboarding/default/design_engineer/policies/design_review_policy.md`
+- `agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md`
 - `agent_onboarding/default/design_engineer/behavioral_guidelines/design_engineer_workflow.md`
 - `agent_onboarding/default/design_engineer/behavioral_guidelines/design_validation_and_handoff.md`
 - `agent_onboarding/default/design_engineer/examples/design_task_flow.md`

@@ -59,6 +59,45 @@ Heading discipline this document obeys, and why:
 
 Spec: `agent_onboarding/default/engineer/skills/system_document_build.md`
 
+
+### Verifying the `path:line` citations in this document
+
+The index tool checks this document's own structure. It CANNOT check the
+`path:line` citations in `EVIDENCE:` blocks, and those rot silently: the file
+keeps existing, the citation keeps parsing, and it quietly points at the wrong
+code. On 2026-08-02 an audit of the 81 citations across the two source documents
+found SEVEN wrong - five pointing into `spell_compiler.py` at lines 1966-3787 of
+a 693-line file (it had been decomposed into subpackages and the ranges were
+never remapped), and two that were in bounds but landed nowhere near the symbol
+they were cited for. Nothing had reported any of it.
+
+Run this after any pass that touches source or citations:
+
+```bash
+python - <<'EOF'
+import pathlib, re
+CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
+for doc in pathlib.Path("context_compass/system_docs").glob("src_*.md"):
+    if doc.name.endswith("_index.md"):
+        continue
+    for i, line in enumerate(doc.read_text(encoding="utf-8").split("\n"), 1):
+        for m in CITE.finditer(line):
+            f = pathlib.Path(m.group(1))
+            if not f.exists():
+                print("MISSING", doc.name, i, m.group(0)); continue
+            n = len(f.read_bytes().decode("utf-8", "replace").splitlines())
+            s = int(m.group(2)); e = int(m.group(3) or m.group(2))
+            if s < 1 or e > n or s > e:
+                print("OUT OF BOUNDS", doc.name, i, m.group(0), "file has", n)
+EOF
+```
+
+In-bounds is necessary, not sufficient. A range can sit inside the file and
+still contain none of what it is cited for, which is how two of the seven
+survived. For any citation you are relying on, open it and confirm the symbol is
+actually there - and when you cite a function, cite its `def` line, because a
+range that merely brushes past a definition reads as verified without being it.
+
 ## DO NOT ASSUME / Unknowns Gate
 Rule: No Unverified Claims.
 Any statement that is not directly supported by evidence must be treated as UNKNOWN.
@@ -103,10 +142,24 @@ Each item must include:
   `utilities/synchronization/creation_gate.py` and `creation_gate_controller.py`);
   `meld_context/` (superseded by `creation_context/`); `SpellCrafter` (renamed
   `SpellCompiler`); `Configuration` (renamed `SpellbookConfiguration`).
-  The 2026-06-12 path/rename sweep that produced this list is COMPLETE and was
-  re-verified 2026-07-25: every source path cited in this document resolves on disk
-  and no renamed symbol survives as a live claim. Its step-by-step narration was
-  removed as settled history; git carries it.
+  The 2026-06-12 path/rename sweep that produced this list is COMPLETE. Its
+  step-by-step narration was removed as settled history; git carries it.
+  WHAT THE RE-VERIFICATION STAMP ACTUALLY COVERS - READ THIS BEFORE TRUSTING IT.
+  This block previously read "re-verified 2026-07-25: every source path cited in
+  this document resolves on disk and no renamed symbol survives as a live claim."
+  The second half of that was NOT TRUE, and an audit on 2026-08-02 disproved it:
+  five renamed or invented symbols were still being cited as live
+  (`add_spell_into_spellindex` and `remove_spell_from_spellindex`, which are not
+  Spellbook methods and never were; `_get_conjure_hook_map`;
+  `_initialize_conduit_hooks`; `Meld._resolve_spell_for_live_creation_probe`),
+  and nine `path:line` citations pointed at the wrong code, five of them into a
+  693-line file at lines 1966-3787.
+  A path sweep and a symbol sweep are DIFFERENT CHECKS. A path resolves whenever
+  the file exists, which stays true through every rename INSIDE that file, so a
+  green path sweep says nothing about whether the symbols are real. Both are now
+  re-verified as of 2026-08-02 - paths via the graph join, symbols against an
+  index of every `class` and `def` in `src/`, citations via the recipe under
+  `## Indexing`. Do not widen a future stamp beyond what was actually run.
 - ARTIFACT OWNERSHIP, phases 8-11 (a live contract, not sweep bookkeeping):
   `SpellCompilerArtifact` is the spell-scoped OWNER of `_occurrence_graph_analysis`,
   `_occurrence_order_analysis`, `_occurrence_instance_analysis`,
@@ -155,19 +208,35 @@ Responsibilities:
 - Expose package metadata and version string.
 
 Inputs:
-- Python runtime version and `sys._is_gil_enabled()`.
+- `sys.version_info`, compared against the hard floor `(3, 14, 0)`.
+- `sys._is_gil_enabled()`, probed inside `try/except AttributeError`. The symbol
+  does not exist on builds before it was introduced, and its ABSENCE is treated
+  as GIL-ENABLED rather than as an error - the conservative direction, because a
+  build too old to answer the question is a build that has the GIL.
 
 Outputs:
-- UserWarning messages.
+- Two INDEPENDENT `UserWarning`s, not one. The version warning fires below the
+  floor and interpolates the running version into the message; the mode warning
+  fires when 3.14+ is present but the GIL is still enabled. A 3.13 GIL build
+  trips BOTH, which is the intended signal - wrong version AND wrong build mode
+  are separate problems with separate fixes.
+- The re-exported public namespace listed in `__all__`.
 
 Owned State:
 - Package metadata (`__version__`, `__author__`, `__license__`, `__description__`).
 
 Lifecycle/Cleanup:
-- Executes at import time; no explicit cleanup.
+- Executes once at import. ORDERING MATTERS AND IS COUNTERINTUITIVE: `Aether()`
+  is constructed BEFORE either guardrail runs, so the singleton exists even on an
+  unsupported interpreter. The guardrails inform; they do not gate construction.
+- No cleanup contract. Module-level import state lives for the life of the
+  process, and there is no point in it at which tearing it down would be valid.
 
 Concurrency/Threading:
-- Import-time only.
+- Import-time only, so both checks execute under the interpreter's import lock
+  and therefore exactly once per process regardless of how many threads import
+  the package concurrently. There is no lock here because the import machinery
+  already provides the mutual exclusion this code would otherwise need.
 
 Invariants/Guarantees:
 - No registration-guard object is constructed at package import; the package root
@@ -184,10 +253,14 @@ Observability:
   guarded bind paths.
 
 Extension Points:
-- None.
+- NONE, deliberately. This module is a re-export surface plus two fixed
+  guardrails; adding a hook here would run arbitrary code before the subsystems
+  it re-exports are importable. Extension belongs to those subsystems.
 
 Key Files (C1):
-- `src/melder/__init__.py`
+- `src/melder/__init__.py` (the entire component - the guardrails, the eager
+  `Aether()` construction, and the `__all__` re-export surface are all in this
+  one module)
 
 ### Component: Packaged Hardcopy Documents And Public Helper Exports
 Purpose:
@@ -264,9 +337,14 @@ Responsibilities:
 - Manage configuration lifecycle and logger initialization.
 - Register spells into local maps and spell-id caches.
 - Maintain spell_id maps for O(1) spell_id resolution.
-- Start transaction-backed SpellIndex mutation flows:
-  `notch_spell(...)`, `add_spell_into_spellindex(...)`, and
-  `remove_spell_from_spellindex(...)`.
+- Run the transaction-backed SpellIndex mutation SEAMS - `_apply_notch(...)`,
+  `_apply_add_to_index(...)`, `_apply_remove_from_index(...)` - inside the held
+  change-control window. Spellbook does NOT start these flows and exposes no
+  public verb for them; the public verbs are on `Conduit`, which delegates here.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:3510 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:3683 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:3858 (`_apply_remove_from_index`)
 - Run phase pipelines before conjure.
 - Conjure exactly one Conduit per Spellbook instance.
 - Provide SpellBinder fluent adapter.
@@ -279,8 +357,9 @@ Inputs:
 Outputs:
 - Spell IDs from `bind()`.
 - Spell ID lists from `scan(...)`.
-- SpellIndex mutation transaction results from `notch_spell(...)`,
-  `add_spell_into_spellindex(...)`, and `remove_spell_from_spellindex(...)`.
+- SpellIndex mutation transaction results, returned back through the calling
+  `Conduit` verb (`notch_spell(...)`, `add_to_spell_index(...)`,
+  `remove_from_spell_index(...)`) rather than produced by a Spellbook verb.
 - Conduit instances from `conjure()`.
 
 Owned State:
@@ -296,10 +375,37 @@ Lifecycle/Cleanup:
 - Cleanup is idempotent, unregisters local lineages from SpellSystemStates, and clears spells, configuration, validators, and logger. EVIDENCE: src/melder/aether/spellbook/spellbook.py:_cleanup_spells
 
 Concurrency/Threading:
-- Internal RLock guards most mutable operations.
+- TWO DISTINCT RLocks with different scopes, and the second one is the
+  non-obvious one:
+  - `_lock` is the general instance lock (63 acquisition sites) guarding
+    registry mutation, spell lookup maps and policy flags. `_block_all_spells`
+    and `_whitelist_all_spells` are only ever written under it, so a policy
+    change cannot be observed half-applied.
+  - `_phase_run_lock` is SEPARATE AND IS NEVER ACQUIRED INSIDE THIS MODULE. It
+    is owned by `Spellbook` but acquired from `SpellbookCreationSystem`, which
+    reaches in as `spellbook._phase_run_lock`. The reason is stated at the
+    acquisition site: the persistent scheduler's phase registry is PER-RUN
+    state, and meld-time revalidation reaches that path from multiple threads
+    WITHOUT holding the Spellbook lock. The run lock makes register / run /
+    release atomic per run, so concurrent runs QUEUE instead of corrupting each
+    other's phase registrations.
+  - Because the two locks protect disjoint state and the run lock is taken
+    without `_lock` held, they impose no ordering on each other. Taking `_lock`
+    inside a phase run would introduce one; nothing does today.
+- `_run_structural_phases` documents a CALLER-HELD precondition rather than
+  taking a lock itself: the caller must hold the Spellbook lock for
+  deterministic conjure ordering. That is a contract the type cannot enforce,
+  which is why it is written down here.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:265 (`_phase_run_lock` created)
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1863-1880
+    (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
+  - src/melder/aether/spellbook/spellbook.py:6279-6288 (policy flags under `_lock`)
 
 Invariants/Guarantees:
-- Conjure allowed once per Spellbook instance.
+- Conjure allowed once per Spellbook instance, tracked by the `_conjured` flag
+  rather than by a lock; it is set on first conjure and read at the Conduit
+  ownership checks, and `cleanup` deletes it along with the rest of the slots.
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Existing-object spells are registered into Creations on conjure/bind.
 
@@ -318,7 +424,14 @@ Failure Modes:
   - src/melder/aether/spellbook/spellbook.py:3828-3856 (`_apply_remove_from_index`)
 
 Observability:
-- Logs via SafeLogger in Spellbook and related components.
+- `SafeLogger` on the Spellbook instance, used at `error` level on the failure
+  branches rather than as a trace log - the configuration-mismatch path logs
+  with `exc_info=True` and the originating method name as context before it
+  raises, so the raised `RuntimeError` and the log entry can be correlated.
+  There is no info/debug narration of the happy path; absence of log output is
+  the normal state, not a sign that nothing ran.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5255-5260
 
 Extension Points:
 - Conduit lifecycle hooks pulled from `SpellbookConfiguration`.
@@ -367,7 +480,17 @@ Inputs:
 - Spell object, spellframe, binding name, existence, permissions.
 
 Outputs:
-- Spell and SpellIndex instances.
+- TWO SHAPES FROM ONE ENTRYPOINT, decided by whether `spell` was supplied.
+  Called directly with a target, `bind` creates and returns the `Spell`. Called
+  without one it returns a DECORATOR, and the decorated object comes back to the
+  caller rather than the Spell - so the return type is not stable across call
+  styles and callers cannot assume a `Spell` came back.
+- A `SpellIndex` carrying the stable ULID identity the spell is addressed by.
+- Nothing at all from the internal-registration guard on the success path: it
+  returns `None` when the candidate is bindable and raises otherwise.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:241-274 (`bind` return contract)
+  - src/melder/aether/spellbook/bind/bind.py:84-97 (`assert_allowed`)
 
 Owned State:
 - SpellIndex: immutable ULID index that holds the active selected spell; versions owned by MutationResearch.
@@ -394,10 +517,25 @@ Failure Modes:
 - ValueError if method/lambda spells are bound with non-unique existence.
 
 Observability:
-- Errors surfaced via exceptions and Spellbook logger.
+- EXCEPTIONS ONLY - `bind.py` holds no logger. The refusal messages are the
+  observable surface and are built to be read without a stack trace: the
+  internal-registration refusal names the blocked type, its module, and the
+  CALLING CONTEXT string passed in at the call site, so a refusal identifies
+  which pipeline stage rejected it rather than only what was rejected.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:93-97
 
 Extension Points:
-- Binding profile strategies in SpellExaminer.
+- `SpellExaminer.register_profile_builder(profile_name, builder)` - a plain
+  name-keyed dictionary of builder callables, seeded by
+  `_register_default_profile_builders()` with the `general` and `detailed`
+  profiles. `bind(profile=...)` defaults to `"general"`, so a registered name
+  becomes selectable at the bind call without touching the pipeline.
+  Registration overwrites by name rather than erroring, which makes replacing a
+  default profile the same operation as adding one - convenient, and the reason
+  a typo'd name silently shadows nothing instead of failing loudly.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py:96-131
 
 Key Files (C1):
 - `src/melder/aether/spellbook/bind/bind.py`
@@ -544,10 +682,28 @@ Responsibilities:
 - Control system_state (automatic vs dynamic).
 
 Inputs:
-- Property values and hook registrations.
+- Property values through `set_property`, constrained by `available_properties`
+  and by `_idempotent_keys` - the subset that may be written exactly once.
+- Hook registrations through `add_hook(spellbook_id, hook_name, hook)`. The
+  registry is keyed `_hooks[spellbook_id][hook_name] -> list[callables]`, so
+  hooks are PER-SPELLBOOK, not per-configuration: one configuration shared
+  across spellbooks does not leak hooks between them.
+- Optional origin identity at `freeze()` (`origin_spellbook_id`,
+  `origin_frame_name`, `origin_dynamic`), which is what makes freezing a
+  recordable event rather than a private state change.
 
 Outputs:
-- Frozen configuration and hook maps.
+- A frozen property surface and the per-spellbook hook maps consumed by the
+  Meld and Conduit pipelines.
+- A CRYSTALLIZER EMISSION as a side effect of freezing, not a return value.
+  `freeze()` is the configuration's true activation: when origin identity is
+  supplied, the world is dynamic, and the crystallizer is recording, the
+  spellbook twin spawns into the active persistence profile. A reader who
+  treats `freeze()` as merely sealing a dict will miss that it is the emission
+  trigger.
+  EVIDENCE:
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:258-276
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:659-680
 
 Owned State:
 - `_properties`, `available_properties`, `_idempotent_keys`.
@@ -558,7 +714,14 @@ Lifecycle/Cleanup:
 - Cleanup clears properties and hooks.
 
 Concurrency/Threading:
-- RLock guards property and hook mutations.
+- One instance `RLock` serialises property and hook mutation. Re-entrant
+  because `freeze()` validates while holding it - `validate()` and
+  `validate_enums()` read the same properties the writer path guards, and a
+  plain `Lock` would self-deadlock on that path.
+- `SystemState` needs no protection at all: it is an `Enum`, so its members are
+  immutable and readable from any thread. It is stated here rather than omitted
+  because "the posture flag is unsynchronised" reads as an oversight unless the
+  reason is written down.
 
 Invariants/Guarantees:
 - Idempotent properties can be set once only.
@@ -571,10 +734,25 @@ Failure Modes:
 - KeyError for unknown property lookup requests.
 
 Observability:
-- Exception-based reporting; no internal logging.
+- NO LOGGER BY DESIGN. This type is constructed and frozen before the logger
+  provider it configures exists, so logging from here would either be dropped
+  or force a bootstrap ordering dependency. Every failure is therefore an
+  exception carrying the offending key, and the four exception types are
+  themselves the diagnostic: `KeyError` means unknown property, `ValueError`
+  means known property with an invalid or missing value, `TypeError` means the
+  wrong shape was passed, `RuntimeError` means the object was already frozen or
+  cleaned.
 
 Extension Points:
-- Additional properties and hook names.
+- New property keys via `available_properties`, with `_idempotent_keys`
+  deciding whether a key is write-once.
+- New hook names in the `_hooks[spellbook_id][hook_name]` registry. The
+  categories are fixed sets today - Meld pipeline, Conduit lifecycle, linking,
+  and contract hooks - and consumers look up by exact name, so an unrecognised
+  hook name registers successfully and is never invoked. Extending here means
+  adding the name AND its call site.
+  EVIDENCE:
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:659-700
 
 Key Files (C1):
 - `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
@@ -628,10 +806,21 @@ Failure Modes:
 - RuntimeError when singleton/frame registries are cleaned or unavailable.
 
 Observability:
-- Logs via SafeLogger.
+- `SafeLogger`, weighted almost entirely to failures: 19 `error` sites against a
+  SINGLE `info`. That one info is the frame-detach record, and it deliberately
+  reports the consequence rather than the action - it logs whether the default
+  frame was cleared as a side effect of the removal, because losing the default
+  frame silently is the failure this subsystem is most likely to produce.
+- Three `cleanup` log calls mark teardown boundaries, so a partially torn-down
+  singleton is distinguishable from one that never started.
+  EVIDENCE:
+  - src/melder/aether/aether.py:398-401
 
 Extension Points:
-- Additional frame behaviors or registries.
+- Additional per-frame behaviours and registries, reached through the frame
+  rather than the singleton. The singleton itself is deliberately closed: it is
+  constructed at package import before any user code runs, so an extension seam
+  here would execute during import of `melder` itself.
 
 Key Files (C1):
 - `src/melder/aether/aether.py`
@@ -682,10 +871,21 @@ Responsibilities:
   declared through that one world root and its `ResearchSet` surface only.
 
 Inputs:
-- Conduit objects and SpellIndex sets.
+- Conduit objects, registered into `_conduit_ids_by_name` - a NAME-TO-ID map,
+  not a name-to-object map. The frame holds identity, not references, so a
+  conduit can be cleaned without the frame holding it alive.
+- SpellIndex sets arriving from the binding pipeline.
+- An `AethericFrameConfiguration` at frame creation, which fixes the posture the
+  frame will enforce for its lifetime.
 
 Outputs:
-- Registry state and DevOps services.
+- The name-to-id registry, consumed by lookup paths that then resolve the id.
+- A `DevOpsManager`, CONSTRUCTED BY THE FRAME AND OWNED BY IT, not injected.
+  That ownership is what makes the frame the enforcement point for posture: the
+  control plane cannot outlive the frame whose rules it enforces.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:168 (registry)
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:209 (DevOpsManager owned)
 
 Owned State:
 - `_conduits`, `_spell_registry`, `_selected_spell_registry`.
@@ -697,7 +897,12 @@ Lifecycle/Cleanup:
 - Cleanup cascades to conduits, clusters, cloud, and control plane.
 
 Concurrency/Threading:
-- Frame-level RLock.
+- One frame-level `RLock`. Its real job is that the frame is the arbitration
+  point BETWEEN conduits: conduit-to-conduit operations that touch two conduits
+  serialise here rather than needing a lock ordering between the two conduit
+  locks, which is the deadlock this design avoids by construction.
+- The frame does not hold the lock while calling into an owned conduit's own
+  cleanup; teardown clears the registry first and cascades afterwards.
 
 Invariants/Guarantees:
 - One DevopsInformationRegistry, SpellSystemStates, and DevOpsManager per
@@ -707,10 +912,26 @@ Failure Modes:
 - Cleanup is best-effort; errors are suppressed to complete teardown.
 
 Observability:
-- Minimal internal logging; relies on caller logs.
+- EXACTLY ONE log call in the whole module, and it is a `warning`, not an error:
+  a conflicting `AethericFrameConfiguration` for an already-configured frame is
+  IGNORED rather than rejected, and the warning reports the existing posture
+  alongside the attempted one so the discarded intent is recoverable. It is
+  routed through `self._aether._logger` after a `None` guard, because the frame
+  has no logger of its own - during early boot the Aether logger may not exist
+  yet.
+- Everything else is exceptions. A frame that is misbehaving without raising
+  will produce no log output at all; do not read silence as health.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:733-740
 
 Extension Points:
-- Additional per-frame services.
+- Additional per-frame services constructed and owned in the same position as
+  `DevOpsManager`, and torn down in the frame's cleanup cascade. The seam is
+  ownership, not registration: there is no service registry to add to, so a new
+  service is added by constructing it in `__init__` and cleaning it in
+  `cleanup`. That keeps lifetime obvious and makes the extension a code change
+  rather than a runtime one - deliberate, given the frame fixes posture for its
+  lifetime.
 
 Key Files (C1):
 - `src/melder/aether/aetheric_frame/aetheric_frame.py`
@@ -897,17 +1118,33 @@ Key Files (C1):
 - `src/melder/crystallizer/persistence/persistence_crystal.py`
 - `src/melder/crystallizer/asset_management/asset_management_system.py`
 - `src/melder/crystallizer/asset_management/crystallizer_cache.py`
-- `src/melder/crystallizer/crystal_loader_system/` (crystal_loader_system.py,
-  load_admission.py, load_plan.py, restore_engine.py, bootstrap_loader.py)
-- `src/melder/crystallizer/crystal_analysis/` (crystal_analyzer.py,
-  crystal_analysis_result.py, custody/, strategies/, preflight/)
+- `src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py`
+- `src/melder/crystallizer/crystal_loader_system/load_admission.py`
+- `src/melder/crystallizer/crystal_loader_system/load_plan.py`
+- `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
+- `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py`
+- `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
+- `src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py`
+- `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
+- `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
+- `src/melder/crystallizer/crystal_analysis/impact_engine.py`
+- `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
+- The crystal_analysis package carries custody (5 modules), strategies (5)
+  and preflight (12) beneath these four - 22 further modules that are not
+  key files of this component.
 - `src/melder/crystallizer/crystals/recorded_unit_state.py`
 - `src/melder/crystallizer/crystals/spell_crystal.py` (package-level since
   the S2 move; carrier-slimmed in S1)
-- `src/melder/crystallizer/crystals/` (aether / aetheric_frame /
-  spellbook / conduit / nexus / mutation_research twins, plus
-  `spell_index_crystal.py` membership map, `contract_crystal.py`
-  relationship map, and `cluster_crystal.py` cluster map)
+- `src/melder/crystallizer/crystals/aether_crystal.py`
+- `src/melder/crystallizer/crystals/aetheric_frame_crystal.py`
+- `src/melder/crystallizer/crystals/spellbook_crystal.py`
+- `src/melder/crystallizer/crystals/conduit_crystal.py`
+- `src/melder/crystallizer/crystals/nexus_crystal.py`
+- `src/melder/crystallizer/crystals/mutation_research_crystal.py`
+- `src/melder/crystallizer/crystals/crystallizer_crystal.py`
+- `src/melder/crystallizer/crystals/spell_index_crystal.py` (membership map)
+- `src/melder/crystallizer/crystals/contract_crystal.py` (relationship map)
+- `src/melder/crystallizer/crystals/cluster_crystal.py` (cluster map)
 - `src/melder/crystallizer/synthetic_module.py`
 
 
@@ -1415,7 +1652,8 @@ Outputs:
   `execute_codegen_request(...)`)
 - shared `CodegenTransactionContext` (the FIRST element of both tuples - the
   context is returned alongside the verdict, not separately)
-  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:261,:296
+  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:260
+  (`validate_codegen_request`), :295 (`execute_codegen_request`)
 - public validation payloads through the reporter
 
 Owned State:
@@ -1527,8 +1765,22 @@ Extension Points:
 Key Files (C1):
 - `src/melder/nexus/frame_descriptor_manager.py`
 - `src/melder/nexus/frame_acl_manager.py`
-- `src/melder/nexus/frame_descriptor/`
-- `src/melder/nexus/acl/`
+- `src/melder/nexus/frame_descriptor/frame_descriptor.py`
+- `src/melder/nexus/frame_descriptor/frame_descriptor_payload.py`
+- `src/melder/nexus/frame_descriptor/frame_record.py`
+- `src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py`
+- `src/melder/nexus/frame_descriptor/conduit_record.py`
+- `src/melder/nexus/frame_descriptor/spell_descriptor_payload.py`
+- `src/melder/nexus/frame_descriptor/spell_record.py`
+- `src/melder/nexus/acl/frame_acl_container.py`
+- `src/melder/nexus/acl/frame_acl_compiler.py`
+- `src/melder/nexus/acl/frame_acl_compiled_access_surface.py`
+- `src/melder/nexus/acl/frame_acl_configuration.py`
+- `src/melder/nexus/acl/frame_acl_configuration_chain.py`
+- The acl package carries three subpackages beneath these five modules -
+  builder (4 modules), configurations (27), validator (10) - 41 further
+  modules that are not key files of this component and are catalogued in
+  `### Full Package Inventory (exhaustive, retained)`.
 
 ### Component: RiftSpace Workstation And Command Surface
 Purpose:
@@ -1751,7 +2003,15 @@ Failure Modes:
 - Meld calls block while the local `CreationGate` is disabled.
 
 Observability:
-- Logs via SafeLogger.
+- `SafeLogger` with 77 `error` sites - the densest error instrumentation in the
+  runtime - against a single `warning` and two `cleanup` markers.
+- That single warning is worth knowing because it reports a SILENT CORRECTION
+  rather than a failure: a lesser conduit constructed with a name has the name
+  OVERRIDDEN TO `None` and continues. The caller's argument is discarded and
+  nothing raises, so a caller who later looks that conduit up by name will find
+  nothing and see no error explaining why. The warning is the only trace.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:1381-1384
 
 Extension Points:
 - Per-conduit hooks via `SpellbookConfiguration`.
@@ -1805,10 +2065,22 @@ Responsibilities:
 - Convert lesser lineage state to normal during conduit upgrade.
 
 Inputs:
-- Conduit objects, policies, and SpellIndex sets.
+- Peer conduits presented for contracting, plus the owning conduit's lesser set.
+- A `Policies` member, which is BROADER THAN A VISIBILITY FLAG: it controls
+  three separate surfaces at once - whether this conduit may initiate outbound
+  grants, whether it may accept inbound borrowed lineages, and whether per-spell
+  permission and whitelist checks are enforced or bypassed. Reading it as
+  "how visible am I" understates what changing it does.
+- SpellIndex sets, which are what a contract actually grants across.
 
 Outputs:
-- Contract state and contracted spell visibility.
+- Contract records addressable from both ends: `_initiated_index` and
+  `_received_index` are maintained separately, so direction survives in the
+  state rather than being inferred from which side is asked.
+- Contracted spell visibility, resolved per conduit rather than globally.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/policies/policies.py:3-20
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:277-281
 
 Owned State:
 - `_contracts`, `_initiated_index`, `_received_index`.
@@ -1816,7 +2088,18 @@ Owned State:
 - `_policy` and `_dynamic` flags.
 
 Lifecycle/Cleanup:
-- Cleanup severs contracts and cleans lesser conduits.
+- Cleanup is ORDERED AND BEST-EFFORT, and the order is the point. Under the
+  ward lock, with the standard double-checked `_cleaned` guard: sever peer
+  contract links FIRST (which updates the Spellbook's maps, so the peer stops
+  seeing this ward before this ward stops existing), then sever lesser-conduit
+  links, then clear `_lesser_conduits`, `_contracts`, `_initiated_index` and
+  `_received_index`, then transition `_conduit_type` to its `cleaned` variant,
+  and only then set `_cleaned = True`.
+- Severing is best-effort by design: a peer that has already gone away must not
+  prevent this ward from completing teardown, or one dead peer would strand
+  every ward that ever contracted with it.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:250-283
 
 Concurrency/Threading:
 - Internal RLock; contract creation uses ordered locking (per docstring).
@@ -1860,13 +2143,30 @@ Concurrency detail:
 - Ordered two-ward locking covers BOTH creation and severing. `_sever_link`
   takes `SafeGuard(self._lock, target_conduit._conduit_ward._lock)` before it
   looks for the contract.
-  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:974.
+  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:957-975
+  (`_sever_link` at :957, `SafeGuard` acquired at :973, contract lookup at :974 -
+  the guard is taken BEFORE the lookup, which is the ordering claim).
 
 Observability:
-- Logs via SafeLogger.
+- `SafeLogger` with 79 `error` sites and, unusually for this codebase, 11 `info`
+  sites. The info calls all mark COMPLETION of an irreversible transition -
+  `cleanup complete`, `cleanup_all_lesser_conduits complete`,
+  `convert_to_normal: success` - each passing `method_name` explicitly so the
+  entry is attributable without a stack trace.
+- This is the one subsystem where success is logged, and the reason is that its
+  operations are cross-object and best-effort: without a completion record there
+  is no way to tell "severed everything" from "stopped partway and swallowed
+  the error", because both leave the caller with no exception.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:283-285
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:565-567
 
 Extension Points:
-- Policies and contract detail types.
+- New `Policies` members. Adding one is not a local change: each member must
+  answer all three control surfaces above, and the conjure-time admission rules
+  decide which members are legal under which `SystemState` - under `automatic`
+  only `Policies.default` is admitted.
+- New contract detail types carried on the contract record.
 
 Key Files (C1):
 - `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
@@ -1919,7 +2219,10 @@ Responsibilities:
 - Preserve/rebind the active creations manager during lesser-to-normal upgrade.
 
 Inputs:
-- Instances created by Meld.
+- Instances created by Meld, registered IN CREATION ORDER - the order is the
+  input, not an incidental property, because disposal replays it in reverse.
+- Disposal method names supplied by `SpellbookConfiguration`, which is how a
+  user type declares its own teardown without this registry knowing the type.
 
 Outputs:
 - Stored instances and cleanup errors (ExceptionGroup).
@@ -1947,7 +2250,10 @@ Lifecycle/Cleanup:
 - SpellSpace cleanup resets scope and unregisters from owner.
 
 Concurrency/Threading:
-- RLock guarding instance maps.
+- One `RLock` over the instance maps, and the source states plainly that it is
+  NOT OPTIONAL under free-threaded 3.14t: with no GIL, two threads resolving
+  into the same scope mutate these maps concurrently, and the ordering that
+  disposal depends on is exactly what a lost update destroys.
 
 Invariants/Guarantees:
 - Creations is used by both normal and lesser conduits; behavior is driven by
@@ -1962,10 +2268,22 @@ Failure Modes:
 - RuntimeError if conduit state is missing during Creations initialization.
 
 Observability:
-- Logs errors during cleanup and disposal attempts.
+- No logger of its own. Disposal failures surface as an `ExceptionGroup` raised
+  AFTER teardown completes, which is the observability decision here: cleanup
+  AGGREGATES failures instead of stopping at the first one, so a caller sees
+  every badly behaved object at once rather than discovering them one redeploy
+  at a time. A single failing disposal must not strand the rest of the scope.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:39-46
+  - src/melder/aether/conduit/creations/creations.py:150-156
 
 Extension Points:
-- Disposal method names in `SpellbookConfiguration`.
+- Disposal method names in `SpellbookConfiguration`. The registry calls a
+  declared name if the object has it, so extending teardown for a user type is
+  a configuration change rather than a subclass. Note the ordering guarantee it
+  inherits: disposal runs in REVERSE CREATION ORDER, newest first, including
+  within a `many` bucket, because resolution registers a dependency before the
+  dependent and the dependent must be torn down first.
 
 Key Files (C1):
 - `src/melder/aether/conduit/creations/creations.py`
@@ -2002,7 +2320,11 @@ SpellSpace enforces active-scope semantics and supports reset/versioning.
 
 ### Component: Meld Resolution Runtime
 Purpose:
-- Resolve and instantiate spells within a Conduit.
+- Resolve a spell to a concrete instance within one Conduit's scope, running the
+  hook chain and the change-control checks that decide whether resolution is
+  permitted at all. It is the only path by which a bound spell becomes a live
+  object, which is why both the hook system and the dirty-root refusal live
+  behind it rather than in the binding pipeline.
 
 Responsibilities:
 - Provide a shared abstract `Meld` core for lookup, validation, lazy
@@ -2051,7 +2373,10 @@ Lifecycle/Cleanup:
 - Cleanup clears spellbook references and CreationContext caches.
 
 Concurrency/Threading:
-- Internal RLock guards Meld operations.
+- One instance `RLock` serialising resolution within a Meld. It is re-entrant
+  because resolution is RECURSIVE: resolving a spell resolves its dependencies
+  through the same object, so a non-reentrant lock would deadlock on any
+  dependency chain deeper than one.
 
 Invariants/Guarantees:
 - At least one of `spell_name`, `spell`, or `spellframe` is required to resolve a target.
@@ -2081,10 +2406,20 @@ Failure Modes:
 - HookExecutionError for hook failures.
 
 Observability:
-- Exceptions and SafeLogger errors.
+- Exceptions carrying the stage that failed, which matters because this runtime
+  has SEVEN distinct raise types and they partition the blame: `HookExecutionError`
+  means user hook code failed, `MeldExecutionError` means change control refused
+  (for example the root reported dirty), `SpellbookValidationError` means the
+  spell should never have compiled, and `TypeError`/`ValueError`/`KeyError` mean
+  the caller's request was malformed. Reading only the message loses that split.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/meld.py:20-21
+  - src/melder/aether/conduit/meld/meld.py:781-795
 
 Extension Points:
-- Hook maps from `SpellbookConfiguration`.
+- Hook maps from `SpellbookConfiguration`, resolved per spellbook id. A hook
+  raising is NOT swallowed - it becomes `HookExecutionError` and fails the
+  resolution, so a hook is part of the success path and not an observer of it.
 
 Key Files (C1):
 - `src/melder/aether/conduit/meld/meld.py`
@@ -2231,7 +2566,11 @@ Responsibilities:
   root reachability/coverage, contract graph cycles, root viability/scale).
 
 Inputs:
-- Spell objects and spellbook registries.
+- Spell objects fresh from the binding pipeline, before any Conduit exists.
+- The spellbook registries the phases validate against - lookup maps, index
+  membership, and permission state - which is why compilation is a Spellbook
+  operation rather than a per-spell one: the checks are about relationships
+  BETWEEN spells, and no single spell can answer them.
 
 Outputs:
 - Validation results and foundational rooted artifacts on Spell.
@@ -2293,21 +2632,33 @@ Dirty terminology guardrail for this pipeline:
   IR-freshness bit
   ("phase8_11 export payload is stale"), not a runtime validity gate.
 - This bit is set by phase8/9/10/11 artifact replacement and flushed by
-  `_capture_phase8_11_codegen_ir_if_dirty()` before codegen-creation compiler
+  `capture_phase8_11_codegen_ir_if_dirty()` before codegen-creation compiler
   work and on
   `codegen_ir` reads.
 - Change-control dirty roots remain a separate system:
   `ChangeControlManager.is_root_dirty(conduit_id, root_id)` is the meld gate
   checked by `Meld._gated_validation_required(...)`.
-- EVIDENCE:
-  - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:529-546`
-  - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:1966-1997`
-  - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:3513-3517`
-  - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:3579-3583`
-  - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:3647-3651`
-  - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:3780-3787`
-  - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:1403-1475`
-  - `src/melder/aether/conduit/meld/meld.py:502-532`
+- EVIDENCE (RE-DERIVED 2026-08-02 - the previous citations pointed into
+  `spell_compiler.py` at lines 1966-3787, and that file is 693 lines. The
+  compiler was decomposed into the `phases/` and `artifact_processor/`
+  subpackages and the ranges were never remapped; they had been unresolvable
+  for some time while still looking authoritative):
+  - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:146`,
+    `:203`, `:322` - the IR-freshness bit itself
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1342`
+    (`capture_phase8_11_codegen_ir`)
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1432-1451`
+    (dirty-bit set/flush)
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1435`
+    (`capture_phase8_11_codegen_ir_if_dirty`)
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1477`
+    (`reset_phase8_11_codegen_ir`)
+  - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:535-546`
+    (`run_phase_change_control_local`)
+  - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:1595`
+    (`is_root_dirty` - NOT :1403-1475, which does not contain it)
+  - `src/melder/aether/conduit/meld/meld.py:760`
+    (`_gated_validation_required` - NOT :502-532)
 
 PhaseScheduler coordinates these phases using worker threads and a shared
 cancellation event; broken spells trigger SpellbookValidationError.
@@ -2348,10 +2699,22 @@ Owned State:
 - `RiskManager` per-conduit risk sets and spellbook gating state. EVIDENCE: src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:__init__ + _conduit_states.
 
 Lifecycle/Cleanup:
-- Cleanup is idempotent and releases references.
+- Idempotent, double-checked under `_lock` (`_cleaned` tested before AND after
+  acquiring), then cascades into the seven managers this plane constructs and
+  owns: `SpellSystemStates`, `DevopsInformationRegistry`, `IncidentManager`,
+  `ChangeControlManager`, `RiskManager`, `CreationGateController` and
+  `ConduitLineageGateOps`. They are built in `__init__`, not injected, so the
+  ownership is unambiguous and none of them can outlive the plane.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:153-171
+  - src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:192-199
 
 Concurrency/Threading:
-- RLocks guard state mutations.
+- One `RLock` at the plane, plus each owned manager's own lock. The plane's lock
+  is taken for the composite operations that span several managers; the managers
+  guard their own state. The ordering is strictly outer-to-inner - the plane
+  acquires before calling in, never the reverse - which is what keeps a control
+  operation and a teardown from deadlocking against each other.
 
 Invariants/Guarantees:
 - Registering a lineage marks it dirty.
@@ -2366,10 +2729,18 @@ Failure Modes:
 - RuntimeError when SpellSystemStates is cleaned/unavailable for state access.
 
 Observability:
-- Exceptions; minimal internal logging.
+- NO LOGGER IN THE MANAGER ITSELF, and only `ValueError` raised directly from
+  it - the plane delegates almost everything, so its own surface is thin by
+  construction. Diagnostics come from the owned managers and from the
+  information registry, which is the intended read point for control-plane
+  state. Looking for control-plane behaviour in this module's logs will find
+  nothing; look at the registry.
 
 Extension Points:
-- Revalidation hooks in ChangeControlManager.
+- Revalidation hooks in `ChangeControlManager`.
+- New owned managers, added the same way the existing seven are: constructed in
+  `__init__` and cleaned in the cascade. There is no registry to plug into,
+  which keeps the teardown order explicit in one readable place.
 
 Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`
@@ -2528,7 +2899,6 @@ Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py`
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py`
 - `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py`
-- `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
 
 Observability:
 - `describe()` returns a detached snapshot under the lock - plain values only,
@@ -2635,7 +3005,6 @@ Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py`
 - `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py`
 - `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py`
-- `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
 
 Failure Modes:
 - Failed executions do NOT increment the builder counters, which keeps the
@@ -2949,7 +3318,10 @@ Inputs:
   provider registration callables.
 
 Outputs:
-- SafeLogger instances.
+- `SafeLogger` instances wrapping a caller-supplied logger or provider. The
+  wrapper is the point: it normalises the call surface so subsystems can log
+  through one shape regardless of what the host application injected, and it
+  applies masking before anything reaches the underlying logger.
 
 Owned State:
 - `AetherUtilitySystem` owns the registered resolver and default fallback
@@ -2970,10 +3342,20 @@ Invariants/Guarantees:
   before finally falling back to a silent SafeLogger.
 
 Failure Modes:
-- TypeError if logger/provider types are unsupported.
+- `TypeError` when the injected logger or provider does not satisfy the expected
+  shape. It is raised at CONSTRUCTION, not at first log call, so a misconfigured
+  logger fails during boot rather than at the moment something has already gone
+  wrong and is trying to report it - the worst possible time to discover the
+  reporting channel is broken.
+- `ValueError` for invalid level or masking configuration.
 
 Observability:
-- SafeLogger routes messages with or without masking.
+- This component IS the observability surface for everything else, so its own
+  instrumentation is deliberately minimal - it holds one `cleanup` marker and
+  two `setLevel` calls and nothing more. A logger that logs about itself
+  through itself is a recursion waiting to happen.
+- Masking is applied on the way through rather than at the sink, so a subsystem
+  cannot bypass it by holding the wrapped logger.
 
 Extension Points:
 - Channel logger resolver registration.
@@ -3110,7 +3492,10 @@ Text is preserved as authored; only its location changed.
 
 ### Component: PhaseScheduler and UnitOfWork Orchestration
 Purpose:
-- Coordinate multi-phase execution across spells.
+- Run registered phases of `UnitOfWork` items across a fixed worker pool and
+  report the outcome of each phase as a barrier, so a phase either completes for
+  every unit or fails with the first recorded error. It exists because conjure
+  ordering must be deterministic even though the work itself is parallel.
 
 Responsibilities:
 - Register phases with factories producing UnitOfWork.
@@ -3118,10 +3503,14 @@ Responsibilities:
 - Enforce phase barriers and timeouts.
 
 Inputs:
-- Spellbook and `SpellbookConfiguration`.
+- The owning Spellbook and its `SpellbookConfiguration`, from which worker count
+  and the barrier timeout are read - both overridable, and both validated
+  positive at construction rather than trusted.
+- Registered phases, each a sequence of `UnitOfWork` items.
 
 Outputs:
-- Phase results (UnitOfWork sequences).
+- `Dict[str, Sequence[UnitOfWork]]` - phase name to the units that ran, returned
+  only after that phase's latch has fired for every unit.
 
 Owned State:
 - Worker threads, queue, cancellation signal.
@@ -3131,16 +3520,43 @@ Lifecycle/Cleanup:
 - Cleanup cancels workers, joins threads, and clears registries.
 
 Concurrency/Threading:
-- Dedicated worker threads and shared queue.
+- A fixed pool of daemon `threading.Thread` workers over ONE shared
+  `SimpleQueue`. Workers BLOCK on `get()` rather than polling, so an idle
+  scheduler costs nothing, and they exit only on an explicit sentinel - one
+  sentinel per worker, enqueued during cleanup.
+- The barrier is a latch per phase, and its invariant is the load-bearing one:
+  every dequeued unit reports into its latch EXACTLY ONCE, success or failure.
+  Reporting is what releases the barrier, so a unit that failed to report would
+  block the caller for the full timeout before it could be discovered. A unit
+  already marked done is SKIPPED by the worker rather than re-run, which is what
+  keeps the count exact when a phase is aborted mid-flight.
+- The full chain per unit: enqueue `(UnitOfWork, PhaseLatch)` -> a worker
+  dequeues and calls `run_for_scheduler()` -> the unit calls `record_error(...)`
+  or `complete()` -> the latch fires -> the waiting caller wakes, and on failure
+  calls `wait_all_reported(...)` BEFORE raising, so no worker is still touching
+  the latch when the exception propagates.
+- Cleanup joins each worker with a 5-second timeout, so a wedged unit degrades
+  teardown to a leaked daemon thread rather than hanging the process.
+  EVIDENCE:
+  - src/melder/utilities/synchronization/phase_scheduler.py:56-70
+  - src/melder/utilities/synchronization/phase_scheduler.py:115-190
+  - src/melder/utilities/synchronization/phase_scheduler.py:399-440
 
 Invariants/Guarantees:
-- One-shot usage; cleaned scheduler is unusable.
+- One-shot. `cleanup` is idempotent and double-checked under `_lock`, and once
+  `_cleaned` is set the scheduler cannot be restarted - the sentinels have been
+  consumed and the workers have exited, so there is nothing left to feed.
 
 Failure Modes:
 - PhaseTimeoutError or PhaseExecutionError on failures.
 
 Observability:
-- Exceptions raised to caller.
+- Exceptions only, and the three custom types name the failure mode precisely:
+  `PhaseExecutionError` for a unit that raised, `PhaseTimeoutError` for a barrier
+  that never filled, `PhaseSchedulerError` for misuse of the scheduler itself.
+  The distinction matters operationally - a timeout points at a wedged unit,
+  an execution error points at the unit's own code, and a scheduler error points
+  at the caller.
 
 Extension Points:
 - Additional phases or alternative UnitOfWork factories.
@@ -3149,6 +3565,25 @@ Key Files (C1):
 - `src/melder/utilities/synchronization/phase_scheduler.py`
 
 ## C2 Subcomponents Catalog
+
+HOW TO READ THIS CATALOG. `src_components_instructions.md` defines a twelve-field
+contract for C3 component entries and says NOTHING about C2 entries, so the shape
+below is this document's own convention. It is written down here because a reader
+who cannot tell a required field from an accidental one has to diff entries to
+find out, and will guess wrong.
+
+- `Parent Component:` names the C3 entry this subcomponent belongs to, and is the
+  link back to the twelve-field entry. Every C2 entry has one.
+- The usual body is `Purpose`, `Contract/Interface`, `Data Structures`,
+  `Concurrency/Threading` - present in 59 or more of the 62 entries.
+- Three builder/engine entries carry `Invariants/Guarantees` in place of
+  `Data Structures`, because their meaningful state is a draft session rather
+  than a structure. That variant is deliberate, not drift.
+- `Key Files (C1)` here follows the same rule as the C3 catalog: in-scope SOURCE
+  paths only.
+- A C2 entry is a NARROWER view of something its parent already owns. If a fact
+  belongs to the component as a whole, it goes in the C3 entry; duplicating it
+  here is how the two drift apart.
 
 ### Subcomponent: Runtime Warning Guardrails
 Parent Component: Public API and Runtime Guardrails
@@ -3209,7 +3644,12 @@ Concurrency/Threading:
 - Stateless. Enforcement is lock-free: a frozenset membership test on an immutable
   module-level object, so it adds no contention to bind.
 Enforcement Surface:
-- Exactly one live call site: `bind.py:363  assert_allowed(spell, context="bind")`.
+- Exactly one live call site:
+  `src/melder/aether/spellbook/bind/bind.py:364` -
+  `assert_allowed(spell, context="bind")`. (Was cited as `:363` here and `:364`
+  in `src_architecture.md`; the call is on 364. The two documents disagreeing
+  about the same line is the failure a bare `bind.py:NNN` invites - no checker
+  can resolve a filename with no path.)
 Key Files (C1):
 - `src/melder/aether/spellbook/bind/bind.py` (`assert_allowed`,
   `_internal_identity_of`)
@@ -3351,12 +3791,20 @@ Purpose:
 - Expose the current public Spellbook seams for SpellIndex active-member
   switching and member movement between indices.
 Contract/Interface:
-- `notch_spell(...)` starts the `notch` transaction and delegates the current
-  member-store switch to `_apply_notch(...)`.
-- `add_spell_into_spellindex(...)` starts the `add_to_index` transaction and
-  delegates the move-in to `_apply_add_to_index(...)`.
-- `remove_spell_from_spellindex(...)` starts the `remove_from_index`
-  transaction and delegates the split to `_apply_remove_from_index(...)`.
+- `Conduit.notch_spell(...)` starts the `notch` transaction; the current
+  member-store switch runs in the Spellbook seam `_apply_notch(...)`.
+- `Conduit.add_to_spell_index(spell=, target_index=)` starts the `add_to_index`
+  transaction; the move-in runs in `_apply_add_to_index(...)`.
+- `Conduit.remove_from_spell_index(spell=, source_index=)` starts the
+  `remove_from_index` transaction; the split runs in
+  `_apply_remove_from_index(...)`.
+  THE SPLIT OF OWNERSHIP IS THE POINT: the Conduit admits the transaction
+  because it owns the lineage being mutated, and the Spellbook applies the
+  membership change because it owns the index maps. Neither half is callable
+  on its own.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:4392, 4482, 4560 (public verbs)
+  - src/melder/aether/spellbook/spellbook.py:3510, 3683, 3858 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
@@ -3602,7 +4050,13 @@ Parent Component: Conduit Runtime (Normal and Lesser)
 Purpose:
 - Pull hook map from `SpellbookConfiguration` and attach to Conduit and Meld.
 Contract/Interface:
-- `_initialize_conduit_hooks()` and `_get_conjure_hook_map()`.
+- `SpellbookCreationSystem.get_conjure_hook_map(spellbook)` builds the conjure
+  hook map; `Conduit._ensure_local_conduit_hooks()` localises it onto the
+  Conduit, and `Conduit._collect_conduit_hook_chain(hook_name)` assembles the
+  chain that `_fire_conduit_hooks(...)` runs.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1231
+  - src/melder/aether/conduit/conduit.py:1778, 1818, 6164
 Data Structures:
 - Hook map keyed by spellbook id.
 Concurrency/Threading:
@@ -3740,8 +4194,9 @@ Concurrency/Threading:
 Key Files (C1):
 - `src/melder/crystallizer/synthetic_module.py`
 - `src/melder/crystallizer/crystal_loader_system/restore_engine.py` (the M3
-  synthetic-module rebuild consumer; `crystal_loader/bootstrap_manifest.py`
-  is gone since the 2026-07-10 decomposition)
+  synthetic-module rebuild consumer)
+- Historical, not a citation: crystal_loader/bootstrap_manifest.py was
+  removed in the 2026-07-10 decomposition and has no successor path.
 
 ### Subcomponent: MutationResearch Root (ResearchSet Registry)
 Parent Component: Aether Singleton (Global Runtime)
@@ -3808,7 +4263,10 @@ Concurrency/Threading:
   BEFORE root (set constructors fire `on_mutation` while the root lock is held), so a
   concurrent emission can no longer publish a torn or stale registry around
   hydration/creation.
-  EVIDENCE: src/melder/mutation_research/mutation_research.py:590,668,3380
+  EVIDENCE: src/melder/mutation_research/mutation_research.py:220
+  (`_emission_lock` created), :804-830 (`create_research_set` takes emission
+  before root), :905-944 (`load_recorded_composition` same order), :3874
+  (`_emit_research_composition`)
 Key Files (C1):
 - `src/melder/mutation_research/mutation_research.py`
 - `src/melder/mutation_research/mutation_configuration.py`
@@ -4276,10 +4734,16 @@ Contract/Interface:
 - `build()` returns one detached `NexusFrameConfiguration`
 - `create()` delegates manager-owned rooted realization and returns `Conduit`
   (concrete; annotated `-> Conduit`).
-  EVIDENCE: src/melder/nexus/nexus_frame_builder.py:255.
+  EVIDENCE: src/melder/nexus/nexus_frame_builder.py:254 (`def create(self) -> Conduit`).
 Invariants/Guarantees:
 - defaults to `dynamic + ai_native_enabled + rift_enabled`
 - root conduit defaults to `"root"` unless explicitly overridden
+Concurrency/Threading:
+- NO LOCK, deliberately: the builder is short-lived and CALLER-CONFINED, and is
+  not intended to be shared across threads. Safety comes from confinement rather
+  than synchronisation, so handing one to a second thread is unsupported rather
+  than merely slow.
+  EVIDENCE: src/melder/nexus/nexus_frame_builder.py:32-34
 Key Files (C1):
 - `src/melder/nexus/nexus_frame_builder.py`
 - `src/melder/nexus/nexus_frame_manager.py`
@@ -4330,6 +4794,15 @@ Contract/Interface:
 Invariants/Guarantees:
 - at most one draft session is active at a time
 - final install is delegated to the owning `FrameACLContainer`
+Concurrency/Threading:
+- One instance `RLock`; every grouped draft lifecycle transition runs under it.
+  The source justifies the lock explicitly against the free-threaded runtime: a
+  transition mutates several builder-owned fields together (`_draft_family_name`,
+  `_draft_contract_name`, `_draft_configuration`), and under 3.14t there is no
+  GIL making that grouping incidentally atomic. It is the one writer for chain
+  state even though several fluent surfaces layer above it.
+- Cleanup is idempotent and closes any still-open draft.
+  EVIDENCE: src/melder/nexus/acl/builder/frame_acl_builder.py:67-70, 93-99, 137
 Key Files (C1):
 - `src/melder/nexus/acl/builder/frame_acl_builder.py`
 
@@ -4443,6 +4916,13 @@ Contract/Interface:
 Invariants/Guarantees:
 - validation precedes execution
 - namespace is built only after accepted validation
+Concurrency/Threading:
+- One instance `RLock` per codegen room, guarding transaction construction and
+  the validator/namespace/compiler/executor/monitor collaborators it owns. The
+  ordering the lock protects is the invariant directly above: validation must
+  precede execution, and the namespace must not be built until validation is
+  accepted.
+  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:139
 Key Files (C1):
 - `src/melder/nexus/rift/codegen_system/codegen_system.py`
 - `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
@@ -4612,8 +5092,9 @@ These flows describe concrete method sequences for core behaviors.
 ### Flow: Conduit.has_live_creation -> Meld Probe
 1. `Conduit.has_live_creation(...)` or `describe_live_creation_status(...)`
    delegates to the owned `Meld` component.
-2. `Meld._resolve_spell_for_live_creation_probe(...)` resolves the spell the
-   same way `meld(...)` would.
+2. `Meld.describe_live_creation_status(...)` resolves the spell the same way
+   `meld(...)` would. It is abstract on the base - concrete Meld subclasses must
+   implement it, and the base raises if they do not.
 3. `Meld._describe_spell_live_creation_status(...)` inspects live runtime
    storage only and returns presence/scope/count information without creating
    anything.
@@ -4722,129 +5203,129 @@ expanded into its real modules rather than given a plausible number.
 
 - path: `src/melder/__init__.py`
   start_line: 1
-  end_line: 261
-  loc: 261
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 260
+  loc: 260
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/system_document.py`
   start_line: 1
-  end_line: 344
-  loc: 344
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 343
+  loc: 343
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/__architecture__.py`
   start_line: 1
-  end_line: 40
-  loc: 40
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 39
+  loc: 39
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/__components__.py`
   start_line: 1
-  end_line: 40
-  loc: 40
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 39
+  loc: 39
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/__graph_network__.py`
   start_line: 1
-  end_line: 39
-  loc: 39
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 38
+  loc: 38
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/__graph_details__.py`
   start_line: 1
-  end_line: 39
-  loc: 39
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 38
+  loc: 38
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aether_configuration.py`
   start_line: 1
-  end_line: 772
-  loc: 772
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 771
+  loc: 771
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aether_configuration_builder.py`
   start_line: 1
-  end_line: 290
-  loc: 290
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 289
+  loc: 289
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
   start_line: 1
-  end_line: 2711
-  loc: 2711
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 2710
+  loc: 2710
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 6497
-  loc: 6497
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 6496
+  loc: 6496
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
-  end_line: 871
-  loc: 871
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 870
+  loc: 870
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
-  end_line: 374
-  loc: 374
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 373
+  loc: 373
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 877
-  loc: 877
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 876
+  loc: 876
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
-  end_line: 508
-  loc: 508
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 507
+  loc: 507
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1646
-  loc: 1646
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1645
+  loc: 1645
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
-  end_line: 102
-  loc: 102
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 101
+  loc: 101
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/resolution_style_matrix.py`
   start_line: 1
-  end_line: 492
-  loc: 492
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 491
+  loc: 491
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
-  start_line: 1
-  end_line: 345
-  loc: 345
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
   start_line: 1
   end_line: 344
   loc: 344
-  verified_at: 2026-08-01T20:05:00Z
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
+  start_line: 1
+  end_line: 343
+  loc: 343
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
   start_line: 1
-  end_line: 71
-  loc: 71
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 70
+  loc: 70
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
   start_line: 1
-  end_line: 1186
-  loc: 1186
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1185
+  loc: 1185
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/configuration/system_state.py`
   start_line: 1
-  end_line: 55
-  loc: 55
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 54
+  loc: 54
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aether.py`
   start_line: 1
-  end_line: 2058
-  loc: 2058
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 2057
+  loc: 2057
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystallizer.py`
   start_line: 1
-  end_line: 2923
-  loc: 2923
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 2922
+  loc: 2922
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
-  end_line: 3935
-  loc: 3935
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 3934
+  loc: 3934
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
   end_line: 1119
@@ -4852,284 +5333,284 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-01T20:05:00Z
 - path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
   start_line: 1
-  end_line: 878
-  loc: 878
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 877
+  loc: 877
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit_cluster.py`
   start_line: 1
-  end_line: 1345
-  loc: 1345
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1344
+  loc: 1344
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/configuration/crystallizer_configuration.py`
   start_line: 1
-  end_line: 1064
-  loc: 1064
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1063
+  loc: 1063
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py`
   start_line: 1
-  end_line: 276
-  loc: 276
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 275
+  loc: 275
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/persistence/persistence_system.py`
   start_line: 1
-  end_line: 1413
-  loc: 1413
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1412
+  loc: 1412
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/persistence/persistence_profile.py`
   start_line: 1
-  end_line: 1472
-  loc: 1472
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1471
+  loc: 1471
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/persistence/persistence_crystal.py`
   start_line: 1
-  end_line: 452
-  loc: 452
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 451
+  loc: 451
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/asset_management/asset_management_system.py`
   start_line: 1
-  end_line: 1044
-  loc: 1044
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1043
+  loc: 1043
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/asset_management/crystallizer_cache.py`
   start_line: 1
-  end_line: 590
-  loc: 590
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 589
+  loc: 589
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/nexus.py`
   start_line: 1
-  end_line: 3422
-  loc: 3422
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 3421
+  loc: 3421
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
-  end_line: 807
-  loc: 807
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 806
+  loc: 806
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_acl_manager.py`
   start_line: 1
-  end_line: 815
-  loc: 815
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 814
+  loc: 814
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/nexus_frame_manager.py`
   start_line: 1
-  end_line: 1186
-  loc: 1186
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1185
+  loc: 1185
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/nexus_frame_builder.py`
   start_line: 1
-  end_line: 269
-  loc: 269
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 268
+  loc: 268
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_link/frame_link_contract.py`
   start_line: 1
-  end_line: 239
-  loc: 239
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 238
+  loc: 238
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_link/frame_link.py`
   start_line: 1
-  end_line: 232
-  loc: 232
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 231
+  loc: 231
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_gate/rift_gate.py`
   start_line: 1
-  end_line: 412
-  loc: 412
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 411
+  loc: 411
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py`
   start_line: 1
-  end_line: 334
-  loc: 334
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 333
+  loc: 333
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
   start_line: 1
-  end_line: 6650
-  loc: 6650
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 6649
+  loc: 6649
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
   start_line: 1
-  end_line: 3135
-  loc: 3135
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 3134
+  loc: 3134
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/view_frame.py`
   start_line: 1
-  end_line: 2648
-  loc: 2648
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 2647
+  loc: 2647
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/view_conduit.py`
   start_line: 1
-  end_line: 1930
-  loc: 1930
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1929
+  loc: 1929
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/view_spell.py`
   start_line: 1
-  end_line: 3093
-  loc: 3093
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 3092
+  loc: 3092
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift.py`
   start_line: 1
-  end_line: 1152
-  loc: 1152
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1151
+  loc: 1151
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
   start_line: 1
-  end_line: 341
-  loc: 341
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 340
+  loc: 340
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/rift_space.py`
   start_line: 1
-  end_line: 991
-  loc: 991
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 990
+  loc: 990
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
   start_line: 1
-  end_line: 291
-  loc: 291
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 290
+  loc: 290
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/event_system/rift_event.py`
   start_line: 1
-  end_line: 167
-  loc: 167
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 166
+  loc: 166
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/static_rift_space.py`
   start_line: 1
-  end_line: 143
-  loc: 143
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 142
+  loc: 142
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
   start_line: 1
-  end_line: 177
-  loc: 177
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 176
+  loc: 176
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/capability_rift_space.py`
   start_line: 1
-  end_line: 149
-  loc: 149
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 148
+  loc: 148
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/workstation.py`
   start_line: 1
-  end_line: 946
-  loc: 946
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 945
+  loc: 945
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
   start_line: 1
-  end_line: 436
-  loc: 436
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 435
+  loc: 435
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py`
   start_line: 1
-  end_line: 136
-  loc: 136
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 135
+  loc: 135
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/command_system/command_system.py`
   start_line: 1
-  end_line: 1656
-  loc: 1656
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1655
+  loc: 1655
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/command_system/static_command_system.py`
   start_line: 1
-  end_line: 681
-  loc: 681
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 680
+  loc: 680
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/command_system/capability_command_system.py`
   start_line: 1
-  end_line: 1656
-  loc: 1656
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1655
+  loc: 1655
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/command_system/codegen_command_system.py`
   start_line: 1
-  end_line: 1938
-  loc: 1938
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1937
+  loc: 1937
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/codegen_system.py`
   start_line: 1
-  end_line: 538
-  loc: 538
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 537
+  loc: 537
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
   start_line: 1
-  end_line: 774
-  loc: 774
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 773
+  loc: 773
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py`
   start_line: 1
-  end_line: 294
-  loc: 294
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 293
+  loc: 293
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
   start_line: 1
-  end_line: 212
-  loc: 212
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 211
+  loc: 211
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
   start_line: 1
-  end_line: 367
-  loc: 367
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 366
+  loc: 366
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
   start_line: 1
-  end_line: 278
-  loc: 278
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 277
+  loc: 277
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
   start_line: 1
-  end_line: 311
-  loc: 311
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 310
+  loc: 310
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
-  start_line: 1
-  end_line: 104
-  loc: 104
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py`
   start_line: 1
   end_line: 103
   loc: 103
-  verified_at: 2026-08-01T20:05:00Z
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py`
+  start_line: 1
+  end_line: 102
+  loc: 102
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
   start_line: 1
-  end_line: 128
-  loc: 128
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 127
+  loc: 127
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py`
   start_line: 1
-  end_line: 356
-  loc: 356
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 355
+  loc: 355
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`
   start_line: 1
-  end_line: 183
-  loc: 183
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 182
+  loc: 182
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
   start_line: 1
-  end_line: 249
-  loc: 249
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 248
+  loc: 248
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/configuration/nexus_frame_mode.py`
   start_line: 1
-  end_line: 54
-  loc: 54
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 53
+  loc: 53
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/configuration/rift_space_type.py`
   start_line: 1
-  end_line: 61
-  loc: 61
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 60
+  loc: 60
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6214
-  loc: 6214
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 6213
+  loc: 6213
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
-  end_line: 604
-  loc: 604
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 603
+  loc: 603
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/utilities/synchronization/creation_gate_controller.py`
   start_line: 1
-  end_line: 1112
-  loc: 1112
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1111
+  loc: 1111
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
   end_line: 3746
@@ -5137,734 +5618,624 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-01T20:05:00Z
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
-  end_line: 76
-  loc: 76
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 75
+  loc: 75
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
   start_line: 1
-  end_line: 66
-  loc: 66
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 65
+  loc: 65
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 616
-  loc: 616
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 615
+  loc: 615
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
-  end_line: 134
-  loc: 134
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 133
+  loc: 133
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 490
-  loc: 490
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 489
+  loc: 489
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1561
-  loc: 1561
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1560
+  loc: 1560
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/meld/conduit_meld.py`
-  start_line: 1
-  end_line: 821
-  loc: 821
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/conduit/meld/spellspace_meld.py`
   start_line: 1
   end_line: 820
   loc: 820
-  verified_at: 2026-08-01T20:05:00Z
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/conduit/meld/spellspace_meld.py`
+  start_line: 1
+  end_line: 819
+  loc: 819
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
-  end_line: 310
-  loc: 310
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 309
+  loc: 309
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
   start_line: 1
-  end_line: 694
-  loc: 694
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 693
+  loc: 693
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
   start_line: 1
-  end_line: 351
-  loc: 351
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 350
+  loc: 350
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
   start_line: 1
-  end_line: 269
-  loc: 269
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 268
+  loc: 268
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`
   start_line: 1
-  end_line: 569
-  loc: 569
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 568
+  loc: 568
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py`
   start_line: 1
-  end_line: 1776
-  loc: 1776
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1775
+  loc: 1775
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 1510
-  loc: 1510
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1509
+  loc: 1509
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
-  end_line: 677
-  loc: 677
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 676
+  loc: 676
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py`
   start_line: 1
-  end_line: 850
-  loc: 850
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 849
+  loc: 849
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   start_line: 1
-  end_line: 1680
-  loc: 1680
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1679
+  loc: 1679
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py`
   start_line: 1
-  end_line: 1455
-  loc: 1455
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 1454
+  loc: 1454
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py`
   start_line: 1
-  end_line: 925
-  loc: 925
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 924
+  loc: 924
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py`
   start_line: 1
-  end_line: 588
-  loc: 588
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 587
+  loc: 587
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py`
   start_line: 1
-  end_line: 621
-  loc: 621
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 620
+  loc: 620
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py`
   start_line: 1
-  end_line: 230
-  loc: 230
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 229
+  loc: 229
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py`
   start_line: 1
-  end_line: 487
-  loc: 487
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 486
+  loc: 486
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py`
   start_line: 1
-  end_line: 398
-  loc: 398
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 397
+  loc: 397
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py`
-  start_line: 1
-  end_line: 304
-  loc: 304
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unlink_transaction_strategy.py`
   start_line: 1
   end_line: 303
   loc: 303
-  verified_at: 2026-08-01T20:05:00Z
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unlink_transaction_strategy.py`
+  start_line: 1
+  end_line: 302
+  loc: 302
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py`
   start_line: 1
-  end_line: 322
-  loc: 322
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 321
+  loc: 321
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py`
-  start_line: 1
-  end_line: 331
-  loc: 331
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py`
-  start_line: 1
-  end_line: 276
-  loc: 276
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py`
-  start_line: 1
-  end_line: 261
-  loc: 261
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py`
-  start_line: 1
-  end_line: 326
-  loc: 326
-  verified_at: 2026-08-01T20:05:00Z
-- path: `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
-  start_line: 1
-  end_line: 662
-  loc: 662
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py`
-  start_line: 1
-  end_line: 286
-  loc: 286
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py`
-  start_line: 1
-  end_line: 200
-  loc: 200
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py`
-  start_line: 1
-  end_line: 157
-  loc: 157
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py`
-  start_line: 1
-  end_line: 159
-  loc: 159
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py`
-  start_line: 1
-  end_line: 171
-  loc: 171
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py`
-  start_line: 1
-  end_line: 145
-  loc: 145
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py`
-  start_line: 1
-  end_line: 222
-  loc: 222
-  verified_at: 2026-08-01T20:05:00Z
-- path: `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
-  start_line: 1
-  end_line: 541
-  loc: 541
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/mediator.py`
-  start_line: 1
-  end_line: 882
-  loc: 882
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/claim_table.py`
-  start_line: 1
-  end_line: 715
-  loc: 715
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/claim_mode.py`
-  start_line: 1
-  end_line: 175
-  loc: 175
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
   start_line: 1
   end_line: 330
   loc: 330
-  verified_at: 2026-08-01T20:05:00Z
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py`
+  start_line: 1
+  end_line: 275
+  loc: 275
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py`
+  start_line: 1
+  end_line: 260
+  loc: 260
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py`
+  start_line: 1
+  end_line: 325
+  loc: 325
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py`
+  start_line: 1
+  end_line: 285
+  loc: 285
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py`
+  start_line: 1
+  end_line: 199
+  loc: 199
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py`
+  start_line: 1
+  end_line: 156
+  loc: 156
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py`
+  start_line: 1
+  end_line: 158
+  loc: 158
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py`
+  start_line: 1
+  end_line: 170
+  loc: 170
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py`
+  start_line: 1
+  end_line: 144
+  loc: 144
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py`
+  start_line: 1
+  end_line: 221
+  loc: 221
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/mediator.py`
+  start_line: 1
+  end_line: 881
+  loc: 881
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/claim_table.py`
+  start_line: 1
+  end_line: 714
+  loc: 714
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/claim_mode.py`
+  start_line: 1
+  end_line: 174
+  loc: 174
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
+  start_line: 1
+  end_line: 329
+  loc: 329
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_mediator/admission_result.py`
   start_line: 1
-  end_line: 312
-  loc: 312
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 311
+  loc: 311
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_mediator/transaction_session.py`
   start_line: 1
-  end_line: 820
-  loc: 820
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 819
+  loc: 819
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_mediator/transaction_request.py`
   start_line: 1
-  end_line: 577
-  loc: 577
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 576
+  loc: 576
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_mediator/staged_transaction.py`
-  start_line: 1
-  end_line: 335
-  loc: 335
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/transaction_strategy.py`
-  start_line: 1
-  end_line: 194
-  loc: 194
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/strategy_builder.py`
-  start_line: 1
-  end_line: 214
-  loc: 214
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/transaction_type.py`
-  start_line: 1
-  end_line: 79
-  loc: 79
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/information_registry.py`
-  start_line: 1
-  end_line: 473
-  loc: 473
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/aetheric_mediator/identity.py`
   start_line: 1
   end_line: 334
   loc: 334
-  verified_at: 2026-08-01T20:05:00Z
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/transaction_strategy.py`
+  start_line: 1
+  end_line: 193
+  loc: 193
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/strategy_builder.py`
+  start_line: 1
+  end_line: 213
+  loc: 213
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/transaction_type.py`
+  start_line: 1
+  end_line: 78
+  loc: 78
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/information_registry.py`
+  start_line: 1
+  end_line: 472
+  loc: 472
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/aetheric_mediator/identity.py`
+  start_line: 1
+  end_line: 333
+  loc: 333
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_mediator/scope_keys.py`
   start_line: 1
-  end_line: 172
-  loc: 172
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 171
+  loc: 171
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aether_utility_system.py`
-  start_line: 1
-  end_line: 460
-  loc: 460
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/utilities/logger/safe_logger.py`
-  start_line: 1
-  end_line: 700
-  loc: 700
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/utilities/helpers/init_helpers.py`
-  start_line: 1
-  end_line: 146
-  loc: 146
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py`
-  start_line: 1
-  end_line: 243
-  loc: 243
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py`
-  start_line: 1
-  end_line: 191
-  loc: 191
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
-  start_line: 1
-  end_line: 593
-  loc: 593
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py`
-  start_line: 1
-  end_line: 508
-  loc: 508
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
-  start_line: 1
-  end_line: 516
-  loc: 516
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/class_profile.py`
-  start_line: 1
-  end_line: 182
-  loc: 182
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py`
-  start_line: 1
-  end_line: 226
-  loc: 226
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/utilities/synchronization/phase_scheduler.py`
-  start_line: 1
-  end_line: 989
-  loc: 989
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
-  start_line: 1
-  end_line: 224
-  loc: 224
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py`
-  start_line: 1
-  end_line: 299
-  loc: 299
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py`
-  start_line: 1
-  end_line: 769
-  loc: 769
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
-  start_line: 1
-  end_line: 1999
-  loc: 1999
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/crystallizer/crystals/spell_crystal.py`
-  start_line: 1
-  end_line: 1163
-  loc: 1163
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
-  start_line: 1
-  end_line: 1446
-  loc: 1446
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/crystallizer/synthetic_module.py`
-  start_line: 1
-  end_line: 1626
-  loc: 1626
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
-  start_line: 1
-  end_line: 2670
-  loc: 2670
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/mutation_configuration.py`
-  start_line: 1
-  end_line: 660
-  loc: 660
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/mutation_configuration_builder.py`
-  start_line: 1
-  end_line: 336
-  loc: 336
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/synthesis/structural_synthesizer.py`
-  start_line: 1
-  end_line: 468
-  loc: 468
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/research_set/research_set.py`
-  start_line: 1
-  end_line: 2646
-  loc: 2646
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/research_set/research_lane.py`
-  start_line: 1
-  end_line: 989
-  loc: 989
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/research_set/research_node.py`
-  start_line: 1
-  end_line: 413
-  loc: 413
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/research_set/transition_entry.py`
-  start_line: 1
-  end_line: 552
-  loc: 552
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/research_set/research_journal.py`
-  start_line: 1
-  end_line: 431
-  loc: 431
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/research_set/residence_registry.py`
-  start_line: 1
-  end_line: 408
-  loc: 408
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/mutation_research/research_set/network_versioner.py`
   start_line: 1
   end_line: 459
   loc: 459
-  verified_at: 2026-08-01T20:05:00Z
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/utilities/logger/safe_logger.py`
+  start_line: 1
+  end_line: 699
+  loc: 699
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/utilities/helpers/init_helpers.py`
+  start_line: 1
+  end_line: 145
+  loc: 145
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py`
+  start_line: 1
+  end_line: 242
+  loc: 242
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py`
+  start_line: 1
+  end_line: 190
+  loc: 190
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
+  start_line: 1
+  end_line: 592
+  loc: 592
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py`
+  start_line: 1
+  end_line: 507
+  loc: 507
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
+  start_line: 1
+  end_line: 515
+  loc: 515
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/class_profile.py`
+  start_line: 1
+  end_line: 181
+  loc: 181
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py`
+  start_line: 1
+  end_line: 225
+  loc: 225
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/utilities/synchronization/phase_scheduler.py`
+  start_line: 1
+  end_line: 988
+  loc: 988
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
+  start_line: 1
+  end_line: 223
+  loc: 223
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py`
+  start_line: 1
+  end_line: 298
+  loc: 298
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py`
+  start_line: 1
+  end_line: 768
+  loc: 768
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
+  start_line: 1
+  end_line: 1998
+  loc: 1998
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/crystallizer/crystals/spell_crystal.py`
+  start_line: 1
+  end_line: 1162
+  loc: 1162
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
+  start_line: 1
+  end_line: 1445
+  loc: 1445
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/crystallizer/synthetic_module.py`
+  start_line: 1
+  end_line: 1625
+  loc: 1625
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
+  start_line: 1
+  end_line: 2669
+  loc: 2669
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/mutation_configuration.py`
+  start_line: 1
+  end_line: 659
+  loc: 659
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/mutation_configuration_builder.py`
+  start_line: 1
+  end_line: 335
+  loc: 335
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/synthesis/structural_synthesizer.py`
+  start_line: 1
+  end_line: 467
+  loc: 467
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/research_set/research_set.py`
+  start_line: 1
+  end_line: 2645
+  loc: 2645
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/research_set/research_lane.py`
+  start_line: 1
+  end_line: 988
+  loc: 988
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/research_set/research_node.py`
+  start_line: 1
+  end_line: 412
+  loc: 412
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/research_set/transition_entry.py`
+  start_line: 1
+  end_line: 551
+  loc: 551
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/research_set/research_journal.py`
+  start_line: 1
+  end_line: 430
+  loc: 430
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/research_set/residence_registry.py`
+  start_line: 1
+  end_line: 407
+  loc: 407
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/mutation_research/research_set/network_versioner.py`
+  start_line: 1
+  end_line: 458
+  loc: 458
+  verified_at: 2026-08-02T13:00:45Z
 
 - expanded from the directory entry `src/melder/crystallizer/crystal_loader_system/`:
 
 - path: `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py`
   start_line: 1
-  end_line: 525
-  loc: 525
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 524
+  loc: 524
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py`
   start_line: 1
-  end_line: 417
-  loc: 417
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 416
+  loc: 416
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
-  end_line: 646
-  loc: 646
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 645
+  loc: 645
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_admission.py`
   start_line: 1
-  end_line: 616
-  loc: 616
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 615
+  loc: 615
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_plan.py`
   start_line: 1
-  end_line: 308
-  loc: 308
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
-  start_line: 1
-  end_line: 2670
-  loc: 2670
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 307
+  loc: 307
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py`
   start_line: 1
-  end_line: 129
-  loc: 129
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 128
+  loc: 128
+  verified_at: 2026-08-02T13:00:45Z
 
 - expanded from the directory entry `src/melder/nexus/frame_descriptor/`:
 
 - path: `src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py`
   start_line: 1
-  end_line: 155
-  loc: 155
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 154
+  loc: 154
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor/conduit_record.py`
   start_line: 1
-  end_line: 162
-  loc: 162
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 161
+  loc: 161
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor/frame_descriptor.py`
   start_line: 1
-  end_line: 633
-  loc: 633
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 632
+  loc: 632
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor/frame_descriptor_payload.py`
   start_line: 1
-  end_line: 168
-  loc: 168
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 167
+  loc: 167
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor/frame_record.py`
   start_line: 1
-  end_line: 159
-  loc: 159
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 158
+  loc: 158
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor/spell_descriptor_payload.py`
   start_line: 1
-  end_line: 327
-  loc: 327
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 326
+  loc: 326
+  verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor/spell_record.py`
-  start_line: 1
-  end_line: 215
-  loc: 215
-  verified_at: 2026-08-01T20:05:00Z
-
-- expanded from the directory entry `src/melder/nexus/acl/`:
-
-- path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
-  start_line: 1
-  end_line: 774
-  loc: 774
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/builder/frame_acl_codegen_builder.py`
-  start_line: 1
-  end_line: 651
-  loc: 651
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/builder/frame_acl_command_builder.py`
-  start_line: 1
-  end_line: 586
-  loc: 586
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/builder/frame_acl_view_builder.py`
-  start_line: 1
-  end_line: 697
-  loc: 697
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py`
-  start_line: 1
-  end_line: 682
-  loc: 682
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/frame_acl_command_configuration.py`
-  start_line: 1
-  end_line: 711
-  loc: 711
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/frame_acl_view_configuration.py`
-  start_line: 1
-  end_line: 872
-  loc: 872
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py`
-  start_line: 1
-  end_line: 842
-  loc: 842
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile.py`
-  start_line: 1
-  end_line: 315
-  loc: 315
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile_builder.py`
   start_line: 1
   end_line: 214
   loc: 214
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py`
+  verified_at: 2026-08-02T13:00:45Z
+
+- expanded from the directory entry `src/melder/nexus/acl/`:
+
+- path: `src/melder/nexus/acl/frame_acl_compiled_access_surface.py`
   start_line: 1
-  end_line: 173
-  loc: 173
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py`
+  end_line: 553
+  loc: 553
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/nexus/acl/frame_acl_compiler.py`
   start_line: 1
-  end_line: 153
-  loc: 153
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py`
+  end_line: 1083
+  loc: 1083
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/nexus/acl/frame_acl_configuration.py`
   start_line: 1
-  end_line: 129
-  loc: 129
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/precision.py`
+  end_line: 847
+  loc: 847
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/nexus/acl/frame_acl_configuration_chain.py`
   start_line: 1
-  end_line: 145
-  loc: 145
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py`
+  end_line: 483
+  loc: 483
+  verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/nexus/acl/frame_acl_container.py`
   start_line: 1
-  end_line: 126
-  loc: 126
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py`
+  end_line: 1340
+  loc: 1340
+  verified_at: 2026-08-02T13:00:45Z
+
+
+- path: `src/melder/_build_assets/_bind_guard/_builder.py`
   start_line: 1
-  end_line: 100
-  loc: 100
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py`
-  start_line: 1
-  end_line: 349
-  loc: 349
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile_builder.py`
-  start_line: 1
-  end_line: 205
-  loc: 205
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py`
-  start_line: 1
-  end_line: 97
-  loc: 97
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py`
+  end_line: 368
+  loc: 368
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/_build_assets/_bind_guard/bind_guard.py`
   start_line: 1
   end_line: 96
   loc: 96
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/command/precision.py`
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 94
-  loc: 94
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/command/safe_profile.py`
+  end_line: 628
+  loc: 628
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/_build_assets/_build_asset_runner.py`
   start_line: 1
-  end_line: 97
-  loc: 97
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py`
+  end_line: 399
+  loc: 399
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
   start_line: 1
-  end_line: 228
-  loc: 228
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py`
+  end_line: 867
+  loc: 867
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystal_analysis/impact_engine.py`
   start_line: 1
-  end_line: 263
-  loc: 263
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_ruleset.py`
+  end_line: 407
+  loc: 407
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   start_line: 1
-  end_line: 298
-  loc: 298
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py`
+  end_line: 231
+  loc: 231
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/aether_crystal.py`
   start_line: 1
-  end_line: 466
-  loc: 466
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile_builder.py`
+  end_line: 142
+  loc: 142
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/aetheric_frame_crystal.py`
   start_line: 1
-  end_line: 205
-  loc: 205
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py`
+  end_line: 246
+  loc: 246
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/cluster_crystal.py`
   start_line: 1
-  end_line: 106
-  loc: 106
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py`
+  end_line: 191
+  loc: 191
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/conduit_crystal.py`
   start_line: 1
-  end_line: 104
-  loc: 104
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/view/precision.py`
+  end_line: 306
+  loc: 306
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/contract_crystal.py`
   start_line: 1
-  end_line: 99
-  loc: 99
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/configurations/profiles/view/safe_profile.py`
+  end_line: 226
+  loc: 226
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/crystallizer_crystal.py`
   start_line: 1
-  end_line: 113
-  loc: 113
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/frame_acl_compiled_access_surface.py`
+  end_line: 149
+  loc: 149
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/mutation_research_crystal.py`
   start_line: 1
-  end_line: 554
-  loc: 554
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/frame_acl_compiler.py`
+  end_line: 350
+  loc: 350
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/nexus_crystal.py`
   start_line: 1
-  end_line: 1084
-  loc: 1084
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/frame_acl_configuration.py`
+  end_line: 188
+  loc: 188
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/recorded_unit_state.py`
   start_line: 1
-  end_line: 848
-  loc: 848
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/frame_acl_configuration_chain.py`
+  end_line: 69
+  loc: 69
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/spell_index_crystal.py`
   start_line: 1
-  end_line: 484
-  loc: 484
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/frame_acl_container.py`
+  end_line: 177
+  loc: 177
+  verified_at: 2026-08-02T14:28:07Z
+- path: `src/melder/crystallizer/crystals/spellbook_crystal.py`
   start_line: 1
-  end_line: 1341
-  loc: 1341
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_report.py`
-  start_line: 1
-  end_line: 243
-  loc: 243
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py`
-  start_line: 1
-  end_line: 637
-  loc: 637
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/frame_acl_validator.py`
-  start_line: 1
-  end_line: 1494
-  loc: 1494
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py`
-  start_line: 1
-  end_line: 25
-  loc: 25
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py`
-  start_line: 1
-  end_line: 121
-  loc: 121
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/profiles/command/precision_strategy.py`
-  start_line: 1
-  end_line: 22
-  loc: 22
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/profiles/command/safe_strategy.py`
-  start_line: 1
-  end_line: 50
-  loc: 50
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/profiles/common.py`
-  start_line: 1
-  end_line: 48
-  loc: 48
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/profiles/view/precision_strategy.py`
-  start_line: 1
-  end_line: 24
-  loc: 24
-  verified_at: 2026-08-01T20:05:00Z
-- path: `src/melder/nexus/acl/validator/profiles/view/safe_strategy.py`
-  start_line: 1
-  end_line: 72
-  loc: 72
-  verified_at: 2026-08-01T20:05:00Z
+  end_line: 264
+  loc: 264
+  verified_at: 2026-08-02T14:28:07Z
 
+CORE-SET INVARIANT (re-established 2026-08-02). This map is the DEDUPLICATED
+UNION OF EVERY `Key Files (C1)` LIST in the catalogs above - nothing more and
+nothing less. It had drifted in both directions: 40 entries were measured here
+that no component claimed (the deep `nexus/acl/` profile, validator and
+configuration modules, which the Frame ACL entries explicitly declare are NOT
+key files), and 18 files that components DO claim were missing - 14 of them
+created by the 2026-08-02 directory expansions, which added paths to
+`Key Files (C1)` without adding them here.
+The 40 were removed from Core, not deleted. Two different things were preserved
+in two different places, and the distinction matters: the MODULES remain
+catalogued with their purpose text in
+`### Full Package Inventory (exhaustive, retained)` below, and their MEASURED
+RANGES - which the inventory does not carry - were moved verbatim to
+`system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`
+so a later pass that promotes any of them back to core does not have to
+remeasure. The 18 were measured from disk and added.
+Re-check with the recipe in `## Indexing`; the two sets must be equal, and any
+future expansion of a `Key Files (C1)` list must land here in the same pass.
 
 ### Full Package Inventory (exhaustive, retained)
 
@@ -7231,6 +7602,79 @@ changed is the document's shape around them.
   produces one-line index fragments. All of it went to
   `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`,
   unwrapped. NOTHING WAS DELETED.
+
+WHAT CHANGED (2026-08-02): CONFORMED to the revised
+`src_components_instructions.md`. Four defect classes closed.
+
+- FIVE DIRECTORY CITATIONS in `Key Files (C1)` were EXPANDED into real modules -
+  `crystal_loader_system/`, `crystal_analysis/`, `crystals/`, `nexus/acl/`,
+  `nexus/frame_descriptor/`. A directory has no line range and cannot resolve
+  against a graph keyed by source file. Every expanded path was checked present
+  in `src_graph_index.md` before it was written. The expansion also recovered
+  two modules the old parenthetical had silently omitted, `graft_runner.py` and
+  `user_world_rebuild.py`. Subpackages too deep to be key files - acl carries 41
+  further modules, crystal_analysis 22 - are named as prose with measured
+  counts, deliberately NOT as citations, so they cannot re-enter the join.
+- TWO TEST PATHS were EVICTED from `Key Files (C1)` and from `## C1 Code Map
+  (Core)`. The graph is built from the source tree, so a test path is a
+  guaranteed miss, not a near miss. They were MOVED, NOT DELETED, to
+  `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`
+  under a heading naming `tests_components.md` as their destination, with their
+  measured ranges retained so the test-side pass need not remeasure. UNTIL THAT
+  PASS LANDS THEY ARE IN NEITHER CANONICAL DOCUMENT. They remain in
+  `## Information Sources` on purpose: they were read as evidence, and that
+  section records what was consulted, not what a component claims as its own.
+- ONE DEAD PATH, `crystal_loader/bootstrap_manifest.py`, removed in the
+  2026-07-10 decomposition, was cited in backticks as though live. The fact is
+  worth keeping; the citation form made every future join report it forever. It
+  is now a plain historical note.
+- ALL 225 C1 RANGES REMEASURED. Same off-by-one as the architecture document:
+  223 of 225 `end_line` values counted a phantom line past the final newline,
+  and `loc` was inflated by one on each. See that document's handoff for the
+  mechanism.
+- Join re-verified by strict parse: 241 `Key Files (C1)` paths and 225 C1
+  entries, 0 unresolved.
+- Scored 71.5/100 (band C) against
+  `design_engineer/policies/system_document_quality_rubric.md`. Band C means
+  usable, refresh before high-risk work. The weak criteria are Contract
+  completeness 3/5 - 50 of 300 C3 field slots are a single short bullet,
+  concentrated in Observability, Extension Points and Concurrency/Threading -
+  and Mirror agreement 2/5. Addressability scores 3/5 because
+  `## C3 Components Catalog` indexes as a 3,033-line range, 41.7% of this
+  document in one slice; that heading is required by the section contract, so
+  the cap is structural and is recorded in the active ticket for a ruling
+  rather than treated as a document defect. SELECT A COMPONENT, NEVER THE
+  CATALOG.
+
+DEPTH PASS (2026-08-02): every hollow field in the C3 catalog was rewritten
+from source read on this pass - 50 thin slots to 0, across 14 components. Field
+CONTENT changed; no component's contract or meaning did. What the rewrite
+surfaced is worth knowing before reading the entries:
+
+- `Spellbook` owns TWO RLocks, and `_phase_run_lock` is never acquired in its
+  own module - `SpellbookCreationSystem` reaches in for it, because meld-time
+  revalidation reaches the scheduler path without the Spellbook lock held.
+- `bind()` returns different shapes for its two call styles; a caller cannot
+  assume a `Spell` came back.
+- `SpellbookConfiguration.freeze()` triggers a crystallizer emission. It is not
+  merely a seal.
+- `Conduit` silently overrides a lesser conduit's name to `None`; the single
+  warning is the only trace a later failed lookup will ever have.
+- `Creations` disposes in REVERSE CREATION ORDER and aggregates failures into an
+  `ExceptionGroup` rather than stopping at the first.
+- `PhaseScheduler` depends on every dequeued unit reporting into its latch
+  EXACTLY ONCE; that invariant is what stops a caller blocking for the full
+  barrier timeout.
+
+ONE CLAIM WAS CORRECTED, NOT JUST EXPANDED: the DevOps Control Plane
+Observability field said "minimal internal logging". `dev_ops_manager.py` has no
+logger at all. Do not look for control-plane behaviour in that module's logs;
+the information registry is the read point.
+
+Scored 83.5/100 (band B), up from 71.5 - the document has left band C, so the
+"refresh before high-risk work" caveat no longer applies. Remaining losses are
+Mirror agreement and the structural Addressability cap, neither of which can be
+closed by editing this file.
 
 WHAT IS STILL UNKNOWN: the `## Unknowns` section is unchanged. The advanced
 `SpellState` flag producers remain blocked by design, awaiting the

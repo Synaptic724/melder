@@ -20,13 +20,25 @@ WHAT EACH MODE DOES, BY OWNERSHIP CLASS
     PACKAGE   both modes: restore if missing, restore if the hash differs.
     RESET     reset:  unlisted files removed; listed files restored to shipped.
               repair: untouched entirely.
-    INSTANCE  never touched, in either mode. `agent_onboarding/user_defined/`
-              is the project's own work and the package has no claim on it.
-              `--purge-user-defined` is the single exception, and it exists only
-              because a release should not ship another project's role overlays.
-              It is never implied by `--mode reset`: deleting someone's role
-              because they asked to tidy a lane would be a betrayal of the
-              invariant, so it has to be asked for by name.
+    INSTANCE  never touched, in either mode. Two lanes, and they are NOT
+              interchangeable:
+
+                `agent_onboarding/user_defined/`  role overlays.
+                    `--purge-user-defined` is the single exception to "never
+                    touched", and it exists only because a release should not
+                    ship another project's roles. Never implied by `--mode
+                    reset`: deleting someone's role because they asked to tidy
+                    a lane would be a betrayal of the invariant, so it has to
+                    be asked for by name.
+
+                `user_defined/`  the top-level free space.
+                    Kept in EVERY mode, including `--purge-user-defined`. Its
+                    README promises the package never writes there, and that
+                    promise is the reason the lane is usable at all.
+
+              An earlier version treated both as one bucket, so a purge deleted
+              top-level files while reporting only the role names it found -
+              removing files it never named. The two roots are now separate.
     LIVE      reset:  the whole file is restored. A release must not ship one
                       project's routing rows.
               repair: only the managed block is swapped. Rows are never touched.
@@ -78,13 +90,21 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from package_manifest import MANIFEST_NAME, SKIP_DIRS, parse  # noqa: E402
+from package_manifest import (  # noqa: E402
+    MANIFEST_NAME, SKIP_DIRS, parse, check_manifest_compatible,
+)
 
 MANAGED_BEGIN = "<!-- BEGIN MANAGED: {name} -->"
 MANAGED_END = "<!-- END MANAGED: {name} -->"
+
+# The two INSTANCE lanes. They are NOT interchangeable: only the first is
+# purgeable, and only by explicit request. See the purge handling in main().
+ROLE_OVERLAY_ROOT = "agent_onboarding/user_defined/"
+FREE_SPACE_ROOT = "user_defined/"
 
 
 def sha_of(path: pathlib.Path) -> str:
@@ -131,6 +151,63 @@ def swap_managed(current: str, reference: str) -> tuple[str, list[str]]:
     return current, changed
 
 
+USER_BEGIN = "<!-- BEGIN USER-DEFINED{suffix} -->"
+USER_END = "<!-- END USER-DEFINED{suffix} -->"
+_USER_OPEN = re.compile(r"<!-- BEGIN USER-DEFINED(?::\s*(.+?))?\s*-->")
+
+
+def user_regions(text: str) -> list[tuple[str, int, int]]:
+    """Every user-defined region as (name, body_start, body_end).
+
+    The offsets bracket the BODY, not the markers, because the markers belong to
+    the package and the body belongs to the install. Carrying the markers across
+    would mean an upgrade could never reposition or rename them.
+    """
+    out = []
+    for m in _USER_OPEN.finditer(text):
+        name = (m.group(1) or "").strip()
+        suffix = f": {name}" if name else ""
+        end_marker = USER_END.format(suffix=suffix)
+        e = text.find(end_marker, m.end())
+        if e == -1:
+            raise ValueError(f"unterminated user-defined region {name or '(unnamed)'!r}")
+        out.append((name, m.end(), e))
+    return out
+
+
+def carry_user_regions(incoming: str, current: str) -> tuple[str, list[str]]:
+    """Return `incoming` with each user region's body taken from `current`.
+
+    This is what lets a package file be conformed without eating the install's
+    work. The package owns the prose, the headings, the field list - all of it
+    updates. What the install wrote inside its user region rides across
+    unchanged.
+
+    A region the incoming file does not declare is NOT carried: the package
+    stopped offering that space, and silently reattaching a body to a region
+    that no longer exists would put text somewhere nobody expects it. Such a
+    region is reported by the caller instead.
+    """
+    mine = {name: current[s:e] for name, s, e in user_regions(current)}
+    if not mine:
+        return incoming, []
+
+    carried: list[str] = []
+    # Back to front: replacing a body changes every offset after it.
+    for name, s, e in sorted(user_regions(incoming), key=lambda r: -r[1]):
+        if name in mine and incoming[s:e] != mine[name]:
+            incoming = incoming[:s] + mine[name] + incoming[e:]
+            carried.append(name or "(unnamed)")
+    return incoming, carried
+
+
+def orphaned_user_regions(incoming: str, current: str) -> list[str]:
+    """User regions the install has and the incoming version no longer offers."""
+    theirs = {n for n, _, _ in user_regions(incoming)}
+    return sorted({(n or "(unnamed)") for n, _, _ in user_regions(current)
+                   if n not in theirs})
+
+
 def diff_config_keys(current: str, shipped: str) -> tuple[list[str], list[str], list[str]]:
     """Which top-level config keys were added, removed, or given a new value.
 
@@ -172,7 +249,9 @@ def main() -> int:
                     help="ALSO delete role overlays under agent_onboarding/user_defined/ "
                          "that the manifest does not list. For cutting a release: a "
                          "release should not ship another project's roles. Never implied "
-                         "by --mode reset, because those overlays are someone's work")
+                         "by --mode reset, because those overlays are someone's work. "
+                         "Does NOT touch top-level user_defined/ - that lane is kept in "
+                         "every mode")
     ap.add_argument("--check", action="store_true", help="report only, change nothing")
     ap.add_argument("--apply", action="store_true", help="perform the cleanup")
     args = ap.parse_args()
@@ -191,7 +270,12 @@ def main() -> int:
         print("Refusing to act without --apply. Use --check to see the plan.")
         return 2
 
-    manifest = parse(man_path.read_text(encoding="utf-8"))
+    manifest_text = man_path.read_text(encoding="utf-8")
+    problem = check_manifest_compatible(manifest_text, str(man_path))
+    if problem:
+        print(f"ERROR: {problem}")
+        return 2
+    manifest = parse(manifest_text)
     reset_roots = sorted({p.split("/")[0] + "/" for p, (c, _) in manifest.items()
                           if c == "RESET" and "/" in p})
 
@@ -206,13 +290,24 @@ def main() -> int:
 
     instance_roots = sorted({p.rsplit('/', 1)[0] + '/' if '/' in p else p
                              for p, (c, _) in manifest.items() if c == 'INSTANCE'} |
-                            {'agent_onboarding/user_defined/', 'user_defined/'})
+                            {ROLE_OVERLAY_ROOT, FREE_SPACE_ROOT})
 
-    foreign_roles: list[str] = []
+    # Two INSTANCE lanes, and only one of them is purgeable.
+    #
+    # `--purge-user-defined` exists so a release does not ship another project's
+    # ROLE OVERLAYS. The top-level free space is a different lane with a
+    # different promise - `user_defined/README.md` states the package never
+    # writes there in any mode - and an earlier version swept both, while
+    # reporting only the role names. It deleted files it never named.
+    foreign_roles: list[str] = []       # agent_onboarding/user_defined/ - purgeable
+    foreign_free: list[str] = []        # user_defined/ - never purged
     for rel in sorted(on_disk - set(manifest)):
-        if any(rel.startswith(r) for r in instance_roots):
+        if rel.startswith(ROLE_OVERLAY_ROOT):
             foreign_roles.append(rel)
             continue          # never removed unless --purge-user-defined says so
+        if any(rel.startswith(r) for r in instance_roots):
+            foreign_free.append(rel)
+            continue          # never removed, full stop
         in_reset_lane = any(rel.startswith(r) for r in reset_roots)
         if in_reset_lane:
             (remove if reset_mode else kept).append(rel)
@@ -286,11 +381,14 @@ def main() -> int:
     if foreign_roles:
         roles = sorted({r.split("/")[2] for r in foreign_roles if r.count("/") >= 2})
         verb = "WILL BE DELETED" if args.purge_user_defined else "kept"
-        print(f"  overlays{len(foreign_roles):>5}  files under user_defined not in the "
-              f"manifest, in {len(roles)} role(s): {', '.join(roles)} - {verb}")
+        print(f"  overlays{len(foreign_roles):>5}  files under {ROLE_OVERLAY_ROOT} not in "
+              f"the manifest, in {len(roles)} role(s): {', '.join(roles) or '-'} - {verb}")
         if not args.purge_user_defined:
             print("            these belong to whoever wrote them. Cutting a release?"
                   " Pass --purge-user-defined.")
+    if foreign_free:
+        print(f"  free    {len(foreign_free):>5}  files under {FREE_SPACE_ROOT} - kept in "
+              f"every mode, including --purge-user-defined")
 
     if reset_mode:
         remove = remove + unknown
@@ -354,8 +452,20 @@ def main() -> int:
         except OSError as exc:
             unpruned.append(f"{d.relative_to(target)}: {exc.strerror or exc}")
 
+    # Re-materialise lane structure the prune above may have taken with it -
+    # `.gitkeep` markers and seeded lane files.
+    #
+    # INSTANCE is excluded, and that exclusion is the whole reason this loop
+    # needs a class check at all. It iterates the manifest, so without one a
+    # LISTED instance file the user deliberately deleted gets written back from
+    # the reference. Restoring a file someone removed on purpose is the same
+    # betrayal as overwriting one they edited: the package has no claim on this
+    # lane, in either mode. Found by mutation testing - every test until then
+    # used UNLISTED instance files, so this branch was never reached.
     recreated = 0
-    for rel in manifest:
+    for rel, (cls, _) in manifest.items():
+        if cls == "INSTANCE":
+            continue
         p = target / rel
         if not p.exists() and (reference / rel).is_file():
             p.parent.mkdir(parents=True, exist_ok=True)

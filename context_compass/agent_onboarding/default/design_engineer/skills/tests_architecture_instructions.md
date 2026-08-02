@@ -100,21 +100,39 @@ Full format specification:
 4. `## DO NOT ASSUME / Unknowns Gate`
 5. `## Unknowns`
 6. `## System Context (C4)`
-7. `## External Interfaces and Entry Points`
-8. `## Core Responsibilities`
-9. `## Data Flows and Lifecycle`
-10. `## Invariants and Guarantees`
-11. `## C1 Code Map (Key Paths)`
-12. `## Diagrams`
-13. `## Information Sources`
-14. `## Context / Handoff Summary`
+7. `## System Boundary and External Interfaces`
+8. `## Architecture Summary (C4)`
+9. `## Entrypoints and Runtime Guardrails`
+10. `## Boot and Configuration Sequence`
+11. `## Data Flows and Sequences`
+12. `## Operational Invariants`
+13. `## Failure Modes and Error Paths`
+14. `## C1 Code Map (Core Only)`
+15. `## Diagrams`
+16. `## Information Sources`
+17. `## Context / Handoff Summary`
+
+**This is `src_architecture.md`'s contract, name for name.** That is required,
+not incidental: `system_document_build.md` states the pair share one section
+contract and that divergence between them *is* the defect. Identical names are
+what let a reader who knows one document navigate the other, and what makes the
+two indexes sliceable by the same query.
+
+The section names stay the same; their **subject** does not. `## Boot and
+Configuration Sequence` here means how the test harness boots and configures,
+not how the runtime does. If a section of this document would read identically
+in `src_architecture.md`, it is describing the wrong system - the shared
+contract is a navigation guarantee, not licence to restate the source map in
+test vocabulary.
 
 ### Sections not in the contract
 
 The contract is a **minimum in a fixed relative order**, not a whitelist. Other
-sections are permitted and are common: real documents run 44 H2 sections against
-a 17-section contract. Read literally as "only these sections", a recomposition
-deletes roughly 1,200 lines per document.
+sections are permitted and are common. Measured on one real architecture
+document: 44 H2 sections against its 17-section contract - read literally as
+"only these sections", a recomposition deletes roughly 1,200 lines. That figure
+is from the source side of the pair, which shares this exact contract, so it
+transfers directly: a mature test architecture will exceed seventeen too.
 
 If material genuinely does not belong here, it is **moved, never deleted**:
 
@@ -127,19 +145,26 @@ If material genuinely does not belong here, it is **moved, never deleted**:
 "Delete it because the contract does not list it" is never the right answer.
 
 ## C1 Code Map Contract
-Each C1 key-path entry must include:
+Each C1 core-map entry must include:
 - `path`
 - `start_line`
 - `end_line`
 - `loc`
 - `verified_at` (UTC DateTime `YYYY-MM-DDTHH:MM:SSZ`)
 
-**Directories are not valid C1 entries.** A directory has no line range, and the
-join to `src_graph.md` is keyed by source file, so a directory citation can never
-resolve. Expand it into its constituent non-`__init__` modules and measure each.
-Do not write `UNKNOWN` for a directory: `UNKNOWN` means "not yet verified and
-here is the investigation target", and a directory is unverifiable in principle -
-the marker would sit there forever with nothing to resolve it.
+**Directories are not valid C1 entries.** A directory has no line range, so a
+citation to one carries no evidence and cannot be verified or remeasured. Expand
+it into its constituent test files - excluding whatever the test scope already
+excludes - and measure each. Do not write `UNKNOWN` for a directory: `UNKNOWN`
+means "not yet verified and here is the investigation target", and a directory is
+unverifiable in principle - the marker would sit there forever with nothing to
+resolve it.
+
+**There is no join to verify on this side, and that is the asymmetry.** The graph
+is built from the source tree, so the source-side documents get their citations
+checked against `src_graph_index.md` for free. This document cites test paths,
+which appear in no graph. Nothing will tell you a path here has gone stale.
+Remeasure ranges on every pass rather than assuming a tool is watching.
 
 Ranges are measured, never estimated. If the exact range is not verified, keep
 the claim `UNKNOWN` and add an investigation target in `## Unknowns` rather than
@@ -155,24 +180,27 @@ writing a plausible number.
   system.
 
 ## Build Sequence (Discovery-First, Required)
-2a. Unwrap any heading spanning more than one physical line. A reflowed
-    heading parses as several sections; the first wins "narrowest match"
-    and `--slice` returns a stub. `index_document.py` warns on unclosed
-    brackets, which is the usual tell, but it cannot catch every wrap -
-    scan the heading list once before you trust it.
-
 1. Confirm active ticket route and test-system scope.
-2. Read required example documents and extract reusable C4 section patterns.
-3. Inventory test entry surfaces (`tests/`, runner config, fixtures).
-4. Capture unknowns before promoting any architecture claims.
-5. Define C4 boundaries and external interfaces.
-6. Document lifecycle flow (setup, execution, teardown) with evidence.
-7. Capture invariants and failure paths observed in sources.
-8. Build C1 key-path map with ranges, LOC, and verification timestamps.
-9. Add ASCII + Mermaid diagrams per the Diagram Contract.
-10. If patch lane is active, confirm the architecture patch has not moved a
+2. If the document already exists, capture the Content Preservation baseline
+   now, before the first edit. Captured later it proves nothing.
+3. Read required example documents and extract reusable C4 section patterns.
+4. Inventory test entry surfaces (test tree, runner config, fixtures).
+5. Unwrap any heading spanning more than one physical line. A reflowed heading
+   parses as several sections; the first wins "narrowest match" and `--slice`
+   returns a stub. `index_document.py` warns on unclosed brackets, which is the
+   usual tell, but it cannot catch every wrap - scan the heading list once
+   before you trust it.
+6. Capture unknowns before promoting any architecture claims.
+7. Define C4 boundaries and external interfaces.
+8. Document lifecycle flow (setup, execution, teardown) with evidence.
+9. Capture invariants and failure paths observed in sources.
+10. Build the C1 core map with ranges, LOC, and verification timestamps.
+11. Add ASCII + Mermaid diagrams per the Diagram Contract.
+12. If patch lane is active, confirm the architecture patch has not moved a
     boundary this document still describes the old way.
-11. Refresh `Information Sources` and `Context / Handoff Summary`.
+13. Refresh `Information Sources` and `Context / Handoff Summary`.
+14. Rebuild the index in this same pass, then satisfy the Content Preservation
+    Gate and the Quality Gate.
 
 Do not skip sequence order. If blocked, write a `BLOCKER` note in the active
 ticket before expanding scope. If a test-architecture claim conflicts with
@@ -203,16 +231,32 @@ So, before the first transform:
    the resulting document or in a **named migration target** you can point at.
 
 ```bash
-# before
+# BEFORE the first transform
 grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/before.txt
-# after
-grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/after.txt
+
+# AFTER - the document PLUS every target you moved material into
+cat DOC.md MIGRATION_TARGET.md ... | grep -v '^[[:space:]]*$' \
+  | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/after.txt
+
 diff /tmp/before.txt /tmp/after.txt
 ```
+
+**The `after` capture must span the document and its migration targets.**
+Comparing the document against itself contradicts the rule above: relocation is
+explicitly allowed, so every legitimately moved line reports as loss. That fires
+hardest on a recomposition that moves material - the exact case this gate exists
+for - and a gate that cries wolf is disabled by the second person who hits it.
 
 **The baseline must be captured BEFORE the first edit.** Captured afterwards it
 proves nothing - it describes the document you already built, which is the exact
 trap that makes "I verified it" feel true while content is gone.
+
+**Reformatting reads as loss under a line comparison.** Rewrapping prose or
+changing a record's shape leaves the content intact and the line text different,
+so this recipe flags it. When a pass deliberately reshapes entries, compare
+extracted content - the paths, the field values, the claims - rather than raw
+lines, or the gate fails on work that lost nothing. Do not respond by relaxing
+the gate; respond by comparing the right thing.
 
 A line legitimately removed is fine. A line you cannot account for is a defect,
 and this gate fails until you can name where it went.
@@ -226,6 +270,16 @@ Pass only when all checks are true:
 - [ ] Interfaces, lifecycle, and invariants are evidence-backed.
 - [ ] C1 map entries include path, range, LOC, and verified_at.
 - [ ] Diagrams and narrative use consistent terms.
+
+Passing this gate means the document is structurally sound, not that it is good.
+Every check above is binary, and none of them notice a document that restates
+source architecture in test vocabulary while satisfying every section. Score it
+with
+`agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md`
+(tests_architecture profile - describing the wrong system scores 0 on Fidelity
+however accurate the sentences are) and record the total in the active ticket.
+Below 60 it is not usable as evidence downstream. Expect a lower score here than
+on the source side on a first pass; that gap is the finding, not an excuse.
 
 ## Validation Commands
 - `rg -n '^#{1,6} .*[([][^)\]]*$' context_compass/system_docs/tests_architecture.md` - headings with an unclosed bracket, the usual sign of a wrap

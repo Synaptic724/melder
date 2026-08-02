@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-01T23:32:17Z |
+| generated_at | 2026-08-02T10:58:15Z |
 | line_count | 96 |
 | line_ending | lf |
-| content_sha256 | `f9fa3dc2950790e22c61abba92928b2f5a933b5ac3552daf1cc84ea69ff9d6fa` |
+| content_sha256 | `d505f573cd2b96f8df2169ab8640297c2f7f0c64fb4898e4f2aeebec14c4b634` |
 | sections | 13 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -36,7 +36,7 @@ which you did.
 | 40-56 | 3 | C3 Components Catalog > Component: Reference Integrity Scanner |
 | 57-61 | 2 | C2 Subcomponents Catalog |
 | 62-65 | 2 | Method-Level Call Flows (C1) |
-| 66-77 | 2 | C1 Code Map (Key Paths) |
+| 66-77 | 2 | C1 Code Map (Core) |
 | 78-89 | 2 | Diagrams |
 | 90-94 | 2 | Information Sources |
 | 95-96 | 2 | Context / Handoff Summary |
