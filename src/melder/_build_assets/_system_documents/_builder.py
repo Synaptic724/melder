@@ -493,6 +493,52 @@ def source_fingerprint() -> str:
     return digest.hexdigest()
 
 
+def _text_literal(text: str) -> str:
+    """
+    Render document text as a Python string literal that round-trips exactly.
+
+    Purpose:
+        The payload IS a string literal, so getting this wrong is the worst
+        failure this asset has: the module still imports, ranges still resolve,
+        and the prose comes back subtly altered. Nothing downstream can detect
+        that.
+
+    Contract:
+        Prefers a triple-quoted literal because a generated payload is
+        diffable and a reviewer should be able to read it. Falls back to
+        `repr()` - which Python guarantees round-trips - whenever the readable
+        form would not.
+
+        The readable form fails on trailing quotes, which fuse with the closing
+        delimiter: one makes the module unparseable, and TWO make it parse
+        while silently dropping them. No shipped document ends that way today,
+        but that is luck rather than a guarantee, and luck is not a thing to
+        emit code on.
+
+        Verified by EXECUTION, not by reasoning about escapes. If the readable
+        literal does not evaluate back to the input, it is not used.
+
+    Args:
+        text: The document text.
+
+    Returns:
+        str: A Python expression evaluating to exactly `text`.
+    """
+    escaped = text.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
+    if escaped.endswith('"'):
+        trailing = len(escaped) - len(escaped.rstrip('"'))
+        escaped = escaped[:-trailing] + '\\"' * trailing
+    readable = '"""' + escaped + '"""'
+    try:
+        namespace: Dict[str, object] = {}
+        exec(compile(f"_ = {readable}", "<literal>", "exec"), namespace)
+        if namespace["_"] == text:
+            return readable
+    except SyntaxError:
+        pass
+    return repr(text)
+
+
 def write_payloads(entries: Dict[str, Dict[str, object]]) -> int:
     """
     Emit one payload module per shipped document, carrying its text.
@@ -542,7 +588,7 @@ def write_payloads(entries: Dict[str, Dict[str, object]]) -> int:
             continue
 
         text = (root / document_file).read_text(encoding="utf-8")
-        literal = text.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
+        literal = _text_literal(text)
         module = "\n".join([
             '"""',
             "GENERATED BUILD ASSET - DO NOT EDIT MANUALLY.",
@@ -563,7 +609,7 @@ def write_payloads(entries: Dict[str, Dict[str, object]]) -> int:
             f'LINE_COUNT = {entry["line_count"]!r}',
             f'CONTENT_SHA256 = {entry["content_sha256"]!r}',
             "",
-            'TEXT = """' + literal + '"""',
+            f'TEXT = {literal}',
             "",
         ])
 

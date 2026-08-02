@@ -391,8 +391,8 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `agent_onboarding/user_defined/synaptic_python_developer/workflows/synaptic_python_developer_onboarding.md` | INSTANCE | `d5caa21812e4e67e72cd2078130f0cd8507cd2a678d141526193dc6025fee6f4` |
 | `artifacts/IMPORTANT_CONSIDERATION.md` | RESET | `593c5f85859354065042e4e09368459f869eecc49dd94b651ed82c0ca761ac2d` |
 | `artifacts/README.md` | RESET | `196e2022e5d708af65d39b7e434c792f5c1374d5eb8b542f4d18ee534bbb4ad3` |
-| `artifact_board.md` | LIVE | `cef354a3976222da7a85200004b255e50eeb2397f80abeb5622bea27e9ae9961` |
-| `attention_board.md` | LIVE | `55a6ed420356aef211e302ced6cf27c12970269eb8b241da07c6486576dedfc5` |
+| `artifact_board.md` | LIVE | `63ad0d1f2b5ef2319a17604035c5ae3556ac2b5f1817caa06fc14cfc1bc355ae` |
+| `attention_board.md` | LIVE | `f65ecb1fdb62eca4001d800ae39b9fe592072b31f13abe2dcecbe9056ba55a3f` |
 | `config/context_compass_config.yaml` | CONFIG | `824d3e76351c412813fdae9a5b0f120bc514e103b09445dc9dbadfed7402e315` |
 | `CONTEXT_COMPACTION.md` | PACKAGE | `dd532c42bce5efd3648b6f52cf931f0a4c5ce5de5ff7e33376e836fc9b625047` |
 | `context_management/artifacts/.gitkeep` | RESET | `01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b` |
@@ -443,7 +443,7 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `examples/story_designer_task_flow.md` | PACKAGE | `75def243d169840f744772b92088ee5547f7f683f54e7f09c3bf684faa63f864` |
 | `examples/story_novel_artist_task_flow.md` | PACKAGE | `7c1d156952c223002f13573f81765e543a284ce97ba4f8cfeb0cdc20fb10ccd1` |
 | `LICENSE` | PACKAGE | `88c41276167ae0f03b2f0dc743040a783b52d4374e75269bce3c3a9c0b5b0b33` |
-| `mailbox_board.md` | LIVE | `ccb1835399a088013593db8637cbda8e16341a79b3c998e941c7b10d06403407` |
+| `mailbox_board.md` | LIVE | `baffe3bd2c7876887af49dba8cf9931cfe456203900f0cb29669d87090285d1f` |
 | `PROFILE_CLASS_CREATION_GUIDE.md` | PACKAGE | `d1fe634a3cf3b2acd6cc4c35cb937fc1a9af18e9c1f66f6cf40e122b3473ec0a` |
 | `README.md` | PACKAGE | `1621c395af61cddc3c1f5bb476b82e73fc0312cca12fb439fdce06816219f282` |
 | `SKILLS.MD` | PACKAGE | `c95bcc044f9ea593e7a6992bcb7ad2f2bf796b05c782dba9e098dde9524a5bb3` |

@@ -37,8 +37,9 @@ GOAL: TURNING THE NEXUS ON - and discovering that it does NOT climb the
         nexus.is_enabled     - the subsystem is up
       Same shape as frozen/activated in lesson 09. Configuration presence
       and subsystem liveness are always separate questions in melder.
-SURFACE EXERCISED: md.Nexus, md.NexusConfiguration, md.NexusFrameMode,
+SURFACE EXERCISED: md.Nexus, md.NexusConfiguration,
                    create_system_configuration, enable, disable
+                   (frame mode passed as the string "single")
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 """
 import melder as md
@@ -64,12 +65,12 @@ def main() -> None:
     assert nexus.is_enabled is False
     print("after create - enabled:", nexus.is_enabled)
 
-    # Frame mode is one of three, and it is a real enum rather than a
-    # string - so a typo is a ValueError instead of a silent default.
+    # Frame mode is one of three. Pass the NAME - the setter is typed
+    # Union[NexusFrameMode, str] and normalizes for you, so a typo is a
+    # ValueError at the door rather than a silent default.
     config.with_nexus_frame_mode("single")
-    print("frame mode set:", "single")
-    print("available modes:",
-          [mode.value for mode in md.NexusFrameMode])
+    print("frame mode set: single")
+    print("available modes:", [mode.name for mode in md.NexusFrameMode])
 
     # ENABLE. Installs the config and finalizes it on the way through -
     # note that we never called finalize() or freeze() ourselves.

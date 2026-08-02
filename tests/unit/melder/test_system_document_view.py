@@ -19,8 +19,8 @@ WHAT THESE PROTECT
    both directions - so an unguarded traversal does not stop. Depth alone does
    not save it; the visited set does.
 
-4. GUESSES DO NOT SHIP. `src_graph_usage.md` measures edge candidates
-   over-generating roughly 8x and calls them leads, never evidence. They are
+4. GUESSES DO NOT SHIP. Extractor candidates over-generate heavily against a
+   hand-authored graph and are leads, never evidence. They are
    excluded from the built adjacency, and that exclusion is asserted here so a
    future builder change cannot launder a guess into structure.
 """
@@ -322,8 +322,8 @@ def test_shipped_payload_matches_the_proof_its_index_claimed(name: str) -> None:
     Purpose:
         The build verified the SOURCE pair. This verifies what actually landed
         in the package, which catches a corrupted wheel or a hand-edit of a
-        generated module - `src_graph_usage.md` refuses to slice an unverified
-        index, and this is that refusal available in-process.
+        generated module. A range from an unverified index is a guess wearing
+        a line number, and this is the refusal that prevents it, in-process.
     """
     view = _available(name)
     assert view.verify()
@@ -434,8 +434,8 @@ def test_edge_candidates_are_not_in_the_shipped_adjacency() -> None:
     Guesses must not be laundered into structure.
 
     Purpose:
-        `src_graph_usage.md`: candidates over-generate roughly 8x and are
-        "leads, never evidence". Every shipped edge must carry a real origin,
+        Candidates over-generate heavily and are leads, never evidence.
+        Every shipped edge must carry a real origin,
         and every target must be a fully qualified id - candidates are bare
         names like `RLock` and `ValueError`.
     """
@@ -518,7 +518,7 @@ def test_describe_returns_the_prose_for_a_walked_node() -> None:
     Purpose:
         The point of the asset. An agent walks to a node it has never heard of
         and reads what the repository says about it, in-process, from a wheel
-        that does not contain `context_compass/`.
+        that does not contain the source documents.
     """
     view = _available("__graph_network__")
     busiest = max(view.node_ids(), key=lambda n: len(view.edges_from(n)))
@@ -615,7 +615,7 @@ def test_search_finds_terms_that_appear_only_in_prose(name: str) -> None:
     Purpose:
         `find` matches section KEYS. A concept discussed in the body but absent
         from every heading is invisible to it, and the fallback - pulling the
-        whole document and grepping - costs ~108k tokens on `__components__`.
+        whole document and grepping - orders of magnitude more than the answer.
     """
     view = _available(name)
     hits = view.search("melder")
@@ -1003,7 +1003,7 @@ def test_search_all_covers_every_document_in_one_call() -> None:
 
 def test_search_all_does_not_double_count_the_shared_graph_document() -> None:
     """
-    The two graph views address the same 25,291 lines.
+    The two graph views address the same document.
 
     Purpose:
         Searching both returned every graph hit twice - pure noise in a ranked

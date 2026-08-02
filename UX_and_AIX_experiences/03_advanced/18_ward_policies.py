@@ -64,16 +64,24 @@ class Payload:
     """A spell to give the ward something to be a policy about."""
 
 
-def main() -> None:
-    print("the five modes:", [policy.name for policy in md.Policies])
+MODES = ("default", "whitelist_all", "block_all",
+         "inbound_only", "outbound_only")
 
-    # auto() means .value is an int - the NAME is the string form.
-    print("Policies.block_all.value:", md.Policies.block_all.value,
-          "(an int)")
-    print("Policies.block_all.name: ", md.Policies.block_all.name,
-          "(the string form)")
+
+def main() -> None:
+    # Pass the mode NAME. That is the whole API - every setter in melder
+    # that takes an enum is typed Union[Enum, str] and normalizes for you.
+    print("the five modes:", list(MODES))
+    assert {policy.name for policy in md.Policies} == set(MODES)
+
+    # AND HERE IS WHY THE STRING IS THE RIGHT HABIT, not just the shorter
+    # one. Policies is built on auto(), so `.value` is an INT - reach for
+    # it to build the argument and you pass 3 instead of "block_all". The
+    # name is the string form. Use the literal and the trap disappears.
     assert isinstance(md.Policies.block_all.value, int)
     assert md.Policies.block_all.name == "block_all"
+    print("Policies.block_all.value is", md.Policies.block_all.value,
+          "- an int, not the mode name. pass \"block_all\" instead.")
 
     # ------------------------------------------------------------------
     # REFUSAL 1 - DYNAMIC MODE ONLY
@@ -99,16 +107,17 @@ def main() -> None:
     print()
     print("dynamic frame conjured")
 
-    # The enum works here even though the public hint says `str` - the
-    # ward converts either form.
+    # Plain strings, like every other enum-shaped argument in melder. The
+    # ward normalizes through EnumHelpers.convert_enum_and_check, so the
+    # mode NAME is all you ever need to pass.
     root.set_new_policy("outbound_only")
-    print("set via the exported enum: outbound_only")
+    print("policy -> outbound_only")
 
     root.set_new_policy("inbound_only")
-    print("set via the string name:   inbound_only")
+    print("policy -> inbound_only")
 
     root.set_new_policy("default")
-    print("set via Policies.default.name -> back to default")
+    print("policy -> default")
 
     # ------------------------------------------------------------------
     # REFUSAL 2 - NORMAL CONDUITS ONLY

@@ -16,11 +16,11 @@ tuples across all four - and touches nothing else.
 Specifically NOT paid at import:
 
     payloads/        the document text. Imported on first slice, per document.
-    graph adjacency  1,188 nodes and 1,444 edges. Imported on first walk.
+    graph adjacency  the node and edge tables. Imported on first walk.
 
 That is deliberate and it is the whole reason the asset is split three ways.
 These four are imported at package scope, so every `import melder` pays for
-whatever this module touches. The graph payload alone is 1.6 MB of source; a
+whatever this module touches. The graph payload is megabytes of source; a
 process that boots melder to bind a spell must not compile it.
 
 NO CACHE, DELIBERATELY
@@ -187,8 +187,8 @@ def search_all(
         one document should not be crowded out by weak hits elsewhere.
 
         Documents sharing a source file are searched ONCE. The two graph views
-        address the same 25,291 lines, so searching both would double every
-        graph hit in a ranked list.
+        address the same document, so searching both would double every graph
+        hit in a ranked list.
 
         Unavailable documents are skipped silently. They are already reported
         by `refusals()`, and raising here would make one stale pair break every

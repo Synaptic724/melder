@@ -128,7 +128,7 @@ def test_probe_frame_posture_is_constructor_first():
         ai_native_enabled=False,
         rift_enabled=False,
     )
-    assert posture.system_state.value == "automatic"
+    assert posture.system_state.name == "automatic"
     print("constructor-first pinned: 4 required kw-only values")
 
 
@@ -148,7 +148,7 @@ def test_probe_frame_posture_with_star_mutates_and_returns_self():
     assert posture.system_caching_enabled is False
     # presets follow the same law
     assert posture.dynamic_defaults() is posture
-    assert posture.system_state.value == "dynamic"
+    assert posture.system_state.name == "dynamic"
     print("with_* and presets pinned: mutate-and-return-self, no clones")
 
 
@@ -184,7 +184,7 @@ def test_probe_frame_posture_finalize_seals_same_instance():
     assert finalized is posture
     with pytest.raises(RuntimeError, match="frozen"):
         posture.with_system_state("automatic")
-    assert posture.system_state.value == "dynamic"
+    assert posture.system_state.name == "dynamic"
     assert posture.ai_native_enabled is True
     print("finalize pinned: same instance, frozen, values intact")
 
@@ -446,8 +446,8 @@ def test_probe_configured_space_type_becomes_the_room_kind():
     nexus = _enabled_nexus()
     for space_type in ("static", "capability"):
         rift = _rift_with_room(
-            nexus, space_type, f"probe-kind-{space_type.value}")
-        assert rift.space.space_kind == space_type.value
+            nexus, space_type, f"probe-kind-{space_type}")
+        assert rift.space.space_kind == space_type
     print("kind pinned: configuration in, room kind out, no translation")
 
 

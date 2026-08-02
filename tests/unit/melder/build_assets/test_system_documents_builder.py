@@ -713,3 +713,303 @@ def test_rendered_manifest_stays_small_enough_for_the_boot_path(builder: Any) ->
         was folded back in.
     """
     assert len(builder.render("9.9.9").encode("utf-8")) < 32_768
+
+
+# ---------------------------------------------------------------------------
+# Literal emission - the worst failure mode this asset has
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "label,text",
+    [
+        ("plain prose", "hello\nworld\n"),
+        ("empty", ""),
+        ("trailing newline only", "\n"),
+        ("a backslash", "a\\nb"),
+        ("windows path", "<local-path>"),
+        ("embedded triple quote", 'a\"\"\"b'),
+        ("one trailing quote", 'hello\"'),
+        ("two trailing quotes", 'hello\"\"'),
+        ("three trailing quotes", 'hello\"\"\"'),
+        ("nothing but quotes", '\"\"\"\"\"'),
+        ("quote then newline", 'hi\"\n'),
+        ("backslash then quote", 'hi\\\\\"'),
+        ("unicode", "\u00e9\u4e2d\u6587\U0001f600\n"),
+        ("nul-adjacent control chars", "a\tb\rc\x0bd\n"),
+    ],
+)
+def test_emitted_literal_round_trips_exactly(builder: Any, label: str, text: str) -> None:
+    """
+    Whatever the emitter produces must evaluate back to the input, byte for byte.
+
+    Purpose:
+        A payload that fails to round-trip is the single worst thing this asset
+        can do. The module still imports, every range still resolves, and the
+        prose comes back subtly altered - nothing downstream can detect it.
+
+        The dangerous cases are trailing quotes. One fuses with the closing
+        delimiter and makes the module unparseable, which at least fails loudly.
+        TWO make it parse and silently drop them. No shipped document ends that
+        way today; that is luck, and this is the test that stops luck being the
+        mechanism.
+    """
+    literal = builder._text_literal(text)
+    namespace: Dict[str, Any] = {}
+    exec(compile(f"_ = {literal}", "<literal>", "exec"), namespace)
+    assert namespace["_"] == text, label
+
+
+def test_emitter_prefers_a_readable_literal_but_will_not_risk_one(
+        builder: Any,
+) -> None:
+    """
+    Readable when safe, `repr` when not.
+
+    Purpose:
+        A generated payload is committed and reviewed, so a triple-quoted
+        literal that a human can diff is worth preferring. It is NOT worth
+        preferring at the cost of correctness, so the fallback exists and is
+        chosen by execution rather than by guessing which inputs are safe.
+    """
+    assert builder._text_literal("ordinary text\n").startswith('\"\"\"')
+    assert not builder._text_literal('ends badly\"\"\"').startswith('\"\"\"')
+
+
+def test_payload_emission_is_atomic(builder: Any) -> None:
+    """
+    No half-written payload survives, and no temporary file is left behind.
+
+    Purpose:
+        A payload is written through a `.tmp` then replaced. An interrupted
+        build that left a partial `.py` would ship a truncated document that
+        still imports.
+    """
+    leftovers = list(builder.payload_dir().glob("*.tmp")) + list(
+        builder.manifest_path().parent.glob("*.tmp")
+    )
+    assert not leftovers
+
+
+def test_payload_directory_holds_nothing_but_current_payloads(builder: Any) -> None:
+    """
+    A document that stops shipping must not linger.
+
+    Purpose:
+        `write_payloads` clears the directory first. Without that, dropping a
+        document from `SOURCES` would leave its payload importable forever -
+        stale prose with no manifest entry pointing at it, and no gate
+        checking it.
+    """
+    manifest = _load_generated(builder, builder.manifest_path().name)
+    expected = {
+        f"{entry['payload_module']}.py"
+        for entry in manifest["DOCUMENTS"].values()
+        if entry["available"] and entry["payload_module"]
+    }
+    if not builder.payload_dir().is_dir():
+        pytest.skip("payloads not generated in this checkout; run the builder")
+    present = {path.name for path in builder.payload_dir().glob("*_payload.py")}
+    assert present == expected
+
+
+# ---------------------------------------------------------------------------
+# Refusal path, forced
+# ---------------------------------------------------------------------------
+
+
+def test_unavailable_entry_matches_a_live_entry_key_for_key(builder: Any) -> None:
+    """
+    Forces a refusal rather than hoping the repository supplies one.
+
+    Purpose:
+        The refusal path is the one an agent hits on the worst day, and in a
+        healthy checkout it never executes - so it is exactly the code that
+        rots unnoticed. Calling it directly is the only way to keep it honest.
+    """
+    spec = builder.SOURCES["__architecture__"]
+    refused = builder._unavailable("__architecture__", spec, "index stale: probe")
+    entries, _ = builder.ingest()
+    live = next(e for e in entries.values() if e["available"])
+    assert set(refused) == set(live) | {"reason"}
+    assert refused["available"] is False
+    assert refused["reason"] == "index stale: probe"
+    assert refused["name"] == "__architecture__"
+    assert refused["title"] == spec["title"]
+    assert refused["summary"] == spec["summary"]
+
+
+def test_unavailable_entry_carries_no_addressable_content(builder: Any) -> None:
+    """
+    A refused document must not look sliceable.
+
+    Purpose:
+        A refusal with sections would let a consumer address ranges into text
+        that was never captured - the exact "guess wearing a line number" the
+        gate exists to prevent.
+    """
+    refused = builder._unavailable(
+        "__components__", builder.SOURCES["__components__"], "source pair absent"
+    )
+    assert refused["sections"] == []
+    assert refused["payload_module"] == ""
+    assert refused["document_file"] == ""
+    assert refused["content_sha256"] == ""
+    assert refused["line_count"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Adjacency parser robustness
+# ---------------------------------------------------------------------------
+
+
+def test_adjacency_attributes_nodes_to_the_file_they_appear_under(
+        builder: Any,
+) -> None:
+    """
+    Source attribution must reset at every file delimiter.
+
+    Purpose:
+        The parser tracks the current file across a 25k-line document. If it
+        failed to reset, every node after the first would be attributed to the
+        wrong file - and `details_key()` would send an agent to read the wrong
+        section while looking entirely plausible.
+    """
+    two_files = _GRAPH_FRAGMENT + _GRAPH_FRAGMENT.replace("pkg/thing", "pkg/other").replace(
+        "pkg.thing", "pkg.second"
+    )
+    nodes, _, _ = builder.parse_graph_adjacency(two_files)
+    assert nodes["pkg.thing.Thing"]["source"] == "src/pkg/thing.py"
+    assert nodes["pkg.second.Thing"]["source"] == "src/pkg/other.py"
+
+
+def test_adjacency_ignores_malformed_edge_rows(builder: Any) -> None:
+    """
+    A table row that is not six columns is not an edge.
+
+    Purpose:
+        The document is generated, but it is still text, and a partially
+        written table during an interrupted run must produce no edge rather
+        than a truncated one.
+    """
+    broken = _GRAPH_FRAGMENT.replace(
+        "| `pkg.thing.Thing` | specializes | `pkg.base.Base` | - | - | derived |",
+        "| `pkg.thing.Thing` | specializes |",
+    )
+    _, edges, _ = builder.parse_graph_adjacency(broken)
+    assert len(edges) == 1
+    assert edges[0][1] == "owns_lifecycle_of"
+
+
+def test_adjacency_keeps_a_justification_containing_a_colon(builder: Any) -> None:
+    """
+    Why-lines are prose and prose contains colons.
+
+    Purpose:
+        The line is split on the FIRST `": "`. A naive split on every colon
+        would truncate any justification that explains itself, which is most
+        of the useful ones.
+    """
+    fragment = _GRAPH_FRAGMENT.replace(
+        "- `pkg.thing.Thing` -> `pkg.other.Other`: Thing owns Other for the whole run.",
+        "- `pkg.thing.Thing` -> `pkg.other.Other`: Thing owns Other: creation, "
+        "reuse, and teardown.",
+    )
+    _, _, whys = builder.parse_graph_adjacency(fragment)
+    assert whys[("pkg.thing.Thing", "pkg.other.Other")] == (
+        "Thing owns Other: creation, reuse, and teardown."
+    )
+
+
+def test_adjacency_does_not_invent_nodes_from_headings_without_ids(
+        builder: Any,
+) -> None:
+    """
+    A heading is not a node; the `- id:` line is.
+
+    Purpose:
+        Treating a bare heading as a node would put entries in the table with
+        no resolvable id, and every one of them would be unreachable from a
+        walk while still inflating the count.
+    """
+    fragment = _GRAPH_FRAGMENT.replace("- id: `pkg.thing.Thing`\n", "")
+    nodes, _, _ = builder.parse_graph_adjacency(fragment)
+    assert "pkg.thing" in nodes
+    assert not any(node_id.endswith(".Thing") for node_id in nodes)
+
+
+def test_adjacency_treats_a_second_edges_table_after_candidates_normally(
+        builder: Any,
+) -> None:
+    """
+    The candidate guard must reset at the next section heading.
+
+    Purpose:
+        Candidates are skipped by a flag. If the flag never cleared, every file
+        after the first candidate block would contribute zero edges - a silent
+        loss of most of the graph.
+    """
+    two_files = _GRAPH_FRAGMENT + _GRAPH_FRAGMENT.replace("pkg/thing", "pkg/other").replace(
+        "pkg.thing", "pkg.second"
+    )
+    _, edges, _ = builder.parse_graph_adjacency(two_files)
+    assert len([e for e in edges if e[0].startswith("pkg.second")]) == 2
+
+
+# ---------------------------------------------------------------------------
+# Determinism and idempotence
+# ---------------------------------------------------------------------------
+
+
+def test_ingest_is_deterministic(builder: Any) -> None:
+    """
+    Two ingests of an unchanged tree agree exactly.
+
+    Purpose:
+        Everything downstream - the fingerprint, `--check`, the emitted
+        modules - assumes this. Non-determinism would report a current asset
+        as stale on every run until the signal was ignored.
+    """
+    first, first_refusals = builder.ingest()
+    second, second_refusals = builder.ingest()
+    assert first == second
+    assert first_refusals == second_refusals
+
+
+def test_generated_modules_carry_the_do_not_edit_banner(builder: Any) -> None:
+    """
+    A generated file that does not say so invites a hand-edit.
+
+    Purpose:
+        Hand-editing a payload is undetectable at runtime until `verify()` is
+        called, and nothing calls it implicitly. The banner is the cheapest
+        prevention available.
+    """
+    for filename in (
+        builder.manifest_path().name,
+        "system_documents_index.py",
+        "graph_adjacency_manifest.py",
+    ):
+        path = builder.manifest_path().parent / filename
+        if not path.is_file():
+            pytest.skip(f"{filename} not generated; run the builder")
+        assert "DO NOT EDIT" in path.read_text(encoding="utf-8")[:800]
+
+
+def test_every_generated_module_names_how_to_regenerate_it(builder: Any) -> None:
+    """
+    A stale asset should tell its reader how to fix it.
+
+    Purpose:
+        The runner reports staleness, but a developer who opens the file
+        directly should not have to go find the command.
+    """
+    for filename in (
+        builder.manifest_path().name,
+        "system_documents_index.py",
+        "graph_adjacency_manifest.py",
+    ):
+        path = builder.manifest_path().parent / filename
+        if not path.is_file():
+            pytest.skip(f"{filename} not generated; run the builder")
+        assert "_build_asset_runner.py" in path.read_text(encoding="utf-8")[:1200]

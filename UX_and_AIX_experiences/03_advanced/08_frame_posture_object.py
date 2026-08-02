@@ -22,7 +22,8 @@ GOAL: THE POSTURE OBJECT ITSELF. Lesson 07 mapped the 15 knobs; this one
            system_state dynamic, and violating it is an exception.
         3. finalize() freezes and returns THE SAME INSTANCE - the fluent
            terminator. After it, every with_* refuses.
-SURFACE EXERCISED: md.AethericFrameConfiguration, md.SystemState
+SURFACE EXERCISED: md.AethericFrameConfiguration (system_state passed as
+                   the string "automatic" / "dynamic")
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
 FINDING (init surface, for the owner's program): this type is exported from
@@ -53,7 +54,7 @@ def main() -> None:
         rift_enabled=False,
     )
     print("constructed:", posture.system_state)
-    assert posture.system_state.value == "automatic"
+    assert posture.system_state.name == "automatic"
     assert posture.ai_native_enabled is False
     assert posture.rift_enabled is False
 
@@ -88,7 +89,7 @@ def main() -> None:
         rift_enabled=False,
     )
     assert preset.dynamic_defaults() is preset
-    assert preset.system_state.value == "dynamic"
+    assert preset.system_state.name == "dynamic"
     print("dynamic_defaults() set the mode and returned self")
 
     # 5. finalize() - the fluent terminator. Freezes, returns THIS instance.
@@ -106,7 +107,7 @@ def main() -> None:
         print("frozen posture refused the edit:", error)
 
     # The values survive the freeze - it seals, it does not clear.
-    assert posture.system_state.value == "dynamic"
+    assert posture.system_state.name == "dynamic"
     assert posture.ai_native_enabled is True
 
     print()

@@ -34,8 +34,10 @@ GOAL: THE ROOM. Every Rift owns exactly one, and the law around it is
       claimed only command_system varied; the owner's 3.14t run proved
       frame_viewer varies too, and the corrected version is the better
       story - authority and visibility narrow TOGETHER.)
-SURFACE EXERCISED: md.RiftSpace via rift.space, md.RiftSpaceType,
-                   the room fixtures, the one-room law
+SURFACE EXERCISED: md.RiftSpace via rift.space, the room fixtures, the
+                   one-room law. Room kind is passed as the STRING
+                   "static"; md.RiftSpaceType appears only in the doc-drift
+                   check below, where the enum itself is the subject.
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
 FINDING (doc drift, 2026-08-02): RiftSpaceType's docstring documents a
@@ -75,8 +77,9 @@ def main() -> None:
     print("space_id:", room.space_id, "| name:", room.space_name)
     print("owner rift:", room.owner_rift_id == rift.id)
 
-    # THE FIXTURES. Same set on every room regardless of kind - the shape
-    # is constant, only the authority differs (lesson 13).
+    # THE FIXTURES. Same set BY NAME on every room regardless of kind.
+    # Two of them differ BY TYPE - command_system and frame_viewer, what
+    # you may DO and what you may SEE (lesson 13 takes that pair apart).
     fixtures = {
         "frame_viewer": room.frame_viewer,
         "workstation": room.workstation,
@@ -99,8 +102,7 @@ def main() -> None:
     # The room kind matches what the configuration asked for, and that is
     # the ONLY place it was ever decided.
     assert room.space_kind == "static"
-    print("configured kind: static ->",
-          "-> room kind:", room.space_kind)
+    print("configured \"static\" -> room kind:", room.space_kind)
 
     # THE DOC DRIFT, made visible rather than described. The docstring
     # promises a "dynamic" legacy alias; the enum does not have one.
@@ -115,7 +117,7 @@ def main() -> None:
 
     print()
     print("one rift, one room, one kind, decided once and never again")
-    print("shape is constant across kinds; authority is not")
+    print("same fixtures by name; command_system and frame_viewer differ by type")
 
 
 if __name__ == "__main__":

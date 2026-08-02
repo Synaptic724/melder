@@ -11,7 +11,20 @@ HOUSE RULE - STRINGS, NOT ENUMS
   through EnumHelpers.convert_enum_and_check. Measured convention across
   the corpus: 113 string uses vs 8 enum uses. Enum references survive ONLY
   where the enum itself is the subject (the RiftSpaceType doc-drift check
-  at lesson 12, the Policies auto()/.value footgun at lesson 18).
+  at lesson 12, the auto()/.value footgun at lesson 18).
+
+  AND HERE IS THE REASON IT IS A RULE AND NOT A STYLE (measured
+  2026-08-02, after `.value` assertions went red on the owner's run):
+  MELDER'S ENUMS ARE NOT CONSISTENT ABOUT `.value`.
+      SystemState     auto()  -> .value is an INT (automatic == 1)
+      Policies        auto()  -> .value is an INT (block_all == 3)
+      Existence       auto()  -> .value is an INT
+      RiftSpaceType   str     -> .value == "static"
+      NexusFrameMode  str     -> .value == "single"
+  So `SomeEnum.member.value` gives you the mode name for two of them and
+  a number for the other three. `.name` is the string form EVERYWHERE.
+  Reading a property back? Use `.name`. Passing one in? Use a literal.
+  Never reach for `.value` unless you have checked which kind it is.
 
 AUTHORED
   01 DELETED 2026-08-02 (owner): was a declaration-only stub for

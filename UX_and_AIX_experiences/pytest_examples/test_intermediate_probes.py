@@ -860,12 +860,20 @@ def test_probe_book_scan_binds_a_module_and_keeps_the_lifecycles():
     """The scan API is `book.scan(module)`. It binds every scan_bind-marked
     object that ORIGINATES in that module, and the decorated existence
     survives the scan - unique stays one per frame, many stays fresh per
-    meld. (Lesson 01 is the authored version; this row pins it.)"""
+    meld. (Lesson 01 is the authored version; this row pins it.)
+
+    NOTE: scan returns SPELL IDs (sha256 digests), not class names. The
+    first draft of this row asserted names and went red on the owner's
+    run. Lesson 01 only ever asserted the COUNT, which is why it stayed
+    green - worth knowing before you write against this return value."""
     book = Spellbook(aetheric_frame="probe-scan-module")
     bound = book.scan(sys.modules[__name__])
-    assert {"_ProbeTrail", "_ProbeEntry"} <= set(bound)
+
+    assert len(bound) == 2, "two scan_bind-marked classes live in this module"
+    assert all(isinstance(spell_id, str) for spell_id in bound)
+    assert all(len(spell_id) == 64 for spell_id in bound), "sha256 digests"
 
     conduit = book.conjure(name="probe-scan-root")
     assert conduit.meld(spell=_ProbeTrail) is conduit.meld(spell=_ProbeTrail)
     assert conduit.meld(spell=_ProbeEntry) is not conduit.meld(spell=_ProbeEntry)
-    print("module scan pinned:", sorted(set(bound)))
+    print("module scan pinned: 2 spell ids, lifecycles intact")

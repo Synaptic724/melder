@@ -15,12 +15,13 @@ ORIENTATION IS NOT A COST
 `__architecture__` is meant to be READ. It is how the system is understood -
 boundaries, boot order, invariants, what fails and how - and an agent that
 slices two sections out of it and calls that understanding will make confident
-decisions on a model of the system it does not have. At 2,298 lines it is the
-one document that repays reading broadly.
+decisions on a model of the system it does not have. It is the one document
+here that repays reading broadly - ask it for `line_count` if you need to
+budget.
 
 The index-first discipline exists for the OTHER documents. `__components__` is
-a lookup table at 8,370 lines; `__graph_details__` is 25,291 lines of
-per-file reference. Nobody reads a reference cover to cover, and handing an
+a subsystem lookup table; `__graph_details__` is a per-file reference running
+an order of magnitude larger. Nobody reads a reference cover to cover, and handing an
 agent that string is not an answer, it is a bill. So those return their INDEX -
 what can be asked - and then exactly the span asked for.
 
@@ -181,7 +182,7 @@ class Edge(NamedTuple):
             sharing a source and target share one justification.
 
             ALWAYS empty for `derived` edges. They need no argument - the
-            syntax tree is their evidence - and 153 endpoint pairs here carry
+            syntax tree is their evidence - and many endpoint pairs carry
             both a derived and an authored edge, so attaching the authored
             justification to its mechanical twin would blur the two tiers.
     """
@@ -274,7 +275,7 @@ class SystemDocumentView:
 
             That split is the point. These four views are built at package
             scope, so anything imported during construction is paid by every
-            `import melder`. The graph payload alone is 1.6 MB of source; a
+            `import melder`. The graph payload is megabytes of source; a
             process that never asks a document anything must not pay to parse
             it.
 
@@ -294,7 +295,7 @@ class SystemDocumentView:
             The section ranges live in their own generated module, keyed by
             document file so the two graph views share one table. Loading them
             here rather than in `__init__` keeps `import melder` off the hook
-            for 756 tuples nothing has asked for yet.
+            for hundreds of tuples nothing has asked for yet.
 
         Returns:
             Tuple: (ordered sections, key -> section).
@@ -438,7 +439,7 @@ class SystemDocumentView:
             re-emits a document legitimately needs all of it.
 
         Contract:
-            No budget. For `__graph_details__` this is 1.6 MB in one value. An
+            No budget. For `__graph_details__` this is megabytes in one value. An
             agent answering a question wants `index()` then `get()`; this is
             for machines, not for reading.
 
@@ -526,8 +527,8 @@ class SystemDocumentView:
             KEYS, which is useless for "where is thread safety discussed" - the
             concept lives in the prose, not in a heading. Without this an
             agent's only recourse is pulling a whole document and grepping,
-            which for `__components__` is roughly 108k tokens and defeats the
-            entire design.
+            which for a document this size costs orders of magnitude more than
+            the answer and defeats the entire design.
 
         Contract:
             Returns SECTIONS, never text - the result stays index-shaped, so a
@@ -838,8 +839,8 @@ class SystemDocumentView:
             The build verified the source pair. This verifies the SHIPPED
             payload, which is a different claim - it catches a corrupted wheel,
             a bad merge into a generated module, or a hand-edit of emitted
-            code. `src_graph_usage.md` refuses to slice an unverified index;
-            this is the same refusal, available in-process.
+            code. A range from an unverified index is a guess wearing a line
+            number; this is the refusal that prevents it, in-process.
 
         Contract:
             Recomputes the SHA-256 of the payload. Costs a full hash of the
@@ -1116,8 +1117,8 @@ class SystemGraphView(SystemDocumentView):
         rows = graph.EDGES
         whys = getattr(graph, "WHY", {})
         # Why-lines justify AUTHORED claims, so they attach only to authored
-        # edges. 153 endpoint pairs in this graph carry the same relationship
-        # twice - once derived, once authored - and the justification belongs
+        # edges. Many endpoint pairs carry the same relationship twice -
+        # once derived, once authored - and the justification belongs
         # to the authored one. Showing it on the derived twin would suggest a
         # mechanical fact needed an argument, blurring the boundary `origin`
         # exists to keep sharp.
