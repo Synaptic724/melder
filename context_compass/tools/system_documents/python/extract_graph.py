@@ -118,7 +118,7 @@ def snake(name: str) -> str:
 
 
 # Bases that DECLARE what a class is rather than name a supertype in the graph.
-# `class ICleanable(Protocol)` does not specialize anything - `Protocol` is a
+# `class IResource(Protocol)` does not specialize anything - `Protocol` is a
 # marker that makes the class an interface. Emitting an edge to it produces a
 # dangling reference to a node that will never exist. Measured on the reference
 # codebase: 70 of 515 extracted edges (13%) pointed at markers like these.
@@ -154,10 +154,14 @@ def class_kind(markers: list[str]) -> str:
 
     This one IS syntactic, unlike curation and edge semantics. In the reference
     codebase both curated `interface` nodes are `Protocol` subclasses, and the
-    extractor previously stamped them `class` because it never looked. ABCs are
-    deliberately NOT interfaces here - the codebase distinguishes `Cleanable`
-    (an ABC everything inherits) from `ICleanable` (its structural mirror), and
-    only the latter is an interface.
+    extractor previously stamped them `class` because it never looked.
+
+    ABCs are deliberately NOT interfaces here. A codebase commonly has both: an
+    abstract base that subclasses actually inherit, and a Protocol mirroring the
+    same public surface for structural typing. They play different roles in a
+    graph - one is a supertype, the other is a contract - so only the Protocol
+    is marked `interface`. See `examples/example_graph_details/src/example/core/`
+    for the pair.
     """
     for m in markers:
         kind = TYPE_MARKERS.get(m)

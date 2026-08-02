@@ -13,8 +13,13 @@ rebuilt in the same pass as any edit:
 
 ```bash
 python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/tests_components.md
+    --doc context_compass/examples/example_components/tests_components.md
 ```
+
+That command indexes THIS example, and it works - run it and compare the
+output to the `tests_components_index.md` beside it. When you write your own, the
+target becomes `context_compass/system_docs/tests_components.md`, which does not exist
+until you create it: the package ships `system_docs/` empty.
 
 Format rules the index depends on, demonstrated throughout this example:
 - exactly one H1 (the document title)
@@ -59,15 +64,15 @@ Keep unresolved test assumptions as UNKNOWN.
 - `triage_findings -> gate_release`
 
 ## C1 Code Map (Key Paths)
-- path: `agent_onboarding/user_defined/synaptic_python_developer/examples/python/pytest_unit_examples.py`
+- path: `examples/example_graph_details/src/example/core/resource.py`
   start_line: 1
-  end_line: 13
-  loc: 13
+  end_line: 15
+  loc: 15
   verified_at: 2026-08-01T16:16:14Z
-- path: `agent_onboarding/user_defined/synaptic_python_developer/examples/python/pytest_integration_examples.py`
+- path: `examples/example_graph_details/src/example/storage/store.py`
   start_line: 1
-  end_line: 17
-  loc: 17
+  end_line: 20
+  loc: 20
   verified_at: 2026-08-01T16:16:14Z
 
 ## Diagrams
@@ -85,7 +90,7 @@ flowchart LR
 ## Information Sources
 - `templates/*.md`
 - `tickets/*/README.md`
-- `agent_onboarding/user_defined/synaptic_python_developer/skills/testing/*`
+- `agent_onboarding/default/qa_engineer/skills/*`
 
 ## Context / Handoff Summary
 Use this structure when mapping real test components.

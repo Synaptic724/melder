@@ -89,7 +89,15 @@ renders. Edge candidates are not counted - they are guesses, not edges.
 - **Nodes**: id, kind (`module`, `class`, `interface`, `abstract`, `enum`,
   `record`), definition line, bases, markers, public methods, and the authored
   fields (`role`, `responsibilities`, `owns_state`, `phases`) when present.
-- **Edges out**: `specializes` and `implements`, with resolved target ids.
+- **Edges out**: one table, six columns - `from`, `relation`, `to`,
+  `cardinality`, `phase`, `origin`. Derived edges (`specializes`, `implements`)
+  carry `-` in the two authored columns, because those are design facts the
+  extractor cannot produce. A row of dashes is not missing data; it is the graph
+  telling you nobody has authored that relationship's semantics yet.
+- **Why lines**: beneath the table, one per authored edge that carries a `why`.
+  This is the justification for a claim the syntax tree cannot support - an
+  authored `owns_lifecycle_of` asserts ownership where the AST shows only a
+  reference. Read it before relying on the edge.
 - **Edge candidates**: AST instantiation guesses. **Unconfirmed.** These
   over-generate roughly 8x against a hand-authored graph. Treat them as leads,
   never as evidence.

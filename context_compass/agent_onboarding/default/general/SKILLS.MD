@@ -24,6 +24,7 @@ Active skills
 - `agent_onboarding/default/general/skills/career_selection.md`
 - `agent_onboarding/default/general/skills/mrp_policy.md`
 - `agent_onboarding/default/general/skills/configuration_standards.md`
+- `agent_onboarding/default/general/skills/package_upgrade.md`
 - `agent_onboarding/default/general/skills/context_gold.md`
 - `agent_onboarding/default/general/skills/security_and_secrets.md`
 - `agent_onboarding/default/general/skills/repo_topology.md`

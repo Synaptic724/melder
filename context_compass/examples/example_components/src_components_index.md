@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-01T17:39:21Z |
-| line_count | 164 |
+| generated_at | 2026-08-01T23:32:17Z |
+| line_count | 169 |
 | line_ending | lf |
-| content_sha256 | `e2edcaa1ac43379c41371f4f039d773b41db9fe352331316448714bf138f2d30` |
+| content_sha256 | `518dd137c426620f9244c8ada040f4adf4bbf5092276ba840af872b517d448ec` |
 | sections | 15 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -29,16 +29,16 @@ which you did.
 | --- | --- | --- |
 | 3-7 | 2 | Metadata |
 | 8-11 | 2 | Scope |
-| 12-30 | 2 | Indexing |
-| 31-34 | 2 | DO NOT ASSUME / Unknowns Gate |
-| 35-38 | 2 | Unknowns |
-| 39-95 | 2 | C3 Components Catalog |
-| 40-59 | 3 | C3 Components Catalog > Component: Router/Role Resolver |
-| 60-77 | 3 | C3 Components Catalog > Component: Ticket Microcycle Coordinator |
-| 78-95 | 3 | C3 Components Catalog > Component: Artifact Link Coordinator |
-| 96-110 | 2 | C2 Subcomponents Catalog |
-| 111-115 | 2 | Method-Level Call Flows (C1) |
-| 116-137 | 2 | C1 Code Map (Core) |
-| 138-150 | 2 | Diagrams |
-| 151-158 | 2 | Information Sources |
-| 159-164 | 2 | Context / Handoff Summary |
+| 12-35 | 2 | Indexing |
+| 36-39 | 2 | DO NOT ASSUME / Unknowns Gate |
+| 40-43 | 2 | Unknowns |
+| 44-100 | 2 | C3 Components Catalog |
+| 45-64 | 3 | C3 Components Catalog > Component: Router/Role Resolver |
+| 65-82 | 3 | C3 Components Catalog > Component: Ticket Microcycle Coordinator |
+| 83-100 | 3 | C3 Components Catalog > Component: Artifact Link Coordinator |
+| 101-115 | 2 | C2 Subcomponents Catalog |
+| 116-120 | 2 | Method-Level Call Flows (C1) |
+| 121-142 | 2 | C1 Code Map (Core) |
+| 143-155 | 2 | Diagrams |
+| 156-163 | 2 | Information Sources |
+| 164-169 | 2 | Context / Handoff Summary |

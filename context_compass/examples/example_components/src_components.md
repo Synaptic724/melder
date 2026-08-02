@@ -16,8 +16,13 @@ rebuilt in the same pass as any edit:
 
 ```bash
 python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_components.md
+    --doc context_compass/examples/example_components/src_components.md
 ```
+
+That command indexes THIS example, and it works - run it and compare the
+output to the `src_components_index.md` beside it. When you write your own, the
+target becomes `context_compass/system_docs/src_components.md`, which does not exist
+until you create it: the package ships `system_docs/` empty.
 
 Format rules the index depends on, demonstrated throughout this example:
 - exactly one H1 (the document title)

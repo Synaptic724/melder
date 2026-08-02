@@ -64,48 +64,49 @@ access, shell or tool access, and the ability to follow written instructions.
 
 ```text
 context_compass/
-  AGENTS.MD
-  SKILLS.MD
+  AGENTS.MD                     runtime entrypoint
+  SKILLS.MD                     the role registry
+  MANIFEST.md                   generated: path, owner, hash for every file
   CONTEXT_COMPACTION.md
   PROFILE_CLASS_CREATION_GUIDE.md
   README.md
 
   config/
-    context_compass_config.yaml
+    context_compass_config.yaml behaviour settings only
 
   agent_onboarding/
-    default/
-      new/
-      general/
-      engineer/
-      design_engineer/
-      platform_engineer/
-      qa_engineer/
-      security_engineer/
-      story_designer/
-      story_novel_artist/
-      researcher/
-      draft_writer/
-      developmental_editor/
-      line_copy_editor/
-      continuity_fact_checker/
-      proofreader/
-    user_defined/
-      synaptic_python_developer/
+    default/                    ships with the package, replaced on upgrade
+      new/  general/  engineer/  design_engineer/  platform_engineer/
+      qa_engineer/  security_engineer/  story_designer/  story_novel_artist/
+      researcher/  draft_writer/  developmental_editor/  line_copy_editor/
+      continuity_fact_checker/  proofreader/
+    user_defined/               YOURS - never replaced, never removed
+      <your overlays>
 
-  tickets/
-    epics/
-    stories/
-    tasks/
+  tools/                        manifest, cleanup, upgrade, document indexing
+  templates/                    ticket templates
+  examples/                     the shape and quality bar for every document type
 
-  templates/
-  examples/
-  system_docs/
-  artifacts/
+  system_docs/                  SHIPS EMPTY - your architecture and component
+                                maps go here; nothing is seeded
+  tickets/                      yours
+  artifacts/                    yours
+  context_management/           yours - context board and artifacts
+  special_instructions/         yours - project-specific rules
 
-  attention_board.md
+  attention_board.md            live routing; package owns only the MANAGED block
   artifact_board.md
+  mailbox_board.md
 ```
+
+Five directories are yours and are never written to by an upgrade: `system_docs/`,
+`tickets/`, `artifacts/`, `context_management/`, `special_instructions/`, plus
+`agent_onboarding/user_defined/`. Everything else belongs to the package and is
+replaced when you upgrade. `MANIFEST.md` records which is which, per file.
+
+`system_docs/` ships empty on purpose. A seeded placeholder in a live lane gets
+read as repository truth no matter what banner sits on it, so the shape
+reference lives in `examples/` instead and this directory stays yours.
 
 ## How It Works
 

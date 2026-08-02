@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-01T18:11:21Z |
-| line_count | 131 |
+| generated_at | 2026-08-01T23:32:34Z |
+| line_count | 136 |
 | line_ending | lf |
-| content_sha256 | `0608ab82163348f2571791c4254de7e6e08aa9ec19f50e93ac68803c73129174` |
+| content_sha256 | `8f426d7c9265847850d4bc3f0650617a387469165ebd9c47465615c21a288deb` |
 | sections | 17 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -29,18 +29,18 @@ which you did.
 | --- | --- | --- |
 | 3-8 | 2 | Metadata |
 | 9-13 | 2 | Scope and Intent |
-| 14-32 | 2 | Indexing |
-| 33-36 | 2 | DO NOT ASSUME / Unknowns Gate |
-| 37-41 | 2 | Unknowns |
-| 42-45 | 2 | System Context (C4) |
-| 46-51 | 2 | System Boundary and External Interfaces |
-| 52-57 | 2 | Architecture Summary (C4) |
-| 58-62 | 2 | Entrypoints and Runtime Guardrails |
-| 63-70 | 2 | Boot and Configuration Sequence |
-| 71-74 | 2 | Data Flows and Sequences |
-| 75-79 | 2 | Operational Invariants |
-| 80-84 | 2 | Failure Modes and Error Paths |
-| 85-106 | 2 | C1 Code Map (Core Only) |
-| 107-119 | 2 | Diagrams |
-| 120-126 | 2 | Information Sources |
-| 127-131 | 2 | Context / Handoff Summary |
+| 14-37 | 2 | Indexing |
+| 38-41 | 2 | DO NOT ASSUME / Unknowns Gate |
+| 42-46 | 2 | Unknowns |
+| 47-50 | 2 | System Context (C4) |
+| 51-56 | 2 | System Boundary and External Interfaces |
+| 57-62 | 2 | Architecture Summary (C4) |
+| 63-67 | 2 | Entrypoints and Runtime Guardrails |
+| 68-75 | 2 | Boot and Configuration Sequence |
+| 76-79 | 2 | Data Flows and Sequences |
+| 80-84 | 2 | Operational Invariants |
+| 85-89 | 2 | Failure Modes and Error Paths |
+| 90-111 | 2 | C1 Code Map (Core Only) |
+| 112-124 | 2 | Diagrams |
+| 125-131 | 2 | Information Sources |
+| 132-136 | 2 | Context / Handoff Summary |

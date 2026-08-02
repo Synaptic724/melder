@@ -57,6 +57,49 @@ This is the contract that makes regeneration safe.
 is verified behaviour, not an intention - inject an authored field, re-run, and
 it survives.
 
+## The authored schema
+
+These are the fields you may populate. Nothing generates them and nothing
+validates them, so this list is the contract.
+
+### Node fields
+
+| field | shape | meaning |
+|---|---|---|
+| `include` | bool | belongs in the composed graph. Absent means "not triaged", which is not the same as `false`. |
+| `role` | prose, one line | what this object is for. |
+| `responsibilities` | list of short phrases | what it is on the hook for. |
+| `owns_state` | list of attribute names | fields whose lifecycle it controls. |
+| `phases` | list | when in its life it matters: `init`, `validation`, `runtime`, `refresh`, `cleanup`. Open set - add one if your system needs it, but reuse these first. |
+
+### Edge fields, under `edges_authored`
+
+| field | shape | rendered |
+|---|---|---|
+| `from` | node id | yes, table |
+| `to` | node id | yes, table |
+| `relation` | `owns_lifecycle_of`, `uses`, `borrows`, `holds`, `owns`, `used_by` | yes, table |
+| `cardinality` | `one_to_one`, `one_to_many`, `many_to_one` | yes, table |
+| `phase` | list, same vocabulary as node `phases` | yes, table |
+| `why` | prose, one or two sentences | yes, beneath the table |
+| `strength` | `hard`, `borrowed`, `soft` | **no - see below** |
+
+**`strength` is stored and deliberately not rendered.** Measured against a
+hand-authored graph of 997 edges it is ~97% recoverable from `relation`:
+`hard` is the ownership relations, `borrowed` is the reference relations. A
+column that restates the column beside it costs space and adds nothing. Keep
+populating it if your tooling consumes it; the document will not show it.
+
+**`why` is rendered because it is the justification for a claim the extractor
+says it cannot make.** An authored `owns_lifecycle_of` asserts ownership where
+the syntax tree shows only a reference. Recording why, and showing it, is the
+difference between evidence and assertion. It sits beneath the table so the
+table stays scannable.
+
+The prose does not cost you a whole-document read, because there is no such
+thing here: you read the index and slice one section. A few extra lines inside
+the one section you asked for is not a cost worth optimising against.
+
 ## What the script cannot do, and why
 
 Do not expect the extractor to produce a finished graph. Measured against a
@@ -114,6 +157,14 @@ or not at all, because a JSON object has no addressable interior.
 
 The replacement is 972 KB of Markdown plus a 62 KB index, and a typical query
 reads a 20-40 line slice.
+
+**If you arrive holding a graph in the retired format, do not run the two-command
+sequence and hope.** Only `specializes` and `implements` are mechanical, so a
+naive re-extraction marks every node `UNSEMANTIC` and drops every authored edge.
+Measured on a mature graph that was 84% of its edges. The rule generalises: the
+better your existing graph, the more the naive path destroys, because a mature
+graph is edge-richer than a young one. Carry the authored tier across by node id
+first, then by `(file, label)`, before you assemble anything.
 
 ## Anti-patterns
 

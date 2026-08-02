@@ -50,25 +50,37 @@ Trigger conditions (any one makes these mandatory):
 - The task touches `system_docs/` or claims about system/runtime/test architecture are required.
 - You are changing cross-cutting behavior that depends on documented architecture or component boundaries.
 - The user explicitly requests an architecture/components/tests deep dive.
-- `system_docs/` is empty, starter-only, or you cannot tell whether its contents describe this repository.
+- `system_docs/` is empty, or you cannot tell whether its contents describe this repository.
+- You are cleaning, upgrading, or preparing a Context Compass install for
+  distribution. Those operations delete and replace files, so the skill that
+  governs them is mandatory before you run either tool.
 
-If triggered, you MUST read the relevant items below (do not skip):
+If triggered, you MUST read:
 - `system_docs/system_docs_read_first.md`
-- `system_docs/tests_architecture.md`
-- `system_docs/tests_components.md`
+
+Then read whichever of these exist in THIS repository. None of them ship with the
+package, so in a fresh install there is nothing here to read:
 - `system_docs/src_architecture.md`
 - `system_docs/src_components.md`
+- `system_docs/tests_architecture.md`
+- `system_docs/tests_components.md`
+
 RAISE TO USER THE BELOW DOCUMENTS AND ASK IF REQUIRED TO READ:
 - `system_docs/src_graph.md`
 
+If you are cleaning or upgrading an install:
+- `agent_onboarding/default/engineer/skills/package_maintenance.md`
+
 Note on a fresh install
-- `system_docs/system_docs_read_first.md` is the entry point for this block. It
-  states what a fresh install is allowed to be missing and which example docs
-  set the quality bar.
-- Read it first when `system_docs/` is empty, starter-only, or you cannot tell
-  whether a doc describes this repository or ships as a placeholder.
-- Sparse or absent context maps in a new install are expected, not a defect.
-  Do not invent runtime truth to fill them.
+- **`system_docs/` ships empty.** The package does not seed architecture,
+  component, test or graph documents, because a shipped placeholder in a live
+  lane gets read as repository truth no matter what banner sits on top of it.
+- `examples/` is where the shape and quality bar live. Read the examples to learn
+  the format; write `system_docs/` from your own repository.
+- An empty `system_docs/` is the expected state of a new install, not a defect,
+  and not something to fill with invented content.
+- `system_docs/system_docs_read_first.md` is the entry point and explains the
+  order to build these in when the repository is ready.
 
 Note on the source graph
 - `system_docs/src_graph.md` and `system_docs/src_graph_index.md` are generated

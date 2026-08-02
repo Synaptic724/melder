@@ -49,6 +49,20 @@ INDEX_NAME = "src_graph_index.md"
 # Section delimiters. Chosen to be greppable and unambiguous: a reader scanning
 # the assembled document can find any file's boundaries without the index, and a
 # validator can confirm the index agrees with the text.
+def fmt_cell(value: object) -> str:
+    """Render an authored edge attribute for a table cell.
+
+    A list becomes comma-joined; absent or empty becomes `-`. Derived edges
+    always render `-`, because these attributes are design facts and the
+    extractor is explicit that it cannot produce them.
+    """
+    if value is None or value == "" or value == []:
+        return "-"
+    if isinstance(value, (list, tuple)):
+        return ",".join(str(v) for v in value) or "-"
+    return str(value)
+
+
 HEADER = "<!-- BEGIN FILE: {source} -->"
 FOOTER = "<!-- END FILE: {source} -->"
 
@@ -143,15 +157,30 @@ def render_descriptor(desc: dict[str, Any]) -> list[str]:
     if edges or authored:
         lines.append("### Edges out")
         lines.append("")
-        lines.append("| from | relation | to | origin |")
-        lines.append("| --- | --- | --- | --- |")
+        lines.append("| from | relation | to | cardinality | phase | origin |")
+        lines.append("| --- | --- | --- | --- | --- | --- |")
         for e in edges:
             target = e.get("to") or f"{e.get('to_label', '?')} (unresolved)"
-            lines.append(f"| `{e['from']}` | {e['relation']} | `{target}` | derived |")
+            lines.append(f"| `{e['from']}` | {e['relation']} | `{target}` | - | - | derived |")
         for e in authored:
             lines.append(f"| `{e.get('from', '?')}` | {e.get('relation', '?')} | "
-                         f"`{e.get('to', '?')}` | authored |")
+                         f"`{e.get('to', '?')}` | {fmt_cell(e.get('cardinality'))} | "
+                         f"{fmt_cell(e.get('phase'))} | authored |")
         lines.append("")
+
+        # `why` is the justification for a claim the extractor states it cannot
+        # derive. It goes beneath the table, not in it: the table stays scannable
+        # and the prose stays readable. Only authored edges carry one.
+        # Do not name these `src` - that is the source path this section is for,
+        # and the footer still needs it. Shadowing it emits a footer carrying a
+        # node id, which the range check catches but which should never be
+        # written in the first place.
+        whys = [(e.get("from", "?"), e.get("to", "?"), e["why"])
+                for e in authored if e.get("why")]
+        if whys:
+            for edge_from, edge_to, why in whys:
+                lines.append(f"- `{edge_from}` -> `{edge_to}`: {why}")
+            lines.append("")
 
     candidates = desc.get("edge_candidates", [])
     if candidates:

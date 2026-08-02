@@ -18,8 +18,13 @@ rebuilt in the same pass as any edit:
 
 ```bash
 python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/src_architecture.md
+    --doc context_compass/examples/example_architecture/src_architecture.md
 ```
+
+That command indexes THIS example, and it works - run it and compare the
+output to the `src_architecture_index.md` beside it. When you write your own, the
+target becomes `context_compass/system_docs/src_architecture.md`, which does not exist
+until you create it: the package ships `system_docs/` empty.
 
 Format rules the index depends on, demonstrated throughout this example:
 - exactly one H1 (the document title)
@@ -95,13 +100,13 @@ state through policy bootstrap, role routing, and ticket-first notes.
   verified_at: 2026-08-01T16:16:14Z
 - path: `attention_board.md`
   start_line: 1
-  end_line: 52
-  loc: 52
+  end_line: 57
+  loc: 57
   verified_at: 2026-08-01T16:16:14Z
 - path: `artifact_board.md`
   start_line: 1
-  end_line: 49
-  loc: 49
+  end_line: 54
+  loc: 54
   verified_at: 2026-08-01T16:16:14Z
 
 ## Diagrams

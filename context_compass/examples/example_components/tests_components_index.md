@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-01T17:39:22Z |
-| line_count | 91 |
+| generated_at | 2026-08-01T23:32:17Z |
+| line_count | 96 |
 | line_ending | lf |
-| content_sha256 | `a8cd8d31b9af30427ed36f67e64d80deda154295ad7eca46e876b9abac69b28a` |
+| content_sha256 | `f9fa3dc2950790e22c61abba92928b2f5a933b5ac3552daf1cc84ea69ff9d6fa` |
 | sections | 13 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -29,14 +29,14 @@ which you did.
 | --- | --- | --- |
 | 3-5 | 2 | Metadata |
 | 6-8 | 2 | Scope |
-| 9-27 | 2 | Indexing |
-| 28-30 | 2 | DO NOT ASSUME / Unknowns Gate |
-| 31-33 | 2 | Unknowns |
-| 34-51 | 2 | C3 Components Catalog |
-| 35-51 | 3 | C3 Components Catalog > Component: Reference Integrity Scanner |
-| 52-56 | 2 | C2 Subcomponents Catalog |
-| 57-60 | 2 | Method-Level Call Flows (C1) |
-| 61-72 | 2 | C1 Code Map (Key Paths) |
-| 73-84 | 2 | Diagrams |
-| 85-89 | 2 | Information Sources |
-| 90-91 | 2 | Context / Handoff Summary |
+| 9-32 | 2 | Indexing |
+| 33-35 | 2 | DO NOT ASSUME / Unknowns Gate |
+| 36-38 | 2 | Unknowns |
+| 39-56 | 2 | C3 Components Catalog |
+| 40-56 | 3 | C3 Components Catalog > Component: Reference Integrity Scanner |
+| 57-61 | 2 | C2 Subcomponents Catalog |
+| 62-65 | 2 | Method-Level Call Flows (C1) |
+| 66-77 | 2 | C1 Code Map (Key Paths) |
+| 78-89 | 2 | Diagrams |
+| 90-94 | 2 | Information Sources |
+| 95-96 | 2 | Context / Handoff Summary |

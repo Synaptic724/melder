@@ -1,5 +1,3 @@
-﻿
-
 # Src Components (C3/C2/C1)
 
 ## Metadata
@@ -21,17 +19,45 @@ Out of scope:
 - Tests and example docs.
 - JSON sidecar metadata files (`__*.json`).
 
-## Documentation Quality Standard
-This document is treated as durable context. It must be deep enough to recover
-system understanding from a blank slate without handwaving.
+## Indexing
 
-Required rules:
-- No handwaving. Every claim must be grounded in source evidence or marked as UNKNOWN.
-- Explicit entrypoints and method-level call flows for core behavior.
-- Explicit ownership, lifecycle, and cleanup order for components.
-- Explicit invariants, failure modes, and concurrency constraints.
-- ASCII and Mermaid diagrams for core flows.
-- Update the information sources list when new files are used.
+This document is AUTHORED. Nothing generates its prose. Its only generated
+companion is `src_components_index.md`, rebuilt in the SAME pass as any edit:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_components.md
+```
+
+Consume it by slicing, never by reading this document whole:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_components.md --slice "<section name>"
+```
+
+Verify before trusting any range:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_components.md --check
+```
+
+Heading discipline this document obeys, and why:
+- exactly one H1 (the document title)
+- the navigable unit is H3 `### Component: <Name>` / `### Subcomponent: <Name>`,
+  at consistent depth - the `Component: ` prefix is load-bearing, it is how a
+  reader greps the index for units rather than front matter
+- names unique and stable - index rows are selected BY NAME
+- `## C3 Components Catalog` and `## C2 Subcomponents Catalog` are CONTAINERS.
+  NEVER select them. A container wraps only other headings, so it indexes as a
+  range covering every component beneath it: selecting the C3 catalog here loads
+  roughly a third of the document while appearing to slice one section. Select
+  the component.
+- `Key Files (C1)` lists real `src/...` paths. That is the join to the source
+  graph, and it is also what `## C1 Code Map (Core)` is built from.
+
+Spec: `agent_onboarding/default/engineer/skills/system_document_build.md`
 
 ## DO NOT ASSUME / Unknowns Gate
 Rule: No Unverified Claims.
@@ -116,39 +142,6 @@ Each item must include:
   `STORY-2026-02-13-spellstate-advanced-flag-producers`,
   `STORY-2026-02-13-mutation-research-runtime-wiring`.
   Current status: blocked (producers await the MR runtime-seam slice).
-
-## Table of Contents
-- Metadata
-- Scope
-- Documentation Quality Standard
-- DO NOT ASSUME / Unknowns Gate
-- Unknowns
-- Table of Contents
-- Component Template
-- C3 Components Catalog
-- C2 Subcomponents Catalog
-- Method-Level Call Flows (C1)
-- C1 Code Map (Core)
-- Diagrams
-- Information Sources
-- DI Resolution Contract Notes (Spec vs Implementation)
-- Open Questions
-- Context / Handoff Summary
-
-## Component Template
-Each component entry includes:
-- Purpose
-- Responsibilities
-- Inputs
-- Outputs
-- Owned State
-- Lifecycle/Cleanup
-- Concurrency/Threading
-- Invariants/Guarantees
-- Failure Modes
-- Observability
-- Extension Points
-- Key Files (C1)
 
 ## C3 Components Catalog
 
@@ -1773,6 +1766,7 @@ Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
 
 ### Component: Transaction Admission Plane (Scope Acquisition)
+
 Purpose:
 - Serialize structural mutations (bind, link, cluster_link,
   transfer_ownership, unlink) through one cheap scope-acquisition gate so
@@ -1814,6 +1808,44 @@ Responsibilities:
   consumers on a whole-link sever so the next meld revalidates (existing
   creations rebuild lazily; nothing is torn down eagerly).
   EVIDENCE: src/melder/aether/conduit/conduit.py:sever_link + begin_transaction(unlink branch); src/melder/aether/conduit/conduit_ward/conduit_ward.py:_remove_contract.
+
+Inputs:
+- A `DevopsIdentity` submitter plus a transaction type.
+- Scope keys, per-scope `scope_claims` (mode tuples), scope hashes, binding
+  keys, contract keys, and structured metadata.
+- Granted/required capabilities for root creation and nested joins.
+
+Outputs:
+- A `TransactionSession` - newly opened as a root, or the active root joined.
+- `ChangeControlAdmissionResult` verdicts carrying blocking evidence on refusal.
+- A detached `describe()` snapshot: configured max wait, active session count,
+  and the sorted live request ids.
+
+Owned State:
+- `TransactionMediator` owns `_lock`, `_wait_condition`,
+  `_sessions_by_request_id`, and the per-thread `_thread_local` request stacks.
+- It BORROWS the transaction manager, conflict manager, embargo manager,
+  orchestrator, information registry, and the Aether-owned `LoadGate`. Borrowed
+  collaborators are dropped at cleanup, never cleaned.
+
+Lifecycle/Cleanup:
+- `cleanup()` is idempotent and re-checks under the lock.
+- It does NOT commit or abort in-flight requests implicitly. It tears down
+  abandoned sessions best-effort - a resisting session must not prevent mediator
+  teardown - then drops session references and the thread-local stacks.
+- The `LoadGate` is borrowed from Aether and explicitly never cleaned here.
+
+Concurrency/Threading:
+- One mediator `RLock` guards shared state; active execution frame stacks live
+  in `threading.local()`.
+- SCOPE WAITING NEVER HOLDS THE MEDIATOR LOCK. A blocked request parks on the
+  embargo manager's own condition and retries admission, in bounded slices of
+  `min(remaining, 1.0)` - the slice exists because a release landing between an
+  admission attempt and the park would otherwise be missed until the full
+  deadline.
+- The `LoadGate` wait happens at NEW-ROOT ingress only and outside the mediator
+  lock; nested same-thread joins never consult it, and the loading thread passes
+  free.
 
 Invariants/Guarantees:
 - Admission cost is O(requested scopes) dict operations under one lock.
@@ -1884,7 +1916,25 @@ Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py`
 - `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
 
+Observability:
+- `describe()` returns a detached snapshot under the lock - plain values only,
+  no live session objects - reflecting every registered session cross-thread,
+  not just the calling thread's.
+- The `registry_consistency_audit` information strategy is the paired check: any
+  asymmetry in the mirrored maps is evidence a write bypassed this plane.
+
+Extension Points:
+- `TransactionStrategyBuilder` registrations add transaction families; each owns
+  its own scope proportionality via `build_start_plan`.
+- The optional `admit_request_fn` facade routes admission through frame-owned
+  policy (for example change-control disablement) instead of straight to the
+  orchestrator.
+- The optional `LoadGate` makes the whole plane defer to a crystallizer load
+  holding system authority. `None` constructs an ungated mediator, which is the
+  unit-test posture.
+
 ### Component: DevOps Information Strategies
+
 Purpose:
 - Caller-paid, registry-only information checks: live activity views, change
   impact sets, frame rollups, and the registry's own consistency audit, each
@@ -1918,6 +1968,38 @@ Responsibilities:
   returns all forward/reverse maps copied under one lock acquisition with
   identity tuple keys rendered "kind:id"; strategies stay on public API.
 
+Inputs:
+- A normalized strategy NAME plus that strategy's own arguments (an axis and
+  identity for `transaction_activity_view`, a conduit or cluster id for
+  `cluster_fanout`, a conduit id for `transfer_blast_radius`).
+- Strategy CLASSES supplied at registration.
+- The frame's `DevopsInformationRegistry`, read through its public API.
+
+Outputs:
+- Detached ids-only payloads. No live object references leave a strategy, which
+  is what makes a result safe to log, ship, or retain after the transaction it
+  describes has ended.
+- Per-name success counts via `get_execution_count` / `list_execution_counts`.
+
+Owned State:
+- The name-to-class strategy map and the per-name success counters.
+- Strategy CLASSES, never instances.
+  EVIDENCE: src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py
+  class contract, `Owned State` section.
+
+Lifecycle/Cleanup:
+- NOT `Cleanable`, and that is evidenced rather than assumed: the module
+  declares `__slots__` but defines no `cleanup` and does not inherit
+  `Cleanable`. It holds a class map and integer counters - no resource, no
+  teardown ordering, nothing to release.
+- Frame-owned: it lives as long as the DevOps surface that reaches it.
+
+Concurrency/Threading:
+- Registration and execution counting are serialized internally.
+- The strategies themselves are STATELESS, so concurrent execution of the same
+  named strategy is safe.
+  EVIDENCE: devops_information_strategy_builder.py class contract, `Threading`.
+
 Invariants/Guarantees:
 - Strategies are static-execute classes resolved by normalized name; results
   are detached ids-only payloads (no live object references).
@@ -1940,6 +2022,26 @@ Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py`
 - `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py`
 - `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
+
+Failure Modes:
+- Failed executions do NOT increment the builder counters, which keeps the
+  "which checks does the system actually rely on" signal honest.
+- UNKNOWN: what `resolve(...)` raises for an unregistered strategy name. Not
+  verified in source.
+  Investigate: devops_information_strategy_builder.py, the resolve/execute
+  methods.
+
+Observability:
+- `get_execution_count(name)` and `list_execution_counts()` answer an otherwise
+  invisible operational question: WHICH information checks actually run. A
+  strategy registered but never executed is dead weight; one executing far more
+  than expected is usually a caller re-deriving a view it could have checked
+  against a `DevopsFactRecord` baseline first.
+
+Extension Points:
+- Register additional strategies on top of the default catalog; a later
+  registration under an existing name REPLACES it, so a caller can override a
+  shipped tool deliberately rather than fork the resolver.
 
 ### Component: Aetheric Mediator Plane (BUILT, NOT WIRED)
 Purpose:
@@ -3810,76 +3912,1167 @@ These flows describe concrete method sequences for core behaviors.
 4. The `detailed` builder adds class and callable inspector payloads on top of
    the general profile contract.
 
-### Mermaid: Conduit Upgrade
-```mermaid
-sequenceDiagram
-  participant LC as Lesser Conduit
-  participant CR as Creations
-  participant M as Meld
-  participant W as ConduitWard
-  participant SB as Spellbook
-  participant AE as Aether
-  participant CC as ConduitCloud
-  LC->>LC: upgrade_to_normal()
-  LC->>CR: preserve + rebind current Creations
-  LC->>M: rewire meld creations/resolution root id
-  LC->>W: _convert_to_normal_conduit()
-  LC->>SB: create_new_preset_spellbook()
-  LC->>AE: _add_conduit()
-  LC->>CC: _register_conduit() (if named)
-```
+## C1 Code Map (Core)
 
-### Mermaid: Conjure Pipeline
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant SB as Spellbook
-  participant PS as PhaseScheduler
-  participant C as Conduit
-  U->>SB: conjure()
-  SB->>SB: validate/freeze config
-  SB->>PS: phases 1-4
-  SB->>PS: phases 5-7
-  SB->>PS: phases 8-11 (if no resolution errors)
-  SB->>C: Conduit(...)
-  SB-->>U: Conduit
-```
+The CORE set: every path cited by a `Key Files (C1)` list in the C3 catalog,
+deduplicated. That union IS the definition of core here - a file a component
+names as its own is core by that component's own claim, which beats a curated
+list somebody has to remember to update.
 
-### Mermaid: Meld Runtime
-```mermaid
-sequenceDiagram
-  participant C as Conduit
-  participant M as Meld
-  participant CC as CreationContext
-  participant P12 as Phase12 Compiled Executors
-  participant CR as Creations
-  C->>M: meld(spell_id/input)
-  M->>CC: get/build creation context
-  M->>CC: invoke _execute_*_compiled(...)
-  CC->>P12: dispatch compiled lane
-  P12->>CR: reuse/construct/register
-  P12-->>CC: instance
-  CC-->>M: instance
-  M-->>C: instance
-```
+Ranges are MEASURED, never estimated. `start_line`/`end_line` are the file's own
+extent and `loc` its line count, read from disk at `verified_at`. All 170 cited
+paths resolved on that pass.
 
-### Mermaid: Ownership Transfer
-```mermaid
-sequenceDiagram
-  participant SC as Source Conduit
-  participant TC as Target Conduit
-  participant TO as TransferOfOwnership
-  participant AE as Aether
-  SC->>TO: preflight()
-  SC->>TO: execute()
-  TO->>SC: disable lineage (transfer_in_progress)
-  TO->>AE: flip registry + spellbooks (under SafeGuard)
-  TO->>SC: move/teardown creations
-  TO->>SC: unshare or repoint contracts
-  TO->>SC: mark lineage dirty/gated
-```
+Three cited paths were DIRECTORIES, which cannot carry a line range; each is
+expanded into its real modules rather than given a plausible number.
 
-## C1 Code Map (Full Package Inventory)
+- path: `src/melder/__init__.py`
+  start_line: 1
+  end_line: 261
+  loc: 261
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/system_document.py`
+  start_line: 1
+  end_line: 344
+  loc: 344
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/__architecture__.py`
+  start_line: 1
+  end_line: 40
+  loc: 40
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/__components__.py`
+  start_line: 1
+  end_line: 40
+  loc: 40
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/__graph_network__.py`
+  start_line: 1
+  end_line: 39
+  loc: 39
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/__graph_details__.py`
+  start_line: 1
+  end_line: 39
+  loc: 39
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aether_configuration.py`
+  start_line: 1
+  end_line: 772
+  loc: 772
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aether_configuration_builder.py`
+  start_line: 1
+  end_line: 290
+  loc: 290
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
+  start_line: 1
+  end_line: 2711
+  loc: 2711
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spellbook.py`
+  start_line: 1
+  end_line: 6497
+  loc: 6497
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spellbinder.py`
+  start_line: 1
+  end_line: 871
+  loc: 871
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/bind/scan.py`
+  start_line: 1
+  end_line: 374
+  loc: 374
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/bind/bind.py`
+  start_line: 1
+  end_line: 877
+  loc: 877
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/bind/spell_index.py`
+  start_line: 1
+  end_line: 508
+  loc: 508
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell.py`
+  start_line: 1
+  end_line: 1646
+  loc: 1646
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_types/spell_types.py`
+  start_line: 1
+  end_line: 102
+  loc: 102
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/resolution_style_matrix.py`
+  start_line: 1
+  end_line: 492
+  loc: 492
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
+  start_line: 1
+  end_line: 345
+  loc: 345
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
+  start_line: 1
+  end_line: 344
+  loc: 344
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
+  start_line: 1
+  end_line: 71
+  loc: 71
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
+  start_line: 1
+  end_line: 1186
+  loc: 1186
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/configuration/system_state.py`
+  start_line: 1
+  end_line: 55
+  loc: 55
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aether.py`
+  start_line: 1
+  end_line: 2058
+  loc: 2058
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystallizer.py`
+  start_line: 1
+  end_line: 2923
+  loc: 2923
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/mutation_research.py`
+  start_line: 1
+  end_line: 3935
+  loc: 3935
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
+  start_line: 1
+  end_line: 1119
+  loc: 1119
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
+  start_line: 1
+  end_line: 878
+  loc: 878
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/conduit_cluster.py`
+  start_line: 1
+  end_line: 1345
+  loc: 1345
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/configuration/crystallizer_configuration.py`
+  start_line: 1
+  end_line: 1064
+  loc: 1064
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py`
+  start_line: 1
+  end_line: 276
+  loc: 276
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/persistence/persistence_system.py`
+  start_line: 1
+  end_line: 1413
+  loc: 1413
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/persistence/persistence_profile.py`
+  start_line: 1
+  end_line: 1472
+  loc: 1472
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/persistence/persistence_crystal.py`
+  start_line: 1
+  end_line: 452
+  loc: 452
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/asset_management/asset_management_system.py`
+  start_line: 1
+  end_line: 1044
+  loc: 1044
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/asset_management/crystallizer_cache.py`
+  start_line: 1
+  end_line: 590
+  loc: 590
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/nexus.py`
+  start_line: 1
+  end_line: 3422
+  loc: 3422
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_descriptor_manager.py`
+  start_line: 1
+  end_line: 807
+  loc: 807
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_acl_manager.py`
+  start_line: 1
+  end_line: 815
+  loc: 815
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/nexus_frame_manager.py`
+  start_line: 1
+  end_line: 1186
+  loc: 1186
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/nexus_frame_builder.py`
+  start_line: 1
+  end_line: 269
+  loc: 269
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_link/frame_link_contract.py`
+  start_line: 1
+  end_line: 239
+  loc: 239
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_link/frame_link.py`
+  start_line: 1
+  end_line: 232
+  loc: 232
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_gate/rift_gate.py`
+  start_line: 1
+  end_line: 412
+  loc: 412
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py`
+  start_line: 1
+  end_line: 334
+  loc: 334
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
+  start_line: 1
+  end_line: 6650
+  loc: 6650
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
+  start_line: 1
+  end_line: 3135
+  loc: 3135
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_viewer/view_frame.py`
+  start_line: 1
+  end_line: 2648
+  loc: 2648
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_viewer/view_conduit.py`
+  start_line: 1
+  end_line: 1930
+  loc: 1930
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_viewer/view_spell.py`
+  start_line: 1
+  end_line: 3093
+  loc: 3093
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift.py`
+  start_line: 1
+  end_line: 1152
+  loc: 1152
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
+  start_line: 1
+  end_line: 341
+  loc: 341
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/rift_space.py`
+  start_line: 1
+  end_line: 991
+  loc: 991
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
+  start_line: 1
+  end_line: 291
+  loc: 291
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/event_system/rift_event.py`
+  start_line: 1
+  end_line: 167
+  loc: 167
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/static_rift_space.py`
+  start_line: 1
+  end_line: 143
+  loc: 143
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
+  start_line: 1
+  end_line: 177
+  loc: 177
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/capability_rift_space.py`
+  start_line: 1
+  end_line: 149
+  loc: 149
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/workstation.py`
+  start_line: 1
+  end_line: 946
+  loc: 946
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
+  start_line: 1
+  end_line: 436
+  loc: 436
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py`
+  start_line: 1
+  end_line: 136
+  loc: 136
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/command_system/command_system.py`
+  start_line: 1
+  end_line: 1656
+  loc: 1656
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/command_system/static_command_system.py`
+  start_line: 1
+  end_line: 681
+  loc: 681
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/command_system/capability_command_system.py`
+  start_line: 1
+  end_line: 1656
+  loc: 1656
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/command_system/codegen_command_system.py`
+  start_line: 1
+  end_line: 1938
+  loc: 1938
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/codegen_system.py`
+  start_line: 1
+  end_line: 538
+  loc: 538
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
+  start_line: 1
+  end_line: 774
+  loc: 774
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py`
+  start_line: 1
+  end_line: 294
+  loc: 294
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
+  start_line: 1
+  end_line: 212
+  loc: 212
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
+  start_line: 1
+  end_line: 367
+  loc: 367
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
+  start_line: 1
+  end_line: 278
+  loc: 278
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
+  start_line: 1
+  end_line: 311
+  loc: 311
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
+  start_line: 1
+  end_line: 104
+  loc: 104
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py`
+  start_line: 1
+  end_line: 103
+  loc: 103
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
+  start_line: 1
+  end_line: 128
+  loc: 128
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py`
+  start_line: 1
+  end_line: 356
+  loc: 356
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`
+  start_line: 1
+  end_line: 183
+  loc: 183
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
+  start_line: 1
+  end_line: 249
+  loc: 249
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/configuration/nexus_frame_mode.py`
+  start_line: 1
+  end_line: 54
+  loc: 54
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/configuration/rift_space_type.py`
+  start_line: 1
+  end_line: 61
+  loc: 61
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/conduit.py`
+  start_line: 1
+  end_line: 6214
+  loc: 6214
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/utilities/synchronization/creation_gate.py`
+  start_line: 1
+  end_line: 604
+  loc: 604
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/utilities/synchronization/creation_gate_controller.py`
+  start_line: 1
+  end_line: 1112
+  loc: 1112
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
+  start_line: 1
+  end_line: 3746
+  loc: 3746
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
+  start_line: 1
+  end_line: 76
+  loc: 76
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
+  start_line: 1
+  end_line: 66
+  loc: 66
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/creations/creations.py`
+  start_line: 1
+  end_line: 616
+  loc: 616
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/creations/conduit_creations.py`
+  start_line: 1
+  end_line: 134
+  loc: 134
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/spell_space/spell_space.py`
+  start_line: 1
+  end_line: 490
+  loc: 490
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/meld/meld.py`
+  start_line: 1
+  end_line: 1561
+  loc: 1561
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/meld/conduit_meld.py`
+  start_line: 1
+  end_line: 821
+  loc: 821
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/meld/spellspace_meld.py`
+  start_line: 1
+  end_line: 820
+  loc: 820
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+  start_line: 1
+  end_line: 310
+  loc: 310
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
+  start_line: 1
+  end_line: 694
+  loc: 694
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
+  start_line: 1
+  end_line: 351
+  loc: 351
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
+  start_line: 1
+  end_line: 269
+  loc: 269
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`
+  start_line: 1
+  end_line: 569
+  loc: 569
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py`
+  start_line: 1
+  end_line: 1776
+  loc: 1776
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
+  start_line: 1
+  end_line: 1510
+  loc: 1510
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
+  start_line: 1
+  end_line: 677
+  loc: 677
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py`
+  start_line: 1
+  end_line: 850
+  loc: 850
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
+  start_line: 1
+  end_line: 1680
+  loc: 1680
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py`
+  start_line: 1
+  end_line: 1455
+  loc: 1455
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py`
+  start_line: 1
+  end_line: 925
+  loc: 925
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py`
+  start_line: 1
+  end_line: 588
+  loc: 588
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py`
+  start_line: 1
+  end_line: 621
+  loc: 621
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py`
+  start_line: 1
+  end_line: 230
+  loc: 230
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py`
+  start_line: 1
+  end_line: 487
+  loc: 487
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py`
+  start_line: 1
+  end_line: 398
+  loc: 398
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py`
+  start_line: 1
+  end_line: 304
+  loc: 304
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unlink_transaction_strategy.py`
+  start_line: 1
+  end_line: 303
+  loc: 303
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py`
+  start_line: 1
+  end_line: 322
+  loc: 322
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py`
+  start_line: 1
+  end_line: 331
+  loc: 331
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py`
+  start_line: 1
+  end_line: 276
+  loc: 276
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py`
+  start_line: 1
+  end_line: 261
+  loc: 261
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py`
+  start_line: 1
+  end_line: 326
+  loc: 326
+  verified_at: 2026-08-01T20:05:00Z
+- path: `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
+  start_line: 1
+  end_line: 662
+  loc: 662
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py`
+  start_line: 1
+  end_line: 286
+  loc: 286
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py`
+  start_line: 1
+  end_line: 200
+  loc: 200
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py`
+  start_line: 1
+  end_line: 157
+  loc: 157
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py`
+  start_line: 1
+  end_line: 159
+  loc: 159
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py`
+  start_line: 1
+  end_line: 171
+  loc: 171
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py`
+  start_line: 1
+  end_line: 145
+  loc: 145
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py`
+  start_line: 1
+  end_line: 222
+  loc: 222
+  verified_at: 2026-08-01T20:05:00Z
+- path: `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
+  start_line: 1
+  end_line: 541
+  loc: 541
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/mediator.py`
+  start_line: 1
+  end_line: 882
+  loc: 882
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/claim_table.py`
+  start_line: 1
+  end_line: 715
+  loc: 715
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/claim_mode.py`
+  start_line: 1
+  end_line: 175
+  loc: 175
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
+  start_line: 1
+  end_line: 330
+  loc: 330
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/admission_result.py`
+  start_line: 1
+  end_line: 312
+  loc: 312
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/transaction_session.py`
+  start_line: 1
+  end_line: 820
+  loc: 820
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/transaction_request.py`
+  start_line: 1
+  end_line: 577
+  loc: 577
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/staged_transaction.py`
+  start_line: 1
+  end_line: 335
+  loc: 335
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/transaction_strategy.py`
+  start_line: 1
+  end_line: 194
+  loc: 194
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/strategy_builder.py`
+  start_line: 1
+  end_line: 214
+  loc: 214
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/transaction_type.py`
+  start_line: 1
+  end_line: 79
+  loc: 79
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/information_registry.py`
+  start_line: 1
+  end_line: 473
+  loc: 473
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/identity.py`
+  start_line: 1
+  end_line: 334
+  loc: 334
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aetheric_mediator/scope_keys.py`
+  start_line: 1
+  end_line: 172
+  loc: 172
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/aether_utility_system.py`
+  start_line: 1
+  end_line: 460
+  loc: 460
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/utilities/logger/safe_logger.py`
+  start_line: 1
+  end_line: 700
+  loc: 700
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/utilities/helpers/init_helpers.py`
+  start_line: 1
+  end_line: 146
+  loc: 146
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py`
+  start_line: 1
+  end_line: 243
+  loc: 243
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py`
+  start_line: 1
+  end_line: 191
+  loc: 191
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
+  start_line: 1
+  end_line: 593
+  loc: 593
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py`
+  start_line: 1
+  end_line: 508
+  loc: 508
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
+  start_line: 1
+  end_line: 516
+  loc: 516
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/class_profile.py`
+  start_line: 1
+  end_line: 182
+  loc: 182
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py`
+  start_line: 1
+  end_line: 226
+  loc: 226
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/utilities/synchronization/phase_scheduler.py`
+  start_line: 1
+  end_line: 989
+  loc: 989
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
+  start_line: 1
+  end_line: 224
+  loc: 224
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py`
+  start_line: 1
+  end_line: 299
+  loc: 299
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py`
+  start_line: 1
+  end_line: 769
+  loc: 769
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
+  start_line: 1
+  end_line: 1999
+  loc: 1999
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystals/spell_crystal.py`
+  start_line: 1
+  end_line: 1163
+  loc: 1163
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
+  start_line: 1
+  end_line: 1446
+  loc: 1446
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/synthetic_module.py`
+  start_line: 1
+  end_line: 1626
+  loc: 1626
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
+  start_line: 1
+  end_line: 2670
+  loc: 2670
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/mutation_configuration.py`
+  start_line: 1
+  end_line: 660
+  loc: 660
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/mutation_configuration_builder.py`
+  start_line: 1
+  end_line: 336
+  loc: 336
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/synthesis/structural_synthesizer.py`
+  start_line: 1
+  end_line: 468
+  loc: 468
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/research_set/research_set.py`
+  start_line: 1
+  end_line: 2646
+  loc: 2646
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/research_set/research_lane.py`
+  start_line: 1
+  end_line: 989
+  loc: 989
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/research_set/research_node.py`
+  start_line: 1
+  end_line: 413
+  loc: 413
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/research_set/transition_entry.py`
+  start_line: 1
+  end_line: 552
+  loc: 552
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/research_set/research_journal.py`
+  start_line: 1
+  end_line: 431
+  loc: 431
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/research_set/residence_registry.py`
+  start_line: 1
+  end_line: 408
+  loc: 408
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/mutation_research/research_set/network_versioner.py`
+  start_line: 1
+  end_line: 459
+  loc: 459
+  verified_at: 2026-08-01T20:05:00Z
+
+- expanded from the directory entry `src/melder/crystallizer/crystal_loader_system/`:
+
+- path: `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py`
+  start_line: 1
+  end_line: 525
+  loc: 525
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py`
+  start_line: 1
+  end_line: 417
+  loc: 417
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
+  start_line: 1
+  end_line: 646
+  loc: 646
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_loader_system/load_admission.py`
+  start_line: 1
+  end_line: 616
+  loc: 616
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_loader_system/load_plan.py`
+  start_line: 1
+  end_line: 308
+  loc: 308
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
+  start_line: 1
+  end_line: 2670
+  loc: 2670
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py`
+  start_line: 1
+  end_line: 129
+  loc: 129
+  verified_at: 2026-08-01T20:05:00Z
+
+- expanded from the directory entry `src/melder/nexus/frame_descriptor/`:
+
+- path: `src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py`
+  start_line: 1
+  end_line: 155
+  loc: 155
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_descriptor/conduit_record.py`
+  start_line: 1
+  end_line: 162
+  loc: 162
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_descriptor/frame_descriptor.py`
+  start_line: 1
+  end_line: 633
+  loc: 633
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_descriptor/frame_descriptor_payload.py`
+  start_line: 1
+  end_line: 168
+  loc: 168
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_descriptor/frame_record.py`
+  start_line: 1
+  end_line: 159
+  loc: 159
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_descriptor/spell_descriptor_payload.py`
+  start_line: 1
+  end_line: 327
+  loc: 327
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/frame_descriptor/spell_record.py`
+  start_line: 1
+  end_line: 215
+  loc: 215
+  verified_at: 2026-08-01T20:05:00Z
+
+- expanded from the directory entry `src/melder/nexus/acl/`:
+
+- path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
+  start_line: 1
+  end_line: 774
+  loc: 774
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/builder/frame_acl_codegen_builder.py`
+  start_line: 1
+  end_line: 651
+  loc: 651
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/builder/frame_acl_command_builder.py`
+  start_line: 1
+  end_line: 586
+  loc: 586
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/builder/frame_acl_view_builder.py`
+  start_line: 1
+  end_line: 697
+  loc: 697
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py`
+  start_line: 1
+  end_line: 682
+  loc: 682
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/frame_acl_command_configuration.py`
+  start_line: 1
+  end_line: 711
+  loc: 711
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/frame_acl_view_configuration.py`
+  start_line: 1
+  end_line: 872
+  loc: 872
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py`
+  start_line: 1
+  end_line: 842
+  loc: 842
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile.py`
+  start_line: 1
+  end_line: 315
+  loc: 315
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile_builder.py`
+  start_line: 1
+  end_line: 214
+  loc: 214
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py`
+  start_line: 1
+  end_line: 173
+  loc: 173
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py`
+  start_line: 1
+  end_line: 153
+  loc: 153
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py`
+  start_line: 1
+  end_line: 129
+  loc: 129
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/precision.py`
+  start_line: 1
+  end_line: 145
+  loc: 145
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py`
+  start_line: 1
+  end_line: 126
+  loc: 126
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py`
+  start_line: 1
+  end_line: 100
+  loc: 100
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py`
+  start_line: 1
+  end_line: 349
+  loc: 349
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile_builder.py`
+  start_line: 1
+  end_line: 205
+  loc: 205
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py`
+  start_line: 1
+  end_line: 97
+  loc: 97
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py`
+  start_line: 1
+  end_line: 96
+  loc: 96
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/precision.py`
+  start_line: 1
+  end_line: 94
+  loc: 94
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/command/safe_profile.py`
+  start_line: 1
+  end_line: 97
+  loc: 97
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py`
+  start_line: 1
+  end_line: 228
+  loc: 228
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py`
+  start_line: 1
+  end_line: 263
+  loc: 263
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_ruleset.py`
+  start_line: 1
+  end_line: 298
+  loc: 298
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py`
+  start_line: 1
+  end_line: 466
+  loc: 466
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile_builder.py`
+  start_line: 1
+  end_line: 205
+  loc: 205
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py`
+  start_line: 1
+  end_line: 106
+  loc: 106
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py`
+  start_line: 1
+  end_line: 104
+  loc: 104
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/precision.py`
+  start_line: 1
+  end_line: 99
+  loc: 99
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/configurations/profiles/view/safe_profile.py`
+  start_line: 1
+  end_line: 113
+  loc: 113
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/frame_acl_compiled_access_surface.py`
+  start_line: 1
+  end_line: 554
+  loc: 554
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/frame_acl_compiler.py`
+  start_line: 1
+  end_line: 1084
+  loc: 1084
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/frame_acl_configuration.py`
+  start_line: 1
+  end_line: 848
+  loc: 848
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/frame_acl_configuration_chain.py`
+  start_line: 1
+  end_line: 484
+  loc: 484
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/frame_acl_container.py`
+  start_line: 1
+  end_line: 1341
+  loc: 1341
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_report.py`
+  start_line: 1
+  end_line: 243
+  loc: 243
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py`
+  start_line: 1
+  end_line: 637
+  loc: 637
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/frame_acl_validator.py`
+  start_line: 1
+  end_line: 1494
+  loc: 1494
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py`
+  start_line: 1
+  end_line: 25
+  loc: 25
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py`
+  start_line: 1
+  end_line: 121
+  loc: 121
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/profiles/command/precision_strategy.py`
+  start_line: 1
+  end_line: 22
+  loc: 22
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/profiles/command/safe_strategy.py`
+  start_line: 1
+  end_line: 50
+  loc: 50
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/profiles/common.py`
+  start_line: 1
+  end_line: 48
+  loc: 48
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/profiles/view/precision_strategy.py`
+  start_line: 1
+  end_line: 24
+  loc: 24
+  verified_at: 2026-08-01T20:05:00Z
+- path: `src/melder/nexus/acl/validator/profiles/view/safe_strategy.py`
+  start_line: 1
+  end_line: 72
+  loc: 72
+  verified_at: 2026-08-01T20:05:00Z
+
+
+### Full Package Inventory (exhaustive, retained)
 
 Generated from source on 2026-07-30 by AST walk over `src/melder`, one entry per
 module (`__init__.py` excluded). Purpose text is taken from the module's own
@@ -4961,421 +6154,300 @@ nothing in `src/melder` constructs any of these; a repo-wide search for
 - `src/melder/utilities/synchronization/ticket_flag.py` - Deque-backed boolean-style flag using ticket cardinality
 - `src/melder/utilities/synchronization/unit_of_work.py`
   Future-based encapsulation of a single unit of work, with integrated cancellation support via...
-## Crystallizer Persistence & Restore (promoted from patch
-## restore_engine_2026_07_07 + successor lanes, 2026-07-07)
 
-Ownership hierarchy (owner-ruled; CURRENT as of the 2026-07-10 subsystem
-decomposition - see the dated section at the end of this block):
-`Crystallizer` owns THREE same-rank children - `PersistenceSystem` (the
-record: profiles + checkpoint ledger, in-process truth ONLY),
-`AssetManagementSystem` (bytes at rest: `CrystallizerCache`, formation
-files, and the `ExternalPersistenceManager` DB seam), and
-`CrystalLoaderSystem` (the unfold: LoadAdmission gating (renamed from
-BootMediator 2026-07-11) + RestoreEngine +
-durable load state). The twin vocabulary lives at package level
-(`crystallizer/crystals/`) and `crystal_analysis/` is the shared analyzer
-service. Users talk to `Crystallizer` facades only.
+## Diagrams
 
-### Record model (EMIT)
-- Twins are pure-data crystals (aether, crystallizer, nexus,
-  mutation_research, frame, spellbook, conduit, spell_index, contract,
-  cluster, spell custody) recorded replace-on-emit into the ACTIVE
-  PersistenceProfile with an insertion-ordered journal (sequence, kind, key).
-- Emission factors: configuration activation/freeze is each unit's emission
-  moment. Three re-entry seams cover legally pre-frozen configurations
-  (spellbook conjure re-freeze, nexus enable, aether root catch-up at
-  crystallizer activation - the aether structurally precedes its recorder).
-  AetherUtilitySystem mutation verbs re-emit the root twin so post-activation
-  logger-policy flips never drift from the record.
-- EVERY snapshot is self-describing (owner ruling): the crystallizer's own
-  policy twin re-emits into each seal's window (`_emit_policy_twin`, direct
-  record to keep the cadence ticker out of seal paths), so one cached
-  crystal names the recording policy that made it.
-- Capture (`capture_segment_since`): full current twins for identities
-  journaled since the mark; spell custody payloads annotate
-  `custody_location`; tombstone kinds carry synthetic removal payloads;
-  state switches (nexus/MR) journal their flips.
-- SpellCrystal carries the full bind signature (module coordinates,
-  spellframe NAME, existence/permissions names, disposal_method_names,
-  profile_family) - content-derived SHA256 ids are STABLE across restore.
+### Mermaid: Conduit Upgrade
+```mermaid
+sequenceDiagram
+  participant LC as Lesser Conduit
+  participant CR as Creations
+  participant M as Meld
+  participant W as ConduitWard
+  participant SB as Spellbook
+  participant AE as Aether
+  participant CC as ConduitCloud
+  LC->>LC: upgrade_to_normal()
+  LC->>CR: preserve + rebind current Creations
+  LC->>M: rewire meld creations/resolution root id
+  LC->>W: _convert_to_normal_conduit()
+  LC->>SB: create_new_preset_spellbook()
+  LC->>AE: _add_conduit()
+  LC->>CC: _register_conduit() (if named)
+```
 
-### Checkpoints, cache, retention
-- `create_checkpoint` seals the delta window into a PersistenceCrystal
-  (ULID id; per-profile checkpoint_number minted highest+1 - count-based
-  minting duplicated under FIFO dropout and was fixed). Ledger retention =
-  `max_persistence_crystals` (FIFO dropout).
-- `verify_checkpoint_chain(profile)` - read-only fold-safety verdicts:
-  intact / truncated_prefix / broken / empty, with break evidence rows and
-  empty-window tolerance; full-dropout restarts detected via the first
-  retained window's start.
-- CrystallizerCache: profile-scoped layout
-  `__crystallizer_cache__/{profile}/{checkpoint_id}.json` (atomic
-  tmp+replace; legacy flat paths tolerated on read);
-  `enforce_cache_retention` FIFO-caps cached files at the checkpoint limit
-  on every flush (no DB emitter -> bounded disk; deeper durability is the
-  user's DB opt-in).
-- `reload_checkpoint_from_cache` (one id) and `reload_profile_from_cache`
-  (whole profile, insert-if-absent, idempotent) - a profile's cache folder
-  IS its portable form.
+### Mermaid: Conjure Pipeline
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant SB as Spellbook
+  participant PS as PhaseScheduler
+  participant C as Conduit
+  U->>SB: conjure()
+  SB->>SB: validate/freeze config
+  SB->>PS: phases 1-4
+  SB->>PS: phases 5-7
+  SB->>PS: phases 8-11 (if no resolution errors)
+  SB->>C: Conduit(...)
+  SB-->>U: Conduit
+```
 
-### Restore (RestoreEngine, all-or-nothing)
-- `load_checkpoint(id)`: the target's same-profile chain detaches under the
-  system lock; the single-use engine runs OUTSIDE it (replay re-enters the
-  emit path). Fold = oldest-first, later-wins per (kind, key), tombstones
-  mirror live eviction match rules, custody routes on custody_location;
-  journal-without-payload folds to an honesty shortfall, never silently.
-- Canonical stage order (owner-ruled boot order):
-  aether_configuration -> crystallizer_policy (boot-time report) ->
-  mutation_research (report; excluded from restore) -> nexus (reload verb +
-  public enable + lifecycle replay) -> frames (posture bind BEFORE books;
-  frames own the dynamic gate) -> books/binds/conjure/staged/selections ->
-  links -> clusters -> contracts LAST (borrower-called naming the owning
-  side; details live in the lineage owner's map under both labels).
-- Fresh identities always (old->new in the report's identity map; spell
-  SHAs never translate). Failure = reverse-order teardown + chained
-  RuntimeError. Shortfall ledger reports everything unreplayable (hooks,
-  non-hydratable targets, cluster leadership, index subscriptions, MR).
+### Mermaid: Meld Runtime
+```mermaid
+sequenceDiagram
+  participant C as Conduit
+  participant M as Meld
+  participant CC as CreationContext
+  participant P12 as Phase12 Compiled Executors
+  participant CR as Creations
+  C->>M: meld(spell_id/input)
+  M->>CC: get/build creation context
+  M->>CC: invoke _execute_*_compiled(...)
+  CC->>P12: dispatch compiled lane
+  P12->>CR: reuse/construct/register
+  P12-->>CC: instance
+  CC-->>M: instance
+  M-->>C: instance
+```
 
-### Configuration reload lanes (owner law: recorded truth, never defaults)
-- Every configuration has a JSON-payload load-and-freeze reload verb:
-  SpellbookConfiguration.load_recorded_dictionary,
-  AethericFrameConfiguration.from_recorded_posture,
-  AetherConfiguration.from_recorded_payload,
-  NexusConfiguration.load_recorded_dictionary (enum-name/collection forms
-  round-trip), CrystallizerConfiguration.load_recorded_dictionary.
-  Recorded values win; backfill is per-key REPORTED; callables record as
-  presence flags and reload as code_participation reports; verbs seal on
-  return.
+### Mermaid: Ownership Transfer
+```mermaid
+sequenceDiagram
+  participant SC as Source Conduit
+  participant TC as Target Conduit
+  participant TO as TransferOfOwnership
+  participant AE as Aether
+  SC->>TO: preflight()
+  SC->>TO: execute()
+  TO->>SC: disable lineage (transfer_in_progress)
+  TO->>AE: flip registry + spellbooks (under SafeGuard)
+  TO->>SC: move/teardown creations
+  TO->>SC: unshare or repoint contracts
+  TO->>SC: mark lineage dirty/gated
+```
 
-### ExternalPersistenceManager (the DB opt-in)
-- module asset_management/external_persistence_manager.py; ASSET-OWNED
-  since the S3 decomposition (custody moved from the crystallizer root
-  into AssetManagementSystem). Separate ExternalPersistenceManagerConfiguration
-  carries USER callables (upload/download/list) + upload_on_flush /
-  strict_uploads knobs; callables-first by owner decision (no SQLAlchemy in
-  core; users own their SQL bootstrap and secrets; a first-party adapter
-  package may PROVIDE callables later).
-- Both flush paths ship local-cache-first then upload (lenient default:
-  failures count into upload_failure_count and never break the seal lane).
-- `reload_profile_from_external` = manager download_profile -> system
-  insert_cached_items (generic insert-if-absent sink).
+## Information Sources
 
-### CrystallizerBootstrap (the pod-restart lane)
-- src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py
-  (moved in S4): single-use fluent builder composing ONLY facades:
-  activate (defaults or supplied config) -> attach manager -> local cache
-  reload (fresh-ever pods legally boot empty) -> remote pull + re-flush
-  into the local cache -> chain-verify gate (broken REFUSES) ->
-  load_checkpoint on the newest profile ULID -> report. Its old
-  with_preflight_gate knob is an accepted no-op: blocker refusal is
-  STANDARD admission now (the engine gate; see the decomposition section).
+Every promoted FACT in this document traces to source. The C3 catalog cites its
+own evidence inline per entry; this is the consolidated list, and it is the same
+set `## C1 Code Map (Core)` measures - one source of truth, not two that drift.
 
-## Subsystem Decomposition (promoted from patch
-## crystallizer_decomposition_2026_07_09, 2026-07-10)
+Primary source files (167, all resolved 2026-08-01T20:05:00Z):
 
-Canonical design anchor: artifacts/2026-07-09_crystallizer_philosophy_v3.md
-(the V3 subsystem model). Owner-run validation: 614/614 across the whole
-crystallizer test tree.
+- `src/melder/__architecture__.py`
+- `src/melder/__components__.py`
+- `src/melder/__graph_details__.py`
+- `src/melder/__graph_network__.py`
+- `src/melder/__init__.py`
+- `src/melder/aether/aether.py`
+- `src/melder/aether/aether_configuration.py`
+- `src/melder/aether/aether_configuration_builder.py`
+- `src/melder/aether/aether_utility_system.py`
+- `src/melder/aether/aetheric_frame/aetheric_frame.py`
+- `src/melder/aether/aetheric_frame/conduit_cloud.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unlink_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py`
+- `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`
+- `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py`
+- `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py`
+- `src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py`
+- `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
+- `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
+- `src/melder/aether/aetheric_mediator/admission_result.py`
+- `src/melder/aether/aetheric_mediator/claim_mode.py`
+- `src/melder/aether/aetheric_mediator/claim_table.py`
+- `src/melder/aether/aetheric_mediator/identity.py`
+- `src/melder/aether/aetheric_mediator/information_registry.py`
+- `src/melder/aether/aetheric_mediator/mediator.py`
+- `src/melder/aether/aetheric_mediator/scope_keys.py`
+- `src/melder/aether/aetheric_mediator/staged_transaction.py`
+- `src/melder/aether/aetheric_mediator/strategy_builder.py`
+- `src/melder/aether/aetheric_mediator/transaction_request.py`
+- `src/melder/aether/aetheric_mediator/transaction_session.py`
+- `src/melder/aether/aetheric_mediator/transaction_strategy.py`
+- `src/melder/aether/aetheric_mediator/transaction_type.py`
+- `src/melder/aether/conduit/conduit.py`
+- `src/melder/aether/conduit/conduit_cluster.py`
+- `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
+- `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
+- `src/melder/aether/conduit/conduit_ward/policies/policies.py`
+- `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
+- `src/melder/aether/conduit/creations/conduit_creations.py`
+- `src/melder/aether/conduit/creations/creations.py`
+- `src/melder/aether/conduit/meld/conduit_meld.py`
+- `src/melder/aether/conduit/meld/contracts/spell_contract.py`
+- `src/melder/aether/conduit/meld/contracts/spell_map.py`
+- `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+- `src/melder/aether/conduit/meld/meld.py`
+- `src/melder/aether/conduit/meld/spellspace_meld.py`
+- `src/melder/aether/conduit/spell_space/spell_space.py`
+- `src/melder/aether/spellbook/bind/bind.py`
+- `src/melder/aether/spellbook/bind/scan.py`
+- `src/melder/aether/spellbook/bind/spell_index.py`
+- `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
+- `src/melder/aether/spellbook/configuration/system_state.py`
+- `src/melder/aether/spellbook/resolution_style_matrix.py`
+- `src/melder/aether/spellbook/spell.py`
+- `src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py`
+- `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py`
+- `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/class_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
+- `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
+- `src/melder/aether/spellbook/spell_types/spell_types.py`
+- `src/melder/aether/spellbook/spellbinder.py`
+- `src/melder/aether/spellbook/spellbook.py`
+- `src/melder/crystallizer/asset_management/asset_management_system.py`
+- `src/melder/crystallizer/asset_management/crystallizer_cache.py`
+- `src/melder/crystallizer/configuration/crystallizer_configuration.py`
+- `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py`
+- `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
+- `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
+- `src/melder/crystallizer/crystallizer.py`
+- `src/melder/crystallizer/crystals/spell_crystal.py`
+- `src/melder/crystallizer/persistence/persistence_crystal.py`
+- `src/melder/crystallizer/persistence/persistence_profile.py`
+- `src/melder/crystallizer/persistence/persistence_system.py`
+- `src/melder/crystallizer/synthetic_module.py`
+- `src/melder/mutation_research/mutation_configuration.py`
+- `src/melder/mutation_research/mutation_configuration_builder.py`
+- `src/melder/mutation_research/mutation_research.py`
+- `src/melder/mutation_research/research_set/network_versioner.py`
+- `src/melder/mutation_research/research_set/research_journal.py`
+- `src/melder/mutation_research/research_set/research_lane.py`
+- `src/melder/mutation_research/research_set/research_node.py`
+- `src/melder/mutation_research/research_set/research_set.py`
+- `src/melder/mutation_research/research_set/residence_registry.py`
+- `src/melder/mutation_research/research_set/transition_entry.py`
+- `src/melder/mutation_research/synthesis/structural_synthesizer.py`
+- `src/melder/nexus/acl/builder/frame_acl_builder.py`
+- `src/melder/nexus/configuration/nexus_frame_mode.py`
+- `src/melder/nexus/configuration/rift_space_type.py`
+- `src/melder/nexus/frame_acl_manager.py`
+- `src/melder/nexus/frame_descriptor_manager.py`
+- `src/melder/nexus/nexus.py`
+- `src/melder/nexus/nexus_frame_builder.py`
+- `src/melder/nexus/nexus_frame_manager.py`
+- `src/melder/nexus/rift/codegen_system/codegen_system.py`
+- `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py`
+- `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py`
+- `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py`
+- `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
+- `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
+- `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`
+- `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
+- `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
+- `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
+- `src/melder/nexus/rift/command_system/capability_command_system.py`
+- `src/melder/nexus/rift/command_system/codegen_command_system.py`
+- `src/melder/nexus/rift/command_system/command_system.py`
+- `src/melder/nexus/rift/command_system/static_command_system.py`
+- `src/melder/nexus/rift/frame_link/frame_link.py`
+- `src/melder/nexus/rift/frame_link/frame_link_contract.py`
+- `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
+- `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
+- `src/melder/nexus/rift/frame_viewer/view_conduit.py`
+- `src/melder/nexus/rift/frame_viewer/view_frame.py`
+- `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
+- `src/melder/nexus/rift/frame_viewer/view_spell.py`
+- `src/melder/nexus/rift/rift.py`
+- `src/melder/nexus/rift/rift_gate/rift_gate.py`
+- `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py`
+- `src/melder/nexus/rift/rift_space/capability_rift_space.py`
+- `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
+- `src/melder/nexus/rift/rift_space/event_system/rift_event.py`
+- `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
+- `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py`
+- `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
+- `src/melder/nexus/rift/rift_space/rift_space.py`
+- `src/melder/nexus/rift/rift_space/static_rift_space.py`
+- `src/melder/nexus/rift/rift_space/workstation.py`
+- `src/melder/system_document.py`
+- `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
+- `src/melder/utilities/helpers/init_helpers.py`
+- `src/melder/utilities/logger/safe_logger.py`
+- `src/melder/utilities/synchronization/creation_gate.py`
+- `src/melder/utilities/synchronization/creation_gate_controller.py`
+- `src/melder/utilities/synchronization/phase_scheduler.py`
+- `tests/unit/melder/aether/dev_ops/change_control_manager/test_scope_acquisition.py`
+- `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
 
-### The five identities (code-real paths)
-- `crystallizer/crystals/` - the twin VOCABULARY at package level (S2):
-  every twin + spell_crystal.py + recorded_unit_state.py. CARRIER LAW:
-  crystals carry recorded truth and analysis RESULTS; they never own
-  analyzers, strategy maps, or walk logic. SpellCrystal slimmed 1684->1030
-  lines in S1: its constructor keeps identity/bind-signature capture and
-  DELEGATES analysis to a single-use CrystalAnalyzer, storing the returned
-  CrystalAnalysisResult (11 properties + describe() read the carried
-  result; describe() preserves every pre-decomposition key and adds
-  physical_module_fingerprints, export_surfaces, module_load_order, and
-  the two AST maps).
-- `crystallizer/crystal_analysis/` - the shared analyzer service (S1):
-  crystal_analyzer.py (walk owner; analyze_spell_root for live spells,
-  analyze_payload for RETAINED payloads - the MR re-analysis seam),
-  crystal_analysis_result.py (value-only carrier), custody/ (per-authority
-  strategies: synthetic text+SHA custody, user_source SHA256 FINGERPRINTS
-  at bind = on-disk drift detection, site_package path law, binary/unknown
-  honest leaves), strategies/ (fact passes: import/from-import extraction
-  with byte-order parity to the historical extractor, export_surface NEW,
-  dependency_view topological load order NEW), preflight/ (the 7 restore
-  strategies + PersistenceAnalyzer, relocated).
-- `crystallizer/persistence/` - the RECORD, ledger only (S3/S4):
-  persistence_system.py + persistence_profile.py + persistence_crystal.py.
-  Verbs: profiles, twins/journal, checkpoint minting, retention, chain
-  verify, cached_item_form/forms (flush feedstock), insert_cached_items
-  (the sink), capture_formation_record, detach_profile_chain (loader
-  feedstock). The record touches NO disk, NO DB, and constructs NO
-  engines; it calls nobody (edge law).
-- `crystallizer/asset_management/` - bytes at rest (S3):
-  asset_management_system.py (borrows the record; owns crystallizer_cache
-  .py + external_persistence_manager(.py|_configuration.py)). FLUSH
-  CONTRACT: seal (ledger) then ship - cache write, FIFO retention at the
-  record's LIVE cap, then the lenient upload leg (ONE feedstock pull
-  serves both legs; the old Crystallizer upload hook is absorbed).
-  Reloads (cache/remote) land in the record's insert sink; formation
-  FILES store/load/list here.
-- `crystallizer/crystal_loader_system/` - the unfold (S4):
-  crystal_loader_system.py (the owner; durable last-load state via
-  describe_last_load), load_admission.py (plan_checkpoint_load /
-  plan_formation_load with the canonical-kind-order window minting moved
-  from the ledger / execute_plan / scope adjudication), load_plan.py
-  (declarative: scope world|conduit|frame, per-kind key counts,
-  inspectable before activation), restore_engine.py (moved; gained
-  refuse_on_blockers), bootstrap_loader.py.
+Companion documents:
 
-### Admission (the verdict law, S4)
-Every mediated load runs plan -> map -> verdict -> execute -> remember.
-The gate lives INSIDE the engine at the fold->preflight seam (the only
-place owning authoritative FOLDED truth - zero fold duplication): with
-refuse_on_blockers=True (every mediated load), a "blockers" verdict
-raises a teach-grade RuntimeError naming the rows BEFORE any replay.
-Warnings proceed and ride the report. LoadAdmission then ADJUDICATES per
-scope: conduit/frame loads reclassify the scope-blind frame_posture
-warnings to "expected_for_scope" in the additive "admission" payload view
-{"scope","verdict","reclassified"} - raw preflight findings are never
-rewritten. Facade payloads are byte-compatible supersets (the "admission"
-key is additive). Proven live: the M3 boot-boundary fixture carrying a
-placeholder SHA was refused by the synthetic_source_integrity blocker
-until the fixture computed its real fingerprint.
+- `context_compass/system_docs/src_architecture.md` - the C4 boundary and
+  runtime narrative this catalog must stay aligned to.
+- `context_compass/system_docs/tests_components.md` - the test-side mirror,
+  which uses this same section contract.
+- `context_compass/system_docs/patches/active/` - active patch lanes; component
+  and code-description patches are inputs to this document while a lane is open.
 
-### Cross-subsystem laws
-- EDGE LAW (acyclic): anything imports crystals/; analysis reads
-  crystals; loader reads record + invokes analysis; assets read record +
-  call its sink; the record calls nobody.
-- LOCK LAW: one-way (facade -> subsystem -> record -> profile); no
-  subsystem-to-subsystem lock nesting; borrowers clean BEFORE the record
-  (crystallizer cleanup order: loader -> assets -> record).
-- Twin-kind honesty: adding a twin kind still touches record AND loader
-  (record/replay are duals) - pay it via checklist, not topology claims.
-- describe boundary: the record's describe() carries NO disk truth; the
-  Crystallizer facade re-enriches cached_checkpoint_count from the asset
-  system.
+## Context / Handoff Summary
 
-## V3 Horizon Iteration (promoted 2026-07-12 from six patch dirs:
-## aether_lazy_frames_and_load_gate_2026_07_11,
-## crystallizer_v3_horizon_2026_07_11, crystallizer_s2_user_source_
-## retention_2026_07_11, crystallizer_s3_impact_engine_2026_07_11,
-## crystallizer_external_mesh_2026_07_12, mr_restore_build_stage_2026_07_11)
+WHAT COMPONENT CONTRACTS CHANGED (2026-08-01): this document was recomposed to
+the Required Section Contract in `src_components_instructions.md`. The component
+contracts themselves are unchanged - no C3 entry's meaning was edited. What
+changed is the document's shape around them.
 
-Owner-run validation: full 3.14t tree green (9702 tests) plus two
---last-failed passes; every lane closed with acceptance walks (see the
-completed epics/stories of 2026-07-11/12).
+- `## Indexing` ADDED; it did not exist.
+- `## C1 Code Map (Full Package Inventory)` RENAMED to the contract's
+  `## C1 Code Map (Core)` and rebuilt with the five required fields per entry,
+  measured from disk. The core set is the deduplicated union of every
+  `Key Files (C1)` list in the C3 catalog. The previous exhaustive 574-module
+  inventory is RETAINED beneath it as
+  `### Full Package Inventory (exhaustive, retained)` - it is genuinely useful
+  and deleting it to satisfy a rename would have been the wrong trade.
+- `## Diagrams` ADDED as its own H2. The diagrams previously sat inside
+  `## Method-Level Call Flows (C1)`, where the contract has no place for them.
+  They were MOVED, not redrawn.
+- `## Information Sources` and `## Context / Handoff Summary` ADDED; neither
+  existed.
+- `## Documentation Quality Standard`, `## Table of Contents`, and
+  `## Component Template` were MOVED OUT, plus four promoted-patch blocks whose
+  headings were WRAPPED across two to five physical lines - the defect that
+  produces one-line index fragments. All of it went to
+  `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`,
+  unwrapped. NOTHING WAS DELETED.
 
-### Lazy frames + the Aether LoadGate (owner substrate rulings)
-- `import melder` creates ZERO AethericFrames (the eager default-frame
-  construction is deleted): the first Spellbook births the frame it
-  names via `_ensure_frame` (spellbook.py:229, get-or-create is the
-  INTENDED semantic); a collapsed configuration falls back to "default"
-  via `_ensure_default_frame`, which now lazily CREATES (recreate-after-
-  individual-clean matches named-frame semantics; `_ensure_frame`'s
-  existing branch repairs a drifted default pointer). check_cleaned
-  still refuses torn-down singletons.
-- utilities/synchronization/load_gate.py - LoadGate (Cleanable):
-  exclusive one-load-at-a-time acquire(label)/release();
-  wait_for_passage(timeout) passes the HOLDER thread free and parks
-  foreign threads (teach-grade timeout names the holding load); cleanup
-  = terminal open with None TOMBSTONES (documented: parked waiters must
-  re-check after waking, so no del posture on the holder slots).
-- Aether hosts the gate BEFORE any frame can exist +
-  acquire_load_authority(label, drain_timeout)/release_load_authority()
-  (drain re-snapshots live frames per slice and counts mediator
-  sessions; failed acquisition releases the gate). The gate threads
-  frame -> DevOpsManager -> CCM -> TransactionMediator as an additive
-  load_gate kwarg (None = ungated); the mediator checks wait_for_passage
-  at BOTH new-root ingresses (begin_transaction pre-build - covers
-  start_transaction and the strategy starter - and begin_frame
-  pre-lock); joins never gate. NOTE: CCM.transaction_mediator is an
-  accessor METHOD, not a property. The loader wraps both load verbs in
-  authority spans ("the loading thread has all control").
-- Posture propagation: bind_frame_configuration's two LANDING branches
-  call AethericFrame._propagate_transaction_wait_posture, routing the
-  canonical posture's max_transaction_wait_time_in_seconds through
-  mediator.configure() - closes the captured-once-at-ctor gap (under
-  lazy frames every restore rebinds posture onto a default-postured
-  frame). The disable_* gates were already live-reads and needed
-  nothing.
+WHAT IS STILL UNKNOWN: the `## Unknowns` section is unchanged. The advanced
+`SpellState` flag producers remain blocked by design, awaiting the
+MutationResearch runtime-seam slice.
 
-### S1 load-scope maturity (formations compose into LIVE worlds)
-- LoadPlan: additive target_frame_name/skip_existing slots.
-- LoadAdmission: borrows aether (None = bare-record);
-  plan_formation_load(..., target_frame_name, skip_existing) rewrites
-  frame identity COPY-ON-WRITE in the detached window only (frame twin
-  re-key + journal frame rows + book/cluster frame_name edges;
-  multi-frame windows refuse - formations are single-frame slices);
-  _preflight_host reads the frame REGISTRY (never _ensure_frame - a
-  probe must not birth the frame it checks): frame_missing=info,
-  posture_conflict=warning, conduit/cluster name collisions=blockers via
-  the PUBLIC cloud probes has_conduit_name / has_cluster_name (the
-  documented _conduit_clusters private seam was retired by the
-  public_cloud_seams lane, 2026-07-12 - see the three-lane section
-  at the end of this doc);
-  execute_plan refuses host blockers PRE-ENGINE or downgrades them to
-  "skipped_existing" under the skip flag; admission view gains the
-  additive "host" key.
-- Engine skip lanes (skip_existing): taken conduit name -> conjure
-  name=None + shortfall "conduit_name_taken_built_unnamed" (safe: names
-  are never replay resolution keys); existing cluster -> REUSED, members
-  join + shortfall "cluster_existed_members_joined".
-- Facade restore_formation gains both params;
-  compose_frame_subtree/compose_conduit_subtree DELETED (zero callers;
-  capture_formation_slice is the shipped composer; NOTE marker in
-  persistence_profile.py records the ruling).
-
-### S2 physical custody (opt-in user-source TEXT retention)
-- CrystallizerConfiguration.retain_user_sources (schema bool, default
-  False = byte-identical pre-S2 record) threads Crystallizer ->
-  SpellCrystal -> CrystalAnalyzer. Harvest: base
-  SourceCustodyStrategy.harvest_payload defaults None;
-  UserSourceCustodyStrategy overrides ({source_text, source_sha256,
-  module_path, is_package} via the existing read+fingerprint helpers);
-  the analyzer walk harvests beside the M3 synthetic harvest;
-  CrystalAnalysisResult.user_module_sources rides describe() and
-  analyze_payload re-folds it.
-- Restore: RestoreEngine._rebuild_user_world - ABSENT files only (THE
-  LIVE FILE ALWAYS WINS; sys.modules skip; dot-depth order), rebuilt
-  through the SyntheticModule lifecycle (normal-verbs law; binding
-  sentinel "user_source_retained"), shortfall
-  "user_module_rebuilt_synthetic_from_retained_source", single import
-  retry via _import_qualified_target.
-- Preflight: hydration downgrades absent-module blockers to info when
-  text is retained; UserSourceIntegrityStrategy: NARROWED (2026-07-12,
-  source_drift_preflight lane) to record self-consistency only -
-  retained-text sha mismatch = BLOCKER (tamper). Live-file drift moved
-  wholesale to the dedicated SourceDriftStrategy (see the three-lane
-  section at the end of this doc); CRLF-safe read_text law unchanged.
-
-### S3 impact engine (blast radius over the manifests)
-- Read seam: PersistenceProfile.describe_spell_crystals() (BOTH custody
-  maps + additive "custody_state"; detached payloads only) + system
-  passthrough.
-- crystal_analysis/impact_engine.py - ImpactEngine: construction builds
-  module->carrying-spells + module->importers reverse indexes +
-  fingerprint/path maps; verbs spells_touching_module,
-  blast_radius_of_module (transitive closure; honest unknown_module),
-  blast_radius_of_spell (spell_id vocabulary; a spell change IS its root
-  module changing), describe_source_drift (CRLF-safe re-hash ->
-  unchanged|drifted|absent|unreadable + radius per non-unchanged),
-  describe. Documented thread-confined: immutable post-construction.
-- Facade Crystallizer.analyze_impact(module_name|spell_id|neither) -
-  one question per call (both = ValueError); engine built + cleaned per
-  invocation.
-
-### External mesh lane + record versioning
-- Generic kind-partitioned callables on the manager configuration:
-  with_store_handler(kind, profile, unit_id, payload) /
-  with_fetch_handler(kind, unit_id) / with_list_units_handler(kind,
-  profile) / with_delete_handler(kind, unit_id) /
-  with_stream_emissions(bool). LEGACY BRIDGE: the checkpoint verbs fall
-  back to the generic lanes (upload->store_unit("checkpoint"),
-  download->fetch_unit, profile list->list_units) - one handler set
-  serves the whole mesh. WRITE-LANE GATES WIDENED in lockstep: validate()
-  AND upload_enabled accept (upload_handler OR store_handler);
-  read-only configs must disable upload_on_flush explicitly.
-- Manager: store_unit lenient + store_failure_count (strict_uploads
-  re-raises); fetch/list loud-refuse; delete_unit STRICT (a half-run
-  retention pass must not lie). Formations ship local-then-remote at
-  store_formation; reload_formations_from_external mirrors the
-  checkpoint reload; apply_external_retention(profile, cap) ULID-sorted
-  oldest-first deletes (facade cap defaults to
-  max_persistence_crystals - the local FIFO's knob).
-- EMISSION TAP (opt-in): every recorded twin streams a delta row
-  {record_version, crystal_kind, payload} under a fresh event ULID.
-  THREAD-SAFETY LAW: the payload captures BEFORE record() (replace-on-
-  emit means a concurrent same-kind emit may clean the twin
-  mid-describe) and ships AFTER (local truth leads the mirror);
-  lenient + counted; untapped worlds pay one property read.
-- persistence/record_version.py - RecordVersion (static authority,
-  CURRENT "1.0.0", key "record_version"): stamps to_cached_item,
-  capture_formation_record, and tap envelopes; check_readable refuses
-  NEWER-major artifacts at from_cached_item (covers cache + external
-  reloads) and load_formation_record; absent stamps read "0.0.0"
-  (pre-versioning = oldest, always readable). MAJOR breaks shape, MINOR
-  adds keys, PATCH documents.
-- Interface contract: a twin IS the interface - emit consumes the
-  object, the mesh ships its describe() dict, and that dict crosses
-  JSON losslessly (proven over the family + the full
-  class->json->class rehydration loop).
-
-### MR restore build stage (twin-over handoff, executed)
-- MutationResearchConfiguration.load_recorded_dictionary (reload-lane
-  law; seals via activate() - the config's emission factor AND root
-  activation's hard gate).
-- _replay_mutation_research = BUILD stage on the canonical slot: no
-  twin = NO-OP; folded "cleaned" = honest shortfall; else reload verb
-  (per-key shortfalls) -> Aether()._get_mutation_research() (hosted
-  accessor; an ALREADY-ACTIVE root deactivates first - live-world loads
-  under the LoadGate; both acts recorded) ->
-  activate(hydrate_from_record=False) (engine owns FOLDED truth) ->
-  load_recorded_composition; pre-Phase-B = config-only +
-  "composition_not_recorded_pre_phase_b"; "disabled" later-wins =
-  activate-then-deactivate. Both first_cut shortfalls RETIRED.
-- MRCompositionStrategy (9th default preflight row; the MR root now
-  rides the engine preflight bundle): blockers ONLY on unparseable
-  shapes (composition/set/organization/lanes/residence); warnings on
-  organization/residence disagreement; spell_id vocabulary (2026-07-11
-  sweep) with pre-sweep payloads tolerated as ONE named
-  "pre_vocabulary_sweep_payload" warning. LoadAdmission reclassifies
-  its findings expected_for_scope on conduit/frame loads (MR is a
-  world-scope root).
-
-## Three-Lane Tail (promoted 2026-07-11 from patch dirs
-## public_cloud_seams_2026_07_12, source_drift_preflight_2026_07_12,
-## spell_index_graft_2026_07_12; owner-directed finish)
-
-### Public cloud seams (access-spelling law; zero behavior change)
-- AethericFrame.conduit_cloud (check_cleaned property,
-  aetheric_frame.py:411) + ConduitCloud.has_cluster_name(name)
-  (lock-guarded membership read mirroring has_conduit_name,
-  conduit_cloud.py:379). Every crystallizer reader repointed: engine
-  cluster-replay + conjure skip lanes, admission _preflight_host conduit
-  and cluster checks. Grep-proven zero private cloud reads remain
-  crystallizer-side; the retired seam comments carry NOTE markers.
-  LAW: cross-package cloud access is public-verb-only.
-
-### Source drift at load-time preflight (10th default row)
-- preflight/source_drift_strategy.py - SourceDriftStrategy
-  ("source_drift"): EVERY bind-time physical_module_fingerprints entry
-  with a recorded module_to_path re-hashes against disk at load,
-  RETENTION-AGNOSTIC (retention-OFF worlds no longer restore blind).
-  Absent file = honest warning (import may still resolve via sys.path);
-  sha differs (CRLF-safe read_text) = warning
-  "user_source_drifted_since_seal"; unreadable = info; unchanged =
-  silent; (module, path) pairs deduplicate across crystals. Drift is
-  notice, never refusal. The DEFAULT PREFLIGHT SET is now 10 rows:
-  link_integrity, contract_peer, hydration, configuration_loss,
-  cluster_membership, frame_posture, synthetic_source_integrity,
-  user_source_integrity (tamper-only), mutation_research_composition,
-  source_drift.
-
-### Spell-index graft lane (restore grain below the conduit slice)
-- Capture: PersistenceProfile.capture_index_graft(index_id) (:783) +
-  system passthrough (:456) - versioned record {record_version,
-  graft_kind:"spell_index", index_id, index_payload (twin describe),
-  members {spell_id: {payload, custody_state}},
-  members_without_custody}. Storage is the user's choice (plain dict;
-  mesh or formations both carry it).
-- Restore: crystal_loader_system/graft_runner.py - GraftRunner
-  (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
-  unconjured-host refusal (public Spellbook.conduit accessor,
-  spellbook.py:5412) -> per-member overlap rule via
-  host_frame.find_index_for_spell (resident member REFUSES by default;
-  skip_resident=True skips + shortfall
-  "member_resident_in_host_skipped"; existing indexes are NEVER
-  mutated - fresh-index-only law) -> hydration via the import lane with
-  failure->rebuild->retry through the shared user_world_rebuild lane ->
-  selected member binds ACTIVE (bind creates the fresh index + selects)
-  -> parked members conduit.bind_inactive onto it -> detached report
-  {status, live_index_id, members_bound, members_parked,
-  skipped_resident, shortfalls, identity}. NO LoadGate: grafts are
-  user-verb activity (per-verb transactions), not world replays.
-  Emissions free: bind/bind_inactive auto-record (re-recording
-  covenant).
-- Shared rebuild lane: crystal_loader_system/user_world_rebuild.py -
-  rebuild_absent_user_modules(spell_id, crystal, on_built,
-  on_shortfall): live-file-wins, sys.modules skip, dot-depth
-  parents-first, SyntheticModule lifecycle, honest shortfalls. The
-  engine's _rebuild_user_world DELEGATES via callbacks (identical
-  built-stack + report semantics); GraftRunner uses a no-op on_built.
-  The rebuild laws live in exactly one place.
-- Facades: Crystallizer.capture_index_graft (:621) / graft_index
-  (:647) (activation-gated; live-object facade per create_spell_crystal
-  precedent).
+WHICH SUBSYSTEM TO VERIFY NEXT: the 30 architecture-level narratives sitting in
+that same migration file are NOT yet merged into this catalog. They are
+subsystem responsibility sections that were living in `src_architecture.md`,
+where its own contract names them an anti-pattern. Most OVERLAP an existing C3
+entry here rather than adding a new one, so merging them is per-section
+judgement - fold the unique detail in, drop what is already said - not a
+mechanical move. Until that merge lands, that material is in NEITHER canonical
+document. That gap is deliberate, bounded, and recorded here so it cannot be
+discovered by accident.

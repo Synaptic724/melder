@@ -40,8 +40,8 @@ called `Overview` in a document holding six overviews is unaddressable even
 though it is indexed. Name sections after the thing they describe.
 
 **Avoid container headings that hold nothing but other headings.** Indexing a
-production `src_components.md` - not the starter shipped here - produces a
-`C3 Components Catalog` section of **1,945 lines**: it wraps 24 components, so
+production `src_components.md` produces a `C3 Components Catalog` section of
+**1,945 lines**: it wraps 24 components, so
 its range spans all of them. An entry like that defeats the index while
 appearing to use it, because a reader who selects it loads 37% of the document
 believing they sliced it. Containers are fine as organisation; just never select
@@ -127,15 +127,15 @@ deep their headings happen to sit.
 So patches declare their boundaries instead of implying them:
 
 ```markdown
-<!-- BEGIN ENTRY: "AethericMediator: scope acquisition" -->
+<!-- BEGIN ENTRY: "PipelineScope: stage admission" -->
 ## Revision 1
 
-Introduces `AethericMediator` as the single admission point for transaction
-scope. Callers stop touching `TransactionMediator` directly.
+Introduces `PipelineScope` as the single admission point for stage
+registration. Callers stop constructing `Stage` directly.
 
-- affects: `src/melder/aether/aetheric_frame/dev_ops/`
+- affects: `src/example/pipeline/`
 - risk: high, changes an admission gate
-<!-- END ENTRY: "AethericMediator: scope acquisition" -->
+<!-- END ENTRY: "PipelineScope: stage admission" -->
 ```
 
 **The name in the marker is the point.** It moves verbatim into the index, so a
@@ -143,8 +143,8 @@ row identifies the object it covers:
 
 ```
 | lines | lvl | name |
-| 6-14  | 1   | AethericMediator: scope acquisition |
-| 16-23 | 1   | ConduitWard: contract delegation |
+| 6-14  | 1   | PipelineScope: stage admission |
+| 16-23 | 1   | StoreHandle: contract delegation |
 ```
 
 A row keyed by a number tells a reader nothing about whether to read it. Every
@@ -186,6 +186,23 @@ current and writes nothing - run it before trusting any range.
 The tool **never modifies the document**. It reads, validates, and writes
 `<stem>_index.md` beside it.
 
+It refuses two targets outright, because it writes and a wrong target does not
+produce a confusing message you shrug off - it produces a plausible file that
+replaces a correct one:
+
+- **an `*_index.md` file.** Indexing an index yields `<stem>_index_index.md`,
+  which addresses nothing.
+- **an assembled graph** (any document containing `<!-- BEGIN FILE:`). Its index
+  is a byproduct of assembly and cannot disagree with it. Re-indexing here would
+  re-parse headings and overwrite that with a weaker index keyed by heading
+  breadcrumb rather than source path. Run `assemble_graph.py`.
+
+Both refusals came from doing it: a convenience glob over `examples/example_*/*.md`
+swept in the generated graph and every existing index, overwrote the graph's
+byproduct index, and left ten junk files behind. The counts caught it, not the
+output - which is the argument for the refusal being in the tool rather than in a
+sentence someone is supposed to remember.
+
 Every range is validated against its own heading before anything is written. An
 off-by-one silently corrupts every downstream read, so it is checked rather than
 trusted, and a failed validation writes nothing.
@@ -204,7 +221,7 @@ The tool does all three:
 ```bash
 python context_compass/tools/system_documents/index_document.py \
     --doc context_compass/system_docs/src_components.md \
-    --slice "Conduit Runtime"
+    --slice "Router and Role Resolution"
 ```
 
 It verifies `line_count` and `content_sha256` against the index ON DISK before
@@ -212,17 +229,21 @@ returning anything, and prints the range as a header so the output carries its
 own citation:
 
 ```
-<!-- src_components.md:1319-1403  C3 Components Catalog > Component: Conduit Runtime -->
-### Component: Conduit Runtime (Normal and Lesser)
+<!-- src_components.md:74-94  C3 Components Catalog > Component: Router and Role Resolution Engine -->
+### Component: Router and Role Resolution Engine
+- Purpose: resolve the selected role chain deterministically.
 ...
 ```
+
+That is real output from the document shipped in this package - run the command
+and you get it back.
 
 Behaviour that matters:
 
 - **A stale index refuses to slice.** Edit the document without regenerating and
   you get `INDEX STALE - refusing to slice`, not wrong content.
 - **An ambiguous name lists the candidates rather than guessing.** Asking for
-  `Catalog` against the reference document matches 88 sections; it prints them
+  `Catalog` against the shipped `src_components.md` matches 7 sections; it prints them
   with their ranges so you can narrow.
 - **A missing index refuses too.** Generate before you slice.
 

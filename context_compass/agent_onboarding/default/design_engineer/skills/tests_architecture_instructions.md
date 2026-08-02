@@ -16,12 +16,16 @@
 - `context_compass/examples/example_architecture/src_architecture.md`
 - `context_compass/examples/example_components/tests_components.md`
 - `context_compass/examples/example_components/src_components.md`
-- `context_compass/system_docs/tests_architecture.md` (active baseline)
 
 Read the two architecture examples as a pair. They share a section contract on
 purpose: one maps the runtime, the other maps how the runtime is verified. If
 your output makes the test map structurally different from the source map, the
 divergence is the defect.
+
+The canonical output does not ship with the package. `system_docs/` is empty in
+a fresh install, so on first run you are creating this document, not editing
+one. The examples above are the shape reference; this repository is the source
+of truth for the content.
 
 ## Required Inputs (Read First)
 - `context_compass/system_docs/tests_components.md`
@@ -54,9 +58,8 @@ Heading discipline the index depends on:
   so there is no wrapper heading to select by mistake. Keep it that way: the
   moment an H2 exists only to group other headings, it indexes as a range
   covering all of them, and a reader selecting it loads that whole span
-  believing they sliced one section. On a production `src_components.md` - not
-  the starter shipped here - that mistake costs 37% of the document in a single
-  slice.
+  believing they sliced one section. On a production `src_components.md` that
+  mistake costs 37% of the document in a single slice.
 
 Consume the index by slicing, never by reading the document whole:
 
@@ -106,6 +109,23 @@ Full format specification:
 13. `## Information Sources`
 14. `## Context / Handoff Summary`
 
+### Sections not in the contract
+
+The contract is a **minimum in a fixed relative order**, not a whitelist. Other
+sections are permitted and are common: real documents run 44 H2 sections against
+a 17-section contract. Read literally as "only these sections", a recomposition
+deletes roughly 1,200 lines per document.
+
+If material genuinely does not belong here, it is **moved, never deleted**:
+
+- relocate it to a named target - the patch lane
+  (`system_docs/patches/active/<patch_id>/`) is the conventional destination
+- name that target in `## Context / Handoff Summary`
+- state plainly that until it is re-absorbed it lives in neither canonical
+  document
+
+"Delete it because the contract does not list it" is never the right answer.
+
 ## C1 Code Map Contract
 Each C1 key-path entry must include:
 - `path`
@@ -113,6 +133,13 @@ Each C1 key-path entry must include:
 - `end_line`
 - `loc`
 - `verified_at` (UTC DateTime `YYYY-MM-DDTHH:MM:SSZ`)
+
+**Directories are not valid C1 entries.** A directory has no line range, and the
+join to `src_graph.md` is keyed by source file, so a directory citation can never
+resolve. Expand it into its constituent non-`__init__` modules and measure each.
+Do not write `UNKNOWN` for a directory: `UNKNOWN` means "not yet verified and
+here is the investigation target", and a directory is unverifiable in principle -
+the marker would sit there forever with nothing to resolve it.
 
 Ranges are measured, never estimated. If the exact range is not verified, keep
 the claim `UNKNOWN` and add an investigation target in `## Unknowns` rather than
@@ -128,6 +155,12 @@ writing a plausible number.
   system.
 
 ## Build Sequence (Discovery-First, Required)
+2a. Unwrap any heading spanning more than one physical line. A reflowed
+    heading parses as several sections; the first wins "narrowest match"
+    and `--slice` returns a stub. `index_document.py` warns on unclosed
+    brackets, which is the usual tell, but it cannot catch every wrap -
+    scan the heading list once before you trust it.
+
 1. Confirm active ticket route and test-system scope.
 2. Read required example documents and extract reusable C4 section patterns.
 3. Inventory test entry surfaces (`tests/`, runner config, fixtures).
@@ -147,8 +180,47 @@ ticket before expanding scope. If a test-architecture claim conflicts with
 proceeding - the mismatch is the finding, and resolving it silently in either
 direction destroys it.
 
+## Content Preservation Gate (Non-Negotiable)
+
+**Structural checks cannot see content loss.** Every check in the Quality Gate
+below is structural - sections present, fields present, ranges present. A
+recomposition can pass all of them while having silently destroyed text.
+
+This is not hypothetical. A real recomposition of a 2,249-line architecture
+document lost ~170 lines to a regex that captured only the description text on
+the same physical line as the path: fifteen wrapped descriptions truncated, two
+destroyed outright, and a previous `## Context / Handoff Summary` overwritten,
+taking a record of decisions in force with it. All six structural checks passed
+the entire time. It was caught by a human noticing the file had shrunk.
+
+So, before the first transform:
+
+1. Capture a **multiset** of the document's non-blank, whitespace-normalised
+   lines. Counts, not a set - a set cannot see that a line appearing three times
+   now appears once.
+2. Do the work.
+3. Re-capture and compare. Every line from the baseline must appear either in
+   the resulting document or in a **named migration target** you can point at.
+
+```bash
+# before
+grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/before.txt
+# after
+grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/after.txt
+diff /tmp/before.txt /tmp/after.txt
+```
+
+**The baseline must be captured BEFORE the first edit.** Captured afterwards it
+proves nothing - it describes the document you already built, which is the exact
+trap that makes "I verified it" feel true while content is gone.
+
+A line legitimately removed is fine. A line you cannot account for is a defect,
+and this gate fails until you can name where it went.
+
 ## Quality Gate (Pass/Fail)
 Pass only when all checks are true:
+- [ ] Content Preservation Gate satisfied: every baseline line is present
+      in this document or in a named migration target.
 - [ ] Required section order exists and is complete.
 - [ ] Unknowns are explicit and tied to investigation targets.
 - [ ] Interfaces, lifecycle, and invariants are evidence-backed.
@@ -156,6 +228,7 @@ Pass only when all checks are true:
 - [ ] Diagrams and narrative use consistent terms.
 
 ## Validation Commands
+- `rg -n '^#{1,6} .*[([][^)\]]*$' context_compass/system_docs/tests_architecture.md` - headings with an unclosed bracket, the usual sign of a wrap
 - `rg -n "^## " context_compass/system_docs/tests_architecture.md`
 - `rg -n "UNKNOWN|System Context|Data Flows|C1 Code Map|Information Sources" context_compass/system_docs/tests_architecture.md`
 - `rg -n "path|start_line|end_line|loc|verified_at" context_compass/system_docs/tests_architecture.md`

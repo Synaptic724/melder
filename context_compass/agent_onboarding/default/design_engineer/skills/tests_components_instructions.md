@@ -16,7 +16,11 @@
 - `context_compass/examples/example_components/src_components.md`
 - `context_compass/examples/example_architecture/tests_architecture.md`
 - `context_compass/examples/example_architecture/src_architecture.md`
-- `context_compass/system_docs/tests_components.md` (active baseline)
+
+The canonical output does not ship with the package. `system_docs/` is empty in
+a fresh install, so on first run you are creating this document, not editing
+one. The examples above are the shape reference; this repository is the source
+of truth for the content.
 
 ## Required Inputs (Read First)
 - `context_compass/system_docs/tests_architecture.md`
@@ -48,9 +52,9 @@ Heading discipline the index depends on:
 - **Never leave a container heading as the read target.** `## C3 Components
   Catalog` wraps only other headings, so it indexes as a range covering every
   component beneath it. Select a component, never the catalog. Measured on a
-  production `src_components.md` - not the starter shipped here - that catalog
-  indexes as a **1,945-line** section, so a reader selecting it loads 37% of the
-  document believing they sliced it. The same shape applies here.
+  production `src_components.md` that catalog indexes as a **1,945-line**
+  section, so a reader selecting it loads 37% of the document believing they
+  sliced it. The same shape applies to whatever you write here.
 
 Consume the index by slicing, never by reading the document whole:
 
@@ -98,6 +102,38 @@ Full format specification:
 11. `## Information Sources`
 12. `## Context / Handoff Summary`
 
+### Sections not in the contract
+
+The contract is a **minimum in a fixed relative order**, not a whitelist. Other
+sections are permitted and are common: real documents run 44 H2 sections against
+a 17-section contract. Read literally as "only these sections", a recomposition
+deletes roughly 1,200 lines per document.
+
+If material genuinely does not belong here, it is **moved, never deleted**:
+
+- relocate it to a named target - the patch lane
+  (`system_docs/patches/active/<patch_id>/`) is the conventional destination
+- name that target in `## Context / Handoff Summary`
+- state plainly that until it is re-absorbed it lives in neither canonical
+  document
+
+"Delete it because the contract does not list it" is never the right answer.
+
+### What "core" means
+
+**Core is the deduplicated union of every `Key Files (C1)` list in the C3
+catalog.** A file a component claims as its own is core by that component's own
+claim, and the set maintains itself: change a component's key files and the core
+set follows. It is also already the join `system_document_build.md` depends on,
+so nothing new has to be tracked.
+
+On a 574-module package that resolved to 170 paths - a scope an agent can
+actually verify, against an inventory it cannot.
+
+An exhaustive inventory is still useful. Keep it, do not let the rename delete
+it: put it beneath as `### Full Package Inventory (exhaustive, retained)`.
+Narrowing a section's scope is not a licence to destroy what was there.
+
 ## Component Entry Contract (C3 Minimum)
 Each C3 test component must include:
 - `Purpose`
@@ -113,6 +149,21 @@ Each C3 test component must include:
 - `Extension Points`
 - `Key Files (C1)`
 
+**`Key Files (C1)` cites in-scope SOURCE paths only.** The graph is built from
+the source tree, so a test path can never resolve against it - it is not a near
+miss, it is a guaranteed miss. Test surfaces belong in the test-side mirror.
+Measured on a real recomposition: 165 of 167 cited paths resolved, and both
+misses were test files sitting in a component's key files.
+
+Verify the join rather than assuming it:
+
+```bash
+# every cited path should appear as a section in the graph index
+rg -o '`(src/[^`]+)`' -r '$1' context_compass/system_docs/src_components.md | sort -u > /tmp/cited.txt
+rg -o '`(src/[^`]+)`' -r '$1' context_compass/system_docs/src_graph_index.md | sort -u > /tmp/graph.txt
+comm -23 /tmp/cited.txt /tmp/graph.txt   # anything here does not resolve
+```
+
 This is the same twelve-field minimum `src_components_instructions.md` requires.
 Test components are components. If a field genuinely does not apply, say so in
 the field rather than dropping it - a missing field and a deliberately empty one
@@ -127,11 +178,24 @@ look identical to a reader, and only one of them is a decision.
   - `loc`
   - `verified_at` (UTC DateTime `YYYY-MM-DDTHH:MM:SSZ`)
 
+**Directories are not valid C1 entries.** A directory has no line range, and the
+join to `src_graph.md` is keyed by source file, so a directory citation can never
+resolve. Expand it into its constituent non-`__init__` modules and measure each.
+Do not write `UNKNOWN` for a directory: `UNKNOWN` means "not yet verified and
+here is the investigation target", and a directory is unverifiable in principle -
+the marker would sit there forever with nothing to resolve it.
+
 Ranges are measured, never estimated. If the exact range is not verified, keep
 the claim `UNKNOWN` and add an investigation target in `## Unknowns` rather than
 writing a plausible number.
 
 ## Build Sequence (Bottom-Up, Required)
+2a. Unwrap any heading spanning more than one physical line. A reflowed
+    heading parses as several sections; the first wins "narrowest match"
+    and `--slice` returns a stub. `index_document.py` warns on unclosed
+    brackets, which is the usual tell, but it cannot catch every wrap -
+    scan the heading list once before you trust it.
+
 1. Confirm active ticket route and test component scope.
 2. Read required example documents and extract reusable C3/C2/C1 patterns.
 3. Re-read tests architecture boundaries and terminology.
@@ -150,8 +214,47 @@ component it verifies in `src_components.md`, log `CONFLICT` in ticket notes and
 escalate before proceeding. The mismatch is the finding; resolving it silently
 in either direction destroys it.
 
+## Content Preservation Gate (Non-Negotiable)
+
+**Structural checks cannot see content loss.** Every check in the Quality Gate
+below is structural - sections present, fields present, ranges present. A
+recomposition can pass all of them while having silently destroyed text.
+
+This is not hypothetical. A real recomposition of a 2,249-line architecture
+document lost ~170 lines to a regex that captured only the description text on
+the same physical line as the path: fifteen wrapped descriptions truncated, two
+destroyed outright, and a previous `## Context / Handoff Summary` overwritten,
+taking a record of decisions in force with it. All six structural checks passed
+the entire time. It was caught by a human noticing the file had shrunk.
+
+So, before the first transform:
+
+1. Capture a **multiset** of the document's non-blank, whitespace-normalised
+   lines. Counts, not a set - a set cannot see that a line appearing three times
+   now appears once.
+2. Do the work.
+3. Re-capture and compare. Every line from the baseline must appear either in
+   the resulting document or in a **named migration target** you can point at.
+
+```bash
+# before
+grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/before.txt
+# after
+grep -v '^[[:space:]]*$' DOC.md | sed 's/[[:space:]]\+/ /g' | sort | uniq -c > /tmp/after.txt
+diff /tmp/before.txt /tmp/after.txt
+```
+
+**The baseline must be captured BEFORE the first edit.** Captured afterwards it
+proves nothing - it describes the document you already built, which is the exact
+trap that makes "I verified it" feel true while content is gone.
+
+A line legitimately removed is fine. A line you cannot account for is a defect,
+and this gate fails until you can name where it went.
+
 ## Quality Gate (Pass/Fail)
 Pass only when all checks are true:
+- [ ] Content Preservation Gate satisfied: every baseline line is present
+      in this document or in a named migration target.
 - [ ] Required section order exists and is complete.
 - [ ] Every C3 entry includes the minimum contract fields.
 - [ ] C1 call flows include concrete methods/functions/fixtures.
@@ -160,6 +263,7 @@ Pass only when all checks are true:
 - [ ] Information Sources support promoted FACT claims.
 
 ## Validation Commands
+- `rg -n '^#{1,6} .*[([][^)\]]*$' context_compass/system_docs/tests_components.md` - headings with an unclosed bracket, the usual sign of a wrap
 - `rg -n "^## " context_compass/system_docs/tests_components.md`
 - `rg -n "C3 Components|C2 Subcomponents|Method-Level Call Flows|C1 Code Map" context_compass/system_docs/tests_components.md`
 - `rg -n "path|start_line|end_line|loc|verified_at" context_compass/system_docs/tests_components.md`

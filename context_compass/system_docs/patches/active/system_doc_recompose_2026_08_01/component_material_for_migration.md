@@ -1222,3 +1222,473 @@ shortfall honesty, R-A covenant) are unchanged.
   Retained-text worlds rebuild through the shared user_world_rebuild
   lane the engine also delegates to. Grafts are user-verb activity: no
   LoadGate, emissions re-record freely.
+
+
+# Material migrated out of src_components.md (2026-08-01)
+
+Moved during the recomposition of `src_components.md` to its Required Section
+Contract. Headings that arrived wrapped across two to five physical lines were
+unwrapped. NOTHING HERE IS DELETED.
+
+## Documentation Quality Standard
+This document is treated as durable context. It must be deep enough to recover
+system understanding from a blank slate without handwaving.
+
+Required rules:
+- No handwaving. Every claim must be grounded in source evidence or marked as UNKNOWN.
+- Explicit entrypoints and method-level call flows for core behavior.
+- Explicit ownership, lifecycle, and cleanup order for components.
+- Explicit invariants, failure modes, and concurrency constraints.
+- ASCII and Mermaid diagrams for core flows.
+- Update the information sources list when new files are used.
+
+
+## Table of Contents
+- Metadata
+- Scope
+- Documentation Quality Standard
+- DO NOT ASSUME / Unknowns Gate
+- Unknowns
+- Table of Contents
+- Component Template
+- C3 Components Catalog
+- C2 Subcomponents Catalog
+- Method-Level Call Flows (C1)
+- C1 Code Map (Core)
+- Diagrams
+- Information Sources
+- DI Resolution Contract Notes (Spec vs Implementation)
+- Open Questions
+- Context / Handoff Summary
+
+
+## Component Template
+Each component entry includes:
+- Purpose
+- Responsibilities
+- Inputs
+- Outputs
+- Owned State
+- Lifecycle/Cleanup
+- Concurrency/Threading
+- Invariants/Guarantees
+- Failure Modes
+- Observability
+- Extension Points
+- Key Files (C1)
+
+
+## Crystallizer Persistence & Restore (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07)
+
+Ownership hierarchy (owner-ruled; CURRENT as of the 2026-07-10 subsystem
+decomposition - see the dated section at the end of this block):
+`Crystallizer` owns THREE same-rank children - `PersistenceSystem` (the
+record: profiles + checkpoint ledger, in-process truth ONLY),
+`AssetManagementSystem` (bytes at rest: `CrystallizerCache`, formation
+files, and the `ExternalPersistenceManager` DB seam), and
+`CrystalLoaderSystem` (the unfold: LoadAdmission gating (renamed from
+BootMediator 2026-07-11) + RestoreEngine +
+durable load state). The twin vocabulary lives at package level
+(`crystallizer/crystals/`) and `crystal_analysis/` is the shared analyzer
+service. Users talk to `Crystallizer` facades only.
+
+### Record model (EMIT)
+- Twins are pure-data crystals (aether, crystallizer, nexus,
+  mutation_research, frame, spellbook, conduit, spell_index, contract,
+  cluster, spell custody) recorded replace-on-emit into the ACTIVE
+  PersistenceProfile with an insertion-ordered journal (sequence, kind, key).
+- Emission factors: configuration activation/freeze is each unit's emission
+  moment. Three re-entry seams cover legally pre-frozen configurations
+  (spellbook conjure re-freeze, nexus enable, aether root catch-up at
+  crystallizer activation - the aether structurally precedes its recorder).
+  AetherUtilitySystem mutation verbs re-emit the root twin so post-activation
+  logger-policy flips never drift from the record.
+- EVERY snapshot is self-describing (owner ruling): the crystallizer's own
+  policy twin re-emits into each seal's window (`_emit_policy_twin`, direct
+  record to keep the cadence ticker out of seal paths), so one cached
+  crystal names the recording policy that made it.
+- Capture (`capture_segment_since`): full current twins for identities
+  journaled since the mark; spell custody payloads annotate
+  `custody_location`; tombstone kinds carry synthetic removal payloads;
+  state switches (nexus/MR) journal their flips.
+- SpellCrystal carries the full bind signature (module coordinates,
+  spellframe NAME, existence/permissions names, disposal_method_names,
+  profile_family) - content-derived SHA256 ids are STABLE across restore.
+
+### Checkpoints, cache, retention
+- `create_checkpoint` seals the delta window into a PersistenceCrystal
+  (ULID id; per-profile checkpoint_number minted highest+1 - count-based
+  minting duplicated under FIFO dropout and was fixed). Ledger retention =
+  `max_persistence_crystals` (FIFO dropout).
+- `verify_checkpoint_chain(profile)` - read-only fold-safety verdicts:
+  intact / truncated_prefix / broken / empty, with break evidence rows and
+  empty-window tolerance; full-dropout restarts detected via the first
+  retained window's start.
+- CrystallizerCache: profile-scoped layout
+  `__crystallizer_cache__/{profile}/{checkpoint_id}.json` (atomic
+  tmp+replace; legacy flat paths tolerated on read);
+  `enforce_cache_retention` FIFO-caps cached files at the checkpoint limit
+  on every flush (no DB emitter -> bounded disk; deeper durability is the
+  user's DB opt-in).
+- `reload_checkpoint_from_cache` (one id) and `reload_profile_from_cache`
+  (whole profile, insert-if-absent, idempotent) - a profile's cache folder
+  IS its portable form.
+
+### Restore (RestoreEngine, all-or-nothing)
+- `load_checkpoint(id)`: the target's same-profile chain detaches under the
+  system lock; the single-use engine runs OUTSIDE it (replay re-enters the
+  emit path). Fold = oldest-first, later-wins per (kind, key), tombstones
+  mirror live eviction match rules, custody routes on custody_location;
+  journal-without-payload folds to an honesty shortfall, never silently.
+- Canonical stage order (owner-ruled boot order):
+  aether_configuration -> crystallizer_policy (boot-time report) ->
+  mutation_research (report; excluded from restore) -> nexus (reload verb +
+  public enable + lifecycle replay) -> frames (posture bind BEFORE books;
+  frames own the dynamic gate) -> books/binds/conjure/staged/selections ->
+  links -> clusters -> contracts LAST (borrower-called naming the owning
+  side; details live in the lineage owner's map under both labels).
+- Fresh identities always (old->new in the report's identity map; spell
+  SHAs never translate). Failure = reverse-order teardown + chained
+  RuntimeError. Shortfall ledger reports everything unreplayable (hooks,
+  non-hydratable targets, cluster leadership, index subscriptions, MR).
+
+### Configuration reload lanes (owner law: recorded truth, never defaults)
+- Every configuration has a JSON-payload load-and-freeze reload verb:
+  SpellbookConfiguration.load_recorded_dictionary,
+  AethericFrameConfiguration.from_recorded_posture,
+  AetherConfiguration.from_recorded_payload,
+  NexusConfiguration.load_recorded_dictionary (enum-name/collection forms
+  round-trip), CrystallizerConfiguration.load_recorded_dictionary.
+  Recorded values win; backfill is per-key REPORTED; callables record as
+  presence flags and reload as code_participation reports; verbs seal on
+  return.
+
+### ExternalPersistenceManager (the DB opt-in)
+- module asset_management/external_persistence_manager.py; ASSET-OWNED
+  since the S3 decomposition (custody moved from the crystallizer root
+  into AssetManagementSystem). Separate ExternalPersistenceManagerConfiguration
+  carries USER callables (upload/download/list) + upload_on_flush /
+  strict_uploads knobs; callables-first by owner decision (no SQLAlchemy in
+  core; users own their SQL bootstrap and secrets; a first-party adapter
+  package may PROVIDE callables later).
+- Both flush paths ship local-cache-first then upload (lenient default:
+  failures count into upload_failure_count and never break the seal lane).
+- `reload_profile_from_external` = manager download_profile -> system
+  insert_cached_items (generic insert-if-absent sink).
+
+### CrystallizerBootstrap (the pod-restart lane)
+- src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py
+  (moved in S4): single-use fluent builder composing ONLY facades:
+  activate (defaults or supplied config) -> attach manager -> local cache
+  reload (fresh-ever pods legally boot empty) -> remote pull + re-flush
+  into the local cache -> chain-verify gate (broken REFUSES) ->
+  load_checkpoint on the newest profile ULID -> report. Its old
+  with_preflight_gate knob is an accepted no-op: blocker refusal is
+  STANDARD admission now (the engine gate; see the decomposition section).
+
+
+## Subsystem Decomposition (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10)
+
+Canonical design anchor: artifacts/2026-07-09_crystallizer_philosophy_v3.md
+(the V3 subsystem model). Owner-run validation: 614/614 across the whole
+crystallizer test tree.
+
+### The five identities (code-real paths)
+- `crystallizer/crystals/` - the twin VOCABULARY at package level (S2):
+  every twin + spell_crystal.py + recorded_unit_state.py. CARRIER LAW:
+  crystals carry recorded truth and analysis RESULTS; they never own
+  analyzers, strategy maps, or walk logic. SpellCrystal slimmed 1684->1030
+  lines in S1: its constructor keeps identity/bind-signature capture and
+  DELEGATES analysis to a single-use CrystalAnalyzer, storing the returned
+  CrystalAnalysisResult (11 properties + describe() read the carried
+  result; describe() preserves every pre-decomposition key and adds
+  physical_module_fingerprints, export_surfaces, module_load_order, and
+  the two AST maps).
+- `crystallizer/crystal_analysis/` - the shared analyzer service (S1):
+  crystal_analyzer.py (walk owner; analyze_spell_root for live spells,
+  analyze_payload for RETAINED payloads - the MR re-analysis seam),
+  crystal_analysis_result.py (value-only carrier), custody/ (per-authority
+  strategies: synthetic text+SHA custody, user_source SHA256 FINGERPRINTS
+  at bind = on-disk drift detection, site_package path law, binary/unknown
+  honest leaves), strategies/ (fact passes: import/from-import extraction
+  with byte-order parity to the historical extractor, export_surface NEW,
+  dependency_view topological load order NEW), preflight/ (the 7 restore
+  strategies + PersistenceAnalyzer, relocated).
+- `crystallizer/persistence/` - the RECORD, ledger only (S3/S4):
+  persistence_system.py + persistence_profile.py + persistence_crystal.py.
+  Verbs: profiles, twins/journal, checkpoint minting, retention, chain
+  verify, cached_item_form/forms (flush feedstock), insert_cached_items
+  (the sink), capture_formation_record, detach_profile_chain (loader
+  feedstock). The record touches NO disk, NO DB, and constructs NO
+  engines; it calls nobody (edge law).
+- `crystallizer/asset_management/` - bytes at rest (S3):
+  asset_management_system.py (borrows the record; owns crystallizer_cache
+  .py + external_persistence_manager(.py|_configuration.py)). FLUSH
+  CONTRACT: seal (ledger) then ship - cache write, FIFO retention at the
+  record's LIVE cap, then the lenient upload leg (ONE feedstock pull
+  serves both legs; the old Crystallizer upload hook is absorbed).
+  Reloads (cache/remote) land in the record's insert sink; formation
+  FILES store/load/list here.
+- `crystallizer/crystal_loader_system/` - the unfold (S4):
+  crystal_loader_system.py (the owner; durable last-load state via
+  describe_last_load), load_admission.py (plan_checkpoint_load /
+  plan_formation_load with the canonical-kind-order window minting moved
+  from the ledger / execute_plan / scope adjudication), load_plan.py
+  (declarative: scope world|conduit|frame, per-kind key counts,
+  inspectable before activation), restore_engine.py (moved; gained
+  refuse_on_blockers), bootstrap_loader.py.
+
+### Admission (the verdict law, S4)
+Every mediated load runs plan -> map -> verdict -> execute -> remember.
+The gate lives INSIDE the engine at the fold->preflight seam (the only
+place owning authoritative FOLDED truth - zero fold duplication): with
+refuse_on_blockers=True (every mediated load), a "blockers" verdict
+raises a teach-grade RuntimeError naming the rows BEFORE any replay.
+Warnings proceed and ride the report. LoadAdmission then ADJUDICATES per
+scope: conduit/frame loads reclassify the scope-blind frame_posture
+warnings to "expected_for_scope" in the additive "admission" payload view
+{"scope","verdict","reclassified"} - raw preflight findings are never
+rewritten. Facade payloads are byte-compatible supersets (the "admission"
+key is additive). Proven live: the M3 boot-boundary fixture carrying a
+placeholder SHA was refused by the synthetic_source_integrity blocker
+until the fixture computed its real fingerprint.
+
+### Cross-subsystem laws
+- EDGE LAW (acyclic): anything imports crystals/; analysis reads
+  crystals; loader reads record + invokes analysis; assets read record +
+  call its sink; the record calls nobody.
+- LOCK LAW: one-way (facade -> subsystem -> record -> profile); no
+  subsystem-to-subsystem lock nesting; borrowers clean BEFORE the record
+  (crystallizer cleanup order: loader -> assets -> record).
+- Twin-kind honesty: adding a twin kind still touches record AND loader
+  (record/replay are duals) - pay it via checklist, not topology claims.
+- describe boundary: the record's describe() carries NO disk truth; the
+  Crystallizer facade re-enriches cached_checkpoint_count from the asset
+  system.
+
+
+## V3 Horizon Iteration (promoted 2026-07-12 from six patch dirs: aether_lazy_frames_and_load_gate_2026_07_11, crystallizer_v3_horizon_2026_07_11, crystallizer_s2_user_source_ retention_2026_07_11, crystallizer_s3_impact_engine_2026_07_11, crystallizer_external_mesh_2026_07_12, mr_restore_build_stage_2026_07_11)
+
+Owner-run validation: full 3.14t tree green (9702 tests) plus two
+--last-failed passes; every lane closed with acceptance walks (see the
+completed epics/stories of 2026-07-11/12).
+
+### Lazy frames + the Aether LoadGate (owner substrate rulings)
+- `import melder` creates ZERO AethericFrames (the eager default-frame
+  construction is deleted): the first Spellbook births the frame it
+  names via `_ensure_frame` (spellbook.py:229, get-or-create is the
+  INTENDED semantic); a collapsed configuration falls back to "default"
+  via `_ensure_default_frame`, which now lazily CREATES (recreate-after-
+  individual-clean matches named-frame semantics; `_ensure_frame`'s
+  existing branch repairs a drifted default pointer). check_cleaned
+  still refuses torn-down singletons.
+- utilities/synchronization/load_gate.py - LoadGate (Cleanable):
+  exclusive one-load-at-a-time acquire(label)/release();
+  wait_for_passage(timeout) passes the HOLDER thread free and parks
+  foreign threads (teach-grade timeout names the holding load); cleanup
+  = terminal open with None TOMBSTONES (documented: parked waiters must
+  re-check after waking, so no del posture on the holder slots).
+- Aether hosts the gate BEFORE any frame can exist +
+  acquire_load_authority(label, drain_timeout)/release_load_authority()
+  (drain re-snapshots live frames per slice and counts mediator
+  sessions; failed acquisition releases the gate). The gate threads
+  frame -> DevOpsManager -> CCM -> TransactionMediator as an additive
+  load_gate kwarg (None = ungated); the mediator checks wait_for_passage
+  at BOTH new-root ingresses (begin_transaction pre-build - covers
+  start_transaction and the strategy starter - and begin_frame
+  pre-lock); joins never gate. NOTE: CCM.transaction_mediator is an
+  accessor METHOD, not a property. The loader wraps both load verbs in
+  authority spans ("the loading thread has all control").
+- Posture propagation: bind_frame_configuration's two LANDING branches
+  call AethericFrame._propagate_transaction_wait_posture, routing the
+  canonical posture's max_transaction_wait_time_in_seconds through
+  mediator.configure() - closes the captured-once-at-ctor gap (under
+  lazy frames every restore rebinds posture onto a default-postured
+  frame). The disable_* gates were already live-reads and needed
+  nothing.
+
+### S1 load-scope maturity (formations compose into LIVE worlds)
+- LoadPlan: additive target_frame_name/skip_existing slots.
+- LoadAdmission: borrows aether (None = bare-record);
+  plan_formation_load(..., target_frame_name, skip_existing) rewrites
+  frame identity COPY-ON-WRITE in the detached window only (frame twin
+  re-key + journal frame rows + book/cluster frame_name edges;
+  multi-frame windows refuse - formations are single-frame slices);
+  _preflight_host reads the frame REGISTRY (never _ensure_frame - a
+  probe must not birth the frame it checks): frame_missing=info,
+  posture_conflict=warning, conduit/cluster name collisions=blockers via
+  the PUBLIC cloud probes has_conduit_name / has_cluster_name (the
+  documented _conduit_clusters private seam was retired by the
+  public_cloud_seams lane, 2026-07-12 - see the three-lane section
+  at the end of this doc);
+  execute_plan refuses host blockers PRE-ENGINE or downgrades them to
+  "skipped_existing" under the skip flag; admission view gains the
+  additive "host" key.
+- Engine skip lanes (skip_existing): taken conduit name -> conjure
+  name=None + shortfall "conduit_name_taken_built_unnamed" (safe: names
+  are never replay resolution keys); existing cluster -> REUSED, members
+  join + shortfall "cluster_existed_members_joined".
+- Facade restore_formation gains both params;
+  compose_frame_subtree/compose_conduit_subtree DELETED (zero callers;
+  capture_formation_slice is the shipped composer; NOTE marker in
+  persistence_profile.py records the ruling).
+
+### S2 physical custody (opt-in user-source TEXT retention)
+- CrystallizerConfiguration.retain_user_sources (schema bool, default
+  False = byte-identical pre-S2 record) threads Crystallizer ->
+  SpellCrystal -> CrystalAnalyzer. Harvest: base
+  SourceCustodyStrategy.harvest_payload defaults None;
+  UserSourceCustodyStrategy overrides ({source_text, source_sha256,
+  module_path, is_package} via the existing read+fingerprint helpers);
+  the analyzer walk harvests beside the M3 synthetic harvest;
+  CrystalAnalysisResult.user_module_sources rides describe() and
+  analyze_payload re-folds it.
+- Restore: RestoreEngine._rebuild_user_world - ABSENT files only (THE
+  LIVE FILE ALWAYS WINS; sys.modules skip; dot-depth order), rebuilt
+  through the SyntheticModule lifecycle (normal-verbs law; binding
+  sentinel "user_source_retained"), shortfall
+  "user_module_rebuilt_synthetic_from_retained_source", single import
+  retry via _import_qualified_target.
+- Preflight: hydration downgrades absent-module blockers to info when
+  text is retained; UserSourceIntegrityStrategy: NARROWED (2026-07-12,
+  source_drift_preflight lane) to record self-consistency only -
+  retained-text sha mismatch = BLOCKER (tamper). Live-file drift moved
+  wholesale to the dedicated SourceDriftStrategy (see the three-lane
+  section at the end of this doc); CRLF-safe read_text law unchanged.
+
+### S3 impact engine (blast radius over the manifests)
+- Read seam: PersistenceProfile.describe_spell_crystals() (BOTH custody
+  maps + additive "custody_state"; detached payloads only) + system
+  passthrough.
+- crystal_analysis/impact_engine.py - ImpactEngine: construction builds
+  module->carrying-spells + module->importers reverse indexes +
+  fingerprint/path maps; verbs spells_touching_module,
+  blast_radius_of_module (transitive closure; honest unknown_module),
+  blast_radius_of_spell (spell_id vocabulary; a spell change IS its root
+  module changing), describe_source_drift (CRLF-safe re-hash ->
+  unchanged|drifted|absent|unreadable + radius per non-unchanged),
+  describe. Documented thread-confined: immutable post-construction.
+- Facade Crystallizer.analyze_impact(module_name|spell_id|neither) -
+  one question per call (both = ValueError); engine built + cleaned per
+  invocation.
+
+### External mesh lane + record versioning
+- Generic kind-partitioned callables on the manager configuration:
+  with_store_handler(kind, profile, unit_id, payload) /
+  with_fetch_handler(kind, unit_id) / with_list_units_handler(kind,
+  profile) / with_delete_handler(kind, unit_id) /
+  with_stream_emissions(bool). LEGACY BRIDGE: the checkpoint verbs fall
+  back to the generic lanes (upload->store_unit("checkpoint"),
+  download->fetch_unit, profile list->list_units) - one handler set
+  serves the whole mesh. WRITE-LANE GATES WIDENED in lockstep: validate()
+  AND upload_enabled accept (upload_handler OR store_handler);
+  read-only configs must disable upload_on_flush explicitly.
+- Manager: store_unit lenient + store_failure_count (strict_uploads
+  re-raises); fetch/list loud-refuse; delete_unit STRICT (a half-run
+  retention pass must not lie). Formations ship local-then-remote at
+  store_formation; reload_formations_from_external mirrors the
+  checkpoint reload; apply_external_retention(profile, cap) ULID-sorted
+  oldest-first deletes (facade cap defaults to
+  max_persistence_crystals - the local FIFO's knob).
+- EMISSION TAP (opt-in): every recorded twin streams a delta row
+  {record_version, crystal_kind, payload} under a fresh event ULID.
+  THREAD-SAFETY LAW: the payload captures BEFORE record() (replace-on-
+  emit means a concurrent same-kind emit may clean the twin
+  mid-describe) and ships AFTER (local truth leads the mirror);
+  lenient + counted; untapped worlds pay one property read.
+- persistence/record_version.py - RecordVersion (static authority,
+  CURRENT "1.0.0", key "record_version"): stamps to_cached_item,
+  capture_formation_record, and tap envelopes; check_readable refuses
+  NEWER-major artifacts at from_cached_item (covers cache + external
+  reloads) and load_formation_record; absent stamps read "0.0.0"
+  (pre-versioning = oldest, always readable). MAJOR breaks shape, MINOR
+  adds keys, PATCH documents.
+- Interface contract: a twin IS the interface - emit consumes the
+  object, the mesh ships its describe() dict, and that dict crosses
+  JSON losslessly (proven over the family + the full
+  class->json->class rehydration loop).
+
+### MR restore build stage (twin-over handoff, executed)
+- MutationResearchConfiguration.load_recorded_dictionary (reload-lane
+  law; seals via activate() - the config's emission factor AND root
+  activation's hard gate).
+- _replay_mutation_research = BUILD stage on the canonical slot: no
+  twin = NO-OP; folded "cleaned" = honest shortfall; else reload verb
+  (per-key shortfalls) -> Aether()._get_mutation_research() (hosted
+  accessor; an ALREADY-ACTIVE root deactivates first - live-world loads
+  under the LoadGate; both acts recorded) ->
+  activate(hydrate_from_record=False) (engine owns FOLDED truth) ->
+  load_recorded_composition; pre-Phase-B = config-only +
+  "composition_not_recorded_pre_phase_b"; "disabled" later-wins =
+  activate-then-deactivate. Both first_cut shortfalls RETIRED.
+- MRCompositionStrategy (9th default preflight row; the MR root now
+  rides the engine preflight bundle): blockers ONLY on unparseable
+  shapes (composition/set/organization/lanes/residence); warnings on
+  organization/residence disagreement; spell_id vocabulary (2026-07-11
+  sweep) with pre-sweep payloads tolerated as ONE named
+  "pre_vocabulary_sweep_payload" warning. LoadAdmission reclassifies
+  its findings expected_for_scope on conduit/frame loads (MR is a
+  world-scope root).
+
+
+## Three-Lane Tail (promoted 2026-07-11 from patch dirs public_cloud_seams_2026_07_12, source_drift_preflight_2026_07_12, spell_index_graft_2026_07_12; owner-directed finish)
+
+### Public cloud seams (access-spelling law; zero behavior change)
+- AethericFrame.conduit_cloud (check_cleaned property,
+  aetheric_frame.py:411) + ConduitCloud.has_cluster_name(name)
+  (lock-guarded membership read mirroring has_conduit_name,
+  conduit_cloud.py:379). Every crystallizer reader repointed: engine
+  cluster-replay + conjure skip lanes, admission _preflight_host conduit
+  and cluster checks. Grep-proven zero private cloud reads remain
+  crystallizer-side; the retired seam comments carry NOTE markers.
+  LAW: cross-package cloud access is public-verb-only.
+
+### Source drift at load-time preflight (10th default row)
+- preflight/source_drift_strategy.py - SourceDriftStrategy
+  ("source_drift"): EVERY bind-time physical_module_fingerprints entry
+  with a recorded module_to_path re-hashes against disk at load,
+  RETENTION-AGNOSTIC (retention-OFF worlds no longer restore blind).
+  Absent file = honest warning (import may still resolve via sys.path);
+  sha differs (CRLF-safe read_text) = warning
+  "user_source_drifted_since_seal"; unreadable = info; unchanged =
+  silent; (module, path) pairs deduplicate across crystals. Drift is
+  notice, never refusal. The DEFAULT PREFLIGHT SET is now 10 rows:
+  link_integrity, contract_peer, hydration, configuration_loss,
+  cluster_membership, frame_posture, synthetic_source_integrity,
+  user_source_integrity (tamper-only), mutation_research_composition,
+  source_drift.
+
+### Spell-index graft lane (restore grain below the conduit slice)
+- Capture: PersistenceProfile.capture_index_graft(index_id) (:783) +
+  system passthrough (:456) - versioned record {record_version,
+  graft_kind:"spell_index", index_id, index_payload (twin describe),
+  members {spell_id: {payload, custody_state}},
+  members_without_custody}. Storage is the user's choice (plain dict;
+  mesh or formations both carry it).
+- Restore: crystal_loader_system/graft_runner.py - GraftRunner
+  (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
+  unconjured-host refusal (public Spellbook.conduit accessor,
+  spellbook.py:5412) -> per-member overlap rule via
+  host_frame.find_index_for_spell (resident member REFUSES by default;
+  skip_resident=True skips + shortfall
+  "member_resident_in_host_skipped"; existing indexes are NEVER
+  mutated - fresh-index-only law) -> hydration via the import lane with
+  failure->rebuild->retry through the shared user_world_rebuild lane ->
+  selected member binds ACTIVE (bind creates the fresh index + selects)
+  -> parked members conduit.bind_inactive onto it -> detached report
+  {status, live_index_id, members_bound, members_parked,
+  skipped_resident, shortfalls, identity}. NO LoadGate: grafts are
+  user-verb activity (per-verb transactions), not world replays.
+  Emissions free: bind/bind_inactive auto-record (re-recording
+  covenant).
+- Shared rebuild lane: crystal_loader_system/user_world_rebuild.py -
+  rebuild_absent_user_modules(spell_id, crystal, on_built,
+  on_shortfall): live-file-wins, sys.modules skip, dot-depth
+  parents-first, SyntheticModule lifecycle, honest shortfalls. The
+  engine's _rebuild_user_world DELEGATES via callbacks (identical
+  built-stack + report semantics); GraftRunner uses a no-op on_built.
+  The rebuild laws live in exactly one place.
+- Facades: Crystallizer.capture_index_graft (:621) / graft_index
+  (:647) (activation-gated; live-object facade per create_spell_crystal
+  precedent).
+

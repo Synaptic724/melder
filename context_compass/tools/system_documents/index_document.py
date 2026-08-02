@@ -259,8 +259,23 @@ def format_warnings(lines: list[str], found: list[tuple[int, int, str]],
     - DUPLICATE NAMES: `--slice` matches on name, so two sections sharing one
       are unaddressable. The slice refuses at read time, but the author who
       created the collision is the person who can fix it, and they are here.
+    - WRAPPED HEADING: a heading whose text was reflowed across physical lines
+      parses as several headings. The first indexes as a one-line fragment and
+      wins "narrowest match", so `--slice` hands back a stub. Observed in the
+      wild spanning five physical lines. Unbalanced brackets are the reliable
+      tell: prose wraps mid-parenthesis far more often than a real heading ends
+      with one open.
     """
     warnings: list[str] = []
+    for i, lv, title in found:
+        for opener, closer in (("(", ")"), ("[", "]")):
+            if title.count(opener) > title.count(closer):
+                warnings.append(
+                    f"line {i}: heading has an unclosed '{opener}' - "
+                    f"'{title[:60]}{'...' if len(title) > 60 else ''}'. A heading "
+                    f"reflowed across lines indexes as several sections and "
+                    f"--slice returns a fragment. Put it on one line.")
+                break
     if found:
         top = min(lv for _, lv, _ in found)
         h1s = [(i, t) for i, lv, t in found if lv == top]
@@ -325,6 +340,32 @@ def main() -> int:
     doc: pathlib.Path = args.doc
     if not doc.is_file():
         print(f"document not found: {doc}", file=sys.stderr)
+        return 2
+
+    # Two refusals. Both exist because this tool WRITES, and a wrong target does
+    # not produce a confusing message you shrug off - it produces a plausible
+    # file that replaces a correct one. Reading the wrong document costs seconds;
+    # writing over the right one costs the artifact.
+    if doc.stem.endswith("_index"):
+        print(f"refusing: {doc.name} is already an index.", file=sys.stderr)
+        print("  Indexing an index produces <stem>_index_index.md, which addresses "
+              "nothing. Point --doc at the document instead.", file=sys.stderr)
+        return 2
+
+    if "<!-- BEGIN FILE:" in doc.read_text(encoding="utf-8", errors="ignore"):
+        companion = doc.with_name(f"{doc.stem}_index.md")
+        print(f"refusing: {doc.name} is an ASSEMBLED graph, not an authored document.",
+              file=sys.stderr)
+        print(f"  Its index is a byproduct of assembly - `assemble_graph.py` knows each",
+              file=sys.stderr)
+        print(f"  range because it emitted those lines, so index and document cannot",
+              file=sys.stderr)
+        print(f"  disagree. Re-indexing it here would re-parse headings instead, and",
+              file=sys.stderr)
+        print(f"  overwrite {companion.name} with a weaker index keyed by heading",
+              file=sys.stderr)
+        print(f"  breadcrumb rather than source path. Run assemble_graph.py.",
+              file=sys.stderr)
         return 2
 
     raw, line_ending, lines = read_lines(doc)

@@ -23,8 +23,13 @@ rebuilt in the same pass as any edit:
 
 ```bash
 python context_compass/tools/system_documents/index_document.py \
-    --doc context_compass/system_docs/tests_architecture.md
+    --doc context_compass/examples/example_architecture/tests_architecture.md
 ```
+
+That command indexes THIS example, and it works - run it and compare the
+output to the `tests_architecture_index.md` beside it. When you write your own, the
+target becomes `context_compass/system_docs/tests_architecture.md`, which does not exist
+until you create it: the package ships `system_docs/` empty.
 
 Format rules the index depends on, demonstrated throughout this example:
 - exactly one H1 (the document title)
@@ -52,8 +57,8 @@ structural rather than behavioural: references resolve, section contracts hold,
 role chains are reachable, and evidence ranges match the files they cite.
 
 ## System Boundary and External Interfaces
-- Test guidance: `agent_onboarding/user_defined/synaptic_python_developer/skills/testing/`
-- Role posture: `agent_onboarding/default/qa_engineer/skills/`
+- Test posture and strategy: `agent_onboarding/default/qa_engineer/skills/`
+- Document contracts under test: `agent_onboarding/default/design_engineer/skills/`
 - Evidence lanes: `tickets/`, active ticket `## Notes`
 - Index tooling: `tools/system_documents/index_document.py`
 
@@ -91,15 +96,15 @@ role chains are reachable, and evidence ranges match the files they cite.
 - ranges copied forward from an earlier revision without remeasuring
 
 ## C1 Code Map (Core Only)
-- path: `agent_onboarding/user_defined/synaptic_python_developer/skills/testing/testing_overview.md`
+- path: `agent_onboarding/default/qa_engineer/skills/test_case_design.md`
   start_line: 1
-  end_line: 196
-  loc: 196
+  end_line: 27
+  loc: 27
   verified_at: 2026-08-01T16:16:14Z
-- path: `agent_onboarding/user_defined/synaptic_python_developer/skills/testing/pytest_unit.md`
+- path: `agent_onboarding/default/qa_engineer/skills/test_automation_practices.md`
   start_line: 1
-  end_line: 42
-  loc: 42
+  end_line: 30
+  loc: 30
   verified_at: 2026-08-01T16:16:14Z
 - path: `agent_onboarding/default/qa_engineer/skills/test_strategy_and_planning.md`
   start_line: 1
@@ -131,7 +136,7 @@ flowchart LR
 ```
 
 ## Information Sources
-- `agent_onboarding/user_defined/synaptic_python_developer/skills/testing/testing_overview.md`
+- `agent_onboarding/default/qa_engineer/skills/test_case_design.md`
 - `agent_onboarding/default/qa_engineer/skills/test_strategy_and_planning.md`
 - `tickets/tasks/README.md`
 - `agent_onboarding/default/engineer/skills/system_document_build.md`
@@ -139,5 +144,5 @@ flowchart LR
 ## Context / Handoff Summary
 This example shows the expected depth standard for the test-side map: concrete
 surfaces, explicit unknowns, and measured line ranges. It pairs with
-`example_architecture/src_architecture.md`; read them together to see how the
+`examples/example_architecture/src_architecture.md`; read them together to see how the
 runtime map and its verification map stay structurally aligned.
