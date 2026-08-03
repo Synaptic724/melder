@@ -2315,14 +2315,19 @@ class Aether(Cleanable):
         Internal use only.
 
         Contract:
-            - Returns the root CONSTRUCTED IN `__init__`. It is no longer built
-              on demand: all three hosted roots are eager as of the owner ruling
-              2026-08-03, so this is a plain read and the double-checked lazy
-              build it used to perform is gone along with the deferred import.
-            - A cleaned root still RAISES rather than being silently rebuilt.
-              That was the pre-lazy contract and it survives the change:
-              cleanup is final, and handing back a fresh root after teardown
-              would let a caller believe custody continued across it.
+            - Returns the root CONSTRUCTED IN `__init__`. All three hosted
+              roots are eager as of the owner ruling 2026-08-03, so this is a
+              plain read; the double-checked lazy build it used to perform is
+              gone along with the deferred import.
+            - A cleaned root RAISES. It is not rebuilt here. Aether owns the
+              root's lifetime, so a root that outlived its Aether is a torn
+              world, and handing back a fresh one would let a caller believe
+              custody continued across a teardown it did not.
+            - TESTS THAT TEAR DOWN A ROOT MUST RESET AETHER TOO. Resetting the
+              root's singleton alone leaves this slot pointing at the corpse.
+              `Aether._reset_singleton_for_tests()` is the one door for that;
+              re-provisioning here to paper over a half-reset world would put
+              a test concern inside the runtime.
 
         Threading:
             Unsynchronized read. The root is assigned before the singleton

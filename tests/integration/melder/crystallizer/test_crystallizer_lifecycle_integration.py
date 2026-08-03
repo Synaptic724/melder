@@ -332,10 +332,14 @@ def test_mutation_research_composition_twin_survives_the_real_record():
     assert {row["spell_id"] for row in spell_rows} == {member_a, member_b}
     assert json.loads(json.dumps(recorded)) == recorded
 
-    # Root death, then REBIRTH through the bootstrap lane.
+    # Root death, then REBIRTH through the bootstrap lane. The host is passed
+    # EXPLICITLY here and that is not optional: the reset above clears the
+    # class singleton, so this is a genuine FIRST construction with nothing to
+    # look up. A bare `MutationResearch()` is a lookup and only works while a
+    # root already exists.
     research.cleanup()
     MutationResearch._reset_singleton_for_tests()
-    reborn = MutationResearch()
+    reborn = MutationResearch(aether=Aether())
     reborn_configuration = MutationResearchConfiguration().with_defaults()
     reborn_configuration.activate()
     reborn.activate(reborn_configuration)  # hydrate_from_record default

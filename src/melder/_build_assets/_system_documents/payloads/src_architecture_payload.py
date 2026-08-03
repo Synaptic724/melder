@@ -15,7 +15,7 @@ Regenerate with:
 
 DOCUMENT_FILE = 'src_architecture.md'
 LINE_COUNT = 2298
-CONTENT_SHA256 = 'd252983338c5a6444b109e2b72b8c381d9d41e2cff99ec72fa960687dd572438'
+CONTENT_SHA256 = '974a0d6571ddee484512bdec807388ec0beae5a9f8751b5b9441bd5032b0f7f4'
 
 TEXT = """# Src Architecture (C4)
 

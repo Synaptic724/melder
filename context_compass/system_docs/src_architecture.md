@@ -437,7 +437,7 @@ External interfaces are Python APIs:
 - `Conduit.create_lesser_conduit(...)` for child scopes.
 - `Conduit.link(...)` / `Conduit.sever_link(...)` for dynamic linking.
 - `SpellbookConfiguration` properties and hooks.
-- `Nexus.configure(...)`, `Nexus.enable(...)`, `Nexus.create_rift(...)`,
+- `Nexus.configure(...)`, `Nexus.activate(...)`, `Nexus.create_rift(...)`,
   and `Nexus.create_rift_configuration(...)` for AR bootstrap.
 - `Rift.get_nexus_frame(...)`, `Rift.create_nexus_frame(...)`, and the
   singular `Rift.space` / viewer helpers for live AR work.
@@ -583,7 +583,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
    - Fires pre/activated/post hooks and wires ownership into spells.
 5) `Nexus` AR path (when engaged):
    - `Nexus.configure(...)` installs frozen process-wide AR policy.
-   - `Nexus.enable()` opens Rift creation.
+   - `Nexus.activate()` opens Rift creation.
    - `Nexus.create_rift_configuration()` builds a Rift config whose primary
      room posture is chosen through `space_type`.
    - `Nexus.create_rift(...)` creates a bare `Rift`, programs one primary room

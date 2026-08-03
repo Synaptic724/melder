@@ -646,7 +646,7 @@ def test_nexus_check_for_aetheric_frame_matrix(
     else:
         nexus._configuration = configuration
         nexus._configured = True
-        nexus._enabled = False
+        nexus._activated = False
 
     frame_name = "ops"
     if managed_frame:

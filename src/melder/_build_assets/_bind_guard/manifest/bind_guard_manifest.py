@@ -15,8 +15,8 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "8391bdd676c0a18d5f1179473ba106e20fe7f50ceef012faf6f5264b77ea3e0a"
-ENTRY_COUNT = 614
+SOURCE_SHA256 = "0ea81b5a65476e259495bc4093e7c12b205e2afc888cee63c8b4738ac26b1a9a"
+ENTRY_COUNT = 626
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -95,9 +95,19 @@ ENTRIES = (
     ('melder.aether.aetheric_mediator.information_registry', 'FactRecord'),
     ('melder.aether.aetheric_mediator.information_registry', 'InformationRegistry'),
     ('melder.aether.aetheric_mediator.mediator', 'Mediator'),
+    ('melder.aether.aetheric_mediator.participation', 'ParticipationConditions'),
+    ('melder.aether.aetheric_mediator.participation', 'ParticipationState'),
     ('melder.aether.aetheric_mediator.scope_keys', 'ScopeKey'),
     ('melder.aether.aetheric_mediator.scope_keys', 'ScopePrefix'),
     ('melder.aether.aetheric_mediator.staged_transaction', 'StagedTransaction'),
+    ('melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy', 'AgentRepairTransactionStrategy'),
+    ('melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy', 'CheckpointLoadTransactionStrategy'),
+    ('melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy', 'FormationLoadTransactionStrategy'),
+    ('melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy', 'FrameCreateTransactionStrategy'),
+    ('melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy', 'IndexGraftTransactionStrategy'),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy', 'SubsystemActivateTransactionStrategy'),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy', 'SubsystemConfigureTransactionStrategy'),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy', 'SubsystemDeactivateTransactionStrategy'),
     ('melder.aether.aetheric_mediator.strategy_builder', 'StrategyBuilder'),
     ('melder.aether.aetheric_mediator.transaction_request', 'MetadataPolicy'),
     ('melder.aether.aetheric_mediator.transaction_request', 'TransactionRequest'),
@@ -107,6 +117,7 @@ ENTRIES = (
     ('melder.aether.aetheric_mediator.transaction_session', '_RollbackAction'),
     ('melder.aether.aetheric_mediator.transaction_strategy', 'TransactionStrategy'),
     ('melder.aether.aetheric_mediator.transaction_type', 'TransactionType'),
+    ('melder.aether.aetheric_mediator.unwind_conflict_error', 'UnwindConflictError'),
     ('melder.aether.conduit.conduit', 'Conduit'),
     ('melder.aether.conduit.conduit_cluster', 'ConduitCluster'),
     ('melder.aether.conduit.conduit_pool', 'ConduitPool'),
@@ -496,6 +507,7 @@ ENTRIES = (
     ('melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator', 'FrameACLSetCompatibilityValidator'),
     ('melder.nexus.acl.validator.frame_acl_validator', 'FrameACLValidator'),
     ('melder.nexus.configuration.nexus_configuration', 'NexusConfiguration'),
+    ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'),
     ('melder.nexus.configuration.nexus_frame_mode', 'NexusFrameMode'),
     ('melder.nexus.configuration.rift_access_mode', 'RiftAccessMode'),
     ('melder.nexus.configuration.rift_configuration', 'RiftConfiguration'),
