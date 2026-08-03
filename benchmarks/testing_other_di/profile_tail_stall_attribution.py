@@ -204,7 +204,7 @@ def _run_sweep(thread_count: int) -> None:
         elapsed = time.perf_counter() - bench_t0
     finally:
         if GC_DISABLE:
-            gc.activate()
+            gc.enable()
         elif gc_log.callback in gc.callbacks:
             gc.callbacks.remove(gc_log.callback)
         root.permanent_cleanup()

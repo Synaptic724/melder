@@ -1755,7 +1755,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     finally:
         # Restore GC posture before the next library runs in this same process.
         if gc_mode == "disabled" and gc_was_enabled and not gc.isenabled():
-            gc.activate()
+            gc.enable()
         if gc_frozen_here:
             gc.unfreeze()
         if gc_probe is not None:

@@ -1875,7 +1875,7 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
 
             finally:
                 if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.activate()
+                    gc.enable()
 
         except BaseException as e:
             local_stats = stats[ix]
@@ -2016,7 +2016,7 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
 
             finally:
                 if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.activate()
+                    gc.enable()
 
         except BaseException as e:
             stats[ix].errors += 1

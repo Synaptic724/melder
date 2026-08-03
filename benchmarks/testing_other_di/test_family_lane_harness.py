@@ -355,7 +355,7 @@ def _warm_per_meld_us(
                     conduit.meld(spell=root_id)
                 elapsed = time.perf_counter() - start
             finally:
-                gc.activate()
+                gc.enable()
             samples.append((elapsed / iterations) * 1_000_000.0)
         finally:
             conduit.cleanup()

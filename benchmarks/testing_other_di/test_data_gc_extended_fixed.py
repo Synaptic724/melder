@@ -128,7 +128,7 @@ def _run_case(
     finally:
         if gc_mode == "disabled_during_loop":
             if old_enabled:
-                gc.activate()
+                gc.enable()
             else:
                 gc.disable()
 

@@ -566,7 +566,7 @@ def _gc_off():
         yield
     finally:
         if was_enabled:
-            gc.activate()
+            gc.enable()
 
 
 def _register_capturing_inverses(session, log, count=3):
@@ -804,10 +804,10 @@ def test_staged_record_is_built_once_and_never_restamped(plane):
             seen.append(staged)
 
     plane.strategies.register(
-        transaction_type=TransactionType.SUBSYSTEM_ENABLE, strategy=_Recording
+        transaction_type=TransactionType.SUBSYSTEM_ACTIVATE, strategy=_Recording
     )
     session = plane.begin(
-        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        transaction_type=TransactionType.SUBSYSTEM_ACTIVATE,
         submitter=_who("stamper"),
         metadata={"frame": "A"},
     )
@@ -1110,13 +1110,13 @@ class _EndCounting(TransactionStrategy):
 
 @pytest.fixture()
 def counting_plane():
-    """A plane whose SUBSYSTEM_ENABLE family counts its end dispatches."""
+    """A plane whose SUBSYSTEM_ACTIVATE family counts its end dispatches."""
     _EndCounting.ends = 0
     _EndCounting.raise_on_start = False
     _EndCounting.raise_on_commit_delta = False
     built = Mediator(max_wait_seconds=0.25)
     built.strategies.register(
-        transaction_type=TransactionType.SUBSYSTEM_ENABLE, strategy=_EndCounting
+        transaction_type=TransactionType.SUBSYSTEM_ACTIVATE, strategy=_EndCounting
     )
     yield built
     if not built.cleaned:
@@ -1127,9 +1127,9 @@ def counting_plane():
 
 
 def _open(plane, who, policy=OutcomePolicy.UNWIND):
-    """Open one SUBSYSTEM_ENABLE session already lowered to depth zero."""
+    """Open one SUBSYSTEM_ACTIVATE session already lowered to depth zero."""
     session = plane.begin(
-        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        transaction_type=TransactionType.SUBSYSTEM_ACTIVATE,
         submitter=_who(who),
         metadata={"frame": "A"},
         outcome_policy=policy,
@@ -1224,7 +1224,7 @@ def test_on_end_fires_when_on_start_raises(counting_plane):
 
     with pytest.raises(RuntimeError, match="on_start exploded"):
         counting_plane.begin(
-            transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+            transaction_type=TransactionType.SUBSYSTEM_ACTIVATE,
             submitter=_who("starter"),
             metadata={"frame": "A"},
         )
@@ -1280,7 +1280,7 @@ def test_a_caller_may_clean_its_own_identity_without_harming_the_plane(
     """
     first = _who("owner-cleans")
     session = counting_plane.begin(
-        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        transaction_type=TransactionType.SUBSYSTEM_ACTIVATE,
         submitter=first,
         metadata={"frame": "A"},
     )
@@ -1290,7 +1290,7 @@ def test_a_caller_may_clean_its_own_identity_without_harming_the_plane(
     first.cleanup()
 
     second = counting_plane.begin(
-        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        transaction_type=TransactionType.SUBSYSTEM_ACTIVATE,
         submitter=_who("owner-cleans"),
         metadata={"frame": "A"},
     )

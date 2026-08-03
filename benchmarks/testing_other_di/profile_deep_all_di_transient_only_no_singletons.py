@@ -594,7 +594,7 @@ def _profile_loop(
     """
     profiler = cProfile.Profile()
     start = time.perf_counter()
-    profiler.activate()
+    profiler.enable()
     run_fn()
     profiler.disable()
     elapsed_s = time.perf_counter() - start

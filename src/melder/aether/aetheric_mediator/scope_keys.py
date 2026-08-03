@@ -138,7 +138,7 @@ class ScopeKey:
         Return the scope key for one whole subsystem.
 
         Contract:
-            Used for subsystem-wide transitions - enabling or disabling
+            Used for subsystem-wide transitions - activating or deactivating
             MutationResearch, Nexus, or the Crystallizer - where the unit of
             isolation is the subsystem itself rather than any frame.
 

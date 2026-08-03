@@ -340,7 +340,7 @@ def _maybe_profile(name: str, fn: Callable[[], None]) -> None:
     import cProfile
 
     profile = cProfile.Profile()
-    profile.activate()
+    profile.enable()
     try:
         fn()
     finally:
@@ -724,7 +724,7 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
                             gc.collect()
             finally:
                 if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.activate()
+                    gc.enable()
 
         except BaseException as e:
             stats[ix].errors += 1

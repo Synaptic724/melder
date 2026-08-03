@@ -427,7 +427,7 @@ def _profile_lib(logger: SafeLogger, lib: str, classes: tuple[type, ...]) -> Non
     if ProfileConfig.VERBOSE_PROGRESS:
         logger.info(f"[{lib}] starting profile", "_profile_lib")
     profile = cProfile.Profile()
-    profile.activate()
+    profile.enable()
     elapsed = _profile_loop(lib, classes, ProfileConfig.ITERATIONS)
     profile.disable()
 

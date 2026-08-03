@@ -673,7 +673,7 @@ def _profile_execution(
     profiler = cProfile.Profile()
     start = time.perf_counter()
     if profile_enabled:
-        profiler.activate()
+        profiler.enable()
     try:
         fn()
     finally:

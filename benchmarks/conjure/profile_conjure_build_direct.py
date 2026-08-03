@@ -386,7 +386,7 @@ def _profile_loop(lib: str, classes: tuple[type, ...], iterations: int) -> float
 
 def _profile_lib(logger: SafeLogger, lib: str, classes: tuple[type, ...]) -> None:
     profile = cProfile.Profile()
-    profile.activate()
+    profile.enable()
     elapsed = _profile_loop(lib, classes, ProfileConfig.ITERATIONS)
     profile.disable()
 

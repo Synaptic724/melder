@@ -44,18 +44,18 @@ class SubsystemConfigureTransactionStrategy(TransactionStrategy):
           reasoning every other family here uses.
         - PURE. Reads metadata, mutates nothing.
 
-    THE CLAIM IS IDENTICAL TO ENABLE AND DISABLE. THE FAMILY IS NOT:
+    THE CLAIM IS IDENTICAL TO ACTIVATE AND DEACTIVATE. THE FAMILY IS NOT:
         Three families sharing one claim shape is a fair thing to be suspicious
         of, so here is the difference stated plainly. What a family expresses is
         not only what it CLAIMS but what it WRITES at commit, and these three
         write three different things to the same row:
 
-            configure -> conditions land; state becomes CONFIGURED unless the
-                         subsystem is already running, in which case it stays
-                         ENABLED
-            enable    -> state becomes ENABLED; the subsystem starts emitting
-            disable   -> state becomes DISABLED; conditions are retained as
-                         last-known
+            configure  -> conditions land; state becomes CONFIGURED unless the
+                          subsystem is already running, in which case it stays
+                          ACTIVE
+            activate   -> state becomes ACTIVE; the subsystem starts emitting
+            deactivate -> state becomes INACTIVE; conditions are retained as
+                          last-known
 
         Merging them into one parameterised family would mean passing the
         target state through metadata, which puts a lifecycle decision in a
@@ -66,12 +66,12 @@ class SubsystemConfigureTransactionStrategy(TransactionStrategy):
         Because everything else reads what it writes. Two concurrent configures
         of one subsystem would both admit under a shared mode and the row would
         take whichever landed last, with no ordering anyone could reason about.
-        More importantly, EXCLUSIVE is what makes configure and enable mutually
+        More importantly, EXCLUSIVE is what makes configure and activate mutually
         excluding: recording conditions halfway through an activation would
         publish settings for a subsystem that is between states.
 
     THE ONE READ-BEFORE-WRITE IN THE PLANE, and why it is safe here:
-        `record_conditions` preserves an ENABLED state rather than overwriting
+        `record_conditions` preserves an ACTIVE state rather than overwriting
         it, which means it reads the current state and then writes. That is a
         race in general. It is not one here, for two specific reasons, and both
         must hold: the read and the write happen inside ONE registry lock
@@ -100,17 +100,21 @@ class SubsystemConfigureTransactionStrategy(TransactionStrategy):
 
     Subsystem Context:
         The first of the three subsystem lifecycle families in the usual order
-        - configure, enable, disable - though none of the three requires
-        another. A subsystem may enable without ever configuring; it simply has
+        - configure, activate, deactivate - though none of the three requires
+        another. A subsystem may activate without ever configuring; it simply has
         no conditions to report.
 
     System Context:
-        The three subsystems reach this edge differently and some do not reach
-        it at all yet. The plane does not model that difference and must not:
-        it isolates the declaration, not how a subsystem arrives at it. This
-        matters more than usual right now because Nexus is being reworked, and
-        a family written against Nexus's current activation shape would be
-        wrong by the time it landed.
+        All three subsystem roots now take `activate(configuration=None)`, and
+        all three document the optional argument the same way: passing one is a
+        convenience that CONFIGURES FIRST. So the two-step this family names
+        already exists down there - it is simply not separately admissible,
+        which is what this family adds.
+
+        The plane still does not model HOW each subsystem arrives at the edge,
+        and must not: it isolates the declaration. That restraint is what let
+        Nexus be reworked from `enable`/`disable` to `activate`/`deactivate`
+        without this family needing to know.
 
     AGENT_ACCESS: internal
 
@@ -178,7 +182,7 @@ class SubsystemConfigureTransactionStrategy(TransactionStrategy):
               subsystem cannot widen its own row by adding metadata keys, and
               the bound lives in the vocabulary rather than being restated by
               each family that writes conditions.
-            - Does NOT move an already-ENABLED subsystem. That rule is enforced
+            - Does NOT move an already-ACTIVE subsystem. That rule is enforced
               by `record_conditions`, not here, so there is one place to be
               right about it rather than one per caller.
             - A configure whose subject is unknown took `world` EXCLUSIVE and

@@ -893,7 +893,7 @@ def _profile_callable(
 
     profile = cProfile.Profile()
     start_ns = time.perf_counter_ns()
-    profile.activate()
+    profile.enable()
     for _ in range(profile_iteration_count):
         fn()
     profile.disable()

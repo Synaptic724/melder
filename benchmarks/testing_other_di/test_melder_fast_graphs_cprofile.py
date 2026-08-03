@@ -689,7 +689,7 @@ def _profile_execution(
 
     start = time.perf_counter()
     if profile_enabled:
-        profiler.activate()
+        profiler.enable()
     try:
         fn()
     finally:

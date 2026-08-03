@@ -20,10 +20,10 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "84abc3eb3c0105a378a72237529eb7b2d2d9f26ccf4f62f97ce59c7a27157a14"
-MARKED_COUNT = 446
+SOURCE_SHA256 = "e1649b7e9317aaded7eda022be32abb21bcfde05bf96df1569ce6a71bd35c24c"
+MARKED_COUNT = 451
 EXEMPT_COUNT = 163
-PENDING_COUNT = 11
+PENDING_COUNT = 12
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -102,16 +102,20 @@ AGENT_METADATA = {
     ('melder.aether.aetheric_mediator.information_registry', 'FactRecord'): ('internal', 'access: internal. Immutable freshness baseline for one region. Cleanable; cleaned when displaced or at registry teardown.'),
     ('melder.aether.aetheric_mediator.information_registry', 'InformationRegistry'): ('internal', 'access: internal. Plane reporting - fact baselines plus live activity indexes by scope, submitter, and type. Caller-paid, detached results.'),
     ('melder.aether.aetheric_mediator.mediator', 'Mediator'): ('internal', 'access: internal. Top-level transaction plane root. Admission, per identity sessions, strategy dispatch, outcome policy, and reporting.'),
+    ('melder.aether.aetheric_mediator.participation', 'ParticipationConditions'): ('internal', 'access: internal. Declared key set for subsystem basic conditions plus the selector that filters metadata down to it. A subsystem cannot widen its own registry row.'),
+    ('melder.aether.aetheric_mediator.participation', 'ParticipationState'): ('internal', 'access: internal. Closed vocabulary of subsystem participation states. Only ACTIVE emits; check `emits` rather than comparing members by hand.'),
     ('melder.aether.aetheric_mediator.scope_keys', 'ScopeKey'): ('internal', 'access: internal. Canonical builders for plane scope keys. Never hand-format a scope key; a typo silently loses isolation.'),
     ('melder.aether.aetheric_mediator.scope_keys', 'ScopePrefix'): ('internal', 'access: internal. Closed vocabulary of scope-key namespaces - world, frame, subsystem. Build keys through `ScopeKey`, never by hand.'),
     ('melder.aether.aetheric_mediator.staged_transaction', 'StagedTransaction'): ('internal', 'access: internal. Immutable post-admission record of one granted transaction, consumed by commit-time hooks and reporting. Cleanable; cleaned by the owning session at teardown.'),
     ('melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy', 'AgentRepairTransactionStrategy'): ('internal', 'access: internal. Claims exactly the scopes a repairing agent names, falling back to whole-world exclusivity when it names none. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy', 'CheckpointLoadTransactionStrategy'): ('internal', 'access: internal. Claims `world` exclusively for a checkpoint load. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy', 'FormationLoadTransactionStrategy'): ('internal', 'access: internal. Claims one frame exclusively under a world intent marker, falling back to whole-world exclusivity when the target frame is not known before admission. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy', 'FrameCreateTransactionStrategy'): ('internal', 'access: internal. Claims one frame exclusively under a world intent marker while the frame is created. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy', 'IndexGraftTransactionStrategy'): ('internal', 'access: internal. Marks one frame as under piece-work for a graft, using intent rather than exclusive so parallel grafts coexist. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy', 'SubsystemDisableTransactionStrategy'): ('internal', 'access: internal. Claims one subsystem exclusively under a world intent marker for its disable transition; the claim excludes transactions, not work already inside the subsystem. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy', 'SubsystemEnableTransactionStrategy'): ('internal', 'access: internal. Claims one subsystem exclusively under a world intent marker for its enable transition. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.aether.aetheric_mediator.strategy_builder', 'StrategyBuilder'): ('internal', 'access: internal. Resolves a transaction type to its registered strategy class. Unregistered types raise; there is no default.'),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy', 'SubsystemActivateTransactionStrategy'): ('internal', 'access: internal. Claims one subsystem exclusively under a world intent marker for its activation transition. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy', 'SubsystemConfigureTransactionStrategy'): ('internal', 'access: internal. Claims one subsystem exclusively while recording the conditions it would run under, without switching it on. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy', 'SubsystemDeactivateTransactionStrategy'): ('internal', 'access: internal. Claims one subsystem exclusively under a world intent marker for its deactivation transition; the claim excludes transactions, not work already inside the subsystem. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
+    ('melder.aether.aetheric_mediator.strategy_builder', 'StrategyBuilder'): ('internal', "access: internal. Resolves a transaction type to its registered strategy class. Seeded with the plane's own family for every vocabulary member at construction; a type with no registration raises rather than guessing."),
     ('melder.aether.aetheric_mediator.transaction_request', 'MetadataPolicy'): ('internal', 'access: internal. Value-only guard for transaction metadata. Rejects object references at the construction boundary.'),
     ('melder.aether.aetheric_mediator.transaction_request', 'TransactionRequest'): ('internal', 'access: internal. Immutable pre-admission transaction record carrying the submitter, the transaction type, and the complete scope-claim set. Cleanable; cleaned by the owning session at teardown.'),
     ('melder.aether.aetheric_mediator.transaction_session', 'OutcomePolicy'): ('internal', 'access: internal. Per-transaction failure posture - unwind and raise, or leave the world broken with a ledger for agent repair.'),
@@ -120,6 +124,7 @@ AGENT_METADATA = {
     ('melder.aether.aetheric_mediator.transaction_session', '_RollbackAction'): ('internal', 'access: internal. A registered inverse plus the description that survives when the inverse is deliberately not run. Cleanable so the captured closure is released deterministically.'),
     ('melder.aether.aetheric_mediator.transaction_strategy', 'TransactionStrategy'): ('internal', 'access: internal. Dispatch contract for one transaction family. build_start_plan decides scope proportionality; the rest is lifecycle.'),
     ('melder.aether.aetheric_mediator.transaction_type', 'TransactionType'): ('internal', 'access: internal. Closed vocabulary of top-level plane transactions. Every member pairs with a registered strategy.'),
+    ('melder.aether.aetheric_mediator.unwind_conflict_error', 'UnwindConflictError'): ('public', 'access: public. Raised when a failed transaction could not be unwound - the world was left as the failure found it. Read `unwound` and `failed` to see how far reversal got, then repair through an AGENT_REPAIR transaction rather than reaching in directly.'),
     ('melder.aether.conduit.conduit', 'Conduit'): ('public', 'access: public. The runtime scope you hold after conjure. Call meld(...) to resolve instances, create_lesser_conduit(...) for child scopes, enter_spellspace() for request scope, and link(...)/sever_link(...)/transfer_spell_ownership(...) in dynamic mode only.'),
     ('melder.aether.conduit.conduit_cluster', 'ConduitCluster'): ('internal', 'access: internal. A membership group of conduits with TWO INDEPENDENT LAYERS: leaderless spell-sharing (the core, always on) and an OPTIONAL elected-leader team store (only ever needed for `unique_per_conduit_cluster` spells). Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.aether.conduit.conduit_pool', 'ConduitPool'): ('internal', 'access: internal. Root-conduit-owned elastic pool scaffold for reusable lesser conduits. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
@@ -350,7 +355,7 @@ AGENT_METADATA = {
     ('melder.nexus.configuration.rift_access_mode', 'RiftAccessMode'): ('internal', 'access: internal. System-level policy for direct Rift retrieval. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.configuration.rift_configuration', 'RiftConfiguration'): ('public', "access: public. Per-Rift settings, chiefly space_type which fixes the room posture for the Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration()."),
     ('melder.nexus.configuration.rift_creation_mode', 'RiftCreationMode'): ('internal', 'access: internal. System-level policy for Rift creation/programming. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.nexus.configuration.rift_space_type', 'RiftSpaceType'): ('public', 'access: public. Room posture, chosen ONCE at Rift creation: static (live-only, no mutation), capability (broad manual, no codegen), codegen (slim manual surface plus the codegen engine). `dynamic` is a legacy alias for codegen.'),
+    ('melder.nexus.configuration.rift_space_type', 'RiftSpaceType'): ('public', 'access: public. Room posture, chosen ONCE at Rift creation: static (live-only, no mutation), capability (broad manual, no codegen), codegen (slim manual surface plus the codegen engine). Those three are the whole set - there is no `dynamic` member.'),
     ('melder.nexus.configuration.rift_validation_mode', 'RiftValidationMode'): ('internal', 'access: internal. Validation posture for Rift codegen/runtime execution. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.frame_acl_manager', 'FrameACLManager'): ('internal', 'access: internal. FrameACLManager runtime object. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
     ('melder.nexus.frame_descriptor.conduit_descriptor_payload', 'ConduitDescriptorPayload'): ('internal', 'access: internal. Descriptor-safe published conduit payload. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
@@ -641,6 +646,7 @@ EXEMPT = (
 )
 
 PENDING = (
+    ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictKeysView'),
@@ -719,14 +725,17 @@ CLASS_BASES = {
     ('melder.aether.aetheric_mediator.information_registry', 'FactRecord'): ('Cleanable',),
     ('melder.aether.aetheric_mediator.information_registry', 'InformationRegistry'): ('Cleanable',),
     ('melder.aether.aetheric_mediator.mediator', 'Mediator'): ('Cleanable',),
+    ('melder.aether.aetheric_mediator.participation', 'ParticipationState'): ('StrEnum',),
     ('melder.aether.aetheric_mediator.scope_keys', 'ScopePrefix'): ('StrEnum',),
     ('melder.aether.aetheric_mediator.staged_transaction', 'StagedTransaction'): ('Cleanable',),
     ('melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy', 'AgentRepairTransactionStrategy'): ('TransactionStrategy',),
     ('melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy', 'CheckpointLoadTransactionStrategy'): ('TransactionStrategy',),
     ('melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy', 'FormationLoadTransactionStrategy'): ('TransactionStrategy',),
+    ('melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy', 'FrameCreateTransactionStrategy'): ('TransactionStrategy',),
     ('melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy', 'IndexGraftTransactionStrategy'): ('TransactionStrategy',),
-    ('melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy', 'SubsystemDisableTransactionStrategy'): ('TransactionStrategy',),
-    ('melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy', 'SubsystemEnableTransactionStrategy'): ('TransactionStrategy',),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy', 'SubsystemActivateTransactionStrategy'): ('TransactionStrategy',),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy', 'SubsystemConfigureTransactionStrategy'): ('TransactionStrategy',),
+    ('melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy', 'SubsystemDeactivateTransactionStrategy'): ('TransactionStrategy',),
     ('melder.aether.aetheric_mediator.strategy_builder', 'StrategyBuilder'): ('Cleanable',),
     ('melder.aether.aetheric_mediator.transaction_request', 'TransactionRequest'): ('Cleanable',),
     ('melder.aether.aetheric_mediator.transaction_session', 'OutcomePolicy'): ('StrEnum',),
@@ -735,6 +744,7 @@ CLASS_BASES = {
     ('melder.aether.aetheric_mediator.transaction_session', '_RollbackAction'): ('Cleanable',),
     ('melder.aether.aetheric_mediator.transaction_strategy', 'TransactionStrategy'): ('ABC',),
     ('melder.aether.aetheric_mediator.transaction_type', 'TransactionType'): ('StrEnum',),
+    ('melder.aether.aetheric_mediator.unwind_conflict_error', 'UnwindConflictError'): ('RuntimeError',),
     ('melder.aether.conduit.conduit', 'Conduit'): ('Cleanable',),
     ('melder.aether.conduit.conduit_cluster', 'ConduitCluster'): ('Cleanable',),
     ('melder.aether.conduit.conduit_state.conduit_state', 'ConduitState'): ('Enum',),
@@ -1057,6 +1067,7 @@ CLASS_BASES = {
     ('melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator', 'FrameACLSetCompatibilityValidator'): ('Cleanable',),
     ('melder.nexus.acl.validator.frame_acl_validator', 'FrameACLValidator'): ('Cleanable',),
     ('melder.nexus.configuration.nexus_configuration', 'NexusConfiguration'): ('Cleanable',),
+    ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'): ('Cleanable',),
     ('melder.nexus.configuration.nexus_frame_mode', 'NexusFrameMode'): ('Enum',),
     ('melder.nexus.configuration.rift_access_mode', 'RiftAccessMode'): ('Enum',),
     ('melder.nexus.configuration.rift_configuration', 'RiftConfiguration'): ('Cleanable',),

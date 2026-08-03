@@ -101,10 +101,10 @@ def _measure(label: str, runner: Callable[[List[list[object]]], None]) -> _Bench
             elapsed_ns = time.perf_counter_ns() - start_ns
             durations.append(elapsed_ns)
             if gc_was_enabled:
-                gc.activate()
+                gc.enable()
     finally:
         if gc_was_enabled and not gc.isenabled():
-            gc.activate()
+            gc.enable()
 
     return _BenchmarkResult(label=label, durations_ns=tuple(durations))
 

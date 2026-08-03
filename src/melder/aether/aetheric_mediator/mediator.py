@@ -235,11 +235,11 @@ class Mediator(Cleanable):
               False, so an activate/deactivate/activate cycle is safe and a
               subsystem never needs to check first. It does NOT move the
               subsystem's participation state - a subsystem that re-announces
-              while ENABLED stays ENABLED, because knocking it back to
+              while ACTIVE stays ACTIVE, because knocking it back to
               REGISTERED would silence something that is running.
             - REGISTERING IS NOT ENABLING. This lands the subsystem at
               `ParticipationState.REGISTERED`: known to the plane, running
-              nothing, emitting nothing. Only a committed `SUBSYSTEM_ENABLE`
+              nothing, emitting nothing. Only a committed `SUBSYSTEM_ACTIVATE`
               moves it to the one state that emits.
             - THIS IS NOT ADMISSION. Registering grants no claim and gates
               nothing. It is a roster, not a permission.
@@ -271,8 +271,8 @@ class Mediator(Cleanable):
         Drop one subsystem from the roster entirely.
 
         Contract:
-            - THIS IS NOT `SUBSYSTEM_DISABLE`. Disabling is a transaction: it
-              moves the subsystem to `DISABLED`, keeps its row, and keeps the
+            - THIS IS NOT `SUBSYSTEM_DEACTIVATE`. Deactivating is a transaction: it
+              moves the subsystem to `INACTIVE`, keeps its row, and keeps the
               conditions it was last running with, because "it ran and stopped"
               is a fact worth reporting. This verb removes the row, so the
               plane goes back to never having heard of the subsystem. Use it
@@ -301,7 +301,7 @@ class Mediator(Cleanable):
 
         Contract:
             True for a subsystem the plane knows about regardless of whether it
-            is running - REGISTERED, CONFIGURED, ENABLED and DISABLED all read
+            is running - REGISTERED, CONFIGURED, ACTIVE and INACTIVE all read
             True. This answers "is it wired in", not "is it working". For the
             latter, and for anything gating emission, use `is_participating`.
 
@@ -326,9 +326,9 @@ class Mediator(Cleanable):
 
         Contract:
             THE ROSTER, NOT THE EMISSION SET. Includes subsystems that are
-            registered but never started and ones that have been disabled. For
-            "who is actually running", use `participants_in_state` with
-            `ParticipationState.ENABLED`.
+            registered but never started and ones that have been deactivated.
+            For "who is actually running", use `participants_in_state` with
+            `ParticipationState.ACTIVE`.
 
         Returns:
             Tuple[str, ...]: Sorted participant names, empty when none.
@@ -341,17 +341,17 @@ class Mediator(Cleanable):
 
     def is_participating(self, participant: str) -> bool:
         """
-        Report whether one subsystem is enabled and active. THE EMISSION GATE.
+        Report whether one subsystem is active. THE EMISSION GATE.
 
         Purpose:
             Answer the question owner constraint 6 poses - emit for a subsystem
-            ONLY when it is enabled and active, otherwise do not care - at the
-            plane's own front door, so a caller does not have to reach through
-            `reporting` to ask it.
+            ONLY when it is active, otherwise do not care - at the plane's own
+            front door, so a caller does not have to reach through `reporting`
+            to ask it.
 
         Contract:
-            True for `ENABLED` alone. A subsystem that is registered,
-            configured, disabled, or unknown all read False, because none of
+            True for `ACTIVE` alone. A subsystem that is registered,
+            configured, inactive, or unknown all read False, because none of
             them is running.
 
             DO NOT SUBSTITUTE `has_participant`. The gap between the two is
@@ -362,7 +362,7 @@ class Mediator(Cleanable):
             participant: The subsystem name to test.
 
         Returns:
-            bool: True only when the subsystem is enabled and active.
+            bool: True only when the subsystem is active.
 
         Raises:
             RuntimeError: If the plane has been cleaned.
@@ -379,7 +379,7 @@ class Mediator(Cleanable):
 
         Contract:
             `None` means the plane has NEVER HEARD of this subsystem, which is
-            a different fact from `DISABLED` and usually a different bug: the
+            a different fact from `INACTIVE` and usually a different bug: the
             first is a subsystem nobody wired in, the second is one that was
             switched off on purpose.
 

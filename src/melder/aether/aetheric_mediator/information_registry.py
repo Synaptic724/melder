@@ -220,7 +220,7 @@ class InformationRegistry(Cleanable):
         self._facts: Dict[str, FactRecord] = {}
         self._active: Dict[str, StagedTransaction] = {}
         # PARTICIPANT STORE. Owner constraint 6 gates participation on
-        # activation: a subsystem takes part ONLY when enabled and active, and
+        # activation: a subsystem takes part ONLY when active, and
         # emits its basic conditions at that edge. This is the ONE place that
         # is recorded - `Mediator`'s roster verbs delegate here rather than
         # keeping a second map, because two stores of the same fact is two
@@ -446,14 +446,14 @@ class InformationRegistry(Cleanable):
               This direction is what keeps epic constraint 4 intact. If the
               plane had to discover its subsystems it would need to import
               `melder.aether`, and the whole isolation property collapses.
-            - LANDS AT `REGISTERED`, NOT `ENABLED`. Announcing is a roster
+            - LANDS AT `REGISTERED`, NOT `ACTIVE`. Announcing is a roster
               arrival, not an activation - the subsystem has said it exists,
               not that it is running. Treating arrival as activation is the
               specific mistake this vocabulary exists to prevent: it would emit
               for a subsystem that has not started.
             - IDEMPOTENT, AND RE-ANNOUNCING NEVER MOVES THE STATE. Returns
               False on a repeat and leaves an existing row's state and
-              conditions untouched. A subsystem that re-announces while ENABLED
+              conditions untouched. A subsystem that re-announces while ACTIVE
               must not be knocked back to REGISTERED; that would silence a
               running subsystem.
             - THIS IS NOT ADMISSION. Announcing grants no claim and gates
@@ -494,8 +494,8 @@ class InformationRegistry(Cleanable):
         Drop one subsystem from the roster entirely.
 
         Contract:
-            - THIS IS NOT `SUBSYSTEM_DISABLE`, and the difference is the reason
-              both exist. Disabling moves a subsystem to `DISABLED` and KEEPS
+            - THIS IS NOT `SUBSYSTEM_DEACTIVATE`, and the difference is the reason
+              both exist. Deactivating moves a subsystem to `INACTIVE` and KEEPS
               its row, because "it ran and stopped" is a fact worth reporting.
               Forgetting removes the row, so the plane goes back to never
               having heard of it. Use this for teardown, not for deactivation.
@@ -529,8 +529,8 @@ class InformationRegistry(Cleanable):
         Move one subsystem to a participation state, optionally with conditions.
 
         Purpose:
-            Be the single write the subsystem lifecycle edges share, so enable,
-            disable and configure differ in the VALUE they write rather than in
+            Be the single write the subsystem lifecycle edges share, so activate,
+            deactivate and configure differ in the VALUE they write rather than in
             the mechanics of writing it.
 
         Contract:
@@ -538,7 +538,7 @@ class InformationRegistry(Cleanable):
               acquisition. Two verbs would leave a window in which a reader
               sees the new state beside the old conditions, and the whole point
               of gating emission on state is that the pair is trustworthy.
-            - CREATES THE ROW IF ABSENT. An enable arriving for a subsystem
+            - CREATES THE ROW IF ABSENT. An activation arriving for a subsystem
               that never announced itself is recorded rather than refused: the
               roster is not wired into the subsystems today, and making the
               activation edge depend on wiring that does not exist would mean
@@ -547,9 +547,9 @@ class InformationRegistry(Cleanable):
               existing conditions in place. An empty mapping means "this edge
               announced nothing IS the announcement" and clears them. That
               distinction is load-bearing: it is what lets a CONFIGURE record
-              settings and a later ENABLE flip the state without wiping them.
+              settings and a later ACTIVATE flip the state without wiping them.
             - CONDITIONS ON A NON-EMITTING ROW ARE LAST-KNOWN, NOT CURRENT.
-              They are deliberately retained through a disable, because the
+              They are deliberately retained through a deactivation, because the
               state already tells a reader not to act on them and "what was it
               running with when it stopped" is the first question asked after a
               subsystem goes quiet. Retention is safe here ONLY because the
@@ -618,12 +618,12 @@ class InformationRegistry(Cleanable):
 
         Contract:
             - PROMOTES A NON-EMITTING ROW TO `CONFIGURED`. A subsystem that was
-              REGISTERED, CONFIGURED or DISABLED lands on CONFIGURED, because
+              REGISTERED, CONFIGURED or INACTIVE lands on CONFIGURED, because
               declaring conditions is exactly the difference between "we know
               the name" and "we know how it would run".
-            - LEAVES AN `ENABLED` ROW ENABLED. Reconfiguring a running
+            - LEAVES AN `ACTIVE` ROW ACTIVE. Reconfiguring a running
               subsystem updates what it is running with; it does not turn it
-              off, and writing CONFIGURED over ENABLED would claim it did. That
+              off, and writing CONFIGURED over ACTIVE would claim it did. That
               is the one transition this verb refuses to make, and it is
               enforced HERE rather than in the calling strategy so there is one
               place to be right about it.
@@ -662,8 +662,8 @@ class InformationRegistry(Cleanable):
                 self._participants[subsystem_name] = row
             current = row.get("state")
             resulting = (
-                ParticipationState.ENABLED
-                if current is ParticipationState.ENABLED
+                ParticipationState.ACTIVE
+                if current is ParticipationState.ACTIVE
                 else ParticipationState.CONFIGURED
             )
             row["conditions"] = frozen
@@ -681,7 +681,7 @@ class InformationRegistry(Cleanable):
 
         Contract:
             `None` means the plane has NEVER HEARD of this subsystem, which is
-            a different fact from `DISABLED`. Collapsing the two would hide the
+            a different fact from `INACTIVE`. Collapsing the two would hide the
             most common real failure - a subsystem that was never wired in at
             all - behind one that looks deliberate.
 
@@ -704,13 +704,13 @@ class InformationRegistry(Cleanable):
 
     def is_participating(self, subsystem_name: str) -> bool:
         """
-        Report whether one subsystem is enabled and active. THE EMISSION GATE.
+        Report whether one subsystem is active. THE EMISSION GATE.
 
         Contract:
             This is the question owner constraint 6 answers: emit for a
-            subsystem ONLY when it is enabled and active, otherwise do not
-            care. True for `ENABLED` alone - a REGISTERED, CONFIGURED,
-            DISABLED, or unknown subsystem all read False, because none of them
+            subsystem ONLY when it is active, otherwise do not
+            care. True for `ACTIVE` alone - a REGISTERED, CONFIGURED,
+            INACTIVE, or unknown subsystem all read False, because none of them
             is running.
 
             Callers gating work on participation must use THIS rather than
@@ -722,7 +722,7 @@ class InformationRegistry(Cleanable):
             subsystem_name: The subsystem being asked about.
 
         Returns:
-            bool: True only when the subsystem is enabled and active.
+            bool: True only when the subsystem is active.
 
         Raises:
             RuntimeError: If the registry has been cleaned.
@@ -745,7 +745,7 @@ class InformationRegistry(Cleanable):
         Contract:
             - DETACHED. Returns a fresh copy, so a caller cannot edit what the
               plane believes about a subsystem by mutating the return.
-            - LAST-KNOWN, NOT NECESSARILY CURRENT. A row that is not ENABLED
+            - LAST-KNOWN, NOT NECESSARILY CURRENT. A row that is not ACTIVE
               still carries the conditions it announced, which is what makes
               "what was it running with when it stopped" answerable. Check
               `is_participating(...)` before acting on these as live settings.
@@ -776,8 +776,8 @@ class InformationRegistry(Cleanable):
 
         Contract:
             This is the ROSTER, not the emission set. It includes REGISTERED,
-            CONFIGURED and DISABLED subsystems. For "who is actually running",
-            use `participants_in_state(ParticipationState.ENABLED)`.
+            CONFIGURED and INACTIVE subsystems. For "who is actually running",
+            use `participants_in_state(ParticipationState.ACTIVE)`.
 
         Returns:
             Tuple[str, ...]: Known subsystem names.
@@ -1003,7 +1003,7 @@ class InformationRegistry(Cleanable):
 
         Contract:
             Reports "who exists and in what state" beside "what is happening",
-            because a stall is as often a subsystem that never reached ENABLED
+            because a stall is as often a subsystem that never reached ACTIVE
             as it is a transaction that will not finish. `emitting_count` is
             broken out because it is the number an operator actually wants -
             the roster length includes subsystems that are doing nothing by

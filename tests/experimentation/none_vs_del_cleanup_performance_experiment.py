@@ -129,10 +129,10 @@ def _measure_cleanup(
             elapsed_ns = time.perf_counter_ns() - start_ns
             durations.append(elapsed_ns)
             if gc_was_enabled:
-                gc.activate()
+                gc.enable()
     finally:
         if gc_was_enabled and not gc.isenabled():
-            gc.activate()
+            gc.enable()
 
     return _CleanupMeasurement(
         label=label,

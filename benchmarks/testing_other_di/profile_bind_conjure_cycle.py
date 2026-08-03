@@ -315,7 +315,7 @@ def run_cycle(
     # ---- bind lane ----
     spell_ids: Dict[type, str] = {}
     if bind_profiler is not None:
-        bind_profiler.activate()
+        bind_profiler.enable()
     bind_t0 = time.perf_counter_ns()
     for cls in _support.ALL_CLASSES:
         single_t0 = time.perf_counter_ns()
@@ -344,7 +344,7 @@ def run_cycle(
 
     # ---- conjure lane ----
     if conjure_profiler is not None:
-        conjure_profiler.activate()
+        conjure_profiler.enable()
     conjure_t0 = time.perf_counter_ns()
     conduit = spellbook.conjure(name=CONDUIT_NAME, dynamic=False)
     timings.conjure_ns = time.perf_counter_ns() - conjure_t0
@@ -373,7 +373,7 @@ def run_cycle(
                 )
 
             if meld_profiler is not None:
-                meld_profiler.activate()
+                meld_profiler.enable()
             meld_t0 = time.perf_counter_ns()
             for cls, spell_id in direct_ids:
                 resolved = conduit.meld(spell=spell_id)

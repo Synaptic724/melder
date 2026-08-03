@@ -57,11 +57,11 @@ class TransactionType(StrEnum):
           the primary case for frame-scoped parallelism.
         - INDEX_GRAFT: the `GraftRunner` lane. Explicitly user-verb activity
           that takes NO load authority today.
-        - SUBSYSTEM_ENABLE / SUBSYSTEM_DISABLE: the activation transitions the
+        - SUBSYSTEM_ACTIVATE / SUBSYSTEM_DEACTIVATE: the activation transitions the
           owner named as the wiring gate - a subsystem participates only when
-          enabled and active, and emits its basic conditions at that edge.
+          active, and emits its basic conditions at that edge.
         - SUBSYSTEM_CONFIGURE: declaring how a subsystem WOULD run, without
-          switching it on. Split from SUBSYSTEM_ENABLE rather than folded into
+          switching it on. Split from SUBSYSTEM_ACTIVATE rather than folded into
           it because the two answer different questions and a subsystem can sit
           in the first state indefinitely: "its settings are recorded" is not
           "it is running", and a plane that could not tell them apart would
@@ -89,6 +89,6 @@ class TransactionType(StrEnum):
     FORMATION_LOAD = "formation_load"
     INDEX_GRAFT = "index_graft"
     SUBSYSTEM_CONFIGURE = "subsystem_configure"
-    SUBSYSTEM_ENABLE = "subsystem_enable"
-    SUBSYSTEM_DISABLE = "subsystem_disable"
+    SUBSYSTEM_ACTIVATE = "subsystem_activate"
+    SUBSYSTEM_DEACTIVATE = "subsystem_deactivate"
     AGENT_REPAIR = "agent_repair"

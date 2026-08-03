@@ -1,14 +1,14 @@
 """
 Unit tests for the plane's participation model - the COMMIT half.
 
-WHY THIS FILE EXISTS SEPARATELY FROM THE STRATEGY TESTS: configure, enable and
-disable claim IDENTICALLY. Tested on claims alone the three look
+WHY THIS FILE EXISTS SEPARATELY FROM THE STRATEGY TESTS: configure, activate and
+deactivate claim IDENTICALLY. Tested on claims alone the three look
 interchangeable, and the obvious conclusion - collapse them into one family - is
 wrong. What separates them is the participation state each writes at commit, and
 that is what this file asserts.
 
 It also pins the property the whole model exists for: EXACTLY ONE STATE EMITS.
-A subsystem that is registered, configured, disabled or unknown is silent, and
+A subsystem that is registered, configured, inactive or unknown is silent, and
 those are four different silences rather than one.
 
 Run:
@@ -33,11 +33,11 @@ from melder.aether.aetheric_mediator.staged_transaction import StagedTransaction
 from melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy import (
     SubsystemConfigureTransactionStrategy,
 )
-from melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy import (
-    SubsystemDisableTransactionStrategy,
+from melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy import (
+    SubsystemDeactivateTransactionStrategy,
 )
-from melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy import (
-    SubsystemEnableTransactionStrategy,
+from melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy import (
+    SubsystemActivateTransactionStrategy,
 )
 from melder.aether.aetheric_mediator.transaction_type import TransactionType
 
@@ -108,7 +108,7 @@ def test_exactly_one_state_emits():
     emitting = tuple(
         member for member in ParticipationState if member.emits
     )
-    assert emitting == (ParticipationState.ENABLED,)
+    assert emitting == (ParticipationState.ACTIVE,)
 
 
 def test_every_state_is_reachable_by_an_edge(registry, submitter):
@@ -122,12 +122,12 @@ def test_every_state_is_reachable_by_an_edge(registry, submitter):
         _staged(TransactionType.SUBSYSTEM_CONFIGURE, "b"),
     )
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE, "c"),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE, "c"),
     )
     _commit(
-        SubsystemDisableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_DISABLE, "d"),
+        SubsystemDeactivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_DEACTIVATE, "d"),
     )
     reached = {
         registry.participation_state(name) for name in ("a", "b", "c", "d")
@@ -164,22 +164,22 @@ def test_the_three_lifecycle_families_write_three_different_states(
     for family, transaction_type in (
         (SubsystemConfigureTransactionStrategy,
          TransactionType.SUBSYSTEM_CONFIGURE),
-        (SubsystemEnableTransactionStrategy,
-         TransactionType.SUBSYSTEM_ENABLE),
-        (SubsystemDisableTransactionStrategy,
-         TransactionType.SUBSYSTEM_DISABLE),
+        (SubsystemActivateTransactionStrategy,
+         TransactionType.SUBSYSTEM_ACTIVATE),
+        (SubsystemDeactivateTransactionStrategy,
+         TransactionType.SUBSYSTEM_DEACTIVATE),
     ):
         _commit(family, registry, submitter, _staged(transaction_type))
         written.append(registry.participation_state(SUBSYSTEM))
 
     assert written == [
         ParticipationState.CONFIGURED,
-        ParticipationState.ENABLED,
-        ParticipationState.DISABLED,
+        ParticipationState.ACTIVE,
+        ParticipationState.INACTIVE,
     ]
 
 
-def test_enabling_is_the_only_edge_that_makes_a_subsystem_emit(
+def test_activating_is_the_only_edge_that_makes_a_subsystem_emit(
         registry, submitter
 ):
     """Owner constraint 6, asserted rather than described."""
@@ -190,23 +190,23 @@ def test_enabling_is_the_only_edge_that_makes_a_subsystem_emit(
     assert registry.is_participating(SUBSYSTEM) is False
 
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE),
     )
     assert registry.is_participating(SUBSYSTEM) is True
 
     _commit(
-        SubsystemDisableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_DISABLE),
+        SubsystemDeactivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_DEACTIVATE),
     )
     assert registry.is_participating(SUBSYSTEM) is False
 
 
-def test_enabling_without_conditions_keeps_the_configured_ones(
+def test_activating_without_conditions_keeps_the_configured_ones(
         registry, submitter
 ):
     """
-    THE NORMAL SEQUENCE IS CONFIGURE THEN ENABLE. If the enable passed an empty
+    THE NORMAL SEQUENCE IS CONFIGURE THEN ACTIVATE. If the activation passed an empty
     mapping rather than None, the settings would be erased at the exact moment
     the subsystem started running with them.
     """
@@ -219,8 +219,8 @@ def test_enabling_without_conditions_keeps_the_configured_ones(
         ),
     )
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE),
     )
     assert registry.participant_conditions(SUBSYSTEM) == {
         "parallel_enabled": True, "worker_count": 4,
@@ -231,24 +231,24 @@ def test_reconfiguring_a_running_subsystem_does_not_switch_it_off(
         registry, submitter
 ):
     """
-    Writing CONFIGURED over ENABLED would claim the subsystem stopped, which it
+    Writing CONFIGURED over ACTIVE would claim the subsystem stopped, which it
     did not. The rule lives in `record_conditions` so there is one place to be
     right about it, and it is safe only because the family holds the subsystem
     exclusively while it reads and writes.
     """
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE, worker_count=4),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE, worker_count=4),
     )
     _commit(
         SubsystemConfigureTransactionStrategy, registry, submitter,
         _staged(TransactionType.SUBSYSTEM_CONFIGURE, worker_count=8),
     )
-    assert registry.participation_state(SUBSYSTEM) is ParticipationState.ENABLED
+    assert registry.participation_state(SUBSYSTEM) is ParticipationState.ACTIVE
     assert registry.participant_conditions(SUBSYSTEM) == {"worker_count": 8}
 
 
-def test_disabling_keeps_the_conditions_it_was_running_with(
+def test_deactivating_keeps_the_conditions_it_was_running_with(
         registry, submitter
 ):
     """
@@ -258,12 +258,12 @@ def test_disabling_keeps_the_conditions_it_was_running_with(
     mistake them for live settings.
     """
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE, policy_version="v2"),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE, policy_version="v2"),
     )
     _commit(
-        SubsystemDisableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_DISABLE),
+        SubsystemDeactivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_DEACTIVATE),
     )
     assert registry.participant_conditions(SUBSYSTEM) == {"policy_version": "v2"}
     assert registry.is_participating(SUBSYSTEM) is False
@@ -276,12 +276,12 @@ def test_a_commit_delta_still_stamps_the_fact_baseline(registry, submitter):
     freshness it never stamped.
     """
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE),
     )
     baseline = registry.get_fact(ScopeKey.subsystem(SUBSYSTEM))
     assert baseline is not None
-    assert baseline["fact_family"] == TransactionType.SUBSYSTEM_ENABLE.value
+    assert baseline["fact_family"] == TransactionType.SUBSYSTEM_ACTIVATE.value
 
 
 def test_an_unnameable_subject_records_nothing(registry, submitter):
@@ -292,14 +292,14 @@ def test_an_unnameable_subject_records_nothing(registry, submitter):
     """
     staged = StagedTransaction(
         request_id="req-nameless",
-        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        transaction_type=TransactionType.SUBSYSTEM_ACTIVATE,
         submitter_kind="subsystem",
         submitter_id="unknown",
         admitted_at=time.time(),
         granted_scopes=(ScopeKey.world(),),
         metadata={"worker_count": 4},
     )
-    _commit(SubsystemEnableTransactionStrategy, registry, submitter, staged)
+    _commit(SubsystemActivateTransactionStrategy, registry, submitter, staged)
     assert registry.known_subsystems() == ()
 
 
@@ -307,7 +307,7 @@ def test_an_unnameable_subject_records_nothing(registry, submitter):
 # Absence, registration, and the difference between them
 # --------------------------------------------------------------------------
 
-def test_unknown_and_disabled_are_different_answers(registry, submitter):
+def test_unknown_and_inactive_are_different_answers(registry, submitter):
     """
     THE FAILURE THIS MODEL EXISTS TO SEPARATE. A subsystem nobody wired in and
     one that was switched off on purpose both do nothing, and they need
@@ -317,15 +317,15 @@ def test_unknown_and_disabled_are_different_answers(registry, submitter):
     assert registry.participation_state("never-seen") is None
 
     _commit(
-        SubsystemDisableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_DISABLE),
+        SubsystemDeactivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_DEACTIVATE),
     )
     assert (
-        registry.participation_state(SUBSYSTEM) is ParticipationState.DISABLED
+        registry.participation_state(SUBSYSTEM) is ParticipationState.INACTIVE
     )
 
 
-def test_announcing_is_not_enabling(registry):
+def test_announcing_is_not_activating(registry):
     """
     A roster arrival says a subsystem exists, not that it is running. Landing
     it anywhere but REGISTERED would start emitting for something that has not
@@ -340,29 +340,29 @@ def test_announcing_is_not_enabling(registry):
 
 def test_re_announcing_never_demotes_a_running_subsystem(registry, submitter):
     """
-    A subsystem that re-announces while ENABLED must stay ENABLED. Knocking it
+    A subsystem that re-announces while ACTIVE must stay ACTIVE. Knocking it
     back to REGISTERED would silence something that is still running, which is
     the worst direction for this bug to go.
     """
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE, worker_count=4),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE, worker_count=4),
     )
     assert registry.announce_participant(SUBSYSTEM) is False
-    assert registry.participation_state(SUBSYSTEM) is ParticipationState.ENABLED
+    assert registry.participation_state(SUBSYSTEM) is ParticipationState.ACTIVE
     assert registry.participant_conditions(SUBSYSTEM) == {"worker_count": 4}
 
 
-def test_forgetting_removes_the_row_where_disabling_keeps_it(
+def test_forgetting_removes_the_row_where_deactivating_keeps_it(
         registry, submitter
 ):
     """
-    The two verbs are not interchangeable and the store must show it: disable
+    The two verbs are not interchangeable and the store must show it: deactivate
     is a lifecycle transition, forget is teardown.
     """
     _commit(
-        SubsystemDisableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_DISABLE),
+        SubsystemDeactivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_DEACTIVATE),
     )
     assert registry.known_subsystems() == (SUBSYSTEM,)
 
@@ -389,14 +389,14 @@ def test_the_roster_reports_every_state_not_only_the_emitting_ones(
         _staged(TransactionType.SUBSYSTEM_CONFIGURE, "nexus"),
     )
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE),
     )
 
     assert registry.known_subsystems() == (
         SUBSYSTEM, "mutation_research", "nexus",
     )
-    assert registry.participants_in_state(ParticipationState.ENABLED) == (
+    assert registry.participants_in_state(ParticipationState.ACTIVE) == (
         SUBSYSTEM,
     )
     assert registry.participants_in_state(ParticipationState.REGISTERED) == (
@@ -414,8 +414,8 @@ def test_reported_rows_are_detached_from_the_store(registry, submitter):
     transaction, which defeats the point of gating the writes.
     """
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE, worker_count=4),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE, worker_count=4),
     )
     rows = registry.describe_participants()
     rows[0]["conditions"]["worker_count"] = 999
@@ -435,8 +435,8 @@ def test_the_snapshot_separates_who_exists_from_who_is_emitting(
     registry.announce_participant("mutation_research")
     registry.announce_participant("nexus")
     _commit(
-        SubsystemEnableTransactionStrategy, registry, submitter,
-        _staged(TransactionType.SUBSYSTEM_ENABLE),
+        SubsystemActivateTransactionStrategy, registry, submitter,
+        _staged(TransactionType.SUBSYSTEM_ACTIVATE),
     )
     snapshot = registry.describe()
 
@@ -464,13 +464,13 @@ def test_an_unnameable_subsystem_is_refused(registry, bad_name):
 
 def test_a_state_outside_the_vocabulary_is_refused(registry):
     """
-    The vocabulary is closed. Accepting the bare string `"enabled"` would let a
+    The vocabulary is closed. Accepting the bare string `"active"` would let a
     caller write a value `emits` cannot be asked of, and the gate would raise
     on read instead of on write.
     """
     with pytest.raises(TypeError):
         registry.set_participation(
-            subsystem_name=SUBSYSTEM, state="enabled", reporter="req-1"
+            subsystem_name=SUBSYSTEM, state="active", reporter="req-1"
         )
 
 
@@ -482,7 +482,7 @@ def test_a_live_object_cannot_be_stored_as_a_condition(registry):
     with pytest.raises(TypeError):
         registry.set_participation(
             subsystem_name=SUBSYSTEM,
-            state=ParticipationState.ENABLED,
+            state=ParticipationState.ACTIVE,
             reporter="req-1",
             conditions={"worker_count": object()},
         )
@@ -496,7 +496,7 @@ def test_an_unattributed_state_change_is_refused(registry):
     with pytest.raises(ValueError):
         registry.set_participation(
             subsystem_name=SUBSYSTEM,
-            state=ParticipationState.ENABLED,
+            state=ParticipationState.ACTIVE,
             reporter="",
         )
 
@@ -514,7 +514,7 @@ def test_participant_verbs_refuse_after_cleanup():
         lambda: registry.participant_conditions(SUBSYSTEM),
         lambda: registry.known_subsystems(),
         lambda: registry.describe_participants(),
-        lambda: registry.participants_in_state(ParticipationState.ENABLED),
+        lambda: registry.participants_in_state(ParticipationState.ACTIVE),
     ):
         with pytest.raises(RuntimeError):
             call()
@@ -543,11 +543,11 @@ def test_the_roster_and_the_participation_states_are_one_store():
 
         plane.reporting.set_participation(
             subsystem_name=SUBSYSTEM,
-            state=ParticipationState.ENABLED,
+            state=ParticipationState.ACTIVE,
             reporter="req-1",
         )
         assert plane.is_participating(SUBSYSTEM) is True
-        assert plane.participants_in_state(ParticipationState.ENABLED) == (
+        assert plane.participants_in_state(ParticipationState.ACTIVE) == (
             SUBSYSTEM,
         )
     finally:
@@ -565,7 +565,7 @@ def test_the_plane_roster_lists_subsystems_that_are_not_running():
         plane.register_participant(SUBSYSTEM)
         plane.reporting.set_participation(
             subsystem_name="nexus",
-            state=ParticipationState.ENABLED,
+            state=ParticipationState.ACTIVE,
             reporter="req-1",
         )
         assert plane.participants() == (SUBSYSTEM, "nexus")

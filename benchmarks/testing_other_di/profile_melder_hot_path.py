@@ -91,7 +91,7 @@ def main() -> None:
             _support.run_gauntlet_once(ops, cfg, iteration_ix)
 
         profiler = cProfile.Profile()
-        profiler.activate()
+        profiler.enable()
         for iteration_ix in range(PROFILED_ITERATIONS):
             _support.run_gauntlet_once(ops, cfg, iteration_ix)
         profiler.disable()

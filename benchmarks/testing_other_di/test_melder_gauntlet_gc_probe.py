@@ -90,7 +90,7 @@ def test_melder_gauntlet_gc_isolated() -> None:
         print("[gc-probe] cycle GC DISABLED for this run")
         _gauntlet.test_melder_gauntlet()
     finally:
-        gc.activate()
+        gc.enable()
         gc.collect()
 
 

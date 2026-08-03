@@ -777,3 +777,91 @@ inner frame transactions JOIN the top session or stay siblings.
   - src/melder/crystallizer/asset_management/asset_management_system.py:110 (the 3.10 import blocker)
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T21:15:00Z
+  TYPE: DECISION
+  CLAIM: THE SUBSYSTEM VOCABULARY IS NOW ACTIVATE/DEACTIVATE, NOT ENABLE/DISABLE.
+    Owner ruling relayed in session: Nexus has been reworked from
+    `enable`/`disable` to `activate`/`deactivate`. Verified in source - all three
+    roots now expose the same pair: `Crystallizer.activate(configuration=None)`
+    / `deactivate()`, `MutationResearch.activate(configuration=None,
+    hydrate_from_record=True)` / `deactivate()`, `Nexus.activate(
+    configuration=None)` / `deactivate()`. That left the plane as the ONLY place
+    still saying "enable" for an edge every subsystem it reports on calls
+    "activate", which is drift that sends readers searching for the wrong word.
+    RENAMED, mechanically and completely: `TransactionType.SUBSYSTEM_ENABLE` ->
+    `SUBSYSTEM_ACTIVATE` (value `subsystem_activate`), `SUBSYSTEM_DISABLE` ->
+    `SUBSYSTEM_DEACTIVATE` (value `subsystem_deactivate`);
+    `subsystem_enable_transaction_strategy.py` ->
+    `subsystem_activate_transaction_strategy.py` and its class likewise; same for
+    disable. This SUPERSEDES the claim-shape line in the 2026-08-01 strategy
+    entry above, which named `subsystem_enable/disable` - the shapes are
+    unchanged, only the names.
+    ADDED under the same lane: `SUBSYSTEM_CONFIGURE`, an eighth vocabulary member
+    with its own family. Not invented for symmetry - all three roots document
+    the optional argument to `activate(...)` as "a convenience that CONFIGURES
+    FIRST", so configure-then-activate already exists down there and was simply
+    not separately admissible.
+    NOT RENAMED, deliberately: `parallel_enabled` stays a condition key, and the
+    `gc.enable()` / `gc.disable()` calls in
+    `test_aetheric_mediator_failure_paths.py` are stdlib and must never be
+    swept by a rename of this kind.
+  EVIDENCE:
+  - src/melder/nexus/nexus.py:838 (activate), :886 (deactivate)
+  - src/melder/crystallizer/crystallizer.py:592 (activate), :791 (deactivate)
+  - src/melder/mutation_research/mutation_research.py:629 (activate), :773 (deactivate)
+  - src/melder/aether/aetheric_mediator/transaction_type.py (8 members)
+  - src/melder/aether/aetheric_mediator/strategies/ (8 families, missing_types() == ())
+  IMPACT: 10 source and test files renamed through; the plane and the three
+    subsystems now use one word for one edge.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T21:20:00Z
+  TYPE: DECISION
+  CLAIM: PARTICIPATION IS A STATE NOW, AND THERE IS ONLY ONE STORE OF IT.
+    `Mediator` kept `_participants` (name -> timestamp) while the subsystem
+    strategies wrote to `InformationRegistry`. Two stores of one fact, and they
+    disagreed by construction: the roster had no writer in `src` at all, so it
+    could report a subsystem the registry had never heard of, and vice versa.
+    The roster verbs now DELEGATE to the registry; `Mediator._participants` is
+    gone. All six pre-existing roster tests pass unchanged, which is the
+    evidence the delegation is behaviour-preserving rather than a rewrite.
+    NEW VOCABULARY `ParticipationState` in `participation.py`: REGISTERED,
+    CONFIGURED, ACTIVE, INACTIVE. Each is written by exactly ONE edge, and
+    `emits` is True for ACTIVE ALONE - owner constraint 6 as code rather than
+    prose. The bool that was there could not say WHY a subsystem was silent, and
+    "never wired in" versus "switched off on purpose" need different fixes.
+    INACTIVE KEEPS ITS CONDITIONS. This reverses my earlier delete-the-row shape
+    and it is not a preference: every `deactivate()` in the three roots promises
+    to stop "without discarding configuration". Retention is safe ONLY because
+    the state guards it - `is_participating` reads False for INACTIVE - which is
+    exactly why it was NOT safe in the presence-only store.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/participation.py
+  - src/melder/aether/aetheric_mediator/information_registry.py (participant store)
+  - src/melder/aether/aetheric_mediator/mediator.py (roster delegates)
+  - tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_participation_unit.py
+  IMPACT: 251 plane assertions pass under the isolated 3.10 loader, including
+    every pre-existing one. Owner pytest remains the only proof.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T21:25:00Z
+  TYPE: RISK
+  CLAIM: I MIS-DIAGNOSED THE SIX gc FAILURES AND SHOULD NOT HAVE.
+    `test_aetheric_mediator_failure_paths.py` was failing on
+    `gc.deactivate()`. I reported it as a 3.14t-only API missing from the 3.10
+    sandbox and moved on. It was not - it was collateral from another agent's
+    enable/disable -> activate/deactivate rename reaching into a STDLIB call.
+    The tell was there and I read past it: `gc` has never had `deactivate` on
+    any Python, so "3.14t-only" was never a possible explanation.
+    Owner fixed it independently; the six now pass. Recording it because the
+    failure mode generalises - a vocabulary rename that is correct for the
+    project can be wrong inside any identifier it does not own, and an agent
+    that explains such a failure away as "environment" removes the one signal
+    that would have caught it.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_failure_paths.py:563-569
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 4

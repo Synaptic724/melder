@@ -257,7 +257,7 @@ def _run_graph_mix(
                             gc.collect()
             finally:
                 if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.activate()
+                    gc.enable()
         except BaseException as exc:
             stats[ix].errors += 1
             errors.append(exc)

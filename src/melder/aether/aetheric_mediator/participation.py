@@ -4,16 +4,22 @@ The participation vocabulary for the mediator plane.
 Dependency-free beyond the standard library.
 
 Owner constraint 6 gates participation on activation: a subsystem takes part in
-the plane ONLY when enabled and active, and emits its basic conditions at that
-edge. Stated that way the rule is describable but not CHECKABLE, because a store
-that records presence and absence can only answer "known" versus "unknown" - and
-"unknown" collapses three genuinely different situations into one. A subsystem
-that has never announced itself, one that announced but has not been switched
-on, and one that ran and was switched off are three distinct facts, and only the
-first is actually an absence.
+the plane ONLY when active, and emits its basic conditions at that edge. Stated
+that way the rule is describable but not CHECKABLE, because a store that records
+presence and absence can only answer "known" versus "unknown" - and "unknown"
+collapses three genuinely different situations into one. A subsystem that has
+never announced itself, one that announced but has not been switched on, and one
+that ran and was switched off are three distinct facts, and only the first is
+actually an absence.
 
 This module is the vocabulary that makes the rule checkable. Four states, each
 reachable by exactly ONE edge, and exactly ONE of them emits.
+
+THE WORDS ARE THE SUBSYSTEMS' OWN. Crystallizer, MutationResearch and Nexus all
+expose `activate(configuration=None)` and `deactivate()`, so this vocabulary
+says ACTIVE and INACTIVE rather than enabled and disabled. A plane that named
+the same edge with a different word than the three subsystems it reports on
+would send every reader searching for the wrong term.
 """
 
 from enum import StrEnum
@@ -34,7 +40,7 @@ class ParticipationState(StrEnum):
           means adding the EDGE that writes it. A state nothing can ever write
           is a state nothing can ever be in, which is worse than not having it:
           readers branch on it forever and the branch is dead.
-        - EXACTLY ONE MEMBER EMITS. `ENABLED` is the only state for which
+        - EXACTLY ONE MEMBER EMITS. `ACTIVE` is the only state for which
           `emits` is True. That is owner constraint 6 expressed as code instead
           of prose, and it is why this is an enum rather than a bool - the bool
           was already there and it could not say WHY a subsystem was silent.
@@ -43,7 +49,7 @@ class ParticipationState(StrEnum):
           they land in registry rows, `describe()` output, and logs, and must
           survive string-oriented APIs without special casing.
         - THERE IS NO TRANSITIONAL MEMBER, and that is deliberate. There is no
-          `ENABLING`, because the edges that move this value run inside
+          `ACTIVATING`, because the edges that move this value run inside
           `apply_commit_delta`, which runs at commit WHILE the transaction
           still holds `subsystem:<name>` EXCLUSIVE. The state flips atomically
           under that claim, so no reader can observe a half-transition. The
@@ -58,14 +64,23 @@ class ParticipationState(StrEnum):
         - CONFIGURED: a `SUBSYSTEM_CONFIGURE` transaction committing. The
           subsystem's basic conditions are recorded and trustworthy, but it is
           still not running. This is the state that separates "we know how it
-          would run" from "it is running".
-        - ENABLED: a `SUBSYSTEM_ENABLE` transaction committing. Enabled AND
-          active. THE ONLY EMITTING STATE.
-        - DISABLED: a `SUBSYSTEM_DISABLE` transaction committing. It ran, and
+          would run" from "it is running", and it is not an invention of this
+          plane: all three subsystems take `activate(configuration=None)`, where
+          passing one "is a convenience that configures first". Configuring and
+          activating are already two steps down there.
+        - ACTIVE: a `SUBSYSTEM_ACTIVATE` transaction committing. Running. THE
+          ONLY EMITTING STATE.
+        - INACTIVE: a `SUBSYSTEM_DEACTIVATE` transaction committing. It ran, and
           it stopped. Distinct from absence: absence means the plane has never
-          heard of the subsystem, which is a configuration question, while
-          DISABLED means it heard and the answer was no. Diagnosing a subsystem
-          that is silently doing nothing needs those two apart.
+          heard of the subsystem, which is a wiring question, while INACTIVE
+          means it heard and the answer was no. Diagnosing a subsystem that is
+          silently doing nothing needs those two apart.
+
+          INACTIVE KEEPS ITS CONDITIONS, and that mirrors the subsystems rather
+          than merely resembling them: every `deactivate()` in the three roots
+          promises to stop "without discarding configuration" and "preserving
+          the installed configuration". A plane that dropped what it knew at
+          this edge would report less than the subsystem itself retains.
 
     Threading:
         Stateless enum; safe to share across threads.
@@ -82,13 +97,13 @@ class ParticipationState(StrEnum):
 
     AGENT_PURPOSE:
         access: internal. Closed vocabulary of subsystem participation states.
-        Only ENABLED emits; check `emits` rather than comparing members by hand.
+        Only ACTIVE emits; check `emits` rather than comparing members by hand.
     """
 
     REGISTERED = "registered"
     CONFIGURED = "configured"
-    ENABLED = "enabled"
-    DISABLED = "disabled"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
 
     @property
     def emits(self) -> bool:
@@ -100,16 +115,16 @@ class ParticipationState(StrEnum):
             has to remember which members count as live.
 
         Contract:
-            True for `ENABLED` and nothing else. Callers must ask this rather
+            True for `ACTIVE` and nothing else. Callers must ask this rather
             than comparing members themselves: a hand-written
-            `state != DISABLED` reads as correct and silently emits for
+            `state != INACTIVE` reads as correct and silently emits for
             REGISTERED and CONFIGURED subsystems, which is precisely the bug
             this vocabulary exists to prevent.
 
         Returns:
-            bool: True only when this state means enabled and active.
+            bool: True only when the subsystem is running.
         """
-        return self is ParticipationState.ENABLED
+        return self is ParticipationState.ACTIVE
 
 
 class ParticipationConditions:

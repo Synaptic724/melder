@@ -745,8 +745,15 @@ class Nexus(Cleanable):
         Contract:
             - FACTORY ONLY: returns a FRESH, unattached `NexusConfiguration`
               and does NOT install it.
-            - The returned object is EMPTY. Call `with_defaults()` before
-              finalize/activate or it will not freeze.
+            - RETURNS IT WITH DEFAULTS ALREADY LOADED, which is what
+              `create_system_configuration` did and what every caller of that
+              verb depends on. `NexusConfiguration` is a property bag whose
+              `validate()` demands EVERY declared key be present, so a bare
+              instance cannot freeze - handing one back would turn a rename
+              into a behaviour change and break every call site at
+              finalize/activate time.
+            - Override after the call; `with_defaults()` is idempotent, so
+              chaining it again is harmless.
 
         Threading:
             Unsynchronized read; a snapshot only.
@@ -761,7 +768,9 @@ class Nexus(Cleanable):
             NexusConfiguration: New mutable configuration object.
         """
         self.check_cleaned()
-        return NexusConfiguration()
+        configuration = NexusConfiguration()
+        configuration.with_defaults()
+        return configuration
 
     def create_configuration_builder(self) -> NexusConfigurationBuilder:
         """

@@ -242,7 +242,7 @@ try:
             results_by_name[name] = result
 finally:
     if gc_was_enabled:
-        gc.activate()
+        gc.enable()
 
 rows = [
     summarize(name, times_by_name[name], iterations)

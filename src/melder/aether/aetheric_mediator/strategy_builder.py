@@ -131,11 +131,11 @@ class StrategyBuilder(Cleanable):
         from melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy import (
             SubsystemConfigureTransactionStrategy,
         )
-        from melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy import (
-            SubsystemDisableTransactionStrategy,
+        from melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy import (
+            SubsystemDeactivateTransactionStrategy,
         )
-        from melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy import (
-            SubsystemEnableTransactionStrategy,
+        from melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy import (
+            SubsystemActivateTransactionStrategy,
         )
 
         self.register(
@@ -159,12 +159,12 @@ class StrategyBuilder(Cleanable):
             strategy=SubsystemConfigureTransactionStrategy,
         )
         self.register(
-            transaction_type=TransactionType.SUBSYSTEM_ENABLE,
-            strategy=SubsystemEnableTransactionStrategy,
+            transaction_type=TransactionType.SUBSYSTEM_ACTIVATE,
+            strategy=SubsystemActivateTransactionStrategy,
         )
         self.register(
-            transaction_type=TransactionType.SUBSYSTEM_DISABLE,
-            strategy=SubsystemDisableTransactionStrategy,
+            transaction_type=TransactionType.SUBSYSTEM_DEACTIVATE,
+            strategy=SubsystemDeactivateTransactionStrategy,
         )
         self.register(
             transaction_type=TransactionType.AGENT_REPAIR,

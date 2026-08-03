@@ -108,7 +108,7 @@ class ProfileScenario:
         state = self.setup(tier)
         profiler = cProfile.Profile()
         try:
-            profiler.activate()
+            profiler.enable()
             self.action(state)
             profiler.disable()
         finally:
