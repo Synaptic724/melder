@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py",
- "source_sha256": "42785ad21008f2724633820744aeacb223c268faaeaf7af7b5d9e31303ae889f",
+ "source_sha256": "fdacb052071cadeb39c44f3df327efa02e2448a491cdf8f0b9dd8b5d60e8a080",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator": {
@@ -158,7 +158,7 @@
    "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator.TransactionMediator",
    "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager",
    "relation": "borrows",
-   "why": "TransactionMediator borrows the conflict manager to evaluate overlapping claim conflicts during admission.",
+   "why": "TransactionMediator REQUIRES the conflict manager at construction (raises ValueError when None) and holds it in __slots__, but never invokes it. The retired detector is threaded through for signature compatibility only; admission overlap is decided entirely by ChangeControlEmbargoManager.",
    "cardinality": "one_to_one",
    "phase": [
     "runtime"

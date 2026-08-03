@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py",
- "source_sha256": "7690680704f62deb6b45a2b82443cdf0c8e9412d3f4a95375acfa5b23670bee0",
+ "source_sha256": "c46342139bff3b2df12e337b6037efd4a9a9306f87cae0721d40a2821f63c586",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator": {
@@ -107,7 +107,7 @@
    "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator",
    "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager",
    "relation": "borrows",
-   "why": "ChangeControlOrchestrator borrows the conflict manager to detect overlapping in-flight scope.",
+   "why": "ChangeControlOrchestrator accepts the conflict manager for SIGNATURE COMPATIBILITY ONLY - admit_request never references it. The legacy in-flight conflict scan was retired 2026-06-12 when admission collapsed into a single atomic moded acquisition carrying holder evidence.",
    "cardinality": "many_to_one",
    "phase": [
     "runtime"

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py",
- "source_sha256": "df1107848966a546a963a1377692688a35bdb82cbfbbcb8185bf9bc42f5cd383",
+ "source_sha256": "df64c3b040eb03b6e9c2cdbe09e62452a1a3affe3cd9e8e9b24cacffecdc7a0b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy": {

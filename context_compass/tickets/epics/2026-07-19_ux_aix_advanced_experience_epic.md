@@ -2,7 +2,7 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-07-19-ux-aix-advanced
-- Status: pending
+- Status: done_pending_owner_run
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p2
@@ -430,15 +430,212 @@ crystallizer save/load, and synthetic modules. See the tier scope note below.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-08-02T20:00:00Z
+  TYPE: DECISION
+  CLAIM: THE TIER WAS RENUMBERED 02..20 -> 01..18, SEQUENTIAL WITH NO GAPS.
+    EVERY LESSON NUMBER IN THE NOTES ABOVE THIS LINE IS OLD NUMBERING. Read
+    them through this map:
+      02->01 03->02 04->03 05->04 07->05 08->06 09->07 10->08 11->09
+      12->10 13->11 14->12 15->13 16->14 17->15 18->16 19->17 20->18
+    The gaps existed because 01 was DELETED (owner 2026-08-02, cluster stub -
+    intermediate teaches clusters) and 06 was RETIRED (owner 2026-07-26,
+    turn-off-the-cache lesson). Both numbers are now RECLAIMED by real
+    lessons; the retired titles live in a history block in
+    `03_advanced/_concept_map.txt`, not in the numbered inventory.
+    ARC BOUNDARIES IN NEW NUMBERS: A=06-07, B=08-12, C=13-15, D=16, E=17-18.
+  EVIDENCE: owner directive 2026-08-02 ("make sure the numbering is correct").
+    Verified after the change: 18 files sequential 01-18, every
+    `TIER: advanced (NN)` header matches its filename, ZERO dangling
+    cross-references across lessons + probes + concept map, no duplicate
+    inventory entries.
+  IMPACT: TWO CLASSES OF REFERENCE ALMOST SURVIVED THE REMAP AND BOTH WERE
+    CAUGHT ONLY BY CHECKING, NOT BY REASONING:
+      (1) my remap regex was LOWERCASE-ONLY, so ~60 capital "Lesson NN"
+          references in probe docstrings went untouched;
+      (2) ranges like "lessons 19-20" had only the FIRST number moved,
+          leaving "lessons 17-20".
+    Anyone repeating a mechanical sweep over this corpus should assume the
+    same shape of miss and verify by enumeration afterwards.
+  NEXT: historical notes above are left AS WRITTEN - rewriting them would
+    destroy the record of when things were learned. Use the map.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-02T20:45:00Z
+  TYPE: DECISION
+  CLAIM: RESOLVED BY OWNER 2026-08-02 - THE MARKERS ARE WRONG, NOT THE
+    LESSONS. Owner ruling: "anything that shows as a public method is not
+    internal, agent fucked it up." So the `Internal` markers on the
+    Nexus/Rift method surface are a DOCUMENTATION DEFECT introduced by a
+    prior agent, not a statement of intent.
+  IMPACT: ARCS B AND C STAND AS AUTHORED - no lesson changes. Lessons 09-15
+    teach a genuinely public surface; the mislabelling is the bug.
+    THIS IS NOW A SOURCE DEFECT FOR THE OWNER'S PROGRAM, and it is larger
+    than the three docstring drifts already recorded: 55 methods across two
+    files carry a marker that contradicts their own class's public export.
+    An agent reading `Internal` on `Nexus.create_rift` will correctly refuse
+    to use the documented way to create a rift - which is exactly what
+    happened to ME during this audit, and I nearly withdrew eight correct
+    lessons over it.
+    SCOPE OF THE FIX (not performed - source work outside this epic's lane):
+      nexus/nexus.py       40 methods marked `Internal`, 0 marked `Public API`
+      nexus/rift/rift.py   15 methods marked `Internal`, 0 marked `Public API`
+    Reference for what correct looks like: aether/conduit/conduit.py carries
+    66 `Public API` markers against 40 `Internal`.
+  NEXT: hand to whoever owns nexus/. A marker sweep, not a code change.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-08-02T20:30:00Z
+  TYPE: FACT
+  CLAIM: [RESOLVED - see the DECISION above. Retained for the evidence.]
+    THE ENTIRE NEXUS/RIFT METHOD SURFACE IS MARKED INTERNAL OR IS
+    UNMARKED. NOT ONE METHOD ON EITHER CLASS CARRIES A `Public API` MARKER.
+    Measured:
+      nexus/nexus.py           40 `Internal`, 0 `Public API`
+      nexus/rift/rift.py       15 `Internal`, 0 `Public API`
+    versus surfaces known to be user-facing:
+      aether/spellbook/spellbook.py   96 `Internal`, 24 `Public API`
+      aether/conduit/conduit.py       40 `Internal`, 66 `Public API`
+    So the convention EXISTS and is applied consistently elsewhere. Nexus
+    and Rift simply have none of it. `Nexus.create_rift` states `Internal`
+    outright; `Rift.mark_active` / `mark_inactive` / `mark_registered` /
+    `list_assigned_frame_names` / `create_frame_link` are unmarked or
+    Internal; `Nexus.has_rift` is Internal.
+  EVIDENCE: marker census run 2026-08-02 over the four files above.
+  IMPACT: ARCS B AND C - EIGHT LESSONS, 09 THROUGH 15 IN THE NEW NUMBERING -
+    ARE BUILT ENTIRELY ON THAT SURFACE. create_rift, mark_active, has_rift
+    and list_assigned_frame_names appear in nearly every one. This is the
+    SAME CLASS OF ERROR as the withdrawn Scan lesson (owner: "scan is not
+    meant to be user surfaced"), except it is 8 lessons rather than 1.
+    I CANNOT RESOLVE THIS FROM THE CODE. Two readings are equally
+    consistent with what is there:
+      (a) the subsystem is genuinely internal-by-method and arcs B/C teach
+          things users should not call - they need withdrawal or rewriting;
+      (b) the subsystem is intended as public and the marker pass simply
+          has not been done on it - in which case the LESSONS are fine and
+          the MARKERS are the gap.
+    The classes themselves ARE exported from `melder.__all__` (Nexus, Rift,
+    RiftSpace, RiftSpaceType, RiftConfiguration, Workstation, FrameViewer,
+    ViewFrame/Conduit/Spell/MultiFrame), which weakly favours (b) - but
+    SpellExaminer and Scan were also exported and both turned out to be (a).
+    Export is not evidence of intent in this codebase.
+  NEXT: OWNER RULING REQUIRED before arcs B and C can be called done. I have
+    NOT deleted or altered them pending that call - the last time I acted on
+    my own reading of an access question I authored an anti-pattern.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-02T21:00:00Z
+  TYPE: MEASURE
+  CLAIM: TIER CLOSED OUT AT 19 LESSONS. A stale-plan audit found the concept
+    map's PLANNED section still listing every finished arc as unbuilt, plus
+    ONE genuinely unbuilt item that belonged here: the wildcard/broadcast
+    override grammar. Authored as lesson 19 with six probe rows (advanced
+    probes now 70). Public-root coverage 49/63; the remaining 14 are 11
+    expert names and 3 dunders.
+  EVIDENCE: 03_advanced/19_wildcard_and_broadcast_overrides.py; probes
+    test_probe_unique_wildcard_resolves_a_single_socket,
+    _refuses_when_it_matches_twice, _broadcast_hits_every_match,
+    _broadcast_refuses_when_it_matches_nothing,
+    _exact_path_beats_broadcast_on_overlap,
+    _many_keeps_override_blast_radius_inside_the_call.
+  IMPACT: Lesson 01 taught only the PATH form. The other two targeting
+    forms - `*param` (exactly one match REQUIRED) and `**param` (at least
+    one REQUIRED) - are the never-substitute rule applied to TARGETING, and
+    melder's own reasoning is the best line in the lesson: a wildcard that
+    silently matched the wrong count "would apply the caller's intent to the
+    wrong object or to nothing at all, and BOTH FAIL INVISIBLY AT RUNTIME".
+    `SpellOverrider` is AGENT_ACCESS: internal ("users supply the override
+    PAYLOAD, never this object") so the lesson teaches the DICT and never
+    touches the class - the access marker was checked BEFORE authoring this
+    time, which is the process fix from the withdrawn Scan lesson.
+  NEXT: nothing further authorable. The tier is unrun.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T21:00:00Z
+  TYPE: FACT
+  CLAIM: REGRESSION I INTRODUCED AND FIXED - the enum-to-string conversion
+    removed the LAST `md.SystemState` reference in the corpus, dropping a
+    public exported name to ZERO lesson coverage. Restored in lesson 06,
+    where it is genuinely instructive: the property hands back a
+    `SystemState` member rather than the string that was passed, because
+    normalization happens at the door.
+  EVIDENCE: coverage sweep before/after; 03_advanced/06_frame_posture_object.py
+  IMPACT: A mechanical sweep can silently un-teach a public name. Any future
+    conversion of this kind should re-run the coverage sweep as part of the
+    change, not after someone asks.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 6
+
+- DATETIME: 2026-08-02T21:30:00Z
+  TYPE: CONFLICT
+  CLAIM: A LIVE EPIC IN ANOTHER LANE NAMES ONE OF THIS TIER'S LESSONS AS
+    COLLATERAL, AND THAT LESSON ALSO HAD A REAL BUG.
+    `attention_board.md:121` records EPIC-2026-08-02-process-wide-spell-id-
+    uniqueness with the owner ruling "one spell_id means one spell,
+    PROCESS-WIDE - which deliberately retires the per-frame multi-tenancy
+    that 03_advanced/02_frames_as_worlds.py teaches."
+    INVESTIGATING THAT TURNED UP A SEPARATE, OLDER DEFECT IN THE LESSON: it
+    named the SAME frame twice - `aetheric_frame="tenant-a"` on BOTH books -
+    while its prose claimed two worlds. It only ever passed because
+    duplicate spell_ids across two Spellbooks on ONE frame were not caught.
+    S1 of that epic landed `Spellbook._spell_id_integrity_checker`, which
+    refuses exactly that at conjure. The lesson was about to go red, and
+    for a correct reason.
+  EVIDENCE:
+  - src/melder/aether/aether_configuration.py:108 (process_wide_unique_spell_ids
+    default True) and :548 (with_ setter)
+  - src/melder/aether/spellbook/spellbook.py:2587 (the checker), :6407 (call site)
+  - context_compass/attention_board.md:121
+  IMPACT: FIXED - the frames now differ ("tenant-a" / "tenant-b") and the
+    lesson teaches what it always claimed to. BUT NOTE THE SCOPE CORRECTION:
+    the checker AS LANDED IS PER-FRAME, not process-wide - its own contract
+    says it refuses "when any spell_id this Spellbook owns is already
+    registered IN THE AETHERIC FRAME". So per-frame isolation still holds
+    today and the lesson is currently correct. S2 of that epic ("unified
+    set", genuinely process-wide) is READY AND UNASSIGNED; landing it WOULD
+    retire what this lesson teaches. The board's "PROCESS-WIDE" phrasing
+    describes the RULING, not the code that has shipped so far.
+    This tier's own probe (test_probe_frames_isolate_names_and_singletons)
+    already used two DIFFERENT frames and is unaffected.
+  NEXT: whoever picks up S2 must retire or rewrite
+    `03_advanced/02_frames_as_worlds.py` in the same change. A pointer to
+    that obligation is now in the lesson's own docstring so it cannot be
+    missed by someone reading only the file.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+## State Transition Event - 2026-08-02T21:30:00Z
+- from_state: pending
+- to_state: done_pending_owner_run
+- transition_reason: all five arcs authored (19 lessons, 01-19 sequential),
+  70 advanced probe rows, public-root coverage 49/63, static audit clean on
+  method names / exported names / keyword arguments. Nothing further is
+  authorable without execution. Moving to `done_pending_owner_run` rather
+  than `done` because the tier has NEVER been run green in its current
+  shape: every advanced file was rewritten twice after the last real signal
+  (enum-to-string conversion, then the renumber). Last measured result was
+  61/64 advanced and 26/27 intermediate.
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
 owner's 3.14t runs (device VM cannot import the runtime).
 
-STATE AT 2026-08-02 (second update this session): ARCS A-E ALL AUTHORED.
-Lessons 08-20 exist, probes are at 62 rows, public-root coverage is 48/65.
-First owner run produced 16 failures across four root causes; all addressed
-and awaiting a re-run. Do NOT treat the tier as green until that re-run lands.
+STATE AT 2026-08-02 (third update this session): ARCS A-E ALL AUTHORED AND
+RENUMBERED. 18 lessons, SEQUENTIAL 01-18, no gaps. Advanced probes at 64
+rows, intermediate at 27. Public-root coverage 48/63 (`__all__` shrank from
+65 to 63 - SpellExaminer and Scan were both curated off this session).
+
+NUMBERING NOTE: every lesson number in the notes ABOVE the renumber DECISION
+is OLD numbering. The mapping is in that note. Arc boundaries in the NEW
+numbers are A=06-07, B=08-12, C=13-15, D=16, E=17-18.
+
+DO NOT TREAT THE TIER AS GREEN. The first owner run gave 16 failures across
+four root causes (three mine, one the frame_name defect); those were fixed,
+then EVERY advanced file was rewritten twice more - once converting enums to
+strings, once renumbering. Nothing has been executed since. The last good
+signal was 61/64 advanced and 26/27 intermediate.
 
 THE ONE THING TO ACT ON: the frame_name defect. Five FrameViewer reads declare
 `frame_name: Optional[str] = None` and reject None unconditionally. It caused

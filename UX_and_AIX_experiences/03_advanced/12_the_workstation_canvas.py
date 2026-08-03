@@ -52,13 +52,14 @@ SURFACE EXERCISED: md.Workstation via room.workstation - bind_object,
                    set_target/get_target/clear_target, weak_ref semantics
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
-FINDING (doc drift, 2026-08-02): describe_bindings() documents "a FOUR-KEY
-summary - `objects`, `attributes`, `methods` and `target_name` - always
-with all four keys present, so callers can index". IT RETURNS FIVE. The
-implementation also emits `target_store`. A caller who trusts the stated
-count breaks. Second drift of this shape in arc B (see RiftSpaceType's
-documented-but-absent `dynamic` member, lesson 10). Pinned in
-test_advanced_probes.
+DOC DRIFT FOUND AND FIXED (2026-08-02): describe_bindings() used to
+document "a FOUR-KEY summary - `objects`, `attributes`, `methods` and
+`target_name` - always with all four keys present, so callers can index
+them" while RETURNING FIVE; the implementation also emits `target_store`.
+That one had teeth, because the docstring explicitly invited callers to
+rely on the count. Now documented as five, with `target_store` explained:
+it names WHICH store the active target came from, so a caller can
+round-trip it back through get(name, store=...).
 """
 import melder as md
 
@@ -107,9 +108,12 @@ def main() -> None:
     assert "subject" in summary["objects"]
     assert "subject" in summary["methods"]
 
-    # The docstring promises four keys. Count them honestly.
-    print("documented key count: 4 | actual:", len(summary))
-    assert len(summary) == 5, "docstring says four; implementation emits five"
+    # Five keys, and the docstring now says five. `target_store` names the
+    # store the active target came from - enough to round-trip it back
+    # through get(name, store=...).
+    assert set(summary) == {"objects", "attributes", "methods",
+                            "target_name", "target_store"}
+    print("keys:", len(summary), "- documented and returned agree")
 
     # ONE TARGET AT A TIME.
     workstation.set_target("subject", store="methods")

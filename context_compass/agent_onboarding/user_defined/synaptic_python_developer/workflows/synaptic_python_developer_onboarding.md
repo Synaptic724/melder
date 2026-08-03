@@ -85,9 +85,13 @@ Provide one explicit synaptic-role onboarding macro that:
   - `AGENT_NAME: <name>`
   - `CERTIFY: APPROVED`
   before any non-onboarding action.
-- Treat `src_graph.md` as the primary graph consumption surface.
-- Do not substitute `src_graph_index.md` unless the user explicitly asks for the
-  raw storage graph.
+- Read `src_graph.md` by SLICE through `src_graph_index.md`, never whole. That is a
+  rule about HOW, not WHETHER - slice it freely and often.
+  - This line previously said to treat the raw graph as the primary surface and not
+    to substitute the index. `context_protocol.md` "Precedence" forbids exactly that:
+    a workflow "may not instruct you to read a large document whole, to skip an
+    index, or to treat the raw document as the primary surface." The package rule
+    wins; this workflow was stale.
 
 ## Phase Sequence
 1. Intake

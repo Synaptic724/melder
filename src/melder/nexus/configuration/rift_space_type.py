@@ -19,9 +19,12 @@ class RiftSpaceType(Enum):
             The Rift exposes the richer room surface intended for mutable local
             state and later codegen-oriented differentiation. It currently
             shares the same broad manual-runtime posture as capability.
-        dynamic:
-            Legacy alias for `codegen`. Retained temporarily so older AR
-            configuration inputs can still normalize during the room rename.
+
+        THERE IS NO `dynamic` MEMBER. This docstring previously documented one
+        as a legacy alias for `codegen`; no such member exists and there is no
+        `_missing_` handler, so `RiftSpaceType("dynamic")` raises ValueError.
+        Either the alias was removed and the prose was not, or it never landed.
+        Corrected 2026-08-02.
 
     Threading:
         Immutable enum members; safe to read from any thread.
@@ -41,18 +44,17 @@ class RiftSpaceType(Enum):
         switching. That is what makes the posture a real boundary rather than a
         mode flag - an agent cannot escalate from static to capability by
         switching rooms, it must obtain a differently configured Rift.
-        `dynamic` is a documented LEGACY ALIAS for `codegen`, retained so older
-        AR configuration inputs still normalize through the room rename. Keeping
-        the alias rather than breaking those inputs is the compatibility posture
-        the repo prefers, and its docstring says plainly that it is temporary -
-        which is what makes eventual removal a decision rather than a surprise.
+        The three members above are the whole set. An input naming anything
+        else - including the historical `dynamic` - fails at normalization
+        rather than falling back, which is the correct behaviour for a value
+        that fixes a security-shaped posture for the life of the Rift.
 
     AGENT_ACCESS: public
 
     AGENT_PURPOSE:
         access: public. Room posture, chosen ONCE at Rift creation: static (live-only, no
         mutation), capability (broad manual, no codegen), codegen (slim manual surface plus the
-        codegen engine). `dynamic` is a legacy alias for codegen.
+        codegen engine). Those three are the whole set - there is no `dynamic` member.
     """
 
     static = "static"

@@ -1,96 +1,96 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/aetheric_mediator/claim_mode.py",
-  "source_sha256": "55dcf960df0f529c93f2ac1c868cceb41bed5f71192cd17c8c2ec8f50942952b",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.aetheric_mediator.claim_mode": {
-      "id": "melder.aether.aetheric_mediator.claim_mode",
-      "label": "claim_mode",
-      "kind": "module",
-      "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
-      "lineno": 1,
-      "role": "The claim vocabulary - EXCLUSIVE / SHARED / INTENT - and the static compatibility matrix between a held claim and a requested one.",
-      "include": true,
-      "semantics_authored_against": "55dcf960df0f529c93f2ac1c868cceb41bed5f71192cd17c8c2ec8f50942952b"
-    },
-    "melder.aether.aetheric_mediator.claim_mode.ClaimMode": {
-      "id": "melder.aether.aetheric_mediator.claim_mode.ClaimMode",
-      "label": "ClaimMode",
-      "kind": "enum",
-      "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
-      "lineno": 17,
-      "bases": [],
-      "markers": [
-        "StrEnum"
-      ],
-      "public_methods": [],
-      "shape": {
-        "method_count": 0,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "e1ccfe5d42fc232a89e5bd735ffd2a4a501bd26a404e791171e1ddd60a7b57ce",
-      "role": "The access posture one holder requests over one scope key - and the vocabulary the whole plane turns on.",
-      "responsibilities": [
-        "EXCLUSIVE ('x'): no other claim of ANY mode may coexist",
-        "SHARED ('s'): coexists with other SHARED claims only",
-        "INTENT ('ix'): the HIERARCHICAL PARENT-SCOPE MARKER - hold ix on the parent while holding x on the child, so disjoint children proceed in parallel while a whole-unit writer is excluded"
-      ],
-      "phases": [
-        "init",
-        "runtime"
-      ],
-      "include": true,
-      "semantics_authored_against": "e1ccfe5d42fc232a89e5bd735ffd2a4a501bd26a404e791171e1ddd60a7b57ce"
-    },
-    "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility": {
-      "id": "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility",
-      "label": "ClaimCompatibility",
-      "kind": "class",
-      "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
-      "lineno": 72,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "is_exclusive",
-        "permits"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": false,
-        "trivial": false
-      },
-      "span_sha256": "07860b916d7507ce43ab9efdaaaf75be7f4599245a02112ec8ab9ffc28e8227e",
-      "role": "The static compatibility matrix: may `requested` be granted on a scope already held under `held`?",
-      "responsibilities": [
-        "exclude EXCLUSIVE against everything, in both directions",
-        "permit SHARED with SHARED and INTENT with INTENT; DENY shared-vs-intent, matching the DevOps embargo manager exactly",
-        "never be instantiated - one ClassVar frozenset of permitted pairs plus two static predicates, so no Cleanable contract"
-      ],
-      "phases": [
-        "init",
-        "runtime"
-      ],
-      "include": true,
-      "semantics_authored_against": "07860b916d7507ce43ab9efdaaaf75be7f4599245a02112ec8ab9ffc28e8227e"
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/claim_mode.py",
+ "source_sha256": "55dcf960df0f529c93f2ac1c868cceb41bed5f71192cd17c8c2ec8f50942952b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.claim_mode": {
+   "id": "melder.aether.aetheric_mediator.claim_mode",
+   "label": "claim_mode",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The claim vocabulary - EXCLUSIVE / SHARED / INTENT - and the static compatibility matrix between a held claim and a requested one.",
+   "semantics_authored_against": "55dcf960df0f529c93f2ac1c868cceb41bed5f71192cd17c8c2ec8f50942952b"
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility",
-      "to_label": "TypeError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "StrEnum": "enum.StrEnum",
-    "ClassVar": "typing.ClassVar",
-    "FrozenSet": "typing.FrozenSet",
-    "Tuple": "typing.Tuple"
+  "melder.aether.aetheric_mediator.claim_mode.ClaimMode": {
+   "id": "melder.aether.aetheric_mediator.claim_mode.ClaimMode",
+   "label": "ClaimMode",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
+   "lineno": 17,
+   "bases": [],
+   "markers": [
+    "StrEnum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "e1ccfe5d42fc232a89e5bd735ffd2a4a501bd26a404e791171e1ddd60a7b57ce",
+   "include": true,
+   "role": "The access posture one holder requests over one scope key - and the vocabulary the whole plane turns on.",
+   "responsibilities": [
+    "EXCLUSIVE ('x'): no other claim of ANY mode may coexist",
+    "SHARED ('s'): coexists with other SHARED claims only",
+    "INTENT ('ix'): the HIERARCHICAL PARENT-SCOPE MARKER - hold ix on the parent while holding x on the child, so disjoint children proceed in parallel while a whole-unit writer is excluded"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "e1ccfe5d42fc232a89e5bd735ffd2a4a501bd26a404e791171e1ddd60a7b57ce"
   },
-  "collapse_candidate": null
+  "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility": {
+   "id": "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility",
+   "label": "ClaimCompatibility",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
+   "lineno": 72,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "is_exclusive",
+    "permits"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "07860b916d7507ce43ab9efdaaaf75be7f4599245a02112ec8ab9ffc28e8227e",
+   "include": true,
+   "role": "The static compatibility matrix: may `requested` be granted on a scope already held under `held`?",
+   "responsibilities": [
+    "exclude EXCLUSIVE against everything, in both directions",
+    "permit SHARED with SHARED and INTENT with INTENT; DENY shared-vs-intent, matching the DevOps embargo manager exactly",
+    "never be instantiated - one ClassVar frozenset of permitted pairs plus two static predicates, so no Cleanable contract"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "07860b916d7507ce43ab9efdaaaf75be7f4599245a02112ec8ab9ffc28e8227e"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "StrEnum": "enum.StrEnum",
+  "ClassVar": "typing.ClassVar",
+  "FrozenSet": "typing.FrozenSet",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": null
 }

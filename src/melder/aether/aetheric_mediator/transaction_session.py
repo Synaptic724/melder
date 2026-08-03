@@ -243,6 +243,7 @@ class TransactionSession(Cleanable):
         "_rollback_actions",
         "_unwind_failures",
         "_leave_broken_residue",
+        "_abort_only_reason",
     ]
 
     def __init__(
@@ -291,6 +292,12 @@ class TransactionSession(Cleanable):
         # call which method, which is what "left for an agent to repair" needs
         # in order to mean anything.
         self._leave_broken_residue: Tuple[str, ...] = ()
+        # STICKY POISON, mirroring the DevOps plane's abort-only flag. A caller
+        # that detects a failure it wants to survive to finalisation - rather
+        # than raise through every intervening frame - marks the session here.
+        # `mark_committing` then refuses, so the root can only end by failing.
+        # `None` means not poisoned; any string is the recorded reason.
+        self._abort_only_reason: Optional[str] = None
 
     def cleanup(self) -> None:
         """
@@ -354,6 +361,7 @@ class TransactionSession(Cleanable):
         del self._rollback_actions
         del self._unwind_failures
         del self._leave_broken_residue
+        del self._abort_only_reason
         del self._lock
 
     @property
@@ -438,6 +446,96 @@ class TransactionSession(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._leave_broken_residue
+
+    @property
+    def abort_only_reason(self) -> Optional[str]:
+        """
+        Return the recorded reason this session may no longer commit.
+
+        Contract:
+            `None` when the session has not been poisoned. Any string is the
+            reason supplied to `mark_abort_only`, and its presence is terminal
+            for the commit path - see that method for why the flag is sticky.
+
+        Returns:
+            Optional[str]: The abort-only reason, or None.
+
+        Raises:
+            RuntimeError: If the session has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._abort_only_reason
+
+    @property
+    def is_abort_only(self) -> bool:
+        """
+        Report whether this session has been poisoned against committing.
+
+        Returns:
+            bool: True when the session may only end by failing.
+
+        Raises:
+            RuntimeError: If the session has been cleaned.
+        """
+        return self.abort_only_reason is not None
+
+    def mark_abort_only(self, reason: str) -> None:
+        """
+        Poison this session so its root can only roll back, never commit.
+
+        Purpose:
+            Let a caller that detects a failure mid-transaction record it and
+            keep going, instead of raising through every intervening frame. The
+            work still unwinds at the root; it just unwinds deliberately rather
+            than by exception propagation.
+
+        Contract:
+            - STICKY AND FIRST-WRITER-WINS. Once marked, later calls do NOT
+              overwrite the reason. The first detected failure is the one worth
+              reporting; a later, vaguer reason overwriting it would lose the
+              diagnosis. Repeat calls are therefore harmless, which matters
+              because several participants may notice the same failure.
+            - Legal in any non-terminal status. Marking a session that has
+              already committed raises, because there is nothing left to
+              prevent and silently accepting it would imply a guarantee that
+              was not delivered.
+            - Does NOT run inverses and does NOT change status. The session
+              stays OPEN and joinable so inner scopes can still leave cleanly;
+              only the eventual commit is barred.
+
+        Args:
+            reason:
+                Human-readable justification, recorded on the session and
+                surfaced in the refusal raised by `mark_committing`.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the session has been cleaned, or has already reached a
+                terminal status.
+            ValueError:
+                If `reason` is not a non-empty string.
+        """
+        self.check_cleaned()
+        if not isinstance(reason, str) or not reason:
+            raise ValueError("reason must be a non-empty string.")
+        with self._lock:
+            if self._status in (
+                    SessionStatus.COMMITTED,
+                    SessionStatus.ABORTED,
+                    SessionStatus.BROKEN,
+            ):
+                raise RuntimeError(
+                    "cannot mark session for request {0!r} abort-only in "
+                    "terminal status {1}.".format(
+                        self._request.request_id, self._status.value
+                    )
+                )
+            if self._abort_only_reason is None:
+                self._abort_only_reason = reason
 
     def join(self) -> int:
         """
@@ -571,6 +669,17 @@ class TransactionSession(Cleanable):
                 raise RuntimeError(
                     "cannot begin committing a session in status {0}.".format(
                         self._status.value
+                    )
+                )
+            if self._abort_only_reason is not None:
+                # The poison is checked HERE rather than at the mediator, so it
+                # holds no matter who calls commit. A session marked abort-only
+                # by any participant cannot be committed by a later one that
+                # never learned about the failure.
+                raise RuntimeError(
+                    "cannot commit session for request {0!r}: it was marked "
+                    "abort-only - {1}".format(
+                        self._request.request_id, self._abort_only_reason
                     )
                 )
             if self._depth > 0:

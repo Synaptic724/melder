@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/load_admission.py",
- "source_sha256": "d2fe9bae071dedd0f8780e7a641ec0128f9f74c9e323a6192ae00a3345a0e1b7",
+ "source_sha256": "f6c9013e860bdf39c057f3b9ac42e64815744ee75f4d5e5d2e6831332f845b38",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.load_admission": {

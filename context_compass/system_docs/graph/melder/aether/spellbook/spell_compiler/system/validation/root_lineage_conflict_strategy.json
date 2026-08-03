@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py",
- "source_sha256": "75fd929990a1f774d24c8e940b1c7ae497da99bdbb97e5897b1bcc80280601b3",
+ "source_sha256": "445a532c25966a03ecc04ec58f5df98e7bc6db9608243f713fb4cf14c2952b0d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.root_lineage_conflict_strategy": {

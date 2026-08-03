@@ -418,12 +418,14 @@ class Workstation(Cleanable):
         Return a detached summary of saved binding names by logical store.
 
         Contract:
-            - Returns a FOUR-KEY summary - `objects`, `attributes`, `methods` and
-              `target_name` - always with all four keys present, so callers can index
-              them without a `get`.
-            - `target_name` is normalized to a LIST for shape consistency with the
-              other three: empty when no target is bound, single-element when one is.
-              It is not a list of many targets.
+            - Returns a FIVE-KEY summary - `objects`, `attributes`, `methods`,
+              `target_name` and `target_store` - always with all five keys
+              present, so callers can index them without a `get`.
+            - `target_name` and `target_store` are normalized to LISTS for shape
+              consistency with the other three: empty when no target is bound,
+              single-element when one is. Neither is a list of many targets.
+              `target_store` names WHICH store the active target came from, so a
+              caller can round-trip it back through `get(name, store=...)`.
             - Names only, not values: this describes what is bound, not what those
               bindings currently hold.
 

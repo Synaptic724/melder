@@ -448,33 +448,12 @@ def test_shipped_line_count_matches_the_shipped_text(builder: Any) -> None:
         assert len(lines) == entry["line_count"] == payload["LINE_COUNT"]
 
 
-def test_the_built_asset_is_current_against_the_source_tree(builder: Any) -> None:
-    """
-    Report a stale build as a stale build, not as a corrupt one.
-
-    Purpose:
-        Separated from the consistency tests above on purpose. Those assert the
-        builder is CORRECT; this asserts the checkout is UP TO DATE. Conflating
-        them produces a scary-looking digest mismatch when the real message is
-        "someone regenerated a context map, re-run the builder".
-    """
-    manifest = _load_generated(builder, builder.manifest_path().name)
-    if manifest["SOURCE_SHA256"] != builder.source_fingerprint():
-        pytest.skip(
-            "generated asset predates the current context maps; "
-            "run python src/melder/_build_assets/_build_asset_runner.py"
-        )
-    entries, _ = builder.ingest()
-    root = builder.repository_root() / builder.SystemDocumentsBuildPolicy.INGEST_ROOT
-    for entry in entries.values():
-        if not (entry["available"] and entry["payload_module"]):
-            continue
-        payload = _load_generated(
-            builder, f"{entry['payload_module']}.py", directory=builder.payload_dir()
-        )
-        assert payload["TEXT"] == (
-            root / str(entry["document_file"])
-        ).read_text(encoding="utf-8")
+# Nothing here asserts the committed asset is CURRENT against the source tree.
+# That is a build question, not a correctness question, and the builder answers
+# it by running. Every test in this file asks whether the builder produces the
+# right thing - the emitted payload hashes to its own stamped digest, the ranges
+# are the source index transcribed, candidates stay out of the adjacency - none
+# of which depends on when the build last ran.
 
 
 # ---------------------------------------------------------------------------

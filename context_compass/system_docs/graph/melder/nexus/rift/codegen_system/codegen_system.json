@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/codegen_system.py",
- "source_sha256": "0177a50f5ebafd5db58f6671edf68936d16ed8d61f00c96f4d3b3511dbf919a6",
+ "source_sha256": "43666d37727d50dcb6c67f6fb925663fdedbfe76ab5989e1fb552b82c42d7832",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.codegen_system": {
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5ec511eb8a36ff8ee5accaf8ee21141f067ca7db1551d56166d3d11a1e1b100a",
+   "span_sha256": "bf6570d4aca43595dc9d54afcd3d1745627daeb539813b0eec859cb921eec363",
    "role": "Room-owned internal codegen engine.",
    "responsibilities": [
     "builds per-call transaction contexts",

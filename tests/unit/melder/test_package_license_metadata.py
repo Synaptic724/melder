@@ -5,7 +5,7 @@ def test_license_module_exposes_expected_license_string() -> None:
     """Pin the direct string exported by the license metadata module."""
     from melder.__license__ import __license__
 
-    assert __license__ == "Apache 2.0"
+    assert __license__ == "AGPL-3.0-or-later"
 
 
 def test_package_license_reexport_matches_module_constant() -> None:

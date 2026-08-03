@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/class_surface_ast_describer.py",
- "source_sha256": "5957ab2079e0f29c6aa5a67137706f04fdd88bc126d0388111bf2152f6e99106",
+ "source_sha256": "b6a97dbc3019e91c15ee923634a6830158875f38edad2ebdcbef3f8e55e69cbf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.class_surface_ast_describer": {
@@ -37,7 +37,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "2724019094c6189d0fbd10bfd0d5135094225fec007e0fae5687630489c2c793",
+   "span_sha256": "2b31ac1853ab925e30c91d0edc3c05e98dd2acdc6f8093e825f83587f5ad85ff",
    "include": true,
    "role": "Typed payload for one parent class's inherited purpose in the MRO.",
    "responsibilities": [
@@ -122,7 +122,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "a640cb31cbbcf30b2dcbdb8b9d7ad5fdc66994bf458255b3ca31b3bf646e91da",
+   "span_sha256": "f56fa850a15a413c231ab5cdeb94a82bb67b7ee7fdad0baa72541456ce2a7d8e",
    "role": "Helper for extracting structural class-surface descriptions via AST.",
    "responsibilities": [
     "describes class surfaces structurally for tooling/AI use"

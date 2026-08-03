@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether.py",
- "source_sha256": "ccbeb9e6a042e1bb02ceddbdffd083574bd3eb0a98fb34289ce13ee02f47002c",
+ "source_sha256": "b4926f02e99052ad632d3063da23ffca68dc69724cee4c543dd47c08d96ea5b7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether": {

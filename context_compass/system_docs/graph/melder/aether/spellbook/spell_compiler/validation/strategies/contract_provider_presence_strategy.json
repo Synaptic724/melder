@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
- "source_sha256": "7b721f937e2293344bd80043a32b43e951f01d93fd8650417bc59b357cb32aa1",
+ "source_sha256": "fb498ec986d601ede370a66c1f9e3f23d00a5efe2d7eb1af6e732d1a048a43fa",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy": {

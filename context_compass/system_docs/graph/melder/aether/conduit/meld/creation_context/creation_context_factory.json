@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
- "source_sha256": "7ad22d054b69bcda9442223c1c50578239c91b90111f62ce4d8cc0eaacd09535",
+ "source_sha256": "8dd187e85c341ce4a63809120a84749f7aee3aa40934d5fd723c3b6e05d8ec07",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.creation_context.creation_context_factory": {
@@ -42,7 +42,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ecbabfc823e747d35e7809615859dbb4370ba7701d6263ac7c2d10042a3f67c8",
+   "span_sha256": "ffb52227b5381f193849707014d577b04578f101d3d3378780ef60a45944ed6d",
    "role": "Factory for spell-owned CreationContext instances.",
    "responsibilities": [
     "builds or reuses spell-owned CreationContext objects",

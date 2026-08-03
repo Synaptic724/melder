@@ -1060,8 +1060,14 @@ class SpellbookConfiguration(Cleanable):
 
         Contract:
             - MUTATES THIS OBJECT and returns `self`; not a copying builder.
-            - Applies the standard local rich-config defaults in place, overwriting
-              anything set earlier, so call it FIRST and override afterwards.
+            - SEEDS ONLY WHAT IS MISSING. It delegates to
+              `load_default_dictionary()`, which writes a default ONLY when the
+              key is absent (`if key not in self._properties`). Values you set
+              earlier are PRESERVED, not replaced.
+            - Therefore it is NOT a reset. Calling it after configuring will not
+              restore defaults - it will do nothing to any key you already set.
+              Call it first if you want defaults underneath your overrides, or
+              at any point if you only want the gaps filled.
             - Does NOT clear previously registered hooks - it seeds value defaults,
               not hook registrations.
             - Refused once frozen.

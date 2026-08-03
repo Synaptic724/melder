@@ -210,7 +210,7 @@ def test_probe_frame_posture_has_no_public_install_door():
     assert "ai_native_enabled" not in door
     assert "rift_enabled" not in door
     print("init-surface gap pinned: exported type, no install door;",
-          "configure_aether_frame reaches", len(posture_knobs), "of 15 knobs")
+          "configure_aether_frame reaches", len(posture_knobs), "of 14 knobs")
 
 
 # ---------------------------------------------------------------------------
@@ -471,10 +471,19 @@ def test_probe_rift_space_type_docstring_documents_a_member_that_is_gone():
     assert "dynamic" not in members
     with pytest.raises(ValueError):
         md.RiftSpaceType("dynamic")
-    assert "dynamic" in (md.RiftSpaceType.__doc__ or ""), (
-        "docstring no longer mentions the alias - delete this probe"
+
+    # DRIFT FIXED 2026-08-02. The docstring used to document `dynamic` as a
+    # fourth member ("Legacy alias for codegen") that has never existed. It
+    # now says so explicitly instead. This row flipped from pinning the
+    # drift to pinning the correction - if someone re-adds the phantom
+    # member entry, it goes red again.
+    doc = md.RiftSpaceType.__doc__ or ""
+    assert "no `dynamic` member" in doc or "NO `dynamic` MEMBER" in doc, (
+        "the docstring stopped saying the alias does not exist - if a real "
+        "`dynamic` member was ADDED, update this row; if the correction was "
+        "reverted, the drift is back"
     )
-    print("doc drift pinned: 'dynamic' documented, not defined")
+    print("doc corrected: three members, and the docstring says so")
 
 
 def test_probe_room_kind_changes_exactly_two_fixtures():
@@ -673,11 +682,17 @@ def test_probe_describe_bindings_returns_five_keys_not_the_documented_four():
         "objects", "attributes", "methods", "target_name", "target_store",
     }
     assert len(summary) == 5
+
+    # DRIFT FIXED 2026-08-02. The docstring used to promise "a FOUR-KEY
+    # summary... always with all four keys present, so callers can index
+    # them" while returning five - and it explicitly invited callers to
+    # rely on the count. It now documents all five, including what
+    # `target_store` is for. This row flipped from pinning the drift to
+    # pinning the correction: doc and return value must agree.
     doc = md.Workstation.describe_bindings.__doc__ or ""
-    assert "FOUR-KEY" in doc or "four keys" in doc, (
-        "docstring no longer claims four - delete this probe"
-    )
-    print("doc drift pinned: documented 4 keys, returns 5")
+    assert "FIVE-KEY" in doc, "the docstring stopped documenting five keys"
+    assert "target_store" in doc, "target_store is returned but undocumented"
+    print("doc corrected: five keys documented, five returned")
 
 
 def test_probe_workstation_is_not_a_resolver():
@@ -711,35 +726,48 @@ def test_probe_view_accessors_split_into_host_and_frame_scoped():
     assert isinstance(viewer, md.FrameViewer)
     assert isinstance(viewer.get_view_multiframe(), md.ViewMultiFrame)
 
+    # Since the 2026-08-02 signature fix, omitting the name fails at the
+    # CALL (TypeError) rather than inside the body (ValueError).
     for accessor in ("get_view_frame", "get_view_conduit", "get_view_spell"):
-        with pytest.raises(ValueError, match="frame_name is required"):
+        with pytest.raises(TypeError):
             getattr(viewer, accessor)()
     print("scope split pinned: 1 host-scoped, 3 frame-scoped")
 
 
-def test_probe_frame_scoped_accessors_default_to_an_invalid_value():
-    """DEFECT (owner's 3.14t run, 2026-08-02).
+def test_probe_frame_scoped_accessors_declare_frame_name_required():
+    """DEFECT FIXED 2026-08-02 (owner: "frame_name cannot be none").
 
-    get_view_frame / get_view_conduit / get_view_spell and the
-    describe_*_surface reads are typed
+    These were typed `frame_name: Optional[str] = None` and then rejected
+    None unconditionally - the documented default was never valid, so a
+    reader who trusted the signature got an error for using it. 33
+    FrameViewer methods now declare `frame_name: str`.
 
-        frame_name: Optional[str] = None
+    This row flipped from pinning the defect to pinning the fix: the
+    parameter must have NO DEFAULT, so omission fails at the call.
 
-    and then reject None UNCONDITIONALLY. THE DEFAULT VALUE IS NEVER
-    VALID. A reader who trusts the signature calls get_view_frame() and
-    gets a ValueError for using the documented default.
-
-    Either the parameter should be `frame_name: str` with no default, or
-    None should route somewhere. This row goes GREEN while the defect
-    stands and RED when it is fixed either way."""
+    IT ALSO GUARDS THE DISTINCTION THAT SURVIVED. On ViewFrame the same
+    parameter stays Optional, because there it is an ASSERTION against a
+    frame the view is ALREADY bound to, not a selector. Optional is
+    correct on one class and a lie on the other; if someone "tidies"
+    ViewFrame to match, this row says why not to."""
     import inspect
     viewer = _viewer(_enabled_nexus(), "probe-defect")
-    for accessor in ("get_view_frame", "get_view_conduit", "get_view_spell"):
-        signature = inspect.signature(getattr(md.FrameViewer, accessor))
-        assert signature.parameters["frame_name"].default is None, accessor
-        with pytest.raises(ValueError, match="frame_name is required"):
+
+    for accessor in ("get_view_frame", "get_view_conduit", "get_view_spell",
+                     "describe_visible_surface", "describe_missing_surface"):
+        param = inspect.signature(
+            getattr(md.FrameViewer, accessor)).parameters["frame_name"]
+        assert param.default is inspect.Parameter.empty, (
+            f"FrameViewer.{accessor} re-acquired a default for frame_name"
+        )
+        with pytest.raises(TypeError):
             getattr(viewer, accessor)()
-    print("defect pinned: Optional[str] = None where None always raises")
+
+    # ViewFrame keeps the optional ASSERTION form - deliberately.
+    assert inspect.signature(
+        md.ViewFrame.describe_missing_surface
+    ).parameters["frame_name"].default is None
+    print("signature fix pinned: selector required, assertion still optional")
 
 
 def test_probe_frame_viewer_holds_no_snapshot():
@@ -910,8 +938,12 @@ def test_probe_blind_spot_report_refuses_when_no_frame_is_bound():
     assert rift.list_assigned_frame_names() == ()
     viewer = rift.space.frame_viewer
     for verb in ("describe_visible_surface", "describe_missing_surface"):
-        with pytest.raises(ValueError, match="frame_name is required"):
+        # no name at all -> refused by the signature (2026-08-02 fix)
+        with pytest.raises(TypeError):
             getattr(viewer, verb)()
+        # a name this rift does not hold -> refused by the resolver
+        with pytest.raises(Exception):
+            getattr(viewer, verb)(frame_name="never-assigned")
     print("refusal pinned: no frame bound, no blind-spot report")
 
 
@@ -1244,6 +1276,132 @@ def test_probe_spell_examiner_was_curated_off_the_public_root():
     assert "SpellExaminer" not in melder.__all__
     assert not hasattr(melder, "SpellExaminer")
     print("curation pinned: SpellExaminer is off the public root")
+
+
+# ---------------------------------------------------------------------------
+# Lesson 19 - wildcard and broadcast override targeting
+# ---------------------------------------------------------------------------
+
+class _Creds:
+    def __init__(self) -> None:
+        self.source = "vault"
+
+
+class _Transport:
+    def __init__(self, credentials: _Creds) -> None:
+        self.credentials = credentials
+
+
+class _Archive:
+    def __init__(self, credentials: _Creds) -> None:
+        self.credentials = credentials
+
+
+class _OneSocket:
+    def __init__(self, transport: _Transport) -> None:
+        self.transport = transport
+
+
+class _TwoSockets:
+    def __init__(self, transport: _Transport, archive: _Archive) -> None:
+        self.transport = transport
+        self.archive = archive
+
+
+def _override_conduit(frame: str):
+    book = Spellbook(aetheric_frame=frame)
+    for spell in (_Creds, _Transport, _Archive, _OneSocket, _TwoSockets):
+        book.bind(spell=spell, existence="many")
+    return book.conjure(name=frame + "-root")
+
+
+def test_probe_unique_wildcard_resolves_a_single_socket():
+    """Lesson 19 claim: `*param` means "exactly one of these exists, find
+    it" - the caller does not have to know the path."""
+    conduit = _override_conduit("probe-ovr-unique")
+    fixture = _Creds()
+    fixture.source = "test-fixture"
+    built = conduit.meld(spell=_OneSocket,
+                         spell_override={"*credentials": fixture})
+    assert built.transport.credentials is fixture
+    print("*param pinned: single socket resolved without a path")
+
+
+def test_probe_unique_wildcard_refuses_when_it_matches_twice():
+    """Lesson 19 HEADLINE. `*param` requires EXACTLY ONE match and the
+    count is ENFORCED, not advisory.
+
+    melder's own reasoning: a *param that silently matched three sockets
+    "would apply the caller's intent to the wrong object... and BOTH FAIL
+    INVISIBLY AT RUNTIME rather than at resolution."
+
+    This is the never-substitute rule applied to TARGETING. A red here
+    means a wildcard started guessing, which is the worst possible
+    failure mode - the fixture lands somewhere plausible and everything
+    appears to work."""
+    conduit = _override_conduit("probe-ovr-twice")
+    fixture = _Creds()
+    with pytest.raises(Exception) as refused:
+        conduit.meld(spell=_TwoSockets,
+                     spell_override={"*credentials": fixture})
+    print("*param two-match refusal:", type(refused.value).__name__)
+
+
+def test_probe_broadcast_hits_every_match():
+    """Lesson 19 claim: `**param` means "hit every one" - both sockets
+    take the override."""
+    conduit = _override_conduit("probe-ovr-broadcast")
+    fixture = _Creds()
+    fixture.source = "test-fixture"
+    built = conduit.meld(spell=_TwoSockets,
+                         spell_override={"**credentials": fixture})
+    assert built.transport.credentials is fixture
+    assert built.archive.credentials is fixture
+    print("**param pinned: every matching socket took the override")
+
+
+def test_probe_broadcast_refuses_when_it_matches_nothing():
+    """Lesson 19 claim: `**param` requires AT LEAST ONE match. A no-op
+    override is a caller mistake, not a silent default."""
+    conduit = _override_conduit("probe-ovr-zero")
+    with pytest.raises(Exception) as refused:
+        conduit.meld(spell=_OneSocket,
+                     spell_override={"**nosuchparam": _Creds()})
+    print("**param zero-match refusal:", type(refused.value).__name__)
+
+
+def test_probe_exact_path_beats_broadcast_on_overlap():
+    """Lesson 19 claim: when a broadcast and an exact path name the same
+    socket, SPECIFICITY decides and the exact path wins. Being more
+    specific means being more authoritative - the only ordering that
+    would not surprise someone."""
+    conduit = _override_conduit("probe-ovr-precedence")
+    broad = _Creds()
+    broad.source = "broadcast"
+    exact = _Creds()
+    exact.source = "archive-only"
+    built = conduit.meld(
+        spell=_TwoSockets,
+        spell_override={"**credentials": broad,
+                        "archive>credentials": exact},
+    )
+    assert built.transport.credentials is broad
+    assert built.archive.credentials is exact
+    print("precedence pinned: exact path beat the broadcast on overlap")
+
+
+def test_probe_many_keeps_override_blast_radius_inside_the_call():
+    """Lesson 01's sharp edge, re-pinned for lesson 19: an override is
+    surgical in WHERE it reaches, not HOW LONG it lasts. Bound `many`,
+    each meld builds its own graph, so a later plain meld is clean."""
+    conduit = _override_conduit("probe-ovr-blast")
+    fixture = _Creds()
+    fixture.source = "test-fixture"
+    conduit.meld(spell=_TwoSockets, spell_override={"**credentials": fixture})
+    clean = conduit.meld(spell=_TwoSockets)
+    assert clean.transport.credentials is not fixture
+    assert clean.archive.credentials.source == "vault"
+    print("blast radius pinned: `many` kept the fixture inside the call")
 
 
 def test_probe_rift_enabled_has_no_public_setter():

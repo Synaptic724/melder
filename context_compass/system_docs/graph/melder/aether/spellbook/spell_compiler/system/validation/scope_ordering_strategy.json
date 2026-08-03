@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py",
- "source_sha256": "7d3c9e9e638d9dc74ee628326cceae0acd907cbd972ae0d2cbf04d9c2bbffd76",
+ "source_sha256": "0666fe37dbc612814b7c9a19123468b2d416932952e084cfa4ed165e2eab8c3c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy": {

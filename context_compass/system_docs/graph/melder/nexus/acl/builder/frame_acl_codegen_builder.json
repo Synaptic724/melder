@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/builder/frame_acl_codegen_builder.py",
- "source_sha256": "063c979b0297eb7164a72db1cefefc9086da43c03e26e74b125704e8635e1a44",
+ "source_sha256": "d8c1ddb05d0073cf5614f0e51e6fbda80c0cfa00ccc7d49ac75ccd8f248b3131",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.builder.frame_acl_codegen_builder": {

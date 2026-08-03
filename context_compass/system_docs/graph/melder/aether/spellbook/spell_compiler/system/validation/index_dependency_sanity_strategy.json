@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py",
- "source_sha256": "d0f44827aa381880fe65aa3261f6f86786b534a20dbcee1c4f12f7574a38723b",
+ "source_sha256": "f889d28018e8db2a57dd1daf9fa9dc1d4b92cbf219b18c1d4a13914a212c1f99",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy": {

@@ -654,6 +654,27 @@ and logging.
 
         self._unregister_owned_spell_id(target_spell_id, target_spell)
 
+        # Release the FRAMEWIDE binding-signature claim. Popping
+        # `self._lookup_spells` above only clears this Spellbook's LOCAL map; the
+        # frame's LookupContainer still maps this signature to the id being
+        # destroyed, so a later bind of a different spell under the same
+        # signature would be refused by `claim` naming a spell that no longer
+        # exists. `lookup_container.py:18-20` requires the release: "a spellbook
+        # cleaning up must release its keys".
+        # BY SPELL_ID, NOT BY KEY, and the difference matters: `release_lookup`
+        # pops whoever holds the key, while `release_lookup_by_spell_id` is a
+        # no-op when this spell holds no signature. That keeps the call correct
+        # if this verb is ever widened to parked spells, which claim no
+        # signature and whose sibling holds the key.
+        try:
+            self._aetheric_frame.release_lookup_by_spell_id(target_spell_id)
+        except Exception as e:
+            self._logger.error(
+                f"Error releasing framewide lookup for '{target_spell_id}': {e}",
+                "cleanup_and_remove_spell",
+                exc_info=True,
+            )
+
         target_spell._spellbook_cleanup = True
         target_spell.cleanup()
 
@@ -2648,25 +2669,77 @@ and logging.
         if not collisions:
             return
 
-        sample = ", ".join(sorted(collisions)[:3])
+        described = self._describe_colliding_spells(collisions)
         self._logger.error(
-            f"Conjure refused: {len(collisions)} owned spell_id(s) already registered "
-            f"in frame '{self._aetheric_frame_name}'.",
+            f"Conjure refused: {len(collisions)} owned spell(s) already registered "
+            f"in frame '{self._aetheric_frame_name}': {described}",
             "_spell_id_integrity_checker",
             exc_info=True,
         )
         raise RuntimeError(
-            f"[SPELLBOOK] Conjure refused: {len(collisions)} spell_id(s) owned by this \n"
+            f"[SPELLBOOK] Conjure refused: {len(collisions)} spell(s) owned by this \n"
             f"Spellbook are already registered in aetheric frame "
             f"'{self._aetheric_frame_name}' by \n"
-            "another Spellbook. A spell_id is computed from the bind-time fingerprint \n"
-            "(structural profile, lookup signature, existence, and resolved disposal \n"
-            "metadata), so two Spellbooks binding the same target with the same bind \n"
-            "parameters mint the same id. spell_id is unique per frame, and that includes \n"
-            "spells staged inactive by bind_inactive - a parked spell still holds its id. \n"
+            "another Spellbook:\n"
+            f"{described}\n"
+            "A spell_id is a SHA256 over the bind-time fingerprint (structural profile, \n"
+            "lookup signature, existence, and resolved disposal metadata) and does NOT \n"
+            "include the frame, so two Spellbooks binding the same target with the same \n"
+            "bind parameters mint the same id. spell_id is unique per frame, and that \n"
+            "includes spells staged inactive by bind_inactive - a parked spell still \n"
+            "holds its id. \n"
             "Fix: conjure into a different aetheric frame, or differentiate the binding \n"
-            f"with a distinct spellframe or binding_name. Colliding ids: {sample}"
+            "with a distinct spellframe or binding_name."
         )
+
+    def _describe_colliding_spells(self, spell_ids: Set[str]) -> str:
+        """
+        Internal
+
+        Render colliding spell ids as human-readable lines for a refusal message.
+
+        Purpose:
+            A bare SHA256 tells a caller nothing about WHICH binding collided.
+            This resolves each id back to the owned `Spell` and reports its name
+            and binding signature alongside a short id prefix.
+
+        Contract:
+            - FAILURE PATH ONLY. Called solely when a collision has already been
+              detected, so the per-id map lookups never run on a healthy conjure.
+            - Looks in the active map first, then the parked map, because a
+              collision can be caused by a spell staged with `bind_inactive`.
+            - Degrades rather than raises: an id that resolves to no owned spell
+              is reported as `<unresolved>` instead of masking the original
+              refusal with a lookup error.
+            - Caps output at 10 entries so a large collision set stays readable.
+
+        Args:
+            spell_ids (Set[str]): The colliding spell ids.
+
+        Returns:
+            str: One `  - name  [signature]  id=prefix...` line per spell.
+        """
+        lines: List[str] = []
+        for spell_id in sorted(spell_ids)[:10]:
+            spell = self._spells_by_id.get(spell_id)
+            if spell is None:
+                spell = self._inactive_spells.get(spell_id)
+
+            if spell is None:
+                lines.append(f"  - <unresolved>  id={spell_id[:16]}...")
+                continue
+
+            name = getattr(spell, "spell_name", None) or "<unnamed>"
+            binding_key = getattr(spell, "_key", None)
+            state = "parked" if spell_id in self._inactive_spells else "active"
+            lines.append(
+                f"  - {name}  [{binding_key}]  {state}  id={spell_id[:16]}..."
+            )
+
+        remaining = len(spell_ids) - len(lines)
+        if remaining > 0:
+            lines.append(f"  - ... and {remaining} more")
+        return "\n".join(lines)
 
     def _get_spell_by_id_via_aether(
             self,
@@ -4179,9 +4252,15 @@ and logging.
             conduit_ids:
                 Optional list of conduits participating in the request.
             scope_keys:
-                Optional normalized scope keys for conflict checks.
+                Optional normalized scope keys. These ARE the admission
+                vocabulary: they become the request's scope claims, and the
+                moded claim table acquires and arbitrates them.
             scope_hashes:
-                Optional normalized scope hashes for conflict checks.
+                Optional normalized scope hashes. ADVISORY IDENTITY ONLY - they
+                carry NO claims and are NOT checked for conflicts. Their only
+                reader is the retired `ChangeControlConflictManager`, which
+                nothing calls. Supplying hashes declares no overlap and buys no
+                isolation; use `scope_keys` to declare scope.
             binding_keys:
                 Optional binding keys are affected by the request.
             contract_keys:
@@ -4392,9 +4471,15 @@ and logging.
             conduit_ids:
                 Optional list of conduits participating in the request.
             scope_keys:
-                Optional normalized scope keys for conflict checks.
+                Optional normalized scope keys. These ARE the admission
+                vocabulary: they become the request's scope claims, and the
+                moded claim table acquires and arbitrates them.
             scope_hashes:
-                Optional normalized scope hashes for conflict checks.
+                Optional normalized scope hashes. ADVISORY IDENTITY ONLY - they
+                carry NO claims and are NOT checked for conflicts. Their only
+                reader is the retired `ChangeControlConflictManager`, which
+                nothing calls. Supplying hashes declares no overlap and buys no
+                isolation; use `scope_keys` to declare scope.
             binding_keys:
                 Optional binding keys are affected by the request.
             contract_keys:
@@ -4655,7 +4740,7 @@ and logging.
             )
             raise
 
-    def _bind_inactive(
+    def bind_inactive(
             self,
             *,
             spell: Any,
@@ -4669,7 +4754,7 @@ and logging.
             **kwargs: Any,
     ) -> str:
         """
-        Internal
+        Public API
 
         Bind a spell as an INACTIVE member of an existing owned `spell_index`.
 
@@ -4723,7 +4808,7 @@ and logging.
         """
         # The staging transaction lives directly in this method. Conduit
         # .bind_inactive delegates here without holding a window of its own,
-        # so `_bind_inactive` opens the bind window and runs the inactive
+        # so `bind_inactive` opens the bind window and runs the inactive
         # registration inside it end to end. If a bind session is already
         # active on this thread the mediator joins it instead of opening a
         # second root.

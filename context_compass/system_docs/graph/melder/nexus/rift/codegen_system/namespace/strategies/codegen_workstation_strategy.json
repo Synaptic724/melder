@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_workstation_strategy.py",
- "source_sha256": "5f2c6dac4352a1c0dbf1ef12536f82b2a263e922b254a7456ac4cc61941c776e",
+ "source_sha256": "cb2bf39017aa8116a3f39f2430f0d3e7785615bccf01ee002c58b7c9b7f79bc0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy": {

@@ -1,0 +1,63 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py",
+ "source_sha256": "2a7eb8017535c0a8a34cdce596b7493755037c782d4fa9ef5e0c3b40e141c199",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy": {
+   "id": "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy",
+   "label": "subsystem_enable_transaction_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy.SubsystemEnableTransactionStrategy": {
+   "id": "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy.SubsystemEnableTransactionStrategy",
+   "label": "SubsystemEnableTransactionStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py",
+   "lineno": 25,
+   "bases": [
+    "TransactionStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build_start_plan",
+    "on_end",
+    "on_start"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "466a4f1965a3b1ee59271928871b8ce0bef7ff69883757c8b25b55d283031e8c"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy.SubsystemEnableTransactionStrategy",
+   "to_label": "TransactionStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Mapping": "typing.Mapping",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClaimMode": "melder.aether.aetheric_mediator.claim_mode.ClaimMode",
+  "Identity": "melder.aether.aetheric_mediator.identity.Identity",
+  "ScopeKey": "melder.aether.aetheric_mediator.scope_keys.ScopeKey",
+  "TransactionStrategy": "melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy",
+  "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy",
+  "class": "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy.SubsystemEnableTransactionStrategy",
+  "label": "SubsystemEnableTransactionStrategy"
+ }
+}

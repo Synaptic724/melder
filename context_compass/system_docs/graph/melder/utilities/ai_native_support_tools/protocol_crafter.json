@@ -163,18 +163,6 @@
  "edges_authored": [
   {
    "from": "melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter",
-   "to": "melder.__melder_registration_guard__.MelderRegistrationGuard",
-   "relation": "uses",
-   "why": "ProtocolCrafter uses the Melder registration guard sentinel to mark itself as internal-only runtime infrastructure.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "init",
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter",
    "to": "melder.utilities.general_base.cleanable.Cleanable",
    "relation": "specializes",
    "why": "ProtocolCrafter inherits the explicit cleanup lifecycle from Cleanable.",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/cluster_creations.py",
- "source_sha256": "6df125a5a74225bff05fac1d0bf79ca76d833a40606db9a86e6afda935ef29f9",
+ "source_sha256": "b50f82833fd03b9b527ba204f5ec5f2d1d284c2684e3298e363520dbcb71a67d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.cluster_creations": {

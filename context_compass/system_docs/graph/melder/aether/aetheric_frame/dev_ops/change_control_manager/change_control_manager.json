@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py",
- "source_sha256": "1444dde9957c097733fdc9b373c410752246d56a6c34339fabafff040750a312",
+ "source_sha256": "bfa4a2fa257ae6c0e9bc5e077f9e195648048fef7acbe501a23047fc2d2a8a71",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager": {
@@ -189,7 +189,7 @@
    "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
    "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager",
    "relation": "owns_lifecycle_of",
-   "why": "ChangeControlManager owns the scope-overlap conflict detector used during admission.",
+   "why": "ChangeControlManager owns the RETIRED scope-overlap conflict detector: it is constructed per frame and cleaned on teardown, but find_conflicts has ZERO call sites and is NOT part of admission. Admission is one atomic moded acquisition against ChangeControlEmbargoManager. Retained by owner ruling 2026-08-03 as a placeholder for a future conflict-based transaction family, not as a live path.",
    "cardinality": "one_to_one",
    "phase": [
     "runtime",

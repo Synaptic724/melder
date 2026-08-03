@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧙 Melder
+# 🧙 Melder™
 
 ### The AI-Native Dependency Graph Runtime
 
@@ -24,7 +24,7 @@ pip install melder
 
 ## What Melder Is
 
-Melder wires your application together — services, config, connections,
+Melder™ wires your application together — services, config, connections,
 handlers — and hands you instances when you ask for them. That part will feel
 familiar if you've used a DI container.
 
@@ -1020,7 +1020,16 @@ the full API surface, and video walkthroughs of the systems above.
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE).
+GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see [LICENSE](LICENSE).
+
+The AGPL's network clause applies: if you run a modified version of Melder™ as a
+service that users interact with over a network, you must offer those users the
+corresponding source of your modified version.
+
+**Trademark.** Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI
+Systems. The AGPL grants rights in the software, not in the name — forks and
+redistributions must not use the Melder name or marks in a way that suggests
+endorsement by, or origin from, the trademark holder. See [NOTICE](NOTICE).
 
 ## Contributing
 

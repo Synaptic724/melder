@@ -1,6 +1,6 @@
 """
 TIER: advanced (06)
-GOAL: THE POSTURE OBJECT ITSELF. Lesson 05 mapped the 15 knobs; this one
+GOAL: THE POSTURE OBJECT ITSELF. Lesson 05 mapped the 14 knobs; this one
       picks the object up and handles it. The headline: this config is
       CONSTRUCTOR-FIRST, not fluent-first - alone among melder's configs.
 
@@ -34,7 +34,7 @@ posture is private (_initialize_aetheric_frame_configuration,
 _bind_aetheric_frame_configuration_to_aether). The one public door,
 Spellbook.configure_aether_frame(...), takes four arguments of which only
 TWO are frame-posture knobs - system_state and system_caching_enabled. The
-remaining 13 knobs have no public door at all.
+remaining 12 knobs have no public door at all.
 
 So today this object is READ-SHAPED: construct one to understand the law
 book and to hold a posture you intend to describe. Authoring a world's
@@ -53,7 +53,12 @@ def main() -> None:
         ai_native_enabled=False,
         rift_enabled=False,
     )
+    # The property hands back a SystemState member, not the string you
+    # passed - normalization happens at the door. `.name` is the string
+    # form; `.value` is an int, because SystemState is built on auto()
+    # (see lesson 16 for why that trips people).
     print("constructed:", posture.system_state)
+    assert isinstance(posture.system_state, md.SystemState)
     assert posture.system_state.name == "automatic"
     assert posture.ai_native_enabled is False
     assert posture.rift_enabled is False

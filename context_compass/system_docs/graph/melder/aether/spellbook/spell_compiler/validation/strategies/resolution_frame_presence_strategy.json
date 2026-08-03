@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py",
- "source_sha256": "4a3745657cd4d60ba5deb282d201ae8aeb35cb3248589a7cd4ab8cb71cdeacbd",
+ "source_sha256": "76cf24e3d01c2ae716237f44a4a9c5ec527421ddf090d14b7a46c5d27f531b4b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py",
- "source_sha256": "ec8e88f1d051d08fb591855c7943e82d6f71f5f93c638861f874de649da22089",
+ "source_sha256": "cfeda5a3b0cac74e70d4ed23c9f490d2dd78f26dfc116b3e6e2ad17b5f68a2c3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy": {

@@ -101,6 +101,11 @@ class AetherConfiguration(Cleanable):
             "channel_logger_activation_enabled": False,
             "channel_logger_resolver": None,
             "default_logger": None,
+            # DEFAULT ON. A spell_id is a SHA256 over the bind-time fingerprint
+            # and does not include the frame, so the same target bound with the
+            # same parameters mints the same id in every frame. Owner ruling
+            # 2026-08-02: one spell_id means one spell, process-wide.
+            "process_wide_unique_spell_ids": True,
         }
 
     def cleanup(self) -> None:
@@ -311,6 +316,43 @@ class AetherConfiguration(Cleanable):
             raise TypeError("default_logger must remain logging.Logger or None.")
         return value
 
+    @property
+    def process_wide_unique_spell_ids(self) -> bool:
+        """
+        Return whether spell_id uniqueness is enforced across the whole process.
+
+        Contract:
+            - DEFENSIVE READ: the stored value's type is re-checked on every read
+              and a drifted value raises `TypeError` rather than being returned.
+            - Reflects the sealed value once frozen, so a post-freeze read is
+              stable.
+            - True (the default) means one spell_id may exist ONCE per process:
+              every `AethericFrame` registers into a single Aether-owned id set
+              instead of its own. False restores per-frame scoping, where two
+              frames may each hold the same id - the multi-tenant shape, where
+              one class can be bound independently in several isolated worlds.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+            TypeError: If the stored value is no longer a bool.
+
+        Returns:
+            bool: True when spell_id uniqueness is process-wide.
+        """
+        self.check_cleaned()
+        value = self._properties["process_wide_unique_spell_ids"]
+        if not isinstance(value, bool):
+            raise TypeError(
+                "process_wide_unique_spell_ids must remain a bool."
+            )
+        return value
+
     def with_defaults(self) -> "AetherConfiguration":
         """
         Apply the default Aether logger policy.
@@ -336,6 +378,7 @@ class AetherConfiguration(Cleanable):
         self.set_channel_logger_activation_enabled(False)
         self.set_channel_logger_resolver(None)
         self.set_default_logger(None)
+        self.set_process_wide_unique_spell_ids(True)
         return self
 
     @classmethod
@@ -502,6 +545,41 @@ class AetherConfiguration(Cleanable):
         self.set_default_logger(logger)
         return self
 
+    def with_process_wide_unique_spell_ids(
+            self,
+            enabled: bool,
+    ) -> "AetherConfiguration":
+        """
+        Set process-wide spell_id uniqueness and return this configuration.
+
+        Contract:
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - Refused once frozen.
+            - Turning this OFF restores per-frame id scoping, which permits the
+              multi-tenant shape: the same class bound independently in several
+              frames, each with its own instance. Leaving it ON means a second
+              bind of the same fingerprint is refused anywhere in the process.
+
+        Args:
+            enabled:
+                True to enforce one spell_id per process; False for per-frame.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned or frozen.
+            TypeError: If `enabled` is not a bool.
+
+        Returns:
+            AetherConfiguration: This configuration instance.
+        """
+        self.set_process_wide_unique_spell_ids(enabled)
+        return self
+
     def set_channel_logger_activation_enabled(self, enabled: bool) -> None:
         """
         Set the automatic channel logger activation flag.
@@ -588,6 +666,41 @@ class AetherConfiguration(Cleanable):
             if self._frozen:
                 raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
             self._properties["default_logger"] = logger
+
+    def set_process_wide_unique_spell_ids(self, enabled: bool) -> None:
+        """
+        Set the process-wide spell_id uniqueness flag.
+
+        Contract:
+            - Refused once frozen, so the regime cannot change under a live
+              world. This matters more than for the logger flags: frames
+              register their ids according to the regime in force when they are
+              born, so flipping it mid-process would leave some ids in the
+              unified Aether set and others in per-frame sets, with no single
+              surface able to answer whether an id exists.
+
+        Args:
+            enabled:
+                True to enforce one spell_id per process; False for per-frame.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the configuration is cleaned or frozen.
+            TypeError:
+                If `enabled` is not a bool.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
+        if not isinstance(enabled, bool):
+            raise TypeError("enabled must be a bool.")
+        with self._lock:
+            if self._frozen:
+                raise RuntimeError("Cannot modify AetherConfiguration after freeze().")
+            self._properties["process_wide_unique_spell_ids"] = enabled
 
     def validate(self) -> bool:
         """

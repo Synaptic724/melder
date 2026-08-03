@@ -31,10 +31,10 @@ class InheritedAgentPurposeDescription(TypedDict):
         rather than seeing a flattened surface with no provenance.
 
     System Context:
-        Part of the agent-facing description surface. Because `__agent_purpose__`
-        is a plain class attribute it resolves through the MRO, so a subclass
-        silently reports its parent's purpose - this payload is what makes that
-        inheritance visible instead of misleading.
+        Part of the agent-facing description surface. A purpose authored on a
+        base class still describes that base, so a subclass reporting it flat
+        would silently claim its parent's purpose as its own - this payload is
+        what makes the inheritance visible instead of misleading.
     """
 
     class_name: str
@@ -110,12 +110,19 @@ class ClassSurfaceAstDescriber:
         Provide one shared AST-backed class-surface description utility for
         Melder objects.
 
-    THIS IS THE CONSUMER OF `__ast_helper_access__`:
-        Melder classes publish two agent-facing markers - `__agent_purpose__`
-        (what an agent can do with the object) and `__ast_helper_access__`
-        (whether that surface is public or internal). This describer is what
-        reads them and turns a class into a structured description an agent can
-        consume without importing or instantiating anything.
+    THIS IS THE CONSUMER OF THE AGENT DOCUMENTATION ASSET:
+        Melder classes publish two agent-facing facts in their DOCSTRINGS -
+        `AGENT_PURPOSE:` (what an agent can do with the object) and
+        `AGENT_ACCESS:` (whether that surface is public or internal). Those are
+        harvested at build time into
+        `_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py`
+        and this describer reads the generated asset, turning a class into a
+        structured description an agent can consume without importing or
+        instantiating anything.
+
+        The facts used to live as `__agent_purpose__` / `__ast_helper_access__`
+        class attributes. They no longer exist anywhere in `src/melder`;
+        authoring one today writes an attribute nothing reads.
 
         That is why the markers are worth carrying: they are not decoration,
         they are input to this.
@@ -160,7 +167,7 @@ class ClassSurfaceAstDescriber:
     AGENT_ACCESS: public
 
     AGENT_PURPOSE:
-        access: public. THE consumer of __ast_helper_access__ / __agent_purpose__: pass any
+        access: public. THE consumer of the generated agent-documentation asset: pass any
         Melder object and get a source-defined (AST, no import) class-surface description -
         members, signatures, docstrings, and the inherited agent-purpose chain - as a dict or
         minified JSON.
@@ -224,8 +231,8 @@ class ClassSurfaceAstDescriber:
 
         Raises:
             ValueError:
-                If the class marks `__ast_helper_access__ = "private"` (private
-                classes expose nothing), or its source cannot be resolved.
+                If the asset records the class as `private` (private classes
+                expose nothing), or its source cannot be resolved.
         """
         access_level = ClassSurfaceAstDescriber._get_required_access_level(
             target_object
@@ -322,9 +329,9 @@ class ClassSurfaceAstDescriber:
 
         Raises:
             ValueError:
-                If the class is missing or has an invalid
-                `__ast_helper_access__` marker, or a private class omits
-                `__agent_purpose__`.
+                If the class carries no access level in the asset or in its
+                docstring, the level is invalid, or a private class omits its
+                purpose.
         """
         access_level = ClassSurfaceAstDescriber._get_required_access_level(
             target_object
@@ -840,7 +847,8 @@ class ClassSurfaceAstDescriber:
             return agent_purpose
         if access_level == "private":
             raise ValueError(
-                "Private class '{0}' must define __agent_purpose__.".format(
+                "Private class '{0}' must document AGENT_PURPOSE: in its "
+                "docstring.".format(
                     type(target_object).__name__
                 )
             )

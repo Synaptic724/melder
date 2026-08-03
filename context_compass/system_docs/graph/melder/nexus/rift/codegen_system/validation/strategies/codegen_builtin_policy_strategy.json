@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py",
- "source_sha256": "cb5f6095c8a97d9e669ea81d92465c669672f54141644a3b53241c08e07e2c63",
+ "source_sha256": "fa1a46ed8581e20f683b8efc55b228e3a01c1d6b3dd78bf1247a0a9f98e5a7e1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy": {

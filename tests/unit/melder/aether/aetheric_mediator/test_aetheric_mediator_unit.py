@@ -674,26 +674,54 @@ class _Noop(TransactionStrategy):
         return None
 
 
-def test_unregistered_type_raises_rather_than_defaulting():
-    """A guessed claim set is how isolation is lost quietly."""
+def test_every_vocabulary_member_resolves_at_construction():
+    """
+    A guessed claim set is how isolation is lost quietly - so the registry now
+    forecloses the guess by seeding every member at construction.
+
+    This REPLACES an earlier test that asserted a fresh registry raises
+    `KeyError` for `AGENT_REPAIR`. That test used AGENT_REPAIR as a stand-in for
+    "a type nobody registered", which was true when nothing was registered and
+    is unreachable now that `StrategyBuilder.__init__` seeds the whole
+    vocabulary (mirroring `TransactionStrategyBuilder` in the DevOps plane).
+
+    The PROPERTY being guarded is unchanged and is arguably better guarded here:
+    the old test proved the registry refuses to invent a strategy; this one
+    proves it never has to, because there is no member without one. The failure
+    it catches is the real one - somebody adds a `TransactionType` member and
+    does not add a registration line for it.
+    """
     builder = StrategyBuilder()
     try:
-        with pytest.raises(KeyError):
-            builder.resolve(TransactionType.AGENT_REPAIR)
+        assert builder.missing_types() == ()
+        for member in TransactionType:
+            assert builder.is_registered(member)
+            resolved = builder.resolve(transaction_type=member)
+            assert isinstance(resolved, type)
+            assert issubclass(resolved, TransactionStrategy)
     finally:
         builder.cleanup()
 
 
-def test_registry_reports_gaps_and_rejects_instances():
-    """Completeness is assertable at boot; instances are not classes."""
+def test_registry_replaces_registrations_and_rejects_instances():
+    """
+    Overriding a seeded family is legal; registering an INSTANCE is not.
+
+    Replacement is the seam a subsystem uses to override one of the plane's own
+    families with a finer one of its own, so it has to keep working after
+    seeding - otherwise seeding would have quietly closed an intended path.
+    """
     builder = StrategyBuilder()
     try:
+        seeded = builder.resolve(transaction_type=TransactionType.CHECKPOINT_LOAD)
         builder.register(
             transaction_type=TransactionType.CHECKPOINT_LOAD, strategy=_Noop
         )
-        assert builder.is_registered(TransactionType.CHECKPOINT_LOAD)
-        assert TransactionType.CHECKPOINT_LOAD not in builder.missing_types()
-        assert TransactionType.AGENT_REPAIR in builder.missing_types()
+        replaced = builder.resolve(transaction_type=TransactionType.CHECKPOINT_LOAD)
+        assert replaced is _Noop
+        assert replaced is not seeded
+        assert builder.missing_types() == ()
+
         with pytest.raises(TypeError):
             builder.register(
                 transaction_type=TransactionType.AGENT_REPAIR, strategy=_Noop()

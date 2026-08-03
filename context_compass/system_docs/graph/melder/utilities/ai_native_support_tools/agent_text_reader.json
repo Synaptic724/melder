@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
- "source_sha256": "861feac5e49604ebe027d404ed382f4d081fe22466ed907424cdb9cce4916057",
+ "source_sha256": "76628b392ad8d7160e44a30f186f3eed89947fb4296968ea5ef9398c37f538dc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.ai_native_support_tools.agent_text_reader": {
@@ -36,7 +36,7 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "56426393f03810e44e7f7effd98dba561c7aef5632062dddb8dc47ff79ff7c6e",
+   "span_sha256": "7a84a6deea403c26a6af0c36a71b8eb8ef5270af949537a620c30519abc81cda",
    "include": true,
    "role": "Fixed bounds and defaults for the reader, held as class constants rather than module globals.",
    "responsibilities": [
@@ -52,7 +52,7 @@
    "label": "TextChunk",
    "kind": "record",
    "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
-   "lineno": 111,
+   "lineno": 119,
    "bases": [],
    "markers": [
     "NamedTuple"
@@ -63,7 +63,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dfebc3621195139e534a467f77b32929762dfdd1a59b1579f66285c2db7fc0b3",
+   "span_sha256": "5015c82a466eb6dd79ce90e137bf4dc1ab2a4b53f72f2ca83e8dd49cb46c2b7f",
    "include": true,
    "role": "One bounded read result plus everything needed to decide what to do next.",
    "responsibilities": [
@@ -79,7 +79,7 @@
    "label": "IndexedText",
    "kind": "class",
    "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
-   "lineno": 154,
+   "lineno": 170,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -118,7 +118,7 @@
    "label": "AgentTextReader",
    "kind": "class",
    "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
-   "lineno": 569,
+   "lineno": 585,
    "bases": [],
    "markers": [],
    "public_methods": [

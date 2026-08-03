@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py",
- "source_sha256": "74df75e450abc29d7e81575488b45143f7a4d9ea8d1d47868ca3c9d26037333c",
+ "source_sha256": "7f1b5652364172bec6b64d9acf414c71fa6a11321c790f3806af311966c367c9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy": {

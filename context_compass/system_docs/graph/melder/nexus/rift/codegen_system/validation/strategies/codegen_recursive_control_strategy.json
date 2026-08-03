@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_recursive_control_strategy.py",
- "source_sha256": "da05e4181c3f6269c8062e567c87945a48b117d4b21bb50e72896cbd81b3e5ac",
+ "source_sha256": "788252513a341c305a22c95c7a230e8299cba0b89991e080ce91720a0e6411b0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy": {

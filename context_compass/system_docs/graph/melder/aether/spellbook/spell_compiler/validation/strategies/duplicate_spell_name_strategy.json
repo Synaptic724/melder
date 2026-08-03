@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
- "source_sha256": "efb2f26d284c70943ee3a5384b2850e213ad2e6b392a6f3629dfd262efa6772a",
+ "source_sha256": "758057871c7db8799b29fcd707147a2fb59c750a87729eec60f5441b0a750f5e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy": {

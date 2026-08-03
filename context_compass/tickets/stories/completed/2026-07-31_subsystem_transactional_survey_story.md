@@ -3,12 +3,12 @@
 ## Metadata
 - Story ID: STORY-2026-07-31-subsystem-transactional-survey
 - Epic ID: EPIC-2026-07-31-aetheric-mediator-subsystem
-- Status: ready
+- Status: completed
 - Owner: cowork
-- Agent Name: UNASSIGNED (deliberately - see note)
+- Agent Name: bootstrap_0 (all three surveys)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-08-02T17:40:00Z
+- Updated: 2026-08-02T19:35:00Z
 
 ## Problem / Opportunity
 We do not yet know WHAT to transactionalize in each subsystem, only that each
@@ -25,8 +25,8 @@ currently protect them with, what scope keys would express that, and what are it
   scope claims - that is a finding, not a failure.
 
 ## Tasks
-- [ ] TASK-2026-07-31-survey-mr-transactional-surface
-- [ ] TASK-2026-07-31-survey-nexus-transactional-surface
+- [x] TASK-2026-07-31-survey-mr-transactional-surface (bootstrap_0, 2026-08-02T19:35:00Z)
+- [x] TASK-2026-07-31-survey-nexus-transactional-surface (bootstrap_0, 2026-08-02T19:00:00Z)
 - [x] TASK-2026-07-31-survey-crystallizer-transactional-surface (bootstrap_0, 2026-08-02T17:40:00Z)
 
 ## Acceptance Criteria
@@ -83,7 +83,51 @@ currently protect them with, what scope keys would express that, and what are it
   stays `x`. The two CONFLICT findings are unaffected. ANY AGENT TAKING THE MR OR
   NEXUS SURVEY SHOULD READ THAT CORRECTION FIRST so the same wrong premise does
   not get re-derived twice more.
-  Two surveys remain OPEN and UNASSIGNED: MR and Nexus. I did not claim them -
+- 2026-08-02T19:00:00Z (bootstrap_0): NEXUS/RIFT survey COMPLETE. Two CONFLICT
+  findings, both about mechanisms a claim table cannot own: (1) `RiftGate.admit`
+  in `wait` mode parks threads on a `threading.Event`, so a parked population
+  holds no claim, requests no claim, and is invisible to the plane - claims and
+  gates are two different waiting mechanisms and the plane would own only one;
+  (2) best-effort gate reopen swallows every error (nexus.py:2576), so a
+  transaction can end with all claims correctly released and a Rift permanently
+  closed. Five gaps found in the refresh fan-out itself, of which the headline is
+  that `_refresh_rift_projection_sets_for_frames` snapshots the rift registry
+  under the Nexus lock and then RELEASES it (nexus.py:2512) before blocking,
+  draining and refreshing - so a Rift added during that window gets no gate
+  disable, no drain and no refresh. Also found notify-before-validate in all
+  three container rollback verbs: the whole fan-out runs before the isinstance
+  check that can raise. RECORDED WHAT IS ALREADY RIGHT TOO: add_rift does its
+  four checks and the insert under one lock (cap is genuinely atomic), and
+  RiftGate.admit_ticket already closed the check-then-register drain race.
+  `ix` IS EARNED HERE, twice and structurally - the ACL fan-out is definitionally
+  piece-work beneath a parent frame scope, and an `ix` claim on
+  `nexus:rift_registry` is precisely what makes the snapshot sound. That is the
+  contrast with crystallizer, which had no such shape; the two surveys differ
+  because the subsystems do, not because I changed my mind twice.
+- 2026-08-02T19:35:00Z (bootstrap_0): MUTATIONRESEARCH survey COMPLETE. STORY
+  EXIT_GATE MET - all three task surveys complete with source evidence.
+  MR is the best-protected of the three and the survey says so: a documented
+  one-way lock order (emission -> root -> set -> crystallizer) with the REASON
+  recorded, and `ResidenceRegistry.transfer` which is already a claim table in
+  miniature - two-phase all-or-nothing under one lock, one non-resident identity
+  raises with NOTHING moved. That is `ClaimTable.try_acquire` semantics arrived
+  at independently, which is the epic's thesis in a single method.
+  TWO CONFLICTS, and the first is the most consequential finding across all three
+  surveys: (1) LOCK ORDER IS NOT A CLAIM ORDER. MR's central safety property is a
+  declared one-way lock sequence, and a scope-claim plane cannot enforce it - a
+  transaction can hold every correct claim and still invert emission/root inside
+  its own code and deadlock, because the deadlock lives BELOW the claim layer.
+  (2) The emission lock guards an ORDERING (no stale composition published over a
+  newer one), which is a different property from the mutual exclusion a claim
+  provides; the plane should defer to it rather than replace it.
+  Gaps found: compensation is hand-placed at exactly the claim/add seam where a
+  bug was once observed and covers nothing downstream of it; the published
+  composition can tear across sets because the emission lock orders emitters but
+  does not freeze the sets the payload is walked from.
+  CROSS-SUBSYSTEM CONCLUSION now that all three are done: the plane SUBSUMES
+  crystallizer's global gate and Nexus's block/drain/refresh choreography, but it
+  does NOT subsume MR's lock order. Wiring MR is an addition on top of an
+  invariant that stays hand-maintained - not a migration. I did not claim them -
   the story's own DECISION note says these should run on FRESH context and I now
   carry the crystallizer read, so a different agent taking one of the remaining
   two is better for the story than me taking all three.

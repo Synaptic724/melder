@@ -611,13 +611,23 @@ def run_gauntlet_once(ops: RuntimeOps, cfg: GauntletConfig, iteration_ix: int) -
     }
     errors: List[BaseException] = []
     stop_event = threading.Event()
-    active_lanes: List[Tuple[str, Callable[[int], ScopeCycleMetrics], int, int]] = [
-        ("request", ops.request_scope_cycle, cfg.request_scope_runs, 17),
-    ]
-    if cfg.threads >= 2:
-        active_lanes.append(("worker_a", ops.worker_a_scope_cycle, cfg.worker_a_jobs, 29))
-    if cfg.threads >= 3:
-        active_lanes.append(("worker_b", ops.worker_b_scope_cycle, cfg.worker_b_jobs, 41))
+    active_lanes: List[Tuple[str, Callable[[int], ScopeCycleMetrics], int, int]] = []
+    if cfg.threads <= 3:
+        active_lanes.append(("request", ops.request_scope_cycle, cfg.request_scope_runs, 17))
+        if cfg.threads >= 2:
+            active_lanes.append(("worker_a", ops.worker_a_scope_cycle, cfg.worker_a_jobs, 29))
+        if cfg.threads >= 3:
+            active_lanes.append(("worker_b", ops.worker_b_scope_cycle, cfg.worker_b_jobs, 41))
+    else:
+        num_req = cfg.threads // 3 + (1 if cfg.threads % 3 > 0 else 0)
+        num_a = cfg.threads // 3 + (1 if cfg.threads % 3 > 1 else 0)
+        num_b = cfg.threads // 3
+        for idx in range(num_req):
+            active_lanes.append(("request", ops.request_scope_cycle, cfg.request_scope_runs, 17 + idx * 100))
+        for idx in range(num_a):
+            active_lanes.append(("worker_a", ops.worker_a_scope_cycle, cfg.worker_a_jobs, 29 + idx * 100))
+        for idx in range(num_b):
+            active_lanes.append(("worker_b", ops.worker_b_scope_cycle, cfg.worker_b_jobs, 41 + idx * 100))
 
     ready_barrier = threading.Barrier(len(active_lanes) + 1)
     start_event = threading.Event()
@@ -672,12 +682,16 @@ def run_gauntlet_once(ops: RuntimeOps, cfg: GauntletConfig, iteration_ix: int) -
     if errors:
         raise errors[0]
 
-    if lane_counts["request"] != cfg.request_scope_runs:
-        raise AssertionError("Request lane did not complete expected scope cycles")
-    if cfg.threads >= 2 and lane_counts["worker_a"] != cfg.worker_a_jobs:
-        raise AssertionError("Worker A lane did not complete expected scope cycles")
-    if cfg.threads >= 3 and lane_counts["worker_b"] != cfg.worker_b_jobs:
-        raise AssertionError("Worker B lane did not complete expected scope cycles")
+    num_req = cfg.threads // 3 + (1 if cfg.threads % 3 > 0 else 0) if cfg.threads > 3 else (1 if cfg.threads >= 1 else 0)
+    num_a = cfg.threads // 3 + (1 if cfg.threads % 3 > 1 else 0) if cfg.threads > 3 else (1 if cfg.threads >= 2 else 0)
+    num_b = cfg.threads // 3 if cfg.threads > 3 else (1 if cfg.threads >= 3 else 0)
+
+    if len(lane_metrics["request"].outer_create_ns) != cfg.request_scope_runs * num_req:
+        raise AssertionError(f"Request lane did not complete expected scope cycles ({len(lane_metrics['request'].outer_create_ns)} vs {cfg.request_scope_runs * num_req})")
+    if len(lane_metrics["worker_a"].outer_create_ns) != cfg.worker_a_jobs * num_a:
+        raise AssertionError(f"Worker A lane did not complete expected scope cycles ({len(lane_metrics['worker_a'].outer_create_ns)} vs {cfg.worker_a_jobs * num_a})")
+    if len(lane_metrics["worker_b"].outer_create_ns) != cfg.worker_b_jobs * num_b:
+        raise AssertionError(f"Worker B lane did not complete expected scope cycles ({len(lane_metrics['worker_b'].outer_create_ns)} vs {cfg.worker_b_jobs * num_b})")
 
     return IterationResult(
         total_ns=time.perf_counter_ns() - total_t0,

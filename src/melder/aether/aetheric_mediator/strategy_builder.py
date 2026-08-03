@@ -58,14 +58,25 @@ class StrategyBuilder(Cleanable):
 
     AGENT_PURPOSE:
         access: internal. Resolves a transaction type to its registered
-        strategy class. Unregistered types raise; there is no default.
+        strategy class. Seeded with the plane's six families at construction;
+        a type with no registration raises rather than guessing.
     """
 
     __slots__ = Cleanable.__slots__ + ["_lock", "_strategies"]
 
     def __init__(self) -> None:
         """
-        Build one empty strategy registry.
+        Build one strategy registry, seeded with the plane's own families.
+
+        Contract:
+            - Every `TransactionType` member resolves immediately after
+              construction, so `missing_types()` is empty on a fresh registry.
+              That is the same posture `TransactionStrategyBuilder` takes in the
+              DevOps plane: a vocabulary member without a strategy is a build
+              error, not a runtime surprise.
+            - Seeding happens LAST, after the lock and the map exist, because
+              `_register_default_strategies` goes through the public `register`
+              verb and that verb takes the lock.
 
         Returns:
             None.
@@ -73,6 +84,63 @@ class StrategyBuilder(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._strategies: Dict[TransactionType, Type[TransactionStrategy]] = {}
+        self._register_default_strategies()
+
+    def _register_default_strategies(self) -> None:
+        """
+        Internal
+
+        Register the plane's own family for every transaction type.
+
+        Contract:
+            - Registers EVERY member of `TransactionType`. A new member added to
+              the vocabulary without a line here leaves `missing_types()`
+              non-empty, which is the intended way to notice.
+            - Imports the families INSIDE the method rather than at module
+              scope. `strategies/__init__.py` re-exports the six classes and each
+              of them imports `transaction_strategy`, which this module also
+              imports - a module-scope import here would make that latent
+              relationship a real import cycle.
+            - Registration stays REPLACEABLE: a subsystem may override any of
+              these afterwards through `Mediator.strategies` by registering its
+              own class against the same type. Seeding does not close that path.
+
+        Returns:
+            None.
+        """
+        from melder.aether.aetheric_mediator.strategies import (
+            AgentRepairTransactionStrategy,
+            CheckpointLoadTransactionStrategy,
+            FormationLoadTransactionStrategy,
+            IndexGraftTransactionStrategy,
+            SubsystemDisableTransactionStrategy,
+            SubsystemEnableTransactionStrategy,
+        )
+
+        self.register(
+            transaction_type=TransactionType.CHECKPOINT_LOAD,
+            strategy=CheckpointLoadTransactionStrategy,
+        )
+        self.register(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            strategy=FormationLoadTransactionStrategy,
+        )
+        self.register(
+            transaction_type=TransactionType.INDEX_GRAFT,
+            strategy=IndexGraftTransactionStrategy,
+        )
+        self.register(
+            transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+            strategy=SubsystemEnableTransactionStrategy,
+        )
+        self.register(
+            transaction_type=TransactionType.SUBSYSTEM_DISABLE,
+            strategy=SubsystemDisableTransactionStrategy,
+        )
+        self.register(
+            transaction_type=TransactionType.AGENT_REPAIR,
+            strategy=AgentRepairTransactionStrategy,
+        )
 
     def cleanup(self) -> None:
         """

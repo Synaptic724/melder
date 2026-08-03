@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_system_documents/system_documents.py",
- "source_sha256": "9d53a2ae5919c9c8f40dd0ced7287493378763a12c4f110d8944725b8fbc0367",
+ "source_sha256": "36765f4c54af3b9299760af1cebfce517279ad325ad928ba8199678a1869703d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._system_documents.system_documents": {
@@ -20,6 +20,24 @@
     "runtime"
    ],
    "semantics_authored_against": "99d0fbf752220491a20489c73aa5cc5014200f9ee36161e1f1472b05c316356e"
+  },
+  "melder._build_assets._system_documents.system_documents.DocumentHit": {
+   "id": "melder._build_assets._system_documents.system_documents.DocumentHit",
+   "label": "DocumentHit",
+   "kind": "record",
+   "file": "src/melder/_build_assets/_system_documents/system_documents.py",
+   "lineno": 153,
+   "bases": [],
+   "markers": [
+    "NamedTuple"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "f9abd49473d8a6598b2e02c6bcd1efeede461cfeac8296549561f19cef5a4ee9"
   }
  },
  "edges_out": [],
@@ -27,8 +45,11 @@
  "published_aliases": [],
  "imports": {
   "Dict": "typing.Dict",
+  "List": "typing.List",
+  "NamedTuple": "typing.NamedTuple",
   "Tuple": "typing.Tuple",
   "_manifest": "melder._build_assets._system_documents.manifest.system_documents_manifest",
+  "SearchHit": "melder.utilities.ai_native_support_tools.system_document_view.SearchHit",
   "SystemDocumentView": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
   "SystemGraphView": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView"
  },

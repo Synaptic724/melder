@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "40952842850327c688ce519dc7c445c49614a0c4c388747e0a417282b0fb5e9d",
+ "source_sha256": "2203b8f76d71a512cbdbdb485265182890fa393821814ddecb11fd74ea21ceea",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -136,9 +136,9 @@
  "edges_authored": [
   {
    "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to": "melder.__melder_registration_guard__.MelderRegistrationGuard",
+   "to": "melder._build_assets._bind_guard.bind_guard",
    "relation": "uses",
-   "why": "Bind calls the Melder registration guard before constructing a Spell so internal control-plane objects cannot be registered as spells.",
+   "why": "Bind.bind calls the module-level assert_allowed() before constructing a Spell, and that check refuses registration when the candidate's exact (module, qualname) pair is present in INTERNAL_MANIFEST - the frozenset this hand-written loader publishes. Membership is an exact match and does NOT walk the MRO, so a user subclass of an internal class carries its own qualname, misses the manifest, and binds normally.",
    "cardinality": "many_to_one",
    "phase": [
     "init",

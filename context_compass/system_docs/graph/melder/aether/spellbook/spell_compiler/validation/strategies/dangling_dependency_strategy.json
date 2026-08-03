@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py",
- "source_sha256": "0ce93c831ea656ce830341d57246b915fb4413cbf93bc8e4b474ae04656b0b7f",
+ "source_sha256": "97281e83ca991da1d504b2f027023ffb746ac6a1ae2ffa2c4367cad576b5203e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy": {

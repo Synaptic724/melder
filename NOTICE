@@ -1,24 +1,38 @@
-Melder
+Melder™
 Copyright 2025-2026 Mark Thomas Geleta / Synaptic AI Systems
+
+Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI Systems. The AGPL
+grants rights in the SOFTWARE; it does not grant rights in the name or the
+marks. Forks and redistributions must not use the Melder name or marks in a way
+that suggests endorsement by, or origin from, the trademark holder.
 
 This product includes software developed by Mark Thomas Geleta.
 Source repository: https://github.com/Synaptic724/melder
 
-Licensed under the Apache License, Version 2.0 (the "License").
-You may not use this file except in compliance with the License.
+Melder™ is free software: you can redistribute it and/or modify it under the
+terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. SPDX-License-Identifier: AGPL-3.0-or-later
+
 You may obtain a copy of the License at:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://www.gnu.org/licenses/agpl-3.0.html
 
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-either express or implied. See the License for the specific
-language governing permissions and limitations under the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 
-Redistributors of this software must retain this NOTICE file,
-LICENSE file, and all attribution and copyright statements
-when redistributing the software, whether in source or binary form.
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+
+NETWORK USE IS DISTRIBUTION. Section 13 of the AGPL is the clause that separates
+it from the ordinary GPL: if you modify Melder™ and let users interact with the
+modified version remotely over a network, you must offer those users the
+corresponding source of your modified version.
+
+Redistributors of this software must retain this NOTICE file, LICENSE file, and
+all attribution and copyright statements when redistributing the software,
+whether in source or binary form.
 
 ---
 

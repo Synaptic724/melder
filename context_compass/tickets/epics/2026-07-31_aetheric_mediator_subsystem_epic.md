@@ -74,6 +74,30 @@ be written against them.
    ACTIVE; they emit their basic conditions to the plane.
 7. Lightweight, but just as effective.
 
+## SURVEY DEPENDENCY DISCHARGED (bootstrap_0, 2026-08-02T19:35:00Z)
+
+One of this epic's three EXIT_GATE conditions - "all three subsystem surveys
+complete" - is MET. `STORY-2026-07-31-subsystem-transactional-survey` is closed
+with all three tasks delivered read-only:
+
+| subsystem | its answer to "coordinate structural mutation" | plane absorbs it? |
+| --- | --- | --- |
+| Crystallizer | global exclusive gate (one load at a time, process-wide) + best-effort teardown | YES |
+| Nexus | per-unit gates + hand-rolled block / drain / refresh / reopen | YES |
+| MutationResearch | declared one-way lock order + one atomic two-phase primitive + hand-placed compensation | **NO - the lock order cannot be expressed as claims** |
+
+THE FINDING THAT MATTERS FOR WIRING ORDER: a scope-claim plane grants sets of
+scopes atomically; it says nothing about the sequence in which a holder takes its
+own mutexes afterwards. MR's central safety property is exactly such a sequence
+(emission -> root -> set -> crystallizer), so a transaction can hold every
+correct claim and still invert its own locks and deadlock. Wiring MR is an
+ADDITION on top of an invariant that stays hand-maintained - and the plane will
+otherwise give a false impression that concurrency is now handled there.
+
+Still open on the EXIT_GATE: core plane proven standalone, and the owner's ruling
+on wiring order (plus open questions 1 and 2, which gate the wiring story).
+
+
 ## Component Split (modelled on DevOps)
 
 CORRECTED 2026-07-31 after actually reading the DevOps subsystem. An earlier

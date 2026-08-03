@@ -494,7 +494,7 @@ class Mediator(Cleanable):
             session` rather than re-derived:
 
                 COMMITTING -> apply_commit_delta -> COMMITTED
-                             \-> on failure: fail(...) per outcome policy
+                             -> on failure: fail(...) per outcome policy
                 on_end (always, exactly once)
                 _finalize (always, even if on_end raises)
 
@@ -652,6 +652,188 @@ class Mediator(Cleanable):
                 request_id=request_id, holder=holder, session=session
             )
         return status, records
+
+    def get_session_for_identity(
+            self,
+            submitter: Identity,
+    ) -> Optional[TransactionSession]:
+        """
+        Return the OPEN session this identity holds on the calling thread.
+
+        Purpose:
+            Let a participant that did not open the transaction discover whether
+            it is already inside one, without opening a second root by calling
+            `begin` speculatively.
+
+        Contract:
+            - Reads the CALLING THREAD's session map. Sessions are per identity
+              PER THREAD, so this deliberately cannot see a session the same
+              identity holds on another thread - reporting one would invite a
+              caller to act on a session it may not touch.
+            - Returns None when there is no session, when the session has been
+              cleaned, or when it is no longer OPEN. A terminal session is not
+              an active one and handing it back would read as "you are still in
+              a transaction".
+            - Read-only. Does not join, does not extend, does not mutate depth.
+
+        Args:
+            submitter:
+                The identity whose session is being looked up.
+
+        Returns:
+            Optional[TransactionSession]: The open session, or None.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        self.check_cleaned()
+        return self._current_session(submitter)
+
+    def has_active_session(self, submitter: Identity) -> bool:
+        """
+        Report whether this identity holds an OPEN session on this thread.
+
+        Contract:
+            Exactly `get_session_for_identity(...) is not None`, offered
+            separately because the boolean question is the common one and a
+            caller asking it should not have to hold a session reference to get
+            an answer.
+
+        Args:
+            submitter:
+                The identity being asked about.
+
+        Returns:
+            bool: True when an open session exists on the calling thread.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        return self.get_session_for_identity(submitter) is not None
+
+    def get_active_request(
+            self,
+            submitter: Identity,
+    ) -> Optional[TransactionRequest]:
+        """
+        Return the frozen request behind this identity's open session.
+
+        Contract:
+            - None when there is no open session on the calling thread.
+            - The request is the PRE-ADMISSION record, frozen before admission
+              and owned by the session. Callers read it; they must not clean it,
+              because `TransactionSession.cleanup` owns that.
+
+        Args:
+            submitter:
+                The identity whose in-flight request is wanted.
+
+        Returns:
+            Optional[TransactionRequest]: The frozen request, or None.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        session = self.get_session_for_identity(submitter)
+        if session is None:
+            return None
+        return session.request
+
+    def get_session_by_request_id(
+            self,
+            request_id: str,
+    ) -> Optional[TransactionSession]:
+        """
+        Return the live session for one request id, from any thread.
+
+        Purpose:
+            Answer "who is holding these claims" when all the caller has is an
+            id out of admission evidence - which is exactly what a refused
+            transaction gets back.
+
+        Contract:
+            - CROSS-THREAD by design, unlike `get_session_for_identity`. A
+              blocked caller needs to identify the holder, and the holder is on
+              another thread by definition.
+            - Returns None for an unknown id and for a session already cleaned.
+              A finalised transaction is removed from this map by `_finalize`,
+              so a live hit means the transaction genuinely has not ended.
+            - READ-ONLY BY INTENT. The returned session belongs to its owning
+              thread; a caller that ends or commits someone else's session
+              through this handle is doing something the session's own
+              one-root-owner rule exists to prevent, and the session will
+              refuse a foreign-thread join for that reason.
+
+        Args:
+            request_id:
+                The request id to look up.
+
+        Returns:
+            Optional[TransactionSession]: The live session, or None.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+            ValueError: If `request_id` is not a non-empty string.
+        """
+        self.check_cleaned()
+        if not isinstance(request_id, str) or not request_id:
+            raise ValueError("request_id must be a non-empty string.")
+        with self._lock:
+            session = self._sessions_by_request_id.get(request_id)
+        if session is None or session.cleaned:
+            return None
+        return session
+
+    def mark_active_session_abort_only(
+            self,
+            *,
+            submitter: Identity,
+            reason: str,
+    ) -> None:
+        """
+        Poison this identity's open session so its root can only roll back.
+
+        Purpose:
+            Mirror the DevOps plane's abort-only verb: let a caller that detects
+            a failure it wants to survive to finalisation record it, instead of
+            raising through every intervening frame and losing the chance to
+            unwind deliberately.
+
+        Contract:
+            - Targets the OPEN session for `submitter` on the CALLING THREAD;
+              raises when there is none, because silently doing nothing would
+              let a caller believe it had poisoned a transaction it had not.
+            - Delegates to `TransactionSession.mark_abort_only`, which is sticky
+              and first-writer-wins - the first detected failure is the reason
+              that survives.
+            - Does NOT end the session, run inverses, or change its status. The
+              session stays OPEN and joinable so inner scopes leave cleanly; the
+              bar applies at `commit`.
+
+        Args:
+            submitter:
+                The identity holding the session.
+            reason:
+                Human-readable justification, recorded on the session.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the plane is cleaned, or no open session exists for this
+                identity on the calling thread.
+            ValueError:
+                If `reason` is not a non-empty string.
+        """
+        self.check_cleaned()
+        session = self._current_session(submitter)
+        if session is None:
+            raise RuntimeError(
+                "no open session for identity {0!r} on this thread; there is "
+                "nothing to mark abort-only.".format(submitter.identity_key())
+            )
+        session.mark_abort_only(reason)
 
     def describe(self) -> Dict[str, object]:
         """

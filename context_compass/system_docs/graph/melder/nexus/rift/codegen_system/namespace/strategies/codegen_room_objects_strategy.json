@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_room_objects_strategy.py",
- "source_sha256": "b5104c701315db97185b5be400d0a6eb99c698de045086a60d7a268c2aec7fb0",
+ "source_sha256": "a9ae751939b7c9b4501957823913023ac6755d22e4fe8c840394929b89d660e3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy": {

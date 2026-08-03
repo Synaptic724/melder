@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py",
- "source_sha256": "55ad4e8ee81686b0a431827de9fe4e1109b2a07acb15613c5bd1967af181a092",
+ "source_sha256": "73994ec030502c882cd4ab320f4f435861b670a78edba3c8a58c244307238070",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy": {

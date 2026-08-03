@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__init__.py",
- "source_sha256": "de41866f6f427056d46a5bd5bc42ebcf11bd070e6162d23d69da1083675c2498",
+ "source_sha256": "5cd6c48497eb0b83fdcb4a01a1d7a63f819b1a26e6a72945305dae1fad55a8b0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder": {
@@ -38,14 +38,12 @@
   "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
   "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
   "SpellSpace": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
-  "Scan": "melder.aether.spellbook.bind.scan.Scan",
   "scan_bind": "melder.aether.spellbook.bind.scan.scan_bind",
   "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
   "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
   "Spell": "melder.aether.spellbook.spell.Spell",
-  "SpellExaminer": "melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner.SpellExaminer",
   "SpellBinder": "melder.aether.spellbook.spellbinder.SpellBinder",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "ExternalPersistenceManager": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",

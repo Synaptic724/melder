@@ -94,6 +94,14 @@ class ReaderPolicy:
             so document size is never a correctness question; the index costs
             8 bytes per line, which is 34 KB on a 4,263-line document.
         NEWLINE: The line separator offsets are computed against.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The bounds every reader budget is validated against -
+        line targets 2-100, char targets 256-65536. Read these before choosing
+        a `line_target`; a value outside them raises rather than being
+        silently clamped.
     """
 
     MIN_LINE_TARGET: int = 2
@@ -138,6 +146,14 @@ class TextChunk(NamedTuple):
         truncated_by: Which budget stopped this read - `"lines"`, `"chars"`, or
             `"end"` when the document simply ran out. Lets an agent widen the
             budget that actually bound rather than guessing.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One bounded span returned by a reader. `has_more` says
+        whether to keep going and `truncated_by` says which budget stopped
+        this chunk - line or char. A line longer than the char budget is
+        returned WHOLE rather than split, so progress always beats the budget.
     """
 
     text: str

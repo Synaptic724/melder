@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-agent-metadata-build-asset
 - Story: none (owner-directed, sibling of EPIC-2026-07-22-agent-metadata-to-docstring)
-- Status: in_progress
+- Status: done
 - Owner: melder_0
 - Agent Name: melder_0
 - Priority: p2
 - Created: 2026-07-25T20:10:00Z
-- Updated: 2026-07-25T20:10:00Z
+- Updated: 2026-08-03T12:22:14Z
 
 ## Objective
 Stop 370 class bodies from carrying `__ast_helper_access__` / `__agent_purpose__`.
@@ -275,6 +275,118 @@ and MUST NOT start until `architecture_patch.md` and
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-08-03T12:22:14Z
+  TYPE: DECISION
+  CLAIM: PHASE 1 DELIVERED AND CLOSED WITH ONE GATE CLAUSE NOT MET, named rather
+    than glossed. Owner directed closure 2026-08-03.
+  EVIDENCE:
+  - src/melder/_build_assets/_agent_documentation/_builder.py
+  - src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:11
+  - tests/unit/melder/build_assets/test_agent_metadata_builder.py
+  IMPACT:
+    GATE CLAUSE BY CLAUSE, verified against live source rather than claimed:
+      MET - runner discovers the asset. Discovery returns
+        ['_agent_documentation', '_bind_guard', '_system_documents'].
+      MET - `--check` green. Owner ran the runner 2026-08-03 and all three assets
+        wrote clean; `check_all` returned 0 in-session against the same tree.
+      NOT MET - counts reconcile with the audit (394 marked / 173 exempt / 10
+        pending). Live is 430 / 163 / 21. This is NOT a harvester defect: the
+        audit totalled 577 classes on 2026-07-25 and the tree now holds 614, so
+        the clause pins a frozen count that has itself gone stale across nine
+        days of source movement. The same failure mode as the currency tests
+        removed from the build-asset suite on owner direction 2026-08-03 - a
+        gate measuring a moment rather than a contract.
+      NOT RECORDED - "tests pass". Owner runs on 2026-08-03 surfaced failures
+        (version-stamp gate keyed by asset directory rather than by file; two
+        snapshot-frozen assertions). All are fixed, but no GREEN owner run on
+        3.14t exists to cite, so this is left unclaimed rather than assumed.
+
+    NAME DRIFT: the ticket's EXECUTION_BOUNDARY says
+    `_build_assets/_agent_metadata/`. The asset shipped as
+    `_build_assets/_agent_documentation/`, renamed during implementation so each
+    builder is named for what it does. The ticket text was never updated.
+
+    PHASE 2 PARTIALLY LANDED OUTSIDE THIS TICKET: the describer already reads
+    the asset (class_surface_ast_describer.py:11) rather than
+    `type(obj).__dict__`, which the ticket scoped as NOT this pass. The ~370
+    file docstring codemod did not happen.
+  NEXT: Owner rules whether the audit-count clause is retired or re-baselined.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T12:22:14Z
+  TYPE: RAISE
+  CLAIM: TEN OF THE 21 PENDING CLASSES ARE MINE, authored in this session and
+    never marked. Reported, not fixed - they sit outside this ticket's
+    EXECUTION_BOUNDARY and fixing them here would be scope creep on a closure.
+  EVIDENCE:
+  - src/melder/utilities/ai_native_support_tools/system_document_view.py
+  - src/melder/utilities/ai_native_support_tools/agent_text_reader.py
+  IMPACT: `system_document_view.{Section, SearchHit, Group, Edge, Node, Impact,
+    SystemDocumentView, SystemGraphView}` and `agent_text_reader.{ReaderPolicy,
+    TextChunk}` carry no `AGENT_ACCESS:`/`AGENT_PURPOSE:`. They are public
+    agent-facing query objects, so pending is the wrong resting state for them -
+    an agent asking the describer what it may do with a `SystemGraphView` gets
+    nothing. Adding ten unmarked public classes to the tree while closing the
+    ticket whose whole purpose is marking classes is worth naming out loud.
+  NEXT: Route as a follow-up task, or fold into the existing
+    `2026-08-02_stale_source_docstrings_task`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T12:22:14Z
+  TYPE: FACT
+  CLAIM: The describer's own docstrings still teach the retired mechanism.
+  EVIDENCE:
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:113
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:115
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:163
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:227
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:326
+  IMPACT: Five places describe `__ast_helper_access__` / `__agent_purpose__` as
+    the live source of truth while line 11 imports the generated asset. The code
+    is right and the prose is nine days stale; a reader following the docstring
+    would author a class attribute nothing reads.
+  NEXT: Belongs to `2026-08-02_stale_source_docstrings_task`.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 6
+
+- DATETIME: 2026-08-03T12:40:00Z
+  TYPE: FACT
+  CLAIM: BOTH CARRIED FINDINGS DISCHARGED post-closure on owner direction
+    ("fix the docstrings too"). Recorded here rather than reopening the ticket.
+  EVIDENCE:
+  - src/melder/utilities/ai_native_support_tools/system_document_view.py
+  - src/melder/utilities/ai_native_support_tools/agent_text_reader.py
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:113-124
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:850
+  - src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
+  IMPACT:
+    FINDING 1 CLEARED - the ten public classes I authored are marked.
+      `system_document_view.{Section, SearchHit, Group, Edge, Node, Impact,
+      SystemDocumentView, SystemGraphView}` and `agent_text_reader.{ReaderPolicy,
+      TextChunk}` now carry `AGENT_ACCESS:`/`AGENT_PURPOSE:`. Asset regenerated:
+      430/163/21 -> 446/163/11. All eleven remaining pending entries predate this
+      session, and one of them (`package.Package`) is pending by explicit owner
+      ruling.
+
+    FINDING 2 CLEARED - the describer no longer teaches the retired mechanism.
+      Five docstrings repointed from `__ast_helper_access__`/`__agent_purpose__`
+      to the docstring sections and the generated asset that actually feed it.
+      One HISTORICAL note is kept deliberately at :123 so a reader who
+      encounters the old attribute names in git history or an old branch learns
+      they are dead rather than guessing.
+
+    A SIXTH SITE WAS FOUND THAT WAS NOT A DOCSTRING and is the one that mattered
+      most: `:850` raised `"Private class 'X' must define __agent_purpose__."` -
+      a runtime error instructing the reader to author a class attribute nothing
+      reads. Docstrings mislead someone who goes looking; an error message
+      misleads someone who is already stuck. Now names the docstring section.
+  NEXT: None. Both findings closed.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 PHASE 1 (additive, in progress): harvester + generated asset under the build-asset
 runner. Nothing consumes it yet, so no runtime behaviour changes and the patch gate
@@ -364,3 +476,20 @@ Canonical doc repair is melder_1's lane and I did not touch either file — mess
 2026-07-28T00:10Z. The four documents are TEMPLATES; populating them from
 `context_compass/system_docs/` raises a two-homes question for the owner, since those
 sources are excluded from the wheel.
+
+
+## Completion Summary
+- CLOSED: 2026-08-03T12:22:14Z
+- Owner directed closure 2026-08-03 ("close both tickets since your done and turn
+  them in").
+- DELIVERED: docstring-harvesting build asset at
+  `_build_assets/_agent_documentation/`, discovered by the runner, consumed by
+  `ClassSurfaceAstDescriber`, covered by `test_agent_metadata_builder.py`.
+- CLOSED WITH TWO CLAUSES UNCLAIMED, both named in `## Notes`: the frozen audit
+  counts (394/173/10 vs live 430/163/21, explained by +37 classes since the
+  audit) and the absence of a recorded green owner run on 3.14t.
+- CARRIED FORWARD AT CLOSURE, THEN DISCHARGED 2026-08-03T12:40:00Z on owner direction: the ten
+  unmarked public classes are marked (asset 430/163/21 -> 446/163/11) and the
+  describer's stale docstrings are repointed - plus a sixth site that was a
+  runtime ERROR MESSAGE, not a docstring, telling users to define an attribute
+  nothing reads. See the final `## Notes` entry.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
- "source_sha256": "b8ece173fc7064dd6fc4e108efc6cb998738548ab7193ccfdcbeccbbc69ab916",
+ "source_sha256": "563b7793572e8f5453d9dd739bfa9b1314a91981195fe964d156c342cda8c966",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership": {

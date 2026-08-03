@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-init-cache-package-placement
 - Story: none (owner-routed directly from EPIC-2026-07-22-internal-bind-guard-replacement)
-- Status: in_progress
+- Status: done
 - Owner: melder_0
 - Agent Name: melder_0 (taken over from gemini_0, owner-directed 2026-07-25)
 - Priority: p0
 - Created: 2026-07-25T18:41:08Z
-- Updated: 2026-07-25T18:52:00Z
+- Updated: 2026-08-03T12:22:14Z
 
 ## Objective
 ORIGINAL: relocate the runtime manifest builder/loader out of the gitignored cache root
@@ -510,6 +510,35 @@ finished correcting to a layout which no longer exists.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-08-03T12:22:14Z
+  TYPE: DECISION
+  CLAIM: CLOSED ON OWNER DIRECTION with the residue clause VERIFIED and the
+    owner-run clause UNCLAIMED.
+  EVIDENCE:
+  - src/  (repository-wide sweep, 0 hits)
+  - pyproject.toml  (0 hits)
+  - .gitignore  (0 hits)
+  IMPACT:
+    GATE CLAUSE 1 - MET AND RE-VERIFIED AT CLOSURE, not accepted on the earlier
+      claim. A sweep for `__init_cache__` and `manifest_loader` across `src/`,
+      `pyproject.toml` and `.gitignore` returns ZERO hits, including in
+      historical framing. The stale packaging keys, ignore rules and prose the
+      objective named are gone, and the loader lives at
+      `_build_assets/_bind_guard/bind_guard.py` with its committed manifest at
+      `_bind_guard/manifest/bind_guard_manifest.py`.
+
+    GATE CLAUSE 2 - NOT MET, LEFT UNCLAIMED. The clause requires an owner-run
+      `pytest tests/unit/melder -q` GREEN on 3.14t. Owner runs happened on
+      2026-08-03 and were red; every failure they surfaced has since been fixed
+      or removed on owner direction, but no green run exists to cite. Claiming
+      this clause would be exactly the unverified-claim anti-pattern this
+      ticket's own Done Checklist forbids, so it is recorded as outstanding
+      rather than assumed from "the failures were addressed".
+  NEXT: One owner `pytest tests/unit/melder -q` on 3.14t discharges the
+    remaining clause. If it reds, this closure reopens.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 TAKEOVER COMPLETE. gemini_0 departed having shipped the relocation this ticket was
 opened to design: guard module deleted, manifest builder + generated asset moved to
@@ -573,3 +602,15 @@ and `_system_documents/` are undocumented in both canonical docs, and the runtim
 helper moved out of `_build_assets/` entirely to
 `utilities/caching_system/asset_cache.py` — it is runtime code and did not belong in a
 build-tools directory.
+
+
+## Completion Summary
+- CLOSED: 2026-08-03T12:22:14Z
+- Owner directed closure 2026-08-03.
+- DELIVERED: gemini_0's relocation verified against the filesystem rather than
+  accepted on handoff, and the residue it left cleared - packaging keys, ignore
+  rules and prose. Repository-wide sweep for the retired
+  `__init_cache__` / `manifest_loader` paths returns zero hits.
+- CLOSED WITH ONE CLAUSE OUTSTANDING: no owner-run green `pytest tests/unit/melder
+  -q` on 3.14t is recorded. A red on that run reopens this closure; it is not a
+  documentation nit.

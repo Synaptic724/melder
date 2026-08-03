@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/asset_management/asset_management_system.py",
- "source_sha256": "26713002da4a9b717aca5dcee845bc5154ec47e5ba54a15fc58adb773286ffa8",
+ "source_sha256": "a0f4656170c9b9848d16ac455149b4962c319d1ececb3e29bdd1d57001424119",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.asset_management.asset_management_system": {

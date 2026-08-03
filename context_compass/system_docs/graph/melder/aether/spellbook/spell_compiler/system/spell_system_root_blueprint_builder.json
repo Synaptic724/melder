@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py",
- "source_sha256": "7e984152de6b23d103cf3ca6d03d5148c9c5918259fa7ec0c82f7c11ebae96c1",
+ "source_sha256": "9864d2727f1a492f14524458a3cb1f3432bb892f6d23238a818c240243bac02a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder": {

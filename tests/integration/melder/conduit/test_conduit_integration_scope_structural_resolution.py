@@ -340,48 +340,18 @@ def test_lineage_dependency_is_durable_across_sibling_lesser_churn() -> None:
 
 
 # =====================================================================
-# 7. CLUSTER dependency path -- the front that was dropped.
-#    A holder on a non-leader member (here a lesser of the leader, which shares
-#    the leader book's bindings) must resolve the LEADER's cluster instance.
+# 7. CLUSTER dependency path -- REMOVED 2026-08-02.
+#    The test here bound the SAME class in two Spellbooks on one frame so a
+#    member conduit could meld a holder depending on a cluster spell. Owner
+#    ruling: a spell_id is unique per frame, so that setup is not a legal world
+#    and the test was probing a scenario the system must refuse. Removed rather
+#    than repaired: `_Holder.__init__(self, dep: _Leaf)` is a hard constructor
+#    dependency resolved at conjure, while cluster shares arrive afterwards, so
+#    there is no ordering that makes a member's own holder resolvable without
+#    the duplicate bind. Re-expressing it needs SpellContract (late-bound
+#    cross-conduit socket), not a second bind. See the conjure integrity sweep
+#    `Spellbook._spell_id_integrity_checker`.
 # =====================================================================
-def test_cluster_dependency_on_member_resolves_leader_instance() -> None:
-    """A `many` holder melded on a non-leader cluster MEMBER must inject the
-    LEADER's cluster instance, not a member-local one -- the cluster analog of the
-    lineage dependency bug.
-
-    Cluster membership is limited to normal (root) conduits -- a lesser is rejected
-    at the cloud boundary ("requires a normal conduit") -- so the member is a
-    SECOND normal conduit in the same frame (shared config), which binds the holder
-    so it can meld it. Expected to FAIL if the cluster dependency path shares the
-    lineage door's caller-store fallback; PASS if it routes through the leader's
-    resolved_store(); an error here is itself a finding about multi-book binding.
-    """
-    configuration = _cluster_config()
-    owner_book = Spellbook(configuration=configuration)
-    owner_leaf_id = owner_book.bind(spell=_Leaf, existence=_CLUSTER, permissions="create")
-    member_book = Spellbook(configuration=configuration)
-    member_book.bind(spell=_Leaf, existence=_CLUSTER, permissions="create")
-    member_holder_id = member_book.bind(spell=_Holder, existence=_MANY, permissions="create")
-
-    owner = owner_book.conjure(dynamic=True, name="owner")
-    member = member_book.conjure(dynamic=True, name="member")
-    try:
-        owner.link(member)
-        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
-        cloud.create_cluster("cluster-a")
-        cloud.add_conduit_to_cluster(owner, "cluster-a")
-        cloud.refresh_cluster_shares_for_conduit(owner)
-        cloud.get_cluster("cluster-a").elect_leader(owner.id)
-        cloud.add_conduit_to_cluster(member, "cluster-a")
-
-        leader_leaf = owner.meld(spell=owner_leaf_id)
-        member_holder = member.meld(spell=member_holder_id)
-        assert member_holder.dep is leader_leaf, (
-            "a member's holder must resolve the cluster LEADER's instance"
-        )
-    finally:
-        member.permanent_cleanup()
-        owner.permanent_cleanup()
 
 
 # =====================================================================

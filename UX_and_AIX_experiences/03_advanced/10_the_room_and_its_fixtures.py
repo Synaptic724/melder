@@ -40,14 +40,14 @@ SURFACE EXERCISED: md.RiftSpace via rift.space, the room fixtures, the
                    check below, where the enum itself is the subject.
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
-FINDING (doc drift, 2026-08-02): RiftSpaceType's docstring documents a
-fourth member - "dynamic: Legacy alias for codegen. Retained temporarily
-so older AR configuration inputs can still normalize during the room
-rename." THERE IS NO SUCH MEMBER. The enum defines static, capability and
-codegen only, with no _missing_ handler, so RiftSpaceType("dynamic")
-raises ValueError. Either the alias was removed and the docstring was not,
-or it was never added. Pinned in test_advanced_probes so the docstring
-cannot quietly stay wrong.
+DOC DRIFT FOUND AND FIXED (2026-08-02): RiftSpaceType's docstring used to
+document a FOURTH member - "dynamic: Legacy alias for codegen, retained
+temporarily so older AR configuration inputs can still normalize during
+the room rename." THERE WAS NO SUCH MEMBER, and no `_missing_` handler,
+so RiftSpaceType("dynamic") raised. The docstring has been corrected to
+state plainly that the three members are the whole set. The check below
+still runs because the enum's shape is worth proving, not because the
+docs are suspect.
 """
 import melder as md
 
@@ -104,16 +104,18 @@ def main() -> None:
     assert room.space_kind == "static"
     print("configured \"static\" -> room kind:", room.space_kind)
 
-    # THE DOC DRIFT, made visible rather than described. The docstring
-    # promises a "dynamic" legacy alias; the enum does not have one.
+    # THREE MEMBERS, AND ONLY THREE. An input naming anything else fails at
+    # normalization rather than falling back - the correct behaviour for a
+    # value that fixes the room's posture for life. (A stale docstring once
+    # promised a fourth, "dynamic"; that has been corrected.)
     members = [kind.value for kind in md.RiftSpaceType]
-    print("actual members:", members)
-    assert "dynamic" not in members
+    print("members:", members)
+    assert members == ["static", "capability", "codegen"]
     try:
         md.RiftSpaceType("dynamic")
-        raise AssertionError("docstring would be right - alias exists")
+        raise AssertionError("expected ValueError - there is no such member")
     except ValueError:
-        print("'dynamic' is documented but NOT defined - docstring is stale")
+        print("an unknown room kind is refused, not defaulted")
 
     print()
     print("one rift, one room, one kind, decided once and never again")

@@ -2746,9 +2746,15 @@ class Conduit(Cleanable):
                 Optional list of conduit objects participating in the request.
                 For link transactions, include the local conduit and peers.
             scope_keys:
-                Optional normalized scope keys for conflict checks.
+                Optional normalized scope keys. These ARE the admission
+                vocabulary: they become the request's scope claims, and the
+                moded claim table acquires and arbitrates them.
             scope_hashes:
-                Optional normalized scope hashes for conflict checks.
+                Optional normalized scope hashes. ADVISORY IDENTITY ONLY - they
+                carry NO claims and are NOT checked for conflicts. Their only
+                reader is the retired `ChangeControlConflictManager`, which
+                nothing calls. Supplying hashes declares no overlap and buys no
+                isolation; use `scope_keys` to declare scope.
             binding_keys:
                 Optional binding keys affected by the request.
             contract_keys:
@@ -2985,9 +2991,15 @@ class Conduit(Cleanable):
                 Optional list of conduit objects participating in the request.
                 For link transactions, include the local conduit and peers.
             scope_keys:
-                Optional normalized scope keys for conflict checks.
+                Optional normalized scope keys. These ARE the admission
+                vocabulary: they become the request's scope claims, and the
+                moded claim table acquires and arbitrates them.
             scope_hashes:
-                Optional normalized scope hashes for conflict checks.
+                Optional normalized scope hashes. ADVISORY IDENTITY ONLY - they
+                carry NO claims and are NOT checked for conflicts. Their only
+                reader is the retired `ChangeControlConflictManager`, which
+                nothing calls. Supplying hashes declares no overlap and buys no
+                isolation; use `scope_keys` to declare scope.
             binding_keys:
                 Optional binding keys affected by the request.
             contract_keys:
@@ -3150,7 +3162,7 @@ class Conduit(Cleanable):
         Contract:
             - Only available in a dynamic environment; raises otherwise.
             - Only normal conduits may stage spells.
-            - Delegates to the owning Spellbook's `_bind_inactive` seam.
+            - Delegates to the owning Spellbook's `bind_inactive` surface.
             - Change-control transaction admission for this staging op is owned by
               the conduit/mediator lane (wired separately); this facade performs
               the dynamic gate and delegation only, holding no transaction window.
@@ -3194,7 +3206,7 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for bind_inactive.")
-        new_spell_id = self._spellbook._bind_inactive(
+        new_spell_id = self._spellbook.bind_inactive(
             spell=spell,
             spell_index=spell_index,
             existence=existence,

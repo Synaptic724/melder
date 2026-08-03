@@ -16,7 +16,17 @@ start until the plane is proven standalone and the surveys are in.
 
 ## BLOCKED ON
 1. STORY-2026-07-31-aetheric-mediator-core complete (plane proven standalone).
-2. STORY-2026-07-31-subsystem-transactional-survey complete (all three).
+2. ~~STORY-2026-07-31-subsystem-transactional-survey complete (all three).~~
+   **CLEARED 2026-08-02T19:35:00Z** (bootstrap_0). All three surveys delivered:
+   crystallizer, nexus, MR - each with six questions answered against source,
+   concrete scope keys and modes, and two CONFLICT findings apiece. Read the
+   cross-subsystem note at the end of the MR survey before starting wiring: the
+   plane subsumes crystallizer's global gate and Nexus's block/drain/refresh
+   choreography, but it does NOT subsume MR's one-way lock order, so wiring MR
+   is an addition on top of a hand-maintained invariant rather than a migration.
+   Also read the `ix` correction on the crystallizer survey - the first version
+   of that survey asserted `ix` meant escalation and refused it everywhere; it is
+   the PARENT-SCOPE marker, and it is earned in both Nexus and MR.
 3. Owner decision on epic open question 1: does the top plane claim FRAME scope
    keys, or only subsystem keys?
 4. Owner decision on epic open question 2: do inner frame transactions JOIN the

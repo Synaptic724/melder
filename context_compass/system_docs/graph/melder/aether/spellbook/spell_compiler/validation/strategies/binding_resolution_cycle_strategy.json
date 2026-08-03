@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py",
- "source_sha256": "697c05120275a0e8fb1f46a6e118cf3cc6a7da3b64aa709fe2dfab9f47305a07",
+ "source_sha256": "7eb4bc88b40efdeff8baac2236d73c8a57950fe4f316cb2118a7f83f4555f62f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy": {

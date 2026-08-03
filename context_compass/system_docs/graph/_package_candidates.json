@@ -42,6 +42,14 @@
    "cohesion": 0.83
   },
   {
+   "id": "src.melder.aether.aetheric_mediator.strategies",
+   "kind": "package",
+   "file": "src/melder/aether/aetheric_mediator/strategies/",
+   "member_count": 8,
+   "shared_suffix": "strategy",
+   "cohesion": 0.75
+  },
+  {
    "id": "src.melder.aether.conduit.creations",
    "kind": "package",
    "file": "src/melder/aether/conduit/creations/",

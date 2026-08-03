@@ -92,6 +92,15 @@ class Section(NamedTuple):
             chunk opening this section reports `start_line - 1`.
         end_line: Last line, 1-based and inclusive.
         line_count: Size of the span, so a caller can budget BEFORE reading.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One addressable span of a system document, as
+        `index()` returns it. Read `line_count` to budget a read BEFORE making
+        it, then pass `key` to `get()`, `reader()` or `stream()`.
+        `start_line`/`end_line` are 1-based inclusive, matching the source
+        index and the repo's `path:start-end` citation convention.
     """
 
     key: str
@@ -132,6 +141,14 @@ class SearchHit(NamedTuple):
             written without opening the section.
         preview: The first matching line, whitespace-collapsed and truncated.
             Enough to triage a hit without paying for the section.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One section whose BODY matched a `search()` term.
+        `hits` ranks it - the section naming a term twenty times usually
+        defines it. `preview` is one line, enough to triage without opening
+        the section; `first_line` cites the match directly.
     """
 
     key: str
@@ -150,6 +167,14 @@ class Group(NamedTuple):
         sections: How many sections fall under it.
         line_count: Their combined size, so a caller can see what reading the
             whole group would cost before asking for any of it.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. A cluster of sections sharing a prefix, from
+        `groups(depth=N)`. Use it to see a large index as a handful of rows
+        instead of hundreds, then expand one prefix with `find()`.
+        `line_count` says what reading the whole group would cost.
     """
 
     prefix: str
@@ -185,6 +210,15 @@ class Edge(NamedTuple):
             syntax tree is their evidence - and many endpoint pairs carry
             both a derived and an authored edge, so attaching the authored
             justification to its mechanical twin would blur the two tiers.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One outbound graph relationship. READ `origin` BEFORE
+        TRUSTING IT: `derived` came from the syntax tree and is rebuilt every
+        extraction, `authored` was written by hand and may describe code that
+        has since moved. Authored edges carry `why`, the argument for a claim
+        the AST cannot support - read it before relying on the edge.
     """
 
     source: str
@@ -207,6 +241,14 @@ class Impact(NamedTuple):
         nodes: The dependent node ids defined in this file.
         edges: How many inbound edges reach the changed node from here. A
             rough coupling weight - one reference is not eight.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One source file affected by changing a node, from
+        `impact()`. `hops` is the shortest distance from the change - 1 is a
+        direct dependent - so the list is triage order. `edges` is a rough
+        coupling weight; `source` opens directly as a section key.
     """
 
     source: str
@@ -230,6 +272,14 @@ class Node(NamedTuple):
         unsemantic: True when the node carries mechanical scaffold only. Its
             structure is trustworthy; its MEANING has not been authored. Do not
             infer purpose from the name of an unsemantic node.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One graph node. `source` is both its defining file and
+        its section key in `__graph_details__`, which is how a walked node
+        resolves to prose. `unsemantic` True means structure is established
+        but MEANING is not - do not infer purpose from such a node's name.
     """
 
     node_id: str
@@ -260,6 +310,17 @@ class SystemDocumentView:
         _entry: That document's manifest entry.
         _sections: Ordered sections, as emitted by the build.
         _by_key: Key -> section, for exact lookup.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. What `melder.__architecture__` and `__components__`
+        return. Ask `index()` or `groups()` what is here and what each piece
+        costs, `search(needle)` which sections discuss a term, then `get(key)`
+        for one slice or `reader()`/`stream()` when a section is itself too
+        large. `cite(key)` gives a ready-to-use `document:start-end`.
+        `verify()` re-checks the shipped bytes. Slicing a document that failed
+        its build-time proof RAISES rather than returning empty.
     """
 
     __slots__ = ("_document", "_entry", "_sections", "_by_key")
@@ -915,6 +976,17 @@ class SystemGraphView(SystemDocumentView):
 
     Attributes:
         _adjacency: The lazily imported generated adjacency module.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. What `melder.__graph_network__` and
+        `__graph_details__` return - everything `SystemDocumentView` does,
+        plus traversal. `edges_from`/`edges_to`/`neighbors`/`walk` move
+        through adjacency resolved at build time, so reverse lookup costs the
+        same as forward. `impact(node)` turns a change into the files it would
+        touch. `describe(node)` reads the prose for any node a walk reached.
+        Extractor guesses are absent by construction.
     """
 
     __slots__ = ("_adjacency",)

@@ -119,11 +119,21 @@ def main() -> None:
     print("assigned frames:", rift.list_assigned_frame_names())
 
     for verb in ("describe_visible_surface", "describe_missing_surface"):
+        # No frame name: refused by the SIGNATURE now (2026-08-02 fix).
         try:
             getattr(viewer, verb)()
             raise AssertionError(f"{verb} should require a frame name")
-        except ValueError as error:
-            print(f"  {verb:26s} refused: {error}")
+        except TypeError as error:
+            print(f"  {verb:26s} requires a frame name: {error}")
+
+        # A frame name this rift is not contracted to: refused by the
+        # RESOLVER. Naming a world you do not hold is not a quiet empty.
+        try:
+            getattr(viewer, verb)(frame_name="never-assigned")
+            raise AssertionError(f"{verb} should refuse an unheld frame")
+        except Exception as error:
+            print(f"  {verb:26s} refused an unheld frame:",
+                  type(error).__name__)
 
     print()
     print("no frame bound, no blind-spot report - and refusing is right:")

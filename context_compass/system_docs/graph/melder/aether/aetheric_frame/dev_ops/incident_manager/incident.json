@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py",
- "source_sha256": "d652283b9e6620a2f73d6eb66a12395a398a0b745bece253026031a494b99166",
+ "source_sha256": "719367ee9546cf45352e89114d4b9e1c943605890c11f784b2511ac77925f7cb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident": {

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py",
- "source_sha256": "d4563db0652b05ddc530654d161b5828a25a0f393c99d9177f4ad98f8bf6890c",
+ "source_sha256": "267383b9d55645bcf766c1198d3db0855add0d4b6d5c793f0b81d907d146a7b0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter": {

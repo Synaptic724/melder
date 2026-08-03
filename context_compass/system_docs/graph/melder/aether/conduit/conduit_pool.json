@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_pool.py",
- "source_sha256": "d6865864423b5c48579f0d9beedec8058e6c88cb7bb9ca8e12bb8b772fe28343",
+ "source_sha256": "2500ab6eab3ef00a37133cc758581e5f638690a11829443ff442e651ccd2b6de",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_pool": {

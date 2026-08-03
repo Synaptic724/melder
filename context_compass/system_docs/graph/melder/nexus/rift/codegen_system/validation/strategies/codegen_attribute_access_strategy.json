@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_attribute_access_strategy.py",
- "source_sha256": "561758a049cfe86f9303fd32081155bec2bd98f7febbb3da59667f0029d795cf",
+ "source_sha256": "0782903ecd1235e84ad780369c9d16571693a07ed59b2128891c4c9ae1151c33",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy": {

@@ -220,8 +220,14 @@ def test_aether_rejects_duplicate_root_conduit_names_per_frame() -> None:
         existence=Existence.unique,
         permissions="create",
     )
+    # DISTINCT class on purpose: spell_id is a SHA256 over the bind-time
+    # fingerprint and does not include the frame, so binding BasicService in
+    # both books would mint the same id twice in one frame and be refused by
+    # the conjure integrity sweep before this test reaches the name check.
+    # This test is about CONDUIT NAME uniqueness; the bindings are only here so
+    # each book has something to conjure.
     borrower_book.bind(
-        spell=BasicService,
+        spell=BasicConfig,
         existence=Existence.unique,
         permissions="create",
     )

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py",
- "source_sha256": "0ab351c9d78a1b2d47e7faa4de5ce83c6c467711647263a01440c8d845070135",
+ "source_sha256": "098d834e47ec1b91c1ed10a403fedc56687c1bb942f8d7729f8d7150a97a56ab",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy": {

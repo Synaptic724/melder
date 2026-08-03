@@ -2161,7 +2161,7 @@ class FrameViewer(Cleanable):
 
     def get_view_frame(
             self,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> ViewFrame:
         """
         Return one frame helper bound to the requested frame.
@@ -2218,7 +2218,7 @@ class FrameViewer(Cleanable):
     def get_view_conduit(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> ViewConduit:
         """
         Return one conduit helper bound to the requested frame.
@@ -2258,7 +2258,7 @@ class FrameViewer(Cleanable):
     def get_view_spell(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> ViewSpell:
         """
         Return one spell helper bound to the requested frame.
@@ -2721,7 +2721,7 @@ class FrameViewer(Cleanable):
     def describe_visible_surface(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return the current visible frame-local surface in one summary.
@@ -2753,7 +2753,7 @@ class FrameViewer(Cleanable):
     def describe_missing_surface(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return what is currently hidden or absent from the selected frame
@@ -2784,7 +2784,7 @@ class FrameViewer(Cleanable):
     def describe_frame_brief_local(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return one compact operator-oriented frame summary.
@@ -2821,7 +2821,7 @@ class FrameViewer(Cleanable):
     def describe_visible_inventory_by_kind(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, Dict[str, object]]:
         """
         Return visible inventory grouped by target kind.
@@ -2858,7 +2858,7 @@ class FrameViewer(Cleanable):
     def describe_frame_topology(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return the visible conduit/spell topology for the selected frame.
@@ -2895,7 +2895,7 @@ class FrameViewer(Cleanable):
     def list_visible_target_ids(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
             source_kind: Optional[str] = None,
     ) -> List[str]:
         """
@@ -2935,7 +2935,7 @@ class FrameViewer(Cleanable):
     def list_visible_target_ids_by_kind(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, Tuple[str, ...]]:
         """
         Return visible target ids grouped by target kind.
@@ -2980,7 +2980,7 @@ class FrameViewer(Cleanable):
     def list_visible_conduit_ids(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> List[str]:
         """
         Return visible conduit ids for the selected frame.
@@ -3025,7 +3025,7 @@ class FrameViewer(Cleanable):
     def list_visible_spell_source_ids(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> List[str]:
         """
         Return visible spell source ids for the selected frame.
@@ -3070,7 +3070,7 @@ class FrameViewer(Cleanable):
     def list_visible_root_conduits(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> List[FrameLink]:
         """
         Return visible conduit links that are also root conduits.
@@ -3115,7 +3115,7 @@ class FrameViewer(Cleanable):
     def list_visible_binding_names(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> List[str]:
         """
         Return visible spell binding names for the selected frame.
@@ -3160,7 +3160,7 @@ class FrameViewer(Cleanable):
     def list_visible_spell_names(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> List[str]:
         """
         Return visible spell names for the selected frame.
@@ -3205,7 +3205,7 @@ class FrameViewer(Cleanable):
     def list_visible_spellframes(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> List[str]:
         """
         Return visible normalized spellframe values for the selected frame.
@@ -3251,7 +3251,7 @@ class FrameViewer(Cleanable):
     def list_visible_index_ids(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> List[str]:
         """
         Return visible spell-index ids for the selected frame.
@@ -3296,7 +3296,7 @@ class FrameViewer(Cleanable):
     def describe_visible_spell_ownership(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, Tuple[str, ...]]:
         """
         Return visible spell ownership grouped by conduit id.
@@ -3342,7 +3342,7 @@ class FrameViewer(Cleanable):
     def describe_visible_conduit_tree(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, Tuple[str, ...]]:
         """
         Return visible conduit ids grouped by root conduit id.
@@ -3389,7 +3389,7 @@ class FrameViewer(Cleanable):
             self,
             text: str,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
             source_kind: Optional[str] = None,
     ) -> List[FrameLink]:
         """
@@ -3433,7 +3433,7 @@ class FrameViewer(Cleanable):
             self,
             prefix: str,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
             source_kind: Optional[str] = None,
     ) -> List[FrameLink]:
         """
@@ -3492,7 +3492,7 @@ class FrameViewer(Cleanable):
     def group_targets_by_kind(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, List[FrameLink]]:
         """
         Return visible targets grouped by target kind.
@@ -3539,7 +3539,7 @@ class FrameViewer(Cleanable):
             *,
             source_kind: str,
             source_id: str,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return one compact summary for a visible target.
@@ -3584,7 +3584,7 @@ class FrameViewer(Cleanable):
             *,
             source_kind: str,
             source_id: str,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return a compact identity summary for one visible target.
@@ -3626,7 +3626,7 @@ class FrameViewer(Cleanable):
     def describe_visible_collisions(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return visible identity collisions for the selected frame.
@@ -3663,7 +3663,7 @@ class FrameViewer(Cleanable):
     def describe_frame_payload(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return the ACL-filtered frame payload for the selected frame.
@@ -3694,7 +3694,7 @@ class FrameViewer(Cleanable):
     def describe_frame_inventory(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return a compact inventory of the selected frame surface.
@@ -3721,7 +3721,7 @@ class FrameViewer(Cleanable):
     def describe_frame_access_contract(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Return the selected ACL access contract for the frame surface.
@@ -3759,7 +3759,7 @@ class FrameViewer(Cleanable):
             self,
             field_name: str,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> object:
         """
         Return one ACL-visible frame payload field or raise.
@@ -3792,7 +3792,7 @@ class FrameViewer(Cleanable):
             self,
             display_name: str,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
             source_kind: Optional[str] = None,
     ) -> List[FrameLink]:
         """
@@ -3837,7 +3837,7 @@ class FrameViewer(Cleanable):
             *,
             source_kind: str,
             source_id: str,
-            frame_name: Optional[str] = None,
+            frame_name: str,
     ) -> Dict[str, object]:
         """
         Explain whether one target is visible and what ACL data is exposed.
@@ -3881,7 +3881,7 @@ class FrameViewer(Cleanable):
     def list_targets(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
             source_kind: Optional[str] = None,
     ) -> List[FrameLink]:
         """
@@ -3910,7 +3910,7 @@ class FrameViewer(Cleanable):
     def describe_targets(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_name: str,
             source_kind: Optional[str] = None,
     ) -> List[Dict[str, object]]:
         """

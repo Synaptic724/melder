@@ -67,11 +67,42 @@ def main() -> None:
     print("posture knobs mapped:", total)
     print("presets available:", len(presets))
 
-    # Derived from the list above, never hardcoded. A hand-maintained count
-    # over a living surface drifts the moment a knob lands - which is exactly
-    # how this example went red: the caching pair was added, the list grew,
-    # and the number underneath it did not.
-    assert total == sum(len(names) for names in knobs.values())
+    # THIS MAP IS CHECKED AGAINST THE REAL CLASS, IN BOTH DIRECTIONS.
+    #
+    # A hand-maintained list over a living surface drifts the moment a knob
+    # lands - which is exactly how this example went red once before: the
+    # caching pair was added, the list grew, and the number underneath it
+    # did not. The fix is not a better number. It is refusing to keep a
+    # count that only ever agrees with itself.
+    #
+    # Direction 1: every knob named here must be a real property.
+    mapped = {name for names in knobs.values() for name in names}
+    for name in sorted(mapped):
+        assert hasattr(md.AethericFrameConfiguration, name), (
+            f"{name} is on the cheatsheet but not on the class"
+        )
+
+    # Direction 2 - THE ONE THAT ACTUALLY CATCHES DRIFT. Every public,
+    # non-preset property on the class must appear on the cheatsheet. Add a
+    # knob to melder and this lesson goes red until the map is updated.
+    plumbing = {"id", "origin_spellbook_id", "frozen", "cleaned"}
+    live = {
+        name for name in dir(md.AethericFrameConfiguration)
+        if not name.startswith("_")
+        and name not in plumbing
+        and isinstance(
+            getattr(md.AethericFrameConfiguration, name, None), property
+        )
+    }
+    unmapped = live - mapped
+    assert not unmapped, f"NEW POSTURE KNOBS not on the cheatsheet: {unmapped}"
+    print("cheatsheet verified against the class:", len(mapped), "knobs,",
+          "0 unmapped")
+
+    # Presets are methods, not knobs - listed apart so the count stays honest.
+    for preset in presets:
+        assert hasattr(md.AethericFrameConfiguration, preset), preset
+
     print("the law book is set before first conjure and frozen by it")
 
 

@@ -1,0 +1,29 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/strategies/default_strategies.py",
+ "source_sha256": "f9e5f45bb824cff2628cf762343cd5490fee1b0e023c2ee2d563d2e1c200c095",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.strategies.default_strategies": {
+   "id": "melder.aether.aetheric_mediator.strategies.default_strategies",
+   "label": "default_strategies",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/strategies/default_strategies.py",
+   "lineno": 1
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "AgentRepairTransactionStrategy": "melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy.AgentRepairTransactionStrategy",
+  "CheckpointLoadTransactionStrategy": "melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy.CheckpointLoadTransactionStrategy",
+  "FormationLoadTransactionStrategy": "melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy.FormationLoadTransactionStrategy",
+  "IndexGraftTransactionStrategy": "melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy.IndexGraftTransactionStrategy",
+  "SubsystemDisableTransactionStrategy": "melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy.SubsystemDisableTransactionStrategy",
+  "SubsystemEnableTransactionStrategy": "melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy.SubsystemEnableTransactionStrategy",
+  "StrategyBuilder": "melder.aether.aetheric_mediator.strategy_builder.StrategyBuilder",
+  "TransactionType": "melder.aether.aetheric_mediator.transaction_type.TransactionType"
+ },
+ "collapse_candidate": null
+}

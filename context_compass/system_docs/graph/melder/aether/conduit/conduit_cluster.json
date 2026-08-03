@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_cluster.py",
- "source_sha256": "530bffc062bf4d79d1aeb85552f50b3ee92c8adc95af37b48e379836a767c77c",
+ "source_sha256": "ffd236f7d36e155ff50130fab84cbd39803b13065789726ef3491698e10b0c26",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_cluster": {
@@ -64,7 +64,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "fb7097fe81ec1229356bd55531563b22adfdcf155d0f8b8005da9443444c03a9",
+   "span_sha256": "e612e0941564842c4435ce9bf1324fe3a05f843d20ff53958e4b14febc7119a2",
    "role": "Cluster-local conduit membership and shared-root manager.",
    "responsibilities": [
     "tracks conduit membership by cluster",

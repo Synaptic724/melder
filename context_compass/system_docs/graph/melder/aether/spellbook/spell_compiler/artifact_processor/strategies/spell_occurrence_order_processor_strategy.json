@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_order_processor_strategy.py",
- "source_sha256": "4e283151f57f43978c62427c99ac9ac1d197054d595f070a57b7467890f889a8",
+ "source_sha256": "904e960166dc581229b19038359665527a6e0f818a549466661cceb03a9e1aee",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy": {

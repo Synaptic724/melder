@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py",
- "source_sha256": "07edcf640262778824d6d1dc666a15116aaa9c1510bb5abbfc58a07f76c2c282",
+ "source_sha256": "9400979bba914ba2ae77bf493c36343b74f3509a0ee3b12a295cf1f68d125bcb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy": {

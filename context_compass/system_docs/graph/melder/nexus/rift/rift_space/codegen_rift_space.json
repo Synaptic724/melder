@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_space/codegen_rift_space.py",
- "source_sha256": "c34513fcd0d813fa75bff721712b5e156f384f5774a928552ec3c08914be5b65",
+ "source_sha256": "7bcc37dfc9c948deb8b2865de473008b11f2d9065478f14b4e66f4d61b2636a4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_space.codegen_rift_space": {
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "98e2e885e5dd2913e9d7c93a1cb3dbf51317747a6df08d3d63c31cd2557c9c3a",
+   "span_sha256": "6dc5d9f21ea8ea03d2c2c8858126654508c01e8f26167db8e3bc9e2390d4a276",
    "role": "Codegen-oriented room specialization.",
    "responsibilities": [
     "fixes room kind to codegen",

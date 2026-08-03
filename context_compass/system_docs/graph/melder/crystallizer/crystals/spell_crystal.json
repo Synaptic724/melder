@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_crystal.py",
- "source_sha256": "6de86f4d2339d75918c4a680413d1f73861c4b15528a37b4b3fdc0a33fec05cd",
+ "source_sha256": "f3f68efe9deb836cc4d081bde5d33bc6a38f636e109e1489592803213d2adf4d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_crystal": {

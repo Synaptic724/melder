@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py",
- "source_sha256": "5ebc11bbf1f3122271e5a9f62979db3b03e37dfef2e9930f9cb2418decf50657",
+ "source_sha256": "b956a1ae19ae32607188520e50b4ef08c602ba98f8b433e2f0d8ce7cdefc0678",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.codegen_system.observability.codegen_event_publisher": {

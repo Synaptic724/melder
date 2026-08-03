@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor_manager.py",
- "source_sha256": "7cc782e60efe22f8c3c82b5cc7668f30bd38f25d591303c6aa80600e3caebd53",
+ "source_sha256": "48dd3f40e1554f793289600e3a63c7c29913766f56804bc456fd8e8b12ed2ef7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor_manager": {

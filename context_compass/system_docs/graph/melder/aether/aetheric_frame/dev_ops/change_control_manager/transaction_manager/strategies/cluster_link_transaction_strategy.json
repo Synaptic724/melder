@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py",
- "source_sha256": "5ee7c19dea74c2673e4a7d6c2efb3a39e7d0056067e491a78f829cda8262054d",
+ "source_sha256": "fd4fc8471505d6336546f7e0067ec19273d821623671a4a30f3077eee88c7047",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy": {

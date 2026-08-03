@@ -2,7 +2,8 @@ CONCEPT MAP - 03_advanced (README tier: ORANGE Advanced)
 ==========================================================
 Isolation + AR: frame posture and configuration surfaces, Nexus and rifts,
 rooms by kind (STATIC and CAPABILITY), the View* read family, ward
-policies, and checkpoint/load. 18 lessons authored, 01-18 sequential.
+policies, checkpoint/load, and the override targeting grammar.
+19 lessons authored, 01-19 sequential.
 
 HOUSE RULE - STRINGS, NOT ENUMS
   Demos pass STRINGS for every enum-shaped argument: existence="unique",
@@ -49,9 +50,15 @@ AUTHORED (01-18, sequential, no gaps - renumbered 2026-08-02)
   04 utility_system_logger (boots-silent law; attach_logger /
      enable_logging are the public post-boot doors; None detaches)
 
-  05 frame_posture_cheatsheet (ALL 15 posture knobs mapped: mode, AR
-     eligibility, sharing, caching, the 7 devops brakes, transaction
-     patience, the 3 presets, the freeze law)
+  05 frame_posture_cheatsheet (ALL 14 posture knobs: mode, AR eligibility,
+     sharing, caching, the 7 devops brakes, transaction patience, the 3
+     presets, the freeze law. THE MAP IS VERIFIED AGAINST THE CLASS IN
+     BOTH DIRECTIONS - every listed knob must be a real property, and
+     every public non-plumbing property must be listed. Add a knob to
+     melder and this lesson goes red until the map catches up. It used to
+     assert `total == sum(len(names)...)`, which only ever agreed with
+     itself; that self-referential count is exactly how the earlier "15
+     knobs" claim survived - the class has 14)
   06 frame_posture_object (the object itself: CONSTRUCTOR-FIRST, 4
      required kw-only values; with_* mutates and returns SELF never a
      copy; validate() RAISES rather than returning False - ai_native
@@ -173,7 +180,22 @@ ARC D COMPLETE (lesson 16)
      is the cheap check. Eviction is a SIDE EFFECT; deletion is a
      DECISION, with its own verb)
 
-ARC E COMPLETE (lessons 17-18) - ADVANCED TIER PLAN FULLY AUTHORED
+ARC E COMPLETE (lessons 17-18)
+
+  19 wildcard_and_broadcast_overrides (the OTHER TWO targeting forms -
+     lesson 01 taught PATH "a>b>c"; this adds UNIQUE "*param" (exactly
+     one match REQUIRED) and BROADCAST "**param" (at least one REQUIRED).
+     THE MATCH COUNTS ARE ENFORCED, NOT ADVISORY - melder's reasoning:
+     "a *param that silently matched three sockets, or zero, would apply
+     the caller's intent to the wrong object or to nothing at all, and
+     BOTH FAIL INVISIBLY AT RUNTIME". Never-substitute applied to
+     TARGETING. Overlap between a broadcast and an exact path is resolved
+     by SPECIFICITY - the exact path wins. Everything bound `many` so the
+     fixtures cannot outlive the call, per lesson 01's sharp edge.
+     NOT taught: SpellOverrider itself is AGENT_ACCESS: internal -
+     "users supply the override PAYLOAD, never this object")
+
+ADVANCED TIER PLAN FULLY AUTHORED - 19 lessons, 01-19
 
 CONFIG TERMINATOR DIVERGENCE (evidence for the uniformity epic)
   AethericFrameConfiguration        freeze, finalize
@@ -224,7 +246,7 @@ FINDINGS (recorded for the owner's init/public-surface program)
     __init__ takes (aetheric_frame, configuration, logger) where
     `configuration` is a SpellbookConfiguration. Every path to the live
     frame posture is private. The one public door,
-    configure_aether_frame(...), reaches TWO of the 15 knobs
+    configure_aether_frame(...), reaches TWO of the 14 knobs
     (system_state, system_caching_enabled). A constructed posture has
     nowhere to go.
   - CLOSED 2026-08-02: "compatibility mode" was a TERMINOLOGY ERROR for
@@ -237,32 +259,53 @@ FINDINGS (recorded for the owner's init/public-surface program)
     configure_aether_frame, and the posture object owning
     with_rift_enabled() has no install door. Rifts/rooms/workstations ARE
     reachable; dynamic AR targeting is not. Pinned as a probe.
-  - DOC DRIFT (2026-08-02, lesson 10): RiftSpaceType's docstring
-    documents a "dynamic" member as a legacy alias for codegen. NO SUCH
-    MEMBER EXISTS and there is no _missing_ handler, so
-    RiftSpaceType("dynamic") raises. Same shape as the false
-    with_defaults() docstring at spellbook_configuration.py:1062-1064.
-    Pinned; the probe goes red when someone fixes either side.
+  - THREE DOC DRIFTS: FOUND, THEN FIXED IN SOURCE 2026-08-02 (owner
+    directive "if there are doc drifts update them"). All three were the
+    same shape - prose making a checkable claim that the code contradicts,
+    with nothing testing the claim:
+      (1) RiftSpaceType documented a FOURTH member, "dynamic: legacy alias
+          for codegen". No such member, no _missing_ handler, so
+          RiftSpaceType("dynamic") raised. Docstring now states the three
+          members are the whole set and an unknown kind is REFUSED.
+      (2) Workstation.describe_bindings promised "a FOUR-KEY summary...
+          always with all four keys present, so callers can index them"
+          and returned FIVE. That one had teeth - it explicitly invited
+          reliance on the count. Now documents five and explains
+          `target_store` (it names WHICH store the target came from, so it
+          round-trips through get(name, store=...)).
+      (3) SpellbookConfiguration.with_defaults claimed it applies defaults
+          "overwriting anything set earlier, so call it FIRST and override
+          afterwards". IT PRESERVES - load_default_dictionary writes only
+          `if key not in self._properties`. So it is NOT a reset, and the
+          dangerous read was the inverse of the advice: configure, then
+          call with_defaults expecting a restore, and nothing happens.
+          Docstring now says SEEDS ONLY WHAT IS MISSING.
+    THE PROBES THAT PINNED THESE HAVE BEEN FLIPPED - they asserted the
+    drift existed and were written to go red when it was fixed. They now
+    pin the CORRECTED state, so a revert is what turns them red.
+    LESSON FOR THE PROGRAM: a docstring that states a count or a member
+    list is a TESTABLE CLAIM. Nothing in the suite tested any of these.
+    Three of one shape in one tier suggests a sweep is worth more than
+    three point fixes.
 
-PLANNED (per README ORANGE + AGENTS charter)
-  - aetheric frames as isolated worlds (categories arc act 3):
-    Spellbook(aetheric_frame="tenant-a"), per-frame singletons,
-    frames do not link across - the wall is real  [DONE - 03]
-  - AethericFrameConfiguration surface (fenced out of intermediate)
-    [DONE - 07 maps it, 08 handles it]
-  - ARC A (09): AetherConfiguration + AetherConfigurationBuilder - two
-    doors to one config (builder.build() vs config.finalize())
-  - ARC B (10-14): Nexus / NexusConfiguration / NexusFrameMode, Rift /
-    RiftConfiguration, RiftSpace + RiftSpaceType STATIC then CAPABILITY,
-    Workstation
-  - ARC C (15-17): FrameViewer, ViewFrame, ViewConduit, ViewSpell,
-    ViewMultiFrame - the read family
-  - ARC D (18): Policies (ward)
-  - ARC E (19-20): checkpoint / load - BLOCKED on owner ruling, the only
-    public doors are crystallizer names assigned to EXPERT
-  - wildcard/broadcast override grammar (*name / **name, specificity,
-    conflict refusals - component suite already proves it)
-  - cluster operations at scale (leader lifecycle, teardown)
+PLAN STATUS (all arcs authored 2026-08-02; numbers are POST-RENUMBER)
+  [DONE] frames as isolated worlds .................... 02
+  [DONE] AethericFrameConfiguration surface ........... 05 maps, 06 handles
+  [DONE] ARC A - config surfaces ...................... 06-07
+  [DONE] ARC B - nexus, rift, rooms, workstation ...... 08-12
+  [DONE] ARC C - the View* read family ................ 13-15
+  [DONE] ARC D - ward policies ........................ 16
+  [DONE] ARC E - checkpoint / load .................... 17-18
+         (arc E was blocked on a tier-scope ruling; owner 2026-08-02:
+          the crystallizer names ARE the public doors, so advanced uses
+          them and expert teaches the machinery behind them)
+  [DONE] wildcard / broadcast override grammar ........ 19
+
+REMAINING / NOT THIS TIER
+  - cluster operations at scale (leader lifecycle, teardown) -> the
+    cluster surface is INTERMEDIATE material per owner 2026-08-02; only
+    at-scale operational behaviour would be advanced, and it has no
+    public door beyond what intermediate already teaches. Not planned.
 
 NOT THIS TIER
   - ConduitCloud -> INTERMEDIATE (owner 2026-08-02, dynamic-mode basics)

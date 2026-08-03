@@ -512,3 +512,51 @@ this is trustworthy: T11 real tests on 3.14t, the three subsystem surveys, and
 owner rulings on the epic's open questions - especially whether the top plane
 claims FRAME scope keys (it currently does, via `ScopeKey.frame`) and whether
 inner frame transactions JOIN the top session or stay siblings.
+
+- DATETIME: 2026-08-02T19:20:00Z
+  TYPE: FACT
+  CLAIM: REVIEW DEBT DISCHARGED - all three flagged assertions VERIFIED AGAINST
+    SOURCE. bootstrap_0 raised them and bootstrap_0 has now retired them, which is
+    second-best to a review by whoever built this package, but it beats leaving
+    them open for a reviewer who no longer exists. Each was checked by opening the
+    file, not by re-reading the docstring the prose came from.
+    (1) `ix` IS THE HIERARCHICAL PARENT-SCOPE MARKER, not an escalation marker.
+    CONFIRMED, and confirmed TWICE by two independent definitions that agree:
+    `embargo_manager.py` `ClaimMode` - "`INTENT` (\"ix\") is the parent-scope
+    marker for hierarchical claims and permits coexistence with other `INTENT`
+    claims only" - and `aetheric_mediator/claim_mode.py` `ClaimMode` - "hold `ix`
+    on the parent while holding `x` on the child, and disjoint children proceed in
+    parallel". This one was not verified as a favour: it is the same claim that
+    caught a real error in my own crystallizer survey, where I had asserted the
+    escalation reading and used it to refuse `ix` everywhere. The graph prose was
+    right and the survey was wrong; correction filed there.
+    (2) REFUSAL LEAVES NO TRACE. CONFIRMED at
+    `admission_orchestrator.py:58-78`. The order is load-bearing: `try_acquire`
+    (:58) is all-or-nothing so a refusal granted nothing; the block evidence is
+    rendered into the verdict and every block is `cleanup()`ed (:75-76); the
+    method returns (:77); and `self._in_flight[request.request_id] = request`
+    (:78) sits AFTER that return, so a refused request never enters the registry.
+    No claims, no registry row, no residue.
+    (3) `BROKEN` IS A DISTINCT TERMINAL STATE. CONFIRMED.
+    `SessionStatus` enumerates OPEN, COMMITTING, COMMITTED, ABORTING, ABORTED,
+    BROKEN - BROKEN is its own member, not a flavour of ABORTED - and the class
+    contract (`transaction_session.py:66-69`) states the reason: aborted means the
+    world was returned toward its prior shape, broken means it was knowingly left
+    mid-flight for repair.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/claim_mode.py (ClaimMode contract)
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py (ClaimMode contract)
+  - src/melder/aether/aetheric_mediator/admission_orchestrator.py:58-78
+  - src/melder/aether/aetheric_mediator/transaction_session.py:58-69
+  - tickets/tasks/completed/2026-07-31_survey_crystallizer_transactional_surface_task.md (the `ix` correction this verification produced)
+  IMPACT: The 38 authored graph nodes for this package stand as written on the
+    three points that were flagged. The descriptors need no correction and no
+    re-stamp. The remaining 35 assertions were never flagged and remain
+    docstring-derived - if this repo's stale-docstring problem
+    (TASK-2026-08-02-stale-source-docstrings) reaches this package, they inherit
+    it, and SEMANTICS_STALE will fire on any node whose source moves.
+  NEXT: None required. Whoever takes this lane may still correct any node they
+    disagree with; the route is unchanged (edit descriptor, `graph_walker.py
+    --accept <node_id> --apply`, reassemble).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

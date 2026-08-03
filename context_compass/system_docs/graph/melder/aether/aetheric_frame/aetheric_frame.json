@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/aetheric_frame.py",
- "source_sha256": "1236a76e6e8b5cd92a63ec71d93fd949ccbcfeeed942d34def3acc83e726068c",
+ "source_sha256": "b52a81b2de38b9a3d9c021d24178a36bc0371aa086e6a0b19308ff103077f8da",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.aetheric_frame": {

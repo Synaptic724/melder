@@ -358,12 +358,47 @@ def test_reporting_answers_along_three_axes_while_in_flight(plane):
     assert plane.reporting.activity_by_scope(ScopeKey.frame("A")) == ()
 
 
-def test_unregistered_transaction_type_refuses(plane):
-    """No default strategy: an unknown claim set must not run."""
-    with pytest.raises(KeyError):
-        plane.begin(
-            transaction_type=TransactionType.AGENT_REPAIR, submitter=_who("one")
-        )
+def test_seeded_family_runs_without_local_registration(plane):
+    """
+    Every vocabulary member has a family at construction, so a type this fixture
+    never registered still admits with a real claim set.
+
+    This REPLACES an earlier test that expected `begin(AGENT_REPAIR)` to raise
+    `KeyError`. That expectation was correct while the registry started empty;
+    `StrategyBuilder` now seeds the plane's six families in `__init__`, mirroring
+    the DevOps plane, so an unregistered member is no longer reachable.
+
+    The fixture registers only CHECKPOINT_LOAD and FORMATION_LOAD, which is what
+    makes this meaningful: AGENT_REPAIR is served by the SEEDED family, not by
+    anything this test set up. And the claim it produces is checked rather than
+    assumed - a repair naming no scopes has unbounded reach into a world already
+    known to be broken, so it must take the whole world.
+    """
+    session = plane.begin(
+        transaction_type=TransactionType.AGENT_REPAIR, submitter=_who("one")
+    )
+    try:
+        assert sorted(session.staged.granted_scopes) == [ScopeKey.world()]
+    finally:
+        session.leave()
+        plane.commit(session)
+
+
+def test_seeded_repair_family_claims_only_what_it_is_given(plane):
+    """A repair that names its scopes claims those, not the world."""
+    session = plane.begin(
+        transaction_type=TransactionType.AGENT_REPAIR,
+        submitter=_who("one"),
+        metadata={"repair_scopes": [ScopeKey.frame("A")]},
+    )
+    try:
+        assert sorted(session.staged.granted_scopes) == [
+            ScopeKey.frame("A"),
+            ScopeKey.world(),
+        ]
+    finally:
+        session.leave()
+        plane.commit(session)
 
 
 def test_concurrent_frame_loads_do_not_serialise(plane):

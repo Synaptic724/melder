@@ -20,20 +20,25 @@ GOAL: THE FRAME VIEWER - the room's read surface, and the first place in
         get_view_spell()      FRAME-SCOPED - identity, source, binding
 
       AND THERE IS NO DEFAULT FRAME.
-      The three frame-scoped accessors REQUIRE a frame name. Omit it and
-      you get `ValueError: frame_name is required.`, because "the viewer
-      no longer supports default-frame routing for frame-local
+      The three frame-scoped accessors REQUIRE a frame name, because "the
+      viewer no longer supports default-frame routing for frame-local
       operations". A freshly opened rift is contracted to no frames, so
       until you assign one there is no name to pass - and that is the
       honest state, not a bug in your code.
 
-      DEFECT NOTE (owner's 3.14t run, 2026-08-02): those accessors are
-      typed `frame_name: Optional[str] = None` and then reject None
-      unconditionally. THE DEFAULT VALUE IS NEVER VALID. A reader who
-      trusts the signature writes get_view_frame() and gets a ValueError
-      for using the documented default. Either the parameter should be
-      `frame_name: str` with no default, or None should route somewhere.
-      Pinned in test_advanced_probes.
+      SIGNATURE DEFECT FOUND AND FIXED (2026-08-02): these were typed
+      `frame_name: Optional[str] = None` and then rejected None
+      unconditionally - the documented default was never valid, so a
+      reader who trusted the signature got an error for using it. 33
+      methods on FrameViewer now declare `frame_name: str`, so omitting
+      it fails at the CALL with a TypeError instead of inside the body.
+
+      NOTE THE DISTINCTION THAT SURVIVED THE FIX, because it is real:
+        FrameViewer.describe_missing_surface(frame_name)   SELECTOR, required
+        ViewFrame.describe_missing_surface(frame_name=None) ASSERTION, optional
+      A ViewFrame is ALREADY bound to one frame, so naming it there is a
+      guard against reading the wrong world, not a choice of which to
+      read. Optional is correct on one and a lie on the other.
 
       AND THEN THE PART WORTH THE WHOLE LESSON.
 
@@ -97,15 +102,15 @@ def main() -> None:
     print("view_multiframe:", type(multiframe).__name__, "(host-scoped)")
 
     # get_view_frame / get_view_conduit / get_view_spell are FRAME-SCOPED.
-    # THERE IS NO DEFAULT FRAME. Calling them without a name raises, and
-    # the viewer says why: "the viewer no longer supports default-frame
-    # routing for frame-local operations."
+    # THERE IS NO DEFAULT FRAME, and since the signature fix that is now
+    # enforced by the signature itself - omitting the name is a TypeError
+    # at the call, not a ValueError from somewhere inside.
     for accessor in ("get_view_frame", "get_view_conduit", "get_view_spell"):
         try:
             getattr(viewer, accessor)()
             raise AssertionError(f"{accessor} should require a frame name")
-        except ValueError as error:
-            print(f"  {accessor:18s} refused: {error}")
+        except TypeError as error:
+            print(f"  {accessor:18s} requires a frame name: {error}")
 
     # This rift is contracted to no frames, so there is no name to pass -
     # which is the honest state of a freshly opened rift.

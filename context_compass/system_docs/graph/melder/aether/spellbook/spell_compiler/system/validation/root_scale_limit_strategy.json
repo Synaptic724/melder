@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py",
- "source_sha256": "3ac24bdf40e2e114e99591928eee389302681aa4302f7600b6d487a4a21b39d4",
+ "source_sha256": "1e59d8b7fe998717975234aa0c1941c6c72406bac031fae64140f3e734cba03a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_strategy": {
