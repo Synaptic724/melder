@@ -5,10 +5,10 @@
 - Epic ID: EPIC-2026-07-31-aetheric-mediator-subsystem
 - Status: in_progress
 - Owner: cowork
-- Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
+- Agent Name: bootstrap_0 (claimed 2026-08-03T02:50:00Z; lane was left ACTIVE and UNASSIGNED after helper_f departed)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-08-01T13:20:00Z
+- Updated: 2026-08-03T02:50:00Z
 
 ## Problem / Opportunity
 The plane must exist and be trustworthy STANDALONE before any subsystem is wired
@@ -558,5 +558,165 @@ inner frame transactions JOIN the top session or stay siblings.
   NEXT: None required. Whoever takes this lane may still correct any node they
     disagree with; the route is unchanged (edit descriptor, `graph_walker.py
     --accept <node_id> --apply`, reassemble).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T02:50:00Z
+  TYPE: FACT
+  CLAIM: LANE CLAIMED by bootstrap_0 and the strategy layer DELIVERED. All six
+    `TransactionType` members now have a registered family under
+    `aetheric_mediator/strategies/`, mirroring the DevOps
+    `transaction_manager/strategies/` layout: registered as CLASSES, every hook
+    static, no instance state, `build_start_plan` pure over
+    (submitter, metadata).
+    CLAIM SHAPES - checkpoint_load `world` x; formation_load `world` ix +
+    `frame:<target>` x; index_graft `world` ix + `frame:<host>` ix;
+    subsystem_enable/disable `world` ix + `subsystem:<name>` x; agent_repair
+    `world` ix + each supplied scope x. Every family degrades to `world` x when
+    its target cannot be determined before admission, because `build_start_plan`
+    is pure and runs once - a guessed frame that is wrong isolates the wrong
+    surface and admits a real conflict.
+    ALSO ADDED, mirroring DevOps: `Mediator.get_session_for_identity`,
+    `has_active_session`, `get_active_request`, `get_session_by_request_id`,
+    `mark_active_session_abort_only`, and `TransactionSession.mark_abort_only` /
+    `abort_only_reason` / `is_abort_only` - the sticky first-writer-wins poison,
+    checked inside `mark_committing` so a session marked by ANY participant
+    cannot be committed by a later one that never learned of the failure.
+    `StrategyBuilder` now self-seeds in `__init__` via
+    `_register_default_strategies`, which is the DevOps shape. Its class
+    docstring previously said "there is no default"; that sentence was UPDATED
+    rather than left standing, because leaving it would have made the docstring
+    a lie of exactly the kind this repo has been finding all week.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/strategies/ (7 files)
+  - src/melder/aether/aetheric_mediator/strategy_builder.py (_register_default_strategies)
+  - src/melder/aether/aetheric_mediator/mediator.py (5 new verbs)
+  - src/melder/aether/aetheric_mediator/transaction_session.py (mark_abort_only)
+  IMPACT: The plane is complete standalone - every vocabulary member resolves,
+    and `missing_types()` is empty at construction, which is the boot-time
+    assertion the epic's EXIT_GATE wanted.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T02:50:00Z
+  TYPE: CONFLICT
+  CLAIM: I BREACHED THIS STORY'S EXECUTION_BOUNDARY and am recording it rather
+    than filing the work quietly under a story that forbids it. The boundary
+    reads "`src/melder/aether/aetheric_mediator/` ONLY. No edits to Aether, MR,
+    Nexus, or Crystallizer under this story." I edited `src/melder/aether/aether.py`
+    to construct, clean and expose the plane (owner constraint 3: Aether HOLDS
+    it, constructed immediately, first, right after Aether itself).
+    WHY IT HAPPENED: direct owner instruction in session, asking whether the
+    transactions were wired. Constraint 3 is an EPIC-level constraint and the
+    edit is one-way (Aether -> plane), so it does not violate constraint 4 - I
+    verified that by walking the transitive import closure of the only outside
+    module the plane touches (`melder.utilities.general_base.cleanable`); it
+    never reaches `melder.aether`, so there is no cycle.
+    WHY IT IS STILL A BREACH: owner instruction changes what is authorised, not
+    what the ticket says. The boundary line is unedited and now contradicts the
+    tree. Someone must either widen this story's boundary to cover constraint 3,
+    or move the Aether edit onto its own task under the epic. That is an owner
+    call, not mine, which is why this is a CONFLICT rather than a note.
+  EVIDENCE:
+  - src/melder/aether/aether.py (import, construction after LoadGate, cleanup, `aetheric_mediator` property)
+  - tickets/epics/2026-07-31_aetheric_mediator_subsystem_epic.md (owner constraint 3)
+  IMPACT: Nothing in the tree is wrong; the TICKET is wrong about what was
+    allowed. Left unrecorded it would read as an undisclosed scope creep the
+    next time anyone audits this lane.
+  NEXT: Owner rules on widening this story vs filing a separate constraint-3 task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T03:05:00Z
+  TYPE: FACT
+  CLAIM: COVERAGE GAP CLOSED. The strategy layer shipped with zero tests of its
+    own - I had only REWRITTEN three existing tests that my change broke, which
+    is not the same as covering new behaviour. New file
+    `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_strategies_unit.py`
+    adds 53 assertions across four groups:
+      CONTRACT SHAPE - families are classes not instances; every plan is
+        complete and typed (no implicit default mode exists, so a bare string
+        key would be silently unusable); `build_start_plan` is pure and
+        deterministic, asserted by planning twice over the same mapping and
+        comparing the mapping before and after.
+      PROPORTIONALITY - each family claims what its operation reaches. Includes
+        the parametrised unknown-target matrix (4 families x 5 malformed values)
+        proving every one degrades to `world` EXCLUSIVE rather than guessing.
+      AGENT_REPAIR - dedup, malformed-entry skipping, the whole-world fallback,
+        and the bare-string case (iterating a string would claim one scope PER
+        CHARACTER).
+      ISOLATION - 12 pairs run through `ClaimCompatibility` rather than by
+        eyeballing modes, because that matrix is what admission actually
+        consults. Each case states the OPERATIONAL claim in prose and the
+        assertion proves the arithmetic delivers it.
+      JURISDICTION - no family emits `spellbook:` / `conduit:` / `spell_index:`
+        / `ward:` keys. `agent_repair` is explicitly skipped with a reason
+        rather than silently excluded, since its set is caller-supplied.
+    ONE TEST ENCODES A KNOWN GAP RATHER THAN HIDING IT: two grafts into the same
+    frame are asserted NOT to conflict. That is the documented consequence of
+    `frame:` INTENT - this plane makes the graft visible and blocks whole-frame
+    and whole-world operations, but book-level overlap is the frame plane's job
+    and the graft lane does not ask it for that either.
+  EVIDENCE:
+  - tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_strategies_unit.py
+  IMPACT: New behaviour now has coverage written alongside it rather than
+    inherited from tests that predate it.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T03:05:00Z
+  TYPE: RISK
+  CLAIM: I HAVE NOT RUN THE SUITE, this session or any other. Every "verified"
+    claim in these notes rests on loading the plane's modules in isolation on a
+    3.10 sandbox with `StrEnum` and `Cleanable` SUBSTITUTED, because the sandbox
+    cannot obtain a 3.14t interpreter. That proves the claim arithmetic and
+    nothing about the shipped wiring - which is exactly the caveat the existing
+    unit-test file already carries in its own module docstring.
+    The evidence that this matters is concrete and from today: the owner's run
+    surfaced three failures I had not predicted, all caused by `StrategyBuilder`
+    self-seeding. My isolated harness could not have caught them because it
+    never exercised the tests.
+  EVIDENCE:
+  - tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py (module docstring states the same gap)
+  IMPACT: Three test files were edited or added under this lane and none has
+    been executed by me. Treat green as unproven until an owner run.
+  NEXT: Owner runs `pytest tests/unit/melder/aether/aetheric_mediator tests/component/melder/aether/aetheric_mediator -q` on 3.14t.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T03:25:00Z
+  TYPE: FACT
+  CLAIM: SECOND COVERAGE FILE ADDED -
+    `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_abort_only.py`,
+    36 assertions over the abort-only poison and the five session lookup verbs,
+    which were the remaining untested part of what I added.
+    THE POISON GETS ONE TEST PER DECISION THAT COULD HAVE GONE THE OTHER WAY,
+    because it is the kind of mechanism that looks obviously right and fails on
+    the second reader:
+      - the bar refuses commit AND the refusal carries the reason;
+      - STICKY / FIRST-WRITER-WINS - three marks, the first reason survives;
+      - marking does NOT end or reshape the session: status stays OPEN, depth is
+        unchanged, and the session is still joinable so an inner scope can leave
+        cleanly rather than being stranded;
+      - THE BAR LIVES ON THE SESSION, proven by calling `session.mark_committing()`
+        DIRECTLY, bypassing the mediator - it still refuses, which is only true
+        because the check is inside the session rather than in `Mediator.commit`;
+      - a reason is mandatory (an undescribed poison is invisible residue, the
+        same argument `_RollbackAction` makes for its description);
+      - marking a COMMITTED session raises rather than silently accepting, since
+        accepting would imply a guarantee never delivered;
+      - marking with no open session raises rather than no-opping, since a quiet
+        no-op lets a caller believe it poisoned a transaction it did not;
+      - unmarked sessions still commit - the bar must not leak into the clean path.
+    THE LOOKUP ASYMMETRY IS TESTED ACROSS A REAL THREAD: `get_session_by_request_id`
+    resolves from a foreign thread (a blocked caller holding an id from admission
+    evidence needs to identify the holder, who is on another thread by
+    definition) while `get_session_for_identity` and `has_active_session` return
+    None/False there. Reporting a session the caller may not touch would invite
+    exactly the foreign-thread join the session refuses.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_abort_only.py
+  IMPACT: Everything I added under this lane now has coverage written alongside
+    it. Two files, 89 assertions total (53 strategy + 36 abort-only/lookup).
   REREAD: HELPFUL
   SCORE_0_TO_10: 7

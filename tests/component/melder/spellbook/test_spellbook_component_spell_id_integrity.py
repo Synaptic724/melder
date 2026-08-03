@@ -143,6 +143,81 @@ def test_component_conjure_allows_same_class_in_different_frames() -> None:
     assert cache_a is not cache_b, "per-frame isolation must still hold"
 
 
+def test_component_a_parked_spell_still_reserves_its_spell_id() -> None:
+    """
+    Purpose:
+        THE SLEEPING-SPELL GUARANTEE. A spell staged inactive by `bind_inactive`
+        is unmeldable, but its spell_id is still ALLOCATED and must still block a
+        duplicate.
+    Contract:
+        - `EPIC-2026-06-14` named this failure in advance: "a dormant candidate's
+          spell_id is still allocated/taken... bind could re-mint a duplicate of
+          a sleeping spell."
+        - `bind_inactive` adds to `_spell_ids` (existence) while claiming NO
+          binding signature, so only the existence aggregate can catch this - the
+          LookupContainer never sees a parked spell.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a parked id can be re-minted by another Spellbook.
+    """
+    owner = _book("integrity-parked")
+    owner.bind(spell=IntegrityTenantCache, existence="unique")
+    conduit = owner.conjure(dynamic=True, name="integrity-parked-conduit")
+
+    spell_index = next(iter(owner.spells.keys()))
+    parked_id: str = conduit.bind_inactive(
+        spell=IntegrityOtherService,
+        spell_index=spell_index,
+        existence="unique",
+    )
+    assert parked_id, "staging did not return a spell_id"
+
+    # A SECOND book now binds the SAME staged class with the SAME parameters,
+    # so it mints the identical fingerprint - which is parked, not active.
+    intruder = _book("integrity-parked")
+    intruder.bind(spell=IntegrityOtherService, existence="unique")
+
+    with pytest.raises(RuntimeError) as excinfo:
+        intruder.conjure(name="integrity-parked-intruder")
+
+    assert "Conjure refused" in str(excinfo.value), (
+        "a PARKED spell_id failed to reserve its id. bind_inactive keeps "
+        "existence in _spell_ids precisely so a sleeping spell cannot be "
+        "duplicated; if this passes, the existence aggregate is active-only."
+    )
+
+
+def test_component_refusal_names_the_spell_not_just_a_sha() -> None:
+    """
+    Purpose:
+        Prove the refusal is diagnosable. A bare SHA256 tells a caller nothing
+        about WHICH binding collided.
+    Contract:
+        - `_describe_colliding_spells` resolves each colliding id back to the
+          owned Spell and reports its name and binding signature.
+        - It runs on the FAILURE PATH ONLY, so a healthy conjure pays nothing.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the message carries no human-readable identifier.
+    """
+    book_a = _book("integrity-message")
+    book_b = _book("integrity-message")
+    book_a.bind(spell=IntegrityTenantCache, existence="unique")
+    book_b.bind(spell=IntegrityTenantCache, existence="unique")
+
+    book_a.conjure(name="integrity-message-a")
+    with pytest.raises(RuntimeError) as excinfo:
+        book_b.conjure(name="integrity-message-b")
+
+    message = str(excinfo.value)
+    assert IntegrityTenantCache.__name__.lower() in message.lower(), (
+        f"the refusal identifies no spell by name, only ids. Got:\n{message}"
+    )
+    assert "id=" in message, "the short id prefix should still be present"
+
+
 def test_component_conjure_allows_distinct_classes_in_one_frame() -> None:
     """
     Purpose:

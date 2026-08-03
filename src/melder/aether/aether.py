@@ -17,6 +17,7 @@ from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_mediator.mediator import Mediator as AethericMediator
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.synchronization.load_gate import LoadGate
@@ -185,6 +186,20 @@ class Aether(Cleanable):
                 # every frame-local TransactionMediator born later (including
                 # frames born mid-load) inherits gate coverage unconditionally.
                 self._load_gate: LoadGate = LoadGate()
+                # AethericMediator, owner constraint 3: Aether HOLDS the plane
+                # and constructs it IMMEDIATELY, first, right after Aether
+                # itself is built - before any frame, subsystem or spellbook can
+                # exist. That ordering is the whole point of the plane: it is
+                # the admission authority that outranks the frame-local ones,
+                # and an authority that appeared after the things it governs
+                # could never admit their creation.
+                #
+                # Constraint 4 is the one-way rule and it is intact here: THIS
+                # import goes Aether -> plane. The plane imports nothing from
+                # `melder.aether` outside its own package, which is what keeps
+                # it constructible before Aether's world exists and testable in
+                # isolation. Do not add a back-reference.
+                self._aetheric_mediator: AethericMediator = AethericMediator()
                 # MutationResearch is constructed lazily on first access
                 # (`_get_mutation_research`): its import chain and root build
                 # cost several milliseconds on the cold import path (Aether()
@@ -239,6 +254,13 @@ class Aether(Cleanable):
                 # teardown never deadlocks behind threads waiting for passage.
                 if self._load_gate is not None:
                     self._load_gate.cleanup()
+                # Plane next, and for the same reason the gate goes first:
+                # `ClaimTable.cleanup` wakes every thread parked in
+                # `wait_for_change` before dropping state, so tearing it down
+                # early releases waiters rather than stranding them behind a
+                # world that is already going away.
+                if self._aetheric_mediator is not None:
+                    self._aetheric_mediator.cleanup()
                 if self._aetheric_frames is not None:
                     self.cleanup_aetheric_frames() # This will clean each individual frame
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
@@ -263,6 +285,7 @@ class Aether(Cleanable):
                 del self._nexus
                 del self._default_frame
                 del self._load_gate
+                del self._aetheric_mediator
             except Exception as e:
                 self._logger.error(f"Error cleaning up Aether: {e}", "cleanup", exc_info=True)
                 raise
@@ -695,6 +718,42 @@ class Aether(Cleanable):
         """
         self.check_cleaned()
         return self._configured
+
+    @property
+    def aetheric_mediator(self) -> AethericMediator:
+        """
+        Return the Aether-owned admission plane.
+
+        Purpose:
+            Give subsystems the one handle they need to open a top-level
+            transaction, without any of them constructing a plane of their own.
+
+        Contract:
+            - EAGER, unlike `mutation_research`. The plane is constructed with
+              Aether (owner constraint 3) because it must exist before anything
+              it governs; a lazy accessor would let a frame be born before the
+              authority that admits frame-level work.
+            - Returns the OWNED instance by reference. Aether cleans it; callers
+              use it and never clean it.
+            - ONE-WAY: subsystems reach the plane through here. The plane holds
+              no reference back to Aether and must never acquire one.
+
+        Threading:
+            Unsynchronized read; a snapshot only. The plane owns its own
+            locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. Cleaned by `Aether.cleanup` right
+            after the LoadGate, so parked claim-table waiters are woken early.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            AethericMediator: The Aether-owned admission plane.
+        """
+        self.check_cleaned()
+        return self._aetheric_mediator
 
     @property
     def mutation_research(self) -> MutationResearch:
@@ -1760,8 +1819,61 @@ class Aether(Cleanable):
         found = frame.has_spell(spell_id)
         if found is True:
             return frame.find_index_for_spell(spell_id)
-        else:
-            return None
+
+        # PROCESS-WIDE SWEEP. The named frame does not hold the id; under the
+        # process-wide regime the other frames still might, because spell_id is a
+        # SHA256 over the bind-time fingerprint and does NOT include the frame -
+        # the same target bound with the same parameters mints the same id
+        # everywhere. Owner ruling 2026-08-02: one spell_id means one spell,
+        # process-wide.
+        #
+        # GATED ON FRAME COUNT, which is what makes this cheap. A single-frame
+        # process - the common case - does no cross-frame work at all, because
+        # the frame just checked IS the process. The sweep only engages once a
+        # second frame exists, and frames are tenant-grained so there are few.
+        #
+        # This runs at REGISTRATION (bind/conjure), never at meld, so it is not
+        # on the resolution hot path.
+        #
+        # Written as an explicit loop rather than `any(...)`: it returns on the
+        # FIRST hit either way, but a generator expression short-circuits while a
+        # list comprehension silently does not, and that difference is one pair
+        # of brackets. The loop cannot be broken that way by a later edit.
+        if self._process_wide_unique_spell_ids() and len(self._aetheric_frames) > 1:
+            for other_frame in self._aetheric_frames.values():
+                if other_frame is frame:
+                    continue
+                if other_frame.has_spell(spell_id):
+                    return other_frame.find_index_for_spell(spell_id)
+
+        return None
+
+    def _process_wide_unique_spell_ids(self) -> bool:
+        """
+        Internal
+
+        Return whether spell_id uniqueness is enforced across the whole process.
+
+        Contract:
+            - Reads the installed `AetherConfiguration` when one exists.
+            - Defaults to True when Aether has never been configured, matching
+              `AetherConfiguration.__init__`. Frames are lazy
+              (`import melder` creates ZERO frames), so a frame can be born
+              before any configuration is installed and must still get the
+              documented default rather than silently falling open.
+            - Never raises: a cleaned or malformed configuration degrades to the
+              default rather than breaking a bind.
+
+        Returns:
+            bool: True when spell_id uniqueness is process-wide.
+        """
+        configuration = self._configuration
+        if configuration is None:
+            return True
+        try:
+            return bool(configuration.process_wide_unique_spell_ids)
+        except Exception:
+            return True
 
     def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
                               aetheric_frame_name: str = "default", spell_ids: Set[str] | None = None) -> None:
