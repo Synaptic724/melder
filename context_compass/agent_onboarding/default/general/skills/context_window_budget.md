@@ -37,7 +37,13 @@ Required note payload per meaningful finding
   `TRADEOFF` | `BLOCKER` | `ALIGNMENT_CHECK` | `MEASURE` | `RISK` |
   `RAISE`
 - `CLAIM`
-- `EVIDENCE` (`path:start_line-end_line`; use `start=end` for single-line evidence)
+- `EVIDENCE` (`path:start_line-end_line`)
+  - The range must cover **the logic the claim describes** - normally a whole
+    function or method. `start=end` is valid only for a genuinely single-line fact:
+    a config value, a constant, a declaration, an import.
+  - A one-line range under a claim about BEHAVIOUR is the signature of a search hit
+    pasted in place of a read. See "A SEARCH HIT IS NOT A READ" in
+    `agent_onboarding/default/general/skills/unknowns_gate_reference.md`.
 - `IMPACT`
 - `NEXT`
 - `REREAD` (`REQUIRED` | `HELPFUL`)

@@ -60,6 +60,10 @@ Rules
 - **These documents guide you to the code. They are not the code.** Before changing
   an implementation you read that implementation. Where a document and the source
   disagree, the source is what runs.
+- **A search is not a read, and a document is not the source.** `grep`/`rg` narrows
+  the shortlist; it never closes a behaviour question. Citing a doc section, or a
+  single line where a symbol matched, is not evidence that code does what you say.
+  Full rule: `agent_onboarding/default/general/skills/unknowns_gate_reference.md`.
 
 Required baseline skills
 - `agent_onboarding/default/engineer/AGENTS.MD`

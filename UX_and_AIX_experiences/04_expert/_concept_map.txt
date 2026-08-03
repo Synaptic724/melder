@@ -1,15 +1,19 @@
 CONCEPT MAP - 04_expert (README tier: BLUE Expert)
 ====================================================
 The machinery behind the doors advanced used: cold boot, the external
-persistence mesh, the mutation-research plane, and the codegen room where
-an agent writes code into a running world.
-15 lessons authored, 01-15 sequential.
+persistence mesh, the mutation-research plane, the codegen room where an
+agent writes code into a running world, and the admission plane that lets
+several of them mutate it at once.
+16 lessons authored, 01-16 sequential.
 
-VERIFICATION STATUS - READ THIS FIRST
-  NONE OF 10-15 HAS BEEN EXECUTED. melder requires Python 3.14t and the
-  authoring sandbox is 3.10, so every assert in those files is a claim
-  read out of source and canonical docs, not an observed result. They
-  ride the owner's 3.14t run. 01-09 predate that split.
+VERIFICATION STATUS
+  RUN 2026-08-03 on the owner's 3.14t: 10 and 15 green first time;
+  11, 12, 13, 14 RED, all four for two causes, both of them things the
+  author had inferred from source instead of observing. Fixed and the
+  fixes are now the lesson content - see FINDINGS FROM THE FIRST RUN.
+  The authoring sandbox is 3.10, so nothing here can be self-checked;
+  reading source tells you what a call DOES and never what the DEFAULTS
+  around it are, which is exactly the gap both failures fell into.
 
 HOUSE RULE - STRINGS, NOT ENUMS (inherited from advanced; see that map
   for the `.value` footgun that makes it a rule rather than a style)
@@ -92,14 +96,27 @@ ARC B COMPLETE (lessons 07-09)
 
   11 pointing_a_rift_at_your_own_frame (finishes what advanced 09 stopped
      short of - AR targeting was genuinely unreachable from `import
-     melder` until 2026-08-03. The chain, every link a refusal point:
-     posture -> conjure -> activate -> create_rift -> create_frame_link.
-     THREE GATES IN ORDER: rift_enabled ALWAYS; ai_native and dynamic for
-     CODEGEN rooms only - so the same frame is ACCEPTED by a capability
-     room and REFUSED by a codegen one. rift_enabled defaults False
-     because it is the frame's OPT-IN TO BEING OBSERVED, and conjure
-     freezes it for the frame's whole life. ATTACHMENT IS THE AUTHORITY
-     BOUNDARY: checked once, there, and never again)
+     melder` until 2026-08-03. ATTACHMENT IS TWO-PARTY CONSENT and
+     create_frame_link runs the parties' gates in order:
+       A. THE OBSERVER'S POLICY - denied_target_frame_names (checked
+          first, deny wins) then allowed_target_frame_names, WHICH SHIPS
+          AS ("default",) AND IS THEREFORE NOT EMPTY. An empty list would
+          mean no restriction, since the check is skipped when falsy; a
+          one-name list means default-deny expressed as DATA rather than
+          as a flag. Skipped entirely for Nexus-managed frames - a Nexus
+          need not allow-list itself.
+       B. THE WORLD'S POSTURE - rift_enabled ALWAYS; ai_native and
+          dynamic for CODEGEN rooms only, so the same frame is ACCEPTED
+          by a capability room and REFUSED by a codegen one.
+     NEITHER SIDE GRANTS ALONE, and the lesson proves both refusal
+     directions against two frames with IDENTICAL posture. Plus the
+     budget: allow_multiple_target_frames (False) and
+     max_target_frame_count (1), REF-COUNTED NEXUS-WIDE - two rifts
+     holding two different worlds spend two, so a lesson with one target
+     frame per rift still has to raise the cap. rift_enabled defaults
+     False because it is the frame's OPT-IN TO BEING OBSERVED, and
+     conjure freezes it for the frame's whole life. ATTACHMENT IS THE
+     AUTHORITY BOUNDARY: checked once, there, and never again)
 
   12 the_codegen_loop_end_to_end (A REFUSAL IS A RETURN VALUE, NOT AN
      EXCEPTION - validate_codegen hands back a CodegenValidationResult,
@@ -124,15 +141,20 @@ ARC B COMPLETE (lessons 07-09)
      default would not be a convenience, it would be a coin flip with
      side effects. Attachment is PER FRAME and there is no
      attach-to-everything verb, because there is no honest way to ask for
-     that. list_accessible_non_nexus_frame_names(rift_id) lets an agent
-     ENUMERATE ITS OWN REACH instead of probing by attempting - and note
-     eligibility is not attachment, the two-bit law again. The frames
-     stay walled: a shared observer is not a shared world)
+     that. THE TWO BUDGET KNOBS ARE NOT REDUNDANT: the boolean permits
+     the plural case at all, the count bounds it. Both default closed.
+     rift.list_accessible_non_nexus_frame_names() lets an agent ENUMERATE
+     ITS OWN REACH instead of probing by attempting, and it runs BOTH
+     gates filtered by the rift's space type, so it answers exactly "what
+     would attach if I tried" - eligibility is not attachment, the
+     two-bit law again. The frames stay walled: a shared observer is not
+     a shared world)
 
   14 compositions_a_subsystem_as_one_unit (03 answered "where is this
      one"; this answers "what is our billing subsystem", which needs a
-     different kind of thing - a SET someone named. EIGHT VERBS, SIX
-     READS TWO WRITES, and the split is the lesson: a capability room
+     different kind of thing - a SET someone named. TWO SPLITS RUN
+     THROUGH THE EIGHT VERBS. By AUTHORITY: six reads, two writes - a
+     capability room
      reads the ENTIRE composition record and cannot change one thing in
      it. THE ID IS THE MEMBERSHIP - sha256 over the sorted, deduped
      member list - so a composition is a SET (order and duplicates
@@ -144,7 +166,17 @@ ARC B COMPLETE (lessons 07-09)
      parent_group_ids=[previous], SAME lane, previous untouched. Both
      writes return a describe() PAYLOAD (a detached plain dict), not the
      node. Compositions do not NEST. research_impact on a single spell
-     names the subsystems it touches under affected_compositions)
+     names the subsystems it touches under affected_compositions.
+     BY DEPENDENCY - the second split, and the reads are NOT the same
+     kind of question. RECORD reads (view, history, diff) answer from the
+     research record alone. FORESIGHT reads (footprint, impact, drift)
+     join custody material and REACH THROUGH THE CRYSTALLIZER, so they
+     REFUSE when it is not recording rather than returning an empty
+     report. AND THE TWO ABSENCES ARE SPELLED DIFFERENTLY: instrument OFF
+     is a refusal, instrument ON with nothing to read is DATA - members
+     with no custody crystal come back named under
+     unknown_custody_members. "I cannot answer" and "the answer is none"
+     are different facts and melder will not conflate them)
 
   15 campaigns_the_why_that_rides_along (a lane is WHERE work lives; a
      campaign is WHICH EFFORT it belonged to, and it crosses lanes,
@@ -153,7 +185,13 @@ ARC B COMPLETE (lessons 07-09)
      must CLEAR the ambient stamp first. Reads like a trap until you see
      what it buys: attribution defaults to TRUE rather than to blank,
      over a session of thousands of calls nobody wants to annotate. An
-     EXPLICIT campaign still wins, so it is a default and not a cage. IT
+     EXPLICIT campaign still wins, so it is a default and not a cage.
+     AND None MEANS THE OPPOSITE ON THE READ SIDE: group_history_view
+     passes campaign THROUGH AS GIVEN, so None is UNFILTERED. Same name,
+     same type, inverted default - correct both times, because a write
+     that names no effort belongs to the one in progress while a read
+     that names no effort wants all of them. Attribution defaults
+     SPECIFIC; queries default BROAD. IT
      RIDES EXACTLY FOUR SEAMS, all on the ROOT FACADE -
      record_world_entry, record_promotion, register_group,
      recompose_group. The room's organizational verbs (create_lane,
@@ -173,6 +211,40 @@ ARC B COMPLETE (lessons 07-09)
 ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
   composition/campaign grain of the research record
 
+  16 the_transaction_plane_who_waits_for_whom (the last big item on the
+     BLUE charter. START WITH WHAT IS NOT IN IT: "Readers (meld paths)
+     NEVER ENTER THIS PLANE; they remain protected by validity gating
+     that commits trigger." meld() takes no transaction and appears
+     nowhere in the admission vocabulary - the plane serializes
+     STRUCTURAL MUTATION only. Most systems that grow a transaction
+     manager eventually drag reads into it and find out their throughput
+     WAS the lock. PUBLIC DOOR: Conduit.transaction /
+     begin_transaction / end_transaction, all marked `Public API`; the
+     context form ends with success=False on exception, so a crash
+     aborts rather than half-committing. SCOPE KEYS DECLARE SCOPE;
+     SCOPE HASHES DECLARE NOTHING - one line apart in the same
+     signature, and the docstring says outright that hashes "carry NO
+     claims... buy no isolation". A silent-failure trap that documents
+     itself. THREE MODES: x excludes everything, s/s coexist, ix/ix
+     coexist, and unspecified defaults to x so modes are an opt-in to
+     MORE concurrency. THE `ix` DESIGN IS THE STEALABLE PART: owning
+     spellbooks are claimed ix rather than x, so two agents doing
+     additive piece-work (bind, link, cluster) on one spellbook never
+     wait on each other, while transfer_ownership takes x on the whole
+     thing and excludes both. You are not locking an object, you are
+     declaring what you intend to do to it. WAITING IS BOUNDED in slices
+     of min(remaining, 1.0) - the slicing caps the cost of a release
+     landing between an attempt and the park at one second instead of
+     the whole deadline - and the timeout RAISES WITH BLOCKING SCOPE
+     KEYS AND HOLDER REQUEST IDS. One root-admission knob only:
+     max_transaction_wait_time_in_seconds, on the frame posture.
+     AND THE SEVEN BRAKES GATE FAMILIES BY NAME, checked before
+     admission is attempted, with a different sentence from the
+     dynamic-mode refusal: what a world IS is not the same fact as what
+     it has been ALLOWED TO DO)
+
+ARC D COMPLETE (lesson 16) - the mutation-admission plane
+
 THE THROUGH-LINES, AT EXPERT GRAIN (both inherited from advanced)
 
   TWO BITS, NEVER ONE
@@ -188,11 +260,41 @@ THE THROUGH-LINES, AT EXPERT GRAIN (both inherited from advanced)
           safer version of your code
       14  a rediscovery REFUSES; you cannot end up with two names for
           one subsystem
+      14  a foresight read with no live custody REFUSES; it does not
+          return an empty report that reads like "nothing found"
       15  an empty campaign REFUSES ON THE WRITE because the READ cannot
           address it
   The 15 case is the sharpest statement of it in the library: melder
   would rather fail your write than let you create a fact that nobody
   can ever ask a question about.
+
+  THIRD THROUGH-LINE, VISIBLE ONLY AT THIS TIER - ABSENCE IS TYPED
+  Advanced 15 taught it on the read surface (hidden vs empty, and the
+  probe that tells them apart). Expert repeats it at three more grains,
+  and the shape is identical every time: melder gives the two kinds of
+  nothing two different spellings.
+      11  "not allowed by policy" vs "rift_enabled is False" - refused
+          by the OBSERVER, or refused by the WORLD
+      12  ValueError on a malformed REQUEST vs a verdict object on
+          disallowed CODE
+      14  a refusal when custody is off vs unknown_custody_members when
+          custody is on and the member simply has none
+      16  "requires dynamic mode" vs "disabled for the current frame
+          posture" - what a world IS vs what it is ALLOWED to do
+  If you only ever learn one thing from this tier, learn to ask which
+  KIND of nothing you are holding.
+
+  FOURTH THROUGH-LINE, AND 16 IS WHERE IT BECOMES OBVIOUS -
+  DECLARE INTENT, NOT POSSESSION
+      14  a composition names a SET so you can ask about the set
+      15  a campaign names an EFFORT so work can be attributed to it
+      16  a claim mode names WHAT YOU INTEND TO DO to a scope, which is
+          why `ix` and `ix` coexist where `x` and `x` cannot
+  In all three the system gets more useful the more precisely you say
+  what you mean, and melder's half of the bargain is that it never
+  guesses on your behalf when you were vague - it refuses and names the
+  ambiguity. Expert 10's `*param` refusal is the same bargain at the
+  smallest possible grain.
 
 RESEARCH METHOD (recorded 2026-08-03 after several wrong assertions)
   Asserting a method is absent after grepping ONE class is how three
@@ -203,6 +305,49 @@ RESEARCH METHOD (recorded 2026-08-03 after several wrong assertions)
   Docs surfaced things no grep would have: that refusal is a return
   value, that memory is a push model on RiftSpace, that campaign=None
   means inherit. Grep confirms; it does not survey.
+
+  ADDENDUM AFTER THE FIRST RUN - AND IT IS THE MORE USEFUL HALF.
+  Reading the source of a CALL tells you what the call does. It does not
+  tell you WHAT THE DEFAULTS AROUND IT ARE, and both first-run failures
+  were exactly that gap:
+      - `_validate_target_frame_names` reads perfectly innocent. The bug
+        was 200 lines away in a defaults dict: allowed_target_frame_names
+        ships as ("default",), not as ().
+      - `research_group_footprint` reads as a plain delegation. The bug
+        was one frame deeper, in `_require_live_custody`.
+  SO: when a lesson SETS UP a subsystem, read its defaults table, not
+  just the verbs it calls. A default is a decision someone made and it is
+  as much part of the contract as a signature.
+
+FINDINGS FROM THE FIRST RUN (2026-08-03) - 4 of 6 new lessons were RED
+  Two causes, four files, and both causes became lesson content because
+  the real behaviour was more interesting than the assumed behaviour.
+
+  CAUSE 1 (11, 12, 13) "Target frame 'X' is not allowed by Nexus policy."
+    Every lesson postured its frames correctly and never told the NEXUS
+    it was allowed to look at them. The draft of lesson 11 claimed THREE
+    gates, all of them posture. There are two gate GROUPS owned by two
+    PARTIES, and the policy group runs first. The corrected lesson is
+    strictly better: it now proves BOTH refusal directions using two
+    frames with identical posture, which is the only way to show that
+    neither party can grant alone.
+
+  CAUSE 2 (14) "Crystallizer custody is unavailable (not recording)."
+    The draft treated the six composition reads as one uniform family and
+    asserted, in a printed line, that custody-less members would be
+    reported honestly rather than raising. HALF RIGHT, AND THE HALVES
+    MATTER: with custody OFF the read refuses; with custody ON, a member
+    that has no crystal IS reported honestly under
+    unknown_custody_members. Conflating those is conflating "I cannot
+    answer" with "the answer is none", which is the exact error melder's
+    design goes out of its way not to make. The lesson now demonstrates
+    the refusal, activates the crystallizer, and then shows the same
+    three reads answering - with the honest-absence data at the end.
+
+  NOT A CAUSE, WORTH RECORDING: lessons 10 and 15 passed first time. Both
+  are lessons where every claim came from a docstring CONTRACT block
+  rather than from reading a call chain. That is a small sample, but it
+  points the same way as the addendum above.
 
 FINDINGS (for the owner's public-surface program)
   - CLOSED 2026-08-03: advanced 09's finding that AR TARGETING IS
@@ -220,16 +365,46 @@ FINDINGS (for the owner's public-surface program)
   - OPEN: Aether still has no deactivate / is_configured / is_activated,
     so the root that hosts the other three is the one that does not
     answer the two-bit question about itself. Flagged, not ruled.
+  - NO PUBLIC DOOR FOR REACH ENUMERATION (2026-08-03, lesson 13). Both
+    `Rift.list_accessible_non_nexus_frame_names()` and the Nexus-level
+    `list_accessible_non_nexus_frame_names(rift_id)` are marked
+    `Internal` in their own docstrings. They are the best AIX door in the
+    subsystem - they run BOTH attachment gates filtered by the rift's
+    space type, so an agent can survey its reach instead of discovering
+    a boundary by crossing it. An agent that cannot enumerate must probe,
+    and probing an authority boundary is precisely what the rest of this
+    design is built to avoid. Lesson 13 uses it and says plainly that it
+    is Internal-marked rather than teaching it as public surface.
+  - THE DEFAULT ALLOW-LIST IS A ONE-NAME TUPLE, NOT EMPTY.
+    `allowed_target_frame_names` ships as ("default",). Because the check
+    is skipped when the tuple is falsy, an EMPTY list means "unrestricted"
+    - so the shipped value is the tight end of the dial, not the loose
+    one. Worth a doc line somewhere prominent: the first thing anyone
+    does with a rift is point it at a frame they named themselves, and
+    the refusal message ("not allowed by Nexus policy") does not hint
+    that a default allow-list is what they collided with.
+  - `Conduit.transaction` ABORTS ON `Exception`, NOT ON `BaseException`
+    (2026-08-03, lesson 16). The context manager is try/except/else, so
+    a KeyboardInterrupt, SystemExit, or a GeneratorExit from the
+    surrounding frame leaves the window OPEN with its claims held -
+    which under a bounded-wait plane means other requests wait out the
+    full `max_transaction_wait_time_in_seconds` for a session nobody is
+    driving. Narrow, but the plane's own cleanup notes say a resisting
+    session must not prevent teardown, so the intent is clearly that
+    windows close. Worth a `finally` or an explicit BaseException arm.
+    NOT pinned by a probe yet - raising BaseException inside an example
+    would take the example runner with it.
   - SPELL IDS ARE PROCESS-WIDE AND THE FRAME IS NOT IN THE FINGERPRINT.
     Identical bindings in two frames COLLIDE. Every multi-frame lesson
     here passes binding_name= or spellframe= for that reason. It is the
     single most common way a working example goes red when copied.
 
 REMAINING / NOT YET AUTHORED
-  - the transaction plane (ACID over the object graph; moded claims) -
-    named in the original BLUE charter, still unauthored.
   - notch -> meld hot-swap with rollback (the stage/promote arc past
-    bind_inactive).
+    bind_inactive). This is the tier's real finale: 03-15 built the
+    record, 16 built the admission plane, and `notch` is a registered
+    transaction family in both - the piece that actually swaps a live
+    object and can put it back.
   - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up
     recipe riding the bind signature into checkpoints.
   - the self-documenting package (__architecture__ etc.).

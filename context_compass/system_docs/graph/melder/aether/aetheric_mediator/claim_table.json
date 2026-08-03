@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/claim_table.py",
- "source_sha256": "7a06b7795c093e7be5cf03b5908ff18e35f1afc977ce0082c7fd16dee45a9b2d",
+ "source_sha256": "725a1918511a1f0cc02b28c2e291b257b0eddc5e5d7382177dddb91031dcc9aa",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.claim_table": {

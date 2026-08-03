@@ -34,6 +34,17 @@ GOAL: CAMPAIGNS - the WHY, carried without anyone remembering to carry
       An EXPLICIT campaign still wins over the ambient one, so the
       default is a default and not a cage.
 
+      AND `None` MEANS THE OPPOSITE THING ON THE READ SIDE
+        register_group(campaign=None)      -> INHERIT the ambient stamp
+        group_history_view(campaign=None)  -> UNFILTERED, every effort
+      Same word, same type, same argument name, opposite meaning - and
+      melder's own docstring calls the difference out rather than leaving
+      you to find it. It is right both times: a write that names no
+      effort belongs to the one in progress, while a read that names no
+      effort wants everything. Attribution defaults to SPECIFIC; queries
+      default to BROAD. Guessing one rule for both is how you end up
+      reading a filtered history and thinking it was the whole story.
+
       AND IT RIDES EXACTLY FOUR SEAMS, NOT EVERYTHING
       The ambient stamp is applied by the ROOT FACADE:
       `record_world_entry`, `record_promotion`, `register_group`,
@@ -228,6 +239,17 @@ def main() -> None:
     print("group_history(subsystem, campaign) ->", type(story).__name__)
     print("   WHERE by WHEN - 'how did this subsystem change during that")
     print("   effort' is a question you can only ask if both were named")
+
+    # ...and here `campaign=None` means UNFILTERED, not "inherit the
+    # ambient one" - the exact inverse of what it meant on every write
+    # above. The ambient stamp is still set right now, so if this read
+    # inherited it the two answers could not differ in principle.
+    unfiltered = capability.research_group_history(second["group_id"])
+    assert research.active_campaign is not None
+    print("group_history(subsystem)          -> unfiltered, not inherited")
+    print("   same argument, same type, opposite default - writes narrow")
+    print("   to the effort in progress, reads widen to all of them")
+    assert isinstance(unfiltered, type(story))
 
     print()
     print("a lane says where work lives; a campaign says what it was for")

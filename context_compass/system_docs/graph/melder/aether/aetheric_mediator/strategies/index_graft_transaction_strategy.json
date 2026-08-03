@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py",
- "source_sha256": "051d0f2763422808dbecb7d22205821414f41bd1269a3a0ac90d6740865c5864",
+ "source_sha256": "c8bf7f5dedd15237bd99a669058314062d758e6a8154b5f78e47a5d77c0ba9d4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy": {
@@ -9,7 +9,13 @@
    "label": "index_graft_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The graft family: the only lane whose subsystem verb takes NO authority today.",
+   "phases": [
+    "init",
+    "runtime"
+   ]
   },
   "melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy.IndexGraftTransactionStrategy": {
    "id": "melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy.IndexGraftTransactionStrategy",
@@ -22,16 +28,27 @@
    ],
    "markers": [],
    "public_methods": [
-    "build_start_plan",
-    "on_end",
-    "on_start"
+    "build_start_plan"
    ],
    "shape": {
-    "method_count": 3,
+    "method_count": 1,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "70f295c747b708b0517285398cc12cf9f7b8a8b1c720f551607cf2f6d596a7e1"
+   "span_sha256": "6eb604d30a983154ab80ac5516559361aed6123420cedaa45195aa8ac03a7b05",
+   "include": true,
+   "role": "Mark one frame as under piece-work for the duration of a graft, using intent rather than exclusive.",
+   "responsibilities": [
+    "Claim `world` ix plus `frame:<host>` ix so parallel grafts into different books coexist",
+    "Exclude the whole-frame and whole-world operations that would destroy a graft in flight",
+    "DELIBERATELY does not name spellbook, conduit or spell_index keys - those are inside a frame and belong to its own ChangeControlManager",
+    "STATED CONSEQUENCE: two grafts into the SAME host book both admit. This makes the graft visible, not safe"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "6eb604d30a983154ab80ac5516559361aed6123420cedaa45195aa8ac03a7b05"
   }
  },
  "edges_out": [
@@ -45,10 +62,9 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "Any": "typing.Any",
-  "Dict": "typing.Dict",
-  "Mapping": "typing.Mapping",
+  "Mapping": "collections.abc.Mapping",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
   "ClaimMode": "melder.aether.aetheric_mediator.claim_mode.ClaimMode",
   "Identity": "melder.aether.aetheric_mediator.identity.Identity",
   "ScopeKey": "melder.aether.aetheric_mediator.scope_keys.ScopeKey",

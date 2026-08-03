@@ -1,0 +1,64 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/unwind_conflict_error.py",
+ "source_sha256": "a090f5a6ac1d752c28c21f88f86b7432deaddeb4520c35d26d8c86611613ff8c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.unwind_conflict_error": {
+   "id": "melder.aether.aetheric_mediator.unwind_conflict_error",
+   "label": "unwind_conflict_error",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/unwind_conflict_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The one error type the plane raises for itself: a failed transaction that could not be unwound.",
+   "phases": [
+    "runtime"
+   ]
+  },
+  "melder.aether.aetheric_mediator.unwind_conflict_error.UnwindConflictError": {
+   "id": "melder.aether.aetheric_mediator.unwind_conflict_error.UnwindConflictError",
+   "label": "UnwindConflictError",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_mediator/unwind_conflict_error.py",
+   "lineno": 20,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [
+    "describe",
+    "failed",
+    "reason",
+    "request_id",
+    "unwound"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "5ed0fcc85dd5b3635725b3ef68557a4330d7f52270aa017cb2c87ec2990d75d3",
+   "include": true,
+   "role": "Raised when a rollback action itself fails, so 'we could not put it back' is recorded as evidence instead of vanishing inside the failure path.",
+   "responsibilities": [
+    "Carry the reason an inverse could not run, and be retained on the session as `unwind_conflict`",
+    "LIVES IN THE PLANE, NOT `melder.utilities`, because test_plane_depends_on_nothing_but_utilities asserts exactly ONE external dependency",
+    "Recording it is PURELY ADDITIVE: a partial unwind still ends ABORTED, because ABORTED means 'moved toward the prior shape' and a partial unwind did exactly that"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "5ed0fcc85dd5b3635725b3ef68557a4330d7f52270aa017cb2c87ec2990d75d3"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_mediator.unwind_conflict_error",
+  "class": "melder.aether.aetheric_mediator.unwind_conflict_error.UnwindConflictError",
+  "label": "UnwindConflictError"
+ }
+}

@@ -1,141 +1,168 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_mediator/information_registry.py",
- "source_sha256": "1e9fa3eff6f3e8ffce3d1d901d7366dbce4c9645c091a2c8c4e9981c7e41e97f",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_mediator.information_registry": {
-   "id": "melder.aether.aetheric_mediator.information_registry",
-   "label": "information_registry",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_mediator/information_registry.py",
-   "lineno": 1,
-   "include": true,
-   "role": "The reporting surface: fact baselines plus live activity indexes, caller-paid and always detached.",
-   "semantics_authored_against": "1e9fa3eff6f3e8ffce3d1d901d7366dbce4c9645c091a2c8c4e9981c7e41e97f"
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_mediator/information_registry.py",
+  "source_sha256": "5fc88947b1907c3b66b774dce84c0de83d743e1f8f88ad99a12b445ed09a7fab",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_mediator.information_registry": {
+      "id": "melder.aether.aetheric_mediator.information_registry",
+      "label": "information_registry",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_mediator/information_registry.py",
+      "lineno": 1,
+      "include": true,
+      "role": "The reporting surface: fact baselines plus live activity indexes, caller-paid and always detached.",
+      "semantics_authored_against": "1e9fa3eff6f3e8ffce3d1d901d7366dbce4c9645c091a2c8c4e9981c7e41e97f"
+    },
+    "melder.aether.aetheric_mediator.information_registry.FactRecord": {
+      "id": "melder.aether.aetheric_mediator.information_registry.FactRecord",
+      "label": "FactRecord",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/information_registry.py",
+      "lineno": 27,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "age_seconds",
+        "cleanup",
+        "describe"
+      ],
+      "shape": {
+        "method_count": 3,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "1f78e4e83eee59e1d8f6b6bf35240ae68e48466fa456f99c0188c762a6cda329",
+      "include": true,
+      "role": "One 'this region was last changed by this reporter at this time' baseline.",
+      "responsibilities": [
+        "stay immutable and be REPLACED WHOLESALE on each report rather than mutated, so a reader holding one never observes it change underneath",
+        "carry no lock - every mutation of the map holding these happens under the registry's RLock"
+      ],
+      "owns_state": [
+        "fact_family",
+        "region",
+        "reporter",
+        "reported_at"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ],
+      "semantics_authored_against": "1f78e4e83eee59e1d8f6b6bf35240ae68e48466fa456f99c0188c762a6cda329"
+    },
+    "melder.aether.aetheric_mediator.information_registry.InformationRegistry": {
+      "id": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+      "label": "InformationRegistry",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/information_registry.py",
+      "lineno": 157,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "activity_by_scope",
+        "activity_by_submitter",
+        "activity_by_type",
+        "announce_participant",
+        "cleanup",
+        "describe",
+        "describe_participants",
+        "forget_participant",
+        "get_fact",
+        "is_participating",
+        "known_subsystems",
+        "participant_conditions",
+        "participants_in_state",
+        "participation_state",
+        "record_conditions",
+        "register_activity",
+        "report_fact",
+        "set_participation",
+        "stale_regions",
+        "unregister_activity"
+      ],
+      "shape": {
+        "method_count": 23,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "3598d15f8e355cb3bd779c32d58ebfd0a5409e3645b93801f8ab72dc258c9480",
+      "include": true,
+      "role": "The reporting surface: answers 'what is happening right now', 'has this region changed since I last looked', and 'is this subsystem running' - all without touching live subsystem state.",
+      "responsibilities": [
+        "stay CALLER-PAID - nothing in the runtime reports automatically, which keeps the admission hot path free of reporting cost",
+        "return DETACHED results: values and strings, never a live StagedTransaction or Identity",
+        "copy under its RLock so a caller never holds a reference into live registry state",
+        "hold PARTICIPATION AS A STATE, not a presence: one ParticipationState per subsystem, so 'never wired in' and 'switched off on purpose' stay different answers",
+        "be the ONLY store of that fact - Mediator's roster verbs delegate here rather than keeping a second map, which is how the two previously drifted apart"
+      ],
+      "owns_state": [
+        "_lock",
+        "_facts",
+        "_active",
+        "_participants"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ],
+      "semantics_authored_against": "3598d15f8e355cb3bd779c32d58ebfd0a5409e3645b93801f8ab72dc258c9480"
+    }
   },
-  "melder.aether.aetheric_mediator.information_registry.FactRecord": {
-   "id": "melder.aether.aetheric_mediator.information_registry.FactRecord",
-   "label": "FactRecord",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/information_registry.py",
-   "lineno": 25,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "age_seconds",
-    "cleanup",
-    "describe"
-   ],
-   "shape": {
-    "method_count": 3,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "1f78e4e83eee59e1d8f6b6bf35240ae68e48466fa456f99c0188c762a6cda329",
-   "include": true,
-   "role": "One 'this region was last changed by this reporter at this time' baseline.",
-   "responsibilities": [
-    "stay immutable and be REPLACED WHOLESALE on each report rather than mutated, so a reader holding one never observes it change underneath",
-    "carry no lock - every mutation of the map holding these happens under the registry's RLock"
-   ],
-   "owns_state": [
-    "fact_family",
-    "region",
-    "reporter",
-    "reported_at"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ],
-   "semantics_authored_against": "1f78e4e83eee59e1d8f6b6bf35240ae68e48466fa456f99c0188c762a6cda329"
+  "edges_out": [
+    {
+      "from": "melder.aether.aetheric_mediator.information_registry.FactRecord",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+      "to_label": "RLock",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+      "to_label": "FactRecord",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+      "to_label": "TypeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Mapping": "collections.abc.Mapping",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Tuple": "typing.Tuple",
+    "ParticipationState": "melder.aether.aetheric_mediator.participation.ParticipationState",
+    "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
   },
-  "melder.aether.aetheric_mediator.information_registry.InformationRegistry": {
-   "id": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
-   "label": "InformationRegistry",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/information_registry.py",
-   "lineno": 155,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "activity_by_scope",
-    "activity_by_submitter",
-    "activity_by_type",
-    "cleanup",
-    "describe",
-    "get_fact",
-    "register_activity",
-    "report_fact",
-    "stale_regions",
-    "unregister_activity"
-   ],
-   "shape": {
-    "method_count": 10,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "fa65a16de3d77527d58e00640a26e3969944a7281abc43a71e8d1e7c03b7eaa0",
-   "include": true,
-   "role": "The reporting surface: answers 'what is happening right now' and 'has this region changed since I last looked' without touching live subsystem state.",
-   "responsibilities": [
-    "stay CALLER-PAID - nothing in the runtime reports automatically, which keeps the admission hot path free of reporting cost",
-    "return DETACHED results: values and strings, never a live StagedTransaction or Identity",
-    "copy under its RLock so a caller never holds a reference into live registry state"
-   ],
-   "owns_state": [
-    "_lock",
-    "_facts",
-    "_active"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ],
-   "semantics_authored_against": "fa65a16de3d77527d58e00640a26e3969944a7281abc43a71e8d1e7c03b7eaa0"
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.aetheric_mediator.information_registry.FactRecord",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
-   "to_label": "RLock",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
-   "to_label": "FactRecord",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
-  "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
- },
- "collapse_candidate": null
+  "collapse_candidate": null
 }

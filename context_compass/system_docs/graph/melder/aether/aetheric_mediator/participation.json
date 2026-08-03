@@ -1,0 +1,93 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/participation.py",
+ "source_sha256": "d0dbbb96056ad7cc8927699e4e840a40500d8b19d93ef9f2a38f4727ea7ca73c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.participation": {
+   "id": "melder.aether.aetheric_mediator.participation",
+   "label": "participation",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/participation.py",
+   "lineno": 1,
+   "include": true,
+   "role": "The participation vocabulary: four subsystem states, each written by exactly one edge, and the closed set of basic conditions a subsystem may announce about itself.",
+   "phases": [
+    "runtime"
+   ]
+  },
+  "melder.aether.aetheric_mediator.participation.ParticipationState": {
+   "id": "melder.aether.aetheric_mediator.participation.ParticipationState",
+   "label": "ParticipationState",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_mediator/participation.py",
+   "lineno": 29,
+   "bases": [],
+   "markers": [
+    "StrEnum"
+   ],
+   "public_methods": [
+    "emits"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "cd494ef645a0c9b3ff516123b86f920a3584050a8d981b07b4cd0e6eb4e24132",
+   "include": true,
+   "role": "The state a subsystem is in from the plane's point of view - and the single place the rule 'emit only when active' is written down as code rather than prose.",
+   "responsibilities": [
+    "REGISTERED: announced through Mediator.register_participant; known to the plane, running nothing, declaring nothing",
+    "CONFIGURED: a SUBSYSTEM_CONFIGURE commit; conditions recorded and trustworthy, still not running",
+    "ACTIVE: a SUBSYSTEM_ACTIVATE commit; THE ONLY STATE FOR WHICH `emits` IS TRUE",
+    "INACTIVE: a SUBSYSTEM_DEACTIVATE commit; it ran and stopped, and KEEPS its last-known conditions because every subsystem `deactivate()` promises to stop without discarding configuration",
+    "NO transitional member exists: the edges run inside apply_commit_delta while the transaction still holds `subsystem:<name>` EXCLUSIVE, so the claim IS the transitional marker"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "cd494ef645a0c9b3ff516123b86f920a3584050a8d981b07b4cd0e6eb4e24132"
+  },
+  "melder.aether.aetheric_mediator.participation.ParticipationConditions": {
+   "id": "melder.aether.aetheric_mediator.participation.ParticipationConditions",
+   "label": "ParticipationConditions",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_mediator/participation.py",
+   "lineno": 130,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "select"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "d61d07685f65253ca6e5a9dedafae382cf316d2e25590205a96eee7ac9543d1f",
+   "include": true,
+   "role": "The declared key set for subsystem basic conditions, owned by the PLANE rather than by the subsystems, plus the pure selector that filters caller-controlled metadata down to it.",
+   "responsibilities": [
+    "Declare the five keys a subsystem may announce: parallel_enabled, worker_count, drain_timeout_seconds, max_active_units, policy_version",
+    "DROP undeclared keys silently rather than refusing - metadata legitimately carries routing values this vocabulary has no opinion about",
+    "Stop a subsystem widening its own registry row; without a declared set the store is unbounded scratch space every reader must defend against"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "d61d07685f65253ca6e5a9dedafae382cf316d2e25590205a96eee7ac9543d1f"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "StrEnum": "enum.StrEnum",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Mapping": "typing.Mapping",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": null
+}

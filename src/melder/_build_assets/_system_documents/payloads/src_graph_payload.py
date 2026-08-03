@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 25586
-CONTENT_SHA256 = '2943c887be9e7fcf8ba6a4955361f730315b9bb7df8f3cb30ffab035dda381c1'
+LINE_COUNT = 25706
+CONTENT_SHA256 = '140c847cdaeecd167911a487f614da68c4d7df67bf1b4b7b4c735d31d93e3f8c'
 
 TEXT = """# src_graph
 
@@ -3095,7 +3095,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/admission_orchestrator.py
 
-- source_sha256: `07e2dd98727390be3654d85ef870ddfc1c5e2c0e158c0bd7be7c17adb605a3ef`
+- source_sha256: `59a2951d4087e0ef703e9245636098dbf810e998fd79fdd16a625da52ce53504`
 - nodes: 2
 
 ### Nodes
@@ -3136,7 +3136,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/admission_result.py
 
-- source_sha256: `a5ea4a30b08f5efd76bb65c3543e96929a631891feecf27bc74662d2d97f6b98`
+- source_sha256: `661455999e201618d79e1a87b7f3c75ec8304180bbe626019691e37e4160d29b`
 - nodes: 3
 
 ### Nodes
@@ -3186,7 +3186,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/claim_mode.py
 
-- source_sha256: `55dcf960df0f529c93f2ac1c868cceb41bed5f71192cd17c8c2ec8f50942952b`
+- source_sha256: `0b3a8cd625f9c3b7f742218adb2603035cc603b50c28e863cff0950d70cbb3de`
 - nodes: 3
 
 ### Nodes
@@ -3227,7 +3227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/claim_table.py
 
-- source_sha256: `7a06b7795c093e7be5cf03b5908ff18e35f1afc977ce0082c7fd16dee45a9b2d`
+- source_sha256: `725a1918511a1f0cc02b28c2e291b257b0eddc5e5d7382177dddb91031dcc9aa`
 - nodes: 4
 
 ### Nodes
@@ -3295,7 +3295,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/identity.py
 
-- source_sha256: `a707185ae61684a24e855e786b880cc78f8c4def8f011d77976cdeae1306a7e5`
+- source_sha256: `084ee855b56a1cab7dfe3e5f90997a51105081bb080196536dc6e30b5010f923`
 - nodes: 2
 
 ### Nodes
@@ -3335,7 +3335,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/information_registry.py
 
-- source_sha256: `1e9fa3eff6f3e8ffce3d1d901d7366dbce4c9645c091a2c8c4e9981c7e41e97f`
+- source_sha256: `5fc88947b1907c3b66b774dce84c0de83d743e1f8f88ad99a12b445ed09a7fab`
 - nodes: 3
 
 ### Nodes
@@ -3349,7 +3349,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `FactRecord` (class)
 
 - id: `melder.aether.aetheric_mediator.information_registry.FactRecord`
-- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:25`
+- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:27`
 - extends: `Cleanable`
 - role: One 'this region was last changed by this reporter at this time' baseline.
 - responsibilities: `stay immutable and be REPLACED WHOLESALE on each report rather than mutated, so a reader holding one never observes it change underneath`, `carry no lock - every mutation of the map holding these happens under the registry's RLock`
@@ -3360,13 +3360,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `InformationRegistry` (class)
 
 - id: `melder.aether.aetheric_mediator.information_registry.InformationRegistry`
-- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:155`
+- defined at: `src/melder/aether/aetheric_mediator/information_registry.py:157`
 - extends: `Cleanable`
-- role: The reporting surface: answers 'what is happening right now' and 'has this region changed since I last looked' without touching live subsystem state.
-- responsibilities: `stay CALLER-PAID - nothing in the runtime reports automatically, which keeps the admission hot path free of reporting cost`, `return DETACHED results: values and strings, never a live StagedTransaction or Identity`, `copy under its RLock so a caller never holds a reference into live registry state`
-- owns_state: `_lock`, `_facts`, `_active`
+- role: The reporting surface: answers 'what is happening right now', 'has this region changed since I last looked', and 'is this subsystem running' - all without touching live subsystem state.
+- responsibilities: `stay CALLER-PAID - nothing in the runtime reports automatically, which keeps the admission hot path free of reporting cost`, `return DETACHED results: values and strings, never a live StagedTransaction or Identity`, `copy under its RLock so a caller never holds a reference into live registry state`, `hold PARTICIPATION AS A STATE, not a presence: one ParticipationState per subsystem, so 'never wired in' and 'switched off on purpose' stay different answers`, `be the ONLY store of that fact - Mediator's roster verbs delegate here rather than keeping a second map, which is how the two previously drifted apart`
+- owns_state: `_lock`, `_facts`, `_active`, `_participants`
 - phases: `runtime`, `cleanup`
-- public methods: `activity_by_scope`, `activity_by_submitter`, `activity_by_type`, `cleanup`, `describe`, `get_fact`, `register_activity`, `report_fact`, `stale_regions`, `unregister_activity`
+- public methods: `activity_by_scope`, `activity_by_submitter`, `activity_by_type`, `announce_participant`, `cleanup`, `describe`, `describe_participants`, `forget_participant`, `get_fact`, `is_participating`, `known_subsystems`, `participant_conditions` (+8 more)
 
 ### Edges out
 
@@ -3375,12 +3375,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.aetheric_mediator.information_registry.FactRecord` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.aether.aetheric_mediator.information_registry.InformationRegistry` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (2, unconfirmed)
+### Edge candidates (4, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.aetheric_mediator.information_registry.InformationRegistry` creates `RLock`
 - `melder.aether.aetheric_mediator.information_registry.InformationRegistry` creates `FactRecord`
+- `melder.aether.aetheric_mediator.information_registry.InformationRegistry` creates `ValueError`
+- `melder.aether.aetheric_mediator.information_registry.InformationRegistry` creates `TypeError`
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/information_registry.py -->
 
@@ -3388,7 +3390,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/mediator.py
 
-- source_sha256: `ec7a2bfb9860461142a35ffabc48f839e2064851b3d49a1d1011300797b35862`
+- source_sha256: `b384be8b654a422d3b3793505fec3d2c6ef912933cf60d0cb89227456a54c6d6`
 - nodes: 2
 
 ### Nodes
@@ -3402,13 +3404,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Mediator` (class)
 
 - id: `melder.aether.aetheric_mediator.mediator.Mediator`
-- defined at: `src/melder/aether/aetheric_mediator/mediator.py:45`
+- defined at: `src/melder/aether/aetheric_mediator/mediator.py:46`
 - extends: `Cleanable`
 - role: The plane root Aether holds: the single front door every top-level structural transaction passes through.
-- responsibilities: `own and clean the claim table, admission orchestrator, information registry and strategy builder, in reverse construction order - the table LAST, because its cleanup wakes anyone parked in wait_for_change`, `key sessions PER IDENTITY, PER THREAD: same identity re-entering JOINS (depth increments); a different identity on the same thread opens its own root`, `import stdlib and melder.utilities ONLY - never melder.aether, which is what lets it exist before any frame can`
+- responsibilities: `own and clean the claim table, admission orchestrator, information registry and strategy builder, in reverse construction order - the table LAST, because its cleanup wakes anyone parked in wait_for_change`, `key sessions PER IDENTITY, PER THREAD: same identity re-entering JOINS (depth increments); a different identity on the same thread opens its own root`, `import stdlib and melder.utilities ONLY - never melder.aether, which is what lets it exist before any frame can`, `expose the roster and the emission gate - register_participant, has_participant, participants, is_participating, participation_state - all DELEGATING to the information registry, which owns the single participant store`
 - owns_state: `_lock`, `_claim_table`, `_orchestrator`, `_information_registry`, `_strategy_builder`, `_max_wait_seconds`, `_thread_local`, `_sessions_by_request_id`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `begin`, `cleanup`, `commit`, `describe`, `fail`, `has_participant`, `participants`, `register_participant`, `reporting`, `strategies`, `unregister_participant`
+- public methods: `begin`, `cleanup`, `commit`, `describe`, `fail`, `get_active_request`, `get_session_by_request_id`, `get_session_for_identity`, `has_active_session`, `has_any_active_session`, `has_participant`, `is_participating` (+8 more)
 
 ### Edges out
 
@@ -3431,11 +3433,48 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/mediator.py -->
 
+<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/participation.py -->
+
+## src/melder/aether/aetheric_mediator/participation.py
+
+- source_sha256: `d0dbbb96056ad7cc8927699e4e840a40500d8b19d93ef9f2a38f4727ea7ca73c`
+- nodes: 3
+
+### Nodes
+
+#### `participation` (module)
+
+- id: `melder.aether.aetheric_mediator.participation`
+- defined at: `src/melder/aether/aetheric_mediator/participation.py:1`
+- role: The participation vocabulary: four subsystem states, each written by exactly one edge, and the closed set of basic conditions a subsystem may announce about itself.
+- phases: `runtime`
+
+#### `ParticipationState` (enum)
+
+- id: `melder.aether.aetheric_mediator.participation.ParticipationState`
+- defined at: `src/melder/aether/aetheric_mediator/participation.py:29`
+- markers: `StrEnum`
+- role: The state a subsystem is in from the plane's point of view - and the single place the rule 'emit only when active' is written down as code rather than prose.
+- responsibilities: `REGISTERED: announced through Mediator.register_participant; known to the plane, running nothing, declaring nothing`, `CONFIGURED: a SUBSYSTEM_CONFIGURE commit; conditions recorded and trustworthy, still not running`, `ACTIVE: a SUBSYSTEM_ACTIVATE commit; THE ONLY STATE FOR WHICH `emits` IS TRUE`, `INACTIVE: a SUBSYSTEM_DEACTIVATE commit; it ran and stopped, and KEEPS its last-known conditions because every subsystem `deactivate()` promises to stop without discarding configuration`, `NO transitional member exists: the edges run inside apply_commit_delta while the transaction still holds `subsystem:<name>` EXCLUSIVE, so the claim IS the transitional marker`
+- phases: `runtime`
+- public methods: `emits`
+
+#### `ParticipationConditions` (class)
+
+- id: `melder.aether.aetheric_mediator.participation.ParticipationConditions`
+- defined at: `src/melder/aether/aetheric_mediator/participation.py:130`
+- role: The declared key set for subsystem basic conditions, owned by the PLANE rather than by the subsystems, plus the pure selector that filters caller-controlled metadata down to it.
+- responsibilities: `Declare the five keys a subsystem may announce: parallel_enabled, worker_count, drain_timeout_seconds, max_active_units, policy_version`, `DROP undeclared keys silently rather than refusing - metadata legitimately carries routing values this vocabulary has no opinion about`, `Stop a subsystem widening its own registry row; without a declared set the store is unbounded scratch space every reader must defend against`
+- phases: `runtime`
+- public methods: `select`
+
+<!-- END FILE: src/melder/aether/aetheric_mediator/participation.py -->
+
 <!-- BEGIN FILE: src/melder/aether/aetheric_mediator/scope_keys.py -->
 
 ## src/melder/aether/aetheric_mediator/scope_keys.py
 
-- source_sha256: `e77dbcc2fd12568328b422d730455db04016d860d15bfcd2fe26b6f808256456`
+- source_sha256: `e0de7620be84e491d9e9273c0ead958e77f5ffa2ff416f8e89afa3c9588ef6dc`
 - nodes: 3
 
 ### Nodes
@@ -3476,7 +3515,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/staged_transaction.py
 
-- source_sha256: `1b24eeaca57a10bbeb16f120f2d236c7bcce13f83258bdb66817db2cd1f6aea7`
+- source_sha256: `f698b9bd64c09a65043e02087bb9cf3d52d2e0f5ea9bed46707ed027589a1200`
 - nodes: 2
 
 ### Nodes
@@ -3512,28 +3551,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/staged_transaction.py -->
 
-<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/__init__.py -->
-
-## src/melder/aether/aetheric_mediator/strategies/__init__.py
-
-- source_sha256: `e2fb6aee69558416847ce8d82424802de0f89ff5cd306bf36dda1b7da97d1a77`
-- nodes: 1
-
-### Nodes
-
-#### `strategies` (module)
-
-- id: `melder.aether.aetheric_mediator.strategies`
-- defined at: `src/melder/aether/aetheric_mediator/strategies/__init__.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
-
-<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/__init__.py -->
-
 <!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py -->
 
 ## src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py
 
-- source_sha256: `17637180a0c3108b085e9f6fb321a866646f2608d22b12eee435577b593162c1`
+- source_sha256: `2ed6b9f6e01a281ead2d66cae948df2bff05ddee8299679f52fdf2e8f4e32118`
 - nodes: 2
 
 ### Nodes
@@ -3542,15 +3564,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The repair family - the only one whose claim set is SUPPLIED rather than derived.
+- phases: `init`, `runtime`
 
 #### `AgentRepairTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy.AgentRepairTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py:27`
 - extends: `TransactionStrategy`
+- role: Claim exactly the scopes an agent names while mending a half-built world.
+- responsibilities: `Claim `world` ix plus each supplied scope x; drop malformed entries and deduplicate rather than refusing`, `Refuse to iterate a bare string, which would claim one scope per character`, `Take `world` EXCLUSIVE when no usable scope is given: unbounded reach into state already known to be broken has no smaller honest claim`, `EXEMPT from the frame-jurisdiction sweep by contract - a caller passing frame-internal keys is asking the wrong plane`
+- phases: `init`, `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3564,7 +3589,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py
 
-- source_sha256: `3b0c61d93f4c67c5954f01e24f1171d0aaa14b65dd3bae0e0989bf13e8c50755`
+- source_sha256: `d8f0866cafcfd2b41a277b29862aa9a95aafcc4e77711fefc748c1232317b728`
 - nodes: 2
 
 ### Nodes
@@ -3573,15 +3598,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The whole-world load family - the plane's restatement of the crystallizer LoadGate.
+- phases: `init`, `runtime`
 
 #### `CheckpointLoadTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy.CheckpointLoadTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py:26`
 - extends: `TransactionStrategy`
+- role: Claim `world` EXCLUSIVE for the length of a checkpoint replay.
+- responsibilities: `Take `world` x and nothing else: a replay rebuilds the world, so there is no smaller honest claim`, `Exclude every other family by construction, including the world INTENT marker the frame-scoped families hold`, `Make LoadGate the DEGENERATE CASE of the claim vocabulary rather than a separate mechanism`
+- phases: `init`, `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3591,28 +3619,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py -->
 
-<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/default_strategies.py -->
-
-## src/melder/aether/aetheric_mediator/strategies/default_strategies.py
-
-- source_sha256: `f9e5f45bb824cff2628cf762343cd5490fee1b0e023c2ee2d563d2e1c200c095`
-- nodes: 1
-
-### Nodes
-
-#### `default_strategies` (module)
-
-- id: `melder.aether.aetheric_mediator.strategies.default_strategies`
-- defined at: `src/melder/aether/aetheric_mediator/strategies/default_strategies.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
-
-<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/default_strategies.py -->
-
 <!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py -->
 
 ## src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py
 
-- source_sha256: `16940b9eb8b412b59d106882f190d58d65488a94922e84d325a4a0a606506400`
+- source_sha256: `cdbee8762c120edf036718edc3f072aeb2926f35000519e5abb268ea737047fd`
 - nodes: 2
 
 ### Nodes
@@ -3621,15 +3632,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The single-frame load family - the primary case for frame-scoped parallelism.
+- phases: `init`, `runtime`
 
 #### `FormationLoadTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy.FormationLoadTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py:25`
 - extends: `TransactionStrategy`
+- role: Claim one frame exclusively under a world intent marker, so disjoint frames restore in parallel.
+- responsibilities: `Claim `world` ix plus `frame:<target>` x when the target is known`, `Degrade to `world` x when it is not: unknown reach takes the largest claim, because a guessed frame isolates the wrong surface`, `Formations are SINGLE-FRAME by law, which is what makes the narrow claim defensible rather than optimistic`
+- phases: `init`, `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
@@ -3639,11 +3653,45 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py -->
 
+<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py -->
+
+## src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py
+
+- source_sha256: `69f6e75c85380d072c43af6102d5afd2795a0023db4eb16a02571928625ea572`
+- nodes: 2
+
+### Nodes
+
+#### `frame_create_transaction_strategy` (module)
+
+- id: `melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py:1`
+- role: The founding family: the transaction the whole plane exists for.
+- phases: `init`, `runtime`
+
+#### `FrameCreateTransactionStrategy` (class)
+
+- id: `melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy.FrameCreateTransactionStrategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py:31`
+- extends: `TransactionStrategy`
+- role: Claim one frame exclusively while it is brought into existence.
+- responsibilities: `Claim `world` ix plus `frame:<name>` x - EXCLUSIVE because creation is a whole-unit write with no piece-work beneath it`, `Give frame creation the admission it never had: the only prior authority was the frame-local mediator, owned BY the frame being created`, `Aether opens this ONLY when the calling thread holds no plane session; re-entrancy, not contention, is the hazard here`, `Does NOT span the posture call that follows - a caller needing atomicity across both must hold ONE session`
+- phases: `init`, `runtime`
+- public methods: `build_start_plan`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy.FrameCreateTransactionStrategy` | specializes | `melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy` | - | - | derived |
+
+<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py -->
+
 <!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py -->
 
 ## src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py
 
-- source_sha256: `051d0f2763422808dbecb7d22205821414f41bd1269a3a0ac90d6740865c5864`
+- source_sha256: `c8bf7f5dedd15237bd99a669058314062d758e6a8154b5f78e47a5d77c0ba9d4`
 - nodes: 2
 
 ### Nodes
@@ -3652,15 +3700,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: The graft family: the only lane whose subsystem verb takes NO authority today.
+- phases: `init`, `runtime`
 
 #### `IndexGraftTransactionStrategy` (class)
 
 - id: `melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy.IndexGraftTransactionStrategy`
 - defined at: `src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py:27`
 - extends: `TransactionStrategy`
-- public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Mark one frame as under piece-work for the duration of a graft, using intent rather than exclusive.
+- responsibilities: `Claim `world` ix plus `frame:<host>` ix so parallel grafts into different books coexist`, `Exclude the whole-frame and whole-world operations that would destroy a graft in flight`, `DELIBERATELY does not name spellbook, conduit or spell_index keys - those are inside a frame and belong to its own ChangeControlManager`, `STATED CONSEQUENCE: two grafts into the SAME host book both admit. This makes the graft visible, not safe`
+- phases: `init`, `runtime`
+- public methods: `build_start_plan`
 
 ### Edges out
 
@@ -3670,73 +3721,113 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py -->
 
-<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_disable_transaction_strategy.py -->
+<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py -->
 
-## src/melder/aether/aetheric_mediator/strategies/subsystem_disable_transaction_strategy.py
+## src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py
 
-- source_sha256: `a5dc57701706a55b73f0fe20dcab6697b4ce35a7a8fad8ebe16a8a3749bd491c`
+- source_sha256: `d282afbe821d27ff39bdcff8ece599a3da59a65d7b2323f2c2a8c002f23d139f`
 - nodes: 2
 
 ### Nodes
 
-#### `subsystem_disable_transaction_strategy` (module)
+#### `subsystem_activate_transaction_strategy` (module)
 
-- id: `melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy`
-- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_disable_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- id: `melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py:1`
+- role: The activation family: the edge the owner named as the wiring gate.
+- phases: `init`, `runtime`
 
-#### `SubsystemDisableTransactionStrategy` (class)
+#### `SubsystemActivateTransactionStrategy` (class)
 
-- id: `melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy.SubsystemDisableTransactionStrategy`
-- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_disable_transaction_strategy.py:24`
+- id: `melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy.SubsystemActivateTransactionStrategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py:32`
 - extends: `TransactionStrategy`
-- public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Claim one subsystem exclusively for its activation, and write the one state that emits.
+- responsibilities: `Claim `world` ix plus `subsystem:<name>` x - IDENTICAL to configure and deactivate, because all three write one surface`, `apply_commit_delta moves the row to ParticipationState.ACTIVE; nothing else in the plane writes it`, `Pass conditions ONLY when the activation announced some, so a prior CONFIGURE is not erased at the moment the subsystem starts`, `Named ACTIVATE, not ENABLE, because all three subsystem roots expose activate(configuration=None)`
+- phases: `init`, `runtime`
+- public methods: `apply_commit_delta`, `build_start_plan`
 
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
-| `melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy.SubsystemDisableTransactionStrategy` | specializes | `melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy` | - | - | derived |
+| `melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy.SubsystemActivateTransactionStrategy` | specializes | `melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy` | - | - | derived |
 
-<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_disable_transaction_strategy.py -->
+<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py -->
 
-<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py -->
+<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py -->
 
-## src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py
+## src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py
 
-- source_sha256: `2a7eb8017535c0a8a34cdce596b7493755037c782d4fa9ef5e0c3b40e141c199`
+- source_sha256: `c4bcf5f6d7ecbacb78c88effefbb9cd9e5aad54aa37ac114426cd76dab270910`
 - nodes: 2
 
 ### Nodes
 
-#### `subsystem_enable_transaction_strategy` (module)
+#### `subsystem_configure_transaction_strategy` (module)
 
-- id: `melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy`
-- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- id: `melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py:1`
+- role: The configuration family: declaring how a subsystem would run, without running it.
+- phases: `init`, `runtime`
 
-#### `SubsystemEnableTransactionStrategy` (class)
+#### `SubsystemConfigureTransactionStrategy` (class)
 
-- id: `melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy.SubsystemEnableTransactionStrategy`
-- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py:25`
+- id: `melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy.SubsystemConfigureTransactionStrategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py:31`
 - extends: `TransactionStrategy`
-- public methods: `build_start_plan`, `on_end`, `on_start`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Claim one subsystem exclusively while its basic conditions are recorded.
+- responsibilities: `Claim `world` ix plus `subsystem:<name>` x; EXCLUSIVE even though nothing runs, because everything else reads what this writes`, `apply_commit_delta records the declared conditions and lands the row at CONFIGURED`, `PRESERVES an already-ACTIVE state rather than overwriting it - reconfiguring a running subsystem does not turn it off`, `THE PLANE'S ONLY READ-BEFORE-WRITE, safe solely because it happens inside one registry lock AND under this family's exclusive claim`, `Not invented for symmetry: all three roots document activate(configuration) as 'a convenience that configures first'`
+- phases: `init`, `runtime`
+- public methods: `apply_commit_delta`, `build_start_plan`
 
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
-| `melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy.SubsystemEnableTransactionStrategy` | specializes | `melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy` | - | - | derived |
+| `melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy.SubsystemConfigureTransactionStrategy` | specializes | `melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy` | - | - | derived |
 
-<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_enable_transaction_strategy.py -->
+<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py -->
+
+<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py -->
+
+## src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py
+
+- source_sha256: `382f584fd92553604478b5b941531f76c45b96d7bc131a954eeecf883eab2f67`
+- nodes: 2
+
+### Nodes
+
+#### `subsystem_deactivate_transaction_strategy` (module)
+
+- id: `melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py:1`
+- role: The deactivation family: the inverse edge, and the harder one.
+- phases: `init`, `runtime`
+
+#### `SubsystemDeactivateTransactionStrategy` (class)
+
+- id: `melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy.SubsystemDeactivateTransactionStrategy`
+- defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py:28`
+- extends: `TransactionStrategy`
+- role: Claim one subsystem exclusively for its deactivation, and record that it ran and stopped.
+- responsibilities: `Claim `world` ix plus `subsystem:<name>` x, identical to activate and configure`, `apply_commit_delta moves the row to INACTIVE and RETAINS the conditions - deleting the row made a subsystem switched off deliberately indistinguishable from one nobody wired in`, `Retention is safe ONLY because the state guards it: is_participating reads False for INACTIVE`, `THE CLAIM EXCLUDES TRANSACTIONS; IT DOES NOT QUIESCE. Work already inside the subsystem never asked the plane for anything. Pair it with the subsystem's own drain`
+- phases: `init`, `runtime`
+- public methods: `apply_commit_delta`, `build_start_plan`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.aetheric_mediator.strategies.subsystem_deactivate_transaction_strategy.SubsystemDeactivateTransactionStrategy` | specializes | `melder.aether.aetheric_mediator.transaction_strategy.TransactionStrategy` | - | - | derived |
+
+<!-- END FILE: src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py -->
 
 <!-- BEGIN FILE: src/melder/aether/aetheric_mediator/strategy_builder.py -->
 
 ## src/melder/aether/aetheric_mediator/strategy_builder.py
 
-- source_sha256: `c33d9497bb76bdbc80c37c7062dd17365caa5c0526b867a236a3afc378c040a0`
+- source_sha256: `5dfac4cb2109a19cb10fe31e13ca3a38b02af1b4015b483f6ae1ba2fd4a436a5`
 - nodes: 2
 
 ### Nodes
@@ -3753,7 +3844,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategy_builder.py:21`
 - extends: `Cleanable`
 - role: The registry resolving a transaction type to its strategy class - the one way to answer 'who decides what this transaction claims'.
-- responsibilities: `make a MISSING answer a loud early failure rather than a silent default`, `store the type object itself, never an instance`, `let re-registration REPLACE the previous class deliberately, so a subsystem can override a default - silently keeping the first registration would be the worse behaviour`
+- responsibilities: `make a MISSING answer a loud early failure rather than a silent default`, `store the type object itself, never an instance`, `let re-registration REPLACE the previous class deliberately, so a subsystem can override a default - silently keeping the first registration would be the worse behaviour`, `SELF-SEED at construction with the plane's own family for every vocabulary member, so missing_types() is empty on a fresh registry and a gap is a build error rather than a runtime surprise`, `import each family module DIRECTLY - there is no strategies/__init__.py, because every melder subpackage is a PEP 420 namespace package and the repo keeps exactly ONE __init__.py`
 - owns_state: `_lock`, `_strategies`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `is_registered`, `missing_types`, `register`, `resolve`
@@ -3778,7 +3869,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_request.py
 
-- source_sha256: `11164e40bf62ec324c2bd34ce9922511182bd4342783c48e4b14331a80ef8219`
+- source_sha256: `ef2cd287be3a7cd88ed77234db2cf1b764ea579f610cc889e5552737893b09cd`
 - nodes: 3
 
 ### Nodes
@@ -3832,7 +3923,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_session.py
 
-- source_sha256: `cab8421c4800f72a4e13f5a1a2f4f2582f05710b8ba29521a2b4aba9b9609a49`
+- source_sha256: `6d1924fd069b92a3f187cac57800f34c10aa55ef0707c72552fbb31affd71278`
 - nodes: 5
 
 ### Nodes
@@ -3846,7 +3937,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `OutcomePolicy` (enum)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.OutcomePolicy`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:22`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:25`
 - markers: `StrEnum`
 - role: What a transaction does to the world when it fails - an EXPLICIT per-transaction choice rather than an accident of whichever path raised.
 - responsibilities: `UNWIND: run registered rollback actions newest-first, then raise; the world is returned toward its prior shape`, `LEAVE_BROKEN: run NO rollback actions, record precisely what was left in place, and mark the session BROKEN - the half-built world is a WORK SURFACE for a repairing agent, not debris`
@@ -3855,7 +3946,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SessionStatus` (enum)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.SessionStatus`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:61`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:64`
 - markers: `StrEnum`
 - role: The lifecycle state of one session, in which BROKEN is a DISTINCT TERMINAL STATE and deliberately not a flavour of ABORTED.
 - responsibilities: `separate aborted (world returned toward its prior shape) from broken (world knowingly left mid-flight for repair)`, `preserve the distinction an agent needs to know whether there is anything to go and fix`
@@ -3864,7 +3955,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `_RollbackAction` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_session._RollbackAction`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:90`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:93`
 - extends: `Cleanable`
 - role: One registered inverse paired with a description - the owner of the single most dangerous reference in this package, a caller-supplied closure.
 - responsibilities: `make the DESCRIPTION mandatory: under LEAVE_BROKEN the action is never invoked, so the description is the ONLY record of what was left in place, and an undescribed action is invisible residue`, `release the closure at an exact chosen moment via cleanup`, `hold no lock - built and cleaned only while the owning session's lock is held`
@@ -3875,13 +3966,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `TransactionSession` (class)
 
 - id: `melder.aether.aetheric_mediator.transaction_session.TransactionSession`
-- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:177`
+- defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:180`
 - extends: `Cleanable`
 - role: One live transaction span owned by exactly one root thread: everything true about a transaction between admission and its terminal state.
-- responsibilities: `fail a FOREIGN-thread join FAST, naming the owning thread, rather than waiting - a cross-thread re-begin is a caller bug and blocking would turn it into a hang`, `depth-count same-thread joins so nested work by one actor is safe`, `NOT own or reference the claim table - releasing claims belongs to the orchestrator`, `drop the rollback action list on cleanup WITHOUT running it: a session being cleaned is not a session being aborted, and quietly firing inverses during teardown would be an invisible mutation`
-- owns_state: `_lock`, `_request`, `_staged`, `_holder`, `_owner_thread_id`, `_depth`, `_status`, `_failure_reason`
+- responsibilities: `fail a FOREIGN-thread join FAST, naming the owning thread, rather than waiting - a cross-thread re-begin is a caller bug and blocking would turn it into a hang`, `depth-count same-thread joins so nested work by one actor is safe`, `NOT own or reference the claim table - releasing claims belongs to the orchestrator`, `drop the rollback action list on cleanup WITHOUT running it: a session being cleaned is not a session being aborted, and quietly firing inverses during teardown would be an invisible mutation`, `carry the two-outcome policy: UNWIND runs the inverses, LEAVE_BROKEN records residue and stops, and BROKEN is its own terminal status rather than a flavour of ABORTED`, `latch abort-only STICKILY, first writer wins, checked inside mark_committing - a span that has learned it cannot commit must not be able to unlearn it`, `retain an UnwindConflictError when an inverse itself fails, PURELY ADDITIVELY: the status still ends ABORTED, because a partial unwind did move toward the prior shape`
+- owns_state: `_lock`, `_request`, `_staged`, `_holder`, `_owner_thread_id`, `_depth`, `_status`, `_failure_reason`, `_outcome_policy`, `_rollback_actions`, `_unwind_failures`, `_leave_broken_residue`, `_abort_only_reason`, `_unwind_conflict`
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `depth`, `describe`, `discard_inverses`, `fail`, `failure_reason`, `holder`, `join`, `leave`, `leave_broken_residue`, `mark_committed`, `mark_committing` (+5 more)
+- public methods: `abort_only_reason`, `cleanup`, `depth`, `describe`, `discard_inverses`, `fail`, `failure_reason`, `holder`, `is_abort_only`, `join`, `leave`, `leave_broken_residue` (+9 more)
 
 ### Edges out
 
@@ -3890,13 +3981,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.aetheric_mediator.transaction_session._RollbackAction` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.aether.aetheric_mediator.transaction_session.TransactionSession` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (3, unconfirmed)
+### Edge candidates (4, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.aetheric_mediator.transaction_session.TransactionSession` creates `RLock`
 - `melder.aether.aetheric_mediator.transaction_session.TransactionSession` creates `ValueError`
 - `melder.aether.aetheric_mediator.transaction_session.TransactionSession` creates `RuntimeError`
+- `melder.aether.aetheric_mediator.transaction_session.TransactionSession` creates `UnwindConflictError`
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/transaction_session.py -->
 
@@ -3904,7 +3996,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_strategy.py
 
-- source_sha256: `a1b2bf941ddb5157cb7dafc182da23588a7aec6ede70427ddf5394ab501613e3`
+- source_sha256: `17e9b7a15d504093a33a4fc0c7dabda275b345bff19cd5ddce0fa85fe7045240`
 - nodes: 2
 
 ### Nodes
@@ -3921,7 +4013,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_strategy.py:28`
 - markers: `ABC`
 - role: The dispatch contract every transaction family implements, and where SCOPE PROPORTIONALITY is decided.
-- responsibilities: `define what a transaction of a given type CLAIMS, plus its local work at start, end and commit`, `keep build_start_plan PURE - it reads identity and metadata and returns a claim map, mutating nothing`, `be REGISTERED AS A CLASS, never an instance: every hook is static or class level, so there is no per-strategy state to guard and concurrency lives entirely in the mediator`
+- responsibilities: `define what a transaction of a given type CLAIMS, plus its local work at start, end and commit`, `keep build_start_plan PURE - it reads identity and metadata and returns a claim map, mutating nothing`, `be REGISTERED AS A CLASS, never an instance: every hook is static or class level, so there is no per-strategy state to guard and concurrency lives entirely in the mediator`, `run apply_commit_delta AT COMMIT WHILE CLAIMS ARE STILL HELD - that invariant is what makes any registry write it performs race-free, and it is where families that claim identically differ from one another`, `DEFAULT on_start and on_end to nothing rather than making them abstract, so that an override MEANS SOMETHING: most families have no work there, and forcing empty overrides buries the few that freeze real state`, `keep build_start_plan ABSTRACT for the opposite reason - there is no defensible default claim set, and a guessed one is exactly how isolation is lost quietly`
 - phases: `runtime`
 - public methods: `apply_commit_delta`, `build_start_plan`, `on_end`, `on_start`
 
@@ -3931,7 +4023,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_type.py
 
-- source_sha256: `ad06c201df3df1f132def820b66b3d81d02c682594e8111ceed9e2ec84d28c2f`
+- source_sha256: `8cd6595d4de6a0fca6ce2563bed642ed7690e60b7e38f0237351c84934215033`
 - nodes: 2
 
 ### Nodes
@@ -3952,6 +4044,34 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - phases: `init`, `runtime`
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/transaction_type.py -->
+
+<!-- BEGIN FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py -->
+
+## src/melder/aether/aetheric_mediator/unwind_conflict_error.py
+
+- source_sha256: `a090f5a6ac1d752c28c21f88f86b7432deaddeb4520c35d26d8c86611613ff8c`
+- nodes: 2
+
+### Nodes
+
+#### `unwind_conflict_error` (module)
+
+- id: `melder.aether.aetheric_mediator.unwind_conflict_error`
+- defined at: `src/melder/aether/aetheric_mediator/unwind_conflict_error.py:1`
+- role: The one error type the plane raises for itself: a failed transaction that could not be unwound.
+- phases: `runtime`
+
+#### `UnwindConflictError` (class)
+
+- id: `melder.aether.aetheric_mediator.unwind_conflict_error.UnwindConflictError`
+- defined at: `src/melder/aether/aetheric_mediator/unwind_conflict_error.py:20`
+- markers: `RuntimeError`
+- role: Raised when a rollback action itself fails, so 'we could not put it back' is recorded as evidence instead of vanishing inside the failure path.
+- responsibilities: `Carry the reason an inverse could not run, and be retained on the session as `unwind_conflict``, `LIVES IN THE PLANE, NOT `melder.utilities`, because test_plane_depends_on_nothing_but_utilities asserts exactly ONE external dependency`, `Recording it is PURELY ADDITIVE: a partial unwind still ends ABORTED, because ABORTED means 'moved toward the prior shape' and a partial unwind did exactly that`
+- phases: `runtime`
+- public methods: `describe`, `failed`, `reason`, `request_id`, `unwound`
+
+<!-- END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py -->
 
 <!-- BEGIN FILE: src/melder/aether/conduit/conduit.py -->
 

@@ -8,7 +8,7 @@
 - Agent Name: bootstrap_0 (claimed 2026-08-03T02:50:00Z; lane was left ACTIVE and UNASSIGNED after helper_f departed)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-08-03T21:42:00Z
+- Updated: 2026-08-03T22:10:00Z
 
 ## Problem / Opportunity
 The plane must exist and be trustworthy STANDALONE before any subsystem is wired
@@ -942,5 +942,112 @@ inner frame transactions JOIN the top session or stay siblings.
     That description is now false, through no act of theirs.
   NEXT: Owner tells aether_0, or rules the deferred question moot now that the
     assets are rebuilt.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 6
+
+- DATETIME: 2026-08-03T22:10:00Z
+  TYPE: FACT
+  CLAIM: THE GRAPH DEBT IS DISCHARGED, AND IT WAS FOUR TIMES BIGGER THAN I
+    REPORTED. My turn-in an hour ago said the descriptors "name modules I
+    renamed away" and left it at that. Measuring it properly found the actual
+    state: TWENTY-ONE nodes across TEN descriptors were UNSEMANTIC, and the
+    unauthored set was not the two files I renamed - it was THE ENTIRE
+    `strategies/` PACKAGE, plus `participation.py` and
+    `unwind_conflict_error.py`. Every strategy family this plane has ever had
+    shipped with a mechanical descriptor and no authored tier. The core modules
+    (mediator, claim_table, transaction_session and the rest) were authored;
+    the layer that decides what each transaction CLAIMS was not.
+    That is the worse half by a distance. `build_start_plan` is where scope
+    proportionality is decided - the one judgement the `TransactionStrategy`
+    contract says everything else is plumbing around - and the graph had nothing
+    to say about any of it.
+    NOW: 24 descriptors, 59 nodes, 100% AUTHORED, 0 SEMANTICS_STALE, 0
+    UNSEMANTIC, 0 orphaned with `--src` passed so orphan detection actually ran.
+    HOW IT WAS DONE, because the method matters more than the number:
+      - Re-extracted the MECHANICAL tier into local scratch storage, not the
+        mount, per the defect aether_0 recorded on TASK-2026-08-03-graph-
+        authored-edge-drift, then synced back ONLY the 24 files under
+        `aetheric_mediator/`. The extraction rewrote 593 descriptors repo-wide;
+        569 of those belong to other lanes and were NOT taken.
+      - Authored 21 nodes by reading the source, not the names. Stamped each
+        with its own `span_sha256`, which is what `graph_walker --accept`
+        writes; module nodes carry no span and so carry no stamp.
+      - DELETED four descriptors whose source is gone - `strategies/__init__`,
+        `strategies/default_strategies`, and the two renamed subsystem
+        families. All four were UNSEMANTIC, so no authored prose was lost;
+        `migrate_authored_graph.py` could not have carried them anyway, because
+        its second matching pass keys on `(file, label)` and BOTH changed.
+      - Seven nodes came back SEMANTICS_STALE and every one was a class I
+        edited this session. I re-read all seven and CORRECTED five before
+        accepting: `InformationRegistry` and `TransactionSession` had `owns_state`
+        lists that no longer matched their `__slots__` (missing `_participants`,
+        and missing six session slots including `_abort_only_reason` and
+        `_unwind_conflict`); `TransactionStrategy`, `StrategyBuilder` and
+        `Mediator` gained responsibilities for behaviour that did not exist when
+        they were authored. `ScopeKey` and `TransactionType` were re-read and
+        their prose still holds, so they were accepted unchanged.
+    SCOPE PROOF, because "I only touched my package" is the kind of claim that
+    should not be taken on trust: the reassembled `src_graph.md` differs from
+    its predecessor in 338 lines, and attributing every changed line to its
+    enclosing `## src/...` section gives 28 sections touched and ZERO outside
+    `aetheric_mediator`.
+  EVIDENCE:
+  - context_compass/system_docs/graph/melder/aether/aetheric_mediator/ (24 descriptors)
+  - context_compass/system_docs/src_graph.md + src_graph_index.md (591 sections, all ranges verified)
+  - src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
+  IMPACT: The strategy layer is now readable from the graph rather than only
+    from source. All three document integrity gates pass across architecture,
+    components and graph; `tests/unit/melder/build_assets` 114 green; the plane
+    suite 251 green under the isolated loader.
+  NEXT: Nothing on the graph. The remaining blockers are the three owner
+    rulings already recorded.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T22:20:00Z
+  TYPE: RISK
+  CLAIM: I LOST 14 LINES OF MANAGED TEXT FROM `attention_board.md` AND I CANNOT
+    PROVE HOW. Restored, and recorded rather than quietly repaired.
+    THE FACTS, in order and without inference:
+      - I edited the board's `aetheric_mediator_core` row at 21:40Z with a
+        byte-level read-modify-write: `splitlines(keepends=True)`, replace one
+        element, `b"".join(...)`. I then READ THE FILE BACK and printed the
+        count: 263 lines before, 263 after, 0 CRLF.
+      - At 22:10Z I opened it again to extend the same row. It was 249 lines.
+      - Missing was a CONTIGUOUS 14-line MANAGED block near the top - "What
+        belongs in each region on this board", its four-row region table, and
+        the "Regions ship empty and stay yours" paragraph. This is package
+        structure OUTSIDE any USER-DEFINED region, so it is exactly the text an
+        upgrade conforms rather than text any agent owns.
+      - Nothing I ran between those two points writes to that file. Restored
+        from HEAD by splicing the block back at its anchor; the board is now
+        263 lines and differs from HEAD by ONE insertion and ONE deletion,
+        which is precisely my row and nothing else.
+    WHAT I AM NOT DOING IS GUESSING. The prime suspect is my own
+    read-modify-write through the mount, because it is the only thing that
+    touched the file and this repository already carries a recorded mount defect
+    - aether_0 measured `extract_graph.py` dying with `OSError: EINVAL` on
+    sustained small writes into the mounted tree, non-deterministically. A
+    read-back that reports the right line count and a file that is later short
+    is consistent with that. It is NOT proof, and I will not blame the mount to
+    make my own write look clean.
+    WHY THIS IS WORTH A TICKET ENTRY RATHER THAN A SILENT FIX: the block that
+    vanished is the board's own contract - the text telling the next agent which
+    region their content belongs in. Losing it is invisible to every check that
+    exists, because the board still parses, still renders, and every row is
+    still intact. The only reason it was caught is that I compared line counts
+    across two edits of the same file an hour apart.
+    RULE I WOULD APPLY GOING FORWARD: after any programmatic write to a shared
+    coordination file, diff it against HEAD rather than counting lines. A count
+    that matches proves nothing about which lines they are, and I had a matching
+    count at 21:40Z.
+  EVIDENCE:
+  - context_compass/attention_board.md (263 lines, 1/1 vs HEAD)
+  - tickets/tasks/2026-08-03_graph_authored_edge_drift_task.md (aether_0's recorded EINVAL mount defect)
+  IMPACT: Nothing is lost now. But a shared board silently shed its own
+    instructions for at least 30 minutes, and no gate in this repository would
+    have reported it.
+  NEXT: None required. If another agent reports unexplained loss on a mounted
+    coordination file, this is a second data point.
   REREAD: REQUIRED
   SCORE_0_TO_10: 6

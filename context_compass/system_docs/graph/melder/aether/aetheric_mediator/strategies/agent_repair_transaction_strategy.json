@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py",
- "source_sha256": "17637180a0c3108b085e9f6fb321a866646f2608d22b12eee435577b593162c1",
+ "source_sha256": "2ed6b9f6e01a281ead2d66cae948df2bff05ddee8299679f52fdf2e8f4e32118",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy": {
@@ -9,7 +9,13 @@
    "label": "agent_repair_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The repair family - the only one whose claim set is SUPPLIED rather than derived.",
+   "phases": [
+    "init",
+    "runtime"
+   ]
   },
   "melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy.AgentRepairTransactionStrategy": {
    "id": "melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy.AgentRepairTransactionStrategy",
@@ -31,7 +37,20 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "163af365a2db13a41a1996fc40e3ce417f657512a23bd045bfb837f6b23882b6"
+   "span_sha256": "163af365a2db13a41a1996fc40e3ce417f657512a23bd045bfb837f6b23882b6",
+   "include": true,
+   "role": "Claim exactly the scopes an agent names while mending a half-built world.",
+   "responsibilities": [
+    "Claim `world` ix plus each supplied scope x; drop malformed entries and deduplicate rather than refusing",
+    "Refuse to iterate a bare string, which would claim one scope per character",
+    "Take `world` EXCLUSIVE when no usable scope is given: unbounded reach into state already known to be broken has no smaller honest claim",
+    "EXEMPT from the frame-jurisdiction sweep by contract - a caller passing frame-internal keys is asking the wrong plane"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "163af365a2db13a41a1996fc40e3ce417f657512a23bd045bfb837f6b23882b6"
   }
  },
  "edges_out": [

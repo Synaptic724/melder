@@ -23,6 +23,35 @@ Required flow - descend the hierarchy, do not enter in the middle
    creation, publication, validation, borrowing, callers.
 6. **The code.** Open the files the graph just handed you and read them.
 
+**Step 6 is not optional and it is where the chain usually breaks.** Steps 1-5 are
+a lookup service whose entire output is a shortlist of files. An agent that stops
+at step 3 or 5 has produced a *location*, then described behaviour it never
+observed - fluently, because the documents are well written, and wrongly whenever
+the code has moved since they were.
+
+Two specific stops to refuse:
+- **Stopping at the documents.** The component map says what a component owns; it
+  does not say what the method you are about to change currently does.
+- **Substituting search for step 6.** A `grep`/`rg` hit is step 5's job - it
+  narrows. It is not a read. See "A SEARCH HIT IS NOT A READ" in
+  `agent_onboarding/default/general/skills/unknowns_gate_reference.md`.
+
+You have completed step 6 when you could describe the function's contract without
+looking at any document: what it takes, what it returns, what it mutates, what it
+locks, and how it fails.
+
+**Why this warning exists at all, and why it grows as the documents improve.**
+This is not a shortcut agents take because they are lazy. It is the direct
+consequence of the system documents being good. A weak component map gets ignored;
+a strong one answers so fluently that opening the source starts to feel redundant -
+and the better the maps get, the stronger that pull becomes. The hierarchy above
+was built to make lookup cheap, and cheap lookup is exactly what makes stopping
+early tempting.
+
+So treat the quality of these documents as a hazard as well as an asset. They are
+accurate about the day they were written and silent about every commit since. The
+moment a document feels like enough, that is the moment you owe the code a read.
+
 Every step is a lookup keyed on a name the previous step produced. That is why the
 order matters: enter at the graph with no name in hand and you are searching tens of
 thousands of lines for something you cannot yet describe.
@@ -46,6 +75,10 @@ sliced through their indexes, every time. See
 
 Rules
 - Always prefer documented context over assumptions. Prefer the source over both.
+- **The hierarchy has a floor, and the floor is the code.** Descending it partway
+  and stopping is worse than not using it, because you arrive at a confident answer
+  with a citation attached. If you cite a document for a behaviour claim, or cite a
+  one-line search hit for anything, you have not finished.
 - Treat UNKNOWN as default until evidence is attached. A document is evidence of
   intent; only the source is evidence of behaviour.
 - Keep architecture/components docs in sync with actual boundaries.

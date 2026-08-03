@@ -1,94 +1,94 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/aetheric_mediator/scope_keys.py",
- "source_sha256": "e77dbcc2fd12568328b422d730455db04016d860d15bfcd2fe26b6f808256456",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.aetheric_mediator.scope_keys": {
-   "id": "melder.aether.aetheric_mediator.scope_keys",
-   "label": "scope_keys",
-   "kind": "module",
-   "file": "src/melder/aether/aetheric_mediator/scope_keys.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Canonical scope-key construction: the closed namespace vocabulary plus the builders that are the ONLY sanctioned way to make a key.",
-   "semantics_authored_against": "e77dbcc2fd12568328b422d730455db04016d860d15bfcd2fe26b6f808256456"
+  "schema_version": 1,
+  "source": "src/melder/aether/aetheric_mediator/scope_keys.py",
+  "source_sha256": "e0de7620be84e491d9e9273c0ead958e77f5ffa2ff416f8e89afa3c9588ef6dc",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.aetheric_mediator.scope_keys": {
+      "id": "melder.aether.aetheric_mediator.scope_keys",
+      "label": "scope_keys",
+      "kind": "module",
+      "file": "src/melder/aether/aetheric_mediator/scope_keys.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Canonical scope-key construction: the closed namespace vocabulary plus the builders that are the ONLY sanctioned way to make a key.",
+      "semantics_authored_against": "e77dbcc2fd12568328b422d730455db04016d860d15bfcd2fe26b6f808256456"
+    },
+    "melder.aether.aetheric_mediator.scope_keys.ScopePrefix": {
+      "id": "melder.aether.aetheric_mediator.scope_keys.ScopePrefix",
+      "label": "ScopePrefix",
+      "kind": "enum",
+      "file": "src/melder/aether/aetheric_mediator/scope_keys.py",
+      "lineno": 16,
+      "bases": [],
+      "markers": [
+        "StrEnum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "798e48f4aae31bdcc3e01366355b3fae513cd19643381b0a97a706e4b208b28c",
+      "include": true,
+      "role": "The CLOSED vocabulary of scope-key namespaces - the levels this plane can isolate at, as a type rather than loose strings.",
+      "responsibilities": [
+        "name each isolation level once, in one place",
+        "stay closed: a caller reaching for a non-member prefix is the signal a level is MISSING, not an invitation to format a string by hand"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ],
+      "semantics_authored_against": "798e48f4aae31bdcc3e01366355b3fae513cd19643381b0a97a706e4b208b28c"
+    },
+    "melder.aether.aetheric_mediator.scope_keys.ScopeKey": {
+      "id": "melder.aether.aetheric_mediator.scope_keys.ScopeKey",
+      "label": "ScopeKey",
+      "kind": "class",
+      "file": "src/melder/aether/aetheric_mediator/scope_keys.py",
+      "lineno": 56,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "frame",
+        "is_world",
+        "subsystem",
+        "world"
+      ],
+      "shape": {
+        "method_count": 4,
+        "has_bases": false,
+        "trivial": false
+      },
+      "span_sha256": "f37eae59f5636cb53f5491483b2aab198bdcc8ff0d2731a94461c1464e8c7227",
+      "include": true,
+      "role": "The only sanctioned way to build a scope key, because a typo in a hand-written key does not fail loudly - it silently claims the wrong thing.",
+      "responsibilities": [
+        "build FLAT, NAMESPACED keys - one string space with a subsystem or level prefix, keeping acquisition O(requested scopes) dict operations",
+        "express the HIERARCHY BY MODE, NOT BY KEY SHAPE: 'world' is the parent of every frame, but that relationship lives in the claim mode",
+        "never be instantiated - a namespace of static builders over ScopePrefix, holding no instance state"
+      ],
+      "phases": [
+        "init",
+        "runtime"
+      ],
+      "semantics_authored_against": "f37eae59f5636cb53f5491483b2aab198bdcc8ff0d2731a94461c1464e8c7227"
+    }
   },
-  "melder.aether.aetheric_mediator.scope_keys.ScopePrefix": {
-   "id": "melder.aether.aetheric_mediator.scope_keys.ScopePrefix",
-   "label": "ScopePrefix",
-   "kind": "enum",
-   "file": "src/melder/aether/aetheric_mediator/scope_keys.py",
-   "lineno": 16,
-   "bases": [],
-   "markers": [
-    "StrEnum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "798e48f4aae31bdcc3e01366355b3fae513cd19643381b0a97a706e4b208b28c",
-   "include": true,
-   "role": "The CLOSED vocabulary of scope-key namespaces - the levels this plane can isolate at, as a type rather than loose strings.",
-   "responsibilities": [
-    "name each isolation level once, in one place",
-    "stay closed: a caller reaching for a non-member prefix is the signal a level is MISSING, not an invitation to format a string by hand"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ],
-   "semantics_authored_against": "798e48f4aae31bdcc3e01366355b3fae513cd19643381b0a97a706e4b208b28c"
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.aetheric_mediator.scope_keys.ScopeKey",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "StrEnum": "enum.StrEnum"
   },
-  "melder.aether.aetheric_mediator.scope_keys.ScopeKey": {
-   "id": "melder.aether.aetheric_mediator.scope_keys.ScopeKey",
-   "label": "ScopeKey",
-   "kind": "class",
-   "file": "src/melder/aether/aetheric_mediator/scope_keys.py",
-   "lineno": 56,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "frame",
-    "is_world",
-    "subsystem",
-    "world"
-   ],
-   "shape": {
-    "method_count": 4,
-    "has_bases": false,
-    "trivial": false
-   },
-   "span_sha256": "02cd624b4ac75f5178f6fd2c5f263bbefa8410cdd869a9c42fe3b370e79bd7eb",
-   "include": true,
-   "role": "The only sanctioned way to build a scope key, because a typo in a hand-written key does not fail loudly - it silently claims the wrong thing.",
-   "responsibilities": [
-    "build FLAT, NAMESPACED keys - one string space with a subsystem or level prefix, keeping acquisition O(requested scopes) dict operations",
-    "express the HIERARCHY BY MODE, NOT BY KEY SHAPE: 'world' is the parent of every frame, but that relationship lives in the claim mode",
-    "never be instantiated - a namespace of static builders over ScopePrefix, holding no instance state"
-   ],
-   "phases": [
-    "init",
-    "runtime"
-   ],
-   "semantics_authored_against": "02cd624b4ac75f5178f6fd2c5f263bbefa8410cdd869a9c42fe3b370e79bd7eb"
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.aether.aetheric_mediator.scope_keys.ScopeKey",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "StrEnum": "enum.StrEnum"
- },
- "collapse_candidate": null
+  "collapse_candidate": null
 }

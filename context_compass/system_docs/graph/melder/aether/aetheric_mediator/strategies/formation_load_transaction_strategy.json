@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py",
- "source_sha256": "16940b9eb8b412b59d106882f190d58d65488a94922e84d325a4a0a606506400",
+ "source_sha256": "cdbee8762c120edf036718edc3f072aeb2926f35000519e5abb268ea737047fd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy": {
@@ -9,7 +9,13 @@
    "label": "formation_load_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The single-frame load family - the primary case for frame-scoped parallelism.",
+   "phases": [
+    "init",
+    "runtime"
+   ]
   },
   "melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy.FormationLoadTransactionStrategy": {
    "id": "melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy.FormationLoadTransactionStrategy",
@@ -31,7 +37,19 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "24d306fa583b2810a8284241ea2975d35ac8a8aac39620d93ca7ba97beec5fa2"
+   "span_sha256": "24d306fa583b2810a8284241ea2975d35ac8a8aac39620d93ca7ba97beec5fa2",
+   "include": true,
+   "role": "Claim one frame exclusively under a world intent marker, so disjoint frames restore in parallel.",
+   "responsibilities": [
+    "Claim `world` ix plus `frame:<target>` x when the target is known",
+    "Degrade to `world` x when it is not: unknown reach takes the largest claim, because a guessed frame isolates the wrong surface",
+    "Formations are SINGLE-FRAME by law, which is what makes the narrow claim defensible rather than optimistic"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "24d306fa583b2810a8284241ea2975d35ac8a8aac39620d93ca7ba97beec5fa2"
   }
  },
  "edges_out": [

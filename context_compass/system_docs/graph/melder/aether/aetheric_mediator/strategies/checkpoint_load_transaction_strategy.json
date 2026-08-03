@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py",
- "source_sha256": "3b0c61d93f4c67c5954f01e24f1171d0aaa14b65dd3bae0e0989bf13e8c50755",
+ "source_sha256": "d8f0866cafcfd2b41a277b29862aa9a95aafcc4e77711fefc748c1232317b728",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy": {
@@ -9,7 +9,13 @@
    "label": "checkpoint_load_transaction_strategy",
    "kind": "module",
    "file": "src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "The whole-world load family - the plane's restatement of the crystallizer LoadGate.",
+   "phases": [
+    "init",
+    "runtime"
+   ]
   },
   "melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy.CheckpointLoadTransactionStrategy": {
    "id": "melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy.CheckpointLoadTransactionStrategy",
@@ -31,7 +37,19 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a2ae1515f6c38efcebb486df38dee2568a88d6741926a51bec0fed09b8de27b2"
+   "span_sha256": "a2ae1515f6c38efcebb486df38dee2568a88d6741926a51bec0fed09b8de27b2",
+   "include": true,
+   "role": "Claim `world` EXCLUSIVE for the length of a checkpoint replay.",
+   "responsibilities": [
+    "Take `world` x and nothing else: a replay rebuilds the world, so there is no smaller honest claim",
+    "Exclude every other family by construction, including the world INTENT marker the frame-scoped families hold",
+    "Make LoadGate the DEGENERATE CASE of the claim vocabulary rather than a separate mechanism"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ],
+   "semantics_authored_against": "a2ae1515f6c38efcebb486df38dee2568a88d6741926a51bec0fed09b8de27b2"
   }
  },
  "edges_out": [

@@ -8,7 +8,9 @@ GOAL: COMPOSITIONS - naming a SET of spells as one thing, and then
       billing subsystem", because a subsystem is not a spell - it is a
       SET of them that someone decided to treat as a unit.
 
-      THE EIGHT VERBS, AND THE SPLIT IS THE LESSON
+      THE EIGHT VERBS, AND TWO DIFFERENT SPLITS RUN THROUGH THEM
+
+      SPLIT ONE - BY AUTHORITY (which room may call it)
 
         ORGANIZE (codegen rooms only - these WRITE)
           research_group_register(member_spell_ids, lane=..., reason=...)
@@ -27,6 +29,37 @@ GOAL: COMPOSITIONS - naming a SET of spells as one thing, and then
       change one thing in it. Only a codegen room may restate what a
       subsystem IS - because restating it changes what the next reader
       concludes about work nobody has redone.
+
+      SPLIT TWO - BY DEPENDENCY (what the read has to reach)
+      The six reads are NOT the same kind of question, and finding this
+      out the hard way is the reason this lesson exists in its current
+      form. Three answer from the RESEARCH RECORD alone:
+
+          view        the roster and its lane joins
+          history     the journal story
+          diff        two rosters, plus lane-evidenced version moves
+
+      Three are FORESIGHT reads that join research truth to CUSTODY
+      material, and they reach through the Crystallizer to do it:
+
+          footprint   the physical module shadow
+          impact      the union blast radius and closure math
+          drift       recorded-vs-disk, narrowed to the footprint
+
+      A FORESIGHT READ WITH NO LIVE CRYSTALLIZER REFUSES. It does not
+      return an empty report, and melder says why in the message:
+      "foresight reads need the record - activate the crystallizer
+      before asking for source, impact, or module graphs." Never-
+      substitute, on a read path.
+
+      AND THE TWO ABSENCES ARE DIFFERENT, WHICH IS THE SUBTLE PART
+        instrument OFF   -> refusal      (no crystallizer: cannot answer)
+        instrument ON,
+        nothing to read  -> data         (members with no custody crystal
+                                          come back under
+                                          `unknown_custody_members`)
+      "I cannot answer" and "the answer is none" are not the same fact,
+      and melder refuses to spell them the same way.
 
       THE ID IS THE MEMBERSHIP, NOT A SERIAL NUMBER
       `group_id` is a sha256 over the SORTED, DEDUPED member list. Three
@@ -67,19 +100,25 @@ GOAL: COMPOSITIONS - naming a SET of spells as one thing, and then
       `affected_compositions`. Blast radius stopped being a list of files
       and became a list of things with names.
 SURFACE EXERCISED: the eight research_group_* commands across a codegen
-                   room and a capability room, and the read/write line
-                   between them
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+                   room and a capability room, the read/write line
+                   between them, and the record/foresight line inside the
+                   reads
+VERIFY: RUN GREEN on the owner's 3.14t run 2026-08-03.
 """
 import melder as md
 
 
 WRITES = ("research_group_register", "research_group_recompose")
-READS = (
-    "research_group_view", "research_group_diff", "research_group_impact",
-    "research_group_footprint", "research_group_drift",
-    "research_group_history",
+# Answered from the research record alone.
+RECORD_READS = (
+    "research_group_view", "research_group_history", "research_group_diff",
 )
+# Joined against custody material - these need a live Crystallizer.
+FORESIGHT_READS = (
+    "research_group_footprint", "research_group_impact",
+    "research_group_drift",
+)
+READS = RECORD_READS + FORESIGHT_READS
 
 
 def _room(nexus, kind, name):
@@ -204,22 +243,61 @@ def main() -> None:
         print("a composition cannot be a member of a composition -")
         print("  ", error)
 
-    # THE READS, ALL SIX, FROM THE ROOM THAT CANNOT WRITE. This is the
-    # point of the split: a reviewer sees everything and moves nothing.
+    # THE RECORD READS, FROM THE ROOM THAT CANNOT WRITE. These need
+    # nothing but the research record, so they answer right now.
     print()
-    print("capability room reading the record it cannot change:")
-    for label, read in (
-            ("view     ", capability.research_group_view),
-            ("footprint", capability.research_group_footprint),
-            ("impact   ", capability.research_group_impact),
-            ("drift    ", capability.research_group_drift),
-            ("history  ", capability.research_group_history),
-    ):
-        print(f"   {label} ->", type(read(second_id)).__name__)
-    print("   diff      ->",
+    print("capability room, RECORD reads (research record only):")
+    print("   view    ->",
+          type(capability.research_group_view(second_id)).__name__)
+    print("   history ->",
+          type(capability.research_group_history(second_id)).__name__)
+    print("   diff    ->",
           type(capability.research_group_diff(group_id, second_id)).__name__)
-    print("   these members carry no custody, and the reads SAY SO rather")
-    print("   than inventing a module footprint for them")
+
+    # THE FORESIGHT READS REFUSE UNTIL CUSTODY IS RECORDING. The
+    # crystallizer exists - Aether built it - but existing is not being
+    # live, and melder will not answer a physical question from an
+    # instrument that is switched off.
+    print()
+    print("capability room, FORESIGHT reads with custody not recording:")
+    for verb in FORESIGHT_READS:
+        try:
+            getattr(capability, verb)(second_id)
+            raise AssertionError(f"{verb} must refuse without custody")
+        except RuntimeError as error:
+            assert "crystallizer" in str(error).lower()
+            print(f"   {verb.split('_')[-1]:<9} -> refused")
+    print("   'cannot answer' is not 'the answer is none' - so it raises")
+    print("   instead of handing back an empty report")
+
+    # SWITCH THE INSTRUMENT ON. Same ladder as everywhere else: the
+    # configuration activates first, then the subsystem.
+    crystallizer = md.Crystallizer()
+    crystallizer.activate(
+        md.CrystallizerConfigurationBuilder().with_defaults().activate(),
+    )
+    assert crystallizer.activated is True
+    print()
+    print("crystallizer activated - custody is recording now")
+
+    print()
+    print("capability room, the SAME three foresight reads:")
+    for verb in FORESIGHT_READS:
+        answer = getattr(capability, verb)(second_id)
+        print(f"   {verb.split('_')[-1]:<9} ->", type(answer).__name__)
+
+    # AND NOW THE OTHER KIND OF ABSENCE. These members were declared by
+    # id and never bound, so no custody crystal exists for any of them.
+    # That is DATA, and the footprint names them rather than pretending.
+    footprint = capability.research_group_footprint(second_id)
+    assert set(footprint["unknown_custody_members"]) == set(
+        second["member_spell_ids"]
+    ), "every member was declared by id and never bound, so all are unknown"
+    print()
+    print("footprint reports", len(footprint["unknown_custody_members"]),
+          "members with no custody crystal, BY NAME")
+    print("   instrument off -> refusal.  nothing to read -> data.")
+    print("   two different absences, spelled two different ways")
 
     print()
     print("a subsystem is a SET someone named, not a folder")

@@ -83,6 +83,11 @@ def main() -> None:
     nexus = md.Nexus()
     system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
+    # Expert 11's gate A: the shipped allow-list is ("default",), so a
+    # world this Nexus has never been told about is refused before its
+    # posture is even read. Naming it here is the observer's half of the
+    # consent.
+    system_configuration.with_allowed_target_frame_names(["loop-world"])
     nexus.activate(system_configuration)
 
     rift_configuration = nexus.create_rift_configuration()

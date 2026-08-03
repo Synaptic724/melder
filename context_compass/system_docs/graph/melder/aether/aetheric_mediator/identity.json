@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/identity.py",
- "source_sha256": "a707185ae61684a24e855e786b880cc78f8c4def8f011d77976cdeae1306a7e5",
+ "source_sha256": "084ee855b56a1cab7dfe3e5f90997a51105081bb080196536dc6e30b5010f923",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.identity": {
