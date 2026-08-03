@@ -1,3 +1,20 @@
+"""
+The one error type this plane defines.
+
+WHY THIS IS NOT IN `melder/utilities/custom_exceptions/` with every other
+custom exception in the repo: `test_plane_depends_on_nothing_but_utilities`
+asserts that this package has EXACTLY ONE external melder dependency -
+`melder.utilities.general_base.cleanable`. That guard exists so coupling
+cannot drift in quietly, and it is doing its job: putting this type in the
+shared exceptions directory added a second dependency and the test caught it
+immediately.
+
+Following repo convention would have meant weakening a live design guard to
+accommodate a file placement. The guard is the stronger signal, and this type
+is plane-specific anyway - it describes a transaction outcome and means
+nothing outside this package.
+"""
+
 from typing import Tuple
 
 

@@ -48,16 +48,22 @@ class Payload:
     pass
 
 
-def test_probe_frames_isolate_names_and_singletons():
-    """Lesson 02 contract (README claim, pinned): two frames bind the
-    SAME class with zero collision, and unique = one singleton PER
-    FRAME. A red here is a finding against the README."""
+def test_probe_frames_isolate_instances_but_not_identity():
+    """Lesson 02 contract, REWRITTEN 2026-08-03. This row used to pin the
+    README claim that "two frames bind the SAME class with zero
+    collision". EPIC-2026-08-02 S2 retired that: a spell_id hashes the
+    bind fingerprint and the FRAME IS NOT IN IT, so identical bindings on
+    different frames mint one id and the second conjure is refused.
+
+    What survived is the half that was always the real point - once the
+    BINDINGS differ, `unique` is one instance PER FRAME and the wall
+    holds. Both halves are asserted here so neither can drift alone."""
     book_a = Spellbook(aetheric_frame="probe-tenant-a")
     book_b = Spellbook(aetheric_frame="probe-tenant-b")
-    book_a.bind(spell=Payload, existence="unique")
-    book_b.bind(spell=Payload, existence="unique")
-    a = book_a.conjure().meld(spell=Payload)
-    b = book_b.conjure().meld(spell=Payload)
+    book_a.bind(spell=Payload, existence="unique", binding_name="tenant-a")
+    book_b.bind(spell=Payload, existence="unique", binding_name="tenant-b")
+    a = book_a.conjure().meld(spell=Payload, binding_name="tenant-a")
+    b = book_b.conjure().meld(spell=Payload, binding_name="tenant-b")
     assert a is not b
     print("frame isolation pinned: same class, two worlds, two singletons")
 
@@ -1075,23 +1081,28 @@ def test_probe_no_retroactive_lockdown_while_contracts_exist():
     print("no-retroactive-lockdown pinned: refuses, never partially applies")
 
 
-def test_probe_policy_is_write_only_on_the_public_surface():
-    """Lesson 16 FINDING: set_new_policy is public; there is NO public way
-    to read a conduit's current policy back. Write-only authority - you
-    can change it and cannot audit it from outside.
+def test_probe_policy_is_readable_and_writable_on_the_public_surface():
+    """THE GAP THIS ROW PINNED HAS CLOSED (2026-08-03). It used to read
+    "set_new_policy is public; there is NO public way to read a conduit's
+    current policy back - write-only authority", and it was written to go
+    red the day a reader landed. It did exactly that, which is the whole
+    point of pinning a gap as a test.
 
-    Green while the gap exists, red the day a reader lands."""
-    import inspect
+    It now pins the PAIR: the write door and the read door both exist, and
+    the read reports the live ward rather than echoing the last argument -
+    which matters because set_new_policy has three refusal paths."""
     _, root = _dynamic_root("probe-ward-read", "probe-read-root")
-    assert hasattr(root, "set_new_policy")
-    public_readers = [
+    public_policy_surface = sorted(
         name for name in dir(root)
         if not name.startswith("_") and "policy" in name.lower()
-    ]
-    assert public_readers == ["set_new_policy"], (
-        f"a public policy reader appeared: {public_readers}"
     )
-    print("write-only gap pinned: only door is", public_readers)
+    assert public_policy_surface == ["policy", "set_new_policy"], (
+        f"the ward policy surface changed shape: {public_policy_surface}"
+    )
+    assert root.policy is md.Policies.default
+    root.set_new_policy("block_all")
+    assert root.policy is md.Policies.block_all
+    print("ward policy pinned: readable and writable, read follows the ward")
 
 
 def _active_crystallizer() -> "Crystallizer":
@@ -1447,21 +1458,29 @@ def test_probe_many_keeps_override_blast_radius_inside_the_call():
     print("blast radius pinned: `many` kept the fixture inside the call")
 
 
-def test_probe_rift_enabled_has_no_public_setter():
-    """FINDING (2026-08-02, arc B): `rift_enabled` gates AR targeting
-    (Nexus raises "AR requires rift_enabled on target frame") and there is
-    NO PUBLIC DOOR TO SET IT. It is not a parameter of
-    Spellbook.configure_aether_frame, and the frame posture that owns
-    with_rift_enabled() cannot be installed from the public root
-    (lesson 06 finding). Rifts themselves ARE reachable - Nexus.enable and
-    create_rift are public - but AR targeting is not.
+def test_probe_rift_enabled_now_has_a_public_setter():
+    """THE GAP THIS ROW PINNED HAS CLOSED (2026-08-03). It used to assert
+    that `rift_enabled` - which gates AR targeting, Nexus raising "AR
+    requires rift_enabled on target frame" - had NO public door, and it was
+    written to go red the day a setter landed. It did.
 
-    Pinned so the gap is a test rather than a memory. Goes red the day a
-    setter lands, which is when arc B can teach AR."""
+    It now pins the setter and the value actually reaching the frame, so a
+    parameter that gets added and then silently stops forwarding is still
+    caught. arc B can teach AR from here."""
     import inspect
     door = inspect.signature(Spellbook.configure_aether_frame).parameters
-    assert "rift_enabled" not in door
-    assert "ai_native_enabled" not in door
-    # the setter exists on the posture object - it is the INSTALL that is missing
+    assert "rift_enabled" in door
+    assert "ai_native" in door
     assert hasattr(md.AethericFrameConfiguration, "with_rift_enabled")
-    print("AR gap pinned: with_rift_enabled exists, no public path installs it")
+
+    book = Spellbook(aetheric_frame="probe-ar-open")
+    book.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+        rift_enabled=True,
+    )
+    posture = Aether()._get_aetheric_frame_configuration("probe-ar-open")
+    assert posture is not None
+    assert posture.rift_enabled is True, "the parameter did not reach the frame"
+    print("AR door pinned: rift_enabled settable AND landing on the frame")

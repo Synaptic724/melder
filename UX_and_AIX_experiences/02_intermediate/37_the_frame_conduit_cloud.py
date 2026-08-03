@@ -58,7 +58,7 @@ class Ledger:
 
 def main() -> None:
     book = md.Spellbook(aetheric_frame="cloud-demo")
-    book.bind(spell=Ledger, existence="unique")
+    book.bind(spell=Ledger, existence="unique", binding_name="demo")
 
     root = book.conjure(name="cloud-root")
     cloud = root.get_conduit_cloud()
@@ -78,8 +78,11 @@ def main() -> None:
     assert root.get_conduit_cloud() is cloud
 
     # A DIFFERENT FRAME IS A DIFFERENT WORLD, and so a different cloud.
+    # A DIFFERENT binding_name, because a spell_id does not carry the
+    # frame - the same class bound identically in two frames collides
+    # process-wide. The CLOUD is still per-frame; identity is not.
     other_book = md.Spellbook(aetheric_frame="cloud-other")
-    other_book.bind(spell=Ledger, existence="unique")
+    other_book.bind(spell=Ledger, existence="unique", binding_name="other")
     other_root = other_book.conjure(name="other-root")
     other_cloud = other_root.get_conduit_cloud()
     assert other_cloud is not cloud

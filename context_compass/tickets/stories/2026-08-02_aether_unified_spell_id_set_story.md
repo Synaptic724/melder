@@ -1,4 +1,11 @@
-# Story: Aether owns one unified spell_id set
+# Story: Move the spell_id check-and-set into register_conduit_spells
+
+> TITLE CORRECTED 2026-08-02. This was filed as "Aether owns one unified
+> spell_id set" BEFORE the owner ruled "we don't need a unified set". The
+> body never proposed one and still does not: R1 puts the sweep INSIDE
+> `AethericFrame.register_conduit_spells`, under the RLock it already takes
+> (see the Notes: "do not add a second acquisition"). NO NEW OBJECT, NO NEW
+> METHOD - an existing method gains the check it should always have had.
 
 ## Metadata
 - Story ID: STORY-2026-08-02-aether-unified-spell-id-set

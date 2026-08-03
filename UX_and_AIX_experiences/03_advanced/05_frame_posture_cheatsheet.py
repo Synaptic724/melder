@@ -85,7 +85,10 @@ def main() -> None:
     # Direction 2 - THE ONE THAT ACTUALLY CATCHES DRIFT. Every public,
     # non-preset property on the class must appear on the cheatsheet. Add a
     # knob to melder and this lesson goes red until the map is updated.
-    plumbing = {"id", "origin_spellbook_id", "frozen", "cleaned"}
+    # Lifecycle/identity reads, not posture knobs. `is_cleaned` joined this
+    # set on 2026-08-03 and the check below is what caught it - the detector
+    # doing its job, not a failure.
+    plumbing = {"id", "origin_spellbook_id", "frozen", "cleaned", "is_cleaned"}
     live = {
         name for name in dir(md.AethericFrameConfiguration)
         if not name.startswith("_")

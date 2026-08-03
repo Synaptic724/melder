@@ -46,13 +46,20 @@ SURFACE EXERCISED: md.Policies, Conduit.set_new_policy, the dynamic-only
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
 FINDINGS (init surface, 2026-08-02):
- 1. NO PUBLIC READER. `set_new_policy` is public; there is no public way
-    to ask a conduit what its policy currently IS. Write-only authority.
- 2. THE SIGNATURE UNDER-SELLS THE CODE. Conduit.set_new_policy is
-    annotated `policy: str`, but it delegates to a ward method typed
-    `str | Policies` which runs EnumHelpers.convert_enum_and_check - so
-    the exported md.Policies enum works fine. A reader trusting the
-    public hint would think the exported enum is unusable here.
+ 1. RESOLVED 2026-08-03 - NO PUBLIC READER. `set_new_policy` was public
+    with no public way to ask a conduit what its policy currently IS:
+    write-only authority. `Conduit.policy` now answers that. Note the
+    deliberate asymmetry - the WRITE is gated on a dynamic frame and a
+    normal (non-lesser) conduit, the READ on neither, because an
+    automatic conduit still enforces a policy and hiding live behaviour
+    behind a mode gate would be worse than the gap was.
+ 2. RESOLVED 2026-08-03 - THE SIGNATURE UNDER-SOLD THE CODE.
+    Conduit.set_new_policy was annotated `policy: str`, but it delegates
+    to a ward method that runs EnumHelpers.convert_enum_and_check and has
+    always accepted a member OR its string name. A reader trusting the
+    public hint would think the exported md.Policies enum was unusable
+    here. It is now annotated Union[str, Policies], which also makes
+    read-then-write a legal round-trip instead of a type error.
  3. Policies uses auto(), so `.value` is an INT, not the mode name. The
     string form is `.name`. Anyone reaching for `.value` to build the
     string argument gets 3 instead of "block_all".
@@ -86,8 +93,14 @@ def main() -> None:
     # ------------------------------------------------------------------
     # REFUSAL 1 - DYNAMIC MODE ONLY
     # ------------------------------------------------------------------
+    # binding_name differs per frame ON PURPOSE. A spell_id is a hash of
+    # the BIND FINGERPRINT and the frame is not in it, so the same class
+    # bound identically in two frames mints the same id and the second
+    # conjure is refused process-wide. Frames isolate instances, not
+    # identity - see advanced 02.
     automatic_book = md.Spellbook(aetheric_frame="ward-automatic")
-    automatic_book.bind(spell=Payload, existence="unique")
+    automatic_book.bind(spell=Payload, existence="unique",
+                        binding_name="automatic")
     automatic_root = automatic_book.conjure(name="automatic-root")
     try:
         automatic_root.set_new_policy("block_all")
@@ -100,7 +113,7 @@ def main() -> None:
     # A DYNAMIC WORLD - now the door opens
     # ------------------------------------------------------------------
     book = md.Spellbook(aetheric_frame="ward-dynamic")
-    book.bind(spell=Payload, existence="unique")
+    book.bind(spell=Payload, existence="unique", binding_name="dynamic")
     book.configure_aether_frame(system_state="dynamic", disposal=None,
                                 disposal_method_names=None)
     root = book.conjure(name="ward-root")

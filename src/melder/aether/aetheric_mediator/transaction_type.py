@@ -43,6 +43,13 @@ class TransactionType(StrEnum):
         rather than a silent one.
 
     Member provenance:
+        - FRAME_CREATE: `Aether._ensure_frame(...)`. THE FOUNDING CASE. The
+          epic exists because this could not be admitted by anything that
+          existed: the only admission authority was the frame-local
+          `TransactionMediator`, which is owned BY the frame being created, so
+          it could never arbitrate its own creation. This member is the first
+          transaction in the vocabulary that could not have been written before
+          the plane existed.
         - CHECKPOINT_LOAD: `CrystalLoaderSystem.load_checkpoint(...)`, which
           today takes whole-world exclusivity through the `LoadGate`.
         - FORMATION_LOAD: `restore_formation_record(...)`. Formations are
@@ -70,6 +77,7 @@ class TransactionType(StrEnum):
         Every member pairs with a registered strategy.
     """
 
+    FRAME_CREATE = "frame_create"
     CHECKPOINT_LOAD = "checkpoint_load"
     FORMATION_LOAD = "formation_load"
     INDEX_GRAFT = "index_graft"

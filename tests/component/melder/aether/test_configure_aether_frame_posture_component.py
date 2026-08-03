@@ -179,14 +179,23 @@ def test_an_absolute_cache_root_is_refused_through_the_door() -> None:
     The setter's "must be relative" rule is not softened by the facade. The
     door forwards the value and lets the posture object refuse it, rather than
     normalizing an absolute path into something the caller did not ask for.
+
+    The path MUST be built from `Path.cwd()` and not written as a literal.
+    `_normalize_cache_root_path` rejects on `Path.is_absolute()`, and on
+    Windows a rooted-but-driveless literal like "/tmp/x" is NOT absolute -
+    `WindowsPath("/tmp/x").is_absolute()` is False. An earlier version of this
+    row used that literal, so it was a no-op on Windows and passed a relative
+    path into a test asserting absolute paths are refused.
     """
+    absolute_root = Path.cwd() / "melder-posture-probe"
+    assert absolute_root.is_absolute(), "the probe path must be absolute here"
     book = _book("cover-abs-path")
     with pytest.raises(ValueError):
         book.configure_aether_frame(
             system_state=None,
             disposal=None,
             disposal_method_names=None,
-            system_cache_root_path=Path("/tmp/melder-posture-probe"),
+            system_cache_root_path=absolute_root,
         )
 
 

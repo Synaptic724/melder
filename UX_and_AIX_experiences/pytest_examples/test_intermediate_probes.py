@@ -815,10 +815,13 @@ def test_probe_conduit_cloud_is_frame_owned_and_shared():
 def test_probe_a_different_frame_gets_a_different_cloud():
     """Lesson 37 claim: frames are worlds (advanced 03) and the cloud is a
     world-level object, so the frame wall holds here too."""
+    # binding_name differs because a spell_id does not carry the frame -
+    # identical bindings on two frames collide process-wide. The CLOUD is
+    # what this row is about, and it IS per-frame.
     first = Spellbook(aetheric_frame="probe-cloud-a")
-    first.bind(spell=_Ledger, existence="unique")
+    first.bind(spell=_Ledger, existence="unique", binding_name="cloud-a")
     second = Spellbook(aetheric_frame="probe-cloud-b")
-    second.bind(spell=_Ledger, existence="unique")
+    second.bind(spell=_Ledger, existence="unique", binding_name="cloud-b")
 
     cloud_a = first.conjure(name="a-root").get_conduit_cloud()
     cloud_b = second.conjure(name="b-root").get_conduit_cloud()

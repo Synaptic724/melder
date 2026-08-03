@@ -65,7 +65,10 @@ def main() -> None:
     assert set(types) == {"development", "experiment", "production", "test"}
 
     # THE LADDER, third subsystem to use it (aether 07, crystallizer 17).
-    research = md.MutationResearch()
+    # The root is AETHER-HOSTED: its constructor takes the hosting Aether,
+    # so there is no free-standing research world. One process, one Aether,
+    # one research root under it.
+    research = md.MutationResearch(md.Aether())
     assert research.activated is False
     print()
     print("start - configured:", research.is_configured,

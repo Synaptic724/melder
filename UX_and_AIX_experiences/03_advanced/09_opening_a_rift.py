@@ -32,9 +32,11 @@ GOAL: OPENING A RIFT - and meeting melder's most repeated law for the
       other.
 
       WHAT THIS LESSON DELIBERATELY DOES NOT DO: AR targeting. That needs
-      `rift_enabled` on the target frame's posture, and there is no public
-      door that sets it (pinned in test_advanced_probes). Rifts, rooms and
-      workstations are reachable; dynamic AR targeting is not, today.
+      `rift_enabled=True` on the target frame's posture - the frame's
+      opt-in to being observable, and it defaults False. Setting it is a
+      FRAME concern, not a rift one, which is why it is not shown here:
+      you posture the frame first, then attach. Rifts, rooms and
+      workstations are what this lesson covers.
 SURFACE EXERCISED: md.Nexus.create_rift_configuration, create_rift,
                    md.RiftConfiguration, md.Rift, md.RiftSpaceType
 VERIFY: rides the owner's 3.14t run; asserts are the contract.

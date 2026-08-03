@@ -254,82 +254,25 @@ def test_dependency_on_leader_lesser_resolves_cluster_instance() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_two_clusters_one_frame_one_binding_are_isolated() -> None:
-    """
-    Purpose:
-        REPLACES the deleted `test_multiple_clusters_separate_frames_isolated`.
-        Two clusters, ONE frame, ONE binding - the only shape that actually
-        exercises `unique_per_conduit_cluster` resolution.
-
-    Contract:
-        - A single Spellbook binds the cluster spell ONCE. Every other conduit
-          joins without binding, so there is exactly one spell_id in play and
-          process-wide uniqueness is satisfied by construction.
-        - Members WITHIN a cluster share one instance.
-        - The two clusters hold DIFFERENT instances.
-
-    Why this is not the test it replaces:
-        The deleted version put each cluster on its own frame, which handed each
-        one its own book, conduit and instance for free - it passed whether or
-        not cluster resolution worked at all. Here both clusters share a frame, a
-        cloud and a binding, so the ONLY thing that can separate the instances is
-        the cluster scope itself. If cluster resolution breaks, this goes red.
-
-    Returns:
-        None.
-    Raises:
-        AssertionError: If members disagree inside a cluster, or the two
-            clusters share an instance.
-    """
-    frame_name = "clu-shared"  # must match _cluster_config("shared")
-    owner_book = Spellbook(
-        aetheric_frame=frame_name, configuration=_cluster_config("shared")
-    )
-    owner_book.bind(spell=_ClusterThing, existence=_CLUSTER, permissions="create")
-    leader_a = owner_book.conjure(dynamic=True, name="shared-leader-a")
-    frame = leader_a._aetheric_frame_name
-
-    # Every remaining conduit joins WITHOUT binding - one binding, many members.
-    leader_b = Spellbook(aetheric_frame=frame).conjure(
-        dynamic=True, name="shared-leader-b"
-    )
-    member_a = Spellbook(aetheric_frame=frame).conjure(
-        dynamic=True, name="shared-member-a"
-    )
-    member_b = Spellbook(aetheric_frame=frame).conjure(
-        dynamic=True, name="shared-member-b"
-    )
-    leader_a.link(member_a)
-    leader_b.link(member_b)
-
-    cloud = leader_a._spellbook._aether.get_conduit_cloud(frame)
-    for cluster_name, leader, member in (
-        ("cluster-a", leader_a, member_a),
-        ("cluster-b", leader_b, member_b),
-    ):
-        cloud.create_cluster(cluster_name)
-        cloud.add_conduit_to_cluster(leader, cluster_name)
-        cloud.add_conduit_to_cluster(member, cluster_name)
-        cloud.refresh_cluster_shares_for_conduit(leader)
-        cloud.get_cluster(cluster_name).elect_leader(leader.id)
-
-    try:
-        leader_a_instance: Any = leader_a.meld(spell=_ClusterThing)
-        member_a_instance: Any = member_a.meld(spell=_ClusterThing)
-        leader_b_instance: Any = leader_b.meld(spell=_ClusterThing)
-        member_b_instance: Any = member_b.meld(spell=_ClusterThing)
-
-        assert leader_a_instance is member_a_instance, (
-            "members of one cluster must share the leader's instance"
-        )
-        assert leader_b_instance is member_b_instance, (
-            "members of one cluster must share the leader's instance"
-        )
-        assert leader_a_instance is not leader_b_instance, (
-            "two clusters on ONE frame off ONE binding leaked a single instance "
-            "- this is the assertion the frame-per-cluster version could never "
-            "make, because separate frames separated the instances for free"
-        )
-    finally:
-        for conduit in (member_b, member_a, leader_b, leader_a):
-            conduit.permanent_cleanup()
+# ---------------------------------------------------------------------------
+# WITHDRAWN 2026-08-02 - test_two_clusters_one_frame_one_binding_are_isolated
+#
+# I wrote this to replace the deleted frame-per-cluster fixtures, on the
+# assumption that any conduit on the frame could meld the one binding. That is
+# WRONG, and the test proved it: `meld` resolves through the conduit's OWN
+# Spellbook first, then contracted conduits (meld.py:1330 ->
+# _resolve_spell_by_lookup_key). `leader_b` came from a Spellbook that bound
+# nothing, so it raised
+#   KeyError: [MELD] No spell found for frame='_clusterthing', binding='__default__'
+#
+# Cluster shares propagate FROM THE OWNER - `refresh_cluster_shares_for_conduit`
+# shares the spells that conduit actually holds - so two cluster leaders each
+# need the binding, and two bindings of one class is what process-wide
+# uniqueness refuses. Whether a second leader can instead acquire it by link or
+# contract is the open question, and I have not read those paths.
+#
+# Withdrawn rather than patched again: I have now guessed twice at cluster
+# mechanics from the fixtures instead of reading the resolution path. The gap
+# left by the deleted tautologies is REAL and still open - do not treat this
+# absence as coverage.
+# ---------------------------------------------------------------------------

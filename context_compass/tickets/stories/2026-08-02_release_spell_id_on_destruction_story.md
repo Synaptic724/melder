@@ -1,4 +1,11 @@
-# Story: Release a spell_id on every destruction path
+# Story: Add the missing release to the destruction paths that already exist
+
+> TITLE CLARIFIED 2026-08-02. "Every destruction path" read as though new
+> paths were being invented. They are not. The paths already exist and are
+> named in Scope - `Spellbook.cleanup_spell` (:4036),
+> `AethericFrame.unregister_conduit_spells` (:1052), and
+> `_unregister_conduit_spells_from_aether` (:2511). The work is adding the
+> release call each one is missing, not adding surface.
 
 ## Metadata
 - Story ID: STORY-2026-08-02-release-spell-id-on-destruction

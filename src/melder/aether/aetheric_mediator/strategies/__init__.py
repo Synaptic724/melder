@@ -60,6 +60,9 @@ from melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_stra
 from melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy import (
     FormationLoadTransactionStrategy,
 )
+from melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy import (
+    FrameCreateTransactionStrategy,
+)
 from melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy import (
     IndexGraftTransactionStrategy,
 )
@@ -74,6 +77,7 @@ __all__ = [
     "AgentRepairTransactionStrategy",
     "CheckpointLoadTransactionStrategy",
     "FormationLoadTransactionStrategy",
+    "FrameCreateTransactionStrategy",
     "IndexGraftTransactionStrategy",
     "SubsystemDisableTransactionStrategy",
     "SubsystemEnableTransactionStrategy",

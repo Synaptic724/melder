@@ -112,11 +112,16 @@ class StrategyBuilder(Cleanable):
             AgentRepairTransactionStrategy,
             CheckpointLoadTransactionStrategy,
             FormationLoadTransactionStrategy,
+            FrameCreateTransactionStrategy,
             IndexGraftTransactionStrategy,
             SubsystemDisableTransactionStrategy,
             SubsystemEnableTransactionStrategy,
         )
 
+        self.register(
+            transaction_type=TransactionType.FRAME_CREATE,
+            strategy=FrameCreateTransactionStrategy,
+        )
         self.register(
             transaction_type=TransactionType.CHECKPOINT_LOAD,
             strategy=CheckpointLoadTransactionStrategy,

@@ -37,22 +37,36 @@ class SharedCollisionService:
     Shared service used to create real cross-frame spell/binding collisions.
     """
 
+    def run(self) -> str:
+        """
+        Return a stable string for integration assertions.
+
+        Returns:
+            str: Stable integration string.
+        """
+        return "shared"
+
 
 class SharedCollisionServiceB:
     """
     The finance-frame counterpart to `SharedCollisionService`.
 
-    A DISTINCT class deliberately bound under the SAME spellframe and
-    binding_name, so the two frames still collide on the LOOKUP KEY - which is
-    what the viewer's cross-frame compare/collision helpers actually report -
-    while minting DIFFERENT spell_ids.
+    A DISTINCT class bound under the SAME spellframe and binding_name, so the two
+    frames still collide on the LOOKUP KEY - what the viewer's cross-frame
+    compare/collision helpers actually report - while minting DIFFERENT spell_ids.
 
-    Before process-wide uniqueness both frames bound the same class, which
-    collided on the lookup key AND the spell_id at once. The spell_id half was
-    incidental scaffolding, never the subject; it is now refused at conjure, so
-    the two halves are separated here rather than the test being weakened.
+    Before process-wide uniqueness both frames bound the same class, colliding on
+    the lookup key AND the spell_id at once. The spell_id half was incidental
+    scaffolding, never the subject; it is refused at conjure now, so the two
+    halves are separated here rather than the test being weakened.
+
+    THE __name__ REASSIGNMENT BELOW IS LOAD-BEARING. The viewer groups
+    `describe_spell_name_collisions` by the spell NAME, while the bind-time
+    fingerprint hashes name AND qualname AND module (bind.py:572-631). Matching
+    the name keeps the NAME collision the viewer must report; the differing
+    qualname keeps the spell_ids apart. Drop it and spell_name_collisions
+    silently finds nothing - which is how this test failed once already.
     """
-    pass
 
     def run(self) -> str:
         """
@@ -62,6 +76,9 @@ class SharedCollisionServiceB:
             str: Stable integration string.
         """
         return "shared"
+
+
+SharedCollisionServiceB.__name__ = SharedCollisionService.__name__
 
 
 class OpsMismatchService:
