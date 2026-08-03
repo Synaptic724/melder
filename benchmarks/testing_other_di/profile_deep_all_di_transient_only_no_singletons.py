@@ -596,7 +596,7 @@ def _profile_loop(
     start = time.perf_counter()
     profiler.activate()
     run_fn()
-    profiler.deactivate()
+    profiler.disable()
     elapsed_s = time.perf_counter() - start
 
     logger.info(

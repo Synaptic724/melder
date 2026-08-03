@@ -64,7 +64,7 @@ def test_melder_gauntlet_gc_isolated() -> None:
     Run the unmodified gauntlet with cycle GC disabled (or stats-instrumented).
 
     Contract:
-        - Default: gc.collect() once for a clean baseline, then gc.deactivate()
+        - Default: gc.collect() once for a clean baseline, then gc.disable()
           for the whole benchmark; gc re-enabled in finally.
         - MELDER_GC_PROBE_KEEP_GC=1: leave GC enabled and print the
           gc.get_stats() collection/collected deltas instead, so a follow-up
@@ -85,7 +85,7 @@ def test_melder_gauntlet_gc_isolated() -> None:
         return
 
     gc.collect()
-    gc.deactivate()
+    gc.disable()
     try:
         print("[gc-probe] cycle GC DISABLED for this run")
         _gauntlet.test_melder_gauntlet()

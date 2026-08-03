@@ -215,7 +215,7 @@ def _time_loop(getter: Callable[[], object], *, warmup: int, tries: int, gc_disa
 
     was_enabled = gc.isenabled()
     if gc_disable and was_enabled:
-        gc.deactivate()
+        gc.disable()
 
     try:
         t0 = _ns()

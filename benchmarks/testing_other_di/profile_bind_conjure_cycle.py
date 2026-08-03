@@ -327,7 +327,7 @@ def run_cycle(
         timings.per_bind_ns.append(time.perf_counter_ns() - single_t0)
     timings.bind_ns = time.perf_counter_ns() - bind_t0
     if bind_profiler is not None:
-        bind_profiler.deactivate()
+        bind_profiler.disable()
 
     # Probe whether a warm classification is even possible before conjure
     # consumes the state (cached ids must cover live ids).
@@ -349,7 +349,7 @@ def run_cycle(
     conduit = spellbook.conjure(name=CONDUIT_NAME, dynamic=False)
     timings.conjure_ns = time.perf_counter_ns() - conjure_t0
     if conjure_profiler is not None:
-        conjure_profiler.deactivate()
+        conjure_profiler.disable()
 
     # ---- resolution lane (first meld of every spell) ----
     # Spellspace-scoped spells (request/worker markers and any subtree that
@@ -396,7 +396,7 @@ def run_cycle(
                     lesser.cleanup()
             timings.first_meld_ns = time.perf_counter_ns() - meld_t0
             if meld_profiler is not None:
-                meld_profiler.deactivate()
+                meld_profiler.disable()
 
         if caching_enabled:
             try:

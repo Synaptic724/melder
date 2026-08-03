@@ -344,7 +344,7 @@ def _maybe_profile(name: str, fn: Callable[[], None]) -> None:
     try:
         fn()
     finally:
-        profile.deactivate()
+        profile.disable()
         out_dir = Path(_env_str("DI_CPROFILE_DIR", "benchmarks/testing_other_di/optimistic"))
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"overrides_{name}.prof"
@@ -697,7 +697,7 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
         try:
             was_enabled = gc.isenabled()
             if cfg.gc_mode == "disabled" and was_enabled:
-                gc.deactivate()
+                gc.disable()
 
             try:
                 start_barrier.wait()

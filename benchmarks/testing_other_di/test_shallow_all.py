@@ -1805,7 +1805,7 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
         try:
             was_enabled = gc.isenabled()
             if cfg.gc_mode == "disabled" and was_enabled:
-                gc.deactivate()
+                gc.disable()
 
             try:
                 start_barrier.wait()
@@ -1969,7 +1969,7 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
         try:
             was_enabled = gc.isenabled()
             if cfg.gc_mode == "disabled" and was_enabled:
-                gc.deactivate()
+                gc.disable()
 
             try:
                 start_barrier.wait()

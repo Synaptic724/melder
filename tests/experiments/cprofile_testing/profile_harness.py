@@ -110,7 +110,7 @@ class ProfileScenario:
         try:
             profiler.activate()
             self.action(state)
-            profiler.deactivate()
+            profiler.disable()
         finally:
             self._run_teardown(state)
 

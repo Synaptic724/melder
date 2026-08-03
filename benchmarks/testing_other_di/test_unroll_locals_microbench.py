@@ -111,7 +111,7 @@ def _warm_per_meld_us(
                 for _ in range(warmup):
                     conduit.meld(spell=root_id)
                 gc.collect()
-                gc.deactivate()
+                gc.disable()
                 try:
                     start = time.perf_counter()
                     for _ in range(iterations):

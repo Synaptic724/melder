@@ -711,7 +711,7 @@ def _profile_execution(
             ):
                 normalized_sample_metadata["sample_actual_duration_s"] = elapsed
         if profile_enabled:
-            profiler.deactivate()
+            profiler.disable()
 
         if profile_enabled:
             profile_path = _dump_profile(label, profiler)

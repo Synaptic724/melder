@@ -561,7 +561,7 @@ class _Sentinel:
 def _gc_off():
     """Run a block with the cycle collector disabled, restoring prior state."""
     was_enabled = gc.isenabled()
-    gc.deactivate()
+    gc.disable()
     try:
         yield
     finally:

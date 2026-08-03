@@ -69,7 +69,7 @@ def _profile_one_build(label: str, report_stream: io.StringIO) -> None:
     profiler = cProfile.Profile()
     profiler.activate()
     ops = _bench._build_runtime_melder()
-    profiler.deactivate()
+    profiler.disable()
     ops.cleanup()
 
     stats = pstats.Stats(profiler, stream=report_stream)

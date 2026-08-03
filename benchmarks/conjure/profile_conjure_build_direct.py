@@ -388,7 +388,7 @@ def _profile_lib(logger: SafeLogger, lib: str, classes: tuple[type, ...]) -> Non
     profile = cProfile.Profile()
     profile.activate()
     elapsed = _profile_loop(lib, classes, ProfileConfig.ITERATIONS)
-    profile.deactivate()
+    profile.disable()
 
     stream = io.StringIO()
     stats = pstats.Stats(profile, stream=stream).sort_stats(ProfileConfig.SORT_BY)

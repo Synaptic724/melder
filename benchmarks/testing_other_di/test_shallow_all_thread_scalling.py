@@ -187,7 +187,7 @@ def _run_graph_mix(
         try:
             was_enabled = gc.isenabled()
             if cfg.gc_mode == "disabled" and was_enabled:
-                gc.deactivate()
+                gc.disable()
 
             try:
                 rng = random.Random(cfg.random_seed + ix)

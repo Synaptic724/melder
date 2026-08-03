@@ -229,7 +229,7 @@ for _, worker in workers:
         bench_worker(worker, iterations)
 
 gc_was_enabled = gc.isenabled()
-gc.deactivate()
+gc.disable()
 
 try:
     for _ in range(repeats):

@@ -94,7 +94,7 @@ def main() -> None:
         profiler.activate()
         for iteration_ix in range(PROFILED_ITERATIONS):
             _support.run_gauntlet_once(ops, cfg, iteration_ix)
-        profiler.deactivate()
+        profiler.disable()
 
         report_stream = io.StringIO()
         stats = pstats.Stats(profiler, stream=report_stream)

@@ -896,7 +896,7 @@ def _profile_callable(
     profile.activate()
     for _ in range(profile_iteration_count):
         fn()
-    profile.deactivate()
+    profile.disable()
     end_ns = time.perf_counter_ns()
 
     stats = pstats.Stats(profile)
