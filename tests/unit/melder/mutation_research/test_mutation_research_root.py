@@ -937,5 +937,8 @@ def test_the_host_is_keyword_only() -> None:
     with pytest.raises(TypeError):
         MutationResearch(_mock_aether())
 
-    MutationResearch._instance = None
-    MutationResearch._initialized = False
+    # A signature TypeError fires before `__init__` runs, so the body's
+    # rollback never executes and `__new__`'s published instance is left
+    # installed. The class's own reset door is what clears it - never a
+    # direct poke at `_instance` / `_initialized`.
+    MutationResearch._reset_singleton_for_tests()

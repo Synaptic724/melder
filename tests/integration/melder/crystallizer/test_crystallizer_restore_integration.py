@@ -940,7 +940,14 @@ def test_mutation_research_round_trips_through_checkpoints(cache_root):
     )
     from melder.mutation_research.mutation_research import MutationResearch
 
+    # Aether owns the research root, so resetting the root's singleton alone
+    # leaves Aether's slot pointing at the corpse. Reset both, then REBUILD -
+    # a reset only tears down; `Aether()` is what constructs the hosted set
+    # again, and without it the next bare `Crystallizer()` is a first
+    # construction with no host and refuses.
     MutationResearch._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Aether()
     try:
         crystallizer = _activate_crystallizer()
         root = Aether()._get_mutation_research()
@@ -1020,7 +1027,14 @@ def test_mutation_research_disabled_worlds_restore_deactivated(cache_root):
     )
     from melder.mutation_research.mutation_research import MutationResearch
 
+    # Aether owns the research root, so resetting the root's singleton alone
+    # leaves Aether's slot pointing at the corpse. Reset both, then REBUILD -
+    # a reset only tears down; `Aether()` is what constructs the hosted set
+    # again, and without it the next bare `Crystallizer()` is a first
+    # construction with no host and refuses.
     MutationResearch._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Aether()
     try:
         crystallizer = _activate_crystallizer()
         root = Aether()._get_mutation_research()

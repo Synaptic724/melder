@@ -3,14 +3,14 @@ TIER: advanced (07)
 GOAL: TWO DOORS TO ONE CONFIG, AND THE LADDER BEHIND THEM.
 
       Aether hands you two ways to build its root configuration:
-        aether.create_configuration()         -> AetherConfiguration
+        aether.create_configuration() -> AetherConfiguration
         aether.create_configuration_builder() -> AetherConfigurationBuilder
 
       They are NOT redundant, and they do NOT end in the same place by
       accident - they end in the same place ON PURPOSE:
 
-        config.with_*(...).finalize()   ->  FROZEN
-        builder.with_*(...).build()     ->  FROZEN
+        config.with_*(...).finalize() -> FROZEN
+        builder.with_*(...).build() -> FROZEN
 
       finalize() freezes and returns THE SAME OBJECT. build() freezes and
       HANDS OVER OWNERSHIP - it is one-shot and consuming, so the builder
@@ -23,16 +23,16 @@ GOAL: TWO DOORS TO ONE CONFIG, AND THE LADDER BEHIND THEM.
       single most confusing thing about melder's configuration model until
       you see it written down:
 
-        frozen     - "no more edits"     (finalize / build / freeze)
-        activated  - "in force"          (activate)
+        frozen     - "no more edits" (finalize / build / freeze)
+        activated - "in force" (activate)
 
       A config can sit frozen for a long time before anything turns it on.
       So the ladder is three rungs, in this order, and the order is a RULE
       rather than a convention:
 
-        1. finalize() or build()    -> frozen
+        1. finalize() or build() -> frozen
         2. configuration.activate() -> activated
-        3. aether.activate(config)  -> Aether itself comes up
+        3. aether.activate(config) -> Aether itself comes up
 
       Skipping rung 2 raises. Aether's own contract says so in capitals:
       "THE CONFIGURATION MUST BE ACTIVATED BEFORE AETHER CAN BE." The two

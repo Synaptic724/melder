@@ -123,7 +123,16 @@ def test_component_bind_inactive_returns_an_id_and_does_not_activate() -> None:
         "a parked spell must still hold its spell_id - existence is what stops "
         "bind re-minting a duplicate of a sleeping spell"
     )
-    parked_spell = spellbook._spells_by_id[parked_id]
+    # PARKED AND ACTIVE ARE SEPARATE MAPS. `bind_inactive` writes the spell to
+    # `_inactive_spells` and keeps only its id in `_spell_ids`; `_spells_by_id`
+    # is the ACTIVE map that `meld` resolves through. Reading the parked spell
+    # out of the active map asserted the opposite of the contract - a parked
+    # spell appearing there would BE the defect.
+    assert parked_id not in spellbook._spells_by_id, (
+        "a parked spell must not appear in the active map - that map is the "
+        "resolution surface and parking is precisely staying off it"
+    )
+    parked_spell = spellbook._inactive_spells[parked_id]
     assert parked_spell._active is False, (
         "bind_inactive must park, not activate"
     )

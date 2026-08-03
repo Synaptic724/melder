@@ -332,11 +332,17 @@ def test_mutation_research_composition_twin_survives_the_real_record():
     assert {row["spell_id"] for row in spell_rows} == {member_a, member_b}
     assert json.loads(json.dumps(recorded)) == recorded
 
-    # Root death, then REBIRTH through the bootstrap lane. The host is passed
-    # EXPLICITLY here and that is not optional: the reset above clears the
-    # class singleton, so this is a genuine FIRST construction with nothing to
-    # look up. A bare `MutationResearch()` is a lookup and only works while a
-    # root already exists.
+    # Root death, then REBIRTH through the bootstrap lane.
+    #
+    # ONLY the research singleton is reset here, and that is load-bearing:
+    # the RECORD this rebirth reads back lives in the CRYSTALLIZER, and
+    # `Aether._reset_singleton_for_tests()` cleans the crystallizer on its
+    # way down. Resetting Aether would destroy the very record hydration is
+    # about to pull, and the reborn root would come up empty.
+    #
+    # The host is therefore passed EXPLICITLY: the reset cleared the class
+    # singleton, so this is a genuine first construction with nothing to look
+    # up, and the live Aether it is handed still owns the intact record.
     research.cleanup()
     MutationResearch._reset_singleton_for_tests()
     reborn = MutationResearch(aether=Aether())
