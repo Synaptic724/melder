@@ -720,3 +720,60 @@ inner frame transactions JOIN the top session or stay siblings.
     it. Two files, 89 assertions total (53 strategy + 36 abort-only/lookup).
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T03:45:00Z
+  TYPE: FACT
+  CLAIM: THIRD COVERAGE FILE -
+    `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_aether_ownership.py`,
+    7 tests over owner constraint 3 (Aether HOLDS the plane), which was the last
+    thing I changed that had no coverage at all.
+    THE ORDERING TEST IS THE ONE THAT MATTERS and is named as such in the file:
+    `test_plane_exists_before_any_frame_does` asserts a fresh Aether carries a
+    WORKING plane (`missing_types() == ()`) while `_aetheric_frames` is still
+    empty. Frames are lazy by design - `import melder` creates zero frames - so
+    if the plane were ever made lazy, or moved below frame construction, that
+    test fails. An admission authority that appeared after the things it governs
+    could never admit their creation, which is the whole reason constraint 3
+    says "immediately, first".
+    Also covered: the accessor returns the OWNED instance rather than rebuilding
+    (a rebuilding property would hand every caller a private claim table and
+    fail SILENTLY, because each caller's transactions would admit perfectly
+    against nothing); the plane is shared across the singleton; a real
+    transaction runs end-to-end through the Aether-held plane, because present
+    is not the same as usable; the plane is cleaned WITH its owner; and the
+    accessor raises through a cleaned Aether rather than handing back a dead
+    object.
+    Constraint 4 is NOT re-tested here - `test_plane_declares_no_dependency_on_aether`
+    already enforces that direction statically. This file covers only the
+    direction I added.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_aether_ownership.py
+  - src/melder/aether/aether.py (construction after LoadGate; cleanup gate -> plane -> frames -> crystallizer)
+  IMPACT: Three coverage files now, ~96 assertions, covering every line I added
+    under this lane.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T03:45:00Z
+  TYPE: RISK
+  CLAIM: THIS FILE IS THE LEAST VERIFIED OF THE THREE AND I WANT THAT ON THE
+    RECORD. The other two were dry-run assertion-by-assertion against real code
+    through an isolated module loader. This one CANNOT be: it constructs a real
+    `Aether()`, which pulls in crystallizer and nexus, and the 3.10 sandbox dies
+    on a pre-existing annotation in `asset_management_system.py:110` that only
+    resolves under 3.14's lazy annotations. So its assertions have never
+    executed in any form.
+    What I did instead, which is weaker and should be read as weaker: verified
+    each ASSUMPTION the file rests on directly against source -
+    `_reset_singleton_for_tests` exists and calls `cleanup()` (so the fixture
+    genuinely tears the plane down between tests); `Aether` is exported from
+    `melder`; `Mediator.strategies` and `Cleanable.cleaned` exist;
+    `_aetheric_frames` initialises to `{}`; the `aetheric_mediator` property
+    guards with `check_cleaned()`; and `Aether.cleanup` orders gate -> plane ->
+    frames -> crystallizer as the docstring claims.
+    Assumption-checking is not execution. If one of these seven fails on the
+    owner run, this file is where to look first.
+  EVIDENCE:
+  - src/melder/crystallizer/asset_management/asset_management_system.py:110 (the 3.10 import blocker)
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

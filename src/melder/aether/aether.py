@@ -990,6 +990,10 @@ class Aether(Cleanable):
         with self._lock:
             if self._aetheric_frames is None:
                 raise RuntimeError("Aether frame registry is unavailable.")
+            # Seal the regime before any frame can exist under it. Frames are
+            # lazy, so this is the first moment the process is guaranteed to
+            # have one - and the last moment a change is still safe.
+            self._collapse_configuration_on_first_frame()
 
             frame = self._aetheric_frames.get(aetheric_frame_name)
             if frame is not None:
@@ -1820,33 +1824,82 @@ class Aether(Cleanable):
         if found is True:
             return frame.find_index_for_spell(spell_id)
 
-        # PROCESS-WIDE SWEEP. The named frame does not hold the id; under the
-        # process-wide regime the other frames still might, because spell_id is a
+        # PROCESS-WIDE SWEEP. The named frame does not hold it; under the
+        # process-wide regime another frame still might, because spell_id is a
         # SHA256 over the bind-time fingerprint and does NOT include the frame -
         # the same target bound with the same parameters mints the same id
         # everywhere. Owner ruling 2026-08-02: one spell_id means one spell,
-        # process-wide.
+        # process-wide, so every consumer of this lookup - the bind guard AND
+        # `Spellbook.inspect_spell` - answers at process scope.
         #
-        # GATED ON FRAME COUNT, which is what makes this cheap. A single-frame
-        # process - the common case - does no cross-frame work at all, because
-        # the frame just checked IS the process. The sweep only engages once a
-        # second frame exists, and frames are tenant-grained so there are few.
+        # GATED ON FRAME COUNT, which is what makes it cheap. A single-frame
+        # process does no cross-frame work at all: the frame just checked IS the
+        # process. The sweep engages only once a second frame exists, and frames
+        # are tenant-grained so there are few. It runs at REGISTRATION and on
+        # inspection, never at meld, so it is off the resolution hot path.
         #
-        # This runs at REGISTRATION (bind/conjure), never at meld, so it is not
-        # on the resolution hot path.
-        #
-        # Written as an explicit loop rather than `any(...)`: it returns on the
-        # FIRST hit either way, but a generator expression short-circuits while a
-        # list comprehension silently does not, and that difference is one pair
-        # of brackets. The loop cannot be broken that way by a later edit.
-        if self._process_wide_unique_spell_ids() and len(self._aetheric_frames) > 1:
-            for other_frame in self._aetheric_frames.values():
-                if other_frame is frame:
-                    continue
-                if other_frame.has_spell(spell_id):
-                    return other_frame.find_index_for_spell(spell_id)
+        # Explicit loop, not `any(...)`: both return on the first hit, but a
+        # generator expression short-circuits while a list comprehension
+        # silently does not, and that difference is one pair of brackets.
+        if not self._process_wide_unique_spell_ids():
+            return None
+        if len(self._aetheric_frames) <= 1:
+            return None
+
+        for other_name, other_frame in self._aetheric_frames.items():
+            if other_name == aetheric_frame_name:
+                continue
+            if other_frame.has_spell(spell_id):
+                return other_frame.find_index_for_spell(spell_id)
 
         return None
+
+    def _collapse_configuration_on_first_frame(self) -> None:
+        """
+        Internal
+
+        Seal the Aether configuration at the moment the first frame is born.
+
+        Purpose:
+            Give the regime a fixed value for the life of the process. Frames are
+            LAZY - `import melder` creates ZERO frames, and the first Spellbook
+            births the frame it names - so nothing forces `configure()` to happen
+            before a frame exists. Without this, a configuration installed later
+            would change the answer under frames already registered under the old
+            rule, and the process would hold ids allocated by two different
+            regimes with nothing able to say which applies.
+
+        Contract:
+            - Runs INSIDE the caller's `_lock` hold, so the check and the install
+              are one atomic act against concurrent first-frame creation.
+            - NO-OP once a configuration exists: an explicitly configured Aether
+              keeps exactly what the caller installed. This only fills the gap
+              left by never configuring at all.
+            - Installs `AetherConfiguration().with_defaults()` and FREEZES it, so
+              the regime cannot be changed afterwards by any path.
+            - Never raises. A failure to collapse must not stop a frame being
+              born; `_process_wide_unique_spell_ids()` already defaults to the
+              same value when no configuration is present, so the behaviour is
+              identical either way - the freeze is what this adds.
+
+        Returns:
+            None.
+        """
+        if self._configuration is not None:
+            return
+        try:
+            from melder.aether.aether_configuration import AetherConfiguration
+
+            configuration = AetherConfiguration().with_defaults()
+            configuration.freeze()
+            self._configuration = configuration
+        except Exception as e:
+            if self._logger is not None:
+                self._logger.error(
+                    f"Failed to collapse Aether configuration at first frame: {e}",
+                    "_collapse_configuration_on_first_frame",
+                    exc_info=True,
+                )
 
     def _process_wide_unique_spell_ids(self) -> bool:
         """
@@ -2018,7 +2071,21 @@ class Aether(Cleanable):
             frame = self._ensure_default_frame()
 
         spell_ids = frame.spells_in_index()
-        return spell_ids
+
+        # Same scope rule as `_check_for_spell`, deliberately mirrored: if the
+        # single-id test and the whole-set read ever disagree about scope, bind
+        # and conjure enforce different rules and a collision slips between them.
+        if not self._process_wide_unique_spell_ids():
+            return spell_ids
+        if len(self._aetheric_frames) <= 1:
+            return spell_ids
+
+        combined = set(spell_ids)
+        for other_name, other_frame in self._aetheric_frames.items():
+            if other_name == aetheric_frame_name:
+                continue
+            combined |= other_frame.spells_in_index()
+        return combined
 
     # endregion Spell Management
 

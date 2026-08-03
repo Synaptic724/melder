@@ -12,6 +12,88 @@
 ## Objective
 The operator's tier: CrystallizerBootstrap pod restart, external persistence meshes (user DB callables), profile/checkpoint operations, group composition and campaign evolution, synthesis previews, class_wraps-built custom decorators over bound spells, multi-frame orchestration.
 
+## Notes
+
+- DATETIME: 2026-08-02T22:15:00Z
+  TYPE: MEASURE
+  CLAIM: EXPERT TIER OPENED - 6 LESSONS, 20 PROBE ROWS, AND THE PUBLIC ROOT
+    IS NOW FULLY TAUGHT. Coverage went 49/63 -> 60/63; the three remaining
+    are `__author__`, `__description__`, `__license__`, which beginner 12
+    already covers as module reads. 103 lessons across four tiers
+    (41 / 37 / 19 / 6).
+    LESSONS: 01 pod boot ("the ORDER is the product"), 02 the external mesh,
+    03 research sets / lanes / residency, 04 diffs are derived never stored,
+    05 ProtocolCrafter (the one tool that writes), 06 two knobs and a
+    terminator per rung.
+    NEW HARNESS FILES: pytest_examples/test_expert_examples.py (runner) and
+    test_expert_probes.py (20 rows). The probe fixture adds
+    MutationResearch to the singleton reset - expert is the first tier to
+    touch it, so all five now reset per row.
+  EVIDENCE: scripted `md.<Name>` sweep over
+    `UX_and_AIX_experiences/**/[0-9]*.py` against `melder.__all__`, and
+    py_compile over every new file.
+  IMPACT: The four-tier ladder now covers every public name melder exports.
+    PROCESS NOTE, because it is the fix that actually held: access markers
+    and property-vs-method were checked BEFORE authoring each lesson this
+    time, not after a red run. That is the correction from the withdrawn
+    Scan lesson, applied rather than merely recorded.
+  NEXT: UNRUN. Rides the owner's 3.14t like every other tier.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T22:00:00Z
+  TYPE: DECISION
+  CLAIM: THE CRYSTALLIZER MACHINERY SHOULD NOT BE EXPORTED. The tier-split
+    ruling of 2026-08-01 said expert gets "crystallizer loading features and
+    saving, synthetic modules", which read as though `RestoreEngine`,
+    `LoadPlan`, `LoadAdmission`, `GraftRunner`, `CrystalLoaderSystem` and
+    `SyntheticModule` needed to reach the public root. THEY DO NOT.
+    Owner 2026-08-02: "don't you just use crystallizer for that shit?" -
+    correct, and the facade already carries it.
+  EVIDENCE: `Crystallizer` exposes 25 verbs covering the whole scope line:
+    SAVING      create_checkpoint, flush_checkpoint, save_formation
+    LOADING     load_checkpoint, reload_cached_checkpoint,
+                reload_profile_from_cache, reload_profile_from_external,
+                reload_formations_from_external
+    FORMATIONS  restore_formation, list_formations, analyze_formation,
+                delete_formation
+    GRAFTS      capture_index_graft, graft_index,
+                store_index_graft_external, fetch/list variants
+    The machinery it delegates to is referenced across 9-18 src files each -
+    internal wiring, not user surface.
+  IMPACT: This is the FOURTH instance of one pattern in a single session:
+    a capable internal collaborator behind a facade that is the real API.
+      Scan            -> `Spellbook.scan(module)` is the door (withdrawn lesson)
+      SpellOverrider  -> the override PAYLOAD dict is the door (expert-adjacent)
+      SpellExaminer   -> curated OFF the root this session
+      crystal loaders -> `Crystallizer` is the door
+    The rule that keeps falling out: IF A FACADE COVERS IT, THE COLLABORATOR
+    IS NOT USER SURFACE. Export is not the test - the presence of a working
+    door is.
+  NEXT: no export work. Expert teaches the facade, which lessons 01-06
+    already do.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-08-02T22:00:00Z
+  TYPE: DECISION
+  CLAIM: `SyntheticModule` STAYS UNEXPORTED, and for a different reason than
+    the loaders. It is not merely behind a facade - IT HAS NO AUTHORING PATH
+    AT ALL. Its constructor demands `spell_crystal_id`, `source_sha256` and
+    `binding_signature`, all of which only exist once a spell has already
+    been harvested, and its only construction site is the restore lane.
+    Owner: "synthetic module is for agents not really sure where to go from
+    there because a lot of this shit is new."
+  EVIDENCE: EPIC-2026-08-02-agent-authored-synthetic-modules, filed this
+    session, which documents the closed lifecycle in full.
+  IMPACT: Exporting it today would ship HALF A FEATURE - a public class an
+    agent cannot originate - which is exactly the mistake SpellExaminer was
+    curated off the root for (public class, public extension point, private
+    instance). The honest order is: give it an authoring path FIRST, then
+    export, then teach. Not the reverse.
+  NEXT: gated on EPIC-2026-08-02-agent-authored-synthetic-modules. No expert
+    lesson until an agent can actually author one.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Ticket Contract
 - ENTRY_GATE: owner directive 2026-07-19 ("explore all the ways a user might use the
   library beginner -> intermediate -> expert -> Master... so we can properly explore

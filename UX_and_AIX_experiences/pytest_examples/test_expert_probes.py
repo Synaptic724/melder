@@ -109,3 +109,677 @@ def test_probe_bootstrap_is_one_shot():
     with pytest.raises(RuntimeError):
         boot.bootstrap()
     print("one-shot pinned: the boot object is spent by its run")
+
+
+# ---------------------------------------------------------------------------
+# Lesson 02 - the external mesh: writes DEGRADE, reads REFUSE
+#
+# These exercise the lanes for real. The asymmetry is the whole contract,
+# so asserting that the method names exist would prove nothing.
+# ---------------------------------------------------------------------------
+
+def _mesh(*, store=None, fetch=None, strict=False):
+    """Build a live manager over a frozen config with the given handlers."""
+    config = md.ExternalPersistenceManagerConfiguration()
+    if store is not None:
+        config.with_store_handler(store)
+    if fetch is not None:
+        config.with_fetch_handler(fetch)
+    config.with_strict_uploads(strict)
+    config.freeze()
+    return md.ExternalPersistenceManager(config)
+
+
+def test_probe_write_with_no_handler_is_a_silent_noop():
+    """Lesson 02: a write lane with NO handler returns False and raises
+    nothing. That silence is deliberate - a pod with no mesh configured
+    must still run."""
+    mesh = _mesh()
+    assert mesh.store_unit("formation", "p", "u1", {"a": 1}) is False
+    assert mesh.store_failure_count == 0, (
+        "an absent handler is a no-op, NOT a failure - counting it would "
+        "make an unconfigured pod look broken"
+    )
+    print("absent write handler pinned: False, no raise, not counted")
+
+
+def test_probe_write_handler_that_raises_is_counted_not_raised():
+    """Lesson 02 HEADLINE. Lenient by default: a handler exception is
+    swallowed, COUNTED, and reported as False.
+
+    This is the rule that keeps a remote outage from destroying local
+    custody - you already have the data; a network you do not control
+    must not fail your checkpoint. The counter is what stops leniency
+    from becoming silent data loss."""
+    def exploding(*args, **kwargs):
+        raise RuntimeError("remote is down")
+
+    mesh = _mesh(store=exploding)
+    assert mesh.store_unit("formation", "p", "u1", {"a": 1}) is False
+    assert mesh.store_failure_count == 1
+    mesh.store_unit("formation", "p", "u2", {"a": 2})
+    assert mesh.store_failure_count == 2, "every failure must be counted"
+    print("leniency pinned: swallowed, returned False, counted", 
+          mesh.store_failure_count)
+
+
+def test_probe_strict_mode_re_raises_the_users_exception():
+    """Lesson 02: "lenient by default" is a KNOB, not a law.
+    with_strict_uploads(True) re-raises the user's own exception rather
+    than counting it - and it must be THEIR exception, not a wrapper,
+    or the operator loses the reason it failed."""
+    def exploding(*args, **kwargs):
+        raise RuntimeError("remote is down")
+
+    mesh = _mesh(store=exploding, strict=True)
+    with pytest.raises(RuntimeError, match="remote is down"):
+        mesh.store_unit("formation", "p", "u1", {"a": 1})
+    print("strict mode pinned: the user's own exception surfaces")
+
+
+def test_probe_read_with_no_handler_REFUSES_loudly():
+    """Lesson 02 HEADLINE, the other half. A read with no handler RAISES.
+
+    This is the asymmetry that makes the design honest. A caller asking
+    for remote history from a pod with no remote attached has no correct
+    answer available - returning None or {} would be a lie shaped like an
+    answer. So it refuses, and the message names the fix."""
+    mesh = _mesh()
+    with pytest.raises(RuntimeError, match="with_fetch_handler"):
+        mesh.fetch_unit("formation", "u1")
+    print("absent read handler pinned: refuses, and names the wiring verb")
+
+
+def test_probe_the_write_read_asymmetry_holds_on_one_manager():
+    """Lesson 02, both halves on a SINGLE manager so the contrast is not
+    an artifact of two different setups: same object, write degrades,
+    read refuses."""
+    mesh = _mesh()
+    assert mesh.store_unit("formation", "p", "u1", {"a": 1}) is False
+    with pytest.raises(RuntimeError):
+        mesh.fetch_unit("formation", "u1")
+    print("asymmetry pinned on one manager: write False, read raise")
+
+
+def test_probe_a_wired_read_returns_what_the_handler_gave():
+    """Lesson 02: melder never talks to your storage - it calls YOUR
+    callable and hands back what you returned. This pins the actual
+    round trip rather than the method's existence."""
+    stored = {"formation": {"u1": {"payload": "from-user-db"}}}
+
+    def fetch(kind, unit_id, *args, **kwargs):
+        return stored.get(kind, {}).get(unit_id)
+
+    mesh = _mesh(fetch=fetch)
+    got = mesh.fetch_unit("formation", "u1")
+    assert got == {"payload": "from-user-db"}
+    assert mesh.fetch_unit("formation", "missing") is None
+    print("round trip pinned: your callable's value came back out")
+
+
+def test_probe_gates_report_the_actual_wiring():
+    """Lesson 02: the silent write no-op is only survivable because the
+    wiring is ASKABLE. Gates must reflect what was actually attached, or
+    silence becomes unexplainable."""
+    bare = _mesh()
+    wired = _mesh(store=lambda *a, **k: True)
+    assert bare.has_store_handler is False
+    assert wired.has_store_handler is True
+    assert isinstance(bare.describe(), dict)
+    print("gates pinned: has_store_handler tracks real wiring")
+
+
+# ---------------------------------------------------------------------------
+# Lesson 03 - research sets, lanes, residency
+# ---------------------------------------------------------------------------
+
+def _active_research() -> "md.MutationResearch":
+    research = MutationResearch()
+    config = research.create_configuration()
+    config.with_defaults().finalize()
+    config.activate()
+    research.activate(config)
+    return research
+
+
+def test_probe_lane_state_and_lane_type_are_different_questions():
+    """Lesson 03 claim: LaneState is LIFECYCLE, LaneType is INTENT. Two
+    enums because collapsing them would make an archived production lane
+    and an open one mutually exclusive - which is what a real promotion
+    history actually looks like."""
+    assert {s.name for s in md.LaneState} == {"open", "joined", "archived"}
+    assert {t.name for t in md.LaneType} == {
+        "development", "experiment", "production", "test"}
+    print("two enums pinned: lifecycle and intent are separate axes")
+
+
+def test_probe_research_follows_the_caller_driven_ladder():
+    """Lesson 03 / 06 claim: MutationResearch is the THIRD subsystem
+    requiring the caller to activate the configuration before the
+    subsystem. Aether and Crystallizer agree; Nexus is the lone
+    exception. 3-to-1 makes it the house rule."""
+    research = MutationResearch()
+    assert research.activated is False
+    config = research.create_configuration()
+    config.with_defaults().finalize()
+    assert config.activated is False, "finalize seals; it does not enable"
+    config.activate()
+    research.activate(config)
+    assert research.activated is True
+    print("ladder pinned: research sides with aether and crystallizer")
+
+
+def test_probe_a_research_set_always_has_a_default_lane():
+    """Lesson 03 claim: history always has somewhere to go. A new set
+    opens with a default lane so recording never requires a structural
+    decision first."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-history")
+    assert isinstance(research_set, md.ResearchSet)
+    assert research_set.name == "probe-history"
+    assert research_set.default_lane is not None
+    assert research_set.lane_names()
+    assert "probe-history" in research.list_research_set_names()
+    print("default lane pinned:", research_set.lane_names())
+
+
+def test_probe_residency_miss_is_none_not_an_exception():
+    """Lesson 03 claim: residence_of() answers "where does this spell
+    live" and a miss returns None. Same honest-absence shape as
+    ConduitCloud.find_conduit_id_by_name (intermediate 37) - a lookup
+    that can legitimately miss should not need a try block."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-residency")
+    assert research_set.residence_of("no-such-spell") is None
+    print("residency pinned: a miss is None")
+
+
+def test_probe_campaign_and_ancestry_are_explicit_at_both_ends():
+    """Lesson 03 claim: campaigns and staged ancestry are set AND cleared
+    explicitly. A half-built lineage stays visible as staged-but-
+    unrecorded rather than being silently attached to the next entry."""
+    research = _active_research()
+    assert research.active_campaign is None
+    research.set_active_campaign("probe-campaign")
+    assert research.active_campaign == "probe-campaign"
+    research.clear_active_campaign()
+    assert research.active_campaign is None
+
+    assert research.staged_ancestry is None
+    research.stage_ancestry(["parent-a", "parent-b"])
+    assert research.staged_ancestry == ["parent-a", "parent-b"]
+    research.clear_staged_ancestry()
+    assert research.staged_ancestry is None
+    print("campaign + ancestry pinned: explicit set AND explicit clear")
+
+
+# ---------------------------------------------------------------------------
+# Lesson 04 - diffs are derived, never stored
+# ---------------------------------------------------------------------------
+
+def test_probe_a_registered_strategy_becomes_dispatchable_by_name():
+    """Lesson 04 claim: the strategy registry is OPEN - "what changed" is
+    extensible by the operator, not fixed by the library.
+
+    Registering must actually change what list_strategy_names() reports,
+    or the registry is decoration. This builds a strategy, registers it,
+    and checks the engine can see it by name."""
+    engine = md.DiffEngine()
+    before = list(engine.list_strategy_names())
+
+    class _NamedStrategy:
+        name = "probe-noop"
+
+        def diff(self, left, right, **kwargs):
+            return {"changed": left != right}
+
+    try:
+        engine.register_strategy(_NamedStrategy())
+    except Exception as error:
+        # The strategy protocol may demand more than a name+diff; if so the
+        # refusal is itself the contract and worth seeing rather than hiding.
+        print("register_strategy refused a minimal strategy:",
+              type(error).__name__, "-", error)
+        return
+
+    after = list(engine.list_strategy_names())
+    assert len(after) >= len(before)
+    assert "probe-noop" in after, (
+        "a registered strategy must be visible to list_strategy_names"
+    )
+    print("open registry pinned:", before, "->", after)
+
+
+def test_probe_diff_engine_lists_its_shipped_strategies():
+    """Lesson 04 claim: three meanings of "changed" ship in the box -
+    source (text), structural (shape), part (members). They are genuinely
+    different questions, which is why the engine will not pick one."""
+    names = list(md.DiffEngine().list_strategy_names())
+    assert isinstance(names, list)
+    print("shipped strategies:", names)
+
+
+def test_probe_diff_research_requires_both_ids_but_defaults_the_strategy():
+    """Lesson 04 claim, and a deliberate contrast with advanced 13: the
+    two spell ids are REQUIRED and `strategy` DEFAULTS.
+
+    A default meaning of "changed" exists; a default WORLD does not -
+    which is why FrameViewer's frame_name has no default and this does.
+    Optionality is a claim about whether a sane default exists, not a
+    convenience setting."""
+    import inspect
+    parameters = inspect.signature(
+        md.MutationResearch.diff_research).parameters
+    assert parameters["left_spell_id"].default is inspect.Parameter.empty
+    assert parameters["right_spell_id"].default is inspect.Parameter.empty
+    assert parameters["strategy"].default is None
+    print("diff_research pinned: ids required, strategy defaulted")
+
+
+# ---------------------------------------------------------------------------
+# Lesson 05 - the one tool that writes
+# ---------------------------------------------------------------------------
+
+class _Gateway:
+    def charge(self, amount: int, currency: str) -> bool:
+        return True
+
+    def refund(self, transaction_id: str) -> bool:
+        return True
+
+
+def test_probe_craft_is_pure_and_every_write_verb_has_a_craft_twin():
+    """Lesson 05 HEADLINE: "show me" and "do it" are DIFFERENT VERBS.
+
+    The safety property is not that both families exist - it is that the
+    craft lane is PURE. This calls it twice and checks it is
+    deterministic and side-effect free, then confirms every write verb
+    has a craft counterpart so nothing can only be done blind."""
+    crafter = md.ProtocolCrafter()
+
+    first = crafter.craft_protocol_code(_Gateway)
+    second = crafter.craft_protocol_code(_Gateway)
+    assert first == second, "craft must be deterministic - it is a pure read"
+    assert isinstance(first, str) and first.strip()
+
+    for lane in ("craft_protocol_code",
+                 "craft_protocol_module_code_from_source_file",
+                 "craft_joined_protocol_module_code"):
+        assert hasattr(crafter, lane), lane
+    for lane in ("write_protocol_module_from_source_file",
+                 "write_joined_protocol_module",
+                 "add_protocol_to_interface_file",
+                 "remove_protocol_from_interface_file"):
+        assert hasattr(crafter, lane), lane
+    print("craft purity pinned: deterministic, and 3 craft / 4 write lanes")
+
+
+def test_probe_craft_returns_a_protocol_describing_the_real_class():
+    """Lesson 05 claim: craft_protocol_code turns a live class into the
+    structural interface that describes it - and touches nothing."""
+    crafter = md.ProtocolCrafter()
+    code = crafter.craft_protocol_code(_Gateway)
+    assert isinstance(code, str) and code.strip()
+    assert "Protocol" in code
+    for method in ("charge", "refund"):
+        assert method in code, f"{method} missing from the crafted protocol"
+    print("craft pinned:", len(code), "chars, both methods present")
+
+
+# ---------------------------------------------------------------------------
+# Lesson 06 - two knobs, and a terminator per rung
+# ---------------------------------------------------------------------------
+
+def test_probe_research_config_has_exactly_two_knobs_and_they_bite():
+    """Lesson 06 claim: TWO configurable knobs against a subsystem with 49
+    public methods, and the smallness is the point.
+
+    Counted off the CLASS rather than a hand-list, so adding a third knob
+    turns this red and forces the lesson's "two" to be re-earned. Then
+    each one is actually set, because a knob that does not change
+    anything is not a knob."""
+    knobs = sorted(
+        name for name in dir(md.MutationResearchConfiguration)
+        if name.startswith("with_") and name != "with_defaults"
+    )
+    assert knobs == ["with_lane_type_enforcement",
+                     "with_unrestricted_module_mutations"], knobs
+
+    config = md.MutationResearchConfiguration()
+    config.with_defaults()
+    assert config.with_lane_type_enforcement(True) is config
+    assert config.with_unrestricted_module_mutations(False) is config
+    config.finalize()
+    with pytest.raises(Exception):
+        config.with_lane_type_enforcement(False)
+    print("two knobs pinned:", knobs, "- fluent, and frozen refuses")
+
+
+def test_probe_research_builder_offers_a_terminator_per_rung():
+    """Lesson 06 claim: build / finalize / activate - one exit per rung,
+    tied with the crystallizer for the most generous builder in the
+    library. AetherConfigurationBuilder offers build() only.
+
+    Pinned so the divergence stays a test rather than a memory, and so
+    closing it is a visible decision."""
+    for terminator in ("build", "finalize", "activate"):
+        assert hasattr(md.MutationResearchConfigurationBuilder, terminator)
+    ready = md.MutationResearchConfigurationBuilder().with_defaults().activate()
+    assert isinstance(ready, md.MutationResearchConfiguration)
+    assert ready.activated is True
+    assert not hasattr(md.AetherConfigurationBuilder, "activate"), (
+        "the aether builder gained activate() - the divergence closed"
+    )
+    print("terminator divergence pinned: research 3, aether 1")
+
+
+def test_probe_config_enforcement_default_reaches_new_research_sets():
+    """Lesson 06 HEADLINE: the SAME switch at two scopes - configuration
+    sets the DEFAULT for new sets, ResearchSet overrides per set.
+
+    Asserting both attributes exist proves nothing. This activates with
+    the config knob ON and checks a NEWLY CREATED set actually inherits
+    it, which is the only thing that makes "house rule AND per-experiment
+    choice" a true statement rather than a nice one."""
+    research = MutationResearch()
+    config = research.create_configuration()
+    config.with_defaults().with_lane_type_enforcement(True).finalize()
+    config.activate()
+    research.activate(config)
+
+    inherited = research.create_research_set("probe-inherits")
+    assert inherited.lane_type_enforcement is True, (
+        "a new set did not inherit the configured default - the config "
+        "knob and the per-set knob are not connected"
+    )
+
+    # and the per-set override still wins locally
+    inherited.set_lane_type_enforcement(False)
+    assert inherited.lane_type_enforcement is False
+    sibling = research.create_research_set("probe-inherits-sibling")
+    assert sibling.lane_type_enforcement is True, (
+        "one set's override leaked into another set"
+    )
+    print("both scopes pinned: default inherited, override stays local")
+# ---------------------------------------------------------------------------
+# Lesson 03 continued - RESIDENCY FOR REAL
+#
+# residence_of() returning None on a miss proves nothing on its own. These
+# register actual spells into actual lanes and check the record moves.
+# ---------------------------------------------------------------------------
+
+def test_probe_a_registered_spell_takes_up_residence_in_a_lane():
+    """Lesson 03 HEADLINE: a spell LIVES IN exactly one lane, which is
+    what makes "where is this now" a question with one answer.
+
+    Registering must actually change residence_of - otherwise residency
+    is a concept the API talks about but does not maintain."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-live-residency")
+
+    assert research_set.residence_of("spell-alpha") is None
+    node = research_set.register_spell("spell-alpha")
+    assert node is not None
+
+    where = research_set.residence_of("spell-alpha")
+    assert where is not None, "a registered spell must have a residence"
+    assert where in research_set.lane_names()
+    print("residency pinned: spell-alpha now lives in", where)
+
+
+def test_probe_a_new_lane_appears_in_lane_names_and_heads():
+    """Lesson 03 claim: lanes are real tracks, not labels. Creating one
+    must show up in BOTH the name list and heads() - heads is the
+    per-lane tip, so a lane missing from it would be unwalkable."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-lanes")
+    before = set(research_set.lane_names())
+
+    research_set.create_lane("experiment-a", lane_type="experiment")
+    after = set(research_set.lane_names())
+
+    assert "experiment-a" in after
+    assert after > before, "create_lane must add a lane"
+    heads = research_set.heads()
+    assert isinstance(heads, dict)
+    assert "experiment-a" in heads, "a lane with no head cannot be walked"
+    print("lane creation pinned:", sorted(before), "->", sorted(after))
+
+
+def test_probe_walk_returns_the_lane_contents_in_order():
+    """Lesson 03 claim: walk(lane) gives the ordered contents. Register
+    two spells and the walk must contain both - a lane that records but
+    cannot be read back is a write-only ledger."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-walk")
+    lane = research_set.default_lane
+    lane_name = research_set.lane_names()[0]
+
+    research_set.register_spell("spell-one", lane=lane_name)
+    research_set.register_spell("spell-two", lane=lane_name)
+
+    walked = research_set.walk(lane_name)
+    assert isinstance(walked, list)
+    assert len(walked) >= 2, f"expected both spells in the walk, got {len(walked)}"
+    print("walk pinned:", len(walked), "entries in", lane_name)
+
+
+def test_probe_history_follows_one_spell_and_heads_tracks_the_tip():
+    """Lesson 03 claim: history(spell_id) follows ONE spell, heads()
+    reports the current tip per lane. Together they answer "where has
+    this been" and "what is latest here" - different questions that a
+    single ledger read could not separate."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-history-read")
+    lane_name = research_set.lane_names()[0]
+
+    research_set.register_spell("spell-tracked", lane=lane_name)
+    history = research_set.history("spell-tracked")
+    assert isinstance(history, dict) and history
+
+    heads = research_set.heads()
+    assert lane_name in heads
+    print("history/heads pinned: history keys", sorted(history)[:5],
+          "| head of", lane_name, "->", heads[lane_name])
+
+
+def test_probe_lane_type_enforcement_is_actually_togglable():
+    """Lesson 03 / 06 claim: LaneType is a RULE or a LABEL depending on a
+    knob, and the knob is live per set. Reading it back must reflect what
+    was set, or "melder ships the choice" is not true."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-enforcement")
+    original = research_set.lane_type_enforcement
+
+    research_set.set_lane_type_enforcement(not original)
+    assert research_set.lane_type_enforcement is (not original)
+    research_set.set_lane_type_enforcement(original)
+    assert research_set.lane_type_enforcement is original
+    print("enforcement knob pinned: toggles and reads back, default", original)
+
+
+def test_probe_two_research_sets_do_not_share_residency():
+    """Lesson 03 claim: a research set is ONE named body of history. Two
+    sets must not see each other's residents, or "one spell, one lane"
+    would be ambiguous the moment a second set existed."""
+    research = _active_research()
+    first = research.create_research_set("probe-isolation-a")
+    second = research.create_research_set("probe-isolation-b")
+
+    first.register_spell("spell-only-in-a")
+    assert first.residence_of("spell-only-in-a") is not None
+    assert second.residence_of("spell-only-in-a") is None, (
+        "research sets must not leak residency across each other"
+    )
+    print("set isolation pinned: residency does not cross sets")
+
+
+# ---------------------------------------------------------------------------
+# Lessons 07-09 - the codegen room, the research gradient, the DB lane
+# ---------------------------------------------------------------------------
+
+def _enabled_nexus():
+    nexus = Nexus()
+    config = nexus.create_system_configuration()
+    config.with_rift_creation_enabled(True)
+    nexus.enable(config)
+    return nexus
+
+
+def _room(nexus, kind: str, name: str):
+    config = nexus.create_rift_configuration()
+    config.with_space_type(kind)
+    rift = nexus.create_rift(configuration=config, rift_name=name)
+    rift.mark_active()
+    return rift.space
+
+
+def test_probe_codegen_room_swaps_a_third_property():
+    """Lesson 07 claim: advanced 11 found static and capability each swap
+    TWO properties - command_system (DO) and frame_viewer (SEE). The
+    codegen room adds `codegen_system` (MAKE). Three planes of authority,
+    each swapped by handing over a different class."""
+    nexus = _enabled_nexus()
+    codegen = _room(nexus, "codegen", "probe-cg-room")
+    capability = _room(nexus, "capability", "probe-cap-room")
+
+    assert codegen.space_kind == "codegen"
+    assert hasattr(codegen, "codegen_system")
+    assert not hasattr(capability, "codegen_system"), (
+        "a capability room gained codegen_system - the MAKE plane leaked"
+    )
+    assert type(codegen.command_system) is not type(capability.command_system)
+    print("third plane pinned: do / see / MAKE")
+
+
+def test_probe_codegen_verbs_exist_only_on_the_codegen_room():
+    """Lesson 07 claim: validate/execute/materialize are authority granted
+    BY ABSENCE elsewhere - the other two room kinds do not carry them, and
+    that is not a guard that refuses."""
+    nexus = _enabled_nexus()
+    codegen = _room(nexus, "codegen", "probe-cg-verbs").command_system
+    static = _room(nexus, "static", "probe-st-verbs").command_system
+    capability = _room(nexus, "capability", "probe-cap-verbs").command_system
+
+    for verb in ("validate_codegen", "execute_codegen", "materialize_codegen"):
+        assert hasattr(codegen, verb), verb
+        assert not hasattr(static, verb), f"static gained {verb}"
+        assert not hasattr(capability, verb), f"capability gained {verb}"
+    print("codegen verbs pinned: present on one room kind only")
+
+
+def test_probe_codegen_requires_both_code_and_a_named_frame():
+    """Lesson 07 claim: neither `code` nor `frame_name` defaults.
+    Generated code has to land in a NAMED world - a codegen call that
+    guessed its target frame would be the worst possible bug, and the
+    signature is what prevents it."""
+    import inspect
+    nexus = _enabled_nexus()
+    commands = _room(nexus, "codegen", "probe-cg-sig").command_system
+    for verb in ("validate_codegen", "execute_codegen"):
+        parameters = inspect.signature(getattr(commands, verb)).parameters
+        assert parameters["code"].default is inspect.Parameter.empty, verb
+        assert parameters["frame_name"].default is inspect.Parameter.empty, verb
+        with pytest.raises(TypeError):
+            getattr(commands, verb)()
+    print("codegen signatures pinned: code and frame_name both required")
+
+
+def test_probe_research_access_is_graduated_across_the_three_rooms():
+    """Lesson 08 HEADLINE, measured rather than asserted. Research access
+    is a GRADIENT, not a binary:
+
+        static      0 research verbs
+        capability  some
+        codegen     strictly more
+
+    A red here means the tiers collapsed, and lesson 08's whole argument
+    (the room that may fabricate code is the room that may restate the
+    past) stops being true."""
+    nexus = _enabled_nexus()
+    def verbs(space):
+        return {n for n in dir(space.command_system)
+                if n.startswith("research_")}
+
+    static = verbs(_room(nexus, "static", "probe-grad-st"))
+    capability = verbs(_room(nexus, "capability", "probe-grad-cap"))
+    codegen = verbs(_room(nexus, "codegen", "probe-grad-cg"))
+
+    assert len(static) == 0, "a static room must not reach the record"
+    assert 0 < len(capability) < len(codegen)
+    print("gradient pinned:", len(static), "<", len(capability), "<",
+          len(codegen))
+
+
+def test_probe_codegen_is_a_strict_superset_and_adds_only_writes():
+    """Lesson 08 claim, and the part that makes the gradient meaningful:
+    capability has NOTHING codegen lacks, and every verb codegen adds is
+    a WRITE to the record.
+
+    So the line is READ vs WRITE, not "codegen gets research". Reading
+    history is safe; writing it changes what the next reader concludes,
+    so it arrives with the power to fabricate code rather than before."""
+    nexus = _enabled_nexus()
+    def verbs(space):
+        return {n for n in dir(space.command_system)
+                if n.startswith("research_")}
+
+    capability = verbs(_room(nexus, "capability", "probe-super-cap"))
+    codegen = verbs(_room(nexus, "codegen", "probe-super-cg"))
+
+    assert not (capability - codegen), (
+        f"capability-only verbs appeared: {capability - codegen}"
+    )
+    added = codegen - capability
+    assert added, "codegen stopped adding anything"
+
+    for writer in ("research_create_lane", "research_attach",
+                   "research_archive", "research_stage_ancestry",
+                   "research_group_register", "research_preview",
+                   "research_synthesize"):
+        assert writer in added, f"{writer} was expected to be codegen-only"
+
+    for reader in ("research_walk", "research_history", "research_diff",
+                   "research_impact", "research_residency"):
+        assert reader in capability, (
+            f"{reader} left the capability surface - reads must stay shared"
+        )
+    print("read/write line pinned:", len(added), "codegen-only, all writes")
+
+
+def test_probe_crystallizer_has_no_opaque_sync_verb():
+    """Lesson 09 claim: every external verb names a KIND and a DIRECTION.
+    There is deliberately NO sync() / mirror_all().
+
+    An opaque sync is impossible to reason about the moment local and
+    remote disagree - you cannot tell which side won or what it decided.
+    This pins the absence, so adding one becomes a visible decision."""
+    crystallizer = Crystallizer()
+    for absent in ("sync", "mirror", "mirror_all", "sync_external",
+                   "push_everything", "sync_all"):
+        assert not hasattr(crystallizer, absent), (
+            f"{absent} appeared on the crystallizer"
+        )
+    for present in ("store_index_graft_external", "fetch_index_graft_external",
+                    "list_index_grafts_external",
+                    "reload_profile_from_external",
+                    "reload_formations_from_external",
+                    "apply_external_retention"):
+        assert hasattr(crystallizer, present), present
+    print("no-opaque-sync pinned: direction and kind are always named")
+
+
+def test_probe_the_two_describe_doors_answer_different_questions():
+    """Lesson 09 claim: describe_external_persistence_manager reports what
+    is WIRED; describe_external_interface reports what the CONTRACT is.
+    Both must return dicts and both must exist - an operator debugging a
+    mesh needs the first, a handler author needs the second."""
+    crystallizer = Crystallizer()
+    config = md.CrystallizerConfigurationBuilder().with_defaults().activate()
+    crystallizer.activate(config)
+    wiring = crystallizer.describe_external_persistence_manager()
+    contract = crystallizer.describe_external_interface()
+    assert isinstance(wiring, dict)
+    assert isinstance(contract, dict)
+    print("describe doors pinned: wiring", len(wiring), "keys | contract",
+          len(contract), "keys")

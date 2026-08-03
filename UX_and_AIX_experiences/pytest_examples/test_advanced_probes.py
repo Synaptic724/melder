@@ -1226,32 +1226,57 @@ def test_probe_deletion_is_explicit_and_removes_from_the_cache():
 
 def test_probe_caller_driven_activation_is_the_house_rule_three_to_one():
     """Arc E closing claim, and evidence for the configuration-uniformity
-    program. FOUR subsystems, and only ONE activates the configuration on
-    the caller's behalf:
+    program. FOUR subsystems; only ONE activates the configuration on the
+    caller's behalf.
 
-        Aether           caller activates the config   (lesson 07)
-        Crystallizer     caller activates the config   (lesson 17)
-        MutationResearch caller activates the config   (expert tier)
-        Nexus            enable() does it FOR you      (lesson 08)
+    This CLIMBS each ladder rather than asserting method names. For the
+    three that are caller-driven, finalize() must leave `activated` False
+    - that is the two-bit split, and it is the actual claim. For Nexus,
+    enable() must seal a config the caller never finalized.
 
-    Their configuration BUILDERS diverge the same way: crystallizer and
-    mutation-research offer build/finalize/activate; aether offers only
-    build. Pinned so the split is a test rather than a memory."""
-    for configuration_type in (md.AetherConfiguration,
-                               md.CrystallizerConfiguration,
-                               md.MutationResearchConfiguration):
-        assert hasattr(configuration_type, "activate"), configuration_type
-        assert hasattr(configuration_type, "finalize"), configuration_type
+    A red here means two subsystems converged, which would be GOOD NEWS
+    for the uniformity epic and would mean lessons 08 and 17 need their
+    contrast sections rewritten."""
+    # 1-2. Aether and Crystallizer: finalize seals, activate enables.
+    aether_config = Aether().create_configuration().with_defaults()
+    aether_config.finalize()
+    assert aether_config.frozen is True
+    assert aether_config.activated is False, "aether: finalize must not enable"
+    aether_config.activate()
+    assert aether_config.activated is True
 
-    for builder_type in (md.CrystallizerConfigurationBuilder,
-                         md.MutationResearchConfigurationBuilder):
-        for terminator in ("build", "finalize", "activate"):
-            assert hasattr(builder_type, terminator), (builder_type, terminator)
+    crystal_config = md.CrystallizerConfiguration()
+    crystal_config.with_defaults().finalize()
+    assert crystal_config.activated is False, "crystallizer: same law"
+    crystal_config.activate()
+    assert crystal_config.activated is True
 
+    # 3. MutationResearch: same again - three of four.
+    research_config = md.MutationResearchConfiguration()
+    research_config.with_defaults().finalize()
+    assert research_config.activated is False, "research: same law"
+    research_config.activate()
+    assert research_config.activated is True
+
+    # 4. NEXUS IS THE EXCEPTION. enable() finalizes a config the caller
+    #    deliberately left unsealed.
+    nexus = Nexus()
+    nexus_config = nexus.create_system_configuration()
+    assert nexus_config.frozen is False, "left unsealed on purpose"
+    nexus.enable(nexus_config)
+    assert nexus_config.frozen is True, (
+        "nexus.enable stopped sealing for the caller - it joined the "
+        "house rule, and the 3-to-1 split is over"
+    )
+    assert nexus.is_enabled is True
+
+    # And the builder divergence, still real.
     assert not hasattr(md.AetherConfigurationBuilder, "activate")
-    print("house rule pinned 3-to-1: nexus is the lone exception")
-
-
+    for builder in (md.CrystallizerConfigurationBuilder,
+                    md.MutationResearchConfigurationBuilder):
+        for terminator in ("build", "finalize", "activate"):
+            assert hasattr(builder, terminator), (builder, terminator)
+    print("house rule CLIMBED 3-to-1: nexus seals for you, the others do not")
 def test_probe_spell_examiner_was_curated_off_the_public_root():
     """CURATION CALL EXECUTED (owner ruling 2026-08-02).
 

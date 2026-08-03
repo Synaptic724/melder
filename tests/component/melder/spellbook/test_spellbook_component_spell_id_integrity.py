@@ -175,13 +175,16 @@ def test_component_a_parked_spell_still_reserves_its_spell_id() -> None:
 
     # A SECOND book now binds the SAME staged class with the SAME parameters,
     # so it mints the identical fingerprint - which is parked, not active.
+    # REFUSED AT BIND, not at conjure: the parked id is already published to the
+    # frame by the owner's conjure above, so the bind-time check sees it. The
+    # conjure preflight only catches the pre-conjure window where neither book
+    # is visible to the other yet.
     intruder = _book("integrity-parked")
-    intruder.bind(spell=IntegrityOtherService, existence="unique")
 
     with pytest.raises(RuntimeError) as excinfo:
-        intruder.conjure(name="integrity-parked-intruder")
+        intruder.bind(spell=IntegrityOtherService, existence="unique")
 
-    assert "Conjure refused" in str(excinfo.value), (
+    assert "collision" in str(excinfo.value).lower(), (
         "a PARKED spell_id failed to reserve its id. bind_inactive keeps "
         "existence in _spell_ids precisely so a sleeping spell cannot be "
         "duplicated; if this passes, the existence aggregate is active-only."
