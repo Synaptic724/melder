@@ -65,10 +65,11 @@ def main() -> None:
     assert set(types) == {"development", "experiment", "production", "test"}
 
     # THE LADDER, third subsystem to use it (aether 07, crystallizer 17).
-    # The root is AETHER-HOSTED: its constructor takes the hosting Aether,
-    # so there is no free-standing research world. One process, one Aether,
-    # one research root under it.
-    research = md.MutationResearch(aether=md.Aether())
+    # AETHER-HOSTED, and reached the same way as md.Crystallizer() and
+    # md.Nexus(): Aether builds all three roots when it boots, so this call
+    # is a LOOKUP, not a construction. One process, one Aether, one research
+    # root under it - there is no free-standing research world to make.
+    research = md.MutationResearch()
     assert research.activated is False
     print()
     print("start - configured:", research.is_configured,

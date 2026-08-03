@@ -381,3 +381,26 @@ layers and cost most of a session; source is authoritative, docstrings are not.
   NEXT: OWNER RULING REQUIRED before either path is implemented.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T03:10:00Z
+  TYPE: HANDOFF
+  CLAIM: LANE TURNED IN, EPIC LEFT OPEN. The regime is implemented, sealed and
+    covered; the epic is NOT done and must not be read as done. S1 closed. S2
+    (check-and-set into `register_conduit_spells`) and S3 (release on the three
+    existing destruction paths) are READY and UNASSIGNED - both were RETITLED
+    this pass because their old names implied new surface neither one builds.
+    The graft is a BLOCKER awaiting an owner ruling.
+  EVIDENCE:
+  - tests/component/melder/aether/test_aether_component_configuration_collapse_on_first_frame.py
+  - tests/component/melder/spellbook/test_spellbook_component_bind_inactive_public_surface.py
+  - tickets/stories/2026-08-02_aether_unified_spell_id_set_story.md
+  IMPACT: NINE TESTS WRITTEN THIS PASS HAVE NEVER BEEN RUN - the five collapse
+    tests and the four bind_inactive tests. NO full suite has run since the
+    viewer repair, the four binding_name fixture fixes, the six deletions and
+    the withdrawn cluster replacement. Every green recorded in this epic came
+    from an OWNER run, and none of those runs included the work above. The next
+    agent's first act is a full suite, not new code.
+  NEXT: Full suite. Then owner rules the graft; then S2 before S3, because the
+    preflight race S2 closes is currently pinned open by a strict xfail.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7

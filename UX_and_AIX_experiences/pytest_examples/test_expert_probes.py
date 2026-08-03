@@ -8,30 +8,7 @@ import pytest
 
 from melder import Aether, Conduit, Crystallizer, MutationResearch, Nexus
 from melder.aether.spellbook.spellbook import Spellbook
-
-
-def _reset_mutation_research() -> None:
-    """Reset the research root without letting a HUSK SINGLETON cascade.
-
-    `MutationResearch.__init__` requires its hosting Aether. If any earlier
-    row or lesson calls `MutationResearch()` with no argument, `__new__`
-    has already published `cls._instance` by the time `__init__` raises
-    TypeError - so the class singleton points at an object whose
-    `_cleaned` slot was never assigned. `_reset_singleton_for_tests` then
-    reads `instance._cleaned` and raises AttributeError in SETUP, which
-    turns one bad construction into an error on every row in this file.
-    That is exactly what happened on 2026-08-03: expert lesson 03 called
-    `md.MutationResearch()` and took out all 38 rows here.
-
-    The lesson is fixed. This guard stays so the failure can never again
-    be 38 errors pointing at the wrong file - a husk is discarded and the
-    row that actually broke is the row that reports.
-    """
-    try:
-        MutationResearch._reset_singleton_for_tests()
-    except AttributeError:
-        MutationResearch._instance = None
-        MutationResearch._initialized = False
+from melder.aether.aether import Aether
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +21,7 @@ def reset_world() -> None:
     checkpoints, profiles or research lanes surface in the next row.
     """
     def _fresh() -> None:
-        _reset_mutation_research()
+        MutationResearch._reset_singleton_for_tests()
         Crystallizer._reset_singleton_for_tests()
         Nexus._reset_singleton_for_tests()
         Aether._reset_singleton_for_tests()
@@ -258,7 +235,7 @@ def test_probe_gates_report_the_actual_wiring():
 # ---------------------------------------------------------------------------
 
 def _active_research() -> "md.MutationResearch":
-    research = MutationResearch(aether=Aether())
+    research = MutationResearch()
     config = research.create_configuration()
     config.with_defaults().finalize()
     config.activate()
@@ -282,7 +259,7 @@ def test_probe_research_follows_the_caller_driven_ladder():
     requiring the caller to activate the configuration before the
     subsystem. Aether and Crystallizer agree; Nexus is the lone
     exception. 3-to-1 makes it the house rule."""
-    research = MutationResearch(aether=Aether())
+    research = MutationResearch()
     assert research.activated is False
     config = research.create_configuration()
     config.with_defaults().finalize()
@@ -505,7 +482,7 @@ def test_probe_config_enforcement_default_reaches_new_research_sets():
     the config knob ON and checks a NEWLY CREATED set actually inherits
     it, which is the only thing that makes "house rule AND per-experiment
     choice" a true statement rather than a nice one."""
-    research = MutationResearch(aether=Aether())
+    research = MutationResearch()
     config = research.create_configuration()
     config.with_defaults().with_lane_type_enforcement(True).finalize()
     config.activate()

@@ -26,8 +26,10 @@ def reset_world_for_accessor_door_tests() -> None:
         - Resets the Aether singleton before and after each test.
         - Rebinds the class-level `Spellbook._aether` / `Conduit._aether`
           references to the fresh instance (component-test precedent).
-        - Resets the MutationResearch singleton so lazy-build assertions
-          observe first-touch construction.
+        - Resets the MutationResearch singleton so each row observes a root
+          built fresh by the Aether it also rebuilds. The root is eager as of
+          2026-08-03, so resetting Aether alone would hand back the previous
+          world's research root.
 
     Returns:
         None.

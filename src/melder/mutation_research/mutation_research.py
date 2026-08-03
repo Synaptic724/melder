@@ -181,10 +181,19 @@ class MutationResearch(Cleanable):
 
         Args:
             aether:
-                Optional hosting `Aether` singleton. First-time initialization
-                requires this host; later constructions are lookups and ignore
-                it. Reach this root through `Aether.mutation_research` rather
-                than constructing it - that accessor supplies the host.
+                Hosting `Aether` singleton. REQUIRED for the first
+                construction - the body refuses without it - but declared
+                optional so that `MutationResearch()` is a legal SINGLE-ACCESS
+                LOOKUP once the root exists, exactly like `Crystallizer()` and
+                `Nexus()`. Python binds arguments before `__init__` runs, so a
+                mandatory parameter would make the bare lookup a TypeError no
+                matter how early the initialized check sits. The default keeps
+                the lookup reachable; the `aether is None` branch below keeps
+                the host mandatory.
+                In practice only `Aether.__init__` passes it: the root is
+                constructed EAGERLY there (owner ruling 2026-08-03) alongside
+                Crystallizer and Nexus, so by the time any caller runs the
+                singleton already exists.
             configuration:
                 Optional initial mutation-research configuration.
 
@@ -194,17 +203,24 @@ class MutationResearch(Cleanable):
               SILENTLY IGNORED after the first call - passing a different `aether`
               does NOT rebind the existing instance. Treat later calls as lookups,
               not configuration.
-            - ROLLS BACK ITS OWN ALLOCATION when constructed without an Aether
-              before the singleton is initialized: it clears `_instance` and the
-              initialized flag so the half-built object is NOT left installed,
-              then raises `ValueError`. This matches `Crystallizer` and `Nexus`
-              exactly, and it is why a pre-boot `MutationResearch()` probe is
-              safe - a later proper construction still gets a clean singleton.
-              Before this rollback existed the missing host raised `TypeError`
-              from the signature, which fired BEFORE any cleanup could run and
-              left `_instance` pointing at an object whose `_cleaned` slot was
-              never assigned; `_reset_singleton_for_tests` then raised
-              `AttributeError` on every subsequent use.
+            - THE EARLY RETURN IS WHY `MutationResearch()` IS SAFE. The
+              initialized check runs BEFORE the signature can matter, so once
+              Aether has built the root a bare call is a legal lookup rather
+              than a missing-argument error. That holds for all three hosted
+              roots identically, and it holds because Aether always builds
+              first - `Aether()` runs at package import.
+            - ROLLS BACK ITS OWN ALLOCATION on an explicit `None` host before
+              the singleton is initialized: it clears `_instance` and the
+              initialized flag under the class lock, then raises `ValueError`.
+              `Crystallizer` and `Nexus` both do this and MutationResearch must
+              too, because `__new__` publishes `cls._instance` BEFORE `__init__`
+              runs - so a refusal that skipped the rollback would leave a
+              half-built husk installed, one whose `_cleaned` slot was never
+              assigned. Every later `_reset_singleton_for_tests` then raises
+              `AttributeError` reading it.
+              THE MANDATORY ANNOTATION DOES NOT MAKE THIS UNREACHABLE. A type
+              hint is not enforcement: `MutationResearch(None)` is a legal call
+              at runtime, and this is what catches it.
             - Establishes a dedicated emission lock that must exist before the first
               `ResearchSet` fires `on_mutation`, so snapshot build and publication in
               the emission seam are serialized from the very first event.

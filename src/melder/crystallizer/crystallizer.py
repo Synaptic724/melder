@@ -11,6 +11,9 @@ from melder.crystallizer.asset_management.external_persistence_manager_configura
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
+from melder.crystallizer.configuration.crystallizer_configuration_builder import (
+    CrystallizerConfigurationBuilder,
+)
 from melder.crystallizer.crystal_loader_system.crystal_loader_system import (
     CrystalLoaderSystem,
 )
@@ -180,10 +183,18 @@ class Crystallizer(Cleanable):
 
         Args:
             aether:
-                Optional hosting `Aether` singleton. When provided, the
-                crystallizer records the private runtime host that owns this
-                root in the same style as Nexus. First-time initialization
-                requires this host.
+                Hosting `Aether` singleton. REQUIRED for the first
+                construction - the body refuses without it - but declared
+                optional so that `Crystallizer()` is a legal SINGLE-ACCESS
+                LOOKUP once the root exists. Python binds arguments before
+                `__init__` runs, so a mandatory parameter would make the bare
+                lookup a TypeError no matter how early the initialized check
+                sits. The default is what keeps the lookup reachable; the
+                `aether is None` branch below is what keeps the host
+                mandatory.
+                In practice only `Aether.__init__` passes it: the root is
+                constructed EAGERLY there (owner ruling 2026-08-03) alongside
+                Nexus and MutationResearch.
             configuration:
                 Optional initial crystallizer configuration. When omitted, the
                 root starts unconfigured and inactive.
@@ -503,6 +514,43 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         return CrystallizerConfiguration()
+
+    def create_configuration_builder(self) -> CrystallizerConfigurationBuilder:
+        """
+        Create a fresh fluent builder for crystallizer configuration assembly.
+
+        Purpose:
+            Close the last hole in the configuration ladder. `Aether` and
+            `MutationResearch` both expose this factory and
+            `CrystallizerConfigurationBuilder` has always existed and been
+            exported from the package root - the crystallizer just never
+            published a door to it, so callers had to import the builder class
+            themselves while the other two roots handed it over.
+
+        Contract:
+            - FACTORY ONLY. Returns a fresh builder wrapping a new configuration
+              and does NOT install anything here.
+            - The builder's exits are one-shot and they are NOT the same rung:
+              `build()` yields a MUTABLE configuration, `finalize()` a frozen
+              one, `activate()` an activated one. Installing whichever you get
+              is still a separate `configure()` / `activate()` call on this
+              root - a built configuration is not a live crystallizer.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The returned builder is the caller's
+            to own; this root does not retain or clean it.
+
+        Raises:
+            RuntimeError: If the crystallizer has been cleaned.
+
+        Returns:
+            CrystallizerConfigurationBuilder: New builder instance.
+        """
+        self.check_cleaned()
+        return CrystallizerConfigurationBuilder()
 
     def configure(self, configuration: CrystallizerConfiguration) -> None:
         """

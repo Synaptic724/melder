@@ -8,6 +8,7 @@ import pytest
 
 from melder import Aether, Conduit, Crystallizer, Nexus
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.aether import Aether
 
 
 @pytest.fixture(autouse=True)

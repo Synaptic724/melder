@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 import time
 from threading import RLock
 from types import TracebackType
@@ -13,16 +14,18 @@ from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
+from melder.mutation_research.mutation_research import MutationResearch
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.mediator import Mediator as AethericMediator
+from melder.aether.aetheric_mediator.transaction_type import TransactionType
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.synchronization.load_gate import LoadGate
 if TYPE_CHECKING:
-    from melder.mutation_research.mutation_research import MutationResearch
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
@@ -69,8 +72,10 @@ class Aether(Cleanable):
     Subsystem Context:
         Layer 1 - the substrate everything else hangs from. It owns the named
         frame registry and hosts the singleton subsystems: `AetherUtilitySystem`,
-        `Crystallizer`, `Nexus`, the lazily-constructed `MutationResearch` root,
-        and the `LoadGate`.
+        `Crystallizer`, `Nexus`, the `MutationResearch` root, and the
+        `LoadGate`. All three subsystem roots are constructed EAGERLY in
+        `__init__`, in that order - Crystallizer leads because the other two
+        read it out of this host as they build.
 
     System Context:
         Under V3 Horizon LAZY FRAMES, `import melder` and the first `Aether()`
@@ -205,11 +210,23 @@ class Aether(Cleanable):
                 # it constructible before Aether's world exists and testable in
                 # isolation. Do not add a back-reference.
                 self._aetheric_mediator: AethericMediator = AethericMediator()
-                # MutationResearch is constructed lazily on first access
-                # (`_get_mutation_research`): its import chain and root build
-                # cost several milliseconds on the cold import path (Aether()
-                # runs at package import) while serving zero boot traffic.
-                self._mutation_research: Optional["MutationResearch"] = None
+                # MutationResearch is constructed EAGERLY here, alongside
+                # Crystallizer and Nexus (owner ruling 2026-08-03). All three
+                # hosted roots are built by Aether, in one place, in a fixed
+                # order - and Crystallizer leads because MutationResearch and
+                # Nexus both read it out of this host as they construct.
+                #
+                # It used to be lazy, deferred purely to keep its import chain
+                # and root build off the cold `import melder` path. That saved
+                # a few milliseconds and cost a real invariant: the root's
+                # existence depended on someone having touched it, so
+                # `MutationResearch()` was a lookup for callers who were lucky
+                # with ordering and a ValueError for everyone else. Eager
+                # construction makes "Aether builds first" true for all three,
+                # which is what makes the bare constructors safe lookups.
+                self._mutation_research: MutationResearch = MutationResearch(
+                    aether=self,
+                )
                 self._nexus: Nexus = Nexus(aether=self)
                 # BUG-002 (2026-07-17 audit): the once-only latch flips while
                 # the class lock is still held so the unlocked fast path above
@@ -271,8 +288,7 @@ class Aether(Cleanable):
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
                 if self._crystallizer is not None:
                     self._crystallizer.cleanup()
-                if self._mutation_research is not None:
-                    self._mutation_research.cleanup()
+                self._mutation_research.cleanup()
                 if self._configuration is not None:
                     self._configuration.cleanup()
                 self._configured = False
@@ -734,10 +750,10 @@ class Aether(Cleanable):
             transaction, without any of them constructing a plane of their own.
 
         Contract:
-            - EAGER, unlike `mutation_research`. The plane is constructed with
-              Aether (owner constraint 3) because it must exist before anything
-              it governs; a lazy accessor would let a frame be born before the
-              authority that admits frame-level work.
+            - EAGER, like every other hosted root. The plane is constructed
+              with Aether (owner constraint 3) because it must exist before
+              anything it governs; a lazy accessor would let a frame be born
+              before the authority that admits frame-level work.
             - Returns the OWNED instance by reference. Aether cleans it; callers
               use it and never clean it.
             - ONE-WAY: subsystems reach the plane through here. The plane holds
@@ -766,10 +782,12 @@ class Aether(Cleanable):
         Return the Aether-owned MutationResearch root.
 
         Contract:
-            - LAZY ACCESSOR: it resolves the mutation-research singleton on demand
-              rather than returning a stored reference, so the first call may
-              construct it.
+            - EAGER, as of the owner ruling 2026-08-03. The root is built in
+              `__init__` alongside Crystallizer and Nexus, so this returns a
+              stored reference and never constructs. It was a lazy resolver
+              until that ruling.
             - Returns the process-wide singleton, not an Aether-private instance.
+            - A CLEANED root raises rather than being rebuilt; cleanup is final.
 
         Threading:
             Unsynchronized read; a snapshot only.
@@ -785,6 +803,88 @@ class Aether(Cleanable):
         """
         self.check_cleaned()
         return self._get_mutation_research()
+
+    @property
+    def crystallizer(self) -> Crystallizer:
+        """
+        Return the Aether-owned crystallizer root.
+
+        Purpose:
+            Close the third of four hosted-subsystem accessors. Aether already
+            CONSTRUCTS, OWNS and CLEANS this root - it simply had no public way
+            to hand back the handle it was holding, so callers reached it by
+            calling `Crystallizer()` and relying on singleton re-entry. That
+            works, but it reads like construction and is not: a bare
+            `Crystallizer()` returns THIS instance, and would raise
+            `ValueError` if Aether had not already built it.
+
+        Contract:
+            - EAGER, like `aetheric_mediator` and unlike `mutation_research`.
+              The root is constructed with Aether (`__init__`) because it is
+              unfolded into every frame, spellbook and conduit, and into
+              MutationResearch as the passive emission sink.
+            - Returns the OWNED instance by reference. Aether cleans it;
+              callers use it and never clean it.
+            - Returns the PROCESS-WIDE singleton, not an Aether-private
+              instance - it is the same object `Crystallizer()` returns.
+            - Reports the root as it stands. This is an existence read, not a
+              liveness one: a returned crystallizer may be unconfigured and
+              inactive, and `activated` is the separate bit that answers that.
+
+        Threading:
+            Unsynchronized read; a snapshot only. The root owns its own
+            locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. Cleaned by `Aether.cleanup`.
+
+        Raises:
+            RuntimeError: If the Aether has been cleaned.
+
+        Returns:
+            Crystallizer: The Aether-owned crystallizer root.
+        """
+        self.check_cleaned()
+        return self._crystallizer
+
+    @property
+    def nexus(self) -> Nexus:
+        """
+        Return the Aether-owned Rift-domain root.
+
+        Purpose:
+            The fourth hosted-subsystem accessor, and the same story as
+            `crystallizer`: Aether constructs `Nexus(aether=self)` in
+            `__init__`, owns it and cleans it, but exposed no public handle.
+            A bare `Nexus()` reaches this instance through singleton re-entry
+            and refuses with `ValueError` on a genuine first construction
+            without a host, so the constructor was never the real door.
+
+        Contract:
+            - EAGER. Constructed with Aether, before any Rift can exist.
+            - Returns the OWNED instance by reference. Aether cleans it;
+              callers use it and never clean it.
+            - Returns the PROCESS-WIDE singleton - the same object `Nexus()`
+              returns.
+            - Existence, not liveness. The returned Nexus may be unconfigured
+              and disabled; `enable()` is what makes it live, and Nexus is the
+              one subsystem that seals its own configuration when you call it.
+
+        Threading:
+            Unsynchronized read; a snapshot only. The root owns its own
+            locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. Cleaned by `Aether.cleanup`.
+
+        Raises:
+            RuntimeError: If the Aether has been cleaned.
+
+        Returns:
+            Nexus: The Aether-owned Rift-domain root.
+        """
+        self.check_cleaned()
+        return self._nexus
 
     @property
     def activated(self) -> bool:
@@ -992,6 +1092,57 @@ class Aether(Cleanable):
         if self._aetheric_frames is None:
             raise RuntimeError("Aether frame registry is unavailable.")
 
+        # PLANE ADMISSION. This is the founding case of
+        # EPIC-2026-07-31-aetheric-mediator-subsystem: frame creation could not
+        # be admitted by anything that existed, because the only admission
+        # authority was the frame-local `TransactionMediator` and that object is
+        # owned BY the frame being created. The plane outranks frames, so it can.
+        #
+        # What this buys concretely: a checkpoint load holds `world` EXCLUSIVE
+        # for its whole replay. Before this, a `Spellbook` constructed on another
+        # thread reached here and birthed a frame straight through that replay.
+        # Now it waits.
+        #
+        # RE-ENTRANCY IS THE HAZARD, NOT CONTENTION, and it is why this is
+        # conditional rather than unconditional. `_ensure_frame` is reached from
+        # six call sites across four subsystems, and some of them are ALREADY
+        # inside a plane transaction - the crystallizer restore engine calls it
+        # mid-replay while its own load holds `world`. Opening a second root here
+        # would request `frame:<name>` and block on a claim its own caller holds
+        # and will never release while blocked. That is a self-deadlock, not a
+        # refusal. When a session is already open on this thread the outer
+        # transaction has, by construction, already claimed what this work
+        # touches.
+        if not self._frame_creation_is_already_admitted():
+            with self._frame_creation_transaction(aetheric_frame_name):
+                return self._ensure_frame_locked(aetheric_frame_name)
+        return self._ensure_frame_locked(aetheric_frame_name)
+
+    def _ensure_frame_locked(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> AethericFrame:
+        """
+        Internal
+
+        Create or return the named frame under the Aether lock.
+
+        Contract:
+            - The registry mutation half of `_ensure_frame`, split out so plane
+              admission can wrap it without duplicating the body.
+            - Unchanged behaviour: the check, the regime seal, and the insert all
+              happen under ONE acquisition of the Aether lock, so two threads
+              racing for the same name still produce one frame.
+
+        Args:
+            aetheric_frame_name: The frame name to ensure exists.
+
+        Returns:
+            AethericFrame: The existing or newly created frame.
+
+        Raises:
+            RuntimeError: If the frame registry is unavailable.
+        """
         with self._lock:
             if self._aetheric_frames is None:
                 raise RuntimeError("Aether frame registry is unavailable.")
@@ -1019,6 +1170,80 @@ class Aether(Cleanable):
                 self._default_frame = frame
 
             return frame
+
+    def _frame_creation_is_already_admitted(self) -> bool:
+        """
+        Internal
+
+        Report whether this thread is already inside a plane transaction.
+
+        Contract:
+            - True when the calling thread holds ANY open plane session, in
+              which case frame creation is already covered by that outer
+              transaction and must NOT open a nested root - see `_ensure_frame`
+              for the self-deadlock this prevents.
+            - True ALSO when the plane is absent or cleaned. That is deliberate
+              and is the safe direction: frame creation predates the plane in
+              this method's own history, and refusing to create a frame because
+              the admission layer is unavailable would turn a coordination
+              improvement into a hard dependency. Teardown is the concrete case
+              - `Aether.cleanup` cleans the plane before frames, so any frame
+              work during teardown finds a cleaned plane and must still work.
+
+        Returns:
+            bool: True when no plane transaction should be opened here.
+        """
+        mediator = getattr(self, "_aetheric_mediator", None)
+        if mediator is None or mediator.cleaned:
+            return True
+        return mediator.has_any_active_session()
+
+    @contextmanager
+    def _frame_creation_transaction(self, aetheric_frame_name: str):
+        """
+        Internal
+
+        Hold a `FRAME_CREATE` claim for the length of one frame creation.
+
+        Contract:
+            - Claims `world` INTENT plus `frame:<name>` EXCLUSIVE through the
+              plane, so a whole-world operation cannot run while a frame is
+              being born and two threads racing for the SAME frame serialise.
+              Different frames still proceed in parallel.
+            - Commits on success, fails on exception, and RE-RAISES either way -
+              the plane records the outcome, it does not swallow the error.
+            - The identity is Aether's own. Frame creation is Aether's act
+              regardless of which subsystem asked for it, and attributing it to
+              the caller would require this seam to know callers it cannot see.
+
+        Args:
+            aetheric_frame_name: The frame being created.
+
+        Yields:
+            None.
+        """
+        mediator = self._aetheric_mediator
+        identity = Identity(
+            kind="aether",
+            identity_id=self._id,
+            label="aether:frame_create",
+        )
+        session = mediator.begin(
+            transaction_type=TransactionType.FRAME_CREATE,
+            submitter=identity,
+            metadata={"frame_name": aetheric_frame_name},
+        )
+        try:
+            yield
+        except BaseException as error:
+            session.leave()
+            mediator.fail(session, reason=str(error) or type(error).__name__)
+            raise
+        else:
+            session.leave()
+            mediator.commit(session)
+        finally:
+            identity.cleanup()
 
     def _create_frame(self, aetheric_frame_name: str = "default") -> AethericFrame:
         """
@@ -2083,20 +2308,25 @@ class Aether(Cleanable):
 
     #region Mutation Research
 
-    def _get_mutation_research(self) -> "MutationResearch":
+    def _get_mutation_research(self) -> MutationResearch:
         """
-        Return the Aether-owned MutationResearch root, building it on first use.
+        Return the Aether-owned MutationResearch root.
 
         Internal use only.
 
         Contract:
-            - Lazily constructs the MutationResearch root on first access
-              (deferred out of `__init__` to keep the import-time `Aether()`
-              bootstrap off the mutation_research import chain).
-            - Double-checked under the singleton lock; exactly one instance
-              is ever built per Aether lifetime.
-            - A cleaned (but not yet del'd) root still raises, preserving the
-              pre-lazy contract: cleanup never silently re-creates the root.
+            - Returns the root CONSTRUCTED IN `__init__`. It is no longer built
+              on demand: all three hosted roots are eager as of the owner ruling
+              2026-08-03, so this is a plain read and the double-checked lazy
+              build it used to perform is gone along with the deferred import.
+            - A cleaned root still RAISES rather than being silently rebuilt.
+              That was the pre-lazy contract and it survives the change:
+              cleanup is final, and handing back a fresh root after teardown
+              would let a caller believe custody continued across it.
+
+        Threading:
+            Unsynchronized read. The root is assigned before the singleton
+            latch flips, so no caller can observe the slot unset.
 
         Returns:
             MutationResearch: The hosted mutation-research singleton.
@@ -2106,17 +2336,6 @@ class Aether(Cleanable):
         """
         self.check_cleaned()
         research = self._mutation_research
-        if research is None:
-            with self._lock:
-                self.check_cleaned()
-                research = self._mutation_research
-                if research is None:
-                    from melder.mutation_research.mutation_research import (
-                        MutationResearch,
-                    )
-
-                    research = MutationResearch(aether=self)
-                    self._mutation_research = research
         if research.cleaned:
             raise RuntimeError("MutationResearch has been cleaned or is unavailable.")
         return research

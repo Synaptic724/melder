@@ -15,6 +15,7 @@ from melder.mutation_research.mutation_configuration_builder import (
 )
 from melder.mutation_research.mutation_research import MutationResearch
 from melder.mutation_research.research_set.research_set import ResearchSet
+from melder.aether.aether import Aether
 
 
 @pytest.fixture(autouse=True)
@@ -860,88 +861,56 @@ def test_rejected_world_entry_restores_staged_ancestry() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Host requirement: MutationResearch now matches Crystallizer and Nexus
+# Single access: MutationResearch now behaves exactly like its two siblings
 # ---------------------------------------------------------------------------
 
-def test_construction_without_a_host_raises_value_error_not_type_error() -> None:
+def test_a_hostless_first_construction_is_refused() -> None:
     """
-    `aether` is keyword-only and defaults to None, so a missing host is a
-    CONTRACT refusal raised from the body - not a signature TypeError.
+    The host is REQUIRED, and the refusal is a `ValueError` raised by the
+    BODY - not a `TypeError` from the signature.
 
-    That distinction is the whole point of the change. A TypeError fires
-    before any code in `__init__` runs, so the rollback below could never
-    execute; a ValueError is raised by the body, after it has cleaned up.
+    That distinction is the whole point. A signature error fires before
+    `__init__` runs, so the rollback below could never execute and the bare
+    lookup in the next row could never work either. Crystallizer and Nexus
+    have always been shaped this way; MutationResearch joined them
+    2026-08-03.
     """
+    MutationResearch._reset_singleton_for_tests()
+
     with pytest.raises(ValueError, match="Aether must be provided"):
         MutationResearch()
 
 
-def test_a_hostless_construction_leaves_no_husk_singleton() -> None:
+def test_a_refused_construction_leaves_no_husk() -> None:
     """
     Regression (2026-08-03): `__new__` publishes `cls._instance` before
-    `__init__` runs, so a refused construction used to leave the class
-    singleton pointing at an object whose `_cleaned` slot was never
-    assigned. Every later `_reset_singleton_for_tests()` then raised
-    AttributeError on `instance._cleaned` - one bad call took out 38
-    unrelated rows in the UX/AIX expert suite.
-
-    The rollback makes the refusal leave NO residue, which is what
-    Crystallizer and Nexus have always done.
+    `__init__` runs, so a refused construction used to leave the singleton
+    pointing at an object whose `_cleaned` slot was never assigned. Every
+    later `_reset_singleton_for_tests()` then raised AttributeError - one bad
+    call took out 38 unrelated rows in the UX/AIX expert suite.
     """
+    MutationResearch._reset_singleton_for_tests()
+
     with pytest.raises(ValueError):
         MutationResearch()
 
     assert MutationResearch._instance is None
     assert MutationResearch._initialized is False
-
-
-def test_reset_survives_a_refused_construction() -> None:
-    """The exact call that used to raise AttributeError must now be a no-op."""
-    with pytest.raises(ValueError):
-        MutationResearch()
-
     MutationResearch._reset_singleton_for_tests()  # must not raise
 
-    assert MutationResearch._instance is None
-    assert MutationResearch._initialized is False
 
-
-def test_a_proper_construction_still_works_after_a_refused_one() -> None:
+def test_a_bare_call_is_the_single_access_door() -> None:
     """
-    The rollback's purpose: a pre-boot probe must not poison the real boot.
-    """
-    with pytest.raises(ValueError):
-        MutationResearch()
+    THE POINT OF THE WHOLE CHANGE. Once Aether has built the root, a bare
+    `MutationResearch()` returns it - no host argument, no accessor hop -
+    exactly like `Crystallizer()` and `Nexus()`.
 
+    In a real process this is always the case: `Aether()` runs at package
+    import and constructs all three hosted roots eagerly.
+    """
     root = MutationResearch(aether=_mock_aether())
 
-    assert root.cleaned is False
-    assert MutationResearch._initialized is True
-    assert MutationResearch._instance is root
-
-
-def test_the_host_is_keyword_only() -> None:
-    """
-    Positional passing is refused, matching Crystallizer and Nexus. This
-    pins the signature shape itself: if `aether` ever drifts back to
-    positional, the three roots stop being interchangeable to a reader.
-
-    THIS TEST CLEANS UP AFTER ITSELF ON PURPOSE, and the reason is a
-    RESIDUAL HOLE the body rollback cannot close: a TypeError raised by
-    the SIGNATURE fires before `__init__` runs at all, so the rollback
-    inside it never executes and `__new__`'s already-published
-    `cls._instance` is left as a husk. That is the same shape as the bug
-    this file's other rows cover, one layer up, and it applies equally to
-    Crystallizer and Nexus - the rollback protects the "no host" path, not
-    the "wrong signature" path. Closing it properly means not publishing
-    `_instance` until `__init__` succeeds, which is a change to all three
-    roots and is deliberately NOT made here.
-    """
-    with pytest.raises(TypeError):
-        MutationResearch(_mock_aether())
-
-    MutationResearch._instance = None
-    MutationResearch._initialized = False
+    assert MutationResearch() is root
 
 
 def test_a_second_construction_is_a_lookup_that_ignores_its_host() -> None:
@@ -952,19 +921,21 @@ def test_a_second_construction_is_a_lookup_that_ignores_its_host() -> None:
     first_host = _mock_aether()
     root = MutationResearch(aether=first_host)
 
-    second_host = _mock_aether()
-    same_root = MutationResearch(aether=second_host)
+    same_root = MutationResearch(aether=_mock_aether())
 
     assert same_root is root
     assert root._aether is first_host
 
 
-def test_a_hostless_second_construction_is_a_lookup_not_a_refusal() -> None:
+def test_the_host_is_keyword_only() -> None:
     """
-    The initialized check runs BEFORE the host check, so once the root
-    exists a bare `MutationResearch()` is a legal lookup rather than a
-    ValueError. Same ordering as Crystallizer and Nexus.
+    `aether` is keyword-only on all three roots. Pinning the shape keeps
+    them interchangeable to a reader.
     """
-    root = MutationResearch(aether=_mock_aether())
+    MutationResearch._reset_singleton_for_tests()
 
-    assert MutationResearch() is root
+    with pytest.raises(TypeError):
+        MutationResearch(_mock_aether())
+
+    MutationResearch._instance = None
+    MutationResearch._initialized = False

@@ -16,6 +16,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.mutation_research.mutation_research import MutationResearch
 
 
 class _FrameConduitCloudStub:
@@ -224,11 +225,16 @@ def test_initialization_defers_default_frame_until_first_use(mock_frame_cls):
     assert isinstance(a._crystallizer, Crystallizer)
     assert a._crystallizer.is_configured is False
     assert a._crystallizer.is_activated is False
-    # MutationResearch is lazily constructed on first access: the slot is
-    # None after init, and the accessor builds the root on demand.
-    assert a._mutation_research is None
-    assert a.mutation_research is not None
-    assert a._mutation_research is not None
+    # MutationResearch is built EAGERLY in __init__ alongside Crystallizer and
+    # Nexus (owner ruling 2026-08-03). It was lazy until then, so this used to
+    # assert the slot was None after init and that the accessor built it on
+    # demand. Now the slot is populated from the start and the accessor is a
+    # plain read - and, like its two siblings, the root comes up neither
+    # configured nor activated.
+    assert isinstance(a._mutation_research, MutationResearch)
+    assert a.mutation_research is a._mutation_research
+    assert a._mutation_research.is_configured is False
+    assert a._mutation_research.is_activated is False
 
 def test_cleanup_clears_state(aether_with_mocks):
     """

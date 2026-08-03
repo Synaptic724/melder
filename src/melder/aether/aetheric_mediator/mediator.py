@@ -689,6 +689,57 @@ class Mediator(Cleanable):
         self.check_cleaned()
         return self._current_session(submitter)
 
+    def has_any_active_session(self) -> bool:
+        """
+        Report whether the CALLING THREAD is inside any plane session at all.
+
+        Purpose:
+            Let a low-level seam that many callers reach - `Aether._ensure_frame`
+            is the one this was built for - decide whether it needs to open a
+            transaction of its own, without knowing WHICH identity is above it.
+
+        WHY THIS IS IDENTITY-AGNOSTIC AND `has_active_session` IS NOT:
+            The question being asked is different. `has_active_session(who)` asks
+            "does THIS actor hold a session", which is what a caller managing its
+            own transaction needs. This asks "is this thread already inside
+            SOMEBODY's transaction", which is what a shared seam needs in order
+            not to open a nested root underneath a caller it cannot see.
+
+            That distinction is load-bearing rather than stylistic. The
+            crystallizer restore engine calls `_ensure_frame` mid-replay while
+            its load holds `world` EXCLUSIVE. If the frame seam opened a
+            `FRAME_CREATE` root under its own identity, that root would request
+            `frame:<name>` and block on a claim its OWN CALLER is holding - a
+            self-deadlock, not a refusal, because the holder is never coming back
+            to release it. Asking per-identity cannot detect this: the identities
+            genuinely differ.
+
+        Contract:
+            - Reads the CALLING THREAD's session map only, like every other
+              per-thread lookup here. A session held by this identity on another
+              thread is correctly invisible.
+            - Counts a session in ANY status the thread-local map still holds; a
+              terminal session is removed by `_forget_session` at finalisation,
+              so a live hit means a transaction genuinely has not ended.
+            - Read-only. Opens nothing, joins nothing, mutates no depth.
+
+        Returns:
+            bool: True when at least one session is open on the calling thread.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        self.check_cleaned()
+        sessions = getattr(self._thread_local, "sessions", None)
+        if not sessions:
+            return False
+        for session in sessions.values():
+            if session is None or session.cleaned:
+                continue
+            if session.status is SessionStatus.OPEN:
+                return True
+        return False
+
     def has_active_session(self, submitter: Identity) -> bool:
         """
         Report whether this identity holds an OPEN session on this thread.

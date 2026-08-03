@@ -93,9 +93,10 @@ def test_aetheric_frame_cleanup_cleans_components_and_conduits() -> None:
     cluster = frame._conduit_cloud._get_cluster("cluster-a")
 
     cloud = frame._conduit_cloud
-    # MutationResearch is built lazily and is aether-owned; force-build it via the
-    # public accessor so the post-cleanup assertion below confirms frame cleanup
-    # leaves the aether-owned root uncleaned (mutation.cleaned is False).
+    # MutationResearch is aether-owned and built eagerly with the Aether, so
+    # this is a plain read rather than the force-build it used to be. The
+    # post-cleanup assertion below confirms frame cleanup leaves the
+    # aether-owned root uncleaned (mutation.cleaned is False).
     mutation = frame._aether.mutation_research
     states = frame._spell_system_states
     devops = frame._dev_ops_manager
