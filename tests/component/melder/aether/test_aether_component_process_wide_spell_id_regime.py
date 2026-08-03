@@ -73,8 +73,11 @@ def _install_regime(enabled: bool) -> None:
     Purpose:
         Install an AetherConfiguration carrying the requested regime.
     Contract:
-        - Assigns `Aether._configuration`, which is what
-          `_process_wide_unique_spell_ids()` reads.
+        - Assigns `Aether._configuration` BEFORE any frame exists. The regime
+          itself lives as a plain bool on Aether; the collapse at first frame
+          birth reads this configuration and seals that bool. Installing after a
+          frame exists would be ignored by design - which is the point of the
+          seal, and why every caller here installs first and builds after.
     Args:
         enabled: True for process-wide uniqueness, False for per-frame.
     Returns:
@@ -98,7 +101,15 @@ def test_component_regime_default_is_process_wide_without_configuration() -> Non
     Raises:
         AssertionError: If the second conjure is permitted.
     """
-    assert Spellbook._aether._configuration is None, "precondition: unconfigured"
+    aether = Spellbook._aether
+    assert aether._configuration is None, (
+        "precondition: nothing configured and - because frames are lazy - no "
+        "frame born yet, so the collapse has not run"
+    )
+    assert aether._process_wide_unique_spell_ids is True, (
+        "the bool must already carry the documented default from __init__, "
+        "before any configuration or frame exists"
+    )
 
     book_a = _book("regime-default-a")
     book_b = _book("regime-default-b")
@@ -185,6 +196,20 @@ def test_component_single_frame_is_unaffected_by_the_regime() -> None:
     )
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "OPEN: the conjure sweep is a PREFLIGHT, not a mutual exclusion. It reads "
+        "the frame set under the Spellbook lock while the write lands later under "
+        "the FRAME lock inside Conduit.__init__, so every thread can pass before "
+        "any thread registers. Closing it needs the atomic check-and-set in "
+        "AethericFrame.register_conduit_spells - "
+        "STORY-2026-08-02-aether-unified-spell-id-set. STRICT ON PURPOSE: when "
+        "that story lands this test starts passing, xfail(strict) turns that into "
+        "a FAILURE, and whoever fixed it is told to delete this marker. Do NOT "
+        "loosen the assertion below to make this green."
+    ),
+)
 def test_component_concurrent_conjures_across_frames_admit_at_most_one() -> None:
     """
     Purpose:

@@ -167,6 +167,11 @@ class Aether(Cleanable):
                 self._id: str = new_ulid()
                 self._crystallizer: Crystallizer = Crystallizer(aether=self)
                 self._configuration: Optional[AetherConfiguration] = None
+                # The regime, as a PLAIN BOOL on the hot path. Sealed once by
+                # `_collapse_configuration_on_first_frame` and never read from
+                # the configuration again - bind and conjure test it on every
+                # call and must not pay for a property read to do it.
+                self._process_wide_unique_spell_ids: bool = True
                 self._configured: bool = False
                 self._activated: bool = False
                 self._logger = InitHelpers.resolve_safe_logger(None)
@@ -1841,7 +1846,7 @@ class Aether(Cleanable):
         # Explicit loop, not `any(...)`: both return on the first hit, but a
         # generator expression short-circuits while a list comprehension
         # silently does not, and that difference is one pair of brackets.
-        if not self._process_wide_unique_spell_ids():
+        if not self._process_wide_unique_spell_ids:
             return None
         if len(self._aetheric_frames) <= 1:
             return None
@@ -1878,21 +1883,35 @@ class Aether(Cleanable):
             - Installs `AetherConfiguration().with_defaults()` and FREEZES it, so
               the regime cannot be changed afterwards by any path.
             - Never raises. A failure to collapse must not stop a frame being
-              born; `_process_wide_unique_spell_ids()` already defaults to the
-              same value when no configuration is present, so the behaviour is
-              identical either way - the freeze is what this adds.
+              born; `_process_wide_unique_spell_ids` is already initialised to
+              the same default in `__init__`, so the behaviour is identical
+              either way - the seal and the freeze are what this adds.
 
         Returns:
             None.
         """
-        if self._configuration is not None:
+        if self._aetheric_frames:
+            # Not the first frame - the regime was sealed when the world began
+            # and re-reading it now is exactly the drift this method prevents.
             return
-        try:
-            from melder.aether.aether_configuration import AetherConfiguration
+        if self._configuration is None:
+            try:
+                from melder.aether.aether_configuration import AetherConfiguration
 
-            configuration = AetherConfiguration().with_defaults()
-            configuration.freeze()
-            self._configuration = configuration
+                self._configuration = AetherConfiguration().with_defaults()
+            except Exception as e:
+                if self._logger is not None:
+                    self._logger.error(
+                        f"Failed to build the default Aether configuration: {e}",
+                        "_collapse_configuration_on_first_frame",
+                        exc_info=True,
+                    )
+                return
+        try:
+            self._process_wide_unique_spell_ids = bool(
+                self._configuration.process_wide_unique_spell_ids
+            )
+            self._configuration.freeze()
         except Exception as e:
             if self._logger is not None:
                 self._logger.error(
@@ -1900,33 +1919,6 @@ class Aether(Cleanable):
                     "_collapse_configuration_on_first_frame",
                     exc_info=True,
                 )
-
-    def _process_wide_unique_spell_ids(self) -> bool:
-        """
-        Internal
-
-        Return whether spell_id uniqueness is enforced across the whole process.
-
-        Contract:
-            - Reads the installed `AetherConfiguration` when one exists.
-            - Defaults to True when Aether has never been configured, matching
-              `AetherConfiguration.__init__`. Frames are lazy
-              (`import melder` creates ZERO frames), so a frame can be born
-              before any configuration is installed and must still get the
-              documented default rather than silently falling open.
-            - Never raises: a cleaned or malformed configuration degrades to the
-              default rather than breaking a bind.
-
-        Returns:
-            bool: True when spell_id uniqueness is process-wide.
-        """
-        configuration = self._configuration
-        if configuration is None:
-            return True
-        try:
-            return bool(configuration.process_wide_unique_spell_ids)
-        except Exception:
-            return True
 
     def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
                               aetheric_frame_name: str = "default", spell_ids: Set[str] | None = None) -> None:
@@ -2075,7 +2067,7 @@ class Aether(Cleanable):
         # Same scope rule as `_check_for_spell`, deliberately mirrored: if the
         # single-id test and the whole-set read ever disagree about scope, bind
         # and conjure enforce different rules and a collision slips between them.
-        if not self._process_wide_unique_spell_ids():
+        if not self._process_wide_unique_spell_ids:
             return spell_ids
         if len(self._aetheric_frames) <= 1:
             return spell_ids

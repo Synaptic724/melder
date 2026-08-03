@@ -1,0 +1,45 @@
+# Line-ending policy - deliberately minimal.
+#
+# ONE RULE, for one concrete failure.
+#
+# The system documents under `context_compass/system_docs/` carry a BYTE-EXACT
+# integrity gate: each `<name>_index.md` records the `content_sha256` of its
+# `<name>.md`, and `_build_assets/_system_documents/_builder.py` refuses to
+# ingest a document whose bytes do not hash to that value. That refusal is
+# correct and intentional - "a range from an unverified index is a guess wearing
+# a line number".
+#
+# Git stores those files LF. A Windows checkout with `core.autocrlf=true`
+# converts them to CRLF, which changes every byte-hash while leaving the LINE
+# COUNT identical. The gate then refuses all four documents, `ingest()` reports
+# nothing available, and the symptom appears far from the cause - as empty
+# build-asset entries, with no error mentioning hashes or line endings.
+#
+# `core.autocrlf` is a per-machine setting, so normalising the files alone does
+# not hold: the next fresh clone re-breaks it. This attribute travels WITH the
+# repository, which is why the fix belongs here rather than in anyone's local
+# git config.
+#
+# WHAT THIS FILE DELIBERATELY DOES NOT DO:
+#
+#   No `* text=auto`, and no blanket `*.py eol=lf`. 439 of the 588 tracked
+#   Python files under `src/` are currently CRLF on disk; pinning them would
+#   rewrite all 439 on the next renormalisation - a repo-wide diff that fixes no
+#   observed problem. Python does not care, and nothing hashes those bytes.
+#
+#   No rule for `_build_assets/_system_documents/payloads/*.py` either. Those
+#   embed the documents verbatim and looked like they needed the same
+#   protection, but the runtime gate was checked directly and PASSES as-is: the
+#   document text lives in a Python string literal, so the file's own line
+#   endings do not alter the embedded content.
+#
+# If a new hashed document is added under `system_docs/`, the glob covers it
+# automatically. If a hashed artifact is ever added ELSEWHERE, it needs its own
+# line here - the rule is scoped, not general.
+#
+# Renormalising an existing checkout is a one-time, repo-scale action and is NOT
+# implied by this file:
+#
+#     git add --renormalize .
+
+context_compass/system_docs/**/*.md text eol=lf

@@ -125,15 +125,33 @@ def test_spellbook_integration_create_new_preset_spellbook_shares_config() -> No
 def test_spellbook_integration_named_frames_isolated() -> None:
     """
     Purpose:
-        Validate named Aetheric frames isolate spell registries.
+        Validate what named Aetheric frames DO and DO NOT isolate under the
+        process-wide spell_id regime.
+
     Contract:
-        - Spells registered in frame A are not visible in frame B.
-        - Spells registered in frame B are not visible in frame A.
+        - EXISTENCE IS NOT ISOLATED. `inspect_spell` is AETHER-SCOPED (owner
+          ruling 2026-08-02): a spell_id exists once per PROCESS, so asking about
+          the wrong frame still finds it. The `aetheric_frame` argument names
+          where to look FIRST, not a wall to stop at.
+        - INSTANCES STILL ARE. Each frame's conduit melds its own object; the
+          shared identity namespace does not make them share instances.
+
+    History:
+        This test previously asserted the cross-frame lookups returned None, which
+        was the per-frame regime that EPIC-2026-08-02-process-wide-spell-id-
+        uniqueness deliberately retired. It was not asserting a leak - it was
+        asserting the old law. Rewritten rather than deleted because the
+        instance-isolation half is still true and still worth guarding.
+
     Returns:
         None.
     Raises:
-        AssertionError: If spells leak across frames.
+        AssertionError: If existence is frame-walled, or instances are shared.
     """
+    class UnboundProbe:
+        """Bound nowhere. The negative control for the widened lookup."""
+        pass
+
     frame_a = "frame-a"
     frame_b = "frame-b"
 
@@ -158,11 +176,25 @@ def test_spellbook_integration_named_frames_isolated() -> None:
     conduit_a = spellbook_a.conjure(name="root-a")
     conduit_b = spellbook_b.conjure(name="root-b")
     try:
+        # Found in its own frame - the ordinary case.
         assert spellbook_a.inspect_spell(BasicService, aetheric_frame=frame_a) == spell_id_a
-        assert spellbook_a.inspect_spell(BasicService, aetheric_frame=frame_b) is None
-
         assert spellbook_b.inspect_spell(BasicConfig, aetheric_frame=frame_b) == spell_id_b
-        assert spellbook_b.inspect_spell(BasicConfig, aetheric_frame=frame_a) is None
+
+        # And found from the OTHER frame, because existence is process-wide. The
+        # id must be the SAME id, not merely non-None: one spell, one identity,
+        # whichever frame you happen to ask from.
+        assert spellbook_a.inspect_spell(BasicService, aetheric_frame=frame_b) == spell_id_a
+        assert spellbook_b.inspect_spell(BasicConfig, aetheric_frame=frame_a) == spell_id_b
+
+        # A class bound in NEITHER frame is still absent - the sweep widens the
+        # search, it does not invent hits.
+        assert spellbook_a.inspect_spell(UnboundProbe, aetheric_frame=frame_a) is None
+        assert spellbook_a.inspect_spell(UnboundProbe, aetheric_frame=frame_b) is None
+
+        # What frames DO isolate: instances.
+        assert spell_id_a != spell_id_b
+        assert conduit_a is not conduit_b
+        assert conduit_a.meld(spell=BasicService) is not conduit_b.meld(spell=BasicConfig)
     finally:
         conduit_b.permanent_cleanup()
         conduit_a.permanent_cleanup()
