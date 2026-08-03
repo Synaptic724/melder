@@ -168,9 +168,9 @@ def main() -> None:
         _run_cycles(root, outer_id, request_id, WARMUP)
 
     profiler = cProfile.Profile()
-    profiler.enable()
+    profiler.activate()
     wall_ns = _run_cycles(root, outer_id, request_id, CYCLES)
-    profiler.disable()
+    profiler.deactivate()
 
     per_cycle_us = wall_ns / CYCLES / 1e3
     report = io.StringIO()

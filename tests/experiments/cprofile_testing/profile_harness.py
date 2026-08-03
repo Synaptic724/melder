@@ -108,9 +108,9 @@ class ProfileScenario:
         state = self.setup(tier)
         profiler = cProfile.Profile()
         try:
-            profiler.enable()
+            profiler.activate()
             self.action(state)
-            profiler.disable()
+            profiler.deactivate()
         finally:
             self._run_teardown(state)
 

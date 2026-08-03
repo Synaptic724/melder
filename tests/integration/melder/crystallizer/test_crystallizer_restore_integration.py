@@ -351,7 +351,7 @@ def test_round_trip_restores_the_nexus_root(cache_root):
     nexus_configuration = NexusConfiguration()
     nexus_configuration.load_default_dictionary()
     nexus_configuration.set_property("max_active_rift_count", 5)
-    Nexus().enable(nexus_configuration)
+    Nexus().activate(nexus_configuration)
     checkpoint_id = crystallizer.create_checkpoint()
     crystallizer.flush_checkpoint(checkpoint_id)
 
@@ -362,7 +362,7 @@ def test_round_trip_restores_the_nexus_root(cache_root):
     assert report["status"] == "complete"
     assert report["built_counts"]["nexus"] == 1
     rebuilt = Nexus()
-    assert rebuilt.is_enabled is True
+    assert rebuilt.is_activated is True
     assert rebuilt.configuration.get_property("max_active_rift_count") == 5
 
 

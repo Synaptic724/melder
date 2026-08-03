@@ -380,14 +380,14 @@ class StaticRiftJsonBench:
             Nexus: Enabled Nexus.
         """
         nexus = Nexus()
-        configuration = nexus.create_system_configuration()
+        configuration = nexus.create_configuration()
         configuration.with_rift_creation_enabled(True)
         configuration.with_direct_rift_access(True)
         configuration.with_target_frame_override(True)
         configuration.with_multiple_target_frames(True)
         configuration.with_max_target_frame_count(8)
         configuration.with_allowed_target_frame_names(("default", self.frame_name))
-        nexus.enable(configuration)
+        nexus.activate(configuration)
         return nexus
 
     def _build_rift(self) -> Rift:

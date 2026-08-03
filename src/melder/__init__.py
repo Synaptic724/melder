@@ -118,6 +118,9 @@ from melder.mutation_research.mutation_research import MutationResearch
 from melder.mutation_research.research_set.research_lane import LaneState, LaneType
 from melder.mutation_research.research_set.research_set import ResearchSet
 from melder.nexus.configuration.nexus_configuration import NexusConfiguration
+from melder.nexus.configuration.nexus_configuration_builder import (
+    NexusConfigurationBuilder,
+)
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
@@ -215,6 +218,7 @@ __all__ = [
     "MutationResearchConfigurationBuilder",
     "Nexus",
     "NexusConfiguration",
+    "NexusConfigurationBuilder",
     "NexusFrameMode",
     "Permissions",
     "PhaseExecutionError",

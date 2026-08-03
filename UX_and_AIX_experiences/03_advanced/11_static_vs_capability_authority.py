@@ -73,9 +73,9 @@ def _room(nexus, space_type, name):
 
 def main() -> None:
     nexus = md.Nexus()
-    system_config = nexus.create_system_configuration()
+    system_config = nexus.create_configuration()
     system_config.with_rift_creation_enabled(True)
-    nexus.enable(system_config)
+    nexus.activate(system_config)
 
     static_room = _room(nexus, "static", "ops-static")
     capability_room = _room(nexus, "capability", "ops-capability")

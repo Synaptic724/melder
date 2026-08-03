@@ -315,7 +315,7 @@ def run_cycle(
     # ---- bind lane ----
     spell_ids: Dict[type, str] = {}
     if bind_profiler is not None:
-        bind_profiler.enable()
+        bind_profiler.activate()
     bind_t0 = time.perf_counter_ns()
     for cls in _support.ALL_CLASSES:
         single_t0 = time.perf_counter_ns()
@@ -327,7 +327,7 @@ def run_cycle(
         timings.per_bind_ns.append(time.perf_counter_ns() - single_t0)
     timings.bind_ns = time.perf_counter_ns() - bind_t0
     if bind_profiler is not None:
-        bind_profiler.disable()
+        bind_profiler.deactivate()
 
     # Probe whether a warm classification is even possible before conjure
     # consumes the state (cached ids must cover live ids).
@@ -344,12 +344,12 @@ def run_cycle(
 
     # ---- conjure lane ----
     if conjure_profiler is not None:
-        conjure_profiler.enable()
+        conjure_profiler.activate()
     conjure_t0 = time.perf_counter_ns()
     conduit = spellbook.conjure(name=CONDUIT_NAME, dynamic=False)
     timings.conjure_ns = time.perf_counter_ns() - conjure_t0
     if conjure_profiler is not None:
-        conjure_profiler.disable()
+        conjure_profiler.deactivate()
 
     # ---- resolution lane (first meld of every spell) ----
     # Spellspace-scoped spells (request/worker markers and any subtree that
@@ -373,7 +373,7 @@ def run_cycle(
                 )
 
             if meld_profiler is not None:
-                meld_profiler.enable()
+                meld_profiler.activate()
             meld_t0 = time.perf_counter_ns()
             for cls, spell_id in direct_ids:
                 resolved = conduit.meld(spell=spell_id)
@@ -396,7 +396,7 @@ def run_cycle(
                     lesser.cleanup()
             timings.first_meld_ns = time.perf_counter_ns() - meld_t0
             if meld_profiler is not None:
-                meld_profiler.disable()
+                meld_profiler.deactivate()
 
         if caching_enabled:
             try:

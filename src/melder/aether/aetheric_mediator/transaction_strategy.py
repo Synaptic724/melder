@@ -111,7 +111,6 @@ class TransactionStrategy(ABC):
         raise NotImplementedError
 
     @staticmethod
-    @abstractmethod
     def on_start(
             *,
             submitter: Identity,
@@ -123,6 +122,20 @@ class TransactionStrategy(ABC):
         Contract:
             Claims are HELD when this runs.
 
+            DEFAULTS TO NOTHING, and is deliberately NOT abstract. Most families
+            have no runtime work to do here: in the DevOps plane only `notch`
+            and the cluster-leader pair quiesce gates, and the other thirteen
+            return immediately. Forcing every family to write an empty override
+            buries the two that matter in eleven that do not, and makes the
+            presence of an override carry no information.
+
+            With a default, AN OVERRIDE MEANS SOMETHING. If you see one, this
+            family freezes or prepares real state and you should read it.
+
+            `build_start_plan` stays abstract for the opposite reason: there is
+            no defensible default claim set. A guessed one is exactly how
+            isolation is lost quietly.
+
         Args:
             submitter: The identity originating the transaction.
             staged: The immutable post-admission record.
@@ -130,10 +143,10 @@ class TransactionStrategy(ABC):
         Returns:
             None.
         """
-        raise NotImplementedError
+        del submitter
+        del staged
 
     @staticmethod
-    @abstractmethod
     def on_end(
             *,
             submitter: Identity,
@@ -147,6 +160,11 @@ class TransactionStrategy(ABC):
             when the transaction did not succeed. Anything that should happen
             only on success belongs in `apply_commit_delta`.
 
+            DEFAULTS TO NOTHING, for the reason given on `on_start`. A family
+            that overrode `on_start` to freeze something almost always overrides
+            this to release it - that pairing is the signal, and it is invisible
+            when every family implements both as no-ops.
+
         Args:
             submitter: The identity originating the transaction.
             staged: The immutable post-admission record.
@@ -154,7 +172,8 @@ class TransactionStrategy(ABC):
         Returns:
             None.
         """
-        raise NotImplementedError
+        del submitter
+        del staged
 
     @classmethod
     def apply_commit_delta(

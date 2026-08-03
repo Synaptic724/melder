@@ -215,7 +215,7 @@ def _time_loop(getter: Callable[[], object], *, warmup: int, tries: int, gc_disa
 
     was_enabled = gc.isenabled()
     if gc_disable and was_enabled:
-        gc.disable()
+        gc.deactivate()
 
     try:
         t0 = _ns()
@@ -224,7 +224,7 @@ def _time_loop(getter: Callable[[], object], *, warmup: int, tries: int, gc_disa
         return _ns() - t0
     finally:
         if gc_disable and was_enabled:
-            gc.enable()
+            gc.activate()
 
 
 def _format_row(r: PerfRow, *, tries: int, warmup: int) -> str:

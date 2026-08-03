@@ -340,11 +340,11 @@ def _maybe_profile(name: str, fn: Callable[[], None]) -> None:
     import cProfile
 
     profile = cProfile.Profile()
-    profile.enable()
+    profile.activate()
     try:
         fn()
     finally:
-        profile.disable()
+        profile.deactivate()
         out_dir = Path(_env_str("DI_CPROFILE_DIR", "benchmarks/testing_other_di/optimistic"))
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"overrides_{name}.prof"
@@ -697,7 +697,7 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
         try:
             was_enabled = gc.isenabled()
             if cfg.gc_mode == "disabled" and was_enabled:
-                gc.disable()
+                gc.deactivate()
 
             try:
                 start_barrier.wait()
@@ -724,7 +724,7 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
                             gc.collect()
             finally:
                 if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.enable()
+                    gc.activate()
 
         except BaseException as e:
             stats[ix].errors += 1

@@ -171,7 +171,7 @@ def _create_enabled_nexus(*allowed_target_frame_names: str) -> Nexus:
         Nexus: Enabled Nexus with Rift creation enabled.
     """
     nexus = Nexus(aether=Aether())
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
@@ -184,7 +184,7 @@ def _create_enabled_nexus(*allowed_target_frame_names: str) -> Nexus:
             allowed_target_frame_names if allowed_target_frame_names else ("ops",)
         )
     )
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     return nexus
 
 

@@ -1119,7 +1119,7 @@ class NexusFrameManager(Cleanable):
             RuntimeError:
                 If Nexus is not enabled.
         """
-        self._nexus._require_enabled()
+        self._nexus._require_activated()
 
     def _get_nexus_frame_mode_name(self) -> str:
         """

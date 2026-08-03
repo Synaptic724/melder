@@ -304,35 +304,35 @@ def test_probe_aether_comes_up_once_the_rungs_are_climbed_in_order():
 # ---------------------------------------------------------------------------
 
 def test_probe_nexus_factory_builds_but_never_installs():
-    """Lesson 08 claim: create_system_configuration() returns a NEW
+    """Lesson 08 claim: create_configuration() returns a NEW
     pre-defaulted config each call and installs nothing. If it ever starts
     installing, the lesson's "factories never wire" sentence is wrong."""
     nexus = Nexus()
     assert nexus.is_configured is False
-    assert nexus.is_enabled is False
-    first = nexus.create_system_configuration()
-    second = nexus.create_system_configuration()
+    assert nexus.is_activated is False
+    first = nexus.create_configuration()
+    second = nexus.create_configuration()
     assert isinstance(first, md.NexusConfiguration)
     assert first is not second
-    assert nexus.is_enabled is False
+    assert nexus.is_activated is False
     print("nexus factory pinned: fresh config per call, installs nothing")
 
 
 def test_probe_nexus_enable_finalizes_the_configuration_for_you():
     """Lesson 08 HEADLINE, and the asymmetry that makes the lesson worth
-    existing: Nexus.enable() finalizes the installed configuration on its
+    existing: Nexus.activate() finalizes the installed configuration on its
     way through. The caller never seals it. This is the OPPOSITE of
     Aether, which refuses a config the caller has not activated.
 
     A red here means the two subsystems converged - which would be good
     news for the configuration-uniformity program, and would mean lesson 08's contrast section needs rewriting rather than the code."""
     nexus = Nexus()
-    config = nexus.create_system_configuration()
+    config = nexus.create_configuration()
     assert config.frozen is False
-    nexus.enable(config)
+    nexus.activate(config)
     assert config.frozen is True, "enable was supposed to seal it"
     assert nexus.is_configured is True
-    assert nexus.is_enabled is True
+    assert nexus.is_activated is True
     print("nexus asymmetry pinned: enable() seals; aether makes you do it")
 
 
@@ -340,10 +340,10 @@ def test_probe_nexus_disable_drops_liveness_not_configuration():
     """Lesson 08 claim: configured and enabled are separate bits, so
     disable() takes the subsystem down and leaves the config installed."""
     nexus = Nexus()
-    nexus.enable(nexus.create_system_configuration())
-    assert (nexus.is_configured, nexus.is_enabled) == (True, True)
-    nexus.disable()
-    assert (nexus.is_configured, nexus.is_enabled) == (True, False)
+    nexus.activate(nexus.create_configuration())
+    assert (nexus.is_configured, nexus.is_activated) == (True, True)
+    nexus.deactivate()
+    assert (nexus.is_configured, nexus.is_activated) == (True, False)
     print("two-bit split pinned on nexus: disable keeps the configuration")
 
 
@@ -352,7 +352,7 @@ def test_probe_nexus_frame_mode_is_a_real_enum():
     members, so a typo raises instead of silently defaulting."""
     modes = {mode.value for mode in md.NexusFrameMode}
     assert modes == {"single", "indexed", "one_per_workspace"}
-    config = Nexus().create_system_configuration()
+    config = Nexus().create_configuration()
     config.with_nexus_frame_mode("single")
     print("frame modes pinned:", sorted(modes))
 
@@ -367,9 +367,9 @@ def test_probe_rift_space_type_is_a_real_enum():
 
 def _enabled_nexus() -> "Nexus":
     nexus = Nexus()
-    system_config = nexus.create_system_configuration()
+    system_config = nexus.create_configuration()
     system_config.with_rift_creation_enabled(True)
-    nexus.enable(system_config)
+    nexus.activate(system_config)
     return nexus
 
 
@@ -392,7 +392,7 @@ def test_probe_rift_registered_and_active_are_separate_bits():
     law. Creation REGISTERS; it does not make live. mark_inactive() drops
     liveness and leaves registration standing.
 
-    frozen/activated (09), is_configured/is_enabled (10), and
+    frozen/activated (09), is_configured/is_activated (10), and
     is_registered/is_active (11) are the same law under three names. A red
     on any of the three means the pattern the curriculum teaches broke."""
     nexus = _enabled_nexus()
@@ -1291,14 +1291,14 @@ def test_probe_caller_driven_activation_is_the_house_rule_three_to_one():
     # 4. NEXUS IS THE EXCEPTION. enable() finalizes a config the caller
     #    deliberately left unsealed.
     nexus = Nexus()
-    nexus_config = nexus.create_system_configuration()
+    nexus_config = nexus.create_configuration()
     assert nexus_config.frozen is False, "left unsealed on purpose"
-    nexus.enable(nexus_config)
+    nexus.activate(nexus_config)
     assert nexus_config.frozen is True, (
         "nexus.enable stopped sealing for the caller - it joined the "
         "house rule, and the 3-to-1 split is over"
     )
-    assert nexus.is_enabled is True
+    assert nexus.is_activated is True
 
     # And the builder divergence, still real.
     assert not hasattr(md.AetherConfigurationBuilder, "activate")

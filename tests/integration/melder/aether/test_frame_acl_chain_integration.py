@@ -247,10 +247,10 @@ def test_integration_frame_detach_removes_acl_container_after_chain_activity() -
 
     conduit = spellbook.conjure(name="root")
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
     container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
     original = container.get_current_view_configuration()
     draft = FrameACLViewConfiguration.from_json_dict(

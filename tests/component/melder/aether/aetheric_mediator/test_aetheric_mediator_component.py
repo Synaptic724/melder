@@ -365,8 +365,9 @@ def test_seeded_family_runs_without_local_registration(plane):
 
     This REPLACES an earlier test that expected `begin(AGENT_REPAIR)` to raise
     `KeyError`. That expectation was correct while the registry started empty;
-    `StrategyBuilder` now seeds the plane's six families in `__init__`, mirroring
-    the DevOps plane, so an unregistered member is no longer reachable.
+    `StrategyBuilder` now seeds a family for EVERY vocabulary member in
+    `__init__`, mirroring the DevOps plane, so an unregistered member is no
+    longer reachable.
 
     The fixture registers only CHECKPOINT_LOAD and FORMATION_LOAD, which is what
     makes this meaningful: AGENT_REPAIR is served by the SEEDED family, not by

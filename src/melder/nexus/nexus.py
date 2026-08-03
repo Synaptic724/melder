@@ -140,7 +140,7 @@ class Nexus(Cleanable):
         "_aether",
         "_configuration",
         "_configured",
-        "_enabled",
+        "_activated",
         "_rifts_by_id",
         "_rift_ids_by_name",
         "_next_default_rift_number",
@@ -272,7 +272,7 @@ class Nexus(Cleanable):
                 self._crystallizer: Crystallizer = aether._crystallizer
                 self._configuration: Optional[NexusConfiguration] = configuration
                 self._configured: bool = configuration is not None
-                self._enabled: bool = False
+                self._activated: bool = False
 
                 self._rifts_by_id: Dict[str, Rift] = {}
                 self._rift_ids_by_name: Dict[str, str] = {}
@@ -360,7 +360,7 @@ class Nexus(Cleanable):
             del self._logger
             del self._configuration
             del self._configured
-            del self._enabled
+            del self._activated
             del self._aether
             del self._next_default_rift_number
             del self._rifts_by_id
@@ -626,7 +626,7 @@ class Nexus(Cleanable):
 
         Contract:
             - Reports that a configuration has been INSTALLED, which is weaker than being
-              usable - `is_enabled` is the operational switch.
+              usable - `is_activated` is the operational switch.
             - Stays True across `disable()`, which deliberately keeps the install.
 
         Returns:
@@ -636,7 +636,58 @@ class Nexus(Cleanable):
         return self._configured
 
     @property
-    def is_enabled(self) -> bool:
+    def activated(self) -> bool:
+        """
+        Return whether the Nexus root is live.
+
+        Contract:
+            - The OPERATIONAL switch, distinct from `configured`. Nexus can be
+              configured and inactive at the same time; that is the normal
+              settled-but-off state, not an inconsistency.
+            - Short form of `is_activated`; both report the same flag, matching
+              Crystallizer and MutationResearch which each carry both spellings.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
+        Returns:
+            bool: True when Rift-domain operations are permitted.
+        """
+        self.check_cleaned()
+        return self._activated
+
+    @property
+    def configured(self) -> bool:
+        """
+        Return whether a configuration is installed on the Nexus root.
+
+        Contract:
+            - Short form of `is_configured`; both report the same flag.
+            - Existence of policy, NOT liveness. See `activated`.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
+        Returns:
+            bool: True when a configuration is installed.
+        """
+        self.check_cleaned()
+        return self._configured
+
+    @property
+    def is_activated(self) -> bool:
         """
         Purpose:
             Return whether Nexus is currently enabled for Rift operations.
@@ -650,7 +701,7 @@ class Nexus(Cleanable):
             bool: True when enabled.
         """
         self.check_cleaned()
-        return self._enabled
+        return self._activated
 
     @property
     def rift_gate_controller(self) -> RiftGateController:
@@ -682,31 +733,12 @@ class Nexus(Cleanable):
         self.check_cleaned()
         return self._rift_gate_controller
 
-    def create_system_configuration(self) -> NexusConfiguration:
-        """
-        Create a fresh mutable Nexus configuration with default values.
-
-        Purpose:
-            Provide callers with a mutable process-level Nexus configuration
-            seeded with repo defaults.
-
-        Contract:
-            - Returns a new `NexusConfiguration` instance on each call.
-            - Applies the default property set before returning it.
-            - Does not install the configuration onto Nexus automatically.
-
-        Returns:
-            NexusConfiguration: Fresh mutable Nexus config.
-        """
-        self.check_cleaned()
-        return NexusConfiguration().with_defaults()
-
     def create_configuration(self) -> NexusConfiguration:
         """
         Create a fresh Nexus configuration object.
 
         Purpose:
-            The name the other three roots use. `create_system_configuration`
+            The name the other three roots use. `create_configuration`
             remains as an alias, but `create_configuration` is what makes this
             root readable next to `Crystallizer` and `MutationResearch`.
 
@@ -799,109 +831,7 @@ class Nexus(Cleanable):
             configuration: Optional[NexusConfiguration] = None,
     ) -> None:
         """
-        Bring the Nexus root live, matching the other three roots' verb.
-
-        Purpose:
-            Give Nexus the same activation verb Aether, Crystallizer and
-            MutationResearch use, so one vocabulary covers every root. Nexus
-            was the lone divergence - `enable()` - and the 3-to-1 split was
-            something every reader had to memorise rather than derive.
-
-        Contract:
-            - DELEGATES TO `enable()`. This is a naming alignment, not a second
-              mechanism: there is exactly one code path that flips the liveness
-              bit, and both verbs reach it. `enable()` remains public.
-            - Inherits `enable()`'s leniency: a configuration that is installed
-              but not frozen is finalized here rather than refused. That is a
-              REAL divergence from Crystallizer, which requires an activated
-              policy object, and it is retained deliberately - changing it
-              would break every existing `enable(config)` caller.
-            - The liveness bit is readable as `is_activated` or `is_enabled`;
-              both report the same flag.
-
-        Args:
-            configuration:
-                Optional replacement configuration, installed before the
-                liveness flip.
-
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError: If Nexus has been cleaned, or has no installed
-                configuration.
-        """
-        self.enable(configuration)
-
-    def deactivate(self) -> None:
-        """
-        Take the Nexus root offline, matching the other three roots' verb.
-
-        Contract:
-            - DELEGATES TO `disable()`. Naming alignment only.
-            - Keeps configuration and registry state, exactly as `disable()`
-              does - this drops liveness, not existence, which is the two-bit
-              law applied to the root itself.
-
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError: If Nexus has been cleaned.
-        """
-        self.disable()
-
-    @property
-    def activated(self) -> bool:
-        """
-        Return whether the Nexus root is live.
-
-        Contract:
-            - The SAME BIT as `is_enabled`, under the name the other three
-              roots use. Nexus's liveness verb is historically enable/disable;
-              this reports that flag so a reader can ask every root the same
-              question.
-
-        Threading:
-            Unsynchronized read; a snapshot only.
-
-        Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
-
-        Raises:
-            RuntimeError: If Nexus has been cleaned.
-
-        Returns:
-            bool: True when Rift-domain operations are permitted.
-        """
-        return self.is_enabled
-
-    @property
-    def is_activated(self) -> bool:
-        """
-        Alias of `activated`, mirroring Crystallizer and MutationResearch.
-
-        Returns:
-            bool: True when Rift-domain operations are permitted.
-        """
-        return self.is_enabled
-
-    @property
-    def configured(self) -> bool:
-        """
-        Alias of `is_configured`, mirroring Crystallizer and MutationResearch.
-
-        Returns:
-            bool: True when a configuration is installed.
-        """
-        return self.is_configured
-
-    def enable(
-            self,
-            configuration: Optional[NexusConfiguration] = None,
-    ) -> None:
-        """
-        Install configuration if needed and enable Nexus operations.
+        Install configuration if needed and bring the Nexus root live.
 
         Purpose:
             Transition Nexus into its enabled state for Rift-domain operations.
@@ -937,14 +867,14 @@ class Nexus(Cleanable):
                 # the activation moment, so the twin emission fires here -
                 # same fix class as the spellbook conjure re-freeze.
                 configured.emit_configured_twin_when_recording()
-            self._enabled = True
+            self._activated = True
             self._logger.info("Nexus enabled.", "enable")
             # Record the lifecycle flip: the twin (emitted at configuration
             # freeze) is retained; the state switch carries enable truth.
             if self._crystallizer.activated:
                 self._crystallizer.emit_nexus_state(RecordedUnitState.enabled)
 
-    def disable(self) -> None:
+    def deactivate(self) -> None:
         """
         Disable Rift operations without discarding configuration or registry
         state.
@@ -964,7 +894,7 @@ class Nexus(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            self._enabled = False
+            self._activated = False
             self._logger.info("Nexus disabled.", "disable")
             # Disable keeps the installed configuration, so the twin stays;
             # the record flips the state switch instead of evicting.
@@ -1192,7 +1122,7 @@ class Nexus(Cleanable):
         Raises:
             ValueError: If ids/names collide or frame budgets are exceeded.
         """
-        self._require_enabled()
+        self._require_activated()
         with self._lock:
             if rift.id in self._rifts_by_id:
                 raise ValueError("Rift with id '{0}' already exists.".format(rift.id))
@@ -1326,7 +1256,7 @@ class Nexus(Cleanable):
         Returns:
             None.
         """
-        self._require_enabled()
+        self._require_activated()
         frame_names_to_cleanup: List[str] = []
         rift_name: Optional[str] = None
         with self._lock:
@@ -1504,7 +1434,7 @@ class Nexus(Cleanable):
         Returns:
             list[str]: Snapshot of registered ids.
         """
-        self._require_enabled()
+        self._require_activated()
         return list(self._rifts_by_id.keys())
 
     def get_rift_gate(self, rift_id: str) -> Optional[RiftGate]:
@@ -2701,7 +2631,7 @@ class Nexus(Cleanable):
             None.
         """
         self.check_cleaned()
-        if not self._configured or self._configuration is None or not self._enabled:
+        if not self._configured or self._configuration is None or not self._activated:
             return
         normalized_frame_names = self._normalize_requested_frame_name_batch(
             frame_names,
@@ -2957,7 +2887,7 @@ class Nexus(Cleanable):
             Tuple[str, ...]: Accessible published non-Nexus frame names.
         """
         self.check_cleaned()
-        self._require_enabled()
+        self._require_activated()
         rift = self._get_required_rift(rift_id)
         requested_space_type = rift.configuration.get_property("space_type")
         if not isinstance(requested_space_type, RiftSpaceType):
@@ -3046,7 +2976,7 @@ class Nexus(Cleanable):
         if not self._configured or self._configuration is None:
             raise RuntimeError("Nexus is not configured.")
 
-    def _require_enabled(self) -> None:
+    def _require_activated(self) -> None:
         """
         Internal
 
@@ -3063,7 +2993,7 @@ class Nexus(Cleanable):
             RuntimeError: If Nexus is disabled.
         """
         self._require_configured()
-        if not self._enabled:
+        if not self._activated:
             raise RuntimeError("Nexus is disabled.")
 
     def _require_rift_creation_allowed(self, creation_token: Optional[str]) -> None:
@@ -3084,7 +3014,7 @@ class Nexus(Cleanable):
         Returns:
             None.
         """
-        self._require_enabled()
+        self._require_activated()
         configuration = self.configuration
         if not configuration.get_property("allow_rift_creation"):
             raise ValueError("Rift creation is disabled.")
@@ -3110,7 +3040,7 @@ class Nexus(Cleanable):
         Returns:
             None.
         """
-        self._require_enabled()
+        self._require_activated()
         configuration = self.configuration
         if not configuration.get_property("allow_direct_rift_access"):
             raise ValueError("Direct Rift access is disabled.")

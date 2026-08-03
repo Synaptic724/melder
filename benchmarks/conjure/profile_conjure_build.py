@@ -427,9 +427,9 @@ def _profile_lib(logger: SafeLogger, lib: str, classes: tuple[type, ...]) -> Non
     if ProfileConfig.VERBOSE_PROGRESS:
         logger.info(f"[{lib}] starting profile", "_profile_lib")
     profile = cProfile.Profile()
-    profile.enable()
+    profile.activate()
     elapsed = _profile_loop(lib, classes, ProfileConfig.ITERATIONS)
-    profile.disable()
+    profile.deactivate()
 
     stream = io.StringIO()
     stats = pstats.Stats(profile, stream=stream).sort_stats(ProfileConfig.SORT_BY)

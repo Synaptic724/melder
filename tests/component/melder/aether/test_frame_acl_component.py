@@ -55,10 +55,10 @@ def test_component_frame_detach_cleans_acl_container_even_without_managed_frame_
     Aether._reset_singleton_for_tests()
     aether = Aether()
     nexus = Nexus(aether=aether)
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     try:
         nexus._get_or_create_frame_descriptor("ops")

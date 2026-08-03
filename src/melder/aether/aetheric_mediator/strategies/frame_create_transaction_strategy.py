@@ -28,7 +28,6 @@ if TYPE_CHECKING:
         StagedTransaction,
     )
 
-
 class FrameCreateTransactionStrategy(TransactionStrategy):
     """
     Claim one frame exclusively while it is brought into existence.
@@ -150,53 +149,3 @@ class FrameCreateTransactionStrategy(TransactionStrategy):
             ScopeKey.world(): ClaimMode.INTENT,
             ScopeKey.frame(frame_name): ClaimMode.EXCLUSIVE,
         }
-
-    @staticmethod
-    def on_start(
-            *,
-            submitter: Identity,
-            staged: StagedTransaction,
-    ) -> None:
-        """
-        Run family-local work after admission succeeds.
-
-        Contract:
-            No family-local work. Aether constructs the frame while holding the
-            claim; a strategy that built it would be the plane reaching into the
-            runtime it is forbidden to import.
-
-        Args:
-            submitter:
-                The identity originating the transaction.
-            staged:
-                The immutable post-admission record.
-
-        Returns:
-            None.
-        """
-        del submitter
-        del staged
-
-    @staticmethod
-    def on_end(
-            *,
-            submitter: Identity,
-            staged: StagedTransaction,
-    ) -> None:
-        """
-        Run family-local work during finalisation.
-
-        Contract:
-            No family-local work, on either the commit or the failure path.
-
-        Args:
-            submitter:
-                The identity originating the transaction.
-            staged:
-                The immutable post-admission record.
-
-        Returns:
-            None.
-        """
-        del submitter
-        del staged

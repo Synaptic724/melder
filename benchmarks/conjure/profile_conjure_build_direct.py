@@ -386,9 +386,9 @@ def _profile_loop(lib: str, classes: tuple[type, ...], iterations: int) -> float
 
 def _profile_lib(logger: SafeLogger, lib: str, classes: tuple[type, ...]) -> None:
     profile = cProfile.Profile()
-    profile.enable()
+    profile.activate()
     elapsed = _profile_loop(lib, classes, ProfileConfig.ITERATIONS)
-    profile.disable()
+    profile.deactivate()
 
     stream = io.StringIO()
     stats = pstats.Stats(profile, stream=stream).sort_stats(ProfileConfig.SORT_BY)

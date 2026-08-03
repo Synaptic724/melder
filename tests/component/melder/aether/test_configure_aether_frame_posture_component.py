@@ -338,9 +338,9 @@ def test_rift_enabled_false_is_what_the_ar_gate_refuses() -> None:
     """A frame left at the default posture is refused by the AR gate."""
     _book("gate-closed").conjure(name="gate-closed-conduit")
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
     with pytest.raises(ValueError, match="rift_enabled"):
         nexus._validate_target_frame_runtime_requirements(
             "gate-closed",
@@ -363,9 +363,9 @@ def test_rift_enabled_through_the_door_opens_the_ar_gate() -> None:
     )
     book.conjure(name="gate-open-conduit")
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
     nexus._validate_target_frame_runtime_requirements(
         "gate-open",
         RiftSpaceType.capability,
@@ -398,9 +398,9 @@ def test_codegen_rooms_need_both_knobs_and_the_door_now_supplies_both() -> None:
     full.conjure(name="codegen-full-conduit")
 
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
 
     with pytest.raises(ValueError):
         nexus._validate_target_frame_runtime_requirements(

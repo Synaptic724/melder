@@ -209,11 +209,11 @@ def test_nexus_enable_disable_flip_the_recorded_state():
     """
     crystallizer = _activate_crystallizer()
     nexus = Aether()._nexus
-    nexus.enable(configuration=NexusConfiguration().with_defaults())
+    nexus.activate(configuration=NexusConfiguration().with_defaults())
     summary = crystallizer.describe_profile()
     assert summary["has_nexus_crystal"] is True
     assert summary["nexus_state"] == "enabled"
-    nexus.disable()
+    nexus.deactivate()
     summary = crystallizer.describe_profile()
     assert summary["nexus_state"] == "disabled"
     assert summary["has_nexus_crystal"] is True
@@ -233,7 +233,7 @@ def test_nexus_cleanup_records_cleaned_while_the_record_lives():
     """
     crystallizer = _activate_crystallizer()
     nexus = Aether()._nexus
-    nexus.enable(configuration=NexusConfiguration().with_defaults())
+    nexus.activate(configuration=NexusConfiguration().with_defaults())
     nexus.cleanup()
     summary = crystallizer.describe_profile()
     assert summary["nexus_state"] == "cleaned"

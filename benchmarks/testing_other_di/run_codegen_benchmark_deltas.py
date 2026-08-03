@@ -893,10 +893,10 @@ def _profile_callable(
 
     profile = cProfile.Profile()
     start_ns = time.perf_counter_ns()
-    profile.enable()
+    profile.activate()
     for _ in range(profile_iteration_count):
         fn()
-    profile.disable()
+    profile.deactivate()
     end_ns = time.perf_counter_ns()
 
     stats = pstats.Stats(profile)

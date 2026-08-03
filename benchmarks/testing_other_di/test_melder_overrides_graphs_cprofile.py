@@ -673,7 +673,7 @@ def _profile_execution(
     profiler = cProfile.Profile()
     start = time.perf_counter()
     if profile_enabled:
-        profiler.enable()
+        profiler.activate()
     try:
         fn()
     finally:
@@ -695,7 +695,7 @@ def _profile_execution(
             ):
                 normalized_sample_metadata["sample_actual_duration_s"] = elapsed
         if profile_enabled:
-            profiler.disable()
+            profiler.deactivate()
             profile_path = _dump_profile(label, profiler)
             log_path = _write_profile_log(label, profiler, profile_path, sort=sort, top=top)
             hotspot_rows = _extract_top_hotspots(profiler, sort=sort, top=top)

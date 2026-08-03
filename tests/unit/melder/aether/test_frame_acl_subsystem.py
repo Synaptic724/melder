@@ -230,10 +230,10 @@ def test_frame_detach_also_removes_matching_acl_container() -> None:
     """
     aether = Aether()
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     nexus._get_or_create_frame_descriptor("ops")
     container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")

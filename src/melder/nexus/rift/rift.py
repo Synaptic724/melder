@@ -196,7 +196,7 @@ class Rift(Cleanable):
             raise TypeError("nexus must satisfy Nexus.")
         if not nexus.is_configured:
             raise RuntimeError("Rift requires a configured Nexus.")
-        if not nexus.is_enabled:
+        if not nexus.is_activated:
             raise RuntimeError("Rift requires an enabled Nexus.")
         if not configuration.frozen:
             raise RuntimeError("Rift requires a finalized RiftConfiguration.")

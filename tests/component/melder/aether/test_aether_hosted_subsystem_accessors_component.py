@@ -161,7 +161,7 @@ def test_the_accessors_report_existence_not_liveness() -> None:
 
     assert aether.crystallizer.activated is False
     assert aether.mutation_research.activated is False
-    assert aether.nexus.is_enabled is False
+    assert aether.nexus.is_activated is False
 
     # ...and neither is any of them CONFIGURED, which is the rung below.
     assert aether.crystallizer.is_configured is False
@@ -171,17 +171,18 @@ def test_the_accessors_report_existence_not_liveness() -> None:
 
 def test_every_root_offers_the_same_configuration_ladder() -> None:
     """
-    The three caller-driven roots expose ONE configuration vocabulary:
-    a factory, a fluent builder factory, install, activate, deactivate, and
-    both readable bits. `create_configuration_builder` was the last hole -
-    `CrystallizerConfigurationBuilder` existed and was exported from the
-    package root, but the crystallizer never published a door to it while
-    Aether and MutationResearch both did.
+    ALL THREE HOSTED ROOTS now expose ONE configuration vocabulary: a
+    factory, a fluent builder factory, install, activate, deactivate, and
+    both readable bits.
 
-    NEXUS IS DELIBERATELY ABSENT from this row. It uses
-    `create_system_configuration` / `enable` / `disable` / `is_enabled` and
-    seals its own configuration on the way in - the documented 3-to-1
-    divergence, not drift.
+    Two holes closed on 2026-08-03. `CrystallizerConfigurationBuilder`
+    existed and was exported from the package root, but the crystallizer
+    never published a door to it. And NEXUS was the 3-to-1 divergence - it
+    had only `create_configuration` / `enable` / `disable` /
+    `is_activated`, no builder class at all, and its configuration carried no
+    activation rung. It now carries the full ladder, and the old verbs were
+    REMOVED rather than aliased - one name per concept - with all 298 call
+    sites migrated in the same change.
     """
     ladder = (
         "create_configuration",
@@ -193,9 +194,13 @@ def test_every_root_offers_the_same_configuration_ladder() -> None:
         "is_activated",
     )
     aether = Aether()
-    for root in (aether.crystallizer, aether.mutation_research):
+    for root in (aether.crystallizer, aether.mutation_research, aether.nexus):
         missing = [verb for verb in ladder if not hasattr(type(root), verb)]
         assert not missing, f"{type(root).__name__} is missing {missing}"
+
+    # Both spellings of each bit agree, exactly as they do on the other two.
+    assert aether.nexus.activated is aether.nexus.is_activated
+    assert aether.nexus.configured is aether.nexus.is_configured
 
 
 def test_a_built_configuration_is_not_a_live_root() -> None:

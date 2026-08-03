@@ -267,7 +267,7 @@ class CodegenRiftJsonBench:
             Nexus: Enabled Nexus.
         """
         nexus = Nexus()
-        configuration = nexus.create_system_configuration()
+        configuration = nexus.create_configuration()
         configuration.with_rift_creation_enabled(True)
         configuration.with_direct_rift_access(True)
         configuration.with_target_frame_override(True)
@@ -275,7 +275,7 @@ class CodegenRiftJsonBench:
         configuration.with_max_target_frame_count(8)
         configuration.with_nexus_frame_mode("indexed")
         configuration.with_max_nexus_frame_count(8)
-        nexus.enable(configuration)
+        nexus.activate(configuration)
         return nexus
 
     def _build_rift(self) -> Rift:

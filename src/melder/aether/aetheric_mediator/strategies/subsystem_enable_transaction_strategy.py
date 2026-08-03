@@ -14,14 +14,20 @@ from typing import TYPE_CHECKING, Any
 
 from melder.aether.aetheric_mediator.claim_mode import ClaimMode
 from melder.aether.aetheric_mediator.identity import Identity
+from melder.aether.aetheric_mediator.participation import (
+    ParticipationConditions,
+    ParticipationState,
+)
 from melder.aether.aetheric_mediator.scope_keys import ScopeKey
 from melder.aether.aetheric_mediator.transaction_strategy import TransactionStrategy
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_mediator.information_registry import (
+        InformationRegistry,
+    )
     from melder.aether.aetheric_mediator.staged_transaction import (
         StagedTransaction,
     )
-
 
 class SubsystemEnableTransactionStrategy(TransactionStrategy):
     """
@@ -68,9 +74,10 @@ class SubsystemEnableTransactionStrategy(TransactionStrategy):
         `TransactionType.SUBSYSTEM_ENABLE`; never bound.
 
     Subsystem Context:
-        Paired with `SubsystemDisableTransactionStrategy`, which is its exact
-        inverse and claims identically because the two transitions write the same
-        surface in opposite directions.
+        One of three lifecycle families - configure, enable, disable - that all
+        claim identically because they write the same surface. This is the only
+        one of the three that produces an emitting subsystem; the other two both
+        leave it silent, for different reasons and from different states.
 
     System Context:
         The three subsystems reach this edge differently - crystallizer through
@@ -124,52 +131,77 @@ class SubsystemEnableTransactionStrategy(TransactionStrategy):
             ScopeKey.subsystem(subsystem_name): ClaimMode.EXCLUSIVE,
         }
 
-    @staticmethod
-    def on_start(
+    @classmethod
+    def apply_commit_delta(
+            cls,
             *,
+            information_registry: "InformationRegistry",
             submitter: Identity,
-            staged: StagedTransaction,
+            staged: "StagedTransaction",
     ) -> None:
         """
-        Run family-local work after admission succeeds.
+        Move the subsystem to ENABLED - the one state that emits.
+
+        Purpose:
+            This is where an enable stops being a claim and becomes a fact. The
+            plane cannot ask a subsystem whether it is active - it is forbidden
+            to import one - so the subsystem announces itself here and the
+            answer is stored.
+
+        WHY THIS OVERRIDE EXISTS AT ALL:
+            Enable, disable and configure claim IDENTICALLY - `world` INTENT
+            plus `subsystem:<name>` EXCLUSIVE. If the claim were the only thing
+            a family expressed, the three would be indistinguishable, and a
+            strategy layer that cannot tell "switch on" from "switch off" is a
+            lookup table wearing a class. The difference lives HERE, in the
+            state each writes at commit.
 
         Contract:
-            No family-local work. The subsystem performs its own activation and
-            emits its own basic conditions; a strategy that did either would be
-            the plane reaching into a subsystem.
+            - Runs at commit WHILE CLAIMS ARE STILL HELD, so the state change
+              lands atomically with the transition that produced it. A reader
+              cannot observe a subsystem that is admitted-but-not-yet-recorded.
+            - Calls the base delta FIRST so the fact baseline is stamped, then
+              moves the state. Order matters only for readers that check
+              freshness before participation, but it is fixed rather than
+              incidental.
+            - THIS IS THE ONLY EDGE THAT MAKES A SUBSYSTEM EMIT.
+              `ParticipationState.ENABLED` is the sole state for which `emits`
+              is True, and nothing else in the plane writes it.
+            - PASSES CONDITIONS ONLY WHEN THE ENABLE ANNOUNCED SOME. An enable
+              that declares nothing passes `None`, which KEEPS whatever a prior
+              configure recorded. Passing an empty mapping instead would erase
+              it, and the configure-then-enable sequence - the normal one -
+              would lose its settings at the moment the subsystem started.
+            - Reads ONLY the keys `ParticipationConditions` declares, so a
+              subsystem cannot widen its own row by adding metadata keys.
+            - Failures PROPAGATE and poison the commit, per the base contract. A
+              state change that silently failed to write would leave the plane
+              believing a subsystem is off while it is running.
 
         Args:
-            submitter:
-                The identity originating the transaction.
-            staged:
-                The immutable post-admission record.
+            information_registry: The plane registry to write.
+            submitter: The identity originating the transaction.
+            staged: The immutable post-admission record.
 
         Returns:
             None.
         """
-        del submitter
-        del staged
-
-    @staticmethod
-    def on_end(
-            *,
-            submitter: Identity,
-            staged: StagedTransaction,
-    ) -> None:
-        """
-        Run family-local work during finalisation.
-
-        Contract:
-            No family-local work, on either the commit or the failure path.
-
-        Args:
-            submitter:
-                The identity originating the transaction.
-            staged:
-                The immutable post-admission record.
-
-        Returns:
-            None.
-        """
-        del submitter
-        del staged
+        super().apply_commit_delta(
+            information_registry=information_registry,
+            submitter=submitter,
+            staged=staged,
+        )
+        subsystem_name = staged.metadata.get(cls.METADATA_SUBSYSTEM_NAME)
+        if not isinstance(subsystem_name, str) or not subsystem_name:
+            # An enable whose subject is unknown took `world` EXCLUSIVE and is
+            # a caller error, but it is not this hook's job to refuse a
+            # transaction that admission already accepted. Nothing is recorded,
+            # which leaves the participant store honest.
+            return
+        announced = ParticipationConditions.select(staged.metadata)
+        information_registry.set_participation(
+            subsystem_name=subsystem_name,
+            state=ParticipationState.ENABLED,
+            reporter=staged.request_id,
+            conditions=announced if announced else None,
+        )

@@ -78,12 +78,12 @@ def _enable_nexus_for_target_frame(frame_name: str) -> Nexus:
         Nexus: Enabled Nexus with direct Rift access.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", frame_name))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     return nexus
 
 

@@ -8,22 +8,22 @@ GOAL: TURNING THE NEXUS ON - and discovering that it does NOT climb the
 
       THE NEXUS PATH
         nexus  = md.Nexus()                        # process-wide, no args
-        config = nexus.create_system_configuration()
-        nexus.enable(config)                       # installs AND finalizes
-        nexus.is_enabled -> True
+        config = nexus.create_configuration()
+        nexus.activate(config)                       # installs AND finalizes
+        nexus.is_activated -> True
 
       THREE ASYMMETRIES WITH AETHER, ALL REAL, NONE ACCIDENTAL:
 
       1. THE FACTORY PRE-DEFAULTS.
          Aether's create_configuration() hands back a bare config and you
-         call with_defaults() yourself. Nexus's create_system_configuration()
+         call with_defaults() yourself. Nexus's create_configuration()
          applies the default property set before returning. Same verb
          shape, different starting state.
 
       2. ENABLE FINALIZES FOR YOU.
          Aether refuses a merely-frozen config and makes you call
          configuration.activate() first - two bits, your responsibility.
-         Nexus.enable() finalizes the installed configuration on its way
+         Nexus.activate() finalizes the installed configuration on its way
          through. You do not pre-seal it, and trying to reason about it
          with Aether's rule in your head will mislead you.
 
@@ -34,11 +34,11 @@ GOAL: TURNING THE NEXUS ON - and discovering that it does NOT climb the
 
       TWO BITS AGAIN, DIFFERENT NAMES
         nexus.is_configured  - a configuration is installed
-        nexus.is_enabled     - the subsystem is up
+        nexus.is_activated     - the subsystem is up
       Same shape as frozen/activated in lesson 07. Configuration presence
       and subsystem liveness are always separate questions in melder.
 SURFACE EXERCISED: md.Nexus, md.NexusConfiguration,
-                   create_system_configuration, enable, disable
+                   create_configuration, enable, disable
                    (frame mode passed as the string "single")
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 """
@@ -51,19 +51,19 @@ def main() -> None:
 
     # Both bits start down. A constructed Nexus is inert.
     print("start - configured:", nexus.is_configured,
-          "enabled:", nexus.is_enabled)
+          "enabled:", nexus.is_activated)
 
     # THE FACTORY. New instance every call, defaults already applied, and
     # nothing installed onto Nexus by the act of creating it.
-    config = nexus.create_system_configuration()
+    config = nexus.create_configuration()
     assert isinstance(config, md.NexusConfiguration)
-    second = nexus.create_system_configuration()
+    second = nexus.create_configuration()
     assert second is not config, "the factory hands back a NEW config each call"
     print("factory: fresh pre-defaulted config, not installed")
 
     # Still inert - proof that create_* did not wire anything.
-    assert nexus.is_enabled is False
-    print("after create - enabled:", nexus.is_enabled)
+    assert nexus.is_activated is False
+    print("after create - enabled:", nexus.is_activated)
 
     # Frame mode is one of three. Pass the NAME - the setter is typed
     # Union[NexusFrameMode, str] and normalizes for you, so a typo is a
@@ -75,12 +75,12 @@ def main() -> None:
     # ENABLE. Installs the config and finalizes it on the way through -
     # note that we never called finalize() or freeze() ourselves.
     assert config.frozen is False, "we did not seal it; enable will"
-    nexus.enable(config)
+    nexus.activate(config)
     assert nexus.is_configured is True
-    assert nexus.is_enabled is True
+    assert nexus.is_activated is True
     assert config.frozen is True, "enable finalized the config for us"
     print("after enable - configured:", nexus.is_configured,
-          "enabled:", nexus.is_enabled, "config frozen:", config.frozen)
+          "enabled:", nexus.is_activated, "config frozen:", config.frozen)
 
     # THE CONTRAST WORTH REMEMBERING. Aether would have refused this exact
     # sequence: it requires configuration.activate() before the subsystem
@@ -91,11 +91,11 @@ def main() -> None:
 
     # disable() puts the subsystem back down. The configuration stays
     # installed - liveness went away, configuration did not.
-    nexus.disable()
-    assert nexus.is_enabled is False
+    nexus.deactivate()
+    assert nexus.is_activated is False
     assert nexus.is_configured is True
     print("after disable - configured:", nexus.is_configured,
-          "enabled:", nexus.is_enabled)
+          "enabled:", nexus.is_activated)
 
     print()
     print("create_* builds and hands over; it never installs")

@@ -114,7 +114,7 @@ def _run_case(
 
     old_enabled = gc.isenabled()
     if gc_mode == "disabled_during_loop":
-        gc.disable()
+        gc.deactivate()
 
     try:
         t0 = time.perf_counter()
@@ -128,9 +128,9 @@ def _run_case(
     finally:
         if gc_mode == "disabled_during_loop":
             if old_enabled:
-                gc.enable()
+                gc.activate()
             else:
-                gc.disable()
+                gc.deactivate()
 
     t_gc0 = time.perf_counter()
     unreachable = gc.collect()

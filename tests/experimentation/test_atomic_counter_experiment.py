@@ -40,9 +40,9 @@ def _gil_runtime_mode() -> str:
     Returns:
         "gil", "no-gil", or "unknown".
     """
-    is_enabled = getattr(sys, "_is_gil_enabled", None)
-    if callable(is_enabled):
-        return "no-gil" if not is_enabled() else "gil"
+    is_activated = getattr(sys, "_is_gil_enabled", None)
+    if callable(is_activated):
+        return "no-gil" if not is_activated() else "gil"
     return "unknown"
 
 

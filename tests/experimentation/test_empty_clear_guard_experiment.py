@@ -95,16 +95,16 @@ def _measure(label: str, runner: Callable[[List[list[object]]], None]) -> _Bench
         for _ in range(REPEATS):
             containers = _build_empty_lists()
             gc.collect()
-            gc.disable()
+            gc.deactivate()
             start_ns = time.perf_counter_ns()
             runner(containers)
             elapsed_ns = time.perf_counter_ns() - start_ns
             durations.append(elapsed_ns)
             if gc_was_enabled:
-                gc.enable()
+                gc.activate()
     finally:
         if gc_was_enabled and not gc.isenabled():
-            gc.enable()
+            gc.activate()
 
     return _BenchmarkResult(label=label, durations_ns=tuple(durations))
 

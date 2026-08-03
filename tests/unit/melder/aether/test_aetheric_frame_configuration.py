@@ -123,10 +123,10 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
     aether._ensure_frame("ops").bind_frame_configuration(frame_configuration)
 
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_allowed_target_frame_names(("ops",))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     descriptor = nexus._get_or_create_frame_descriptor("ops")
     descriptor.set_frame_overview(
         FrameRecord(

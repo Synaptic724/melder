@@ -39,10 +39,10 @@ def fresh_nexus_runtime() -> None:
 
 def _create_enabled_nexus() -> Nexus:
     nexus = Nexus(aether=Aether())
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     return nexus
 
 
@@ -359,13 +359,13 @@ def test_nexus_refresh_rift_projection_sets_reenables_gates_after_refresh_failur
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     nexus = Nexus(aether=Aether())
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_projection_refresh_gate(True)
     configuration.with_projection_refresh_gate_timeout_seconds(7.0)
     configuration.with_projection_refresh_gate_poll_interval_seconds(0.5)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     calls = []
 
@@ -425,7 +425,7 @@ def test_nexus_refresh_rift_projection_sets_reenables_gates_after_refresh_failur
 
 def test_nexus_refresh_rift_projection_sets_returns_early_when_disabled() -> None:
     nexus = Nexus(aether=Aether())
-    nexus.disable()
+    nexus.deactivate()
     calls = []
     nexus._rifts_by_id = {
         "rift-1": SimpleNamespace(
@@ -638,11 +638,11 @@ def test_nexus_check_for_aetheric_frame_matrix(
         expect_removed: bool,
 ) -> None:
     nexus = Nexus(aether=Aether())
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     if enabled:
-        nexus.enable(configuration)
+        nexus.activate(configuration)
     else:
         nexus._configuration = configuration
         nexus._configured = True

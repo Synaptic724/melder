@@ -67,9 +67,9 @@ def _profile_one_build(label: str, report_stream: io.StringIO) -> None:
     Profile one full runtime build (binds + conjure) and append the report.
     """
     profiler = cProfile.Profile()
-    profiler.enable()
+    profiler.activate()
     ops = _bench._build_runtime_melder()
-    profiler.disable()
+    profiler.deactivate()
     ops.cleanup()
 
     stats = pstats.Stats(profiler, stream=report_stream)

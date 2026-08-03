@@ -91,10 +91,10 @@ def main() -> None:
             _support.run_gauntlet_once(ops, cfg, iteration_ix)
 
         profiler = cProfile.Profile()
-        profiler.enable()
+        profiler.activate()
         for iteration_ix in range(PROFILED_ITERATIONS):
             _support.run_gauntlet_once(ops, cfg, iteration_ix)
-        profiler.disable()
+        profiler.deactivate()
 
         report_stream = io.StringIO()
         stats = pstats.Stats(profiler, stream=report_stream)

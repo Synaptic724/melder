@@ -58,8 +58,9 @@ class StrategyBuilder(Cleanable):
 
     AGENT_PURPOSE:
         access: internal. Resolves a transaction type to its registered
-        strategy class. Seeded with the plane's six families at construction;
-        a type with no registration raises rather than guessing.
+        strategy class. Seeded with the plane's own family for every vocabulary
+        member at construction; a type with no registration raises rather than
+        guessing.
     """
 
     __slots__ = Cleanable.__slots__ + ["_lock", "_strategies"]
@@ -127,6 +128,9 @@ class StrategyBuilder(Cleanable):
         from melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy import (
             IndexGraftTransactionStrategy,
         )
+        from melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy import (
+            SubsystemConfigureTransactionStrategy,
+        )
         from melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy import (
             SubsystemDisableTransactionStrategy,
         )
@@ -149,6 +153,10 @@ class StrategyBuilder(Cleanable):
         self.register(
             transaction_type=TransactionType.INDEX_GRAFT,
             strategy=IndexGraftTransactionStrategy,
+        )
+        self.register(
+            transaction_type=TransactionType.SUBSYSTEM_CONFIGURE,
+            strategy=SubsystemConfigureTransactionStrategy,
         )
         self.register(
             transaction_type=TransactionType.SUBSYSTEM_ENABLE,

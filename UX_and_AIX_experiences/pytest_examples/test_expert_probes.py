@@ -621,9 +621,9 @@ def test_probe_two_research_sets_do_not_share_residency():
 
 def _enabled_nexus():
     nexus = Nexus()
-    config = nexus.create_system_configuration()
+    config = nexus.create_configuration()
     config.with_rift_creation_enabled(True)
-    nexus.enable(config)
+    nexus.activate(config)
     return nexus
 
 

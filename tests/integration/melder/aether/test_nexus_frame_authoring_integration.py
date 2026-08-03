@@ -31,14 +31,14 @@ def _create_enabled_nexus(
         max_nexus_frame_count: int = 8,
 ) -> Nexus:
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode(nexus_frame_mode)
     if nexus_frame_mode == "single":
         max_nexus_frame_count = 1
     configuration.with_max_nexus_frame_count(max_nexus_frame_count)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     return nexus
 
 

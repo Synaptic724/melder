@@ -72,9 +72,9 @@ import melder as md
 
 def main() -> None:
     nexus = md.Nexus()
-    system_config = nexus.create_system_configuration()
+    system_config = nexus.create_configuration()
     system_config.with_rift_creation_enabled(True)
-    nexus.enable(system_config)
+    nexus.activate(system_config)
 
     rift_config = nexus.create_rift_configuration()
     rift_config.with_space_type("capability")

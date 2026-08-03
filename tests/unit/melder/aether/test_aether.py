@@ -221,7 +221,7 @@ def test_initialization_defers_default_frame_until_first_use(mock_frame_cls):
     assert a._default_frame is mock_frame_cls.return_value
     assert isinstance(a._nexus, Nexus)
     assert a._nexus.is_configured is False
-    assert a._nexus.is_enabled is False
+    assert a._nexus.is_activated is False
     assert isinstance(a._crystallizer, Crystallizer)
     assert a._crystallizer.is_configured is False
     assert a._crystallizer.is_activated is False
@@ -510,7 +510,7 @@ def test_aether_privately_hosts_nexus_singleton(aether_with_mocks):
 
     assert a._nexus is nexus
     assert nexus.is_configured is False
-    assert nexus.is_enabled is False
+    assert nexus.is_activated is False
 
 
 def test_aether_privately_hosts_crystallizer_singleton(aether_with_mocks):

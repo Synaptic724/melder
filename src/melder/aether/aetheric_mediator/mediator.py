@@ -30,6 +30,7 @@ from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.information_registry import (
     InformationRegistry,
 )
+from melder.aether.aetheric_mediator.participation import ParticipationState
 from melder.aether.aetheric_mediator.staged_transaction import StagedTransaction
 from melder.aether.aetheric_mediator.strategy_builder import StrategyBuilder
 from melder.aether.aetheric_mediator.transaction_request import TransactionRequest
@@ -111,7 +112,6 @@ class Mediator(Cleanable):
         "_max_wait_seconds",
         "_thread_local",
         "_sessions_by_request_id",
-        "_participants",
     ]
 
     # Longest single park in the admission retry loop, and therefore the worst
@@ -152,7 +152,6 @@ class Mediator(Cleanable):
         self._max_wait_seconds: float = max_wait_seconds
         self._thread_local: threading.local = threading.local()
         self._sessions_by_request_id: Dict[str, TransactionSession] = {}
-        self._participants: Dict[str, float] = {}
 
     def cleanup(self) -> None:
         """
@@ -191,9 +190,6 @@ class Mediator(Cleanable):
             self._cleaned = True
             sessions = list(self._sessions_by_request_id.values())
             self._sessions_by_request_id.clear()
-            # Names and floats only - nothing here owns a subsystem, so this
-            # is a clear, not a teardown cascade.
-            self._participants.clear()
         # Borrowers first - see the contract above.
         self._strategy_builder.cleanup()
         self._information_registry.cleanup()
@@ -207,7 +203,6 @@ class Mediator(Cleanable):
         # has finished dying rather than one mid-teardown.
         self._claim_table.cleanup()
         del self._sessions_by_request_id
-        del self._participants
         del self._thread_local
         del self._max_wait_seconds
         del self._strategy_builder
@@ -238,9 +233,23 @@ class Mediator(Cleanable):
               strings.
             - IDEMPOTENT. Re-announcing refreshes the timestamp and returns
               False, so an activate/deactivate/activate cycle is safe and a
-              subsystem never needs to check first.
+              subsystem never needs to check first. It does NOT move the
+              subsystem's participation state - a subsystem that re-announces
+              while ENABLED stays ENABLED, because knocking it back to
+              REGISTERED would silence something that is running.
+            - REGISTERING IS NOT ENABLING. This lands the subsystem at
+              `ParticipationState.REGISTERED`: known to the plane, running
+              nothing, emitting nothing. Only a committed `SUBSYSTEM_ENABLE`
+              moves it to the one state that emits.
             - THIS IS NOT ADMISSION. Registering grants no claim and gates
               nothing. It is a roster, not a permission.
+            - STORED IN THE INFORMATION REGISTRY, NOT HERE. The roster and the
+              participation states are the same fact at two resolutions, so
+              they live in one store. Keeping a second map on this object was
+              exactly the "second place to be wrong" the registry's own
+              contract forbids, and the two drifted immediately: this roster
+              said `crystallizer` was live while the registry, written only by
+              committed transactions, had never heard of it.
 
         Args:
             participant:
@@ -255,59 +264,71 @@ class Mediator(Cleanable):
             ValueError: If `participant` is empty or whitespace-only.
         """
         self.check_cleaned()
-        if not participant or not participant.strip():
-            raise ValueError(
-                "register_participant requires a non-empty subsystem name; it "
-                "must match the name used for ScopeKey.subsystem(...)."
-            )
-        with self._lock:
-            first = participant not in self._participants
-            self._participants[participant] = time.time()
-            return first
+        return self._information_registry.announce_participant(participant)
 
     def unregister_participant(self, participant: str) -> bool:
         """
-        Record that one subsystem is no longer live.
+        Drop one subsystem from the roster entirely.
 
         Contract:
-            Idempotent: unregistering an absent participant returns False, so
-            a teardown path may call this unconditionally. Does NOT release
-            any claims that subsystem holds - claims belong to transactions
-            and are released by finalising those, never by roster changes.
+            - THIS IS NOT `SUBSYSTEM_DISABLE`. Disabling is a transaction: it
+              moves the subsystem to `DISABLED`, keeps its row, and keeps the
+              conditions it was last running with, because "it ran and stopped"
+              is a fact worth reporting. This verb removes the row, so the
+              plane goes back to never having heard of the subsystem. Use it
+              for teardown, not for deactivation.
+            - Idempotent: unregistering an absent participant returns False, so
+              a teardown path may call this unconditionally.
+            - Does NOT release any claims that subsystem holds - claims belong
+              to transactions and are released by finalising those, never by
+              roster changes.
 
         Args:
             participant: The subsystem name to drop.
 
         Returns:
-            bool: True when a live participant was removed.
+            bool: True when a known participant was removed.
 
         Raises:
             RuntimeError: If the plane has been cleaned.
         """
         self.check_cleaned()
-        with self._lock:
-            return self._participants.pop(participant, None) is not None
+        return self._information_registry.forget_participant(participant)
 
     def has_participant(self, participant: str) -> bool:
         """
-        Report whether one subsystem has announced itself.
+        Report whether one subsystem has announced itself, in ANY state.
+
+        Contract:
+            True for a subsystem the plane knows about regardless of whether it
+            is running - REGISTERED, CONFIGURED, ENABLED and DISABLED all read
+            True. This answers "is it wired in", not "is it working". For the
+            latter, and for anything gating emission, use `is_participating`.
 
         Args:
             participant: The subsystem name to test.
 
         Returns:
-            bool: True when the subsystem is registered.
+            bool: True when the subsystem is known.
 
         Raises:
             RuntimeError: If the plane has been cleaned.
         """
         self.check_cleaned()
-        with self._lock:
-            return participant in self._participants
+        return (
+            self._information_registry.participation_state(participant)
+            is not None
+        )
 
     def participants(self) -> Tuple[str, ...]:
         """
-        Return every registered subsystem name, sorted.
+        Return every known subsystem name, sorted, in any state.
+
+        Contract:
+            THE ROSTER, NOT THE EMISSION SET. Includes subsystems that are
+            registered but never started and ones that have been disabled. For
+            "who is actually running", use `participants_in_state` with
+            `ParticipationState.ENABLED`.
 
         Returns:
             Tuple[str, ...]: Sorted participant names, empty when none.
@@ -316,8 +337,84 @@ class Mediator(Cleanable):
             RuntimeError: If the plane has been cleaned.
         """
         self.check_cleaned()
-        with self._lock:
-            return tuple(sorted(self._participants))
+        return self._information_registry.known_subsystems()
+
+    def is_participating(self, participant: str) -> bool:
+        """
+        Report whether one subsystem is enabled and active. THE EMISSION GATE.
+
+        Purpose:
+            Answer the question owner constraint 6 poses - emit for a subsystem
+            ONLY when it is enabled and active, otherwise do not care - at the
+            plane's own front door, so a caller does not have to reach through
+            `reporting` to ask it.
+
+        Contract:
+            True for `ENABLED` alone. A subsystem that is registered,
+            configured, disabled, or unknown all read False, because none of
+            them is running.
+
+            DO NOT SUBSTITUTE `has_participant`. The gap between the two is
+            every subsystem that exists but is not running, which is precisely
+            the population this gate is here to exclude.
+
+        Args:
+            participant: The subsystem name to test.
+
+        Returns:
+            bool: True only when the subsystem is enabled and active.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        self.check_cleaned()
+        return self._information_registry.is_participating(participant)
+
+    def participation_state(
+            self,
+            participant: str,
+    ) -> Optional[ParticipationState]:
+        """
+        Return one subsystem's participation state, if the plane knows it.
+
+        Contract:
+            `None` means the plane has NEVER HEARD of this subsystem, which is
+            a different fact from `DISABLED` and usually a different bug: the
+            first is a subsystem nobody wired in, the second is one that was
+            switched off on purpose.
+
+        Args:
+            participant: The subsystem name to look up.
+
+        Returns:
+            Optional[ParticipationState]: The current state, or None when
+                unknown.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        self.check_cleaned()
+        return self._information_registry.participation_state(participant)
+
+    def participants_in_state(
+            self,
+            state: ParticipationState,
+    ) -> Tuple[str, ...]:
+        """
+        Return every subsystem currently in one participation state, sorted.
+
+        Args:
+            state: The state to filter by.
+
+        Returns:
+            Tuple[str, ...]: Subsystem names in that state.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+            TypeError: If `state` is not a `ParticipationState`.
+        """
+        self.check_cleaned()
+        return self._information_registry.participants_in_state(state)
 
     @property
     def strategies(self) -> StrategyBuilder:

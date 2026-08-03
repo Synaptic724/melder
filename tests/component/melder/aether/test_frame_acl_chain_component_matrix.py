@@ -303,10 +303,10 @@ def test_component_frame_detach_cleans_container_after_chain_growth(
     """
     aether = Aether()
     nexus = Nexus(aether=aether)
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     frame = aether._ensure_frame(frame_name)
     nexus._get_or_create_frame_descriptor(frame_name)
     container = nexus._frame_acl_manager._get_required_frame_acl_container(frame_name)

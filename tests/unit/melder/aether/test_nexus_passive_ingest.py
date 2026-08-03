@@ -111,7 +111,7 @@ def test_publish_frame_record_does_not_require_nexus_enable() -> None:
     nexus = Nexus()
     spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
 
-    assert nexus.is_enabled is False
+    assert nexus.is_activated is False
     assert nexus._publish_frame_record(spellbook) is True
 
     record = nexus._get_required_frame_descriptor("ops").frame_overview

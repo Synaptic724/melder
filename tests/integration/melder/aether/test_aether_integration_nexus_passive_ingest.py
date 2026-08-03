@@ -73,7 +73,7 @@ def test_integration_spellbook_conjure_populates_passive_nexus_records() -> None
         Verify successful Spellbook conjure still populates passive Nexus frame,
         conduit, and spell records through the manager-owned boundary.
     Contract:
-        - Passive publication does not require `Nexus.enable()`.
+        - Passive publication does not require `Nexus.activate()`.
         - Conjure binds frame posture, creates the root conduit, and publishes
           frame/conduit/spell records.
     Returns:
@@ -90,7 +90,7 @@ def test_integration_spellbook_conjure_populates_passive_nexus_records() -> None
     conduit = spellbook.conjure(name="root")
     try:
         nexus = Nexus()
-        assert nexus.is_enabled is False
+        assert nexus.is_activated is False
 
         descriptor = nexus._get_required_frame_descriptor("ops")
         assert descriptor.frame_configuration is not None
@@ -113,7 +113,7 @@ def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_r
         Nexus and cleanup removes them again.
     Contract:
         - Late binds on a Rift-enabled frame publish a new spell record without
-          requiring Nexus.enable().
+          requiring Nexus.activate().
         - Conduit cleanup removes the late-bound spell record from the passive
           descriptor store.
     Returns:

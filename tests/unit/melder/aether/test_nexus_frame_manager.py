@@ -211,7 +211,7 @@ class _FakeNexus:
     def configuration(self):
         return self._configuration
 
-    def _require_enabled(self) -> None:
+    def _require_activated(self) -> None:
         self.enabled_checked = True
 
     def _get_required_rift(self, rift_id: str):

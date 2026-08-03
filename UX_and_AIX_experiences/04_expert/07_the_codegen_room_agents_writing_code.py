@@ -74,9 +74,9 @@ GATES = (
 
 def main() -> None:
     nexus = md.Nexus()
-    system_config = nexus.create_system_configuration()
+    system_config = nexus.create_configuration()
     system_config.with_rift_creation_enabled(True)
-    nexus.enable(system_config)
+    nexus.activate(system_config)
 
     # THE THIRD ROOM KIND. static and capability were advanced 11;
     # codegen is the one that accepts source.

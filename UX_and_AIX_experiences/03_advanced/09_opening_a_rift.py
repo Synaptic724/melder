@@ -5,7 +5,7 @@ GOAL: OPENING A RIFT - and meeting melder's most repeated law for the
 
       THE PATH (each step needs the one above it)
         nexus = md.Nexus()
-        nexus.enable(nexus.create_system_configuration())    # lesson 08
+        nexus.activate(nexus.create_configuration())    # lesson 08
         rift_config = nexus.create_rift_configuration()
         rift_config.with_space_type("static")
         rift = nexus.create_rift(configuration=rift_config, rift_name="ops")
@@ -22,7 +22,7 @@ GOAL: OPENING A RIFT - and meeting melder's most repeated law for the
       subsystem splits it into two bits, and only the names change:
 
         lesson 07  config   frozen         / activated
-        lesson 08  nexus    is_configured  / is_enabled
+        lesson 08  nexus    is_configured  / is_activated
         lesson 09  rift     is_registered  / is_active
 
       Once you have seen it three times it stops being trivia and starts
@@ -48,10 +48,10 @@ def main() -> None:
     nexus = md.Nexus()
 
     # A rift needs a live nexus underneath it - lesson 08's ladder.
-    system_config = nexus.create_system_configuration()
+    system_config = nexus.create_configuration()
     system_config.with_rift_creation_enabled(True)
-    nexus.enable(system_config)
-    assert nexus.is_enabled is True
+    nexus.activate(system_config)
+    assert nexus.is_activated is True
     print("nexus enabled; rift creation permitted")
 
     # The per-rift configuration is its own object with its own factory.
@@ -64,7 +64,7 @@ def main() -> None:
     print("rift configuration staged: static room named 'health'")
 
     # create_rift finalizes the configuration on the way through - the same
-    # courtesy Nexus.enable() extended in lesson 08, and still the opposite
+    # courtesy Nexus.activate() extended in lesson 08, and still the opposite
     # of what Aether does.
     rift = nexus.create_rift(configuration=rift_config, rift_name="ops")
     assert isinstance(rift, md.Rift)

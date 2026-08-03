@@ -46,14 +46,14 @@ def _create_enabled_nexus() -> Nexus:
     """
     Aether()
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_multiple_target_frames(True)
     configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     return nexus
 
 
@@ -175,9 +175,9 @@ def test_rift_constructor_rejects_invalid_nexus_and_configuration_inputs() -> No
             configuration=configuration,
         )
 
-    system_configuration = configured_only_nexus.create_system_configuration()
-    configured_only_nexus.enable(system_configuration)
-    configured_only_nexus.disable()
+    system_configuration = configured_only_nexus.create_configuration()
+    configured_only_nexus.activate(system_configuration)
+    configured_only_nexus.deactivate()
     with pytest.raises(RuntimeError, match="enabled Nexus"):
         Rift(
             configured_only_nexus,

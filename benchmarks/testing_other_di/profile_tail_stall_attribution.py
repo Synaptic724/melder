@@ -179,7 +179,7 @@ def _run_sweep(thread_count: int) -> None:
         logs = [StallLog() for _ in range(thread_count)]
         gc.collect()
         if GC_DISABLE:
-            gc.disable()
+            gc.deactivate()
         else:
             gc.callbacks.append(gc_log.callback)
         stop_at = time.perf_counter() + DURATION_S
@@ -204,7 +204,7 @@ def _run_sweep(thread_count: int) -> None:
         elapsed = time.perf_counter() - bench_t0
     finally:
         if GC_DISABLE:
-            gc.enable()
+            gc.activate()
         elif gc_log.callback in gc.callbacks:
             gc.callbacks.remove(gc_log.callback)
         root.permanent_cleanup()

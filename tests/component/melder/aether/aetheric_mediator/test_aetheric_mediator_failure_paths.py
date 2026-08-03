@@ -561,12 +561,12 @@ class _Sentinel:
 def _gc_off():
     """Run a block with the cycle collector disabled, restoring prior state."""
     was_enabled = gc.isenabled()
-    gc.disable()
+    gc.deactivate()
     try:
         yield
     finally:
         if was_enabled:
-            gc.enable()
+            gc.activate()
 
 
 def _register_capturing_inverses(session, log, count=3):

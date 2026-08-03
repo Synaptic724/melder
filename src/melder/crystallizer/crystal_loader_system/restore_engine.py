@@ -1535,11 +1535,11 @@ class RestoreEngine(Cleanable):
                 ),
             )
         nexus = Nexus()
-        nexus.enable(configuration)
+        nexus.activate(configuration)
         if self._nexus_state_name == "disabled":
             # Recorded history: the world sealed with a disabled Nexus -
             # enable-then-disable replays both truthful acts.
-            nexus.disable()
+            nexus.deactivate()
         self._record_built_unit("nexus", nexus)
         self._report.record_built("nexus")
 

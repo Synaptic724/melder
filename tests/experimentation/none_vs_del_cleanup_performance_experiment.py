@@ -122,17 +122,17 @@ def _measure_cleanup(
         for _ in range(REPEATS):
             batch = _build_batch(probe_type)
             gc.collect()
-            gc.disable()
+            gc.deactivate()
             start_ns = time.perf_counter_ns()
             for probe in batch:
                 probe.cleanup()
             elapsed_ns = time.perf_counter_ns() - start_ns
             durations.append(elapsed_ns)
             if gc_was_enabled:
-                gc.enable()
+                gc.activate()
     finally:
         if gc_was_enabled and not gc.isenabled():
-            gc.enable()
+            gc.activate()
 
     return _CleanupMeasurement(
         label=label,

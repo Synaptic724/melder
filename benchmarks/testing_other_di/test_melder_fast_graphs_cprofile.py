@@ -689,7 +689,7 @@ def _profile_execution(
 
     start = time.perf_counter()
     if profile_enabled:
-        profiler.enable()
+        profiler.activate()
     try:
         fn()
     finally:
@@ -711,7 +711,7 @@ def _profile_execution(
             ):
                 normalized_sample_metadata["sample_actual_duration_s"] = elapsed
         if profile_enabled:
-            profiler.disable()
+            profiler.deactivate()
 
         if profile_enabled:
             profile_path = _dump_profile(label, profiler)

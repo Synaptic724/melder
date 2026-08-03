@@ -1,5 +1,11 @@
 """
-Unit tests for the plane's six transaction families.
+Unit tests for the plane's transaction families - the CLAIM half.
+
+What each family WRITES at commit is covered separately, in
+`test_aetheric_mediator_participation_unit.py`. That split is deliberate: the
+three subsystem families claim identically and differ only in their commit
+delta, so a file that tested claims alone would show them as interchangeable
+and a reader would conclude the split was pointless.
 
 WHY THIS FILE EXISTS: the strategies shipped with no coverage of their own.
 
@@ -37,6 +43,9 @@ from melder.aether.aetheric_mediator.strategies.frame_create_transaction_strateg
 from melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy import (
     IndexGraftTransactionStrategy,
 )
+from melder.aether.aetheric_mediator.strategies.subsystem_configure_transaction_strategy import (
+    SubsystemConfigureTransactionStrategy,
+)
 from melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy import (
     SubsystemDisableTransactionStrategy,
 )
@@ -51,8 +60,17 @@ ALL_FAMILIES = (
     FormationLoadTransactionStrategy,
     FrameCreateTransactionStrategy,
     IndexGraftTransactionStrategy,
+    SubsystemConfigureTransactionStrategy,
     SubsystemDisableTransactionStrategy,
     SubsystemEnableTransactionStrategy,
+)
+
+# The three lifecycle families claim the same surface on purpose. Naming them
+# once keeps that fact in one place instead of three parametrize lists.
+SUBSYSTEM_FAMILIES = (
+    SubsystemConfigureTransactionStrategy,
+    SubsystemEnableTransactionStrategy,
+    SubsystemDisableTransactionStrategy,
 )
 
 # `agent_repair` is excluded from the jurisdiction sweep because its claim set
@@ -202,12 +220,16 @@ def test_index_graft_marks_the_frame_with_intent_not_exclusive(submitter):
     assert plan[ScopeKey.frame("A")] is ClaimMode.INTENT
 
 
-@pytest.mark.parametrize(
-    "family",
-    [SubsystemEnableTransactionStrategy, SubsystemDisableTransactionStrategy],
-)
+@pytest.mark.parametrize("family", SUBSYSTEM_FAMILIES)
 def test_subsystem_transitions_claim_the_subsystem_exclusively(family, submitter):
-    """Enable and disable write the same surface, so they claim identically."""
+    """
+    Configure, enable and disable write the same surface, so they claim alike.
+
+    Asserting the three plans are EQUAL is the point, not an accident of the
+    parametrize. All three mutate one subsystem's row, so all three must
+    exclude each other; a family that quietly narrowed its claim would let a
+    configure land halfway through an activation.
+    """
     plan = family.build_start_plan(
         submitter=submitter, metadata={"subsystem_name": "crystallizer"}
     )
@@ -223,6 +245,7 @@ def test_subsystem_transitions_claim_the_subsystem_exclusively(family, submitter
         (FormationLoadTransactionStrategy, "target_frame_name"),
         (FrameCreateTransactionStrategy, "frame_name"),
         (IndexGraftTransactionStrategy, "host_frame_name"),
+        (SubsystemConfigureTransactionStrategy, "subsystem_name"),
         (SubsystemEnableTransactionStrategy, "subsystem_name"),
         (SubsystemDisableTransactionStrategy, "subsystem_name"),
     ],
@@ -329,6 +352,12 @@ def test_repair_with_no_usable_scopes_takes_the_world(candidate, submitter):
          "a whole-world replay must not run mid-activation"),
         ("en_c", "dis_c", True,
          "enable and disable of one subsystem must serialise"),
+        ("cfg_c", "en_c", True,
+         "conditions must not land halfway through an activation"),
+        ("cfg_c", "cfg_c2", True,
+         "two configures of one subsystem must not race on its row"),
+        ("cfg_c", "en_n", False,
+         "configuring one subsystem does not stall another's activation"),
         ("repair_a", "form_a", True,
          "repair holds the frame exclusively"),
     ],
@@ -359,6 +388,10 @@ def test_isolation_holds_on_a_real_claim_table(
         "en_n": SubsystemEnableTransactionStrategy.build_start_plan(
             submitter=submitter, metadata={"subsystem_name": "nexus"}),
         "dis_c": SubsystemDisableTransactionStrategy.build_start_plan(
+            submitter=submitter, metadata={"subsystem_name": "crystallizer"}),
+        "cfg_c": SubsystemConfigureTransactionStrategy.build_start_plan(
+            submitter=submitter, metadata={"subsystem_name": "crystallizer"}),
+        "cfg_c2": SubsystemConfigureTransactionStrategy.build_start_plan(
             submitter=submitter, metadata={"subsystem_name": "crystallizer"}),
         "repair_a": AgentRepairTransactionStrategy.build_start_plan(
             submitter=submitter, metadata={"repair_scopes": [ScopeKey.frame("A")]}),

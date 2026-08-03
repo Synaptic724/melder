@@ -60,6 +60,13 @@ class TransactionType(StrEnum):
         - SUBSYSTEM_ENABLE / SUBSYSTEM_DISABLE: the activation transitions the
           owner named as the wiring gate - a subsystem participates only when
           enabled and active, and emits its basic conditions at that edge.
+        - SUBSYSTEM_CONFIGURE: declaring how a subsystem WOULD run, without
+          switching it on. Split from SUBSYSTEM_ENABLE rather than folded into
+          it because the two answer different questions and a subsystem can sit
+          in the first state indefinitely: "its settings are recorded" is not
+          "it is running", and a plane that could not tell them apart would
+          report a configured-but-never-started subsystem as either live or
+          entirely unknown. Both readings send the reader to the wrong place.
         - AGENT_REPAIR: the leave-broken-for-repair outcome. An agent mending a
           half-built world is doing structural work and must be able to claim
           it, or "leave it for an agent" means "leave it and stop the world".
@@ -81,6 +88,7 @@ class TransactionType(StrEnum):
     CHECKPOINT_LOAD = "checkpoint_load"
     FORMATION_LOAD = "formation_load"
     INDEX_GRAFT = "index_graft"
+    SUBSYSTEM_CONFIGURE = "subsystem_configure"
     SUBSYSTEM_ENABLE = "subsystem_enable"
     SUBSYSTEM_DISABLE = "subsystem_disable"
     AGENT_REPAIR = "agent_repair"

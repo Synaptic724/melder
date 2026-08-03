@@ -229,7 +229,7 @@ for _, worker in workers:
         bench_worker(worker, iterations)
 
 gc_was_enabled = gc.isenabled()
-gc.disable()
+gc.deactivate()
 
 try:
     for _ in range(repeats):
@@ -242,7 +242,7 @@ try:
             results_by_name[name] = result
 finally:
     if gc_was_enabled:
-        gc.enable()
+        gc.activate()
 
 rows = [
     summarize(name, times_by_name[name], iterations)

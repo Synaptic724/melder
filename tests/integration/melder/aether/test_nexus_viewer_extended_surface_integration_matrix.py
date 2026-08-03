@@ -155,7 +155,7 @@ def _build_real_room_viewer() -> object:
     )
     conduit = spellbook.conjure(name="root")
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     system_configuration.with_target_frame_override(True)
@@ -163,7 +163,7 @@ def _build_real_room_viewer() -> object:
     system_configuration.with_max_target_frame_count(2)
     system_configuration.with_default_space_type(RiftSpaceType.capability)
     system_configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
     rift_configuration = (
         nexus.create_rift_configuration()
         .with_space_type(RiftSpaceType.capability)
@@ -190,7 +190,7 @@ def _build_real_rift_viewer() -> object:
     )
     conduit = spellbook.conjure(name="root")
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     system_configuration.with_target_frame_override(True)
@@ -198,7 +198,7 @@ def _build_real_rift_viewer() -> object:
     system_configuration.with_max_target_frame_count(2)
     system_configuration.with_default_space_type(RiftSpaceType.capability)
     system_configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
 
     rift_configuration = (
         nexus.create_rift_configuration()
@@ -254,7 +254,7 @@ def _build_real_multi_frame_room_viewer() -> object:
     ops_conduit = ops_spellbook.conjure(name="ops_root")
     finance_conduit = finance_spellbook.conjure(name="finance_root")
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     system_configuration.with_target_frame_override(True)
@@ -262,7 +262,7 @@ def _build_real_multi_frame_room_viewer() -> object:
     system_configuration.with_max_target_frame_count(3)
     system_configuration.with_default_space_type(RiftSpaceType.capability)
     system_configuration.with_allowed_target_frame_names(("default", "ops", "finance"))
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
     rift_configuration = (
         nexus.create_rift_configuration()
         .with_space_type(RiftSpaceType.capability)
@@ -324,7 +324,7 @@ def _build_real_multi_frame_rift_viewer() -> object:
     ops_conduit = ops_spellbook.conjure(name="ops_root")
     finance_conduit = finance_spellbook.conjure(name="finance_root")
     nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
+    system_configuration = nexus.create_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     system_configuration.with_target_frame_override(True)
@@ -332,7 +332,7 @@ def _build_real_multi_frame_rift_viewer() -> object:
     system_configuration.with_max_target_frame_count(3)
     system_configuration.with_default_space_type(RiftSpaceType.capability)
     system_configuration.with_allowed_target_frame_names(("default", "ops", "finance"))
-    nexus.enable(system_configuration)
+    nexus.activate(system_configuration)
 
     rift_configuration = (
         nexus.create_rift_configuration()

@@ -125,10 +125,10 @@ def _create_enabled_nexus() -> Nexus:
         allowed.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     return nexus
 
 
@@ -825,7 +825,7 @@ def test_nexus_starts_unconfigured_and_disabled() -> None:
     nexus = Nexus()
 
     assert nexus.is_configured is False
-    assert nexus.is_enabled is False
+    assert nexus.is_activated is False
     with pytest.raises(RuntimeError, match="not configured"):
         _ = nexus.configuration
 
@@ -838,9 +838,9 @@ def test_create_rift_requires_enabled_nexus() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
-    nexus.enable(configuration)
-    nexus.disable()
+    configuration = nexus.create_configuration()
+    nexus.activate(configuration)
+    nexus.deactivate()
 
     with pytest.raises(RuntimeError, match="disabled"):
         nexus.create_rift(rift_name="alpha")
@@ -854,9 +854,9 @@ def test_create_rift_requires_creation_permission() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(False)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     with pytest.raises(ValueError, match="creation is disabled"):
         nexus.create_rift(rift_name="alpha")
@@ -915,13 +915,13 @@ def test_nexus_refresh_rift_projection_sets_for_frame_uses_configured_gate_barri
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_projection_refresh_gate(True)
     configuration.with_projection_refresh_gate_timeout_seconds(9.5)
     configuration.with_projection_refresh_gate_poll_interval_seconds(0.25)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     calls = []
     impacted_rift = SimpleNamespace(
@@ -976,11 +976,11 @@ def test_nexus_refresh_rift_projection_sets_for_frame_can_skip_gate_barrier(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_projection_refresh_gate(False)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     calls = []
     impacted_rift = SimpleNamespace(
@@ -1023,13 +1023,13 @@ def test_nexus_refresh_rift_projection_sets_for_frames_batches_overlapping_rifts
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_projection_refresh_gate(True)
     configuration.with_projection_refresh_gate_timeout_seconds(7.0)
     configuration.with_projection_refresh_gate_poll_interval_seconds(0.5)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     calls = []
     first_impacted_rift = SimpleNamespace(
@@ -1243,8 +1243,8 @@ def test_create_rift_configuration_uses_nexus_defaults() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
-    nexus.enable(configuration)
+    configuration = nexus.create_configuration()
+    nexus.activate(configuration)
     config = nexus.create_rift_configuration()
 
     assert config.get_property("space_type") == RiftSpaceType.static
@@ -1262,8 +1262,8 @@ def test_create_rift_configuration_can_clone_registered_profile() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
-    nexus.enable(configuration)
+    configuration = nexus.create_configuration()
+    nexus.activate(configuration)
 
     profile = nexus.create_rift_configuration()
     profile.with_space_type(RiftSpaceType.codegen)
@@ -1288,8 +1288,8 @@ def test_register_rift_profile_replaces_existing_template_and_cleans_old_clone()
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
-    nexus.enable(configuration)
+    configuration = nexus.create_configuration()
+    nexus.activate(configuration)
 
     first_profile = nexus.create_rift_configuration().with_space_name("ops-room")
     second_profile = nexus.create_rift_configuration().with_space_name("finance-room")
@@ -4578,11 +4578,11 @@ def test_capability_rift_can_attach_to_automatic_target_frame_when_rift_enabled(
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
@@ -5443,14 +5443,14 @@ def test_rift_exposes_frame_link_contract_from_assigned_frames() -> None:
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_multiple_target_frames(True)
     configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration()
@@ -5474,14 +5474,14 @@ def test_rift_get_frame_viewer_returns_room_owned_viewer_from_assigned_frame_con
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_multiple_target_frames(True)
     configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration()
@@ -5510,14 +5510,14 @@ def test_rift_can_target_frame_through_contract_after_nexus_validation() -> None
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_multiple_target_frames(True)
     configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration()
@@ -5574,14 +5574,14 @@ def test_rift_create_frame_link_uses_frame_named_acl_contract_for_viewer_project
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_multiple_target_frames(True)
     configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
@@ -5627,14 +5627,14 @@ def test_rift_refresh_runtime_projections_rebuilds_room_owned_viewer_for_one_eng
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_multiple_target_frames(True)
     configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration()
@@ -5667,12 +5667,12 @@ def test_rift_attaches_room_owned_viewer_to_active_space_and_reads_it_back() -> 
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration().with_space_name("main")
@@ -5710,12 +5710,12 @@ def test_direct_rift_access_can_be_token_gated() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_rift_access_token_required(True)
     configuration.with_rift_access_token("secret")
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift = nexus.create_rift(rift_name="alpha")
 
@@ -5740,23 +5740,23 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
     configuration.with_denied_target_frame_names(("ops",))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     blocked_rift = nexus.create_rift(rift_name="blocked")
     with pytest.raises(ValueError, match="denied"):
         blocked_rift.create_frame_link("ops")
 
-    replacement_configuration = nexus.create_system_configuration()
+    replacement_configuration = nexus.create_configuration()
     replacement_configuration.with_rift_creation_enabled(True)
     replacement_configuration.with_target_frame_override(True)
     replacement_configuration.with_allowed_target_frame_names(("default", "ops"))
     replacement_configuration.with_denied_target_frame_names(tuple())
-    nexus.enable(replacement_configuration)
+    nexus.activate(replacement_configuration)
     _seed_frame_descriptor("ops")
     rift = nexus.create_rift(rift_name="allowed")
     rift.create_frame_link("ops")
@@ -5773,11 +5773,11 @@ def test_static_rift_requires_target_frame_ai_profiles() -> None:
     """
     _bind_target_frame_configuration("ops", rift_enabled=False)
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
         RiftSpaceType.static
@@ -5802,11 +5802,11 @@ def test_codegen_rift_requires_target_frame_ai_native_enabled() -> None:
         system_state=SystemState.dynamic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
         RiftSpaceType.codegen
@@ -5851,11 +5851,11 @@ def test_codegen_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
         system_state=SystemState.dynamic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
@@ -5883,11 +5883,11 @@ def test_static_rift_can_attach_to_automatic_target_frame_when_rift_enabled() ->
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
@@ -5914,11 +5914,11 @@ def test_target_frame_requires_existing_descriptor_truth() -> None:
         system_state=SystemState.automatic,
     )
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift = nexus.create_rift(rift_name="ops-static")
 
@@ -5943,12 +5943,12 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     assert shared_rift.get_nexus_frame() is shared_nexus.get_nexus_frame_for_rift(shared_rift.id)
 
     isolated_nexus = Nexus()
-    configuration = isolated_nexus.create_system_configuration()
+    configuration = isolated_nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("one_per_workspace")
     configuration.with_max_nexus_frame_count(2)
-    isolated_nexus.enable(configuration)
+    isolated_nexus.activate(configuration)
 
     isolated_rift = isolated_nexus.create_rift(rift_name="isolated")
     private_frame_name = "aetheric_frame_system:{0}".format(isolated_rift.id)
@@ -5967,11 +5967,11 @@ def test_rift_create_frame_link_rejects_other_private_nexus_frame_in_one_per_wor
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_nexus_frame_mode("one_per_workspace")
     configuration.with_max_nexus_frame_count(3)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     owner_rift = nexus.create_rift(rift_name="owner")
     other_rift = nexus.create_rift(rift_name="other")
@@ -6020,12 +6020,12 @@ def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("one_per_workspace")
     configuration.with_max_nexus_frame_count(2)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift = nexus.create_rift(rift_name="isolated")
     frame_name = rift.create_nexus_frame()._aetheric_frame_name
@@ -6084,12 +6084,12 @@ def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("one_per_workspace")
     configuration.with_max_nexus_frame_count(3)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
@@ -6110,12 +6110,12 @@ def test_one_per_workspace_mode_rejects_immutable_private_frame_creation() -> No
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("one_per_workspace")
     configuration.with_max_nexus_frame_count(3)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift = nexus.create_rift(rift_name="isolated")
 
@@ -6131,12 +6131,12 @@ def test_indexed_mode_allows_shared_lookup_by_explicit_name() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("indexed")
     configuration.with_max_nexus_frame_count(4)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
@@ -6159,12 +6159,12 @@ def test_indexed_mode_can_create_explicit_new_frame() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("indexed")
     configuration.with_max_nexus_frame_count(4)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift = nexus.create_rift(rift_name="builder")
     created_conduit = rift.create_nexus_frame(frame_name="ops", immutable=True)
@@ -6183,13 +6183,13 @@ def test_viewer_lists_linked_nexus_and_non_nexus_frame_names_separately() -> Non
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("indexed")
     configuration.with_max_nexus_frame_count(4)
     configuration.with_allowed_target_frame_names(("managed", "ops", "blocked"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     rift = nexus.create_rift(rift_name="alpha")
     rift.create_nexus_frame(frame_name="managed")
@@ -6214,11 +6214,11 @@ def test_codegen_room_filters_non_nexus_frame_names_by_runtime_requirements() ->
         None.
     """
     nexus = Nexus()
-    nexus_configuration = nexus.create_system_configuration()
+    nexus_configuration = nexus.create_configuration()
     nexus_configuration.with_rift_creation_enabled(True)
     nexus_configuration.with_direct_rift_access(True)
     nexus_configuration.with_allowed_target_frame_names(("ops", "forge"))
-    nexus.enable(nexus_configuration)
+    nexus.activate(nexus_configuration)
 
     rift_configuration = nexus.create_rift_configuration()
     rift_configuration.with_space_type(RiftSpaceType.codegen)
@@ -6252,13 +6252,13 @@ def test_command_system_surfaces_frame_link_and_nexus_root_conduit_helpers() -> 
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("indexed")
     configuration.with_max_nexus_frame_count(4)
     configuration.with_allowed_target_frame_names(("ops", "managed"))
-    nexus.enable(configuration)
+    nexus.activate(configuration)
 
     _bind_target_frame_configuration("ops", rift_enabled=True)
     _seed_frame_descriptor("ops")
@@ -6306,7 +6306,7 @@ def test_direct_rift_construction_requires_configured_enabled_nexus() -> None:
         None.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     rift_configuration = RiftConfiguration().with_defaults().finalize()
 
     with pytest.raises(RuntimeError, match="configured Nexus"):
@@ -6316,8 +6316,8 @@ def test_direct_rift_construction_requires_configured_enabled_nexus() -> None:
             rift_name="manual",
         )
 
-    nexus.enable(configuration)
-    nexus.disable()
+    nexus.activate(configuration)
+    nexus.deactivate()
     with pytest.raises(RuntimeError, match="enabled Nexus"):
         Rift(
             nexus,

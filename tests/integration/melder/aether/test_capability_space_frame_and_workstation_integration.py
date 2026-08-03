@@ -241,7 +241,7 @@ def _create_enabled_capability_nexus(
         Nexus: Enabled Nexus instance.
     """
     nexus = Nexus()
-    configuration = nexus.create_system_configuration()
+    configuration = nexus.create_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
@@ -253,7 +253,7 @@ def _create_enabled_capability_nexus(
         configuration.with_max_nexus_frame_count(1)
     else:
         configuration.with_max_nexus_frame_count(8)
-    nexus.enable(configuration)
+    nexus.activate(configuration)
     return nexus
 
 

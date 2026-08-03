@@ -24,7 +24,6 @@ if TYPE_CHECKING:
         StagedTransaction,
     )
 
-
 class IndexGraftTransactionStrategy(TransactionStrategy):
     """
     Mark one frame as under piece-work for the duration of a graft.
@@ -139,51 +138,3 @@ class IndexGraftTransactionStrategy(TransactionStrategy):
             ScopeKey.world(): ClaimMode.INTENT,
             ScopeKey.frame(host_frame_name): ClaimMode.INTENT,
         }
-
-    @staticmethod
-    def on_start(
-            *,
-            submitter: Identity,
-            staged: StagedTransaction,
-    ) -> None:
-        """
-        Run family-local work after admission succeeds.
-
-        Contract:
-            No family-local work; the graft is performed by the claim holder.
-
-        Args:
-            submitter:
-                The identity originating the transaction.
-            staged:
-                The immutable post-admission record.
-
-        Returns:
-            None.
-        """
-        del submitter
-        del staged
-
-    @staticmethod
-    def on_end(
-            *,
-            submitter: Identity,
-            staged: StagedTransaction,
-    ) -> None:
-        """
-        Run family-local work during finalisation.
-
-        Contract:
-            No family-local work, on either the commit or the failure path.
-
-        Args:
-            submitter:
-                The identity originating the transaction.
-            staged:
-                The immutable post-admission record.
-
-        Returns:
-            None.
-        """
-        del submitter
-        del staged
