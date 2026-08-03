@@ -127,6 +127,12 @@ def _mesh(*, store=None, fetch=None, strict=False):
     if fetch is not None:
         config.with_fetch_handler(fetch)
     config.with_strict_uploads(strict)
+    # `upload_on_flush` defaults ON, and validate() refuses a config that
+    # enables it with NO write lane attached - a knob pointing at nothing is a
+    # misconfiguration, not a no-op. These probes deliberately build meshes
+    # with no store handler, so the knob has to come off explicitly.
+    if store is None:
+        config.with_upload_on_flush(False)
     config.freeze()
     return md.ExternalPersistenceManager(config)
 
@@ -325,7 +331,7 @@ def test_probe_a_registered_strategy_becomes_dispatchable_by_name():
     Registering must actually change what list_strategy_names() reports,
     or the registry is decoration. This builds a strategy, registers it,
     and checks the engine can see it by name."""
-    engine = md.DiffEngine()
+    engine = md.DiffEngine(lambda unit_id: {})
     before = list(engine.list_strategy_names())
 
     class _NamedStrategy:
@@ -355,7 +361,7 @@ def test_probe_diff_engine_lists_its_shipped_strategies():
     """Lesson 04 claim: three meanings of "changed" ship in the box -
     source (text), structural (shape), part (members). They are genuinely
     different questions, which is why the engine will not pick one."""
-    names = list(md.DiffEngine().list_strategy_names())
+    names = list(md.DiffEngine(lambda unit_id: {}).list_strategy_names())
     assert isinstance(names, list)
     print("shipped strategies:", names)
 
@@ -524,7 +530,14 @@ def test_probe_a_registered_spell_takes_up_residence_in_a_lane():
 
     where = research_set.residence_of("spell-alpha")
     assert where is not None, "a registered spell must have a residence"
-    assert where in research_set.lane_names()
+    # RESIDENCE IS A LANE ID, NOT A LANE NAME. `lane_names()` answers a
+    # different question, and the two vocabularies are easy to conflate -
+    # this row originally asserted the id was in the name list and failed.
+    assert isinstance(where, str) and where
+    assert where not in research_set.lane_names()
+    assert research_set.residence_of("spell-alpha") == where, (
+        "residence must be stable across reads"
+    )
     print("residency pinned: spell-alpha now lives in", where)
 
 

@@ -1,16 +1,235 @@
 CONCEPT MAP - 04_expert (README tier: BLUE Expert)
 ====================================================
-Agent rooms, transactions, checkpoints, governed mutation. Mostly
-machine-facing; mostly UNAUTHORED - awaits the advanced tier landing.
+The machinery behind the doors advanced used: cold boot, the external
+persistence mesh, the mutation-research plane, and the codegen room where
+an agent writes code into a running world.
+15 lessons authored, 01-15 sequential.
 
-PLANNED (per README BLUE + AGENTS charter)
-  - the self-documenting package (__architecture__ etc.)
-  - Nexus/Rift rooms: static -> capability -> codegen escalation,
-    workstation, command systems, compiled ACL dials
-  - the transaction plane (ACID over the object graph; moded claims)
-  - crystallizer: checkpoints, CrystallizerBootstrap cold boot,
-    external persistence mesh (user-owned callables)
-  - mutation research: residency/impact/preview foresight, then
-    stage (bind_inactive) -> notch -> meld hot-swap with rollback
-  - boot melds (owner epic 2026-07-20, unassigned): conjure-time
-    warm-up recipe riding the bind signature into checkpoints
+VERIFICATION STATUS - READ THIS FIRST
+  NONE OF 10-15 HAS BEEN EXECUTED. melder requires Python 3.14t and the
+  authoring sandbox is 3.10, so every assert in those files is a claim
+  read out of source and canonical docs, not an observed result. They
+  ride the owner's 3.14t run. 01-09 predate that split.
+
+HOUSE RULE - STRINGS, NOT ENUMS (inherited from advanced; see that map
+  for the `.value` footgun that makes it a rule rather than a style)
+
+AUTHORED (01-15, sequential, no gaps)
+
+  01 pod_boot_the_order_is_the_product (CrystallizerBootstrap. Its own
+     contract heading is the lesson: "Contract (the ORDER is the
+     product)". Every step is separately callable; what the entry point
+     sells is the SEQUENCE. Advanced 17-18 taught the two verbs by hand -
+     this is the operator's restart flow)
+
+  02 persistence_mesh_your_code_their_lanes (melder never talks to your
+     database - it calls YOUR callables. "The USER owns storage
+     bootstrap, credentials, durability, and handler synchronization;
+     MELDER owns the value-shaped callable contract and failure
+     accounting." Handler-gated lanes: WRITES DEGRADE, READS REFUSE, and
+     the asymmetry is deliberate - a lost write is an accounting problem,
+     an invented read is a lie)
+
+  03 research_sets_lanes_and_residency (MutationResearch / ResearchSet /
+     ResearchLane / ResearchNode. Same ladder as Aether and Crystallizer -
+     activate the config, then the subsystem. RESIDENCY IS SINGLE: a
+     spell lives in exactly ONE lane, and residence_of returns a LANE ID,
+     not a name)
+
+  04 diffs_are_derived_never_stored ("Nothing is stored - FULL-OBJECT
+     RECORDS STAY THE ONLY STORAGE; diffs are ALWAYS DERIVED." An
+     architectural commitment, not an implementation note, and the
+     opposite of what most version-tracking systems do. md.DiffEngine()
+     needs a material_resolver)
+
+  05 protocol_crafter_the_tool_that_writes (the ONE surface in the
+     curriculum that MODIFIES source: "Most of this codebase READS
+     source; this one MODIFIES it." Generates Protocol definitions from a
+     live class - concrete type in, structural interface out)
+
+  06 two_knobs_and_a_terminator_per_rung (MutationResearchConfiguration
+     has exactly TWO knobs - with_unrestricted_module_mutations,
+     with_lane_type_enforcement - across a subsystem with 49 public
+     methods. The smallness IS the point: the research plane records, it
+     does not govern)
+
+ARC A COMPLETE (lessons 01-06) - boot, mesh, and the research plane
+
+  07 the_codegen_room_agents_writing_code (the third room kind, and the
+     only one where the CALLER supplies executable source. Names the
+     three verbs and the order; 12 drives them)
+
+  08 research_is_graduated_by_room (MEASURED, and the numbers are the
+     argument: static 0 / capability 21 / codegen 34 research verbs.
+     RE-MEASURED 2026-08-03: capability's 21 are a strict SUBSET of
+     codegen's 34 - zero capability-only verbs - and the two classes are
+     SIBLINGS, both extending CommandSystem directly. So this is advanced
+     11's law at a new grain: authority by CLASS MEMBERSHIP, never denied
+     by guard. The 13 codegen-only verbs are exactly the writes plus
+     research_preview: create_lane, attach, detach, join, archive,
+     set_campaign, clear_campaign, stage_ancestry,
+     clear_staged_ancestry, synthesize, preview, group_register,
+     group_recompose)
+
+  09 getting_data_into_your_database (the crystallizer half of the mesh -
+     configure_external_persistence_manager is ONE door, and after it the
+     crystallizer owns the manager. The verbs that decide WHAT crosses
+     and WHEN. _mesh() helpers need with_upload_on_flush(False) unless
+     you mean to ship on every flush)
+
+ARC B COMPLETE (lessons 07-09)
+
+  10 deep_overrides_paths_through_a_graph (advanced 19's grammar at DEPTH
+     FOUR, where it stops being convenience. A PATH WALKS SOCKET NAMES,
+     NOT TYPES - "gateway>upstream>credentials" is parameter names on the
+     class at each level, so two sockets of the SAME type at different
+     depths are DIFFERENT ADDRESSES. Four things depth changes: ambiguity
+     becomes normal so `*param` starts refusing; a path that stops early
+     GRAFTS A SUBTREE rather than patching a leaf; exact path BEATS
+     broadcast on a shared socket, which is how you say "all of them
+     except this one" in one call; a typo'd path REFUSES instead of
+     applying to the nearest match)
+
+  11 pointing_a_rift_at_your_own_frame (finishes what advanced 09 stopped
+     short of - AR targeting was genuinely unreachable from `import
+     melder` until 2026-08-03. The chain, every link a refusal point:
+     posture -> conjure -> activate -> create_rift -> create_frame_link.
+     THREE GATES IN ORDER: rift_enabled ALWAYS; ai_native and dynamic for
+     CODEGEN rooms only - so the same frame is ACCEPTED by a capability
+     room and REFUSED by a codegen one. rift_enabled defaults False
+     because it is the frame's OPT-IN TO BEING OBSERVED, and conjure
+     freezes it for the frame's whole life. ATTACHMENT IS THE AUTHORITY
+     BOUNDARY: checked once, there, and never again)
+
+  12 the_codegen_loop_end_to_end (A REFUSAL IS A RETURN VALUE, NOT AN
+     EXCEPTION - validate_codegen hands back a CodegenValidationResult,
+     and execute on rejected code returns a VALIDATION-FAILED
+     CodegenExecutionResult without reaching compile or exec. ValueError
+     is reserved for MALFORMED REQUESTS (empty code, empty frame name):
+     bad input raises, bad code reports. execute VALIDATES FIRST anyway,
+     so the separate verb buys the answer early and never a way around
+     it - the only reason an agent can probe a boundary without crossing
+     it. Seven strategies; read `recursive_control` twice - it exists
+     because generated code that generates code is how a bounded system
+     stops being bounded. MEMORY IS A ROOM SYSTEM AND IT PUSHES:
+     room.memory_system.register_memory_callback(fn); `memory_enabled` is
+     literally "is anyone listening". ONE RECORD PER SUCCESSFUL TOP-LEVEL
+     CALL - refusals do not emit, and a call-depth counter suppresses
+     nested emission. research_preview needs a LIVE MutationResearch: the
+     research family uses a NON-CONSTRUCTING peek and refuses rather than
+     booting one behind your back)
+
+  13 one_workshop_many_worlds (one codegen room, THREE postured frames,
+     two attached - where frame_name stops looking like ceremony. A
+     default would not be a convenience, it would be a coin flip with
+     side effects. Attachment is PER FRAME and there is no
+     attach-to-everything verb, because there is no honest way to ask for
+     that. list_accessible_non_nexus_frame_names(rift_id) lets an agent
+     ENUMERATE ITS OWN REACH instead of probing by attempting - and note
+     eligibility is not attachment, the two-bit law again. The frames
+     stay walled: a shared observer is not a shared world)
+
+  14 compositions_a_subsystem_as_one_unit (03 answered "where is this
+     one"; this answers "what is our billing subsystem", which needs a
+     different kind of thing - a SET someone named. EIGHT VERBS, SIX
+     READS TWO WRITES, and the split is the lesson: a capability room
+     reads the ENTIRE composition record and cannot change one thing in
+     it. THE ID IS THE MEMBERSHIP - sha256 over the sorted, deduped
+     member list - so a composition is a SET (order and duplicates
+     canonicalise away), THE SAME ROSTER IS THE SAME COMPOSITION, and
+     re-declaring one REFUSES as a rediscovery naming the holding lane.
+     A recompose that resolves back to the previous roster refuses for
+     the same reason: melder will not write "nothing happened" into a
+     timeline. Recompose is FORWARD-ONLY - new node,
+     parent_group_ids=[previous], SAME lane, previous untouched. Both
+     writes return a describe() PAYLOAD (a detached plain dict), not the
+     node. Compositions do not NEST. research_impact on a single spell
+     names the subsystems it touches under affected_compositions)
+
+  15 campaigns_the_why_that_rides_along (a lane is WHERE work lives; a
+     campaign is WHICH EFFORT it belonged to, and it crosses lanes,
+     subsystems, and agents. THE ONE THING TO LEARN: campaign=None DOES
+     NOT MEAN "no campaign", IT MEANS INHERIT - to record with none you
+     must CLEAR the ambient stamp first. Reads like a trap until you see
+     what it buys: attribution defaults to TRUE rather than to blank,
+     over a session of thousands of calls nobody wants to annotate. An
+     EXPLICIT campaign still wins, so it is a default and not a cage. IT
+     RIDES EXACTLY FOUR SEAMS, all on the ROOT FACADE -
+     record_world_entry, record_promotion, register_group,
+     recompose_group. The room's organizational verbs (create_lane,
+     attach, archive) delegate straight to the set and are UNSTAMPED:
+     moving furniture is not part of an effort's story unless you say so.
+     WRITE/READ AGREEMENT IS A LAW (BUG-047): an empty campaign is
+     refused on the WRITE side because campaign_view refuses it on the
+     READ side - a public write may never create a record the public
+     query API cannot reach. The view answers {campaign, nodes,
+     transitions, lane_names} and TRANSITIONS IS THE WIDER SET: only four
+     acts contribute a node, so a campaign of pure organizational moves
+     yields an empty node list, which is correct rather than a gap.
+     Sequenced by JOURNAL order, never a lane walk - lane iteration
+     tie-breaks same-millisecond ULIDs on their RANDOM component, and a
+     history that reorders itself between runs is not a history)
+
+ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
+  composition/campaign grain of the research record
+
+THE THROUGH-LINES, AT EXPERT GRAIN (both inherited from advanced)
+
+  TWO BITS, NEVER ONE
+      11  eligible to be targeted / actually attached
+      14  a composition EXISTS / it is the CURRENT one for its lane
+      15  a stamp is SET / a record inherited it
+  Presence never implies liveness, and reach never implies grant.
+
+  MELDER NEVER SUBSTITUTES
+      10  a typo'd override path REFUSES; it does not hit the nearest
+          socket, and at depth four that would be undetectable
+      12  a rejected validation returns a VERDICT; it does not run a
+          safer version of your code
+      14  a rediscovery REFUSES; you cannot end up with two names for
+          one subsystem
+      15  an empty campaign REFUSES ON THE WRITE because the READ cannot
+          address it
+  The 15 case is the sharpest statement of it in the library: melder
+  would rather fail your write than let you create a fact that nobody
+  can ever ask a question about.
+
+RESEARCH METHOD (recorded 2026-08-03 after several wrong assertions)
+  Asserting a method is absent after grepping ONE class is how three
+  lessons got written wrong. The order that works:
+      1. context_compass/system_docs/src_components_index.md  (line ranges)
+      2. the named range in src_components.md                 (the claim)
+      3. the source                                           (the truth)
+  Docs surfaced things no grep would have: that refusal is a return
+  value, that memory is a push model on RiftSpace, that campaign=None
+  means inherit. Grep confirms; it does not survey.
+
+FINDINGS (for the owner's public-surface program)
+  - CLOSED 2026-08-03: advanced 09's finding that AR TARGETING IS
+    UNREACHABLE FROM THE PUBLIC ROOT. configure_aether_frame now reaches
+    all 14 posture knobs including rift_enabled and ai_native, so the
+    chain at lesson 11 runs entirely from `import melder`.
+  - CLOSED 2026-08-03: the three hosted roots now agree. Crystallizer,
+    Nexus and MutationResearch are all eagerly constructed by Aether, all
+    reachable as bare md.X(), and all speak the same configuration
+    ladder. Nexus's create_system_configuration / enable / disable /
+    is_enabled were RENAMED (not aliased) to create_configuration /
+    activate / deactivate / is_activated, and NexusConfiguration gained
+    the activation rung it was missing. Advanced's "SUBSYSTEM ACTIVATION
+    DIVERGENCE - IT IS 3 TO 1" note is now historical: it is 4 to 0.
+  - OPEN: Aether still has no deactivate / is_configured / is_activated,
+    so the root that hosts the other three is the one that does not
+    answer the two-bit question about itself. Flagged, not ruled.
+  - SPELL IDS ARE PROCESS-WIDE AND THE FRAME IS NOT IN THE FINGERPRINT.
+    Identical bindings in two frames COLLIDE. Every multi-frame lesson
+    here passes binding_name= or spellframe= for that reason. It is the
+    single most common way a working example goes red when copied.
+
+REMAINING / NOT YET AUTHORED
+  - the transaction plane (ACID over the object graph; moded claims) -
+    named in the original BLUE charter, still unauthored.
+  - notch -> meld hot-swap with rollback (the stage/promote arc past
+    bind_inactive).
+  - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up
+    recipe riding the bind signature into checkpoints.
+  - the self-documenting package (__architecture__ etc.).

@@ -7,7 +7,7 @@
 - Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-07-31T23:00:41Z
+- Updated: 2026-08-03T21:47:00Z
 - Target Window: UNKNOWN
 - Related Program/Initiative: EPIC-2026-07-27-transactional-structure-unwind
   (the investigation that produced this direction)
@@ -444,6 +444,85 @@ rule should be a test, not a convention.
     no lifecycle benefit. Reverse this if `Identity` ever gains a reference.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T21:45:00Z
+  TYPE: DECISION
+  CLAIM: THREE OF THE SIX OPEN QUESTIONS MOVED, ANSWERED BY BUILDING RATHER THAN
+    BY ARGUING. Recording them here because they are epic-level and would
+    otherwise be buried in a story log.
+    Q5 - "does `apply_commit_delta` come up here?" - ANSWERED YES, and it turned
+    out to be the load-bearing hook rather than a nice-to-have. The three
+    subsystem lifecycle families claim IDENTICALLY (`world` ix plus
+    `subsystem:<name>` x); what separates them is entirely what each WRITES at
+    commit. Without this hook they are one parameterised family and the strategy
+    layer is a lookup table wearing a class. The leaning in the question was
+    KEEP; the build makes it non-optional. Consider Q5 closed.
+    Q3 - "what are each subsystem's basic conditions?" - PROPOSED, NOT SETTLED.
+    `ParticipationConditions.DECLARED_KEYS` declares five: `parallel_enabled`,
+    `worker_count`, `drain_timeout_seconds`, `max_active_units`,
+    `policy_version`. THE PLANE OWNS THE KEY SET, not the subsystems, because
+    conditions arrive through caller-controlled metadata and an undeclared set
+    lets a subsystem widen its own row with anything. Undeclared keys are DROPPED
+    silently rather than refused - metadata legitimately carries routing values
+    this vocabulary has no opinion about. Owner should confirm the five against
+    the surveys; adding a sixth is a one-line change, and nothing outside this
+    tuple can reach the store.
+    Q4 - "does the registry mirror RELATIONSHIPS, or only activity plus fact
+    baselines?" - THE PROPOSED ANSWER STANDS AND THE QUESTION WAS INCOMPLETE.
+    No relational mirrors were added and none should be: relational truth stays
+    owned by each subsystem. But the store now holds a THIRD category the
+    question did not anticipate - PER-SUBSYSTEM LIFECYCLE STATE, which is neither
+    a relationship nor a transaction activity row. It is a fact ABOUT a
+    subsystem rather than about a transaction, it is written only by that
+    subsystem's own committed transaction, and it is what makes "should I emit
+    for this subsystem" answerable without importing one. If the owner reads
+    that as relational mirroring, this is the thing to strike.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/participation.py
+  - src/melder/aether/aetheric_mediator/transaction_strategy.py (apply_commit_delta contract)
+  - src/melder/aether/aetheric_mediator/information_registry.py (participant store)
+  IMPACT: Q5 closes. Q3 has a concrete proposal to accept or amend. Q4's answer
+    holds but its scope needs widening to name lifecycle state explicitly.
+    Questions 1, 2 and 6 are UNTOUCHED and still block the wiring story.
+  NEXT: Owner rules Q3 and the Q4 widening; 1 and 2 remain the wiring gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T21:47:00Z
+  TYPE: FACT
+  CLAIM: OWNER CONSTRAINT 6 IS NOW CHECKABLE INSTEAD OF DESCRIBED, AND THE
+    VOCABULARY MATCHES THE SUBSYSTEMS IT REPORTS ON.
+    Constraint 6 says a subsystem participates ONLY when enabled and active and
+    emits its basic conditions at that edge. That was prose in four docstrings
+    and a bare presence set in code - which could answer "known or unknown" and
+    nothing else. A subsystem nobody wired in and one switched off on purpose
+    read identically, and those need different fixes.
+    `ParticipationState` makes it a value: REGISTERED, CONFIGURED, ACTIVE,
+    INACTIVE, each written by exactly one edge, `emits` True for ACTIVE alone.
+    ALSO CORRECTED, epic-wide: the plane said ENABLE where all three subsystem
+    roots say ACTIVATE. Nexus was reworked from `enable`/`disable` to
+    `activate`/`deactivate` on 2026-08-03, joining Crystallizer and
+    MutationResearch, so `SUBSYSTEM_ENABLE`/`SUBSYSTEM_DISABLE` became the last
+    place in the system using the old word for an edge every subsystem calls
+    something else. Renamed to `SUBSYSTEM_ACTIVATE`/`SUBSYSTEM_DEACTIVATE`.
+    An eighth member `SUBSYSTEM_CONFIGURE` was added, and it is not symmetry for
+    its own sake: all three roots take `activate(configuration=None)` and
+    document the optional argument as "a convenience that CONFIGURES FIRST", so
+    the two-step already exists below - it simply was not separately admissible.
+    Reading those three roots also overturned an earlier decision of mine.
+    Every `deactivate()` promises to stop "without discarding configuration", so
+    INACTIVE now RETAINS the conditions it was running with, where an earlier
+    shape deleted the row. Retention is safe here ONLY because the state guards
+    it; in the presence-only store it genuinely would have been stale policy.
+  EVIDENCE:
+  - src/melder/nexus/nexus.py:838 activate, :886 deactivate
+  - src/melder/crystallizer/crystallizer.py:592 activate, :791 deactivate
+  - src/melder/mutation_research/mutation_research.py:629 activate, :773 deactivate
+  IMPACT: One word for one edge across the plane and the three subsystems, and a
+    constraint that can now be asserted in a test rather than believed.
+  NEXT: Nothing here. Wiring is gated on questions 1 and 2.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
