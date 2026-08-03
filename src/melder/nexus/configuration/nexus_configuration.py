@@ -74,6 +74,7 @@ class NexusConfiguration(Cleanable):
         "_id",
         "_lock",
         "_frozen",
+        "_activated",
         "_properties",
         "available_properties",
     ]
@@ -128,6 +129,11 @@ class NexusConfiguration(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frozen: bool = False
+        # Two bits, never one. `_frozen` says the policy can no longer change;
+        # `_activated` says the caller has declared it ready to install. A
+        # frozen configuration is NOT a ready one - the same split Crystallizer
+        # and MutationResearch configurations have always carried.
+        self._activated: bool = False
         self._properties: Dict[str, object] = {}
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "allow_rift_creation": bool,
@@ -667,6 +673,77 @@ class NexusConfiguration(Cleanable):
             NexusConfiguration: This configuration instance.
         """
         self.freeze()
+        return self
+
+    @property
+    def activated(self) -> bool:
+        """
+        Return whether this policy object has been marked ready to install.
+
+        Contract:
+            - REPORTS THE POLICY OBJECT, NOT THE NEXUS. A `True` here means the
+              caller finished authoring and called `activate()`; it says nothing
+              about whether `Nexus.activate(...)` was ever reached. Two objects,
+              two bits.
+            - Independent of `frozen`. Freezing settles the values; activating
+              declares them ready. A frozen-but-unactivated configuration is the
+              normal state after `finalize()`.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            bool: True once `activate()` has run on this object.
+        """
+        self.check_cleaned()
+        return self._activated
+
+    def activate(self) -> "NexusConfiguration":
+        """
+        Validate, freeze, and mark this configuration active.
+
+        Purpose:
+            The activation rung this configuration never had. Crystallizer and
+            mutation-research configurations have always carried it, and their
+            roots take an ALREADY-ACTIVATED policy object. Nexus had no such
+            rung because `enable()` sealed the configuration on the caller's
+            behalf - which is why it was the one subsystem out of four where
+            the caller could not settle policy before installing it.
+
+        Guidance:
+            The normal final authoring step before `Nexus.activate(configuration)`.
+            It changes only this policy object's readiness.
+
+        Contract:
+            - Freezes and marks this policy object ready. It does NOT enable or
+              activate the Nexus singleton; that is a separate call.
+            - Idempotent: `freeze()` is idempotent and the flag is a plain set
+              with no side effect attached.
+            - `finalize()` remains freeze-only. The two verbs are different
+              rungs and neither implies the other.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()` through `freeze()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+            ValueError: If validation fails during freeze.
+
+        Returns:
+            NexusConfiguration: This activated configuration instance.
+        """
+        self.freeze()
+        with self._lock:
+            self._activated = True
         return self
 
     def build(self) -> "NexusConfiguration":

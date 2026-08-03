@@ -15,7 +15,6 @@ is plane-specific anyway - it describes a transaction outcome and means
 nothing outside this package.
 """
 
-from typing import Tuple
 
 
 class UnwindConflictError(RuntimeError):
@@ -84,15 +83,15 @@ class UnwindConflictError(RuntimeError):
         transaction rather than reaching in directly.
     """
 
-    __slots__ = ("_request_id", "_reason", "_unwound", "_failed")
+    __slots__ = ("_failed", "_reason", "_request_id", "_unwound")
 
     def __init__(
             self,
             *,
             request_id: str,
             reason: str,
-            unwound: Tuple[str, ...] = (),
-            failed: Tuple[str, ...] = (),
+            unwound: tuple[str, ...] = (),
+            failed: tuple[str, ...] = (),
     ) -> None:
         """
         Build one unwind-conflict record.
@@ -119,16 +118,12 @@ class UnwindConflictError(RuntimeError):
         self._unwound = tuple(unwound)
         self._failed = tuple(failed)
         if failed:
-            detail = "{0} inverse(s) ran, {1} failed".format(
-                len(self._unwound), len(self._failed)
-            )
+            detail = f"{len(self._unwound)} inverse(s) ran, {len(self._failed)} failed"
         else:
             detail = "no inverse was registered, so nothing could be reversed"
         super().__init__(
-            "transaction {0!r} failed ({1}) and could not be unwound: {2}. "
-            "The world was left as the failure found it.".format(
-                request_id, reason, detail
-            )
+            f"transaction {request_id!r} failed ({reason}) and could not be unwound: {detail}. "
+            "The world was left as the failure found it."
         )
 
     @property
@@ -142,12 +137,12 @@ class UnwindConflictError(RuntimeError):
         return self._reason
 
     @property
-    def unwound(self) -> Tuple[str, ...]:
+    def unwound(self) -> tuple[str, ...]:
         """Return descriptions of the inverses that ran successfully."""
         return self._unwound
 
     @property
-    def failed(self) -> Tuple[str, ...]:
+    def failed(self) -> tuple[str, ...]:
         """Return descriptions of the inverses that raised, with their errors."""
         return self._failed
 

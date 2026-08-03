@@ -11,7 +11,8 @@ between member 3 and member 4, and nothing rolls back members 1-3 if member 4
 refuses. This family is the first admission this lane has ever had.
 """
 
-from typing import Any, Dict, Mapping, TYPE_CHECKING
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 from melder.aether.aetheric_mediator.claim_mode import ClaimMode
 from melder.aether.aetheric_mediator.identity import Identity
@@ -108,7 +109,7 @@ class IndexGraftTransactionStrategy(TransactionStrategy):
             *,
             submitter: Identity,
             metadata: Mapping[str, Any],
-    ) -> Dict[str, ClaimMode]:
+    ) -> dict[str, ClaimMode]:
         """
         Return the frame-intent claim set, or the whole-world set when unknown.
 
@@ -143,7 +144,7 @@ class IndexGraftTransactionStrategy(TransactionStrategy):
     def on_start(
             *,
             submitter: Identity,
-            staged: "StagedTransaction",
+            staged: StagedTransaction,
     ) -> None:
         """
         Run family-local work after admission succeeds.
@@ -162,13 +163,12 @@ class IndexGraftTransactionStrategy(TransactionStrategy):
         """
         del submitter
         del staged
-        return None
 
     @staticmethod
     def on_end(
             *,
             submitter: Identity,
-            staged: "StagedTransaction",
+            staged: StagedTransaction,
     ) -> None:
         """
         Run family-local work during finalisation.
@@ -187,4 +187,3 @@ class IndexGraftTransactionStrategy(TransactionStrategy):
         """
         del submitter
         del staged
-        return None
