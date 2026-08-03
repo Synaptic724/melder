@@ -16,6 +16,9 @@ from typing import Callable, Dict, List, Optional, Tuple
 from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.staged_transaction import StagedTransaction
 from melder.aether.aetheric_mediator.transaction_request import TransactionRequest
+from melder.utilities.custom_exceptions.unwind_conflict_error import (
+    UnwindConflictError,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -244,6 +247,7 @@ class TransactionSession(Cleanable):
         "_unwind_failures",
         "_leave_broken_residue",
         "_abort_only_reason",
+        "_unwind_conflict",
     ]
 
     def __init__(
@@ -298,6 +302,11 @@ class TransactionSession(Cleanable):
         # `mark_committing` then refuses, so the root can only end by failing.
         # `None` means not poisoned; any string is the recorded reason.
         self._abort_only_reason: Optional[str] = None
+        # Retained for the same reason `_leave_broken_residue` is: the caller
+        # that receives the return value may not be the one that needs the
+        # evidence, and a transaction that broke during COMMIT has no caller
+        # holding a return at all.
+        self._unwind_conflict: Optional[UnwindConflictError] = None
 
     def cleanup(self) -> None:
         """
@@ -362,6 +371,7 @@ class TransactionSession(Cleanable):
         del self._unwind_failures
         del self._leave_broken_residue
         del self._abort_only_reason
+        del self._unwind_conflict
         del self._lock
 
     @property
@@ -780,11 +790,61 @@ class TransactionSession(Cleanable):
             # second reference behind for `discard_inverses` to trip over.
             pending = list(reversed(self._rollback_actions))
             self._rollback_actions.clear()
+            if not pending:
+                # NOTHING TO REVERSE. Previously this fell through and reported
+                # ABORTED, which was a lie: `SessionStatus` defines aborted as
+                # "the world was returned toward its prior shape", and running
+                # zero inverses returns nothing. A caller reading ABORTED would
+                # believe the failure had been cleaned up when the world is
+                # exactly as broken as the moment it failed.
+                #
+                # This is not a rare corner. The plane's OWN six families never
+                # register an inverse and never can - authoring one means
+                # touching the subsystem objects the plane is forbidden to
+                # import - so under the default UNWIND policy this was the
+                # NORMAL path for every plane-level transaction.
+                #
+                # Owner ruling: if we cannot unwind we record the conflict and
+                # leave it alone. So the session goes BROKEN, which already
+                # means "knowingly left mid-flight for repair", and the conflict
+                # is retained as evidence.
+                conflict = UnwindConflictError(
+                    request_id=self._request.request_id,
+                    reason=reason,
+                )
+                self._unwind_conflict = conflict
+                self._status = SessionStatus.BROKEN
+                return SessionStatus.BROKEN, (str(conflict),)
         failures = self._run_inverses(pending)
         with self._lock:
             self._unwind_failures.extend(failures)
+            if failures:
+                # A PARTIAL unwind is not an abort either. Some inverses ran and
+                # some raised, so the world is neither its prior shape nor the
+                # shape the failure left - it is a third thing, and the only
+                # honest report is that it is broken and here is how far the
+                # reversal got.
+                ran = tuple(
+                    entry.description
+                    for entry in pending
+                    if not any(
+                        failure.startswith(entry.description)
+                        for failure in failures
+                    )
+                )
+                conflict = UnwindConflictError(
+                    request_id=self._request.request_id,
+                    reason=reason,
+                    unwound=ran,
+                    failed=tuple(failures),
+                )
+                self._unwind_conflict = conflict
+                self._status = SessionStatus.BROKEN
+                return SessionStatus.BROKEN, tuple(failures)
+            # Every registered inverse ran and none raised. This is the ONLY
+            # path that has earned the word "aborted".
             self._status = SessionStatus.ABORTED
-            return SessionStatus.ABORTED, tuple(failures)
+            return SessionStatus.ABORTED, ()
 
     def _run_inverses(self, pending: List[_RollbackAction]) -> List[str]:
         """

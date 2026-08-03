@@ -79,23 +79,28 @@ def test_probe_posture_public_door_then_freeze():
     print("post-freeze reconfigure refusal type:", type(refused.value).__name__)
 
 
-def test_probe_devops_flags_gate_via_retained_posture_seam():
-    """FINDING (2026-07-25): there is NO PUBLIC DOOR to stage the frame
-    devops flags (disable_linking / disable_bind / ...) - the component
-    suite stages them through the book's PRIVATE retained posture
-    (book._aetheric_frame_configuration.with_disable_*). This probe pins
-    the gate behavior through that same seam so the curriculum can teach
-    it the day a public door exists. Public-surface gap recorded for the
-    owner's init program."""
+def test_probe_devops_flags_gate_through_the_public_door():
+    """RESOLVED (2026-08-03): the frame devops flags now have a public
+    door. This row used to stage disable_linking through the book's
+    PRIVATE retained posture because none existed; it now drives the same
+    gate through configure_aether_frame and asserts the SAME refusal, so
+    what it proves is that widening the door did not change the behaviour
+    behind it. Note the two knobs travel in ONE call - system_state is
+    applied first inside the method, which is what lets a single call move
+    the world to dynamic and brake it at the same time."""
     book = Spellbook(aetheric_frame="probe-flags")
     book.bind(spell=Payload, existence="unique")
-    book._aetheric_frame_configuration.with_system_state("dynamic")
-    book._aetheric_frame_configuration.with_disable_linking(True)
+    book.configure_aether_frame(
+        system_state="dynamic",
+        disposal=None,
+        disposal_method_names=None,
+        disable_linking=True,
+    )
     owner = book.conjure(dynamic=True, name="flag-owner")
     borrower = Spellbook(aetheric_frame="probe-flags").conjure(name="flag-borrower")
     with pytest.raises(RuntimeError, match="disabled"):
         owner.link(borrower)
-    print("devops flag gate pinned: disable_linking refused the link")
+    print("devops flag gate pinned through the PUBLIC door: link refused")
 
 
 def test_probe_attach_logger_lifecycle():
@@ -189,28 +194,41 @@ def test_probe_frame_posture_finalize_seals_same_instance():
     print("finalize pinned: same instance, frozen, values intact")
 
 
-def test_probe_frame_posture_has_no_public_install_door():
-    """FINDING (2026-08-02, lesson 06): md.AethericFrameConfiguration is
-    EXPORTED FROM THE PUBLIC ROOT AND CANNOT BE INSTALLED FROM IT.
-    Spellbook.__init__ takes (aetheric_frame, configuration, logger) where
-    `configuration` is a SpellbookConfiguration. This row pins the gap by
-    signature so it goes GREEN today and RED the day a door lands - at
-    which point the lesson's closing paragraph needs rewriting."""
+def test_probe_frame_posture_has_no_public_install_door_but_a_total_one():
+    """THE GAP THIS ROW PINNED HAS CLOSED (2026-08-03), and the row is
+    rewritten rather than deleted because BOTH halves still matter.
+
+    STILL TRUE: md.AethericFrameConfiguration is exported from the public
+    root and CANNOT BE INSTALLED FROM IT. Spellbook.__init__ takes
+    (aetheric_frame, configuration, logger) where `configuration` is a
+    SpellbookConfiguration. That is deliberate - the collaborator stays
+    private.
+
+    NO LONGER TRUE: that this left the posture unauthorable. The door
+    carried 2 of 14 knobs; it now carries 14 of 14, so the capability is
+    reachable while the object stays behind the facade. This row now pins
+    TOTALITY - it goes RED if a posture builder is ever added without a
+    matching parameter, which is the failure mode that created the gap in
+    the first place."""
     import inspect
     parameters = inspect.signature(Spellbook.__init__).parameters
     assert "aetheric_frame_configuration" not in parameters
     annotation = parameters["configuration"].annotation
     assert "AethericFrameConfiguration" not in str(annotation)
 
-    # The one public door reaches TWO of the fifteen posture knobs.
-    door = inspect.signature(Spellbook.configure_aether_frame).parameters
-    posture_knobs = {"system_state", "system_caching_enabled"}
-    assert posture_knobs.issubset(set(door))
-    assert "with_disable_linking" not in door
-    assert "ai_native_enabled" not in door
-    assert "rift_enabled" not in door
-    print("init-surface gap pinned: exported type, no install door;",
-          "configure_aether_frame reaches", len(posture_knobs), "of 14 knobs")
+    builders = {
+        name[len("with_"):]
+        for name, _ in inspect.getmembers(
+            md.AethericFrameConfiguration, inspect.isfunction
+        )
+        if name.startswith("with_") and name != "with_defaults"
+    }
+    door = set(inspect.signature(Spellbook.configure_aether_frame).parameters)
+    unreachable = builders - door
+    assert not unreachable, f"posture knobs with no public door: {sorted(unreachable)}"
+    assert {"rift_enabled", "ai_native", "disable_linking"}.issubset(door)
+    print("posture door is TOTAL:", len(builders), "builders,",
+          len(builders), "reachable; the object itself stays private")
 
 
 # ---------------------------------------------------------------------------

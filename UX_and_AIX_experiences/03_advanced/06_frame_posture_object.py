@@ -26,19 +26,29 @@ SURFACE EXERCISED: md.AethericFrameConfiguration (system_state passed as
                    the string "automatic" / "dynamic")
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
-FINDING (init surface, for the owner's program): this type is exported from
-the public root and CANNOT BE INSTALLED from it. Spellbook.__init__ accepts
+RESOLVED FINDING (init surface): this type is exported from the public root
+and still CANNOT BE INSTALLED from it. Spellbook.__init__ accepts
 (aetheric_frame, configuration, logger) - `configuration` is a
 SpellbookConfiguration, not this. Every path that reaches the live frame
 posture is private (_initialize_aetheric_frame_configuration,
-_bind_aetheric_frame_configuration_to_aether). The one public door,
-Spellbook.configure_aether_frame(...), takes four arguments of which only
-TWO are frame-posture knobs - system_state and system_caching_enabled. The
-remaining 12 knobs have no public door at all.
+_bind_aetheric_frame_configuration_to_aether).
 
-So today this object is READ-SHAPED: construct one to understand the law
-book and to hold a posture you intend to describe. Authoring a world's
-posture from the public root is not yet possible beyond those two knobs.
+That used to mean the posture was unauthorable: the one public door,
+Spellbook.configure_aether_frame(...), carried TWO of the 14 knobs, and the
+other 12 - rift_enabled and ai_native among them - could not be set from the
+public root at all. Since rift_enabled defaults False and gates EVERY Rift
+attachment, the public package could not configure a frame to host one.
+
+THE DOOR WAS WIDENED, NOT THE OBJECT EXPOSED (2026-08-03). All 14 knobs are
+now parameters of configure_aether_frame; the collaborator stays private.
+That is deliberate and it is the same rule that keeps Scan, SpellOverrider
+and the crystal loaders off the root: when a facade covers a collaborator,
+the facade is the surface, and the fix for a missing capability is to widen
+the door rather than hand out the object behind it.
+
+So this object stays READ-SHAPED BY DESIGN: construct one to understand the
+law book, as this lesson does. To AUTHOR a world's posture, use lesson 03's
+door - it now reaches everything.
 """
 import melder as md
 

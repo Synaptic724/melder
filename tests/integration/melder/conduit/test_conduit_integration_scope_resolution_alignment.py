@@ -370,25 +370,6 @@ def test_lineage_shared_across_nested_lesser() -> None:
         book.cleanup()
 
 
-def test_lineage_distinct_across_separate_roots() -> None:
-    """Two independent roots each own a DISTINCT lineage instance (no cross-leak)."""
-    n_roots = 4
-    keepalive: List[Tuple[Spellbook, Any]] = []
-    instances: List[Any] = []
-    try:
-        for i in range(n_roots):
-            book = _static_book(f"lin-iso-{i}")
-            sid = book.bind(spell=_Leaf, existence=_LINEAGE, permissions="create")
-            root = book.conjure(name=f"root-{i}", dynamic=False)
-            keepalive.append((book, root))
-            instances.append(root.meld(spell=sid))
-        assert len({id(x) for x in instances}) == n_roots
-    finally:
-        for book, root in keepalive:
-            root.permanent_cleanup()
-            book.cleanup()
-
-
 def test_lineage_dependency_into_many_parent_resolves_root_instance() -> None:
     """BUG PIN: a `many` holder on a lesser must receive the ROOT lineage dep."""
     book = _static_book("lin-dep-many")
@@ -698,3 +679,31 @@ def test_concurrent_lineage_dependency_resolves_single_root_instance() -> None:
     finally:
         root.permanent_cleanup()
         book.cleanup()
+
+
+# ---------------------------------------------------------------------------
+# DELETED 2026-08-02 - EPIC-2026-08-02-process-wide-spell-id-uniqueness
+#
+# Deleted:
+#   test_lineage_distinct_across_separate_roots
+#
+# These bound the SAME class once per root/cluster, each on its OWN FRAME, and
+# relied on collisions being frame-scoped to get away with it - the fixtures
+# said so themselves ("the same class is reused safely, since collisions are
+# frame-scoped"). Process-wide uniqueness retired that rule, so the setup is no
+# longer expressible.
+#
+# They are deleted rather than repaired because they were TAUTOLOGIES. Putting
+# each root on its own frame gives it its own book, its own conduit and its own
+# instance no matter what the scope does - so "the instances are distinct"
+# passed by construction and would have kept passing with unique_per_conduit_lineage
+# resolution entirely removed. There is no coverage here to preserve.
+#
+# REAL coverage needs several scopes sharing ONE binding inside ONE frame. That
+# shape IS reachable and always was - `_form_cluster` already builds it: one
+# book binds, further Spellbooks on the SAME frame conjure WITHOUT binding, and
+# clusters are created on the CONDUIT CLOUD, not the frame. Two clusters off one
+# binding is `create_cluster("a")` + `create_cluster("b")` on the same cloud.
+# Only that shape actually exercises unique_per_conduit_lineage; the deleted
+# tests never did.
+# ---------------------------------------------------------------------------

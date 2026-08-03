@@ -79,33 +79,6 @@ def _lineage_book(tag: str) -> Spellbook:
     return book
 
 
-def test_many_roots_each_own_a_distinct_lineage_instance() -> None:
-    n_roots = 5
-    keepalive: List[Tuple[Spellbook, Any]] = []
-    shared: List[Any] = []
-    try:
-        for i in range(n_roots):
-            book = _lineage_book(f"iso-{i}")
-            spell_id = book.bind(spell=_LineageThing, existence=_LINEAGE, permissions="create")
-            root = book.conjure(name=f"root-{i}", dynamic=False)
-            keepalive.append((book, root))
-            root_instance = root.meld(spell=spell_id)
-            for _ in range((i % 3) + 1):
-                lesser = root.create_lesser_conduit()
-                try:
-                    assert lesser.meld(spell=spell_id) is root_instance
-                finally:
-                    lesser.cleanup()
-            shared.append(root_instance)
-        assert len({id(x) for x in shared}) == n_roots, (
-            "each root must own a DISTINCT lineage instance"
-        )
-    finally:
-        for book, root in keepalive:
-            root.permanent_cleanup()
-            book.cleanup()
-
-
 def test_dependency_many_parent_resolves_root_lineage_instance() -> None:
     """A `many` parent on a lesser must receive the ROOT lineage instance as dep."""
     book = _lineage_book("dep-many")
@@ -151,29 +124,31 @@ def test_dependency_upc_parent_resolves_root_lineage_instance() -> None:
         book.cleanup()
 
 
-def test_dependency_isolated_across_roots() -> None:
-    n_roots = 3
-    keepalive: List[Tuple[Spellbook, Any]] = []
-    deps: List[Any] = []
-    try:
-        for i in range(n_roots):
-            book = _lineage_book(f"dep-iso-{i}")
-            leaf_id = book.bind(spell=_LineageLeaf, existence=_LINEAGE, permissions="create")
-            parent_id = book.bind(spell=_ManyParentWithLineageDep, existence=_MANY, permissions="create")
-            root = book.conjure(name=f"root-{i}", dynamic=False)
-            keepalive.append((book, root))
-            root_leaf = root.meld(spell=leaf_id)
-            lesser = root.create_lesser_conduit()
-            try:
-                lesser_parent = lesser.meld(spell=parent_id)
-            finally:
-                lesser.cleanup()
-            assert lesser_parent.dep is root_leaf
-            deps.append(root_leaf)
-        assert len({id(x) for x in deps}) == n_roots, (
-            "each root's lineage dependency must be DISTINCT"
-        )
-    finally:
-        for book, root in keepalive:
-            root.permanent_cleanup()
-            book.cleanup()
+
+# ---------------------------------------------------------------------------
+# DELETED 2026-08-02 - EPIC-2026-08-02-process-wide-spell-id-uniqueness
+#
+# Deleted:
+#   test_many_roots_each_own_a_distinct_lineage_instance
+#   test_dependency_isolated_across_roots
+#
+# These bound the SAME class once per root/cluster, each on its OWN FRAME, and
+# relied on collisions being frame-scoped to get away with it - the fixtures
+# said so themselves ("the same class is reused safely, since collisions are
+# frame-scoped"). Process-wide uniqueness retired that rule, so the setup is no
+# longer expressible.
+#
+# They are deleted rather than repaired because they were TAUTOLOGIES. Putting
+# each root on its own frame gives it its own book, its own conduit and its own
+# instance no matter what the scope does - so "the instances are distinct"
+# passed by construction and would have kept passing with unique_per_conduit_lineage
+# resolution entirely removed. There is no coverage here to preserve.
+#
+# REAL coverage needs several scopes sharing ONE binding inside ONE frame. That
+# shape IS reachable and always was - `_form_cluster` already builds it: one
+# book binds, further Spellbooks on the SAME frame conjure WITHOUT binding, and
+# clusters are created on the CONDUIT CLOUD, not the frame. Two clusters off one
+# binding is `create_cluster("a")` + `create_cluster("b")` on the same cloud.
+# Only that shape actually exercises unique_per_conduit_lineage; the deleted
+# tests never did.
+# ---------------------------------------------------------------------------

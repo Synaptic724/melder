@@ -139,27 +139,6 @@ def test_many_members_all_share() -> None:
         leader.cleanup()
 
 
-def test_multiple_clusters_separate_frames_isolated() -> None:
-    handles: List[Tuple[Any, List[Any]]] = []
-    shared: List[Any] = []
-    try:
-        for name in ("alpha", "beta", "gamma"):
-            _ob, leader, members, _cloud, spell_id = _form_cluster(name, 2, _bind_cluster_thing)
-            handles.append((leader, members))
-            leader_instance = leader.meld(spell=spell_id)
-            for member in members:
-                assert member.meld(spell=spell_id) is leader_instance
-            shared.append(leader_instance)
-        assert len({id(x) for x in shared}) == len(shared), (
-            "each cluster must own a DISTINCT instance"
-        )
-    finally:
-        for leader, members in handles:
-            for member in members:
-                member.cleanup()
-            leader.cleanup()
-
-
 def test_two_distinct_cluster_spells_each_shared() -> None:
     def _bind(book: Spellbook) -> Tuple[Any, Any]:
         return (
@@ -245,27 +224,112 @@ def test_dependency_on_leader_lesser_resolves_cluster_instance() -> None:
         leader.cleanup()
 
 
-def test_dependency_isolated_across_clusters() -> None:
-    def _bind(book: Spellbook) -> Tuple[Any, Any]:
-        return (
-            book.bind(spell=_ClusterLeaf, existence=_CLUSTER, permissions="create"),
-            book.bind(spell=_ManyParentWithClusterDep, existence=_MANY, permissions="create"),
-        )
 
-    handles: List[Any] = []
-    deps: List[Any] = []
+# ---------------------------------------------------------------------------
+# DELETED 2026-08-02 - EPIC-2026-08-02-process-wide-spell-id-uniqueness
+#
+# Deleted:
+#   test_multiple_clusters_separate_frames_isolated
+#   test_dependency_isolated_across_clusters
+#
+# These bound the SAME class once per root/cluster, each on its OWN FRAME, and
+# relied on collisions being frame-scoped to get away with it - the fixtures
+# said so themselves ("the same class is reused safely, since collisions are
+# frame-scoped"). Process-wide uniqueness retired that rule, so the setup is no
+# longer expressible.
+#
+# They are deleted rather than repaired because they were TAUTOLOGIES. Putting
+# each root on its own frame gives it its own book, its own conduit and its own
+# instance no matter what the scope does - so "the instances are distinct"
+# passed by construction and would have kept passing with unique_per_conduit_cluster
+# resolution entirely removed. There is no coverage here to preserve.
+#
+# REAL coverage needs several scopes sharing ONE binding inside ONE frame. That
+# shape IS reachable and always was - `_form_cluster` already builds it: one
+# book binds, further Spellbooks on the SAME frame conjure WITHOUT binding, and
+# clusters are created on the CONDUIT CLOUD, not the frame. Two clusters off one
+# binding is `create_cluster("a")` + `create_cluster("b")` on the same cloud.
+# Only that shape actually exercises unique_per_conduit_cluster; the deleted
+# tests never did.
+# ---------------------------------------------------------------------------
+
+
+def test_two_clusters_one_frame_one_binding_are_isolated() -> None:
+    """
+    Purpose:
+        REPLACES the deleted `test_multiple_clusters_separate_frames_isolated`.
+        Two clusters, ONE frame, ONE binding - the only shape that actually
+        exercises `unique_per_conduit_cluster` resolution.
+
+    Contract:
+        - A single Spellbook binds the cluster spell ONCE. Every other conduit
+          joins without binding, so there is exactly one spell_id in play and
+          process-wide uniqueness is satisfied by construction.
+        - Members WITHIN a cluster share one instance.
+        - The two clusters hold DIFFERENT instances.
+
+    Why this is not the test it replaces:
+        The deleted version put each cluster on its own frame, which handed each
+        one its own book, conduit and instance for free - it passed whether or
+        not cluster resolution worked at all. Here both clusters share a frame, a
+        cloud and a binding, so the ONLY thing that can separate the instances is
+        the cluster scope itself. If cluster resolution breaks, this goes red.
+
+    Returns:
+        None.
+    Raises:
+        AssertionError: If members disagree inside a cluster, or the two
+            clusters share an instance.
+    """
+    frame_name = "clu-shared"  # must match _cluster_config("shared")
+    owner_book = Spellbook(
+        aetheric_frame=frame_name, configuration=_cluster_config("shared")
+    )
+    owner_book.bind(spell=_ClusterThing, existence=_CLUSTER, permissions="create")
+    leader_a = owner_book.conjure(dynamic=True, name="shared-leader-a")
+    frame = leader_a._aetheric_frame_name
+
+    # Every remaining conduit joins WITHOUT binding - one binding, many members.
+    leader_b = Spellbook(aetheric_frame=frame).conjure(
+        dynamic=True, name="shared-leader-b"
+    )
+    member_a = Spellbook(aetheric_frame=frame).conjure(
+        dynamic=True, name="shared-member-a"
+    )
+    member_b = Spellbook(aetheric_frame=frame).conjure(
+        dynamic=True, name="shared-member-b"
+    )
+    leader_a.link(member_a)
+    leader_b.link(member_b)
+
+    cloud = leader_a._spellbook._aether.get_conduit_cloud(frame)
+    for cluster_name, leader, member in (
+        ("cluster-a", leader_a, member_a),
+        ("cluster-b", leader_b, member_b),
+    ):
+        cloud.create_cluster(cluster_name)
+        cloud.add_conduit_to_cluster(leader, cluster_name)
+        cloud.add_conduit_to_cluster(member, cluster_name)
+        cloud.refresh_cluster_shares_for_conduit(leader)
+        cloud.get_cluster(cluster_name).elect_leader(leader.id)
+
     try:
-        for name in ("dx", "dy"):
-            _ob, leader, members, _cloud, bound = _form_cluster(name, 1, _bind)
-            handles.append((leader, members))
-            leaf_id, parent_id = bound
-            leader_parent = leader.meld(spell=parent_id)
-            leader_leaf = leader.meld(spell=leaf_id)
-            assert leader_parent.dep is leader_leaf
-            deps.append(leader_leaf)
-        assert deps[0] is not deps[1], "each cluster's dependency must be DISTINCT"
+        leader_a_instance: Any = leader_a.meld(spell=_ClusterThing)
+        member_a_instance: Any = member_a.meld(spell=_ClusterThing)
+        leader_b_instance: Any = leader_b.meld(spell=_ClusterThing)
+        member_b_instance: Any = member_b.meld(spell=_ClusterThing)
+
+        assert leader_a_instance is member_a_instance, (
+            "members of one cluster must share the leader's instance"
+        )
+        assert leader_b_instance is member_b_instance, (
+            "members of one cluster must share the leader's instance"
+        )
+        assert leader_a_instance is not leader_b_instance, (
+            "two clusters on ONE frame off ONE binding leaked a single instance "
+            "- this is the assertion the frame-per-cluster version could never "
+            "make, because separate frames separated the instances for free"
+        )
     finally:
-        for leader, members in handles:
-            for member in members:
-                member.cleanup()
-            leader.cleanup()
+        for conduit in (member_b, member_a, leader_b, leader_a):
+            conduit.permanent_cleanup()

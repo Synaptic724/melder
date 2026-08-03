@@ -10,9 +10,12 @@ reaches the frame when its Conduit is constructed, so two books that both bind
 BEFORE either conjures are invisible to each other and both bind-time checks
 pass. That hole was reachable from the public API with four ordinary calls.
 
-The negative control matters as much as the positive one: two frames binding the
-same class MUST still both succeed, because per-frame isolation is a designed
-feature, not an accident.
+SCOPE, post owner-ruling 2026-08-02: uniqueness is PROCESS-WIDE. Two frames
+binding the same class are BOTH refused - the fingerprint has no frame in it, so
+a second frame was never an escape, it was only a blind spot. Per-frame
+behaviour survives solely as an opt-out
+(`process_wide_unique_spell_ids = False`), covered in
+tests/component/melder/aether/test_aether_component_process_wide_spell_id_regime.py.
 """
 
 from typing import Any
@@ -111,20 +114,37 @@ def test_component_conjure_refuses_duplicate_spell_id_in_same_frame() -> None:
     )
 
 
-def test_component_conjure_allows_same_class_in_different_frames() -> None:
+def test_component_conjure_refuses_same_class_in_different_frames() -> None:
     """
     Purpose:
-        NEGATIVE CONTROL. Per-frame isolation is a designed feature, so the same
-        class bound in two different frames must still conjure in both.
+        THE REGIME ITSELF. A spell_id is unique per PROCESS, so the same class
+        bound with the same parameters is refused in a SECOND frame just as it is
+        in the same frame.
+
     Contract:
-        - Identical fingerprints, therefore identical spell_ids.
-        - Different frames means different registries, so no collision.
-        - If this fails, the integrity sweep is over-blocking and has broken
-          multi-tenancy rather than fixed a hole.
+        - Identical fingerprints, therefore identical spell_ids. The frame is not
+          in the fingerprint and never was.
+        - The first conjure succeeds; the second is refused before its Conduit is
+          built.
+        - The refusal must NOT advise moving frames - under this regime that is
+          not an escape, and saying so sends the caller in a circle.
+
+    History:
+        This was written as a NEGATIVE CONTROL asserting per-frame multi-tenancy
+        survived the integrity sweep. Owner ruling 2026-08-02 then made
+        uniqueness process-wide and deliberately retired that multi-tenancy, so
+        the control was asserting the retired law - the same defect as the six
+        frame-per-scope fixtures deleted under
+        EPIC-2026-08-02-process-wide-spell-id-uniqueness. Inverted, not deleted:
+        the cross-frame case is exactly what the regime exists to refuse.
+        Per-frame behaviour with the flag OFF is covered by
+        `test_component_regime_off_restores_per_frame_isolation`.
+
     Returns:
         None.
     Raises:
-        AssertionError: If either conjure is refused.
+        AssertionError: If the second frame is allowed to conjure, or the refusal
+            recommends a frame move.
     """
     book_a = _book("integrity-frame-a")
     book_b = _book("integrity-frame-b")
@@ -133,14 +153,23 @@ def test_component_conjure_allows_same_class_in_different_frames() -> None:
     book_b.bind(spell=IntegrityTenantCache, existence="unique")
 
     conduit_a = book_a.conjure(name="integrity-a")
-    conduit_b = book_b.conjure(name="integrity-b")
+    assert conduit_a is not None, "the first conjure must succeed"
 
-    assert conduit_a is not None and conduit_b is not None
-    assert conduit_a is not conduit_b
+    with pytest.raises(RuntimeError) as excinfo:
+        book_b.conjure(name="integrity-b")
 
-    cache_a: Any = conduit_a.meld(spell=IntegrityTenantCache)
-    cache_b: Any = conduit_b.meld(spell=IntegrityTenantCache)
-    assert cache_a is not cache_b, "per-frame isolation must still hold"
+    message = str(excinfo.value)
+    assert "Conjure refused" in message, (
+        f"refused for the wrong reason; got: {message}"
+    )
+    assert "conjure into a different aetheric frame" not in message.lower(), (
+        "the refusal advises the one fix that cannot work here: the fingerprint "
+        "has no frame in it, so another frame mints the same id and the caller "
+        "is sent in a circle"
+    )
+    assert book_b._conduit is None, (
+        "a refusal must not leave a half-built conduit behind"
+    )
 
 
 def test_component_a_parked_spell_still_reserves_its_spell_id() -> None:

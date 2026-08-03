@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from pathlib import Path
 from types import MappingProxyType, ModuleType, TracebackType
 from typing import TYPE_CHECKING, Optional, List, Any, Mapping, Sequence, Dict, Set, Iterable, Tuple, Generator, Union, \
     ClassVar, Type
@@ -2685,11 +2686,16 @@ and logging.
             "A spell_id is a SHA256 over the bind-time fingerprint (structural profile, \n"
             "lookup signature, existence, and resolved disposal metadata) and does NOT \n"
             "include the frame, so two Spellbooks binding the same target with the same \n"
-            "bind parameters mint the same id. spell_id is unique per frame, and that \n"
-            "includes spells staged inactive by bind_inactive - a parked spell still \n"
-            "holds its id. \n"
-            "Fix: conjure into a different aetheric frame, or differentiate the binding \n"
-            "with a distinct spellframe or binding_name."
+            "bind parameters mint the same id. That includes spells staged inactive \n"
+            "by bind_inactive - a parked spell still holds its id. \n"
+            "SCOPE: a spell_id is unique per PROCESS while "
+            "`process_wide_unique_spell_ids` \n"
+            "is on (the default), and per FRAME only when it is off. \n"
+            "Fix: differentiate the binding with a distinct spellframe or "
+            "binding_name. \n"
+            "Moving to another aetheric frame is NOT a fix under the process-wide \n"
+            "regime - the id follows the fingerprint, and the fingerprint has no frame \n"
+            "in it."
         )
 
     def _describe_colliding_spells(self, spell_ids: Set[str]) -> str:
@@ -6032,6 +6038,18 @@ and logging.
             disposal: Optional[bool],
             disposal_method_names: Optional[List[str]],
             system_caching_enabled: Optional[bool] = None,
+            ai_native: Optional[bool] = None,
+            rift_enabled: Optional[bool] = None,
+            shared_framewide_spellbook_configuration: Optional[bool] = None,
+            system_cache_root_path: Optional[Union[str, Path]] = None,
+            disable_all_transactions_after_conjure: Optional[bool] = None,
+            disable_mutations: Optional[bool] = None,
+            disable_linking: Optional[bool] = None,
+            disable_bind: Optional[bool] = None,
+            disable_conduit_cluster: Optional[bool] = None,
+            disable_transfer_of_ownership: Optional[bool] = None,
+            disable_contract_mutation: Optional[bool] = None,
+            max_transaction_wait_time_in_seconds: Optional[float] = None,
     ) -> None:
         """
         Public API
@@ -6039,35 +6057,154 @@ and logging.
         Apply frame/runtime posture inputs, freeze configuration, and bind the
         result into Aether for this spellbook's frame.
 
+        Purpose:
+            This is the ONE public door onto a book's frame posture. The
+            `AethericFrameConfiguration` this method writes through is created
+            and retained by the spellbook itself - it is never handed to the
+            caller - so every knob that is not a parameter here is a knob no
+            user can reach. That made two capabilities unreachable from the
+            public root before this door was widened:
+
+              - `rift_enabled` is the frame's OPT-IN TO BEING OBSERVABLE. It
+                gates passive Nexus publication
+                (`_refresh_nexus_publish_enabled`) and static AR attachment,
+                which raises `"AR requires rift_enabled on target frame"` when
+                it is False.
+              - `ai_native` is the AI-native runtime posture, and it is the
+                single consistency rule `AethericFrameConfiguration.validate()`
+                enforces.
+
         Contract:
             - Uses the existing spellbook configuration and frame-configuration
               objects rather than creating a parallel setup path.
             - Applies only provided values; omitted values leave the current state
-              unchanged.
-            - Freezes the rich spellbook configuration and then binds it to the
-              owning Aether frame.
+              unchanged. `None` means "do not touch", NOT "reset to default" -
+              there is no way to clear a knob through this door, only to set it.
+            - COVERS THE WHOLE FRAME POSTURE. Every `with_*` builder on
+              `AethericFrameConfiguration` has a parameter here.
+            - `system_state` IS APPLIED FIRST, DELIBERATELY. `ai_native`
+              requires dynamic state and that rule is enforced at FREEZE rather
+              than at assignment, so ordering the two lets a single call move a
+              frame to dynamic and enable AI-native together. Passing
+              `ai_native=True` without a dynamic frame (either already dynamic
+              or made so by `system_state` in this same call) succeeds here and
+              makes the later frame freeze raise `ValueError`.
+            - PRE-SETTLEMENT ONLY. The frame posture freezes when the frame
+              settles at conjure, and every `with_*` builder refuses afterwards.
+              This method does not freeze the frame posture itself; it freezes
+              the rich SPELLBOOK configuration and binds that to the owning
+              Aether frame.
+            - NOT ATOMIC. Values are applied in parameter order and a rejected
+              value leaves the earlier ones already written. Re-call with a
+              corrected argument rather than assuming the posture is untouched.
+
+        Threading:
+            Each `with_*` assignment takes the frame configuration's own lock
+            individually; this method holds no lock spanning the group, which
+            is why the sequence is not atomic.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame configuration is owned by
+            this spellbook and is not the caller's to clean.
 
         Args:
             system_state:
-                Optional frame system-state name.
+                Optional frame system-state name, e.g. `"dynamic"` or
+                `"automatic"`. Applied before every other posture value.
             disposal:
                 Optional disposal toggle for the rich spellbook configuration.
             disposal_method_names:
                 Optional replacement disposal-method list.
             system_caching_enabled:
                 Optional replacement system-caching-enabled toggle.
+            ai_native:
+                Optional AI-native frame posture. Requires the frame to be
+                dynamic by the time it freezes.
+            rift_enabled:
+                Optional Rift-visibility opt-in. Must be True for a Rift to
+                attach to this frame, for static AR to target it, and for the
+                frame to publish passively into Nexus.
+            shared_framewide_spellbook_configuration:
+                Optional toggle for sharing one spellbook configuration across
+                every book on the frame.
+            system_cache_root_path:
+                Optional replacement cache-root fragment, as a `str` or `Path`.
+                MUST BE RELATIVE - it is resolved against the melder package
+                root, not the working directory, and an absolute path raises
+                `ValueError`.
+            disable_all_transactions_after_conjure:
+                Optional toggle that closes the transaction surface once the
+                frame has conjured.
+            disable_mutations:
+                Optional toggle that refuses spell mutation on this frame.
+            disable_linking:
+                Optional toggle that refuses conduit linking on this frame.
+            disable_bind:
+                Optional toggle that refuses further binding on this frame.
+            disable_conduit_cluster:
+                Optional toggle that refuses conduit clustering on this frame.
+            disable_transfer_of_ownership:
+                Optional toggle that refuses ownership transfer on this frame.
+            disable_contract_mutation:
+                Optional toggle that refuses contract mutation on this frame.
+            max_transaction_wait_time_in_seconds:
+                Optional transaction wait ceiling, in seconds.
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If this spellbook has been cleaned, if the frame
+                configuration or the spellbook configuration is unavailable, or
+                if the frame posture has already frozen.
+            TypeError: If a posture value is not the type its `with_*` builder
+                requires.
+            ValueError: If the spellbook configuration fails validation during
+                the freeze that closes this call.
         """
         self.check_cleaned()
         frame_configuration = self._aetheric_frame_configuration
         if frame_configuration is None:
             raise RuntimeError("AethericFrameConfiguration is unavailable.")
+        # system_state leads on purpose: ai_native's dynamic requirement is
+        # checked at freeze, so applying the state first lets one call satisfy
+        # both. Do not reorder these two.
         if system_state is not None:
             frame_configuration.with_system_state(system_state)
         if system_caching_enabled is not None:
             frame_configuration.with_system_caching_enabled(system_caching_enabled)
+        if ai_native is not None:
+            frame_configuration.with_ai_native(ai_native)
+        if rift_enabled is not None:
+            frame_configuration.with_rift_enabled(rift_enabled)
+        if shared_framewide_spellbook_configuration is not None:
+            frame_configuration.with_shared_framewide_spellbook_configuration(
+                shared_framewide_spellbook_configuration,
+            )
+        if system_cache_root_path is not None:
+            frame_configuration.with_system_cache_root_path(system_cache_root_path)
+        if disable_all_transactions_after_conjure is not None:
+            frame_configuration.with_disable_all_transactions_after_conjure(
+                disable_all_transactions_after_conjure,
+            )
+        if disable_mutations is not None:
+            frame_configuration.with_disable_mutations(disable_mutations)
+        if disable_linking is not None:
+            frame_configuration.with_disable_linking(disable_linking)
+        if disable_bind is not None:
+            frame_configuration.with_disable_bind(disable_bind)
+        if disable_conduit_cluster is not None:
+            frame_configuration.with_disable_conduit_cluster(disable_conduit_cluster)
+        if disable_transfer_of_ownership is not None:
+            frame_configuration.with_disable_transfer_of_ownership(
+                disable_transfer_of_ownership,
+            )
+        if disable_contract_mutation is not None:
+            frame_configuration.with_disable_contract_mutation(disable_contract_mutation)
+        if max_transaction_wait_time_in_seconds is not None:
+            frame_configuration.with_max_transaction_wait_time_in_seconds(
+                max_transaction_wait_time_in_seconds,
+            )
 
         configuration = self._configuration
         if configuration is None:

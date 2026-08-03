@@ -146,15 +146,22 @@ def test_aether_conduit_cloud_isolated_by_frame() -> None:
         aetheric_frame="frame-b",
         configuration=_make_configuration(aether_frame="frame-b", dynamic=True),
     )
+    # binding_name per frame: the subject here is CONDUIT CLOUD isolation, and
+    # the bound spell is only scaffolding to give each frame a conduit. The frame
+    # is not in the bind-time fingerprint, so without this both books mint the
+    # same spell_id and process-wide uniqueness refuses the second conjure before
+    # the clouds are ever compared.
     book_a.bind(
         spell=BasicService,
         existence=Existence.unique,
         permissions="create",
+        binding_name="frame-a",
     )
     book_b.bind(
         spell=BasicService,
         existence=Existence.unique,
         permissions="create",
+        binding_name="frame-b",
     )
 
     conduit_a = book_a.conjure(dynamic=True, name="root-a")

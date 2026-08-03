@@ -2138,7 +2138,57 @@ class Conduit(Cleanable):
 
 
 
-    def set_new_policy(self, policy: str) -> None:
+    @property
+    def policy(self) -> Policies:
+        """
+        Public API
+
+        Return the linking policy currently in force on this Conduit's ward.
+
+        Purpose:
+            The counterpart read for `set_new_policy`. Without it the policy is
+            a WRITE-ONLY setting: a caller could change how linking behaves and
+            then had no public way to ask what the behaviour now is. Melder
+            does not conflate "I set it" with "it is in force" anywhere else,
+            and the ward is no exception - `set_new_policy` can refuse (lesser
+            conduit, existing contracts, automatic frame), so the value a
+            caller last passed is not evidence of the value that is live.
+
+        Contract:
+            - Reports the LIVE ward policy, not a remembered argument. After a
+              `set_new_policy` that raised, this still reads the policy that
+              survived the refusal.
+            - Available in every mode. Unlike `set_new_policy`, reading is not
+              gated on a dynamic frame - an automatic conduit can be asked what
+              it enforces even though it can never be told to enforce something
+              else.
+            - Available on lesser conduits, which also cannot be written to.
+            - Returns the `Policies` MEMBER, not its name. Use `.name` for the
+              string form; `.value` is an integer because `Policies` is built
+              on `auto()`.
+            - The returned member may be passed straight back into
+              `set_new_policy`, which accepts a member or its string name.
+
+        Threading:
+            Unsynchronized read of a single attribute. A caller racing
+            `set_new_policy` observes either the old or the new member and
+            never a partial state, but the answer is a snapshot - do not cache
+            it across an operation that may re-policy the conduit.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The ward is owned by this conduit and
+            is torn down with it.
+
+        Returns:
+            Policies: The linking policy the ward is currently enforcing.
+
+        Raises:
+            RuntimeError: If the Conduit has been cleaned.
+        """
+        self.check_cleaned()
+        return self._conduit_ward._policy
+
+    def set_new_policy(self, policy: Union[str, Policies]) -> None:
         """
         Public API
 
@@ -2149,12 +2199,18 @@ class Conduit(Cleanable):
               rather than silently ignoring the request, and the refusal is logged.
             - Applies the policy through the conduit ward under the conduit lock, so
               the swap is atomic with respect to other conduit operations.
+            - NOT A CONFIRMATION. A successful return means the ward accepted
+              the swap; read `policy` when you need the value that is live.
 
         Args:
-            policy (str): The new policy to set, governing linking behavior.
+            policy (Union[str, Policies]): The new policy to set, governing
+                linking behavior. Accepts a `Policies` member or its lowercase
+                string name, so the member returned by `policy` round-trips
+                back through this call unchanged.
 
         Raises:
             RuntimeError: If dynamic environment is not enabled.
+            ValueError: If `policy` is a string that names no `Policies` member.
 
         Returns:
             None.

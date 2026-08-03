@@ -568,12 +568,17 @@ def test_probe_frame_owned_config_needs_switch_and_publication():
     nobody published through EITHER door (no configure_aether_frame,
     no conjure), so the second book still mints its own config.
 
-    FINDING: neither step has a public door for the switch itself - the
-    only setters are the AethericFrameConfiguration constructor kwarg
-    (:118) and with_shared_framewide_spellbook_configuration() (:607),
-    and configure_aether_frame() never touches it. Pinned here through
-    the retained posture the Spellbook holds BY REFERENCE
-    (_initialize_aetheric_frame_configuration, spellbook.py:5359-5376)."""
+    WHY THIS ROW STILL USES THE PRIVATE SEAM, deliberately, after the
+    public door landed (2026-08-03): configure_aether_frame() now accepts
+    shared_framewide_spellbook_configuration, but it also FREEZES and
+    PUBLISHES in the same call. Setting the switch through it would
+    perform step 2 as well, and this row exists to prove step 1 ALONE
+    does nothing. The seam is the only instrument that can separate them,
+    so it is the right instrument here and the wrong one everywhere else.
+    Reached through the retained posture the Spellbook holds BY REFERENCE
+    (_initialize_aetheric_frame_configuration, spellbook.py:5359-5376).
+    See test_probe_frame_owned_config_adoption_via_public_door for the
+    both-steps case, which now needs no seam at all."""
     first = Spellbook(aetheric_frame="switch-only-frame")
     first._aetheric_frame_configuration.\
         with_shared_framewide_spellbook_configuration(True)
@@ -584,10 +589,15 @@ def test_probe_frame_owned_config_needs_switch_and_publication():
     print("switch without publication: still per-book")
 
 
-def test_probe_frame_owned_config_adoption_via_seam():
-    """FRAME-OWNED SHARING, both steps (the shape lesson 35 describes).
-    Switch on, then the first book PUBLISHES through
-    configure_aether_frame() - which freezes its rich config
+def test_probe_frame_owned_config_adoption_via_public_door():
+    """FRAME-OWNED SHARING, both steps, NOW IN ONE PUBLIC CALL
+    (2026-08-03 - this row used to need the private posture seam for the
+    switch and was named ..._via_seam). The switch travels IN the publish
+    call because configure_aether_frame applies posture BEFORE it freezes
+    and binds, so the bind that follows in the same call already sees
+    shared=True. The rich config must therefore be shaped BEFORE the call.
+    That is the shape lesson 35 describes.
+    The call freezes its rich config
     (_validate_and_freeze_configuration, :5909) and binds it to the frame
     (:5910 -> aether._bind_configuration, aether.py:1194, first-wins).
     Every book constructed AFTER that adopts the frame-owned object at
@@ -604,13 +614,12 @@ def test_probe_frame_owned_config_adoption_via_seam():
         pass
 
     first = Spellbook(aetheric_frame="probe-shared-frame")
-    first._aetheric_frame_configuration.\
-        with_shared_framewide_spellbook_configuration(True)
     published = first.get_configuration()
     first.configure_aether_frame(
         system_state=None,
         disposal=None,
         disposal_method_names=None,
+        shared_framewide_spellbook_configuration=True,
     )
     assert first.is_configuration_locked() is True
 

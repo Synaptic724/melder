@@ -22,8 +22,8 @@ GOAL: THE FRAME POSTURE CHEATSHEET - every AethericFrameConfiguration
         disable_transfer_of_ownership / disable_contract_mutation /
         disable_mutations / disable_all_transactions_after_conjure
         - a gated verb refuses with a "disabled" RuntimeError at its
-          own door. NOTE: staging these currently requires the private
-          retained posture (no public door yet - recorded finding).
+          own door. All seven are settable through the public door,
+          configure_aether_frame(disable_linking=True, ...).
       TRANSACTION PATIENCE
         max_transaction_wait_time_in_seconds - how long a structural
           transaction waits on a busy scope before refusing, naming

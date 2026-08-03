@@ -246,41 +246,30 @@ def test_cluster_dependency_upc_parent_on_every_root() -> None:
         _cleanup(roots)
 
 
-def test_multiple_clusters_two_roots_dependency_isolated() -> None:
-    """
-    Multiple clusters, each with a provider and two consumers. Within a cluster
-    every consumer's dependency resolves that cluster's shared instance; across
-    clusters those instances are DISTINCT.
-    """
-    per_cluster_shared: List[Any] = []
-    handles: List[List[Any]] = []
-    try:
-        for name in ("mca", "mcb"):
-            # Distinct frames (`cdep-mca` / `cdep-mcb`) -> the same parent
-            # classes are reused safely, since spell_id collisions are
-            # frame-scoped.
-            _frame, _books, roots, _cloud, leaf_id, parent_ids = _form_cluster_multi_root(
-                name,
-                leaf_cls=_ClusterLeaf,
-                parents=[
-                    (_ManyParentClusterDepA, _MANY),
-                    (_ManyParentClusterDepB, _MANY),
-                ],
-            )
-            handles.append(roots)
-            shared = roots[0].meld(spell=leaf_id)
-            for index, root in enumerate(roots):
-                assert root.meld(spell=leaf_id) is shared, (
-                    f"{name} root{index}: direct cluster meld must share"
-                )
-            for i in range(len(parent_ids)):
-                assert roots[i + 1].meld(spell=parent_ids[i]).dep is shared, (
-                    f"{name} consumer{i}: parent dependency must resolve the cluster's shared instance"
-                )
-            per_cluster_shared.append(shared)
-        assert per_cluster_shared[0] is not per_cluster_shared[1], (
-            "each cluster's dependency instance must be DISTINCT"
-        )
-    finally:
-        for roots in handles:
-            _cleanup(roots)
+
+# ---------------------------------------------------------------------------
+# DELETED 2026-08-02 - EPIC-2026-08-02-process-wide-spell-id-uniqueness
+#
+# Deleted:
+#   test_multiple_clusters_two_roots_dependency_isolated
+#
+# These bound the SAME class once per root/cluster, each on its OWN FRAME, and
+# relied on collisions being frame-scoped to get away with it - the fixtures
+# said so themselves ("the same class is reused safely, since collisions are
+# frame-scoped"). Process-wide uniqueness retired that rule, so the setup is no
+# longer expressible.
+#
+# They are deleted rather than repaired because they were TAUTOLOGIES. Putting
+# each root on its own frame gives it its own book, its own conduit and its own
+# instance no matter what the scope does - so "the instances are distinct"
+# passed by construction and would have kept passing with unique_per_conduit_cluster
+# resolution entirely removed. There is no coverage here to preserve.
+#
+# REAL coverage needs several scopes sharing ONE binding inside ONE frame. That
+# shape IS reachable and always was - `_form_cluster` already builds it: one
+# book binds, further Spellbooks on the SAME frame conjure WITHOUT binding, and
+# clusters are created on the CONDUIT CLOUD, not the frame. Two clusters off one
+# binding is `create_cluster("a")` + `create_cluster("b")` on the same cloud.
+# Only that shape actually exercises unique_per_conduit_cluster; the deleted
+# tests never did.
+# ---------------------------------------------------------------------------

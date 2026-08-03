@@ -37,6 +37,23 @@ class SharedCollisionService:
     Shared service used to create real cross-frame spell/binding collisions.
     """
 
+
+class SharedCollisionServiceB:
+    """
+    The finance-frame counterpart to `SharedCollisionService`.
+
+    A DISTINCT class deliberately bound under the SAME spellframe and
+    binding_name, so the two frames still collide on the LOOKUP KEY - which is
+    what the viewer's cross-frame compare/collision helpers actually report -
+    while minting DIFFERENT spell_ids.
+
+    Before process-wide uniqueness both frames bound the same class, which
+    collided on the lookup key AND the spell_id at once. The spell_id half was
+    incidental scaffolding, never the subject; it is now refused at conjure, so
+    the two halves are separated here rather than the test being weakened.
+    """
+    pass
+
     def run(self) -> str:
         """
         Return a stable string for integration assertions.
@@ -210,7 +227,7 @@ def _build_real_multi_frame_room_viewer() -> object:
         spellframe="OpsFrame",
     )
     finance_spellbook.bind(
-        spell=SharedCollisionService,
+        spell=SharedCollisionServiceB,
         existence=Existence.unique,
         permissions="create",
         binding_name="shared_binding",
@@ -280,7 +297,7 @@ def _build_real_multi_frame_rift_viewer() -> object:
         spellframe="OpsFrame",
     )
     finance_spellbook.bind(
-        spell=SharedCollisionService,
+        spell=SharedCollisionServiceB,
         existence=Existence.unique,
         permissions="create",
         binding_name="shared_binding",
