@@ -97,10 +97,14 @@ class StrategyBuilder(Cleanable):
               the vocabulary without a line here leaves `missing_types()`
               non-empty, which is the intended way to notice.
             - Imports the families INSIDE the method rather than at module
-              scope. `strategies/__init__.py` re-exports the six classes and each
-              of them imports `transaction_strategy`, which this module also
-              imports - a module-scope import here would make that latent
-              relationship a real import cycle.
+              scope. Each family module imports `transaction_strategy`, which
+              this module also imports - a module-scope import here would make
+              that latent relationship a real import cycle.
+            - Imports each family module DIRECTLY. There is no
+              `strategies/__init__.py` to import from: every melder subpackage
+              is a PEP 420 namespace package by explicit design (`pyproject`
+              sets `namespaces = true`) and the repo keeps exactly ONE
+              `__init__.py`, at the package root.
             - Registration stays REPLACEABLE: a subsystem may override any of
               these afterwards through `Mediator.strategies` by registering its
               own class against the same type. Seeding does not close that path.
@@ -108,13 +112,25 @@ class StrategyBuilder(Cleanable):
         Returns:
             None.
         """
-        from melder.aether.aetheric_mediator.strategies import (
+        from melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy import (
             AgentRepairTransactionStrategy,
+        )
+        from melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy import (
             CheckpointLoadTransactionStrategy,
+        )
+        from melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy import (
             FormationLoadTransactionStrategy,
+        )
+        from melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy import (
             FrameCreateTransactionStrategy,
+        )
+        from melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy import (
             IndexGraftTransactionStrategy,
+        )
+        from melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy import (
             SubsystemDisableTransactionStrategy,
+        )
+        from melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy import (
             SubsystemEnableTransactionStrategy,
         )
 

@@ -22,12 +22,25 @@ from melder.aether.aetheric_mediator.claim_mode import ClaimMode
 from melder.aether.aetheric_mediator.claim_table import ClaimTable
 from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.scope_keys import ScopeKey
-from melder.aether.aetheric_mediator.strategies import (
+from melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy import (
     AgentRepairTransactionStrategy,
+)
+from melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy import (
     CheckpointLoadTransactionStrategy,
+)
+from melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy import (
     FormationLoadTransactionStrategy,
+)
+from melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy import (
+    FrameCreateTransactionStrategy,
+)
+from melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy import (
     IndexGraftTransactionStrategy,
+)
+from melder.aether.aetheric_mediator.strategies.subsystem_disable_transaction_strategy import (
     SubsystemDisableTransactionStrategy,
+)
+from melder.aether.aetheric_mediator.strategies.subsystem_enable_transaction_strategy import (
     SubsystemEnableTransactionStrategy,
 )
 from melder.aether.aetheric_mediator.transaction_strategy import TransactionStrategy
@@ -36,6 +49,7 @@ ALL_FAMILIES = (
     AgentRepairTransactionStrategy,
     CheckpointLoadTransactionStrategy,
     FormationLoadTransactionStrategy,
+    FrameCreateTransactionStrategy,
     IndexGraftTransactionStrategy,
     SubsystemDisableTransactionStrategy,
     SubsystemEnableTransactionStrategy,
@@ -51,6 +65,7 @@ DERIVED_FAMILIES = tuple(
 
 # Every family reads these; each ignores the keys that are not its own.
 FULL_METADATA = {
+    "frame_name": "A",
     "target_frame_name": "A",
     "host_frame_name": "A",
     "subsystem_name": "crystallizer",
@@ -206,6 +221,7 @@ def test_subsystem_transitions_claim_the_subsystem_exclusively(family, submitter
     "family,key",
     [
         (FormationLoadTransactionStrategy, "target_frame_name"),
+        (FrameCreateTransactionStrategy, "frame_name"),
         (IndexGraftTransactionStrategy, "host_frame_name"),
         (SubsystemEnableTransactionStrategy, "subsystem_name"),
         (SubsystemDisableTransactionStrategy, "subsystem_name"),

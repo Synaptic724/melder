@@ -310,3 +310,74 @@ layers and cost most of a session; source is authoritative, docstrings are not.
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->
 <!-- END USER-DEFINED: project_fields -->
+
+- DATETIME: 2026-08-02T21:40:00Z
+  TYPE: FACT
+  CLAIM: THE REGIME LANDED, AND THE EXPENSIVE PART WAS NOT THE CODE - IT WAS
+    EVERY PLACE THAT DESCRIBED THE OLD LAW. Implementation: the regime is a
+    PLAIN BOOL on Aether (`_process_wide_unique_spell_ids`), sealed once by
+    `_collapse_configuration_on_first_frame` inside `_ensure_frame`'s lock hold
+    and never read from configuration again - bind and conjure test it on every
+    call and must not pay a property read. Both sweeps (`_check_for_spell`,
+    `_get_all_spell_ids`) gate identically on the bool AND frame count > 1.
+    An earlier attempt split these into `*_anywhere` variants; the owner refused
+    it as dead surface and it was reverted to the original methods.
+  EVIDENCE:
+  - src/melder/aether/aether.py (bool at :174, collapse, both gated sweeps)
+  - src/melder/aether/aether_configuration.py
+  - src/melder/aether/spellbook/spellbook.py (conjure preflight, refusal text)
+  IMPACT: 22 tests across the suite broke, and only ONE was a code defect. The
+    rest were fixtures, docstrings and a REFUSAL MESSAGE that still taught the
+    retired rule. The message told callers "Fix: conjure into a different
+    aetheric frame" - advice that cannot work, since the frame is not in the
+    fingerprint, so the caller is sent in a circle. Changing a law means
+    auditing everything that DESCRIBES it, not just everything that ENFORCES it.
+  NEXT: STORY-2026-08-02-aether-unified-spell-id-set (retitled - it moves the
+    check into `register_conduit_spells`, it does NOT build a unified set).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-02T21:40:00Z
+  TYPE: FACT
+  CLAIM: SIX DELETED FIXTURES WERE TAUTOLOGIES, NOT MERELY STALE. Each put every
+    root or cluster on its OWN FRAME, which hands it its own book, conduit and
+    instance for free - so "the instances are distinct" passed BY CONSTRUCTION
+    and would have kept passing with cluster/lineage resolution entirely
+    removed. They asserted frame isolation while claiming to assert scope
+    isolation. The fixtures said the quiet part out loud: "the same class is
+    reused safely, since collisions are frame-scoped".
+  EVIDENCE:
+  - tests/integration/melder/conduit/test_conduit_integration_cluster_isolation.py
+  - tests/integration/melder/conduit/test_conduit_integration_lineage_isolation.py
+  - tests/integration/melder/conduit/test_conduit_integration_cluster_dependency.py
+  IMPACT: Deleting them costs no real coverage, but it EXPOSES a genuine gap that
+    was never covered. A replacement (two clusters, one frame, one binding) was
+    written and WITHDRAWN: it assumed any conduit on the frame could meld the one
+    binding, and `meld` resolves through the conduit's OWN Spellbook first
+    (meld.py:1330), so a leader whose book bound nothing raises KeyError. Cluster
+    shares propagate FROM THE OWNER, so two leaders need two bindings - which the
+    regime refuses. Whether a second leader can acquire it by link or contract is
+    UNREAD. The gap is open; the absence of these tests is not coverage.
+  NEXT: Read the link/contract resolution paths before attempting a replacement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-02T21:40:00Z
+  TYPE: BLOCKER
+  CLAIM: THE CRYSTALLIZER GRAFT CONTRADICTS THE REGIME AND NEEDS AN OWNER RULING.
+    `graft_runner._bind_selected` (graft_runner.py:404) rebinds a LIVE
+    `Existence.unique` spell into a host book on ANOTHER frame while the SOURCE
+    book still holds it - two spells wearing one spell_id. Three integration
+    tests are marked `xfail(strict=True)` rather than deleted, because the tests
+    are correct and the lane is not.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/graft_runner.py:404
+  - tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py
+  IMPACT: Two ways out, and they are not equivalent: the graft RELEASES the
+    source claim first (a move, not a copy - the source book loses the spell), or
+    custody transfer is carved out of the regime explicitly (cheaper, but a
+    permanent hole in the law). Strict xfail means whichever is chosen, the
+    tests flip to failing and the marker must be removed.
+  NEXT: OWNER RULING REQUIRED before either path is implemented.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
