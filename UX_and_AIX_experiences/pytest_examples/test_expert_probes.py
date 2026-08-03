@@ -258,7 +258,7 @@ def test_probe_gates_report_the_actual_wiring():
 # ---------------------------------------------------------------------------
 
 def _active_research() -> "md.MutationResearch":
-    research = MutationResearch(Aether())
+    research = MutationResearch(aether=Aether())
     config = research.create_configuration()
     config.with_defaults().finalize()
     config.activate()
@@ -282,7 +282,7 @@ def test_probe_research_follows_the_caller_driven_ladder():
     requiring the caller to activate the configuration before the
     subsystem. Aether and Crystallizer agree; Nexus is the lone
     exception. 3-to-1 makes it the house rule."""
-    research = MutationResearch(Aether())
+    research = MutationResearch(aether=Aether())
     assert research.activated is False
     config = research.create_configuration()
     config.with_defaults().finalize()
@@ -505,7 +505,7 @@ def test_probe_config_enforcement_default_reaches_new_research_sets():
     the config knob ON and checks a NEWLY CREATED set actually inherits
     it, which is the only thing that makes "house rule AND per-experiment
     choice" a true statement rather than a nice one."""
-    research = MutationResearch(Aether())
+    research = MutationResearch(aether=Aether())
     config = research.create_configuration()
     config.with_defaults().with_lane_type_enforcement(True).finalize()
     config.activate()

@@ -254,7 +254,7 @@ def test_mutation_research_lifecycle_records_all_three_states():
         AssertionError: If any MR lifecycle flip fails to record.
     """
     crystallizer = _activate_crystallizer()
-    research = MutationResearch(Aether())
+    research = MutationResearch(aether=Aether())
     configuration = MutationResearchConfiguration().with_defaults()
     configuration.activate()
     research.activate(configuration)
@@ -293,7 +293,7 @@ def test_mutation_research_composition_twin_survives_the_real_record():
     import json
 
     crystallizer = _activate_crystallizer()
-    research = MutationResearch(Aether())
+    research = MutationResearch(aether=Aether())
     configuration = MutationResearchConfiguration().with_defaults()
     configuration.activate()
     research.activate(configuration, hydrate_from_record=False)
@@ -335,7 +335,7 @@ def test_mutation_research_composition_twin_survives_the_real_record():
     # Root death, then REBIRTH through the bootstrap lane.
     research.cleanup()
     MutationResearch._reset_singleton_for_tests()
-    reborn = MutationResearch(Aether())
+    reborn = MutationResearch(aether=Aether())
     reborn_configuration = MutationResearchConfiguration().with_defaults()
     reborn_configuration.activate()
     reborn.activate(reborn_configuration)  # hydrate_from_record default

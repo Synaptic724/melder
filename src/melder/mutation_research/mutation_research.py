@@ -172,8 +172,8 @@ class MutationResearch(Cleanable):
 
     def __init__(
             self,
-            aether: "Aether",
             *,
+            aether: Optional["Aether"] = None,
             configuration: Optional[MutationResearchConfiguration] = None,
     ) -> None:
         """
@@ -181,8 +181,10 @@ class MutationResearch(Cleanable):
 
         Args:
             aether:
-                Hosting `Aether` singleton. First-time initialization requires
-                this host.
+                Optional hosting `Aether` singleton. First-time initialization
+                requires this host; later constructions are lookups and ignore
+                it. Reach this root through `Aether.mutation_research` rather
+                than constructing it - that accessor supplies the host.
             configuration:
                 Optional initial mutation-research configuration.
 
@@ -192,6 +194,17 @@ class MutationResearch(Cleanable):
               SILENTLY IGNORED after the first call - passing a different `aether`
               does NOT rebind the existing instance. Treat later calls as lookups,
               not configuration.
+            - ROLLS BACK ITS OWN ALLOCATION when constructed without an Aether
+              before the singleton is initialized: it clears `_instance` and the
+              initialized flag so the half-built object is NOT left installed,
+              then raises `ValueError`. This matches `Crystallizer` and `Nexus`
+              exactly, and it is why a pre-boot `MutationResearch()` probe is
+              safe - a later proper construction still gets a clean singleton.
+              Before this rollback existed the missing host raised `TypeError`
+              from the signature, which fired BEFORE any cleanup could run and
+              left `_instance` pointing at an object whose `_cleaned` slot was
+              never assigned; `_reset_singleton_for_tests` then raised
+              `AttributeError` on every subsequent use.
             - Establishes a dedicated emission lock that must exist before the first
               `ResearchSet` fires `on_mutation`, so snapshot build and publication in
               the emission seam are serialized from the very first event.
@@ -212,6 +225,19 @@ class MutationResearch(Cleanable):
         """
         if MutationResearch._initialized:
             return
+
+        if aether is None:
+            with MutationResearch._lock:
+                if (
+                        MutationResearch._instance is self
+                        and not MutationResearch._initialized
+                ):
+                    MutationResearch._instance = None
+                    MutationResearch._initialized = False
+            raise ValueError(
+                "Aether must be provided to initialize MutationResearch."
+            )
+
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()

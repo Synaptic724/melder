@@ -68,7 +68,7 @@ def main() -> None:
     # The root is AETHER-HOSTED: its constructor takes the hosting Aether,
     # so there is no free-standing research world. One process, one Aether,
     # one research root under it.
-    research = md.MutationResearch(md.Aether())
+    research = md.MutationResearch(aether=md.Aether())
     assert research.activated is False
     print()
     print("start - configured:", research.is_configured,
