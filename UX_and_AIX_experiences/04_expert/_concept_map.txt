@@ -4,8 +4,9 @@ The machinery behind the doors advanced used: cold boot, the external
 persistence mesh, the mutation-research plane, the codegen room where an
 agent writes code into a running world, the admission plane that lets
 several of them mutate it at once, the staging half of a hot swap, and
-the documents the package hands an agent before any of it boots.
-18 lessons authored, 01-18 sequential.
+the documents the package hands an agent before any of it boots -
+prose it addresses, and structure it walks.
+25 lessons authored, 01-25 sequential.
 
 VERIFICATION STATUS (two harness runs, both 2026-08-03)
 
@@ -32,6 +33,62 @@ VERIFICATION STATUS (two harness runs, both 2026-08-03)
         line_count coincidentally exist on both, so it got four steps in
         before `lines()` did not. Rewritten against the real API, which
         is far better: documents are ADDRESSED by section key, not paged.
+
+  RUN 3: 20 and 21 landed; 22-25 ALL RED ON ONE LAW the author did not
+    know existed, and the error message named the fix in full:
+      "[SPELLBOOK] Dynamic-mode conjure with an active Crystallizer
+       requires the SpellbookConfiguration to be finalized BEFORE the
+       first bind."
+    A RECORDED WORLD MUST BE BORN CONFIGURED. The reason is in the
+    refusal: the profile record, the checkpoints and the default
+    bootstrap would DURABLY PERSIST binds that ran against unsettled
+    configuration. A runtime can tolerate config-incoherent binds; a
+    RECORD cannot, because the record is what a future boot rebuilds
+    from. Automatic-mode worlds and worlds with no active Crystallizer
+    are exempt, so nothing that is not being recorded pays for it.
+    THE FIX, ALL PUBLIC:
+      md.SpellbookConfiguration(FRAME).with_defaults().finalize()
+      md.Spellbook(aetheric_frame=FRAME, configuration=...)
+      bind... then conjure(dynamic=True)
+    WHY IT HIT EXACTLY FOUR LESSONS: a sweep showed 22-25 are the only
+    ones that activate custody AND conjure dynamic. Every earlier
+    crystallizer lesson activates custody AFTER building, or never
+    conjures dynamic - so they were exempt and the author never met the
+    rule. The rule is narrow and it is exactly as narrow as the risk.
+    NOTE THE REFUSAL ITSELF: it states the count of offending binds, the
+    consequence, and the remedy in one message. That is the standard the
+    rest of this tier keeps pointing at - a refusal that leaves the
+    caller able to act.
+
+  RUN 4: 24 and 25 green. 22 and 23 red on two more reading failures.
+    22  `research_impact(spell_id)` - it is KEYWORD-ONLY. The verb takes
+        `spell_id=` OR `module_name=` and answers about exactly ONE
+        center per call, so it will not accept a bare identifier and
+        infer which kind of center you meant.
+    22+23  A SILENT ONE. Both anchored on a spell that research had
+        never heard of - "Lane 'default' holds no identity ... to anchor
+        at." CAUSE: a plain bind auto-declares into research only
+        `if self._is_dynamic_posture()`, and BOTH lessons bound BEFORE
+        calling configure_aether_frame, so the frame was not yet dynamic
+        at bind time and nothing was recorded. No error at the bind -
+        "research bookkeeping never gates a bind" - so the omission
+        surfaced two dozen lines later as a missing anchor.
+        THE FIX IS AN ORDERING, AND NOW THERE ARE THREE:
+          1. activate custody + research      (or nothing is recorded)
+          2. finalize the SpellbookConfiguration (or conjure refuses)
+          3. configure_aether_frame(dynamic)  (or binds are not declared)
+          ... THEN bind, THEN conjure.
+        `_is_dynamic_posture()` reads the FRAME configuration and its
+        docstring says outright that it is answerable "before conjure" -
+        which is exactly why the posture call belongs before the bind
+        and not merely before the conjure.
+        WORTH SITTING WITH: rules 2 and 3 both concern the same window
+        (between construction and the first bind) and they fail in
+        OPPOSITE ways. Rule 2 refuses loudly at conjure. Rule 3 says
+        nothing at all and costs you a record you cannot get back. The
+        loud one taught itself; the quiet one needed a downstream
+        failure to surface, which is the case for reading a call site
+        rather than assuming its guard.
 
   ALL THREE RUN-2 FAILURES ARE THE SAME MISTAKE IN THREE COSTUMES:
   reading ONE thing and assuming the NEIGHBOURING thing matches it -
@@ -364,7 +421,224 @@ ARC D COMPLETE (lessons 16-17) - changing a running world: rewiring it
      verify() is ALWAYS False for an unavailable document; there is
      nothing to check.)
 
-ARC E COMPLETE (lesson 18) - the self-documenting package
+  19 the_codebase_as_a_walkable_graph (18 addressed prose; the two GRAPH
+     documents carry that whole surface AND a real graph, answered at
+     import with nothing conjured. THE MOVE WORTH REMEMBERING:
+     `node_at(source_path, line)` turns a traceback line into the NODE
+     that encloses it, and `impact()` turns that node into a blast
+     radius - stack trace to affected files without leaving the process.
+     EVERY EDGE EXPLAINS ITSELF: Edge carries `why` (the justification,
+     travelling WITH the edge) and `origin` - `authored` or `derived`,
+     i.e. did a human assert this or did a tool infer it. `origin` is a
+     TRUST FILTER accepted by walk() and impact(), so you can traverse
+     only what someone meant, or only what a machine can prove. A graph
+     that cannot separate the two forces you to trust all of it equally,
+     which in practice means trusting none of it. AND GUESSES DO NOT
+     SHIP - edge_count excludes extractor candidates, which over-
+     generate ~8x and are leads, not evidence.
+     `walk()` YIELDS, and that is a context-budget decision in the same
+     family as 18's paging: a generator "so an agent can stop at the
+     first useful hop instead of materialising a subgraph it will
+     discard", breadth-first so stopping early stops at the RIGHT
+     things. TWO GUARANTEES MAKE IT SAFE: cycles are handled (`borrows`
+     and `used_by` run both ways, every node expanded at most once, an
+     unguarded walk would not terminate), and AN EDGE TO AN UNKNOWN NODE
+     IS STILL YIELDED then not expanded - "the relationship is real even
+     where the target is not described here", so the graph never
+     understates what touches what. IMPACT IS MEASURED IN FILES, ranked
+     by proximity: not 400 symbols, but the files in the order you
+     should open them. AND THE PAIR JOINS - details_key(node_id) /
+     describe(node_id) address prose in the OTHER document, which is why
+     the two ship together)
+
+ARC E COMPLETE (lessons 18-19) - the self-documenting package: prose you
+  address by section, and structure you walk by node
+
+  20 the_workstation_an_agents_workbench (advanced 12 introduced the
+     workstation as a STORE; this is what it is FOR. THE LOOP:
+     bind_object -> set_target -> execute_target_method(...,
+     bind_as_name="result") -> set_target("result"). A COMMAND'S RETURN
+     VALUE BECOMES THE NEXT NAMED BINDING, so an agent works in steps it
+     named itself instead of carrying objects in its head or re-deriving
+     them from the runtime every call. THREE STORES, one namespace each -
+     the same name in `objects` and `attributes` is not a collision, and
+     describe_bindings() reports FIVE keys because the fifth,
+     `target_store`, names WHICH store the active target came from so a
+     target round-trips through get(name, store=...). STRONG VS WEAK IS
+     ENFORCED: explicit weak on a non-weakreferenceable value RAISES
+     rather than storing it strongly, because a silent degrade pins an
+     object the caller believed was collectable. AND A COLLECTED WEAK
+     BINDING PUBLISHES A ROOM EVENT - "what I was holding went away" is
+     TOLD, not discovered by dereferencing a hole. TWO WAYS TO STOP
+     POINTING: clear_target() deselects and the object lives;
+     cleanup_target() calls cleanup ON it first. Putting the tool down
+     vs dismantling it.
+     THE SECURITY LINE, WORTH KNOWING WHICH SIDE YOU ARE ON: the command
+     system gates runtime access BEFORE a bind and leaves already-bound
+     workstation objects OUTSIDE post-bind ACL policing. Getting the
+     handle is the checkpoint; using it is not re-litigated per call.
+     AND THE WORKSTATION NEVER FABRICATES - it holds room-local bindings
+     only, resolution stays the command system's job, and cleanup()
+     clears the stores while deliberately NOT cleaning the objects in
+     them, because it did not make them.
+     (execute_target_method lives on the base CommandSystem and is NOT
+     overridden by CodegenCommandSystem - verified by AST - so the
+     workbench loop is available in every room kind that has a command
+     system at all.)
+     TWO RUN NOTES, both refusals the author had assumed away, both now
+     the best moments in the lesson:
+       - `get_target()` on an empty bench RAISES ValueError; it does not
+         return None. None would be a VALUE, and a caller would call a
+         method on it before noticing.
+       - `get(name)` with no `store=` REFUSES AS AMBIGUOUS once the name
+         exists in two stores. The stores do not collide on WRITE and
+         are deliberately NOT merged on READ. The lesson now shows the
+         SAME bare call succeeding earlier and refusing later: nothing
+         about the call changed, the world did. A bare name is only an
+         address while it happens to be unique, and melder says so the
+         moment it stops being one.
+
+  21 many_agents_writing_code_at_once (the shape melder is actually
+     built for - four agents, four rooms, one shared world, concurrent.
+     HOW DATA LEAVES GENERATED CODE: the executor runs the source in a
+     controlled namespace and lifts exactly ONE name out of it -
+     `CodegenExecutionResult` is constructed with `result=` taken from
+     the namespace after the code runs, so `payload["result"]` is the
+     whole boundary. Everything else the code computed dies with the
+     sandbox. One value out means the boundary is a VALUE, not a scope
+     an agent can leak through.
+     THE PAYLOAD IS A VERDICT, NOT A RETURN VALUE: `accepted` and
+     `frame_name` always present; `reason`, `runtime_error`,
+     `validation_issues`, `result` fill in per outcome. The SAME shape
+     describes a refusal, a crash and a success, so an agent branches on
+     `accepted` rather than catching (expert 12's law, now load-bearing
+     across four threads).
+     FOUR AGENTS, FOUR ROOMS, ONE WORLD: each opens its own rift and
+     therefore its own room, workstation and memory; what they share is
+     the target frame. PRIVATE BENCHES, SHARED WORLD - asserted by
+     distinct workstation ids.
+     WHAT IS NOT SERIALIZED: nothing here opens a transaction, because
+     computing a value mutates no structure. Four agents run genuinely
+     in parallel and none waits. The plane only arbitrates when one of
+     them binds or links - and even then the vocabulary stays out of the
+     agent's code.
+     PER-AGENT AUDIT IS FREE: subscribe to one room's memory, run the
+     identical call in two, and the other room's call is absent. It
+     falls out of per-agent rooms rather than being a feature anyone
+     built.
+     The four job sources were EXECUTED in a restricted namespace during
+     authoring to confirm their expected values - generated source in a
+     lesson is still source, and asserting its output without running it
+     is the same mistake as asserting an API without reading it.)
+
+ARC F COMPLETE (lessons 20-21) - the agent's bench, and many agents on
+  it at once
+
+  22 asking_what_code_would_do_before_running_it (FORESIGHT, and the
+     codegen room's centerpiece. `research_preview(code,
+     against_spell_id=, frame_name=)` answers FIVE questions in one
+     call: what the candidate DEFINES and IMPORTS (from its AST), the
+     would-be source + structural DIFF against the version it would
+     replace, the IMPACT of that replacement joined with research
+     residency, its candidate_sha256, and - only when frame_name is
+     given - the room's normal codegen VALIDATION verdict. So "may I"
+     and "what would happen" are answered together instead of being two
+     round trips.
+     ORDER OF SETUP IS LOAD-BEARING AND EASY TO GET WRONG: a bind
+     auto-records into research ONLY if the root is already live. The
+     seam returns quietly when research is absent, cleaned or inactive,
+     because "research bookkeeping never gates a bind" - so a world
+     built before you activate research is a world research never saw.
+     Activate custody and record FIRST, then build. And the impact half
+     reaches through the Crystallizer, so it refuses loudly without live
+     custody (expert 14's record-vs-foresight split).
+     THE READ-ONLY CLAIM IS CHECKED, NOT TRUSTED: the lesson snapshots
+     research_heads() before and after the preview and asserts they are
+     IDENTICAL, then re-melds to show the live object is unchanged.
+     "Nothing executes, binds, or records" is melder's claim about
+     itself; the lesson makes it an assertion.
+     AND A BROKEN CANDIDATE ANSWERS RATHER THAN EXPLODING - source that
+     does not parse comes back with `parse_error` populated and the
+     payload otherwise shaped the same. An agent's generator emits
+     garbage sometimes, and a foresight tool that raised on garbage
+     would fail exactly when it is needed most)
+
+  23 branching_the_record_and_joining_back (research lanes are melder's
+     branches, and they look like git until three places where they
+     deliberately are not.
+     A BRANCH STARTS EMPTY. `create_lane(attach_to=, attach_at_spell_id=)`
+     records ANCESTRY ONLY - no node copied, no node moved, anchor lane
+     untouched, new lane at zero versions with a memory of where it came
+     from. A git branch starts AT a commit and carries the history; this
+     one starts at nothing and remembers a point.
+     ANCHORING IS ALL-OR-NOTHING - both arguments or neither, and
+     exactly one raises BEFORE the lock is taken. No "anchor to the
+     current tip" shorthand exists, because the anchor is the one fact
+     the join later reasons about and a shorthand would let you record a
+     different anchor than you meant.
+     THE DEFAULT LANE TYPE IS `experiment`, NOT the default lane's
+     `development` - the safe classification is the one you get by not
+     thinking about it.
+     AND THE JOIN IS DIVERGENCE-AWARE, which is the lesson: the CLEAN
+     path needs the source anchored onto the receiver AND the receiver's
+     tip STILL AT that anchor. Anything else refuses, and THE REFUSAL
+     NAMES BOTH TIPS. `force=True` is an EXPLICIT SUPERSEDE and melder
+     says plainly what it is not: "Reconciliation-by-content is not a
+     join concern: compose in the codegen workshop, register the
+     multi-parent result, then join." A VCS that merges FOR you is
+     guessing at your source; this one refuses to. `collapse` chooses
+     whether the full line or only the tip comes across, residence
+     travels with whatever moves, and a joined source accepts no further
+     work.)
+
+  24 loading_a_whole_world_back (the round trip. FIVE VERBS AND ONLY THE
+     LAST IS A BOOT: create_checkpoint -> describe_checkpoint ->
+     flush_checkpoint -> reload_cached_checkpoint -> load_checkpoint.
+     The first four move a RECORD around; `load_checkpoint` unfolds it
+     into the live runtime.
+     A RESTORE IS NOT A RESURRECTION. The RestoreReport carries status,
+     built counts, SHORTFALL ENTRIES, and an IDENTITY TRANSLATION MAP -
+     old id -> new id. Rebuilt objects get NEW identities, so the world
+     that comes back is EQUIVALENT, not identical, and anything holding
+     a raw pre-restore id is holding a stale address. The map is the
+     only honest way to translate one.
+     SHORTFALLS ARE NAMED, NOT DROPPED - a class that can no longer be
+     imported becomes an entry rather than a silent omission, because a
+     restore that quietly dropped what it could not rebuild would look
+     identical to a world that never had those things (expert 18's law
+     at the boot grain).
+     CHECKPOINTS ACCUMULATE and list_checkpoint_ids() returns them in
+     exact ledger creation order - there is no "the" checkpoint.
+     And md.CrystallizerBootstrap is the operator's one-call form of the
+     same sequence, with one knob, `with_preflight_gate`, that is an
+     ACCEPTED NO-OP and says so in its own docstring instead of quietly
+     doing nothing.)
+
+  25 many_research_sets_one_world (research sets, PLURAL - every earlier
+     lesson used the default and never mentioned there was a choice.
+     A SET IS THE WORLD A LANE LIVES IN: own lanes, own residency, own
+     journal, own campaigns. Two sets are two independent investigations
+     of the SAME runtime, so expert 23's join can never cross them and a
+     lane name in one says nothing about a lane name in the other - two
+     agents auditing one world for different reasons need not share a
+     vocabulary or know about each other.
+     THE CRUX: a version can be RESIDENT in one set and UNKNOWN to
+     another, and neither is wrong. A set records what an investigation
+     CHOSE to look at, not everything that exists.
+     AN UNKNOWN SET NAME RAISES AND THE ERROR LISTS THE KNOWN ONES -
+     small, and enormous for an agent: a typo self-corrects instead of
+     returning an empty set that reads as "this world has no history".
+     And the bare `research_set()` is THE DEFAULT, never ALL - the cheap
+     call is scoped rather than sweeping.
+     AUTHORING NOTE: the first draft used `list_lanes()` and
+     `heads_view()` behind hasattr guards. NEITHER EXISTS. The guards
+     would have hidden that at runtime, which is the guessing pattern
+     this tier keeps relearning - rewritten on `walk(lane_ref)`, which
+     returns a LIST of self-describing node payloads, not a dict.)
+
+ARC G COMPLETE (lessons 22-25) - the record as a working instrument:
+  foresight before action, branching without guessing at content,
+  unfolding a sealed world, and keeping investigations apart
 
 THE THROUGH-LINES, AT EXPERT GRAIN (both inherited from advanced)
 
