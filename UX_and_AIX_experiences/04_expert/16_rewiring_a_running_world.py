@@ -42,17 +42,25 @@ GOAL: CHANGING THE WIRING WHILE THE WORLD RUNS. A dynamic world can gain
       traceback you will get the blocking holder named, not a hang.
 
       AND A WORLD CAN BE TOLD IT DOES NOT DO THIS
-      Two refusals live on `link()` and they are different sentences, in
-      this order:
-        braked posture  -> "Linking is disabled for the current frame
-                            posture."
-        not dynamic     -> "Dynamic environment is not enabled."
-      What a world has been ALLOWED to do is checked before what it IS -
-      so a deliberately locked-down dynamic world and an ordinary static
-      one fail differently, and the message tells you which you have.
+      `link()` asks the frame posture FIRST, and the posture gate answers
+      for both of the obvious cases:
+        a dynamic world with disable_linking=True   -> refused
+        an ordinary static world                    -> refused
+      BOTH GET THE SAME SENTENCE - "Linking is disabled for the current
+      frame posture." - and that surprised the author of this lesson,
+      who expected the static world to complain about dynamic mode. It
+      does not, because an unconfigured non-dynamic frame is already
+      "not allowed to link" as far as the posture gate is concerned; the
+      separate dynamic-mode message sits behind that gate and only
+      surfaces when the posture passes and the CONDUIT was nevertheless
+      conjured non-dynamic.
+      The lesson: the message names the GATE that refused, not the
+      property you were thinking about. Two different worlds, one gate,
+      one sentence.
 SURFACE EXERCISED: md.Spellbook.bind / conjure / configure_aether_frame,
                    Conduit.link / add_spell_to_contract / meld
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: went RED 2026-08-03 and was fixed the same day; awaiting
+        re-run. See the header note for what the failure taught.
 """
 import melder as md
 
@@ -149,19 +157,20 @@ def main() -> None:
         print("braked world refused link() -")
         print("  ", error)
 
-    # A STATIC WORLD REFUSES FOR A DIFFERENT REASON. It can still bind;
-    # it cannot rewire itself while running.
+    # AN ORDINARY STATIC WORLD REFUSES TOO - and with the SAME sentence,
+    # because the posture gate answers first and an unconfigured
+    # non-dynamic frame is already "not allowed to link" to it.
     static_owner, static_borrower, _ = _pair("rewire-static")
     try:
         static_owner.link(static_borrower)
-        raise AssertionError("expected a refusal: link needs dynamic mode")
+        raise AssertionError("expected a refusal: static cannot link")
     except RuntimeError as error:
-        assert "ynamic" in str(error)
+        assert "posture" in str(error)
         print()
         print("static world refused link() -")
         print("  ", error)
-        print("  ALLOWED-to-do is checked before WHAT-IT-IS, so the two")
-        print("  failures never wear each other's message")
+        print("  SAME sentence as the braked world: the message names the")
+        print("  GATE that refused, not the property you had in mind")
 
     print()
     print("link, pull, meld - and the order is just dependency order")

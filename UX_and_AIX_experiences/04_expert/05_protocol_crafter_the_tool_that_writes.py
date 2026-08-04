@@ -56,7 +56,7 @@ GOAL: THE ONE TOOL THAT WRITES TO DISK. Every surface in this curriculum
       is to show the tool and the boundary, not to edit your tree.
 SURFACE EXERCISED: md.ProtocolCrafter - the craft/write split, bounded
                    block updates (craft lanes only; nothing is written)
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

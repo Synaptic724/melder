@@ -67,7 +67,7 @@ SURFACE EXERCISED: CodegenCommandSystem.validate_codegen /
                    execute_codegen / materialize_codegen, the
                    CodegenValidationResult / CodegenExecutionResult
                    verdicts, and RiftSpace.memory_system callbacks
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

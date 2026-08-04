@@ -53,7 +53,7 @@ GOAL: HOW AN AGENT REACHES MUTATION RESEARCH - and the discovery that
       blindly and not acting at all.
 SURFACE EXERCISED: the research_* gradient across static / capability /
                    codegen rooms; read-vs-write as the dividing line
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

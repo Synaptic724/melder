@@ -103,7 +103,7 @@ SURFACE EXERCISED: the eight research_group_* commands across a codegen
                    room and a capability room, the read/write line
                    between them, and the record/foresight line inside the
                    reads
-VERIFY: RUN GREEN on the owner's 3.14t run 2026-08-03.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

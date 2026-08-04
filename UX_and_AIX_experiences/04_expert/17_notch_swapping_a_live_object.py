@@ -63,7 +63,7 @@ GOAL: LINEAGES, AND THE STAGING HALF OF A HOT SWAP. An index is a
 SURFACE EXERCISED: Conduit.bind_inactive, SpellIndex.selected_spell_id /
                    spells_in_index, and the public boundary in front of
                    notch_spell
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

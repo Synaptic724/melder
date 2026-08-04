@@ -375,20 +375,14 @@ class MutationResearch(Cleanable):
         Reset the singleton for isolated test setup.
 
         Contract:
-            - TOLERATES A HUSK. `__new__` publishes the instance before
-              `__init__` runs, so a construction that fails on the SIGNATURE
-              (a positional `aether`, say) leaves an instance installed whose
-              `Cleanable` slot `_cleaned` was never assigned. Reading the flag
-              on that object raises `AttributeError`, so the read is guarded:
-              there is nothing to clean, only bookkeeping to clear. Nexus
-              documents the same case on its own reset door.
-            - Reads the PUBLIC `cleaned` property rather than the base slot,
-              matching Crystallizer, so the three hosted roots stay
-              interchangeable to a reader.
-            - Clears `_instance` / `_initialized` on EVERY path, including
-              when cleanup is skipped or raises `AttributeError`. A reset that
-              left a husk installed would fail the NEXT test instead of this
-              one, which is the worst place to spend a bug.
+            - Cleans unconditionally. `cleanup()` guards its own `_cleaned`
+              flag, so a caller-side liveness check buys nothing.
+            - Tolerates a HUSK: `__new__` publishes the instance before
+              `__init__` runs, so a construction that fails on the signature
+              leaves one installed with no `_cleaned` slot at all. Its
+              `cleanup()` raises `AttributeError` reading its own guard;
+              there is nothing live to release.
+            - Clears `_instance` / `_initialized` on every path.
 
         Returns:
             None.
@@ -397,12 +391,8 @@ class MutationResearch(Cleanable):
             instance = cls._instance
         if instance is not None:
             try:
-                if not instance.cleaned:
-                    instance.cleanup()
+                instance.cleanup()
             except AttributeError:
-                # Husk: constructed by `__new__`, never initialized. The
-                # base lifecycle flag does not exist yet, so there is no
-                # live state behind this reference to release.
                 pass
         with cls._lock:
             cls._instance = None

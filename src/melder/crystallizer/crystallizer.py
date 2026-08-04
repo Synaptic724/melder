@@ -337,13 +337,26 @@ class Crystallizer(Cleanable):
         """
         Reset the singleton for isolated test setup.
 
+        Contract:
+            - Cleans unconditionally. `cleanup()` guards its own `_cleaned`
+              flag, so a caller-side liveness check buys nothing.
+            - Tolerates a HUSK: `__new__` publishes the instance before
+              `__init__` runs, so a construction that fails on the signature
+              leaves one installed with no `_cleaned` slot at all. Its
+              `cleanup()` raises `AttributeError` reading its own guard;
+              there is nothing live to release.
+            - Clears `_instance` / `_initialized` on every path.
+
         Returns:
             None.
         """
         with cls._lock:
             instance = cls._instance
-        if instance is not None and not instance.cleaned:
-            instance.cleanup()
+        if instance is not None:
+            try:
+                instance.cleanup()
+            except AttributeError:
+                pass
         with cls._lock:
             cls._instance = None
             cls._initialized = False

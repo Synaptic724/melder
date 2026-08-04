@@ -50,7 +50,7 @@ GOAL: MUTATION RESEARCH - melder's record of how a world CHANGED, not
       thing.
 SURFACE EXERCISED: md.MutationResearch, md.ResearchSet, md.LaneState,
                    md.LaneType - lanes, residency, campaigns, ancestry
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

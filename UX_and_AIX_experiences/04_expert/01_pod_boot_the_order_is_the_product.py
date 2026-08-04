@@ -55,7 +55,7 @@ GOAL: BOOTING A POD. Advanced 17-18 taught checkpoint and load as two
 SURFACE EXERCISED: md.CrystallizerBootstrap - with_profile,
                    with_pull_remote, with_formation_reload,
                    with_preflight_gate, bootstrap
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

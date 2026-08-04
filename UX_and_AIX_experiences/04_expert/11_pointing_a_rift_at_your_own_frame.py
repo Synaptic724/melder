@@ -73,7 +73,7 @@ SURFACE EXERCISED: configure_aether_frame(rift_enabled=..., ai_native=...),
                    with_allowed_target_frame_names,
                    with_multiple_target_frames, with_max_target_frame_count,
                    Nexus.create_rift, Rift.create_frame_link, both gates
-VERIFY: RUN GREEN on the owner's 3.14t run 2026-08-03.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

@@ -78,7 +78,7 @@ SURFACE EXERCISED: research_set_campaign / research_clear_campaign /
                    research_campaign_view, ambient inheritance through
                    research_group_register and research_group_recompose,
                    and research_group_history(campaign=...)
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

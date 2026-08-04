@@ -56,7 +56,7 @@ GOAL: THE EXTERNAL MESH - how melder persists across a host boundary
 SURFACE EXERCISED: md.ExternalPersistenceManager,
                    md.ExternalPersistenceManagerConfiguration - the
                    handler-gated lanes, strictness, failure accounting
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

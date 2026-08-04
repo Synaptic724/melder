@@ -53,7 +53,7 @@ GOAL: THE ACTUAL ANSWER TO "HOW DO I GET MELDER STATE INTO MY DATABASE."
 SURFACE EXERCISED: Crystallizer external lane -
                    configure_external_persistence_manager, the push/pull/
                    list/retention verbs, the two describe doors
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

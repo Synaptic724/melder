@@ -7,14 +7,38 @@ several of them mutate it at once, the staging half of a hot swap, and
 the documents the package hands an agent before any of it boots.
 18 lessons authored, 01-18 sequential.
 
-VERIFICATION STATUS
-  RUN 2026-08-03 on the owner's 3.14t: 10 and 15 green first time;
-  11, 12, 13, 14 RED, all four for two causes, both of them things the
-  author had inferred from source instead of observing. Fixed and the
-  fixes are now the lesson content - see FINDINGS FROM THE FIRST RUN.
-  The authoring sandbox is 3.10, so nothing here can be self-checked;
-  reading source tells you what a call DOES and never what the DEFAULTS
-  around it are, which is exactly the gap both failures fell into.
+VERIFICATION STATUS (two harness runs, both 2026-08-03)
+
+  RUN 1: 10 and 15 green. 11, 12, 13, 14 RED on two causes -
+    the shipped Nexus allow-list `("default",)`, and foresight reads
+    needing a live Crystallizer. Both were DEFAULTS and DEPENDENCIES the
+    author had inferred rather than observed. Fixed; the fixes became
+    lesson content.
+
+  RUN 2: 15 of 18 green - 01-12, 14, 15, 17. Three RED:
+    13  melded from a FRESH Spellbook in the same frame, which owns
+        nothing that book bound -> KeyError. A frame is not a shared
+        pool, which is the lesson's own thesis, violated in its own
+        demo. `_workshop_frame` now returns its conduit.
+    16  asserted the static world would refuse with the dynamic-mode
+        message. It refuses with the POSTURE message: an unconfigured
+        non-dynamic frame is already blocked at the posture gate, and
+        the dynamic-mode sentence only surfaces when posture PASSES and
+        the conduit was conjured non-dynamic anyway. Rewritten as the
+        real finding: the message names the GATE, not the property.
+    18  written against the WRONG CLASS. The package-root documents are
+        `SystemDocumentView` / `SystemGraphView`, not the
+        `StaticSystemDocument` carrier the author read. head/tail/
+        line_count coincidentally exist on both, so it got four steps in
+        before `lines()` did not. Rewritten against the real API, which
+        is far better: documents are ADDRESSED by section key, not paged.
+
+  ALL THREE RUN-2 FAILURES ARE THE SAME MISTAKE IN THREE COSTUMES:
+  reading ONE thing and assuming the NEIGHBOURING thing matches it -
+  a carrier class for the exports built from it, a frame for the books
+  inside it, one refusal path for the other. Source reading tells you
+  what the thing you read does. It never tells you that the thing you
+  did NOT read is the same.
 
 HOUSE RULE - STRINGS, NOT ENUMS (inherited from advanced; see that map
   for the `.value` footgun that makes it a rule rather than a style)
@@ -309,37 +333,36 @@ ARC D COMPLETE (lessons 16-17) - changing a running world: rewiring it
   invites a reader to reach for it.
 
   18 the_package_reads_itself_to_you (THE TIER FINALE, and it ends where
-     an agent BEGINS. Four StaticSystemDocuments hang off the package
-     root - __architecture__, __components__, __graph_network__,
-     __graph_details__ - and answer AT IMPORT. The class System Context
-     puts it exactly: they sit "entirely outside the runtime graph and
-     BEFORE IT IN TIME", queryable with no Spellbook, no Conduit, no
-     conjured anything. THE FULL-READ DOOR IS THE FAILURE MODE AND THE
-     SOURCE SAYS SO: `reader()`'s docstring calls `render_markdown()`
-     "the whole point of failure" for a populated document - that is the
-     stated reason the paging API exists, not a warning added later.
-     Advanced 14's describe-ladder-as-context-budget, now at document
-     scale where the blast radius is megabytes. THE LADDER: line_count /
-     char_count to SIZE a read before spending context on it, then
-     head() for orientation, lines(start, count) for random access,
-     reader() for a resumable cursor. `has_more` IS THE END TEST and the
-     NamedTuple explains why you must not improvise one - end_line ==
-     total_lines is unreliable because the last line can be partial, so
-     the library computes it in one place. PROGRESS ALWAYS BEATS THE
-     BUDGET: a line longer than the whole char budget comes back WHOLE
-     rather than split, because the alternative is a cursor that returns
-     empty forever and hangs a correct loop. TWO REFUSALS THAT ONLY LOOK
-     INCONSISTENT: line_target outside 2..100 RAISES (a malformed
-     request), lines(past_the_end) CLAMPS (a reasonable question at the
-     edge) - expert 12's request-vs-content distinction again. AND IT
-     COSTS NOTHING UNTIL ASKED: the index builds on FIRST BOUNDED READ
-     with the IndexedText import inside the method, because __init__.py
-     imports all four at package scope and every `import melder` would
-     otherwise pay for a document most processes never open. The index
-     builds UNLOCKED on purpose - racing threads build equivalent
-     indexes over the same immutable string, so the race is benign and a
-     lock would add contention to a path that settles after one call. A
-     DOCUMENTED benign race is a different object from an overlooked one)
+     an agent BEGINS. Four views hang off the package root and answer AT
+     IMPORT - queryable with no Spellbook, no Conduit, no conjured
+     anything. Two are `SystemDocumentView` (__architecture__,
+     __components__); two are `SystemGraphView` (__graph_network__,
+     __graph_details__), which SUBCLASSES it - so the graph documents
+     answer every prose question and add nodes and edges on top.
+     THE THESIS: YOU DO NOT PAGE A SYSTEM DOCUMENT, YOU ADDRESS IT.
+     `addressing` publishes what keys MEAN - "section" (heading paths)
+     or "source_path" (repo-relative files) - so a caller asks the shape
+     instead of inferring it from a sample and silently missing.
+     THE CHEAP SURVEY, THEN THE PAID READ: keys() / groups(depth) /
+     index() cost no document text, and index() returns
+     Section(key, start_line, end_line, line_count) - sizing PER
+     SECTION. find() addresses by key; search() investigates BODIES,
+     ranked by hit count with a preview. Two different questions,
+     neither costing you the document. Only then get(key) or
+     reader(key, ...).
+     `reader()` TAKING A KEY IS THE WHOLE DESIGN - the cursor is scoped
+     to a SECTION, so an agent that narrowed correctly never pages the
+     document at all.
+     CITATIONS, NOT PARAPHRASES: cite(key) -> "src_graph.md:3518-3596",
+     cite(key, line=) -> "src_graph.md:3520". An agent hands back an
+     address a human can open and check. That is a falsifiable answer,
+     which a summary is not - the best thing in the API.
+     REFUSED IS NOT MISSING: available / reason / verify(). A document
+     that fails verification still EXISTS and still answers, because
+     omitting it would make a stale index look identical to a document
+     that never shipped - and the second invites an agent to invent.
+     verify() is ALWAYS False for an unavailable document; there is
+     nothing to check.)
 
 ARC E COMPLETE (lesson 18) - the self-documenting package
 
@@ -569,7 +592,45 @@ DOCSTRINGS THAT LIE (verified individually, not taken on trust)
   goes looking for the transaction window on the wrong object, and the
   ownership split is the single most important fact about this surface.
 
-SOURCE CHANGE MADE BY THIS TIER - NEEDS A BUILD-ASSET REGENERATE
+SOURCE FIXES MADE ALONGSIDE THIS TIER (2026-08-03)
+
+  1. THE HUSK BUG IN THE RESET DOORS - MutationResearch, then Crystallizer.
+     SYMPTOM: `test_the_host_is_keyword_only` went red with
+     `AttributeError: object has no attribute '_cleaned'` raised from
+     inside `_reset_singleton_for_tests` itself.
+     CAUSE: `__new__` publishes the singleton BEFORE `__init__` runs, and
+     a construction that fails on the SIGNATURE (positional `aether`)
+     fires its TypeError before `__init__`. `Cleanable.__slots__` is
+     `['_cleaned']` and the flag is assigned in `__init__`, so the
+     published husk has the slot UNSET - reading it raises rather than
+     returning a default. The reset door died on the exact object it
+     exists to clear.
+     THE TEST HAD ALREADY PREDICTED THIS in its own comment: "a signature
+     TypeError fires before `__init__` runs, so the body's rollback never
+     executes and `__new__`'s published instance is left installed. The
+     class's own reset door is what clears it." The door just could not.
+     FOUR DOORS, THREE IMPLEMENTATIONS, WHICH IS HOW IT SURVIVED:
+       Nexus            try/except AttributeError/finally - husk-safe
+       Crystallizer     `not instance.cleaned`   - LATENT, same hole
+       MutationResearch `not instance._cleaned`  - the one that fired
+       Aether           try/finally, NO except
+     THE REAL FIX WAS SMALLER THAN THE FIRST ATTEMPT (owner ruling):
+     DELETE THE LIVENESS CHECK ENTIRELY. Every one of the four
+     `cleanup()` methods already guards its own `_cleaned` flag and
+     returns early, so a caller-side "is it clean yet" test was pure
+     redundancy - and it was the redundancy that crashed, because it read
+     a slot a husk does not have. A reset door does not need to know
+     whether the thing is live. It cleans and it clears.
+     ALL FOUR ARE NOW ONE SHAPE, verified by AST rather than by eye:
+       clean unconditionally -> swallow the husk AttributeError ->
+       clear `_instance` / `_initialized`
+     Aether included: it keeps propagating real cleanup failures (its
+     documented contract) and no longer dies on a husk. The "divergence"
+     recorded here earlier was not a divergence to preserve - it was
+     three copies of the same avoidable check, and the author had added
+     a fourth before being told to stop.
+
+  2. SOURCE CHANGE THAT NEEDS A BUILD-ASSET REGENERATE
   `StaticSystemDocument`'s AGENT_PURPOSE was extended (2026-08-03).
   WHY: the four package-root documents are the FIRST thing an agent
   touches, and that class re-exposes line_count / char_count / head /

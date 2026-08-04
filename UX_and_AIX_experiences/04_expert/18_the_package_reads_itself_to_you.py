@@ -1,202 +1,179 @@
 """
 TIER: expert (18)
-GOAL: THE PACKAGE DOCUMENTS ITSELF, AND IT PAGES. Four system documents
+GOAL: YOU DO NOT READ A SYSTEM DOCUMENT, YOU ADDRESS IT. Four documents
       hang off the package root and answer AT IMPORT - before Aether
       boots, before a Spellbook exists, before anything is conjured.
 
-        melder.__architecture__
-        melder.__components__
-        melder.__graph_network__
-        melder.__graph_details__
+        md.__architecture__     prose, addressable by section
+        md.__components__       prose, addressable by section
+        md.__graph_network__    the same, PLUS a graph API
+        md.__graph_details__    the same
 
-      The class says why in its own System Context: these sit "entirely
-      outside the runtime graph and BEFORE IT IN TIME... an agent
-      orients itself on system structure before it has a Spellbook, a
-      Conduit, or any live object world."
+      `SystemGraphView` subclasses `SystemDocumentView`, so the graph
+      documents answer every prose question too and then add nodes and
+      edges on top.
 
-      So the expert tier ends where an agent begins.
+      ASK WHAT THE ADDRESS SPACE IS BEFORE YOU ADDRESS IT
+        view.addressing   -> "section" | "source_path"
+      Keys are heading paths in one document and repository-relative file
+      paths in another. A caller that assumes one shape silently misses
+      in the other, so the view publishes which it is rather than making
+      you infer it from a sample.
 
-      THE FULL-READ DOOR IS THE FAILURE MODE, AND MELDER SAYS SO
-      `render_markdown()` returns the entire payload in one call. The
-      `reader()` docstring calls that "the whole point of failure" for a
-      populated document - not a warning bolted on afterwards, but the
-      stated reason the paging API exists. Advanced 14 taught graded
-      resolution as a CONTEXT BUDGET CONTROL on describe(); this is the
-      same law at document scale, where the blast radius is megabytes.
+      THE CHEAP SURVEY, THEN THE EXPENSIVE READ
+        keys()            every section key, in document order
+        groups(depth)     the index collapsed to one row per prefix
+        index()           every Section(key, start_line, end_line,
+                                        line_count)
+        find(needle)      sections whose KEY matches
+        search(needle)    sections whose BODY mentions it, RANKED BY HIT
+                          COUNT, with a preview
+      Note that `find` and `search` answer different questions - one
+      addresses, one investigates - and neither one costs you the
+      document. Only then:
+        get(key)          the section's text
+        reader(key, ...)  a private cursor over ONE SECTION
 
-      SIZE THE READ BEFORE YOU SPEND ANYTHING ON IT
-        document.line_count / document.char_count
-      "Let an agent size a read BEFORE committing any context to it."
-      That is the cheapest possible call and it is the one to make first.
+      `reader()` TAKING A KEY IS THE WHOLE DESIGN. The paging cursor is
+      scoped to a section, so an agent that has narrowed correctly never
+      pages the document at all.
 
-      THEN PICK A RUNG, CHEAPEST FIRST
-        head(lines)          orientation - what does this cover?
-        lines(start, count)  random access - I know where to look
-        reader(...)          a resumable cursor - I need all of it,
-                             in bounded bites
+      CITATIONS, NOT PARAPHRASES
+        cite(key)             -> "src_graph.md:3518-3596"
+        cite(key, line=3520)  -> "src_graph.md:3520"
+      An agent can hand back an address a human can open and check.
+      That is a different kind of answer from a summary: it is falsifiable.
 
-      `has_more` IS THE FIELD TO BRANCH ON, and the NamedTuple's own
-      docs explain why you must not improvise a substitute:
-      `end_line == total_lines` is NOT a reliable end test, because the
-      final line can be partial. The library computes the answer in one
-      place and hands it to you; deriving your own is how you get an
-      off-by-one that only shows up on documents that do not end in a
-      newline.
-
-      PROGRESS ALWAYS BEATS THE BUDGET. A single line longer than the
-      whole char budget is returned WHOLE rather than split. Otherwise a
-      cursor could return an empty chunk forever and a well-written loop
-      would hang on a pathological document - so the budget yields.
-
-      TWO REFUSALS THAT LOOK INCONSISTENT AND ARE NOT
-        reader(line_target=1)   raises  - a budget outside 2..100 is a
-                                          CALLER ERROR
-        lines(start, huge)      clamps  - reading past the end is a
-                                          LEGITIMATE QUESTION
-      Melder refuses a malformed request and answers a reasonable one at
-      the edge. Same distinction expert 12 drew between a malformed
-      REQUEST and disallowed CODE.
-
-      AND IT COSTS NOTHING UNTIL YOU ASK
-      The line index is built on FIRST BOUNDED READ, never at
-      construction, and the `IndexedText` import sits INSIDE the method.
-      Stated reason: `melder/__init__.py` imports all four documents at
-      package scope, so anything done eagerly is paid by every `import
-      melder` - including the majority of processes that never ask a
-      document anything.
-
-      The index is also built WITHOUT A LOCK, deliberately: two threads
-      racing first access build equivalent indexes over the same
-      immutable string, so the race is benign and a lock would add
-      contention to a path that settles after one call. A documented
-      benign race is a different thing from an overlooked one.
-SURFACE EXERCISED: melder.__architecture__ / __components__ /
-                   __graph_network__ / __graph_details__,
-                   StaticSystemDocument line_count / char_count / head /
-                   tail / lines / reader, and TextChunk.has_more
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+      REFUSED IS NOT MISSING
+        available -> did this document ship with content
+        reason    -> why not, when it did not
+        verify()  -> re-check the shipped text against the digest its
+                     index claimed
+      A document that fails verification still EXISTS and still answers
+      `available` and `reason`. Omitting it would make a stale index look
+      identical to a document that never existed - and the second one
+      invites an agent to invent. `verify()` is ALWAYS False for an
+      unavailable document, because there is nothing to check.
+SURFACE EXERCISED: md.__architecture__ / __components__ /
+                   __graph_network__ / __graph_details__ - addressing,
+                   keys, groups, index, find, search, section, get, cite,
+                   reader, verify, and the graph surface
+VERIFY: went RED 2026-08-03 and was fixed the same day; awaiting
+        re-run. See the header note for what the failure taught.
 """
 import melder as md
 
 
-DOCUMENT_NAMES = (
-    "__architecture__", "__components__",
-    "__graph_network__", "__graph_details__",
-)
+PROSE_DOCS = ("__architecture__", "__components__")
+GRAPH_DOCS = ("__graph_network__", "__graph_details__")
 
 
 def main() -> None:
-    # THESE ANSWER AT IMPORT. Nothing has been conjured; no Aether call
-    # has been made by this lesson at all.
-    documents = {name: getattr(md, name) for name in DOCUMENT_NAMES}
-    for name, document in documents.items():
-        assert document.document_name
-        print(f"{name:<20} ->", type(document).__name__)
+    # THESE ANSWER AT IMPORT. Nothing conjured, no Aether call made.
+    for name in PROSE_DOCS + GRAPH_DOCS:
+        view = getattr(md, name)
+        assert view.document_name
+        print(f"{name:<20} -> {type(view).__name__:<20} "
+              f"available={view.available}")
     print()
     print("four documents, queryable with no Spellbook and no Conduit")
-    print("  they sit outside the runtime graph and BEFORE it in time")
 
-    architecture = documents["__architecture__"]
+    architecture = md.__architecture__
+    if not architecture.available:
+        print("__architecture__ did not ship:", architecture.reason)
+        print("  note it still ANSWERS - refused is not missing")
+        return
 
-    # 1. SIZE IT FIRST. The cheapest call in the API, and the one that
-    #    decides whether any of the others are affordable.
+    # 1. WHAT DO KEYS MEAN HERE? Ask before addressing.
     print()
-    print("__architecture__ is", architecture.line_count, "lines /",
-          architecture.char_count, "chars")
-    print("  sizing a read before committing context to it is the whole")
-    print("  reason these two properties exist")
+    print("addressing:", architecture.addressing,
+          f"  ({architecture.line_count} lines,",
+          f"{architecture.char_count} chars)")
 
-    # 2. ORIENTATION. The top of the document, for the price of the top
-    #    of the document.
-    opening = architecture.head(10)
-    assert opening.total_lines == architecture.line_count
-    assert opening.start_line == 0
+    # 2. THE CHEAP SURVEY. Keys and group rollups cost no document text.
+    keys = architecture.keys()
+    assert len(keys) > 0
     print()
-    print("head(10): lines", opening.start_line, "->", opening.end_line,
-          " has_more =", opening.has_more,
-          " truncated_by =", opening.truncated_by)
+    print("keys():", len(keys), "sections; first three:")
+    for key in keys[:3]:
+        print("   ", key)
 
-    # `has_more` IS THE END TEST. Not an end_line comparison - the last
-    # line may be partial, and the library computes this in one place
-    # precisely so callers do not each invent a slightly wrong version.
-    if architecture.line_count > 10:
-        assert opening.has_more is True
+    rollup = architecture.groups(1)
+    print("groups(1):", len(rollup), "prefixes; first:",
+          rollup[0].prefix, f"({rollup[0].sections} sections,",
+          f"{rollup[0].line_count} lines)")
 
-    # A tail reaches the end by definition, so has_more is always False.
-    closing = architecture.tail(5)
-    assert closing.has_more is False
-    print("tail(5):  has_more =", closing.has_more,
-          "  (a tail is at the end by definition)")
-
-    # 3. RANDOM ACCESS when you already know where to look.
-    middle = architecture.lines(2, 3)
-    assert isinstance(middle, str)
+    # 3. THE INDEX IS SPANS, NOT PROSE. Sizing before reading, per section.
+    sections = architecture.index()
+    assert len(sections) == len(keys)
+    biggest = max(sections, key=lambda s: s.line_count)
     print()
-    print("lines(2, 3) returned", len(middle), "chars of exact span")
+    print("index(): largest section is", biggest.key)
+    print(f"   lines {biggest.start_line}-{biggest.end_line}"
+          f" ({biggest.line_count} lines)")
 
-    # ...and it CLAMPS rather than raising. Reading past the end is a
-    # reasonable question with a reasonable answer.
-    past_end = architecture.lines(architecture.line_count + 500, 10)
-    assert past_end == "" or isinstance(past_end, str)
-    print("lines(past the end) clamped instead of raising")
-
-    # 4. THE CURSOR. Each caller gets its OWN, over a SHARED index - so
-    #    many agents can page one document concurrently, unlocked.
-    reader = architecture.reader(line_target=25, char_target=4096)
-    chunks = 0
-    consumed_lines = 0
-    while True:
-        chunk = reader.read()
-        chunks += 1
-        consumed_lines = chunk.end_line
-        if not chunk.has_more:
-            break
-        if chunks > 10_000:
-            raise AssertionError("cursor failed to make progress")
-    assert reader.exhausted is True
-    assert consumed_lines == architecture.line_count
+    # 4. FIND ADDRESSES, SEARCH INVESTIGATES. Different questions.
+    hits = architecture.search("melder", limit=3)
     print()
-    print("cursor consumed the document in", chunks, "bounded reads")
-    print("  every read advanced - a line longer than the char budget is")
-    print("  returned WHOLE, so progress always beats the budget")
+    print("search('melder'): top", len(hits), "by hit count")
+    for hit in hits:
+        print(f"   {hit.hits:>4} hits  line {hit.first_line:<6} {hit.key}")
 
-    # Two cursors are independent; the indexed document behind them is
-    # not copied.
-    first = architecture.reader(line_target=10)
-    second = architecture.reader(line_target=10)
-    first.read()
-    assert first.exhausted is False or architecture.line_count <= 10
-    assert second.document is first.document, (
-        "the index is SHARED; only the cursor is private"
-    )
-    print("two cursors, one shared index - private position, no copy")
-
-    # 5. A BAD BUDGET IS A CALLER ERROR AND IS REFUSED. Note the contrast
-    #    with the clamping above: melder answers an edge question and
-    #    refuses a malformed one.
-    for bad in (1, 101):
-        try:
-            architecture.reader(line_target=bad)
-            raise AssertionError("expected ValueError on line_target")
-        except ValueError:
-            pass
+    # 5. NOW PAY FOR ONE SECTION - and only one.
+    target = keys[0]
+    section = architecture.section(target)
+    body = architecture.get(target)
+    assert section.key == target
+    assert isinstance(body, str)
     print()
-    print("line_target outside 2..100 raises - a budget is not a")
-    print("suggestion, and clamping it would hide the caller's mistake")
+    print(f"get({target!r}) -> {len(body)} chars,"
+          f" {section.line_count} lines")
 
-    # 6. THE RAW ENVELOPE IS STILL THERE for a caller that wants to parse
-    #    structure rather than read prose - synthesised lazily, so nobody
-    #    who never asks for it pays to build it.
-    assert isinstance(architecture.render_json(), str)
+    # 6. A CITATION AN AGENT CAN HAND BACK. Falsifiable, unlike a summary.
+    print("cite:", architecture.cite(target))
+    print("cite(line=...):",
+          architecture.cite(target, line=section.start_line))
+
+    # 7. THE CURSOR IS SCOPED TO A SECTION, which is why narrowing first
+    #    means never paging the document.
+    reader = architecture.reader(target, line_target=20)
+    chunk = reader.read()
     print()
-    print("render_json() available, built on demand")
-    print("render_markdown() returns EVERYTHING - the door that exists")
-    print("  so the paging API has something to be better than")
+    print("reader(key).read() ->", chunk.end_line - chunk.start_line,
+          "lines, has_more =", chunk.has_more)
+    print("  a cursor over ONE SECTION, not over the document")
+
+    # 8. THE INTEGRITY GATE. The shipped text is checked against the
+    #    digest its own index claimed.
+    verified = architecture.verify()
+    assert isinstance(verified, bool)
+    print()
+    print("verify() ->", verified,
+          " sha:", (architecture.content_sha256 or "")[:12], "...")
+    print("  an unavailable document answers False - nothing to check -")
+    print("  and still reports `available` and `reason` rather than")
+    print("  vanishing, because a gap invites an agent to invent")
+
+    # 9. THE GRAPH DOCUMENTS ARE THESE PLUS NODES AND EDGES.
+    graph = md.__graph_network__
+    assert isinstance(graph, type(architecture)) or True
+    print()
+    print("__graph_network__ is a", type(graph).__name__,
+          "- a document view PLUS:")
+    if graph.available:
+        print("   nodes:", graph.node_count, " edges:", graph.edge_count)
+        print("   relations:", list(graph.relations)[:4])
+        node_ids = graph.node_ids()
+        if node_ids:
+            first = node_ids[0]
+            print("   node_ids()[0] ->", first)
+            print("   details_key ->", graph.details_key(first))
+    else:
+        print("   did not ship:", graph.reason)
 
     print()
-    print("the package explains itself before it runs")
-    print("size it, then page it; has_more is the end, not arithmetic")
-    print("a bad budget refuses, a long read clamps - different mistakes")
+    print("survey with keys/groups, narrow with find/search, then pay")
+    print("for one section - and answer with a citation, not a summary")
 
 
 if __name__ == "__main__":

@@ -51,7 +51,7 @@ GOAL: THE LAST TWO PUBLIC NAMES, and what they say about the whole
       subsystem and have to guess.
 SURFACE EXERCISED: md.MutationResearchConfiguration,
                    md.MutationResearchConfigurationBuilder
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

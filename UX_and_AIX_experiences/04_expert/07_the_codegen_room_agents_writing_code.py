@@ -54,7 +54,7 @@ GOAL: THE CODEGEN ROOM - where an agent writes code that becomes part of
 SURFACE EXERCISED: CodegenCommandSystem via a codegen room -
                    validate_codegen / execute_codegen / materialize_codegen,
                    the seven validation strategies, frame_name as required
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

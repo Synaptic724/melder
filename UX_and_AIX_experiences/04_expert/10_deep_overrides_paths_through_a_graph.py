@@ -42,7 +42,7 @@ GOAL: OVERRIDES WHEN THE GRAPH IS DEEP. Advanced 19 taught the three
 SURFACE EXERCISED: conduit.meld(spell_override=...) with multi-hop paths,
                    branch replacement, path-beats-broadcast precedence,
                    and the refusal on an unresolvable path
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

@@ -344,7 +344,10 @@ class Aether(Cleanable):
             None.
 
         Raises:
-            Exception: Propagates any exception raised by cleanup().
+            Exception: Propagates any exception raised by cleanup(), except
+                the AttributeError of an uninitialized husk - an instance
+                `__new__` published before a failing `__init__`, which has
+                no state to release.
 
         Threading:
             Acquires the class-level lock to serialize singleton resets.
@@ -360,6 +363,11 @@ class Aether(Cleanable):
                 return
             try:
                 instance.cleanup()
+            except AttributeError:
+                # Husk: `__new__` published it, `__init__` never ran, so
+                # `cleanup()` raises reading its own `_cleaned` guard.
+                # Nothing live to release - just clear the bookkeeping.
+                pass
             finally:
                 cls._instance = None
                 cls._initialized = False

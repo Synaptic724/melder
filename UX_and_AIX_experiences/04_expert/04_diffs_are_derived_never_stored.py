@@ -53,7 +53,7 @@ GOAL: "WHAT CHANGED BETWEEN THESE TWO VERSIONS" - and the storage
       because "just show me what changed" is the common ask.
 SURFACE EXERCISED: md.DiffEngine - register_strategy, list_strategy_names,
                    diff, diff_materials; MutationResearch.diff_research
-VERIFY: rides the owner's 3.14t run; asserts are the contract.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
 """
 import melder as md
 

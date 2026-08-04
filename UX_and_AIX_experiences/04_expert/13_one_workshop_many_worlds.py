@@ -57,7 +57,8 @@ SURFACE EXERCISED: several postured frames, the Nexus target-frame policy
                    and budget knobs, one codegen rift with several frame
                    links, per-frame codegen calls, and the
                    accessible-frames enumeration
-VERIFY: RUN GREEN on the owner's 3.14t run 2026-08-03.
+VERIFY: went RED 2026-08-03 and was fixed the same day; awaiting
+        re-run. See the header note for what the failure taught.
 """
 import melder as md
 
@@ -77,7 +78,7 @@ class AuditTrail:
         self.kind = "audit"
 
 
-def _workshop_frame(frame_name: str, spell: type) -> None:
+def _workshop_frame(frame_name: str, spell: type):
     """One AI-native, rift-visible world holding its own object."""
     book = md.Spellbook(aetheric_frame=frame_name)
     # A distinct binding_name per frame: spell_id is process-wide and the
@@ -91,14 +92,17 @@ def _workshop_frame(frame_name: str, spell: type) -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    book.conjure(name=f"{frame_name}-root")
+    # Hand the conduit back. A frame is not a shared pool: a SECOND book
+    # in the same frame owns nothing this one bound, so the only way to
+    # reach these spells later is to keep this conduit.
+    return book.conjure(name=f"{frame_name}-root")
 
 
 def main() -> None:
     # THREE WORLDS, THREE DIFFERENT OBJECTS. Two will be attached; the
     # third is postured but deliberately left unattached, to show that
     # reach is something you grant, not something that leaks.
-    _workshop_frame("billing", Invoice)
+    billing_conduit = _workshop_frame("billing", Invoice)
     _workshop_frame("catalog", Product)
     _workshop_frame("compliance", AuditTrail)
     print("three worlds up: billing/Invoice, catalog/Product,",
@@ -174,10 +178,9 @@ def main() -> None:
     print("  entirely - which is why there is no default")
 
     # THE WALL HOLDS. Each frame still owns its own bindings; one observer
-    # seeing both worlds did not merge them.
-    billing_conduit = md.Spellbook(aetheric_frame="billing").conjure(
-        name="billing-reader",
-    )
+    # seeing both worlds did not merge them. Note we meld through the
+    # conduit that BOUND these spells - a fresh book in the same frame
+    # would own nothing and resolve nothing.
     invoice = billing_conduit.meld(spell=Invoice, binding_name="billing")
     assert invoice.kind == "invoice"
     try:
