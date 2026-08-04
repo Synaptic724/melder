@@ -358,6 +358,12 @@ class Mediator(Cleanable):
             every subsystem that exists but is not running, which is precisely
             the population this gate is here to exclude.
 
+            DO NOT PAIR IT WITH `participation_state` EITHER, under threads.
+            Each call is atomic on its own; nothing is held between two of them,
+            so the pair can straddle a committing transaction and disagree. Take
+            multiple fields from ONE read - `reporting.describe_participants()`
+            renders each row under a single lock acquisition.
+
         Args:
             participant: The subsystem name to test.
 

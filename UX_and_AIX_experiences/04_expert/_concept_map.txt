@@ -2,9 +2,10 @@ CONCEPT MAP - 04_expert (README tier: BLUE Expert)
 ====================================================
 The machinery behind the doors advanced used: cold boot, the external
 persistence mesh, the mutation-research plane, the codegen room where an
-agent writes code into a running world, and the admission plane that lets
-several of them mutate it at once.
-16 lessons authored, 01-16 sequential.
+agent writes code into a running world, the admission plane that lets
+several of them mutate it at once, the staging half of a hot swap, and
+the documents the package hands an agent before any of it boots.
+18 lessons authored, 01-18 sequential.
 
 VERIFICATION STATUS
   RUN 2026-08-03 on the owner's 3.14t: 10 and 15 green first time;
@@ -243,7 +244,79 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      dynamic-mode refusal: what a world IS is not the same fact as what
      it has been ALLOWED TO DO)
 
-ARC D COMPLETE (lesson 16) - the mutation-admission plane
+  17 notch_swapping_a_live_object (LINEAGES AND THE STAGING HALF. bind
+     -> bind_inactive (park a candidate on the SAME index, selection
+     unchanged) -> notch_spell (repoint the selection). THE FIRST TWO
+     ARE USER SURFACE AND THE THIRD IS NOT DRIVEN BY HAND - notch_spell
+     takes the parked OBJECT, which lives in the Spellbook's private
+     parking lot, and the Spellbook is not what you notch from. The
+     lesson stops at that boundary and demonstrates it (a parked id
+     resolves to the ACTIVE member) instead of poking through it.
+     WHAT STAGING BUYS: the expensive, failure-prone half of a swap -
+     compiling, registering and owning the new version - happens while
+     the old version is still serving, because a parked candidate is
+     inert and unmeldable. Preparing a swap and taking it are two acts.
+     AN INDEX IS A VERSION LINEAGE
+     WITH ONE SELECTED MEMBER, so a notch creates, binds and removes
+     NOTHING - the outgoing version stays in the lineage and stays
+     resolvable by id. THAT is why ROLLBACK IS JUST A NOTCH THE OTHER
+     WAY: no undo log, no snapshot restore, because nothing was thrown
+     away. THE OWNERSHIP SPLIT: the CONDUIT admits the transaction (it
+     owns the change-control envelope and the links), the SPELLBOOK
+     applies the switch (it owns the index maps), and neither half is
+     callable alone - Spellbook exposes no public notch verb at all.
+     FOUR THINGS MAKE A LIVE SWAP SAFE: the notch strategy's on_start
+     QUIESCES the sealed conduits' CreationGates so no in-flight meld
+     straddles the repoint; tearing down the outgoing creation context
+     BUMPS THE DOOR EPOCH so the warm fast-door cannot serve the stale
+     spell; the index is re-registered DIRTY so revalidation is lazy and
+     the window stays short; and it is a real transaction in 16's plane
+     (family `notch`, spellbook ix + binding key x). BORROWERS ARE FANNED
+     OUT AND THE TWO KINDS GET DIFFERENT ANSWERS: a version-anchored
+     borrower has its copy PARKED, an index-link receiver has its head
+     MOVED - never-substitute at the topology grain, where whoever named
+     a version keeps that version's fate and whoever named a lineage
+     follows the lineage. FOOTGUN: change_reason defaults to
+     `selected_different_spell`, which records an ordinary selection and
+     MISATTRIBUTES a mutation in the state history)
+
+ARC D COMPLETE (lessons 16-17) - the mutation-admission plane and the
+  staging half of the hot swap that rides it
+
+  18 the_package_reads_itself_to_you (THE TIER FINALE, and it ends where
+     an agent BEGINS. Four StaticSystemDocuments hang off the package
+     root - __architecture__, __components__, __graph_network__,
+     __graph_details__ - and answer AT IMPORT. The class System Context
+     puts it exactly: they sit "entirely outside the runtime graph and
+     BEFORE IT IN TIME", queryable with no Spellbook, no Conduit, no
+     conjured anything. THE FULL-READ DOOR IS THE FAILURE MODE AND THE
+     SOURCE SAYS SO: `reader()`'s docstring calls `render_markdown()`
+     "the whole point of failure" for a populated document - that is the
+     stated reason the paging API exists, not a warning added later.
+     Advanced 14's describe-ladder-as-context-budget, now at document
+     scale where the blast radius is megabytes. THE LADDER: line_count /
+     char_count to SIZE a read before spending context on it, then
+     head() for orientation, lines(start, count) for random access,
+     reader() for a resumable cursor. `has_more` IS THE END TEST and the
+     NamedTuple explains why you must not improvise one - end_line ==
+     total_lines is unreliable because the last line can be partial, so
+     the library computes it in one place. PROGRESS ALWAYS BEATS THE
+     BUDGET: a line longer than the whole char budget comes back WHOLE
+     rather than split, because the alternative is a cursor that returns
+     empty forever and hangs a correct loop. TWO REFUSALS THAT ONLY LOOK
+     INCONSISTENT: line_target outside 2..100 RAISES (a malformed
+     request), lines(past_the_end) CLAMPS (a reasonable question at the
+     edge) - expert 12's request-vs-content distinction again. AND IT
+     COSTS NOTHING UNTIL ASKED: the index builds on FIRST BOUNDED READ
+     with the IndexedText import inside the method, because __init__.py
+     imports all four at package scope and every `import melder` would
+     otherwise pay for a document most processes never open. The index
+     builds UNLOCKED on purpose - racing threads build equivalent
+     indexes over the same immutable string, so the race is benign and a
+     lock would add contention to a path that settles after one call. A
+     DOCUMENTED benign race is a different object from an overlooked one)
+
+ARC E COMPLETE (lesson 18) - the self-documenting package
 
 THE THROUGH-LINES, AT EXPERT GRAIN (both inherited from advanced)
 
@@ -365,6 +438,42 @@ FINDINGS (for the owner's public-surface program)
   - OPEN: Aether still has no deactivate / is_configured / is_activated,
     so the root that hosts the other three is the one that does not
     answer the two-bit question about itself. Flagged, not ruled.
+  - RETRACTED 2026-08-03, SAME DAY IT WAS WRITTEN: "the notch arc is not
+    driveable from the public surface" was filed as the biggest finding
+    in the tier. IT IS NOT A FINDING. Owner ruling: you are not supposed
+    to notch through the Spellbook - THAT IS WHY IT IS PRIVATE.
+    The facts underneath were all correct - `bind_inactive` returns a
+    str, `notch_spell` needs the parked OBJECT, `find_spell_by_id`
+    resolves any lineage id to the ACTIVE member, `_inactive_spells` has
+    no public reader - and the CONCLUSION drawn from them was wrong. The
+    author hit encapsulation, assumed the flow was meant to be
+    hand-driven, and reported the encapsulation as a missing door.
+    THE ERROR IS WORTH KEEPING BECAUSE IT IS A REPEATABLE ONE:
+    friction at a private boundary is evidence you are holding the wrong
+    object, and the first hypothesis should be "which facade owns this",
+    not "the surface is incomplete". The facade rule already said so:
+    IF A FACADE COVERS IT, THE COLLABORATOR IS NOT USER SURFACE.
+    Lesson 17 was rewritten to stop at the public boundary: it stages
+    with `bind_inactive`, proves staging does not move the selection, and
+    demonstrates rather than laments that a parked id resolves to the
+    active member. It touches no private map.
+  - RETRACTED 2026-08-03, SAME DAY IT WAS WRITTEN: "the canonical doc is
+    stale on notch fan-out". IT IS NOT. The note is SEAM-SCOPED and the
+    scope word is in the sentence: `_apply_notch`'s own docstring says
+    "Contracted borrowers are NOT yet fanned out HERE (owner-side only)".
+    `_apply_notch` is the Spellbook's local switch; the fan-out lives one
+    layer up in `Conduit.notch_spell`. Both statements are true at their
+    own layer. The author read the doc's paraphrase of the seam, found
+    fan-out code at the VERB, and called the doc wrong - without reading
+    `_apply_notch` itself, where the qualifier is.
+    ALSO UNRESOLVED AND NOT CLAIMED EITHER WAY: the limitation says "a
+    notch on a SHARED index", and `shared` is cluster vocabulary
+    (`ConduitCluster.get_shared_spells` -> owner_id -> {SpellIndex}), not
+    contract-borrow vocabulary. The two fan-out calls at the verb handle
+    LINKED peers and INDEX-LINK receivers. Whether cluster-shared indices
+    are covered was never checked, so the limitation may be entirely
+    current. Do not repeat the claim without reading the cluster path.
+    LESSON: a scoped statement read out of its scope becomes a false one.
   - NO PUBLIC DOOR FOR REACH ENUMERATION (2026-08-03, lesson 13). Both
     `Rift.list_accessible_non_nexus_frame_names()` and the Nexus-level
     `list_accessible_non_nexus_frame_names(rift_id)` are marked
@@ -399,12 +508,32 @@ FINDINGS (for the owner's public-surface program)
     here passes binding_name= or spellframe= for that reason. It is the
     single most common way a working example goes red when copied.
 
+DOCSTRINGS THAT LIE (verified individually, not taken on trust)
+  The canonical doc flags these and lesson 17 re-verified the first three
+  by reading the bodies. All three Conduit verbs say "Delegates to the
+  owning Spellbook, WHICH ADMITS the change-control transaction" and all
+  three then call `mediator.start_transaction(...)` themselves a few
+  lines down. The CONDUIT admits; the Spellbook only applies.
+      Conduit.notch_spell              conduit.py:4460
+      Conduit.add_to_spell_index       conduit.py:4550
+      Conduit.remove_from_spell_index  conduit.py (same shape)
+  Logged as TASK-2026-08-02-stale-source-docstrings.
+  WHY IT MATTERS BEYOND TIDINESS: a reader who believes the docstring
+  goes looking for the transaction window on the wrong object, and the
+  ownership split is the single most important fact about this surface.
+
+THE TIER'S OWN SHAPE, NOW THAT IT IS DONE
+  It opens with a COLD BOOT (01) and closes with a document that answers
+  BEFORE any boot at all (18). In between it goes: record what changed
+  (03-06), let an agent write into a running world (07-15), let several
+  agents mutate it at once (16), and prepare a swap without taking it
+  (17). Read in order, the tier is a widening circle of who is allowed
+  to change what - and every widening is paid for with a new way to
+  REFUSE precisely. That is the through-line worth naming out loud:
+  melder buys concurrency and agency with precision of refusal, never
+  with permissiveness.
+
 REMAINING / NOT YET AUTHORED
-  - notch -> meld hot-swap with rollback (the stage/promote arc past
-    bind_inactive). This is the tier's real finale: 03-15 built the
-    record, 16 built the admission plane, and `notch` is a registered
-    transaction family in both - the piece that actually swaps a live
-    object and can put it back.
   - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up
     recipe riding the bind signature into checkpoints.
-  - the self-documenting package (__architecture__ etc.).
+  (the self-documenting package landed as lesson 18)

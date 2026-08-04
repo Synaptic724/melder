@@ -8,7 +8,7 @@
 - Agent Name: bootstrap_0 (claimed 2026-08-03T02:50:00Z; lane was left ACTIVE and UNASSIGNED after helper_f departed)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-08-03T22:10:00Z
+- Updated: 2026-08-03T23:05:00Z
 
 ## Problem / Opportunity
 The plane must exist and be trustworthy STANDALONE before any subsystem is wired
@@ -1051,3 +1051,107 @@ inner frame transactions JOIN the top session or stay siblings.
     coordination file, this is a second data point.
   REREAD: REQUIRED
   SCORE_0_TO_10: 6
+
+- DATETIME: 2026-08-03T22:35:00Z
+  TYPE: FACT
+  CLAIM: CORRECTION TO THE 22:20Z RISK ENTRY - I NAMED MYSELF AS PRIME SUSPECT
+    AND THE COMMIT LOG REFUTES IT. Appending rather than editing, because the
+    wrong call is part of the record.
+    THE ENTRY SAID: "the prime suspect is my own read-modify-write through the
+    mount", for the 14 MANAGED lines missing from `attention_board.md`.
+    THE EVIDENCE I DID NOT HAVE THEN: the owner has been committing throughout
+    this session, and `git log -- context_compass/attention_board.md` settles it.
+    Commit `321648d1d` (16:50:17) contains the board carrying BOTH the 14-line
+    region-contract block AND my row - the row I wrote at ~15:40. So my write
+    produced an intact file that survived, untouched, for seventy minutes and
+    was committed that way. It cannot have dropped those lines.
+    The loss therefore happened between 16:50:17 and ~17:26, when I next opened
+    the file. In that window I ran graph extraction, the walker, the assembler
+    and the build-asset runner - none of which write to `attention_board.md` -
+    and the owner was working in the IDE and committed twice. Commit
+    `39a16c931` (17:29:30) then captured the restored board.
+    WHAT I GOT WRONG, precisely: not the restore, which was correct, but
+    volunteering a suspect. I had two facts - a matching line count at write
+    time, and a short file later - and reached for a cause. Self-blame reads as
+    rigour and is not: naming the wrong mechanism sends the next person
+    investigating a mount defect that did not do this, and it burns the credit
+    that an accurate self-report is supposed to earn. THE CORRECT ENTRY WOULD
+    HAVE STOPPED AT "restored, cause unknown, here is the window."
+    THE ONE DURABLE RULE FROM THE 22:20Z ENTRY STANDS AND IS WORTH KEEPING:
+    after a programmatic write to a shared coordination file, diff it against
+    HEAD rather than counting lines. A matching count proves nothing about
+    WHICH lines, and that is exactly the check that failed to protect me.
+  EVIDENCE:
+  - git log --format="%h %ad" --date=format:"%H:%M:%S" -- context_compass/attention_board.md
+  - 321648d1d 16:50:17 (block present, my row present)
+  - 39a16c931 17:29:30 (restored board committed)
+  IMPACT: The 22:20Z RISK entry should be read WITH this correction. The board
+    is intact and committed; no mount defect is implicated by this incident.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 5
+
+- DATETIME: 2026-08-03T23:05:00Z
+  TYPE: FACT
+  CLAIM: THE CONCURRENCY COVERAGE I CLAIMED WAS HALF TRUE, AND THE HALF THAT
+    WAS MISSING WAS EVERYTHING I ADDED THIS SESSION. Owner asked three direct
+    questions - multiple threads, kitchen sink on every transaction, singleton
+    reset - and checking rather than answering from memory found two real gaps.
+    WHAT EXISTED: thirteen threaded tests, all of them predating the
+    participation model - exclusive contention, cleanup waking parked waiters,
+    foreign-thread join, concurrent cleanup double-free, roster election,
+    parallel frame loads, atomic multi-scope acquisition.
+    WHAT DID NOT: (1) NO test drove the eight families concurrently through the
+    real `begin` -> `leave` -> `commit` pipeline - the isolation matrix asserts
+    pairwise `try_acquire` on a `ClaimTable`, single-threaded, which proves the
+    modes and nothing about the pipeline around them. (2) NO test raced the
+    participant store at all. All thirty participation tests were
+    single-threaded, so new state under a new lock discipline, written from
+    inside `apply_commit_delta`, had never had two threads pointed at it.
+    NEW FILE `test_aetheric_mediator_concurrency_component.py`, ten tests.
+    THE FIRST VERSION OF IT WAS WORTHLESS AND I ALMOST SHIPPED IT. Eight
+    threads, eight families, six rounds, all green in 0.16 seconds. Measured
+    directly: FORTY-EIGHT world-EXCLUSIVE transactions, ZERO refusals, 0.00s.
+    Every acquisition released before the next thread reached the table, so
+    nothing ever contended and every assertion passed against an idle plane. A
+    concurrency test that never achieves concurrency is worse than none,
+    because it reports green.
+    THE FIX IS THAT CONTENTION IS NOW PROVEN BY THE CLOCK, NOT ASSUMED.
+    Transactions hold their claims for 3ms, and two tests measure the result
+    against what serialised work would cost:
+      - 24 world-EXCLUSIVE holds land at 107% of serial cost (threshold 70%) -
+        they genuinely excluded each other;
+      - 24 disjoint-frame holds land at 15% of serial cost (threshold 50%) -
+        `world` ix plus disjoint `frame:<name>` x really does run in parallel.
+      Without the second, the first is satisfiable by a plane that serialises
+      everything, which would be a global mutex with extra vocabulary.
+    A REAL API FINDING, from a test that failed on its first honest run.
+    The torn-row reader called `participation_state(x)` then
+    `is_participating(x)` and immediately observed `(ACTIVE, False)`. That is
+    NOT a plane defect - each verb reads under the lock and is internally
+    consistent, but NOTHING IS HELD BETWEEN TWO CALLS, so the pair can straddle
+    a committing transaction. The row was never torn; my reader was. Corrected
+    to take one rendered row from `describe_participants()`, which builds under
+    a single acquisition, and the trap is now written into the contract on both
+    `InformationRegistry.is_participating` and `Mediator.is_participating`
+    rather than left for the next caller to discover.
+    ON SINGLETONS, since it was asked directly: NOTHING IN THIS PLANE IS ONE.
+    Zero `_instance`, `_initialized`, `__new__` or `_reset_singleton_for_tests`
+    in the entire package - verified by grep, not by memory. `Mediator` is an
+    ordinary object Aether constructs and holds, which is why the reset dance
+    the three subsystem roots need has no counterpart here. The properties that
+    pattern protects are still real, so they are now asserted directly: two
+    planes are fully independent (a claim in one is invisible to the other), a
+    fresh plane after a cleaned one starts empty, and eight threads calling
+    `cleanup()` at once run it exactly once.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py
+  - src/melder/aether/aetheric_mediator/information_registry.py (is_participating contract)
+  - src/melder/aether/aetheric_mediator/mediator.py (is_participating contract)
+  IMPACT: Plane suite 251 -> 261. Every transaction family is now driven
+    concurrently through the real pipeline, the participant store has been
+    raced, and the two timing assertions FAIL if a future change makes the
+    plane stop contending - which is the failure mode the first version of this
+    file had and could not have reported.
+  NEXT: Nothing here. The three owner rulings remain the only blockers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8

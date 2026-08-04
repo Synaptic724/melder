@@ -718,6 +718,18 @@ class InformationRegistry(Cleanable):
             `participation_state(...) is not None`, and the gap between the two
             is every subsystem that exists but is not running.
 
+            THIS CALL IS ATOMIC; PAIRING IT WITH ANOTHER IS NOT. Each verb here
+            reads under the lock and is internally consistent, but nothing is
+            held BETWEEN two calls, so
+            `participation_state(x)` followed by `is_participating(x)` can
+            straddle a committing transaction and return a state and a gate that
+            disagree. A concurrency test written that way failed on its first
+            run reading `(ACTIVE, False)`, which is not a defect - it is two
+            reads of a value that legitimately moved in between.
+            A caller needing more than one field of a row must take them from a
+            SINGLE read: `describe_participants()` renders each row under one
+            acquisition, so its `state` and `emits` cannot disagree.
+
         Args:
             subsystem_name: The subsystem being asked about.
 

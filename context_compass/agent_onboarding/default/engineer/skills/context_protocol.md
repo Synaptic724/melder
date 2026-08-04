@@ -52,6 +52,22 @@ So treat the quality of these documents as a hazard as well as an asset. They ar
 accurate about the day they were written and silent about every commit since. The
 moment a document feels like enough, that is the moment you owe the code a read.
 
+**This is not an argument for using them less.** Read them more, and slice them
+often - `src_architecture.md`, `src_components.md` and `src_graph.md` are the
+fastest route from "somewhere in this repository" to four files worth opening, and
+an agent that skips them searches blind and burns its context finding what an index
+would have handed over in one lookup. The rule is about what each thing DECIDES:
+
+| the documents | the code |
+| --- | --- |
+| tell you WHERE to look, and WHY the design is shaped that way | tells you WHAT it does today |
+| are how you navigate, scope, and avoid sprawl | is the only thing that settles a behaviour question |
+| are evidence of intent | is evidence of behaviour |
+
+Use them for everything in the left column, freely. Never let the left column
+answer a question in the right one - and changing an implementation is always a
+question in the right one.
+
 Every step is a lookup keyed on a name the previous step produced. That is why the
 order matters: enter at the graph with no name in hand and you are searching tens of
 thousands of lines for something you cannot yet describe.
