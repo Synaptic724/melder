@@ -25,6 +25,41 @@ python context_compass/tools/system_documents/python/assemble_graph.py \
 `--check` on either script reports without writing. Run it before assuming the
 graph is current.
 
+## A file the interpreter cannot parse leaves the graph silently
+
+`extract_graph.py` walks source with `ast.parse`. A file that raises `SyntaxError`
+gets no descriptor, so every node in it disappears from the assembled document -
+and the run still succeeds, because one unreadable file is not a reason to abandon
+the other several hundred.
+
+That is correct when the file is broken. It is wrong when the file is merely
+**newer than the interpreter**, and the two are indistinguishable at the parse
+site. Measured case: a PEP 701 f-string (nested quotes inside an f-string) parses
+on 3.12+ and raises on 3.10, so a graph extracted with an older Python came out one
+class short, every `Key Files (C1)` citation into that class stopped resolving, and
+the summary said nothing was wrong.
+
+Two defences, and use both:
+
+- The run prints a **`SKIPPED - NOT IN THE GRAPH`** block naming every file and its
+  reason, including the Python version that did the parsing. Read it. It is
+  deliberately separate from the census, because the census counts nodes that exist
+  and these do not.
+- Pass **`--strict`** to exit non-zero when anything was skipped:
+
+```bash
+python context_compass/tools/system_documents/python/extract_graph.py \
+    --src src --out context_compass/system_docs/graph --strict
+```
+
+`--strict` is opt-in rather than the default so existing invocations keep their exit
+semantics, but an unattended or CI run should always set it. Without it the only
+signal is a line of stdout that nobody is reading.
+
+**Check the interpreter before concluding the file is broken.** Compare
+`python -V` against the project's `requires-python`. If the interpreter is older,
+the file is fine and the graph is not - re-run on the version the project targets.
+
 Three more scripts exist for cases the pipeline alone cannot serve:
 
 ```
@@ -325,6 +360,12 @@ first, then by `(file, label)`, before you assemble anything.
   swallowed 14 real files including `__init__.py` and every dunder module. A
   prefix is a naming convention, not a type.
 - Promoting an edge candidate to an edge without reading the code.
+- **Reading `skipped=N` in the summary as harmless.** A skipped file is not a
+  partial result, it is an absent one: the graph is wrong rather than incomplete,
+  and nothing downstream can tell. Run with `--strict` so it cannot pass silently.
+- **Treating a `SyntaxError` from the extractor as a defect in the source file.**
+  Check `python -V` against the project's `requires-python` first; an interpreter
+  older than the code produces exactly this signature.
 - **Writing `context_compass/...` into a descriptor's authored prose.** The
   generated document is clean today - it cites the source tree constantly and
   names this package nowhere - and that is only true because nothing has typed a

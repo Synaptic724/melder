@@ -430,17 +430,52 @@ def test_blocking_evidence_names_the_contended_scope(submitter, table):
 # Jurisdiction - the boundary this plane must not cross
 # --------------------------------------------------------------------------
 
+# THE FRAME PLANE'S ACTUAL KEY VOCABULARY, read out of
+# `aetheric_frame/dev_ops/change_control_manager/` rather than guessed. Every
+# scope-key prefix that subsystem emits, with its occurrence count at the time
+# of writing:
+#
+#     scope:      12      spellbook:   4      contract:    3
+#     binding:     3      conduit:     1
+#
+# THE FIRST VERSION OF THIS TUPLE WAS WRONG IN BOTH DIRECTIONS. It forbade
+# `spell_index:` and `ward:`, neither of which the frame plane uses at all, and
+# it did NOT forbid `scope:`, `contract:` or `binding:` - which are three of its
+# five real prefixes and the most-used one among them. A family that started
+# emitting `scope:` would have collided with the frame plane's busiest namespace
+# and this test would have passed.
+#
+# That is the failure mode a jurisdiction guard exists to prevent, so the list
+# is now MEASURED. If the frame plane grows a prefix, this tuple is stale and
+# the guard silently narrows again - which is why the counts above are recorded,
+# to make re-measuring cheap.
+FRAME_PLANE_PREFIXES = (
+    "scope:",
+    "spellbook:",
+    "contract:",
+    "binding:",
+    "conduit:",
+)
+
+
 @pytest.mark.parametrize("family", DERIVED_FAMILIES)
 def test_no_derived_family_claims_inside_a_frame(family, submitter):
     """
     Anything INSIDE a frame belongs to that frame's own `ChangeControlManager`,
     which has its own claim table. This plane claims `frame:<name>` as ONE UNIT
-    and never reaches past it - book or conduit keys would put two planes on one
-    vocabulary with no arbiter between them.
+    and never reaches past it.
+
+    WHY THE TWO PLANES CANNOT CONTEND, stated as the property rather than as an
+    intention: their key namespaces are DISJOINT. This plane emits `world`,
+    `frame:<name>` and `subsystem:<name>` and nothing else; the frame plane
+    emits the five prefixes above and never emits `world` or `frame:` - checked
+    by grep across `change_control_manager/`, in both directions. Two planes on
+    one vocabulary would need an arbiter between them and there is none, so the
+    disjointness is load-bearing rather than tidy.
     """
     plan = family.build_start_plan(submitter=submitter, metadata=FULL_METADATA)
-    forbidden = ("spellbook:", "conduit:", "spell_index:", "ward:")
     for scope_key in plan:
-        assert not scope_key.startswith(forbidden), (
-            "{0!r} reaches inside a frame".format(scope_key)
+        assert not scope_key.startswith(FRAME_PLANE_PREFIXES), (
+            "{0!r} reaches inside a frame - that key belongs to the frame's own "
+            "ChangeControlManager".format(scope_key)
         )

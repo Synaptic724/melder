@@ -3,12 +3,12 @@
 ## Metadata
 - Story ID: STORY-2026-07-31-aetheric-mediator-wiring
 - Epic ID: EPIC-2026-07-31-aetheric-mediator-subsystem
-- Status: blocked
+- Status: ready (all four blockers cleared 2026-08-03; unclaimed)
 - Owner: cowork
 - Agent Name: UNASSIGNED
 - Priority: p2
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-07-31T23:00:41Z
+- Updated: 2026-08-03T23:30:00Z
 
 ## Problem / Opportunity
 Wiring is where the blast radius lives - three working subsystems. It does not
@@ -27,10 +27,25 @@ start until the plane is proven standalone and the surveys are in.
    Also read the `ix` correction on the crystallizer survey - the first version
    of that survey asserted `ix` meant escalation and refused it everywhere; it is
    the PARENT-SCOPE marker, and it is earned in both Nexus and MR.
-3. Owner decision on epic open question 1: does the top plane claim FRAME scope
-   keys, or only subsystem keys?
-4. Owner decision on epic open question 2: do inner frame transactions JOIN the
-   top session, or stay siblings?
+3. ~~Owner decision on epic open question 1: does the top plane claim FRAME
+   scope keys, or only subsystem keys?~~ **CLEARED 2026-08-03T23:30:00Z**
+   (bootstrap_0). ANSWERED FROM THE BUILT CODE: IT CLAIMS FRAME KEYS.
+   `frame_create` and `formation_load` take `world` ix + `frame:<name>` x;
+   `index_graft` takes `world` ix + `frame:<host>` ix. It claims a frame AS ONE
+   UNIT and names nothing inside it - no `spellbook:`, `conduit:` or
+   `spell_index:` key exists in the package, and
+   `test_no_derived_family_claims_inside_a_frame` fails the build if one
+   appears. The two planes share no key, so they cannot contend for one. The
+   alternative (subsystem keys only) is refused on the epic's own grounds: it
+   leaves frame creation unprotected, which is the hole this epic exists to close.
+4. ~~Owner decision on epic open question 2: do inner frame transactions JOIN
+   the top session, or stay siblings?~~ **CLEARED 2026-08-03T23:30:00Z**
+   (bootstrap_0). ANSWERED: SIBLINGS. Nothing joins across planes and nothing
+   could - `join()` has exactly one caller, `Mediator.begin`, joining a session
+   to another session OF THIS PLANE held by the same identity on the same
+   thread. THE PLANE ORGANISES THREADS, IT DOES NOT UNIFY TRANSACTIONS. A
+   caller wanting one atomic span across both planes holds ONE top session
+   across its own frame work, which is possible today and was not before.
 
 ## Ticket Contract
 - ENTRY_GATE: all four blockers cleared.

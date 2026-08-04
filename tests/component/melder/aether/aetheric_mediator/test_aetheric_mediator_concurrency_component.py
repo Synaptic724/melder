@@ -262,7 +262,7 @@ def test_every_family_under_threads_leaves_no_claim_behind(plane):
     """
     families = list(FAMILY_METADATA.items())
     outcomes = []
-    outcomes_lock = threading.Lock()
+    outcomes_lock = threading.RLock()
 
     def make_worker(index):
         """Build one worker that cycles the families from its own identity."""
@@ -315,7 +315,7 @@ def test_contended_and_disjoint_families_both_make_progress(plane):
     frame load racing it should still get through within the wait.
     """
     committed = {"checkpoint": 0, "frame_a": 0, "frame_b": 0}
-    counter_lock = threading.Lock()
+    counter_lock = threading.RLock()
 
     def make_worker(label, transaction_type, metadata):
         """Build one worker that repeatedly drives a single family."""
@@ -376,7 +376,7 @@ def test_racing_lifecycle_edges_never_leave_a_torn_row(plane):
     """
     failures = []
     reads = []
-    bookkeeping = threading.Lock()
+    bookkeeping = threading.RLock()
     # A COUNTDOWN, not a flag. An earlier version set a single Event in each
     # writer's `finally`, so the FIRST writer to finish stopped the reader and
     # the row was only sampled during the opening moments of the race. The
@@ -496,7 +496,7 @@ def test_configure_racing_activate_never_reports_a_running_subsystem_as_stopped(
     plane would report a running subsystem as not running.
     """
     observed = []
-    observed_lock = threading.Lock()
+    observed_lock = threading.RLock()
 
     def make_worker(index):
         """Alternate configure and activate against one subsystem."""
@@ -625,7 +625,7 @@ def test_concurrent_cleanup_of_the_plane_runs_exactly_once():
     """
     plane = Mediator(max_wait_seconds=0.1)
     errors = []
-    errors_lock = threading.Lock()
+    errors_lock = threading.RLock()
 
     def worker(barrier):
         """Tear the plane down from every thread at once."""

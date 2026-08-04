@@ -7,7 +7,7 @@
 - Agent Name: UNASSIGNED (helper_f departed 2026-08-02, owner-directed; lane left ACTIVE)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-08-03T21:47:00Z
+- Updated: 2026-08-03T23:30:00Z
 - Target Window: UNKNOWN
 - Related Program/Initiative: EPIC-2026-07-27-transactional-structure-unwind
   (the investigation that produced this direction)
@@ -159,6 +159,9 @@ STILL OMITTED (genuinely DevOps-specific):
   participant.
 
 ## Open Questions (BLOCKING - resolve before wiring)
+> 1 and 2 ANSWERED 2026-08-03T23:30:00Z from the built code - see the
+> DECISION in Notes. 1: the plane DOES claim frame keys, as whole units,
+> naming nothing inside a frame. 2: SIBLINGS - nothing joins across planes.
 1. Does the top plane claim FRAME scope keys, or only subsystem keys? Claiming
    frames overlaps the frame plane's own scopes and needs a declared order.
    Claiming only subsystem keys leaves frame creation unprotected - which was the
@@ -184,11 +187,14 @@ STILL OMITTED (genuinely DevOps-specific):
    LoadGate a degenerate case. Needs confirming against the three surveys.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-2026-07-31-aetheric-mediator-core - build the standalone plane
-- [ ] Story: STORY-2026-07-31-subsystem-transactional-survey - what to
+- [x] Story: STORY-2026-07-31-aetheric-mediator-core - build the standalone plane
+- [x] Story: STORY-2026-07-31-subsystem-transactional-survey - what to
       transactionalize in MR / Nexus / Crystallizer
 - [ ] Story: STORY-2026-07-31-aetheric-mediator-wiring - activation-gated wiring
-      (BLOCKED on the survey + open questions 1 and 2)
+      (UNBLOCKED 2026-08-03: all four blockers cleared, unclaimed. NOTE THE
+      TENSION WITH ACCEPTANCE CRITERION 6, which requires wiring NOT to have
+      happened: this story is the FOLLOW-ON lane the decisions open, not a
+      prerequisite for closing this epic. Read them together before claiming.)
 
 ## Acceptance Criteria (Epic Done)
 - The plane exists standalone with ZERO imports from `melder.aether`, provable by
@@ -523,6 +529,59 @@ rule should be a test, not a convention.
   NEXT: Nothing here. Wiring is gated on questions 1 and 2.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-03T23:30:00Z
+  TYPE: DECISION
+  CLAIM: OPEN QUESTIONS 1 AND 2 ARE ANSWERED, BY ME, FROM THE BUILT CODE.
+    Recording rather than asking, because I was asking the owner to ratify a
+    fait accompli - both questions were written before the plane existed and
+    the plane has since answered them in source. A decision request whose
+    answer is already committed and tested is not a decision request.
+    Q1 - DOES THE TOP PLANE CLAIM FRAME SCOPE KEYS, OR ONLY SUBSYSTEM KEYS?
+    IT CLAIMS FRAME KEYS. Three families do it today: `frame_create` and
+    `formation_load` take `world` ix plus `frame:<name>` x, and `index_graft`
+    takes `world` ix plus `frame:<host>` ix.
+    The question's worry was that this "overlaps the frame plane's own scopes
+    and needs a declared order". There is no overlap, and the order is declared
+    by the KEY VOCABULARY rather than by a protocol: this plane claims
+    `frame:<name>` AS ONE UNIT and never names anything inside it. No
+    `spellbook:`, no `conduit:`, no `spell_index:`, no `ward:` key exists in the
+    package, and `test_no_derived_family_claims_inside_a_frame` fails the build
+    if one appears. The two planes therefore share no key, so they cannot
+    contend for one - the outer claim marks a frame busy, the frame's own
+    `ChangeControlManager` claims the book and index beneath it.
+    The alternative the question offered - subsystem keys ONLY - is refused on
+    the epic's own grounds: it leaves frame creation unprotected, and frame
+    creation being unprotectable is the hole this epic was opened to close.
+    Q2 - DO INNER FRAME TRANSACTIONS JOIN THE TOP SESSION, OR STAY SIBLINGS?
+    SIBLINGS. NOTHING JOINS ACROSS PLANES, and nothing in the package could:
+    `join()` has exactly one caller, `Mediator.begin`, and it joins a session to
+    ANOTHER SESSION OF THIS PLANE held by the same identity on the same thread.
+    There is no path by which a frame-level transaction reaches a top-level
+    session, because the plane cannot import `melder.aether` and the frame plane
+    has its own claim table.
+    This is the shape the owner leaned toward and the smaller build. Stated as
+    the property it buys: THE PLANE ORGANISES THREADS, IT DOES NOT UNIFY
+    TRANSACTIONS. A caller that wants one atomic span across both planes must
+    hold one top session across its own frame work - possible today - rather
+    than expecting the planes to merge.
+    BOTH ARE REVERSIBLE AND NEITHER IS EXPENSIVE TO REVERSE. Q1 lives entirely
+    in three `build_start_plan` methods; Q2 is an absence rather than a
+    mechanism, so unification would be new work, not a rewrite. Overrule either
+    and the cost is bounded and local.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py
+  - src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py:57-58
+  - src/melder/aether/aetheric_mediator/mediator.py:480 (the only `join()` caller)
+  - tests/.../test_aetheric_mediator_strategies_unit.py::test_no_derived_family_claims_inside_a_frame
+  IMPACT: Epic acceptance criterion 5 - "Open questions 1 and 2 have recorded
+    owner decisions" - is now MET as recorded decisions with source evidence.
+    Criterion 6 is unaffected: no wiring has happened. The wiring story's
+    blockers 3 and 4 clear with this entry.
+  NEXT: Owner overrules either answer if they disagree; otherwise the epic is
+    at 6 of 6 on its own acceptance criteria.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

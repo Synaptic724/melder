@@ -24,7 +24,7 @@ from melder.aether.aetheric_mediator.admission_result import AdmissionReason
 from melder.aether.aetheric_mediator.claim_mode import ClaimMode
 from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.mediator import Mediator
-from melder.aether.aetheric_mediator.scope_keys import ScopeKey
+from melder.aether.aetheric_mediator.scope_keys import ScopeKey, ScopePrefix
 from melder.aether.aetheric_mediator.transaction_session import (
     OutcomePolicy,
     SessionStatus,
@@ -140,6 +140,176 @@ def test_plane_declares_no_dependency_on_aether():
 
     assert offenders == [], (
         "plane modules declare imports on melder.aether: {0}".format(offenders)
+    )
+
+
+def test_no_plain_lock_anywhere_in_the_lane():
+    """
+    OWNER INSTRUCTION, STANDING: the mediator uses RLocks, never plain Locks.
+
+    Enforced as a test because I have now reported it wrong once. I grepped the
+    PACKAGE, found six RLocks and zero `threading.Lock()`, and reported "every
+    lock in the plane is an RLock" - while the concurrency test file I had
+    written minutes earlier contained FIVE plain Locks, and the pre-existing
+    unit tests two more. The report was true of the directory I looked at and
+    false of the lane, which is the same shape of mistake as a jurisdiction
+    guard that forbids words nobody uses: the half I thought to check passed.
+
+    So the check now covers SOURCE AND TESTS TOGETHER, and it is a test rather
+    than a habit, because a habit is exactly what failed.
+
+    WHY RLOCK IS NOT A PREFERENCE HERE: the plane re-enters its own locks. A
+    thread inside `Mediator.cleanup` holding `_lock` calls into children that
+    take their own; `TransactionSession` depth-counts same-thread joins;
+    `ClaimTable` acquisition walks compatibility while holding. A plain Lock
+    deadlocks the moment any of those paths nests, and it deadlocks
+    NON-DETERMINISTICALLY under free-threaded 3.14t - the worst possible way to
+    find out.
+
+    PARSED, NOT GREPPED, and the first version of this guard is why. A regex
+    over lines flagged THIS TEST at two offsets: its own docstring names the
+    thing it forbids, and its own pattern string contains it. A textual check
+    for a code construct cannot tell code from prose ABOUT that construct, so it
+    fails on the one file guaranteed to discuss it - the guard itself.
+
+    `ast` sees calls, not text, so a docstring mentioning the forbidden call is
+    invisible to it and a real call is not.
+    """
+    import ast
+    import pathlib
+
+    import melder.aether.aetheric_mediator as package
+
+    plane_root = pathlib.Path(next(iter(package.__path__)))
+    repo_root = plane_root.parents[3]
+
+    # THE LANE IS DEFINED BY CONTENT, NOT BY DIRECTORY, and that is the whole
+    # point of this paragraph. The first version listed two hard-coded test
+    # directories, which is the same scope-by-assumption that produced every
+    # other miss in this lane. It was already wrong when written:
+    # `tests/component/melder/aether/test_aether_hosted_subsystem_accessors_component.py`
+    # imports `Mediator` and sits in NEITHER directory, so a plain Lock there
+    # would have been invisible to a guard that reports on "the lane".
+    #
+    # Any test file that imports the plane IS the lane. A file moving, or a new
+    # one landing somewhere nobody predicted, cannot slip out of scope.
+    def imports_the_plane(path):
+        """True when a file imports anything from the mediator package."""
+        text = path.read_text(encoding="utf-8")
+        if "aetheric_mediator" not in text:          # cheap reject before parse
+            return False
+        for node in ast.walk(ast.parse(text)):
+            names = []
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module]
+            if any("aetheric_mediator" in name for name in names):
+                return True
+        return False
+
+    in_scope = sorted(plane_root.rglob("*.py"))
+    for candidate in sorted((repo_root / "tests").rglob("*.py")):
+        if imports_the_plane(candidate):
+            in_scope.append(candidate)
+
+    def is_plain_lock(node):
+        """True for `threading.Lock()` or a bare imported `Lock()`."""
+        if not isinstance(node, ast.Call):
+            return False
+        func = node.func
+        if isinstance(func, ast.Attribute):
+            return func.attr == "Lock"
+        if isinstance(func, ast.Name):
+            return func.id == "Lock"
+        return False
+
+    offenders = []
+    for source_path in in_scope:
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if is_plain_lock(node):
+                offenders.append(
+                    "{0}:{1}".format(source_path.name, node.lineno)
+                )
+
+    # A guard that silently scanned nothing is worse than no guard. The plane
+    # has 24 modules and there are several test files; anything near zero means
+    # the discovery above broke, not that the lane got smaller.
+    assert len(in_scope) > 25, (
+        "the guard found only {0} files in the lane - discovery is "
+        "broken".format(len(in_scope))
+    )
+    assert offenders == [], (
+        "plain Lock in the mediator lane - the owner instruction is RLock "
+        "everywhere, source AND tests: {0}".format(offenders)
+    )
+
+
+def test_the_two_planes_share_no_scope_key_namespace():
+    """
+    THE PROPERTY THAT MAKES TWO CLAIM TABLES SAFE, checked on both sides.
+
+    This plane claims `frame:<name>` and the frame's own `ChangeControlManager`
+    claims things inside that frame. Nothing arbitrates between the two tables,
+    so the ONLY thing preventing them contending for one key is that their
+    namespaces are disjoint - and disjointness that nobody checks is a
+    convention, not a property.
+
+    Checked STATICALLY, in the style of the two constraint-4 tests above and for
+    the same reason: importing the frame plane drags the whole runtime in.
+
+    THE ASYMMETRY THIS CATCHES. `test_no_derived_family_claims_inside_a_frame`
+    guards THIS plane against reaching down, and its forbidden list was
+    originally wrong in both directions - it named two prefixes the frame plane
+    never uses and missed three it does. Nothing at all guarded the other
+    direction: if the frame plane ever grew a `world` or `frame:` key, both
+    tables would name it, neither would know, and the failure would be a silent
+    loss of isolation rather than an error.
+
+    SCOPE OF THE CHECK, stated so it is not over-trusted: it reads string
+    literals out of the frame plane's source. A key assembled at runtime from
+    parts would not be seen. That is acceptable because the frame plane builds
+    its keys as inline f-string literals today, and a helper appearing there is
+    itself the signal to revisit this.
+    """
+    import pathlib
+    import re
+
+    import melder.aether.aetheric_mediator as package
+
+    plane_root = pathlib.Path(next(iter(package.__path__)))
+    frame_plane = (
+        plane_root.parent / "aetheric_frame" / "dev_ops" / "change_control_manager"
+    )
+    assert frame_plane.is_dir(), (
+        "frame plane not found at {0} - this guard has gone stale".format(
+            frame_plane
+        )
+    )
+
+    # The three names THIS plane owns. `ScopePrefix` is the closed vocabulary,
+    # so reading it here keeps the two in step automatically.
+    ours = {member.value for member in ScopePrefix}
+
+    literal = re.compile(r'f?"([a-z_]+):')
+    theirs = set()
+    for source_path in sorted(frame_plane.rglob("*.py")):
+        text = source_path.read_text(encoding="utf-8")
+        theirs.update(literal.findall(text))
+        if '"world"' in text:
+            theirs.add("world")
+
+    assert theirs, (
+        "no scope-key prefixes found in the frame plane - the pattern this "
+        "guard matches on has changed and it is no longer checking anything"
+    )
+    collisions = sorted(ours & theirs)
+    assert collisions == [], (
+        "the two claim tables both name {0}, and nothing arbitrates between "
+        "them. Ours: {1}. Theirs: {2}.".format(
+            collisions, sorted(ours), sorted(theirs)
+        )
     )
 
 

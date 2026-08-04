@@ -83,7 +83,15 @@ class StaticSystemDocument:
     AGENT_PURPOSE:
         access: public. Immutable packaged hardcopy of a system document. Read
         `melder.__architecture__`, `__components__`, `__graph_network__`, `__graph_details__` to
-        orient inside the runtime without leaving the process.
+        orient inside the runtime without leaving the process. These payloads are
+        large, so SIZE THE READ BEFORE YOU SPEND CONTEXT ON IT: `line_count` and
+        `char_count` cost nothing, `head(n)`/`tail(n)` orient cheaply,
+        `lines(start, count)` is random access once you know where to look, and
+        `reader(...)` hands you your own resumable cursor over the shared index -
+        branch on the returned chunk's `has_more`, never on line arithmetic.
+        `render_markdown()` returns the WHOLE document in one call and is the
+        wrong default for any populated one; `render_json()` is the raw envelope
+        for parsing structure rather than reading prose.
     """
 
     __slots__ = [

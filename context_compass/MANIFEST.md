@@ -39,7 +39,7 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 
 | path | class | sha256 |
 | --- | --- | --- |
-| `.gitattributes` | PACKAGE | `14005817f70a04dae78e57e862fca91cba3f47c83a90bc07594194f024a37d49` |
+| `.gitattributes` | PACKAGE | `9ff348d31ff5f0941a76321a0ef45d47acb5bd218c3febffd3885f453ea325ef` |
 | `AGENTS.MD` | PACKAGE | `a884358f1aa5cf3311648b1498cdbe4a30481b96952bacbf69bf6573f1eeb4f1` |
 | `agent_onboarding/default/continuity_fact_checker/AGENTS.MD` | PACKAGE | `3928c7c3959d7c75e0b3752cce505119060bed73b4ad565923d4801cfa703557` |
 | `agent_onboarding/default/continuity_fact_checker/behavioral_guidelines/continuity_fact_checker_workflow.md` | PACKAGE | `ace3e5e300fda18719730e05bdb0ca15d8afdc32289e1a13a7c8bd3d91470753` |
@@ -128,7 +128,7 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `agent_onboarding/default/engineer/skills/package_maintenance.md` | PACKAGE | `c4a4c6ae98ee9dc01aaf3b2d225530f2d9b5c37a6bb276f80a9c289a6188855a` |
 | `agent_onboarding/default/engineer/skills/patch_artifact_consumption.md` | PACKAGE | `5b20db99ae4debdf90e9dac96ad81c2e035a552e1bf94ef8c336cd053e7286a2` |
 | `agent_onboarding/default/engineer/skills/patch_framework_gating.md` | PACKAGE | `303738c05c8af351707b929cf7b12c0c019946d2b37af4b819e486c295c2e9d9` |
-| `agent_onboarding/default/engineer/skills/src_graph_generation.md` | PACKAGE | `3736bb7f1b35499fb82179a2b6b103ddead6a17ffa8bb388f8dc4ab62e1879ce` |
+| `agent_onboarding/default/engineer/skills/src_graph_generation.md` | PACKAGE | `783bf3b10dadcabd6cbf1a0c5757a5ac73fee69cdfac0250fb6da996f088a41c` |
 | `agent_onboarding/default/engineer/skills/src_graph_usage.md` | PACKAGE | `03de5066f06fe2c62405ac1d0e41a83a3e4315cb46383012dd1c05fde0e90b98` |
 | `agent_onboarding/default/engineer/skills/staleness_protocol.md` | PACKAGE | `f9a4ffd6221f01d03e2d659238f76aafcf7e4b8813d3b9ac5ba0577f932e3f86` |
 | `agent_onboarding/default/engineer/skills/system_document_build.md` | PACKAGE | `b53ca5318f8d695929014ce745e7ff3ffd343a0fda2c23a7354fa87a14220c1e` |
@@ -478,9 +478,9 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `tools/cleanup_context_compass.py` | PACKAGE | `40e0fad8112c3b16438fb9f3f1d36b1f60b7a42c8b7cc22cf3e9acacc9a38c3d` |
 | `tools/migrate_boards.py` | PACKAGE | `14ff0166908e20fc6768fcb42e77ec81048ff34afecedc93fb729bb9487f06fa` |
 | `tools/package_manifest.py` | PACKAGE | `6ca3234c863193f208f729dbe85e8d48ad0fe8462d77858d47423d21e622436e` |
-| `tools/system_documents/index_document.py` | PACKAGE | `fe0894d1677e3ec342db183419bbb84999c9d236d58d7d1a95382bc60effd36d` |
+| `tools/system_documents/index_document.py` | PACKAGE | `b17bcea2f4cb527fe5daf23b1e022099210ebdc9ca5c665bd09f21f94bb75753` |
 | `tools/system_documents/python/assemble_graph.py` | PACKAGE | `fda6f9e23bf3227904ea59de359842b11b8bfc477cf88e6ae9f17e31f0a9ede6` |
-| `tools/system_documents/python/extract_graph.py` | PACKAGE | `a03cb51b152d39e92ece0f6dc006ba977f7dc907e37b9d4a30c0941774b5a3d7` |
+| `tools/system_documents/python/extract_graph.py` | PACKAGE | `2f18c1ef0b9649be1996f434c4d1afb90be2b619d74349ea4725554e6f864848` |
 | `tools/system_documents/python/graph_semantics_tickets.py` | PACKAGE | `a4d98e644c99d4404ef62ecad3b58efd8b837b762989c2b18ca9ebc4a3341eb9` |
 | `tools/system_documents/python/graph_walker.py` | PACKAGE | `c6d0825a35c8021d9bf41eb5cc1eb934d2014d6932d8bd28fa982992600ff802` |
 | `tools/system_documents/python/migrate_authored_graph.py` | PACKAGE | `478b9e7e77520ab65c1cc5aaa8445a8083e48390088e1168c0557b70b03b3687` |

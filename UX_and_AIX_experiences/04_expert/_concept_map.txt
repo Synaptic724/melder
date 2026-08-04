@@ -212,8 +212,28 @@ ARC B COMPLETE (lessons 07-09)
 ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
   composition/campaign grain of the research record
 
-  16 the_transaction_plane_who_waits_for_whom (the last big item on the
-     BLUE charter. START WITH WHAT IS NOT IN IT: "Readers (meld paths)
+  16 rewiring_a_running_world (REWRITTEN TWICE, 2026-08-03. Draft 1
+     wrapped add_spell_to_contract in a `with conduit.transaction(...)`
+     window - the literal thing AGENTS.md rules against. Draft 2 removed
+     the window but was still a lesson ABOUT the transaction plane.
+     OWNER RULING: transactions must not leak out of the base code at
+     all - they are not curriculum vocabulary, and `conduit.link` is
+     what you use. So the subject changed, not just the code: this is
+     now a lesson about CHANGING THE WIRING WHILE THE WORLD RUNS -
+     link, pull, meld - in which the machinery is never named.
+     WHAT IT TEACHES: each structural verb is COMPLETE IN ITSELF, so
+     there is nothing to open, hold or commit; SHARING IS A PULL and the
+     conduit NAMED in add_spell_to_contract must OWN the spell (an
+     owner-push is refused); the five-step order of operations per
+     dependency edge; and the two link() refusals, braked-posture before
+     not-dynamic, so ALLOWED-to-do is checked before WHAT-IT-IS.
+     Concurrency appears as one plain sentence - independent work
+     overlaps, and a collision names the holder rather than hanging.
+     WHAT WAS CUT AND WHY IT WAS RIGHT TO CUT: claim modes, scope keys
+     vs hashes, admission waits. All true, all internal. Teaching them
+     invites a reader to reach for them.
+     (Retained here for maintainers only, since the map is not a
+     lesson: "Readers (meld paths)
      NEVER ENTER THIS PLANE; they remain protected by validity gating
      that commits trigger." meld() takes no transaction and appears
      nowhere in the admission vocabulary - the plane serializes
@@ -270,8 +290,9 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      straddles the repoint; tearing down the outgoing creation context
      BUMPS THE DOOR EPOCH so the warm fast-door cannot serve the stale
      spell; the index is re-registered DIRTY so revalidation is lazy and
-     the window stays short; and it is a real transaction in 16's plane
-     (family `notch`, spellbook ix + binding key x). BORROWERS ARE FANNED
+     the window stays short; and the whole switch runs under one seal
+     (maintainer detail, deliberately unnamed in the lesson itself, the
+     same way 16 no longer names it). BORROWERS ARE FANNED
      OUT AND THE TWO KINDS GET DIFFERENT ANSWERS: a version-anchored
      borrower has its copy PARKED, an index-link receiver has its head
      MOVED - never-substitute at the topology grain, where whoever named
@@ -280,8 +301,12 @@ ARC C COMPLETE (lessons 10-15) - AR targeting, the codegen loop, and the
      `selected_different_spell`, which records an ordinary selection and
      MISATTRIBUTES a mutation in the state history)
 
-ARC D COMPLETE (lessons 16-17) - the mutation-admission plane and the
-  staging half of the hot swap that rides it
+ARC D COMPLETE (lessons 16-17) - changing a running world: rewiring it
+  through link/pull/meld, and staging a version swap onto a lineage.
+  BOTH LESSONS NAME NO MACHINERY. That is the arc's rule, not an
+  accident of drafting: everything underneath - admission, claims,
+  seals, gates - is base-code business, and a lesson that names it
+  invites a reader to reach for it.
 
   18 the_package_reads_itself_to_you (THE TIER FINALE, and it ends where
      an agent BEGINS. Four StaticSystemDocuments hang off the package
@@ -368,6 +393,28 @@ THE THROUGH-LINES, AT EXPERT GRAIN (both inherited from advanced)
   guesses on your behalf when you were vague - it refuses and names the
   ambiguity. Expert 10's `*param` refusal is the same bargain at the
   smallest possible grain.
+
+THE CHARTER IS AGENTS.md AND IT OUTRANKS ANY TEST YOU COPY FROM
+  Read UX_and_AIX_experiences/AGENTS.md before authoring. Three of its
+  laws were broken in this tier by lifting patterns out of the
+  integration suite, which is allowed to do things curriculum is not:
+    - "NORMAL CODE ONLY (owner ruling 2026-07-20): curriculum code never
+      pulls mediator transactions into user flow... The user surface is
+      link / add_spell_to_contract / meld." Lesson 16's first draft did
+      exactly the forbidden thing. FIXED.
+    - "Every example is written against `import melder as md` ONLY - any
+      example forced to reach a deep path is, BY DEFINITION, an
+      init-surface gap." Lesson 17's first draft reached
+      `book._inactive_spells`. FIXED - and note the charter's framing
+      would have caught it: a deep path is a FINDING to record, never a
+      thing to ship in a lesson.
+    - "Examples may only assert behavior VERIFIED in source or PROVEN by
+      a probe row. Uncertain contracts get a probe here first."
+  SWEEP RUN 2026-08-03 over all 18: no mediator ceremony anywhere, no
+  melder submodule imports anywhere.
+  THE PATTERN BEHIND ALL THREE MISTAKES: tests reach through facades on
+  purpose. Copying a test into a lesson imports its licence along with
+  its shape.
 
 RESEARCH METHOD (recorded 2026-08-03 after several wrong assertions)
   Asserting a method is absent after grepping ONE class is how three
@@ -521,6 +568,32 @@ DOCSTRINGS THAT LIE (verified individually, not taken on trust)
   WHY IT MATTERS BEYOND TIDINESS: a reader who believes the docstring
   goes looking for the transaction window on the wrong object, and the
   ownership split is the single most important fact about this surface.
+
+SOURCE CHANGE MADE BY THIS TIER - NEEDS A BUILD-ASSET REGENERATE
+  `StaticSystemDocument`'s AGENT_PURPOSE was extended (2026-08-03).
+  WHY: the four package-root documents are the FIRST thing an agent
+  touches, and that class re-exposes line_count / char_count / head /
+  tail / lines / reader itself - but its agent purpose named none of
+  them. The budgeting guidance lived one layer down on `IndexedText` and
+  `AgentTextReader`, which a caller holding `melder.__architecture__` has
+  no reason to go look up. The front door pointed inside without saying
+  how to walk. Now it says: size before you read, pick a rung, branch on
+  has_more, and render_markdown() is the wrong default.
+  CONSEQUENCE - DO NOT SKIP: AGENT_PURPOSE is HARVESTED by
+  `src/melder/_build_assets/_agent_documentation/_builder.py` into the
+  committed `agent_documentation_manifest.py`, and the asset carries a
+  source digest over every src `*.py`. Editing that docstring moves the
+  digest, so the manifest is STALE until regenerated:
+      python src/melder/_build_assets/_build_asset_runner.py
+      python src/melder/_build_assets/_build_asset_runner.py --check
+  Not run here - the authoring sandbox is 3.10 and the runner imports
+  melder, which needs 3.14t.
+  VERIFIED BEFORE SHIPPING: the real `parse_docstring_markers` was run
+  against the real edited docstring and harvests all 776 chars with
+  access still `public` - no Title-Case line closed the block early, and
+  the 8-space body indent keeps it collecting per the parser's own rule
+  (`section_header.match(line) and not line.startswith(" " * 8)`).
+  The file is CRLF and STAYED CRLF: 403 lines, 403 CRLF, 0 bare LF.
 
 THE TIER'S OWN SHAPE, NOW THAT IT IS DONE
   It opens with a COLD BOOT (01) and closes with a document that answers

@@ -2,8 +2,9 @@ import ast
 import difflib
 import hashlib
 import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -13,15 +14,15 @@ from melder.crystallizer.crystals.mutation_research_crystal import (
     MutationResearchCrystal,
 )
 from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
+from melder.mutation_research.diff.diff_engine import DiffEngine
+from melder.mutation_research.group_diff.group_diff_engine import (
+    GroupDiffEngine,
+)
 from melder.mutation_research.mutation_configuration import (
     MutationResearchConfiguration,
 )
 from melder.mutation_research.mutation_configuration_builder import (
     MutationResearchConfigurationBuilder,
-)
-from melder.mutation_research.diff.diff_engine import DiffEngine
-from melder.mutation_research.group_diff.group_diff_engine import (
-    GroupDiffEngine,
 )
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
@@ -119,7 +120,7 @@ class MutationResearch(Cleanable):
 
     DEFAULT_RESEARCH_SET_NAME: ClassVar[str] = "default"
 
-    _instance: ClassVar[Optional["MutationResearch"]] = None
+    _instance: ClassVar[MutationResearch | None] = None
     _lock: ClassVar[threading.RLock] = threading.RLock()
     _initialized: ClassVar[bool] = False
     __slots__ = Cleanable.__slots__ + [
@@ -142,7 +143,7 @@ class MutationResearch(Cleanable):
             cls,
             *args: object,
             **kwargs: object,
-    ) -> "MutationResearch":
+    ) -> MutationResearch:
         """
         Return the singleton MutationResearch instance.
 
@@ -166,15 +167,15 @@ class MutationResearch(Cleanable):
             with cls._lock:
                 instance = cls._instance
                 if instance is None:
-                    instance = super(MutationResearch, cls).__new__(cls)
+                    instance = super().__new__(cls)
                     cls._instance = instance
         return instance
 
     def __init__(
             self,
             *,
-            aether: Optional["Aether"] = None,
-            configuration: Optional[MutationResearchConfiguration] = None,
+            aether: Aether | None = None,
+            configuration: MutationResearchConfiguration | None = None,
     ) -> None:
         """
         Initialize the singleton mutation-research root.
@@ -260,17 +261,17 @@ class MutationResearch(Cleanable):
             # Serializes snapshot build + publication in the emission seam;
             # must exist before the first ResearchSet fires on_mutation.
             self._emission_lock: threading.RLock = threading.RLock()
-            self._aether: "Aether" = aether
-            self._crystallizer: "Crystallizer" = aether._crystallizer
-            self._configuration: Optional[MutationResearchConfiguration] = None
+            self._aether: Aether = aether
+            self._crystallizer: Crystallizer = aether._crystallizer
+            self._configuration: MutationResearchConfiguration | None = None
             self._configured: bool = False
             self._activated: bool = False
-            self._research_sets_by_name: Dict[str, ResearchSet] = {}
-            self._diff_engine: Optional[DiffEngine] = None
-            self._group_diff_engine: Optional[GroupDiffEngine] = None
-            self._synthesizer: Optional[StructuralSynthesizer] = None
-            self._active_campaign: Optional[str] = None
-            self._staged_ancestry: Optional[List[str]] = None
+            self._research_sets_by_name: dict[str, ResearchSet] = {}
+            self._diff_engine: DiffEngine | None = None
+            self._group_diff_engine: GroupDiffEngine | None = None
+            self._synthesizer: StructuralSynthesizer | None = None
+            self._active_campaign: str | None = None
+            self._staged_ancestry: list[str] | None = None
             self._research_sets_by_name[
                 MutationResearch.DEFAULT_RESEARCH_SET_NAME
             ] = ResearchSet(
@@ -373,13 +374,36 @@ class MutationResearch(Cleanable):
         """
         Reset the singleton for isolated test setup.
 
+        Contract:
+            - TOLERATES A HUSK. `__new__` publishes the instance before
+              `__init__` runs, so a construction that fails on the SIGNATURE
+              (a positional `aether`, say) leaves an instance installed whose
+              `Cleanable` slot `_cleaned` was never assigned. Reading the flag
+              on that object raises `AttributeError`, so the read is guarded:
+              there is nothing to clean, only bookkeeping to clear. Nexus
+              documents the same case on its own reset door.
+            - Reads the PUBLIC `cleaned` property rather than the base slot,
+              matching Crystallizer, so the three hosted roots stay
+              interchangeable to a reader.
+            - Clears `_instance` / `_initialized` on EVERY path, including
+              when cleanup is skipped or raises `AttributeError`. A reset that
+              left a husk installed would fail the NEXT test instead of this
+              one, which is the worst place to spend a bug.
+
         Returns:
             None.
         """
         with cls._lock:
             instance = cls._instance
-        if instance is not None and not instance._cleaned:
-            instance.cleanup()
+        if instance is not None:
+            try:
+                if not instance.cleaned:
+                    instance.cleanup()
+            except AttributeError:
+                # Husk: constructed by `__new__`, never initialized. The
+                # base lifecycle flag does not exist yet, so there is no
+                # live state behind this reference to release.
+                pass
         with cls._lock:
             cls._instance = None
             cls._initialized = False
@@ -516,7 +540,7 @@ class MutationResearch(Cleanable):
         return self.activated
 
     @property
-    def configuration(self) -> Optional[MutationResearchConfiguration]:
+    def configuration(self) -> MutationResearchConfiguration | None:
         """
         Return the installed configuration, if any.
 
@@ -628,7 +652,7 @@ class MutationResearch(Cleanable):
 
     def activate(
             self,
-            configuration: Optional[MutationResearchConfiguration] = None,
+            configuration: MutationResearchConfiguration | None = None,
             *,
             hydrate_from_record: bool = True,
     ) -> None:
@@ -887,7 +911,7 @@ class MutationResearch(Cleanable):
             self._emit_research_composition()
         return research_set
 
-    def list_research_set_names(self) -> List[str]:
+    def list_research_set_names(self) -> list[str]:
         """
         Return every owned research-set name, sorted.
 
@@ -912,7 +936,7 @@ class MutationResearch(Cleanable):
         with self._lock:
             return sorted(self._research_sets_by_name.keys())
 
-    def describe_research_composition(self) -> Dict[str, object]:
+    def describe_research_composition(self) -> dict[str, object]:
         """
         Return the detached composition payload across every owned set.
 
@@ -946,7 +970,7 @@ class MutationResearch(Cleanable):
 
     def load_recorded_composition(
             self,
-            composition_payload: Dict[str, object],
+            composition_payload: dict[str, object],
     ) -> None:
         """
         Rebuild the research-set registry from a recorded composition.
@@ -985,7 +1009,7 @@ class MutationResearch(Cleanable):
         # emission -> root.
         with self._emission_lock:
             with self._lock:
-                rebuilt: Dict[str, ResearchSet] = {}
+                rebuilt: dict[str, ResearchSet] = {}
                 for name, set_payload in composition_payload.items():
                     rebuilt[str(name)] = ResearchSet.from_payload(
                         set_payload,
@@ -1018,7 +1042,7 @@ class MutationResearch(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def active_campaign(self) -> Optional[str]:
+    def active_campaign(self) -> str | None:
         """
         Return the ambient campaign stamp, when one is set.
 
@@ -1110,7 +1134,7 @@ class MutationResearch(Cleanable):
     # ------------------------------------------------------------------
 
     @property
-    def staged_ancestry(self) -> Optional[List[str]]:
+    def staged_ancestry(self) -> list[str] | None:
         """
         Return the staged parent identities, when any.
 
@@ -1141,7 +1165,7 @@ class MutationResearch(Cleanable):
                 else None
             )
 
-    def stage_ancestry(self, parent_spell_ids: List[str]) -> None:
+    def stage_ancestry(self, parent_spell_ids: list[str]) -> None:
         """
         Stage parent ancestry for the NEXT world entry (one-shot).
 
@@ -1222,9 +1246,9 @@ class MutationResearch(Cleanable):
             spell_id: str,
             *,
             staged: bool = False,
-            author: Optional[str] = None,
-            reason: Optional[str] = None,
-            campaign: Optional[str] = None,
+            author: str | None = None,
+            reason: str | None = None,
+            campaign: str | None = None,
     ) -> bool:
         """
         Idempotently declare one world-entry into the default set.
@@ -1295,12 +1319,12 @@ class MutationResearch(Cleanable):
 
     def record_promotion(
             self,
-            from_spell_id: Optional[str],
+            from_spell_id: str | None,
             to_spell_id: str,
             *,
-            actor: Optional[str] = None,
-            reason: Optional[str] = None,
-            campaign: Optional[str] = None,
+            actor: str | None = None,
+            reason: str | None = None,
+            campaign: str | None = None,
     ) -> None:
         """
         Record one runtime selection change (notch) into the default set.
@@ -1362,7 +1386,7 @@ class MutationResearch(Cleanable):
             spell_id: str,
             *,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return the query-time residency join for one identity.
 
@@ -1401,10 +1425,10 @@ class MutationResearch(Cleanable):
             raise ValueError("spell_id must be a non-empty string.")
         research_set = self.research_set(set_name)
         lane_id = research_set.residence_of(spell_id)
-        lane_name: Optional[str] = None
-        lane_state: Optional[str] = None
-        lane_type: Optional[str] = None
-        node_type: Optional[str] = None
+        lane_name: str | None = None
+        lane_state: str | None = None
+        lane_type: str | None = None
+        node_type: str | None = None
         if lane_id is not None:
             lane = research_set.get_lane(lane_id)
             lane_name = lane.name
@@ -1471,7 +1495,7 @@ class MutationResearch(Cleanable):
     def _locate_live_membership(
             self,
             spell_id: str,
-    ) -> Tuple[Optional[str], Optional[str], bool]:
+    ) -> tuple[str | None, str | None, bool]:
         """
         Scan live frames for one identity's index membership.
 
@@ -1492,8 +1516,8 @@ class MutationResearch(Cleanable):
                 identity is not a live index member anywhere.
         """
         aether = self._aether
-        parked_frame: Optional[str] = None
-        parked_index: Optional[str] = None
+        parked_frame: str | None = None
+        parked_index: str | None = None
         for frame_name, frame in list(aether._aetheric_frames.items()):
             try:
                 if frame.cleaned:
@@ -1510,7 +1534,7 @@ class MutationResearch(Cleanable):
                 parked_index = index.id
         return parked_frame, parked_index, False
 
-    def _probe_custody(self, spell_id: str) -> Optional[bool]:
+    def _probe_custody(self, spell_id: str) -> bool | None:
         """
         Probe crystallizer custody for one identity, without raising.
 
@@ -1568,8 +1592,8 @@ class MutationResearch(Cleanable):
             left_spell_id: str,
             right_spell_id: str,
             *,
-            strategy: Optional[str] = None,
-    ) -> Dict[str, object]:
+            strategy: str | None = None,
+    ) -> dict[str, object]:
         """
         Compute one derived diff between two version identities.
 
@@ -1669,7 +1693,7 @@ class MutationResearch(Cleanable):
     def _resolve_diff_material(
             self,
             spell_id: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Resolve one version's diff material from crystallizer custody.
 
@@ -1702,7 +1726,7 @@ class MutationResearch(Cleanable):
                 "diff material cannot be resolved."
             )
         payload = self._get_spell_crystal_for_read(spell_id).describe()
-        sources: Dict[str, object] = {}
+        sources: dict[str, object] = {}
         # BOTH recorded carriers feed comparison material (owner ruling
         # 2026-07-11: diffs speak the FULL module, physical or synthetic):
         # synthetic text first, user-retained text fills the gaps. The
@@ -1738,7 +1762,7 @@ class MutationResearch(Cleanable):
             self,
             identity: str,
             set_name: str = "default",
-    ) -> Optional["GroupedResearchNode"]:
+    ) -> GroupedResearchNode | None:
         """
         Return the resident composition for one identity, or None.
 
@@ -1769,9 +1793,9 @@ class MutationResearch(Cleanable):
 
     def _fan_out_members(
             self,
-            node: "GroupedResearchNode",
-            read: "Callable[[str], Dict[str, object]]",
-    ) -> Dict[str, object]:
+            node: GroupedResearchNode,
+            read: Callable[[str], dict[str, object]],
+    ) -> dict[str, object]:
         """
         Apply one spell-grain read to every member of a composition.
 
@@ -1789,7 +1813,7 @@ class MutationResearch(Cleanable):
                 - custody-less members answer honestly instead of killing
                 the fan-out.
         """
-        members: Dict[str, object] = {}
+        members: dict[str, object] = {}
         for member in node.member_spell_ids:
             try:
                 members[member] = read(member)
@@ -1855,7 +1879,7 @@ class MutationResearch(Cleanable):
                 pass
             raise
 
-    def _require_live_custody(self) -> "Crystallizer":
+    def _require_live_custody(self) -> Crystallizer:
         """
         Return the live crystallizer or refuse teach-grade.
 
@@ -1886,8 +1910,8 @@ class MutationResearch(Cleanable):
             self,
             spell_id: str,
             *,
-            module_name: Optional[str] = None,
-    ) -> Dict[str, object]:
+            module_name: str | None = None,
+    ) -> dict[str, object]:
         """
         Return the code of one spell's module world (or one module of it).
 
@@ -1951,7 +1975,7 @@ class MutationResearch(Cleanable):
                     "modules": {},
                 }
             targets = [str(module_name)]
-        modules: Dict[str, Dict[str, object]] = {}
+        modules: dict[str, dict[str, object]] = {}
         for name in targets:
             modules[name] = self._resolve_module_source(payload, name)
         return {
@@ -1962,9 +1986,9 @@ class MutationResearch(Cleanable):
 
     def _resolve_module_source(
             self,
-            payload: Dict[str, object],
+            payload: dict[str, object],
             module_name: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Resolve one module's source row from a custody payload.
 
@@ -2008,7 +2032,7 @@ class MutationResearch(Cleanable):
                 except Exception:
                     text = None
                 if text is not None:
-                    drifted: Optional[bool] = None
+                    drifted: bool | None = None
                     fingerprints = payload.get(
                         "physical_module_fingerprints"
                     )
@@ -2037,10 +2061,10 @@ class MutationResearch(Cleanable):
     def impact_view(
             self,
             *,
-            spell_id: Optional[str] = None,
-            module_name: Optional[str] = None,
+            spell_id: str | None = None,
+            module_name: str | None = None,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return one blast radius joined with research residency.
 
@@ -2105,7 +2129,7 @@ class MutationResearch(Cleanable):
         # touches.
         affected_set = set(affected)
         research_set = self.research_set(set_name)
-        affected_compositions: List[Dict[str, object]] = []
+        affected_compositions: list[dict[str, object]] = []
         for tip_node in self._current_compositions(set_name):
             shared = sorted(
                 set(tip_node.member_spell_ids) & affected_set
@@ -2122,9 +2146,9 @@ class MutationResearch(Cleanable):
 
     def _residency_join(
             self,
-            spell_ids: List[str],
+            spell_ids: list[str],
             set_name: str,
-    ) -> Dict[str, Dict[str, object]]:
+    ) -> dict[str, dict[str, object]]:
         """
         Join affected identities with declared research truth.
 
@@ -2144,7 +2168,7 @@ class MutationResearch(Cleanable):
                 If `set_name` names no research set.
         """
         research_set = self.research_set(set_name)
-        joined: Dict[str, Dict[str, object]] = {}
+        joined: dict[str, dict[str, object]] = {}
         for spell_id in spell_ids:
             lane_id = research_set.residence_of(spell_id)
             if lane_id is None:
@@ -2158,7 +2182,7 @@ class MutationResearch(Cleanable):
                 }
                 continue
             lane = research_set.get_lane(lane_id)
-            campaign: Optional[str] = None
+            campaign: str | None = None
             if lane.has_node(spell_id):
                 campaign = lane.get_node(spell_id).campaign
             joined[spell_id] = {
@@ -2171,7 +2195,7 @@ class MutationResearch(Cleanable):
             }
         return joined
 
-    def module_graph_view(self, spell_id: str) -> Dict[str, object]:
+    def module_graph_view(self, spell_id: str) -> dict[str, object]:
         """
         Return one spell's module world as a walkable graph payload.
 
@@ -2223,7 +2247,7 @@ class MutationResearch(Cleanable):
                 payload.get("module_to_direct_dependencies", {})
             ).items()
         }
-        local_importers: Dict[str, List[str]] = {}
+        local_importers: dict[str, list[str]] = {}
         for importer, imported_list in dependency_map.items():
             for imported in imported_list:
                 local_importers.setdefault(imported, []).append(importer)
@@ -2252,7 +2276,7 @@ class MutationResearch(Cleanable):
             ],
         }
 
-    def source_drift_view(self) -> Dict[str, object]:
+    def source_drift_view(self) -> dict[str, object]:
         """
         Return the full recorded-vs-disk drift report.
 
@@ -2282,7 +2306,7 @@ class MutationResearch(Cleanable):
             self,
             spell_id: str,
             module_name: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return everything the crystal knows about one module in one call.
 
@@ -2378,9 +2402,9 @@ class MutationResearch(Cleanable):
             spell_id: str,
             part_name: str,
             *,
-            kind: Optional[str] = None,
-            module_name: Optional[str] = None,
-    ) -> Dict[str, object]:
+            kind: str | None = None,
+            module_name: str | None = None,
+    ) -> dict[str, object]:
         """
         Return one named top-level part's text from a version's world.
 
@@ -2433,7 +2457,7 @@ class MutationResearch(Cleanable):
         if group is not None:
             # First hit across the roster (a subsystem's part is one of
             # its members' parts); the winning member is named.
-            searched_members: List[str] = []
+            searched_members: list[str] = []
             for member in group.member_spell_ids:
                 searched_members.append(member)
                 try:
@@ -2467,8 +2491,8 @@ class MutationResearch(Cleanable):
                 [root_module] if root_module in targets else []
             ) + sorted(name for name in targets if name != root_module)
         synthesizer = self._get_synthesizer()
-        searched: List[str] = []
-        parse_errors: Dict[str, str] = {}
+        searched: list[str] = []
+        parse_errors: dict[str, str] = {}
         for candidate in search_order:
             row = self._resolve_module_source(payload, candidate)
             text = row["source"]
@@ -2502,8 +2526,8 @@ class MutationResearch(Cleanable):
             self,
             spell_id: str,
             *,
-            module_name: Optional[str] = None,
-    ) -> Dict[str, object]:
+            module_name: str | None = None,
+    ) -> dict[str, object]:
         """
         Return every top-level part of a version's world, with code.
 
@@ -2562,10 +2586,10 @@ class MutationResearch(Cleanable):
                 }
             targets = [str(module_name)]
         synthesizer = self._get_synthesizer()
-        modules: Dict[str, Dict[str, object]] = {}
+        modules: dict[str, dict[str, object]] = {}
         for name in targets:
             row = self._resolve_module_source(payload, name)
-            module_entry: Dict[str, object] = {
+            module_entry: dict[str, object] = {
                 "source_kind": row["kind"],
                 "drifted": row["drifted"],
             }
@@ -2592,10 +2616,10 @@ class MutationResearch(Cleanable):
             right_spell_id: str,
             part_name: str,
             *,
-            kind: Optional[str] = None,
-            module_name: Optional[str] = None,
+            kind: str | None = None,
+            module_name: str | None = None,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Unified text diff of one named part between two versions.
 
@@ -2662,7 +2686,7 @@ class MutationResearch(Cleanable):
         right_part = self._locate_recorded_part(
             right_spell_id, part_name, kind=kind, module_name=module_name,
         )
-        result: Dict[str, object] = {
+        result: dict[str, object] = {
             "left_spell_id": left_spell_id,
             "right_spell_id": right_spell_id,
             "part_name": part_name,
@@ -2710,9 +2734,9 @@ class MutationResearch(Cleanable):
             spell_id: str,
             part_name: str,
             *,
-            kind: Optional[str],
-            module_name: Optional[str],
-    ) -> Optional[Dict[str, object]]:
+            kind: str | None,
+            module_name: str | None,
+    ) -> dict[str, object] | None:
         """
         Locate one part in one version's RECORDED material only.
 
@@ -2787,10 +2811,10 @@ class MutationResearch(Cleanable):
             self,
             code: str,
             *,
-            against_spell_id: Optional[str] = None,
-            module_name: Optional[str] = None,
+            against_spell_id: str | None = None,
+            module_name: str | None = None,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Mock one candidate codegen and report what would happen next.
 
@@ -2852,7 +2876,7 @@ class MutationResearch(Cleanable):
             )
         candidate_sha = hashlib.sha256(code.encode("utf-8")).hexdigest()
         analysis = self._analyze_candidate(code)
-        result: Dict[str, object] = {
+        result: dict[str, object] = {
             "candidate_sha256": candidate_sha,
             "module_name": module_name,
             "against_spell_id": against_spell_id,
@@ -2864,7 +2888,7 @@ class MutationResearch(Cleanable):
         }
         if analysis["parse_error"] is not None:
             return result
-        target_module: Optional[str] = module_name
+        target_module: str | None = module_name
         if against_spell_id is not None:
             left_material = self._resolve_diff_material(against_spell_id)
             root_payload = self._get_spell_crystal_for_read(
@@ -2901,7 +2925,7 @@ class MutationResearch(Cleanable):
             )
         return result
 
-    def _analyze_candidate(self, code: str) -> Dict[str, object]:
+    def _analyze_candidate(self, code: str) -> dict[str, object]:
         """
         Statically analyze one candidate source text.
 
@@ -2926,9 +2950,9 @@ class MutationResearch(Cleanable):
                 "defines": {"classes": [], "functions": []},
                 "import_roots": [],
             }
-        classes: List[str] = []
-        functions: List[str] = []
-        roots: List[str] = []
+        classes: list[str] = []
+        functions: list[str] = []
+        roots: list[str] = []
         for node in tree.body:
             if isinstance(node, ast.ClassDef):
                 classes.append(node.name)
@@ -2955,11 +2979,11 @@ class MutationResearch(Cleanable):
             base_spell_id: str,
             donor_spell_id: str,
             *,
-            take_functions: Optional[List[str]] = None,
-            take_classes: Optional[List[str]] = None,
+            take_functions: list[str] | None = None,
+            take_classes: list[str] | None = None,
             stage_ancestry: bool = False,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Surgically compose one candidate from two recorded versions.
 
@@ -3029,7 +3053,7 @@ class MutationResearch(Cleanable):
                 )
         base_view = self.source_view(base_spell_id)
         donor_view = self.source_view(donor_spell_id)
-        result: Dict[str, object] = {
+        result: dict[str, object] = {
             "base_spell_id": base_spell_id,
             "donor_spell_id": donor_spell_id,
             "parents": [base_spell_id, donor_spell_id],
@@ -3083,7 +3107,7 @@ class MutationResearch(Cleanable):
             self,
             group_id: str,
             set_name: str = "default",
-    ) -> "GroupedResearchNode":
+    ) -> GroupedResearchNode:
         """
         Resolve one resident composition node or refuse teach-grade.
 
@@ -3127,7 +3151,7 @@ class MutationResearch(Cleanable):
     def _resolve_group_material(
             self,
             group_id: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Resolve one composition's diff material from the default set.
 
@@ -3150,7 +3174,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         node = self._locate_group_node(group_id)
         research_set = self.research_set()
-        members: Dict[str, Dict[str, object]] = {}
+        members: dict[str, dict[str, object]] = {}
         for member in node.member_spell_ids:
             lane_id = research_set.residence_of(member)
             if lane_id is None:
@@ -3197,7 +3221,7 @@ class MutationResearch(Cleanable):
             identity: str,
             *,
             kind: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Walk one identity's recorded ancestry chain to closure.
 
@@ -3217,7 +3241,7 @@ class MutationResearch(Cleanable):
                 branch - ancestry never guesses).
         """
         seen: set = set()
-        frontier: List[str] = [identity]
+        frontier: list[str] = [identity]
         while frontier:
             current = frontier.pop()
             lane_id = research_set.residence_of(current)
@@ -3241,7 +3265,7 @@ class MutationResearch(Cleanable):
             right_group_id: str,
             *,
             strategy: str = "members",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Compute one derived diff between two recorded compositions.
 
@@ -3293,7 +3317,7 @@ class MutationResearch(Cleanable):
             group_id: str,
             *,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return one composition's roster with residence and drift truth.
 
@@ -3330,7 +3354,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         node = self._locate_group_node(group_id, set_name)
         research_set = self.research_set(set_name)
-        members: Dict[str, Dict[str, object]] = {}
+        members: dict[str, dict[str, object]] = {}
         behind_count = 0
         for member in node.member_spell_ids:
             lane_id = research_set.residence_of(member)
@@ -3369,15 +3393,15 @@ class MutationResearch(Cleanable):
 
     def register_group(
             self,
-            member_spell_ids: List[str],
+            member_spell_ids: list[str],
             *,
-            lane: Optional[str] = None,
-            parent_group_ids: Optional[List[str]] = None,
-            author: Optional[str] = None,
-            campaign: Optional[str] = None,
-            reason: Optional[str] = None,
+            lane: str | None = None,
+            parent_group_ids: list[str] | None = None,
+            author: str | None = None,
+            campaign: str | None = None,
+            reason: str | None = None,
             set_name: str = "default",
-    ) -> "GroupedResearchNode":
+    ) -> GroupedResearchNode:
         """
         Declare one composition WITH the ambient campaign stamp (parity
         law: compositions registered through the root carry the active
@@ -3436,13 +3460,13 @@ class MutationResearch(Cleanable):
             self,
             previous_group_id: str,
             *,
-            add: Optional[List[str]] = None,
-            remove: Optional[List[str]] = None,
-            author: Optional[str] = None,
-            campaign: Optional[str] = None,
-            reason: Optional[str] = None,
+            add: list[str] | None = None,
+            remove: list[str] | None = None,
+            author: str | None = None,
+            campaign: str | None = None,
+            reason: str | None = None,
             set_name: str = "default",
-    ) -> "GroupedResearchNode":
+    ) -> GroupedResearchNode:
         """
         Evolve one composition WITH the ambient campaign stamp.
 
@@ -3498,7 +3522,7 @@ class MutationResearch(Cleanable):
     def _current_compositions(
             self,
             set_name: str = "default",
-    ) -> List["GroupedResearchNode"]:
+    ) -> list[GroupedResearchNode]:
         """
         Return every lane TIP that is a composition (current subsystems).
 
@@ -3516,7 +3540,7 @@ class MutationResearch(Cleanable):
                 ordinary spell entries on the same lane).
         """
         research_set = self.research_set(set_name)
-        tips: List["GroupedResearchNode"] = []
+        tips: list[GroupedResearchNode] = []
         for lane_name in research_set.lane_names():
             lane = research_set.get_lane(lane_name)
             # Current means each lane's LATEST composition record
@@ -3524,7 +3548,7 @@ class MutationResearch(Cleanable):
             # a mixed/default lane displace a still-resident composition
             # out of the reverse lift. Registration order decides; ordinary
             # spell records never revoke an informational composition.
-            latest_group: Optional["GroupedResearchNode"] = None
+            latest_group: GroupedResearchNode | None = None
             for candidate_id in lane.node_spell_ids():
                 candidate = lane.get_node(candidate_id)
                 if isinstance(candidate, GroupedResearchNode):
@@ -3538,7 +3562,7 @@ class MutationResearch(Cleanable):
             spell_id: str,
             *,
             set_name: str = "default",
-    ) -> List[Dict[str, object]]:
+    ) -> list[dict[str, object]]:
         """
         Return the current compositions pinning one spell (reverse lift).
 
@@ -3574,7 +3598,7 @@ class MutationResearch(Cleanable):
         if not isinstance(spell_id, str) or not spell_id:
             raise ValueError("spell_id must be a non-empty string.")
         research_set = self.research_set(set_name)
-        rows: List[Dict[str, object]] = []
+        rows: list[dict[str, object]] = []
         for tip_node in self._current_compositions(set_name):
             if spell_id in tip_node.member_spell_ids:
                 lane_id = research_set.residence_of(tip_node.group_id)
@@ -3590,7 +3614,7 @@ class MutationResearch(Cleanable):
             group_id: str,
             *,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return one composition's physical shadow (module footprint).
 
@@ -3630,8 +3654,8 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         node = self._locate_group_node(group_id, set_name)
         crystallizer = self._require_live_custody()
-        module_members: Dict[str, List[str]] = {}
-        unknown_members: List[str] = []
+        module_members: dict[str, list[str]] = {}
+        unknown_members: list[str] = []
         for member in node.member_spell_ids:
             try:
                 payload = crystallizer.get_spell_crystal(member).describe()
@@ -3659,7 +3683,7 @@ class MutationResearch(Cleanable):
             group_id: str,
             *,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return recorded-vs-disk drift filtered to one composition's shadow.
 
@@ -3702,14 +3726,14 @@ class MutationResearch(Cleanable):
             drift.get("statuses") if isinstance(drift, dict) else None
         )
         radii_all = drift.get("radii") if isinstance(drift, dict) else None
-        statuses: Dict[str, str] = {}
-        counts: Dict[str, int] = {}
+        statuses: dict[str, str] = {}
+        counts: dict[str, int] = {}
         if isinstance(statuses_all, dict):
             for module_name, status in statuses_all.items():
                 if str(module_name) in modules:
                     statuses[str(module_name)] = str(status)
                     counts[str(status)] = counts.get(str(status), 0) + 1
-        radii: Dict[str, object] = {}
+        radii: dict[str, object] = {}
         if isinstance(radii_all, dict):
             for module_name, radius in radii_all.items():
                 if str(module_name) in modules:
@@ -3726,9 +3750,9 @@ class MutationResearch(Cleanable):
             self,
             group_id: str,
             *,
-            campaign: Optional[str] = None,
+            campaign: str | None = None,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return the journal story of one subsystem area.
 
@@ -3772,7 +3796,7 @@ class MutationResearch(Cleanable):
             *,
             limit: int = 50,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return the newest journal events across the whole record.
 
@@ -3816,7 +3840,7 @@ class MutationResearch(Cleanable):
             group_id: str,
             *,
             set_name: str = "default",
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Return one composition's union blast radius with the closure math.
 
@@ -3858,7 +3882,7 @@ class MutationResearch(Cleanable):
         member_set = set(node.member_spell_ids)
         affected_modules: set = set()
         affected_spells: set = set()
-        per_member: Dict[str, Dict[str, object]] = {}
+        per_member: dict[str, dict[str, object]] = {}
         for member in node.member_spell_ids:
             radius = crystallizer.analyze_impact(spell_id=member)
             member_modules = [
@@ -3876,11 +3900,11 @@ class MutationResearch(Cleanable):
             }
         internal = sorted(affected_spells & member_set)
         outbound = sorted(affected_spells - member_set)
-        closure: Optional[float] = None
+        closure: float | None = None
         if affected_spells:
             closure = len(internal) / len(affected_spells)
         research_set = self.research_set(set_name)
-        affected_compositions: List[Dict[str, object]] = []
+        affected_compositions: list[dict[str, object]] = []
         for tip_node in self._current_compositions(set_name):
             if tip_node.group_id == node.group_id:
                 continue
@@ -3945,7 +3969,7 @@ class MutationResearch(Cleanable):
             crystallizer = self._crystallizer
             if not crystallizer.activated:
                 return
-            configuration_payload: Dict[str, object] = {}
+            configuration_payload: dict[str, object] = {}
             if self._configured:
                 configuration_payload = (
                     self._configuration.describe_configuration_payload()

@@ -46,10 +46,10 @@ GOAL: LINEAGES, AND THE STAGING HALF OF A HOT SWAP. An index is a
         4. Re-registers the index gated + dirty, so revalidation
            recompiles LAZILY on the next resolve rather than inside the
            window.
-      It is a real transaction in expert 16's plane - family `notch`,
-      owning spellbook claimed `ix`, binding key claimed `x` - and the
-      strategy's `on_start` quiesces the sealed conduits' CreationGates
-      so no in-flight meld can straddle the repoint.
+      All of it happens under one seal, and the sealed conduits' creation
+      gates are quiesced for the duration, so no in-flight meld can
+      straddle the repoint. You do not arrange any of that; the verb
+      does, the same way `link` does in expert 16.
 
       THE OUTGOING VERSION IS NOT DESTROYED. It stays a member of the
       lineage and stays resolvable by id, which is why a rollback is

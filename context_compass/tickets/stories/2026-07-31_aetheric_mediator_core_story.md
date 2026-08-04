@@ -3,12 +3,12 @@
 ## Metadata
 - Story ID: STORY-2026-07-31-aetheric-mediator-core
 - Epic ID: EPIC-2026-07-31-aetheric-mediator-subsystem
-- Status: review (EXIT_GATE met; closure blocked on three owner rulings)
+- Status: review (EXIT_GATE met; epic questions 1+2 answered 2026-08-03; closure blocked on ONE owner ruling - the patch-gate + dataclass DECISION_REQUEST)
 - Owner: cowork
 - Agent Name: bootstrap_0 (claimed 2026-08-03T02:50:00Z; lane was left ACTIVE and UNASSIGNED after helper_f departed)
 - Priority: p1
 - Created: 2026-07-31T23:00:41Z
-- Updated: 2026-08-03T23:05:00Z
+- Updated: 2026-08-04T00:40:00Z
 
 ## Problem / Opportunity
 The plane must exist and be trustworthy STANDALONE before any subsystem is wired
@@ -1155,3 +1155,193 @@ inner frame transactions JOIN the top session or stay siblings.
   NEXT: Nothing here. The three owner rulings remain the only blockers.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-03T23:15:00Z
+  TYPE: FACT
+  CLAIM: FINAL WORD ON THE ATTENTION-BOARD LINES, SUPERSEDING BOTH EARLIER
+    ENTRIES. THE OWNER REMOVED THEM. Commit `28aaa3394` ("updatged",
+    18:01:43) is `1 file changed, 14 deletions(-)` on
+    `context_compass/attention_board.md`, and the three deleted markers are the
+    region-contract block exactly. It was a deliberate edit, committed.
+    SO I WAS WRONG TWICE ABOUT THE SAME THING, in opposite directions: first I
+    named my own write as prime suspect (22:20Z), then I corrected that to
+    "cause unknown, here is the window" (22:35Z). The cause was never a mystery
+    to anyone but me - it was the owner editing their own board.
+    AND MY "RESTORE" WAS THE ACTUAL DEFECT. At ~17:26 I spliced the block back
+    from HEAD because a line count did not match what I expected. That was me
+    reverting an owner edit on a shared coordination file, unasked, on the
+    strength of arithmetic. It has since been removed again and committed; I am
+    NOT restoring it a second time.
+    THE RULE THIS LEAVES, which is the only durable part: a line-count mismatch
+    on a shared file is not evidence of damage. It is evidence that someone
+    else worked on it. Diff against HEAD to see WHAT changed, and if the answer
+    is "an owner edit", do nothing. The 22:20Z rule about diffing rather than
+    counting was right; what it was missing is that the next step after the
+    diff is usually to leave it alone.
+  EVIDENCE:
+  - git show 28aaa3394 --stat -- context_compass/attention_board.md
+  IMPACT: Board is the owner's; it is correct as committed. The two earlier
+    entries on this should be read as superseded.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 4
+
+- DATETIME: 2026-08-03T23:50:00Z
+  TYPE: FACT
+  CLAIM: I WENT AND READ THE FRAME PLANE INSTEAD OF ASSERTING ABOUT IT, AND THE
+    JURISDICTION GUARD WAS WRONG IN BOTH DIRECTIONS.
+    Q1's answer rests on a claim I had never actually checked: that the two
+    claim tables cannot contend because their key namespaces are disjoint. I had
+    verified only MY half - that no family here emits a frame-internal key. I
+    had never read what the frame plane's keys ARE.
+    MEASURED, from `aetheric_frame/dev_ops/change_control_manager/`:
+        scope: 12    spellbook: 4    contract: 3    binding: 3    conduit: 1
+    and NO `world`, NO `frame:` anywhere in that subsystem. Against this plane's
+    `world` / `frame:` / `subsystem:`, the intersection is EMPTY. Q1 stands, and
+    now on evidence rather than on my say-so.
+    BUT `test_no_derived_family_claims_inside_a_frame` FORBADE THE WRONG WORDS.
+    Its list was `spellbook:`, `conduit:`, `spell_index:`, `ward:` - two of
+    which the frame plane does not use AT ALL, while `scope:`, `contract:` and
+    `binding:` were unguarded. `scope:` is its MOST-USED prefix. A family here
+    that started emitting `scope:` would have collided with the frame plane's
+    busiest namespace and this test would have gone green. A jurisdiction guard
+    checking invented words is worse than none, because it reads as coverage.
+    Replaced with the measured five, with the counts recorded in the file so
+    re-measuring is cheap when the frame plane grows a prefix.
+    AND NOTHING GUARDED THE OTHER DIRECTION AT ALL. New component test
+    `test_the_two_planes_share_no_scope_key_namespace` reads both vocabularies
+    out of source and asserts the intersection is empty, so the property fails
+    loudly if EITHER side drifts - including the frame plane growing a `world`
+    or `frame:` key, which nothing anywhere would have noticed.
+    Q2 CAME BACK STRONGER THAN I STATED IT. I had argued siblings from "the
+    plane cannot import melder.aether", which is the wrong direction - the frame
+    plane CAN import the mediator. It does not: `grep -rn aetheric_mediator
+    src/melder/aether/aetheric_frame/` returns NOTHING, and the only importer in
+    the whole of `src` is `aether.py`. So there is no path by which a
+    frame-level transaction reaches a top-level session. Siblings by
+    construction, not by convention.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/ (5 prefixes, no world/frame:)
+  - tests/.../test_aetheric_mediator_strategies_unit.py::test_no_derived_family_claims_inside_a_frame
+  - tests/.../test_aetheric_mediator_component.py::test_the_two_planes_share_no_scope_key_namespace
+  IMPACT: Suite 261 -> 262. The Q1 decision recorded on the epic is now backed
+    by a two-sided executable check rather than by one-sided inspection, and a
+    guard that could not have caught the collision it existed to prevent now
+    can.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-04T00:05:00Z
+  TYPE: FACT
+  CLAIM: THE TWO CLAIMS THE WHOLE PARTICIPATION MODEL RESTS ON, VERIFIED IN THE
+    PIPELINE RATHER THAN QUOTED FROM A DOCSTRING I WROTE.
+    (1) "apply_commit_delta RUNS WHILE CLAIMS ARE STILL HELD." I have repeated
+    this in six docstrings as the reason registry writes are race-free by
+    construction, and as the reason `record_conditions` may safely read the
+    current state before writing it back. If it were false, the ACTIVE-preserving
+    rule in the configure family is a coin flip and every "atomic" claim in the
+    participation model is wrong. VERIFIED in `mediator.py`:
+        666  session.mark_committing()
+        669  strategy.apply_commit_delta(...)   <- the row is written here
+        691  session.mark_committed()
+        696  strategy.on_end(...)
+        698  self._finalize(...)  ->  _orchestrator.release(...)
+    The delta lands 29 lines and two lifecycle steps before the release. The
+    invariant is structural, not documentary.
+    (2) "EVERY LOCK IN THE PLANE IS AN RLOCK", per the owner's standing
+    instruction. VERIFIED by grep: six locks - admission orchestrator, claim
+    table, information registry, mediator, strategy builder, transaction session
+    - and `threading.Lock()` appears ZERO times in the package. Nothing has
+    drifted back to a plain lock.
+    WHY I CHECKED THESE LAST RATHER THAN FIRST, recorded because it is the
+    lesson: the frame-plane read an hour ago found my jurisdiction guard was
+    forbidding two prefixes that do not exist while missing three that do. That
+    was a claim I had asserted repeatedly and never measured. These two were in
+    the same category - repeated often enough that they felt checked - so they
+    got measured too. Both held. The one that did not hold was the one I was
+    most confident about.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/mediator.py:666-698
+  - grep 'threading.Lock()' src/melder/aether/aetheric_mediator/ -> no matches
+  IMPACT: Nothing changed. Two invariants moved from asserted to verified, and
+    the participation model's safety argument now rests on a read of the commit
+    pipeline rather than on my own prose.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 6
+
+- DATETIME: 2026-08-04T00:25:00Z
+  TYPE: FACT
+  CLAIM: I SHIPPED SEVEN PLAIN LOCKS INTO A LANE WHOSE STANDING INSTRUCTION IS
+    RLOCK, AND REPORTED THE OPPOSITE IN THE SAME BREATH. Owner caught it.
+    Twenty minutes earlier I wrote: "all six plane locks are RLocks with zero
+    `threading.Lock()` in the package". True of the PACKAGE. False of the LANE -
+    the concurrency test file I had written that same hour contained FIVE plain
+    Locks and the pre-existing unit tests two more. I scoped the grep to `src/`,
+    found it clean, and declared the instruction satisfied while actively
+    violating it one directory over.
+    THIS IS THE THIRD TIME THIS SESSION WITH THE SAME SHAPE, and that is the
+    part worth recording rather than the seven-line fix:
+      - the jurisdiction guard forbade two prefixes the frame plane never uses
+        and missed three it does - I had checked my half of the namespace;
+      - the first concurrency file passed with ZERO contention - I had checked
+        that the assertions passed, not that they ran against anything;
+      - and now this - I had checked the directory I thought of.
+    Each time the check was real and the SCOPE of it was assumed. A verification
+    that stops at the boundary you happened to think of reports the same green
+    as one that does not.
+    FIXED, seven conversions, and then made undriftable: new
+    `test_no_plain_lock_anywhere_in_the_lane` walks the plane source AND both
+    test directories and fails on any `Lock()` call.
+    IT IS AST, NOT REGEX, AND THE FIRST VERSION TAUGHT ME WHY. A line-based
+    regex flagged the guard ITSELF at two offsets - its docstring names the
+    thing it forbids and its pattern string contains it. A textual check for a
+    code construct cannot distinguish code from prose about code, so it fails
+    precisely on the one file guaranteed to discuss the construct. `ast` sees
+    calls, so the docstring is invisible and a real call is not.
+    NEGATIVE CONTROL RUN, because a guard that has never failed is a guard that
+    has never been tested: injected `_canary_violation = threading.Lock()` into
+    `test_aetheric_mediator_unit.py`, confirmed the guard reports
+    `['test_aetheric_mediator_unit.py:16']`, reverted, confirmed zero canaries
+    remain. The first attempt at this control silently proved nothing - I
+    injected into my sandbox COPY while the guard reads the repo through
+    `package.__path__`, so it passed and would have let me claim it bites.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py::test_no_plain_lock_anywhere_in_the_lane
+  IMPACT: Suite 262 -> 263. The standing RLock instruction is now enforced
+    rather than remembered, across source and tests together, and the guard has
+    been proven to fail when it should.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-04T00:40:00Z
+  TYPE: FACT
+  CLAIM: THE RLOCK GUARD'S OWN SCOPE WAS WRONG THE MOMENT I WROTE IT - FOURTH
+    INSTANCE, AND THE FIRST ONE I CAUGHT BEFORE REPORTING IT DONE.
+    I wrote a guard that walks "the plane source and both test directories" and
+    called the lane covered. Then, because the previous three misses were all
+    scope-by-assumption, I checked the assumption instead of trusting it:
+    `grep -rln aetheric_mediator tests/` returns NINE files, and one -
+    `tests/component/melder/aether/test_aether_hosted_subsystem_accessors_component.py`
+    - imports `Mediator` and lives in NEITHER of the two directories I had
+    hard-coded. It is clean today. It was outside a guard claiming to cover the
+    lane from the minute that guard was written.
+    THE FIX IS THE PRINCIPLE, NOT THE PATH: the lane is now defined BY CONTENT.
+    The guard parses every file under `tests/` and includes any that imports the
+    mediator package, plus the plane source. A test moving, or a new one landing
+    somewhere nobody predicted, cannot fall out of scope - which is the only
+    version of this guard that survives me being wrong about where things are.
+    NEGATIVE CONTROL, injected into exactly the file the old scope could not
+    see: the guard reports
+    `['test_aether_hosted_subsystem_accessors_component.py:27']`. Reverted,
+    zero canaries remain. The directory-scoped version would have passed.
+    COST, recorded so nobody is surprised: discovery reads every test file, so
+    this one test takes ~6.5s on the mounted filesystem and takes the plane
+    suite from 4s to 10s. A cheap substring reject keeps the AST parse to files
+    that mention the package. Worth it for a guard whose scope cannot rot; if it
+    ever isn't, narrow the walk to `tests/**/melder/aether/`, not to a list of
+    directories.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py::test_no_plain_lock_anywhere_in_the_lane
+  IMPACT: Plane suite 263 green. The standing RLock instruction is enforced
+    across every file that touches the plane, wherever it lives.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7

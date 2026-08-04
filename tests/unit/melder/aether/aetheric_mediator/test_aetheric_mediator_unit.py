@@ -203,7 +203,7 @@ def test_release_is_idempotent_and_frees_the_scope():
 def test_exclusive_contention_never_overlaps_under_threads():
     """The core mutual-exclusion guarantee, exercised concurrently."""
     table = ClaimTable()
-    overlap, live, guard = [], [], threading.Lock()
+    overlap, live, guard = [], [], threading.RLock()
 
     def worker(index: int) -> None:
         me = Identity(kind="w", identity_id=str(index))
@@ -1010,7 +1010,7 @@ def test_concurrent_registration_of_one_name_elects_exactly_one_first():
     try:
         barrier = threading.Barrier(8)
         results = []
-        results_lock = threading.Lock()
+        results_lock = threading.RLock()
 
         def announce() -> None:
             """Announce the same participant from every thread at once."""

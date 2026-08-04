@@ -34,3 +34,17 @@
 *.py    text eol=lf
 LICENSE text eol=lf
 NOTICE  text eol=lf
+
+# Binaries must be declared, or `* text=auto` above can mangle them. This lane
+# matters here: `artifacts/` is yours and agents drop screenshots, PDFs and
+# archives into it as ticket evidence. A misdetected binary is a corrupted file,
+# not a diff you can read.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.pdf   binary
+*.ico   binary
+*.zip   binary
+*.woff  binary
+*.woff2 binary
