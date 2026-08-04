@@ -1,56 +1,55 @@
-from typing import (
-    TYPE_CHECKING,
-    Optional,
-    List,
-    Any,
-    Callable,
-    Sequence,
-    ClassVar,
-    Union,
-    FrozenSet,
-)
+from collections.abc import Callable, Sequence
 from threading import RLock
 from types import TracebackType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+)
 
 # Melder Imports
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.helpers.ulid_factory import new_ulid
-
-from melder.utilities.synchronization.counter_switch import CounterSwitch
-from melder.aether.spellbook.spell_types.spell_types import SpellType
-from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
 from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph import (
     SpellSymbolicGraph,
 )
+from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.general_helpers import SpellInputUtils
+from melder.utilities.helpers.ulid_factory import new_ulid
+from melder.utilities.synchronization.counter_switch import CounterSwitch
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import (
+        SpellSystemState,
+    )
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
         SpellSystemStates,
     )
+    from melder.aether.conduit.meld.creation_context.creation_context import (
+        CreationContext,
+    )
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import (
         SpellRequirements,
-    )
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state import SpellSystemState
-    from melder.aether.spellbook.spellbook import Spellbook
-    from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
-    from melder.utilities.synchronization.creation_gate_controller import (
-        CreationGateController,
     )
     from melder.aether.spellbook.spell_compiler.system.spell_system_validation_state import (
         SpellSystemValidationState,
     )
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
         SpellValidationResult,
+    )
+    from melder.aether.spellbook.spellbook import Spellbook
+    from melder.utilities.synchronization.creation_gate_controller import (
+        CreationGateController,
     )
 
 
@@ -289,18 +288,18 @@ class Spell(Cleanable):
             self,
             spell: Any,
             spell_index: SpellIndex,
-            spellframe: Optional[Any],
-            binding_name: Optional[str],
+            spellframe: Any | None,
+            binding_name: str | None,
             spell_name: str,
             existence: Existence,
             spell_type: SpellType,
             spell_id: str,
             permissions: Permissions,
             aetheric_frame: str,
-            spellbook: "Spellbook",
-            profile: Optional[Any] = None,
-            existing_object: Optional[object] = None,
-            disposal_method_names: FrozenSet[str] = frozenset(),
+            spellbook: Spellbook,
+            profile: Any | None = None,
+            existing_object: object | None = None,
+            disposal_method_names: frozenset[str] = frozenset(),
             *args: Any,
             **kwargs: Any,
     ):
@@ -383,7 +382,7 @@ class Spell(Cleanable):
         self.spell_index: SpellIndex = spell_index
         self.spell: Any = spell  # Object reference
         self.spell_id: str = spell_id  # SHA256 unique identifier
-        self.spellframe: Optional[Any] = spellframe
+        self.spellframe: Any | None = spellframe
         self.spell_type: SpellType = spell_type
         self._is_existing_creation: bool = spell_type in (
             SpellType.EXISTING_CREATION,
@@ -407,18 +406,18 @@ class Spell(Cleanable):
             SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
             SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
         )
-        self.user_created_object: Optional[object] = existing_object
-        self.binding_name: Optional[str] = binding_name
+        self.user_created_object: object | None = existing_object
+        self.binding_name: str | None = binding_name
         self.spell_name: str = spell_name
         self.existence: Existence = existence
 
         # Reflective spell profile.
         # Treated as opaque here; downstream consumers normalize general or
         # detailed profiles as needed.
-        self.profile: Optional[Any] = profile
+        self.profile: Any | None = profile
 
         self.aetheric_frame: str = aetheric_frame
-        self.timeout: Optional[int] = None  # Optional timeout for spell execution
+        self.timeout: int | None = None  # Optional timeout for spell execution
         self.retries: int = 0  # Number of retries allowed for spell execution
 
         # Permissions
@@ -431,7 +430,7 @@ class Spell(Cleanable):
         # Spell Metadata
         self.tags = list(args) if args else []
         self.metadata = kwargs if kwargs else {}
-        self._mutation_override: Optional[dict[str, Any]] = None
+        self._mutation_override: dict[str, Any] | None = None
         self.disposal_method_names: frozenset[str] = frozenset(disposal_method_names)
         self.has_disposal_methods: bool = bool(self.disposal_method_names)
 
@@ -445,13 +444,13 @@ class Spell(Cleanable):
         # Bump sites assume chokepoints are serialized per spell (they run
         # under spell/spellbook locks or single-threaded build phases).
         self._door_epoch: int = 0
-        self._pre_hooks: List[Callable[..., Any]] = []
-        self._activation_hooks: List[Callable[..., Any]] = []
-        self._post_hooks: List[Callable[..., Any]] = []
+        self._pre_hooks: list[Callable[..., Any]] = []
+        self._activation_hooks: list[Callable[..., Any]] = []
+        self._post_hooks: list[Callable[..., Any]] = []
 
         # Final build-time artifacts
         self.dependency_graph: Any = None
-        self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
+        self.dependencies: list[str] = []  # SHA256 spell IDs required for this spell to function
 
         # Foundation artifact home for compiler/build state and validation
         # artifacts owned directly by the Spell.
@@ -459,9 +458,9 @@ class Spell(Cleanable):
             SpellCompilerArtifact(self.spell_id)
         )
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
-        self._creation_context: Optional[CreationContext] = None
+        self._creation_context: CreationContext | None = None
         # Spell-owned context factory configured at conduit ownership stamp time.
-        self._creation_context_factory: Optional[CreationContextFactory] = None
+        self._creation_context_factory: CreationContextFactory | None = None
         # Spell-owned selector latch for one-leader CreationContext publication.
         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
         # Runtime cache policy mirror. Defaults to enabled and may be overridden
@@ -481,8 +480,8 @@ class Spell(Cleanable):
         self.requires_spellspace_request: bool = False
 
         # Created after Conduit made (ownership / scope integration)
-        self._owner_conduit_id: Optional[str] = None
-        self._owner_conduit_name: Optional[str] = None
+        self._owner_conduit_id: str | None = None
+        self._owner_conduit_name: str | None = None
         self._owner_creations: Any = None  # Scope level creations for singletons
 
         # Spell System State
@@ -605,9 +604,9 @@ class Spell(Cleanable):
     def _set_hooks(
             self,
             *,
-            pre_hooks: Optional[Sequence[Callable[..., Any]]] = None,
-            activation_hooks: Optional[Sequence[Callable[..., Any]]] = None,
-            post_hooks: Optional[Sequence[Callable[..., Any]]] = None,
+            pre_hooks: Sequence[Callable[..., Any]] | None = None,
+            activation_hooks: Sequence[Callable[..., Any]] | None = None,
+            post_hooks: Sequence[Callable[..., Any]] | None = None,
     ) -> None:
         """
         Internal
@@ -838,7 +837,7 @@ class Spell(Cleanable):
 
 
     #region Context Manager
-    def __enter__(self) -> "Spell":
+    def __enter__(self) -> Spell:
         """
         Acquire the spell's internal lock and return `self`.
 
@@ -1048,7 +1047,7 @@ class Spell(Cleanable):
         return self.user_created_object is not None
 
     @property
-    def owner_conduit_info(self) -> tuple[Optional[str], Optional[str]]:
+    def owner_conduit_info(self) -> tuple[str | None, str | None]:
         """
         Return the current conduit ownership tuple for this spell.
 
@@ -1076,7 +1075,7 @@ class Spell(Cleanable):
         return self._owner_conduit_id, self._owner_conduit_name
 
     @property
-    def requirements(self) -> Optional["SpellRequirements"]:
+    def requirements(self) -> SpellRequirements | None:
         """
         Phase 1 artifact for this spell, if it has been computed.
 
@@ -1105,7 +1104,7 @@ class Spell(Cleanable):
         return self._compiler_artifact._requirements
 
     @property
-    def symbolic_graph(self) -> Optional["SpellSymbolicGraph"]:
+    def symbolic_graph(self) -> SpellSymbolicGraph | None:
         """
         Phase 2 symbolic graph for this spell, if it has been computed.
 
@@ -1160,7 +1159,7 @@ class Spell(Cleanable):
         return self._compiler_artifact._resolution_frame
 
     @property
-    def validation_result_phase4(self) -> Optional[SpellValidationResult]:
+    def validation_result_phase4(self) -> SpellValidationResult | None:
         """
         Phase 4 validation result for this spell, if it has been computed.
 
@@ -1189,7 +1188,7 @@ class Spell(Cleanable):
         return self._compiler_artifact._validation_result_phase4
 
     @property
-    def validation_result_phase6(self) -> Optional[SpellSystemValidationState]:
+    def validation_result_phase6(self) -> SpellSystemValidationState | None:
         """
         Phase 6 validation result for this spell, if it has been computed.
 
@@ -1278,7 +1277,7 @@ class Spell(Cleanable):
     #region Configuration
     def invalidate_spell(
             self,
-            change_reason: Optional[SpellStateChangeReason] = None,
+            change_reason: SpellStateChangeReason | None = None,
     ) -> None:
         """
         Invalidate this spell for a full next-meld rebuild.
@@ -1347,7 +1346,7 @@ class Spell(Cleanable):
     def _add_owned_conduit(
             self,
             conduit_id: str,
-            conduit_name: Optional[str] = None,
+            conduit_name: str | None = None,
             creations: Any = None,
             *,
             dynamic_environment: bool,
@@ -1398,7 +1397,7 @@ class Spell(Cleanable):
     def _add_build_details(
             self,
             dag: Any,
-            dependencies: List[str],
+            dependencies: list[str],
     ) -> None:
         """
         Internal
@@ -1438,7 +1437,7 @@ class Spell(Cleanable):
     #endregion Configuration
     #region Spell Mutations
     @property
-    def system_state(self) -> Optional["SpellSystemState"]:
+    def system_state(self) -> SpellSystemState | None:
         """
         Return the SpellSystemState instance associated with this spell's lineage.
 
@@ -1540,7 +1539,7 @@ class Spell(Cleanable):
 
     def apply_mutation_override(
             self,
-            override: Optional[Union[dict, list, tuple]],
+            override: dict | list | tuple | None,
     ) -> None:
         """
         Apply or replace the persistent default override payload for this spell.
@@ -1611,8 +1610,8 @@ class Spell(Cleanable):
 
     @staticmethod
     def _normalize_mutation_override_payload(
-            override: Optional[Union[dict, list, tuple]],
-    ) -> Optional[dict[str, Any]]:
+            override: dict | list | tuple | None,
+    ) -> dict[str, Any] | None:
         """
         Normalize one stored mutation override payload into runtime shape.
 

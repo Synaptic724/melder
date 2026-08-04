@@ -1,14 +1,11 @@
 import logging
-from pathlib import Path
 import threading
-from typing import Any, Callable, ClassVar, Optional, Union
-
-
+from collections.abc import Callable
+from typing import Any
 
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-
 
 
 class AetherConfigurationBuilder(Cleanable):
@@ -116,7 +113,7 @@ class AetherConfigurationBuilder(Cleanable):
             del self._configuration
             del self._id
 
-    def with_defaults(self) -> "AetherConfigurationBuilder":
+    def with_defaults(self) -> AetherConfigurationBuilder:
         """
         Apply the default Aether logger policy.
 
@@ -144,7 +141,7 @@ class AetherConfigurationBuilder(Cleanable):
     def with_channel_logger_activation_enabled(
             self,
             enabled: bool,
-    ) -> "AetherConfigurationBuilder":
+    ) -> AetherConfigurationBuilder:
         """
         Set the automatic channel logger activation flag.
 
@@ -175,8 +172,8 @@ class AetherConfigurationBuilder(Cleanable):
 
     def with_channel_logger_resolver(
             self,
-            resolver: Optional[Callable[..., Any]],
-    ) -> "AetherConfigurationBuilder":
+            resolver: Callable[..., Any] | None,
+    ) -> AetherConfigurationBuilder:
         """
         Set the channel logger resolver.
 
@@ -207,8 +204,8 @@ class AetherConfigurationBuilder(Cleanable):
 
     def with_default_logger(
             self,
-            logger: Optional[logging.Logger],
-    ) -> "AetherConfigurationBuilder":
+            logger: logging.Logger | None,
+    ) -> AetherConfigurationBuilder:
         """
         Set the stdlib fallback logger.
 

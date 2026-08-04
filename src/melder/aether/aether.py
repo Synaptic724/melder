@@ -1,38 +1,48 @@
 import logging
-from contextlib import contextmanager
 import time
+from contextlib import contextmanager
 from threading import RLock
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from melder.utilities.helpers.ulid_factory import new_ulid
-
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
 
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.aether_configuration import AetherConfiguration
-from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
-from melder.nexus.nexus import Nexus
-from melder.crystallizer.crystallizer import Crystallizer
-from melder.mutation_research.mutation_research import MutationResearch
-from melder.utilities.interfaces.ichannellogger import IChannelLogger
-from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
+)
 from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.mediator import Mediator as AethericMediator
 from melder.aether.aetheric_mediator.transaction_type import TransactionType
-from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.mutation_research.mutation_research import MutationResearch
+from melder.nexus.nexus import Nexus
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.init_helpers import InitHelpers
+from melder.utilities.helpers.ulid_factory import new_ulid
+from melder.utilities.interfaces.ichannellogger import IChannelLogger
 from melder.utilities.synchronization.load_gate import LoadGate
+
 if TYPE_CHECKING:
-    from melder.aether.conduit.conduit import Conduit
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import (
+        ChangeControlManager,
+    )
     from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
-    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import IncidentManager
-    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
-    from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import (
+        IncidentManager,
+    )
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.configuration.spellbook_configuration import (
+        SpellbookConfiguration,
+    )
 
 
 class Aether(Cleanable):
@@ -103,11 +113,11 @@ class Aether(Cleanable):
         create_configuration()/configure()/activate() for root logger policy, attach_logger(...)
         to install one directly.
     """
-    _instance: ClassVar[Optional["Aether"]] = None
+    _instance: ClassVar[Aether | None] = None
     _lock: ClassVar[RLock] = RLock()
     _initialized: ClassVar[bool] = False
 
-    def __new__(cls, *args: object, **kwargs: object) -> "Aether":
+    def __new__(cls, *args: object, **kwargs: object) -> Aether:
         """
         Return the one process-wide `Aether` singleton instance.
 
@@ -120,7 +130,7 @@ class Aether(Cleanable):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(Aether, cls).__new__(cls)
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self) -> None:
@@ -171,7 +181,7 @@ class Aether(Cleanable):
                 super().__init__()
                 self._id: str = new_ulid()
                 self._crystallizer: Crystallizer = Crystallizer(aether=self)
-                self._configuration: Optional[AetherConfiguration] = None
+                self._configuration: AetherConfiguration | None = None
                 # The regime, as a PLAIN BOOL on the hot path. Sealed once by
                 # `_collapse_configuration_on_first_frame` and never read from
                 # the configuration again - bind and conjure test it on every
@@ -180,8 +190,8 @@ class Aether(Cleanable):
                 self._configured: bool = False
                 self._activated: bool = False
                 self._logger = InitHelpers.resolve_safe_logger(None)
-                self._aetheric_frames: Dict[str, AethericFrame] = {}
-                self._default_frame: Optional[AethericFrame] = None
+                self._aetheric_frames: dict[str, AethericFrame] = {}
+                self._default_frame: AethericFrame | None = None
                 self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
                 # Crystallizer is constructed FIRST so it can be unfolded into
                 # every frame/spellbook/conduit and into MutationResearch as the
@@ -481,7 +491,7 @@ class Aether(Cleanable):
     # region Configuration
 
     #region Context Manager
-    def __enter__(self) -> "Aether":
+    def __enter__(self) -> Aether:
         """
         Enter the Aether lock context and return `self`.
 
@@ -498,9 +508,9 @@ class Aether(Cleanable):
 
     def __exit__(
             self,
-            exc_type: Optional[type[BaseException]],
-            exc_value: Optional[BaseException],
-            traceback: Optional[TracebackType],
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
     ) -> None:
         """
         Exit the Aether lock context.
@@ -699,7 +709,7 @@ class Aether(Cleanable):
         self._logger = next_logger
 
     @property
-    def configuration(self) -> Optional[AetherConfiguration]:
+    def configuration(self) -> AetherConfiguration | None:
         """
         Return the installed Aether root configuration, if any.
 
@@ -994,7 +1004,7 @@ class Aether(Cleanable):
 
     def activate(
             self,
-            configuration: Optional[AetherConfiguration] = None,
+            configuration: AetherConfiguration | None = None,
     ) -> None:
         """
         Activate the installed Aether root configuration.
@@ -1303,9 +1313,7 @@ class Aether(Cleanable):
                 raise RuntimeError("Aether frame registry is unavailable.")
             if aetheric_frame_name in self._aetheric_frames:
                 raise ValueError(
-                    "AethericFrame '{0}' already exists.".format(
-                        aetheric_frame_name
-                    )
+                    f"AethericFrame '{aetheric_frame_name}' already exists."
                 )
             frame = AethericFrame(self, aetheric_frame_name)
             self._aetheric_frames[aetheric_frame_name] = frame
@@ -1536,7 +1544,7 @@ class Aether(Cleanable):
                     frame._configuration = configuration
 
 
-    def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[SpellbookConfiguration]:
+    def _get_configuration(self, aetheric_frame_name: str = "default") -> SpellbookConfiguration | None:
         """
         Return the shared Spellbook configuration object bound to one frame.
 
@@ -1565,7 +1573,7 @@ class Aether(Cleanable):
     def _get_aetheric_frame_configuration(
             self,
             aetheric_frame_name: str = "default",
-    ) -> Optional[AethericFrameConfiguration]:
+    ) -> AethericFrameConfiguration | None:
         """
         Return the narrow frame-level AR posture object for one frame.
 
@@ -1635,7 +1643,7 @@ class Aether(Cleanable):
     def list_conduit_ids(
             self,
             aetheric_frame_name: str = "default",
-    ) -> Tuple[str, ...]:
+    ) -> tuple[str, ...]:
         """
         Return the registered root conduit identifiers for one frame.
 
@@ -1655,16 +1663,12 @@ class Aether(Cleanable):
                 frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(
-                    "Aetheric frame '{0}' does not exist.".format(
-                        aetheric_frame_name
-                    ),
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
                     "list_conduit_ids",
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Aetheric frame '{0}' does not exist.".format(
-                        aetheric_frame_name
-                    )
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
                 )
         else:
             frame = self._ensure_default_frame()
@@ -1673,7 +1677,7 @@ class Aether(Cleanable):
     def list_conduit_names(
             self,
             aetheric_frame_name: str = "default",
-    ) -> Tuple[str, ...]:
+    ) -> tuple[str, ...]:
         """
         Return the registered root conduit names for one frame.
 
@@ -1693,16 +1697,12 @@ class Aether(Cleanable):
                 frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(
-                    "Aetheric frame '{0}' does not exist.".format(
-                        aetheric_frame_name
-                    ),
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
                     "list_conduit_names",
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Aetheric frame '{0}' does not exist.".format(
-                        aetheric_frame_name
-                    )
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
                 )
         else:
             frame = self._ensure_default_frame()
@@ -1806,7 +1806,7 @@ class Aether(Cleanable):
             self,
             name: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Return the registered root conduit id for one name, if present.
 
@@ -1828,16 +1828,12 @@ class Aether(Cleanable):
                 frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(
-                    "Aetheric frame '{0}' does not exist.".format(
-                        aetheric_frame_name
-                    ),
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
                     "find_conduit_id_by_name",
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Aetheric frame '{0}' does not exist.".format(
-                        aetheric_frame_name
-                    )
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
                 )
         else:
             frame = self._ensure_default_frame()
@@ -2153,8 +2149,8 @@ class Aether(Cleanable):
                     exc_info=True,
                 )
 
-    def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
-                              aetheric_frame_name: str = "default", spell_ids: Set[str] | None = None) -> None:
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: set[SpellIndex],
+                              aetheric_frame_name: str = "default", spell_ids: set[str] | None = None) -> None:
         """
         Registers a set of SpellIndex objects for a conduit and refreshes version registry.
 
@@ -2183,7 +2179,7 @@ class Aether(Cleanable):
         # refresh happen atomically under frame._lock (no direct dict poking).
         frame.register_conduit_spells(conduit_id, spell_set, spell_ids)
 
-    def _remove_spells_from_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
+    def _remove_spells_from_aether(self, conduit_id: str, spell_set: set[SpellIndex],
                                    aetheric_frame_name: str = "default") -> None:
         """
         Unregisters a set of SpellIndex objects for a conduit and refreshes version registry.

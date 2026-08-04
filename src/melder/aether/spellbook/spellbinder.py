@@ -1,6 +1,6 @@
 import threading
-from typing import TYPE_CHECKING, Any, Optional, Callable, ClassVar
-
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -137,7 +137,7 @@ class SpellBinder(Cleanable):
         self._permissions: str = default_permissions
         self._profile: str = default_profile
         self._spellframe: Any | None = None
-        self._binding_name: Optional[str] = None
+        self._binding_name: str | None = None
         self._kwargs: dict[str, Any] = {}
 
     def cleanup(self) -> None:
@@ -298,7 +298,7 @@ class SpellBinder(Cleanable):
             spellframe: Any | None = None,
             binding_name: str | None = None,
             **kwargs: Any,
-    ) -> "SpellBinder":
+    ) -> SpellBinder:
         """
         Start a new fluent registration chain for one spell target.
 
@@ -365,7 +365,7 @@ class SpellBinder(Cleanable):
     # Fluent Modifiers - Lifecycle / Scope
     # ------------------------------------------------------------------
 
-    def with_existence(self, existence: Existence) -> "SpellBinder":
+    def with_existence(self, existence: Existence) -> SpellBinder:
         """
         Manually set the `Existence` lifecycle for this registration.
 
@@ -389,7 +389,7 @@ class SpellBinder(Cleanable):
             self._existence = existence
         return self
 
-    def as_unique(self) -> "SpellBinder":
+    def as_unique(self) -> SpellBinder:
         """
         Configures the spell as a **Global Singleton** (Unique per Aetheric Frame).
 
@@ -415,7 +415,7 @@ class SpellBinder(Cleanable):
             self._existence = Existence.unique
         return self
 
-    def as_many(self) -> "SpellBinder":
+    def as_many(self) -> SpellBinder:
         """
         Configures the spell as **Transient** (Many Instances).
 
@@ -441,7 +441,7 @@ class SpellBinder(Cleanable):
             self._existence = Existence.many
         return self
 
-    def as_unique_per_conduit(self) -> "SpellBinder":
+    def as_unique_per_conduit(self) -> SpellBinder:
         """
         Configures the spell as **Scoped to Conduit**.
 
@@ -467,7 +467,7 @@ class SpellBinder(Cleanable):
             self._existence = Existence.unique_per_conduit
         return self
 
-    def as_unique_per_conduit_cluster(self) -> "SpellBinder":
+    def as_unique_per_conduit_cluster(self) -> SpellBinder:
         """
         Configures the spell as **Scoped to Cluster**.
 
@@ -492,7 +492,7 @@ class SpellBinder(Cleanable):
             self._existence = Existence.unique_per_conduit_cluster
         return self
 
-    def as_unique_per_conduit_lineage(self) -> "SpellBinder":
+    def as_unique_per_conduit_lineage(self) -> SpellBinder:
         """
         Configures the spell as **Scoped to Lineage** (Hierarchical).
 
@@ -517,7 +517,7 @@ class SpellBinder(Cleanable):
             self._existence = Existence.unique_per_conduit_lineage
         return self
 
-    def as_unique_per_spell_space(self) -> "SpellBinder":
+    def as_unique_per_spell_space(self) -> SpellBinder:
         """
         Configures the spell as **Scoped to SpellSpace** (Session/Request).
 
@@ -547,7 +547,7 @@ class SpellBinder(Cleanable):
     # Fluent Modifiers - Identity & Permissions
     # ------------------------------------------------------------------
 
-    def with_permissions(self, permissions: str) -> "SpellBinder":
+    def with_permissions(self, permissions: str) -> SpellBinder:
         """
         Set the access permissions for the pending registration.
 
@@ -582,7 +582,7 @@ class SpellBinder(Cleanable):
             self._permissions = permissions
         return self
 
-    def under_spellframe(self, spellframe: Any) -> "SpellBinder":
+    def under_spellframe(self, spellframe: Any) -> SpellBinder:
         """
         Stage a spellframe for the pending registration.
 
@@ -611,7 +611,7 @@ class SpellBinder(Cleanable):
             self._spellframe = spellframe
         return self
 
-    def named(self, binding_name: str) -> "SpellBinder":
+    def named(self, binding_name: str) -> SpellBinder:
         """
         Stage a binding name for the pending registration.
 
@@ -638,7 +638,7 @@ class SpellBinder(Cleanable):
             self._binding_name = binding_name
         return self
 
-    def with_kwargs(self, **kwargs: Any) -> "SpellBinder":
+    def with_kwargs(self, **kwargs: Any) -> SpellBinder:
         """
         Pass arbitrary keyword arguments directly to the Spellbook's bind method.
 
@@ -665,7 +665,7 @@ class SpellBinder(Cleanable):
     # Fluent Modifiers - Lifecycle Hooks
     # ------------------------------------------------------------------
 
-    def with_pre_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
+    def with_pre_hook(self, hook: Callable[..., Any]) -> SpellBinder:
         """
         Adds a **Pre-Cast Hook**.
 
@@ -693,7 +693,7 @@ class SpellBinder(Cleanable):
             hooks.append(hook)
         return self
 
-    def with_pre_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
+    def with_pre_hooks(self, *hooks: Callable[..., Any]) -> SpellBinder:
         """
         Adds multiple Pre-Cast Hooks at once, preserving the provided order.
 
@@ -716,7 +716,7 @@ class SpellBinder(Cleanable):
             lst.extend(hooks)
         return self
 
-    def with_activation_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
+    def with_activation_hook(self, hook: Callable[..., Any]) -> SpellBinder:
         """
         Adds an **Activation Hook**.
 
@@ -745,7 +745,7 @@ class SpellBinder(Cleanable):
             hooks.append(hook)
         return self
 
-    def with_activation_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
+    def with_activation_hooks(self, *hooks: Callable[..., Any]) -> SpellBinder:
         """
         Adds multiple Activation Hooks at once, preserving the provided order.
 
@@ -768,7 +768,7 @@ class SpellBinder(Cleanable):
             lst.extend(hooks)
         return self
 
-    def with_post_hook(self, hook: Callable[..., Any]) -> "SpellBinder":
+    def with_post_hook(self, hook: Callable[..., Any]) -> SpellBinder:
         """
         Adds a **Post-Cast Hook**.
 
@@ -796,7 +796,7 @@ class SpellBinder(Cleanable):
             hooks.append(hook)
         return self
 
-    def with_post_hooks(self, *hooks: Callable[..., Any]) -> "SpellBinder":
+    def with_post_hooks(self, *hooks: Callable[..., Any]) -> SpellBinder:
         """
         Adds multiple Post-Cast Hooks at once, preserving the provided order.
 

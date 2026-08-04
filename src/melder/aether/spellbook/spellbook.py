@@ -1,56 +1,65 @@
+import threading
+import time
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from types import MappingProxyType, ModuleType, TracebackType
-from typing import TYPE_CHECKING, Optional, List, Any, Mapping, Sequence, Dict, Set, Iterable, Tuple, Generator, Union, \
-    ClassVar, Type
-import threading
-import time
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+)
 
+from melder.aether.aether import Aether
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
+)
 
 # Melder Imports
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import (
+    SpellValidity,
+)
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.scan import Scan
-from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
-from melder.aether.aetheric_frame.aetheric_frame_configuration import (
-    AethericFrameConfiguration,
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
 )
 from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.general_helpers import EnumHelpers, SpellInputUtils
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.aether.spellbook.bind.bind import Bind
-from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.spellbook.spell import Spell
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
-from melder.nexus.nexus import Nexus
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator import (
+        TransactionMediator,
+    )
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
         SpellSystemStates,
     )
     from melder.aether.conduit.conduit import Conduit
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator import (
-        TransactionMediator,
-    )
-    from melder.utilities.synchronization.unit_of_work import UnitOfWork
-    from melder.utilities.logger.safe_logger import SafeLogger
     from melder.crystallizer.crystallizer import Crystallizer
     from melder.mutation_research.mutation_research import MutationResearch
+    from melder.utilities.logger.safe_logger import SafeLogger
+    from melder.utilities.synchronization.unit_of_work import UnitOfWork
 
 #region Spellbook
 
@@ -206,7 +215,7 @@ and logging.
         "_mutation_research",
     ]
 
-    def __init__(self, aetheric_frame: str = "default", configuration: Optional[SpellbookConfiguration] = None,
+    def __init__(self, aetheric_frame: str = "default", configuration: SpellbookConfiguration | None = None,
                  logger: Any | None = None):
         """
         Public API
@@ -252,14 +261,14 @@ and logging.
         self._conjured = False
         self._cache_emit_required: bool = False
         self._caching_enabled: bool = False
-        self._caching_system: Optional[CachingSystem] = None
-        self._pending_binding_frame_keys: Set[str] = set()
-        self._pending_structural_spells: List[Spell] = []
+        self._caching_system: CachingSystem | None = None
+        self._pending_binding_frame_keys: set[str] = set()
+        self._pending_structural_spells: list[Spell] = []
         # Spellbook-owned persistent phase scheduler (lazy): one worker pool
         # reused across every conjure phase group and lazy revalidation run.
         # Created on first phase run; cleaned (sentinels + joins) exactly
         # once in Spellbook cleanup.
-        self._phase_scheduler: Optional[PhaseScheduler] = None
+        self._phase_scheduler: PhaseScheduler | None = None
         # Serializes phase RUNS on the shared persistent scheduler: the
         # per-run phase registry is scheduler state, so concurrent meld-time
         # revalidations (which do not hold the Spellbook lock) must not
@@ -269,8 +278,8 @@ and logging.
         # a phase unit (worker thread) - that would deadlock against the
         # owning control thread.
         self._phase_run_lock: threading.RLock = threading.RLock()
-        self._configured_disposal_method_names: Optional[frozenset[str]] = None
-        self._conduit: Optional[Conduit] = None
+        self._configured_disposal_method_names: frozenset[str] | None = None
+        self._conduit: Conduit | None = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame_name: str = aetheric_frame
         if not isinstance(self._aetheric_frame_name, str):
@@ -308,9 +317,9 @@ and logging.
         # SpellbookConfiguration state
         self._configuration_locked: bool = False
         self._binds_before_configuration_count: int = 0
-        self._conjure_dynamic_hint: Optional[bool] = None
-        self._configuration: Optional[SpellbookConfiguration] = configuration
-        self._aetheric_frame_configuration: Optional[AethericFrameConfiguration] = None
+        self._conjure_dynamic_hint: bool | None = None
+        self._configuration: SpellbookConfiguration | None = configuration
+        self._aetheric_frame_configuration: AethericFrameConfiguration | None = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
         self._logger: SafeLogger = InitHelpers.resolve_safe_logger(None)
         self._initialize_aetheric_frame_configuration()
@@ -321,22 +330,22 @@ and logging.
         self._initialize_logging(logger)
 
         # ACTIVE resolution surface — a spell is PULLED from all of these on inactivate
-        self._spells: Dict[SpellIndex, Spell] = {}          # ACTIVE: index -> active spell (cold meld resolves here)
-        self._lookup_spells: Dict[tuple, SpellIndex] = {}   # ACTIVE: spell._key (frame_key,bind_key) -> index (binding lookup)
-        self._spells_by_id: Dict[str, Spell] = {}           # ACTIVE: spell_id -> active spell (meld-by-id)
-        self._spell_id_pool: Dict[str, Spell] = {}          # ACTIVE: spell_id -> active spell (warm pool)
+        self._spells: dict[SpellIndex, Spell] = {}          # ACTIVE: index -> active spell (cold meld resolves here)
+        self._lookup_spells: dict[tuple, SpellIndex] = {}   # ACTIVE: spell._key (frame_key,bind_key) -> index (binding lookup)
+        self._spells_by_id: dict[str, Spell] = {}           # ACTIVE: spell_id -> active spell (meld-by-id)
+        self._spell_id_pool: dict[str, Spell] = {}          # ACTIVE: spell_id -> active spell (warm pool)
 
         # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
-        self._spell_ids: Set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
-        self._inactive_spells: Dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
+        self._spell_ids: set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
+        self._inactive_spells: dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
 
         # Contracted (borrowed, keyed by peer conduit id) — same split
-        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
-        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = {} # ACTIVE: conduit -> {signature -> index}
-        self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}         # ACTIVE: conduit -> {spell_id -> active borrowed spell}
-        self._contracted_spell_ids: Dict[str, Set[str]] = {}                    # ALL borrowed ids per conduit (existence; contracted twin of _spell_ids)
-        self._inactive_contracted_spells: Dict[str, Dict[str, Spell]] = {}  # INACTIVE borrowed: conduit_id -> {spell_id -> parked borrowed spell}
-        self._contracted_indexes: Dict[str, SpellIndex] = {}  # CONTRACTED INDEXES: index_id -> the contracted SpellIndex (concrete target; ward owns the per-peer relationship)
+        self._contracted_spells: dict[str, dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
+        self._lookup_contracted_spells: dict[str, dict[tuple, SpellIndex]] = {} # ACTIVE: conduit -> {signature -> index}
+        self._contracted_spells_by_id: dict[str, dict[str, Spell]] = {}         # ACTIVE: conduit -> {spell_id -> active borrowed spell}
+        self._contracted_spell_ids: dict[str, set[str]] = {}                    # ALL borrowed ids per conduit (existence; contracted twin of _spell_ids)
+        self._inactive_contracted_spells: dict[str, dict[str, Spell]] = {}  # INACTIVE borrowed: conduit_id -> {spell_id -> parked borrowed spell}
+        self._contracted_indexes: dict[str, SpellIndex] = {}  # CONTRACTED INDEXES: index_id -> the contracted SpellIndex (concrete target; ward owns the per-peer relationship)
 
         # Spell States System
         self._spell_system_states: SpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
@@ -608,7 +617,7 @@ and logging.
                 Spellbook.
         """
         self.check_cleaned()
-        target_spell: Optional[Spell]
+        target_spell: Spell | None
         target_spell_id: str
         with self._lock:
             if isinstance(spell, str):
@@ -728,7 +737,7 @@ and logging.
 
     #endregion Disposal
     #region Context Manager
-    def __enter__(self) -> "Spellbook":
+    def __enter__(self) -> Spellbook:
         """
         Enter the Spellbook lock context and return `self`.
 
@@ -746,9 +755,9 @@ and logging.
 
     def __exit__(
             self,
-            exc_type: Optional[type[BaseException]],
-            exc_value: Optional[BaseException],
-            traceback: Optional[TracebackType],
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
     ) -> None:
         """
         Exit the Spellbook lock context.
@@ -890,7 +899,7 @@ and logging.
 
     def _get_or_create_caching_system(
             self,
-            conduit_name: Optional[str] = None,
+            conduit_name: str | None = None,
     ) -> CachingSystem:
         """
         Internal
@@ -974,6 +983,8 @@ and logging.
                 return False
             from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache import (
                 MANIFEST_METADATA_KEY,
+            )
+            from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache import (
                 build_package as build_manifest_package,
             )
             if (
@@ -1887,7 +1898,7 @@ and logging.
                 map.
         """
         self.check_cleaned()
-        contracted_views: Dict[str, Mapping[SpellIndex, Spell]] = {
+        contracted_views: dict[str, Mapping[SpellIndex, Spell]] = {
             conduit_id: MappingProxyType(dict(spells))
             for conduit_id, spells in self._contracted_spells.items()
         }
@@ -1896,7 +1907,7 @@ and logging.
         )
         return contracted_spells_view
 
-    def snapshot_state(self) -> Dict[str, Any]:
+    def snapshot_state(self) -> dict[str, Any]:
         """
         Public API
 
@@ -1927,17 +1938,17 @@ and logging.
             lookup_spells = dict(self._lookup_spells) if self._lookup_spells is not None else {}
             spell_ids = set(self._spell_ids) if self._spell_ids is not None else set()
 
-            contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}
+            contracted_spells: dict[str, dict[SpellIndex, Spell]] = {}
             if self._contracted_spells is not None:
                 for conduit_id, spells in self._contracted_spells.items():
                     contracted_spells[conduit_id] = dict(spells)
 
-            lookup_contracted_spells: Dict[str, Dict[Tuple[str, str], SpellIndex]] = {}
+            lookup_contracted_spells: dict[str, dict[tuple[str, str], SpellIndex]] = {}
             if self._lookup_contracted_spells is not None:
                 for conduit_id, lookup_map in self._lookup_contracted_spells.items():
                     lookup_contracted_spells[conduit_id] = dict(lookup_map)
 
-            contracted_spell_ids: Dict[str, Set[str]] = {}
+            contracted_spell_ids: dict[str, set[str]] = {}
             if self._contracted_spell_ids is not None:
                 for conduit_id, conduit_spell_ids in self._contracted_spell_ids.items():
                     contracted_spell_ids[conduit_id] = set(conduit_spell_ids)
@@ -1959,7 +1970,7 @@ and logging.
 
     #region Core Methods
     #region General Methods
-    def find_spell_by_id(self, spell_id: str) -> Optional[Spell]:
+    def find_spell_by_id(self, spell_id: str) -> Spell | None:
         """
         Public API
 
@@ -2012,7 +2023,7 @@ and logging.
 
         return None
 
-    def get_spell_permissions(self, spell_index: SpellIndex) -> Optional[str]:
+    def get_spell_permissions(self, spell_index: SpellIndex) -> str | None:
         """
         Public API
 
@@ -2060,7 +2071,7 @@ and logging.
         )
         raise RuntimeError(f"Spell with index {spell_index} not found in the spellbook.")
 
-    def _find_spell(self, spell_index: SpellIndex) -> Optional[Spell]:
+    def _find_spell(self, spell_index: SpellIndex) -> Spell | None:
         """
         Internal
 
@@ -2078,7 +2089,7 @@ and logging.
             spell = self._spells.get(spell_index, None)
         return spell
 
-    def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[Spell]:
+    def _find_contracted_spell(self, spell_index: SpellIndex) -> Spell | None:
         """
         Internal
 
@@ -2103,7 +2114,7 @@ and logging.
     def _find_spell_index_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[SpellIndex]:
+    ) -> SpellIndex | None:
         """
         Internal
 
@@ -2126,7 +2137,7 @@ and logging.
     def _find_contracted_spell_index_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[SpellIndex]:
+    ) -> SpellIndex | None:
         """
         Internal
 
@@ -2150,7 +2161,7 @@ and logging.
     def get_spell_by_index_id(
             self,
             spell_index_id: str,
-    ) -> Optional[Spell]:
+    ) -> Spell | None:
         """
         Public API
 
@@ -2213,7 +2224,7 @@ and logging.
         return count
 
 
-    def find_spell_index(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[SpellIndex]:
+    def find_spell_index(self, spellframe: str, spell_name: str, binding_name: str) -> SpellIndex | None:
         """
         Public API
 
@@ -2269,7 +2280,7 @@ and logging.
             self,
             spellframe: Any,
             spell_name: str,
-            binding_name: Optional[str],
+            binding_name: str | None,
     ) -> tuple[str, str]:
         """
         Internal
@@ -2347,7 +2358,7 @@ and logging.
                 self._logger.error(message, context, exc_info=True)
                 raise RuntimeError(message)
 
-    def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> Optional[tuple]:
+    def find_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> tuple | None:
         """
         Public API
 
@@ -2403,7 +2414,7 @@ and logging.
             self,
             spell: Any,
             aetheric_frame: str = "default",
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Public API
 
@@ -2557,7 +2568,7 @@ and logging.
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[Conduit]:
+    ) -> Conduit | None:
         """
         Internal
 
@@ -2698,7 +2709,7 @@ and logging.
             "in it."
         )
 
-    def _describe_colliding_spells(self, spell_ids: Set[str]) -> str:
+    def _describe_colliding_spells(self, spell_ids: set[str]) -> str:
         """
         Internal
 
@@ -2725,7 +2736,7 @@ and logging.
         Returns:
             str: One `  - name  [signature]  id=prefix...` line per spell.
         """
-        lines: List[str] = []
+        lines: list[str] = []
         for spell_id in sorted(spell_ids)[:10]:
             spell = self._spells_by_id.get(spell_id)
             if spell is None:
@@ -2751,7 +2762,7 @@ and logging.
             self,
             spell_id: str,
             aetheric_frame_name: str = "default",
-    ) -> Optional[Spell]:
+    ) -> Spell | None:
         """
         Internal
 
@@ -2882,7 +2893,7 @@ and logging.
 
     #endregion General Methods
     #region Contract API
-    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> Optional[Spell]:
+    def _find_contracted_spell_by_id(self, spell_id: str, conduit_id: str) -> Spell | None:
         """
         Internal
 
@@ -3133,7 +3144,7 @@ and logging.
         with self._lock:
             self._contracted_indexes.pop(index_id, None)
 
-    def _get_owned_spell(self, spell_id: str) -> Optional[Spell]:
+    def _get_owned_spell(self, spell_id: str) -> Spell | None:
         """
         Internal
 
@@ -3277,7 +3288,7 @@ and logging.
             conduit_id (str): The ID of the peer conduit whose contracted spells are to be cleared
         """
 
-        removed_spells: List[Spell] = []
+        removed_spells: list[Spell] = []
         with self._lock:
             if (
                 conduit_id not in self._contracted_spells
@@ -3335,13 +3346,7 @@ and logging.
     def _detach_link_contract(
             self,
             conduit_id: str,
-    ) -> Optional[Tuple[
-        Dict[SpellIndex, Spell],
-        Dict[tuple, SpellIndex],
-        Set[str],
-        Dict[str, Spell],
-        Optional[Dict[str, Spell]],
-    ]]:
+    ) -> tuple[dict[SpellIndex, Spell], dict[tuple, SpellIndex], set[str], dict[str, Spell], dict[str, Spell] | None] | None:
         """
         Internal
 
@@ -3408,12 +3413,12 @@ and logging.
     def _reattach_link_contract(
             self,
             conduit_id: str,
-            payload: Tuple[
-                Dict[SpellIndex, Spell],
-                Dict[tuple, SpellIndex],
-                Set[str],
-                Dict[str, Spell],
-                Optional[Dict[str, Spell]],
+            payload: tuple[
+                dict[SpellIndex, Spell],
+                dict[tuple, SpellIndex],
+                set[str],
+                dict[str, Spell],
+                dict[str, Spell] | None,
             ],
     ) -> None:
         """
@@ -3469,12 +3474,12 @@ and logging.
     def _destroy_detached_link_contract(
             self,
             conduit_id: str,
-            payload: Tuple[
-                Dict[SpellIndex, Spell],
-                Dict[tuple, SpellIndex],
-                Set[str],
-                Dict[str, Spell],
-                Optional[Dict[str, Spell]],
+            payload: tuple[
+                dict[SpellIndex, Spell],
+                dict[tuple, SpellIndex],
+                set[str],
+                dict[str, Spell],
+                dict[str, Spell] | None,
             ],
     ) -> None:
         """
@@ -3580,7 +3585,7 @@ and logging.
             and frame_configuration.system_state is SystemState.dynamic
         )
 
-    def _get_required_transaction_mediator(self) -> "TransactionMediator":
+    def _get_required_transaction_mediator(self) -> TransactionMediator:
         """
         Internal
 
@@ -3948,8 +3953,8 @@ and logging.
             self,
             spell_index: SpellIndex,
             *,
-            binding_key: Tuple[str, str],
-            owner_conduit_id: Optional[str],
+            binding_key: tuple[str, str],
+            owner_conduit_id: str | None,
     ) -> None:
         """
         Internal -- idempotently destroy an emptied, LOCAL SpellIndex.
@@ -4226,13 +4231,13 @@ and logging.
             self,
             transaction_type: ChangeTransactionType,
             *,
-            conduit_id: Optional[str] = None,
-            conduit_ids: Optional[Iterable[str]] = None,
-            scope_keys: Optional[Iterable[str]] = None,
-            scope_hashes: Optional[Iterable[str]] = None,
-            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
-            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
-            metadata: Optional[Dict[str, Any]] = None,
+            conduit_id: str | None = None,
+            conduit_ids: Iterable[str] | None = None,
+            scope_keys: Iterable[str] | None = None,
+            scope_hashes: Iterable[str] | None = None,
+            binding_keys: Iterable[tuple[str, str]] | None = None,
+            contract_keys: Iterable[tuple[str, str, str]] | None = None,
+            metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Public API
@@ -4366,7 +4371,7 @@ and logging.
 
     def end_transaction(
             self,
-            transaction_type: Optional[ChangeTransactionType] = None,
+            transaction_type: ChangeTransactionType | None = None,
             *,
             success: bool = True,
     ) -> None:
@@ -4450,14 +4455,14 @@ and logging.
             self,
             transaction_type: ChangeTransactionType,
             *,
-            conduit_id: Optional[str] = None,
-            conduit_ids: Optional[Iterable[str]] = None,
-            scope_keys: Optional[Iterable[str]] = None,
-            scope_hashes: Optional[Iterable[str]] = None,
-            binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
-            contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
-            metadata: Optional[Dict[str, Any]] = None,
-    ) -> Generator["Spellbook", None, None]:
+            conduit_id: str | None = None,
+            conduit_ids: Iterable[str] | None = None,
+            scope_keys: Iterable[str] | None = None,
+            scope_hashes: Iterable[str] | None = None,
+            binding_keys: Iterable[tuple[str, str]] | None = None,
+            contract_keys: Iterable[tuple[str, str, str]] | None = None,
+            metadata: dict[str, Any] | None = None,
+    ) -> Generator[Spellbook]:
         """
         Public API
 
@@ -4548,11 +4553,11 @@ and logging.
             self,
             *,
             origin_surface: str,
-            conduit_id: Optional[str],
-            scope_keys: Optional[Iterable[str]],
-            scope_hashes: Optional[Iterable[str]],
-            binding_keys: Optional[Iterable[Tuple[str, str]]],
-    ) -> Dict[str, object]:
+            conduit_id: str | None,
+            scope_keys: Iterable[str] | None,
+            scope_hashes: Iterable[str] | None,
+            binding_keys: Iterable[tuple[str, str]] | None,
+    ) -> dict[str, object]:
         """
         Internal
 
@@ -4577,7 +4582,7 @@ and logging.
 
     def _clear_bind_transaction_state(
             self,
-            _staged: Optional[Any] = None,
+            _staged: Any | None = None,
     ) -> None:
         """
         Internal
@@ -4638,7 +4643,7 @@ and logging.
             Captures staged inputs under the Spellbook lock; change-control
             update is performed without the Spellbook lock.
         """
-        pending_spells: List[Spell] = []
+        pending_spells: list[Spell] = []
         with self._lock:
             if self._pending_structural_spells is not None:
                 pending_spells = list(self._pending_structural_spells)
@@ -4650,8 +4655,8 @@ and logging.
             return
         if not pending_spells:
             return
-        binding_keys: List[Tuple[str, str]] = []
-        seen_keys: Set[Tuple[str, str]] = set()
+        binding_keys: list[tuple[str, str]] = []
+        seen_keys: set[tuple[str, str]] = set()
         for spell in pending_spells:
             key = spell.key
             if key in seen_keys:
@@ -4692,7 +4697,7 @@ and logging.
         """
         if not conduit_id:
             return
-        lookup_keys: List[Tuple[str, str]] = []
+        lookup_keys: list[tuple[str, str]] = []
         with self._lock:
             if self._lookup_contracted_spells is not None:
                 lookup_map = self._lookup_contracted_spells.get(conduit_id)
@@ -4715,7 +4720,7 @@ and logging.
             contract_keys=filtered_keys,
         )
 
-    def _mark_collection_dependents_dirty(self, frame_keys: Set[str]) -> None:
+    def _mark_collection_dependents_dirty(self, frame_keys: set[str]) -> None:
         """
         Internal
 
@@ -4751,11 +4756,11 @@ and logging.
             *,
             spell: Any,
             spell_index: SpellIndex,
-            existence: Union[str, Existence],
+            existence: str | Existence,
             permissions: str | Permissions = "create",
             spellframe: Any = None,
-            binding_name: Optional[str] = None,
-            disposal_method_names: Optional[Sequence[str]] = None,
+            binding_name: str | None = None,
+            disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
             **kwargs: Any,
     ) -> str:
@@ -4994,7 +4999,7 @@ and logging.
 
     def _record_research_promotion(
             self,
-            from_spell_id: Optional[str],
+            from_spell_id: str | None,
             to_spell_id: str,
     ) -> None:
         """
@@ -5026,11 +5031,11 @@ and logging.
             self,
             *,
             spell: Any,
-            existence: Union[str, Existence],
+            existence: str | Existence,
             permissions: str | Permissions = "create",
             spellframe: Any = None,
-            binding_name: Optional[str] = None,
-            disposal_method_names: Optional[Sequence[str]] = None,
+            binding_name: str | None = None,
+            disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
             **kwargs: Any,
     ) -> str:
@@ -5429,7 +5434,7 @@ and logging.
               * Otherwise create a fresh SpellbookConfiguration for this frame (unlocked).
         """
         try:
-            aether_config: Optional[SpellbookConfiguration] = self._get_configuration_from_aether()
+            aether_config: SpellbookConfiguration | None = self._get_configuration_from_aether()
             if aether_config is not None:
                 if self._configuration is not None and aether_config is not self._configuration:
                     self._logger.error(
@@ -5499,7 +5504,7 @@ and logging.
 
     def _is_frame_owned_shared_configuration(
             self,
-            configuration: Optional[SpellbookConfiguration] = None,
+            configuration: SpellbookConfiguration | None = None,
     ) -> bool:
         """
         Internal
@@ -6034,22 +6039,22 @@ and logging.
     def configure_aether_frame(
             self,
             *,
-            system_state: Optional[str],
-            disposal: Optional[bool],
-            disposal_method_names: Optional[List[str]],
-            system_caching_enabled: Optional[bool] = None,
-            ai_native: Optional[bool] = None,
-            rift_enabled: Optional[bool] = None,
-            shared_framewide_spellbook_configuration: Optional[bool] = None,
-            system_cache_root_path: Optional[Union[str, Path]] = None,
-            disable_all_transactions_after_conjure: Optional[bool] = None,
-            disable_mutations: Optional[bool] = None,
-            disable_linking: Optional[bool] = None,
-            disable_bind: Optional[bool] = None,
-            disable_conduit_cluster: Optional[bool] = None,
-            disable_transfer_of_ownership: Optional[bool] = None,
-            disable_contract_mutation: Optional[bool] = None,
-            max_transaction_wait_time_in_seconds: Optional[float] = None,
+            system_state: str | None,
+            disposal: bool | None,
+            disposal_method_names: list[str] | None,
+            system_caching_enabled: bool | None = None,
+            ai_native: bool | None = None,
+            rift_enabled: bool | None = None,
+            shared_framewide_spellbook_configuration: bool | None = None,
+            system_cache_root_path: str | Path | None = None,
+            disable_all_transactions_after_conjure: bool | None = None,
+            disable_mutations: bool | None = None,
+            disable_linking: bool | None = None,
+            disable_bind: bool | None = None,
+            disable_conduit_cluster: bool | None = None,
+            disable_transfer_of_ownership: bool | None = None,
+            disable_contract_mutation: bool | None = None,
+            max_transaction_wait_time_in_seconds: float | None = None,
     ) -> None:
         """
         Public API
@@ -6223,7 +6228,7 @@ and logging.
     #endregion SpellbookConfiguration API
     #region Conduit API
 
-    def create_new_preset_spellbook(self) -> 'Spellbook':
+    def create_new_preset_spellbook(self) -> Spellbook:
         """
         Internal
 
@@ -6262,7 +6267,7 @@ and logging.
         return Spellbook(self._aetheric_frame_name, self._configuration)
 
     @property
-    def conduit(self) -> Optional["Conduit"]:
+    def conduit(self) -> Conduit | None:
         """
         Return this book's conjured root conduit, or None pre-conjure.
 
@@ -6374,10 +6379,10 @@ and logging.
 
     def conjure(
             self,
-            policy: Optional[str] = "default",
+            policy: str | None = "default",
             dynamic: bool = False,
-            name: Optional[str] = None,
-            conduit_logger: Optional[Any] = None,
+            name: str | None = None,
+            conduit_logger: Any | None = None,
     ) -> Conduit:
         """
         Public API
@@ -6469,10 +6474,10 @@ and logging.
     def _conjure_within_transaction_window(
             self,
             *,
-            policy: Optional[str],
+            policy: str | None,
             dynamic: bool,
-            name: Optional[str],
-            conduit_logger: Optional[Any],
+            name: str | None,
+            conduit_logger: Any | None,
     ) -> Conduit:
         """
         Internal
@@ -6506,22 +6511,18 @@ and logging.
             ):
                 early_bind_count = self._binds_before_configuration_count
                 self._logger.error(
-                    "conjure refused: {0} bind(s) preceded configuration "
-                    "finalization in a dynamic crystallizer world".format(
-                        early_bind_count
-                    ),
+                    f"conjure refused: {early_bind_count} bind(s) preceded configuration "
+                    "finalization in a dynamic crystallizer world",
                     "conjure",
                 )
                 raise RuntimeError(
                     "[SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the \n"
-                    "SpellbookConfiguration to be finalized BEFORE the first bind. {0} spell(s) \n"
+                    f"SpellbookConfiguration to be finalized BEFORE the first bind. {early_bind_count} spell(s) \n"
                     "were bound while the configuration was still mutable, so the recorded world \n"
                     "(profiles, checkpoints, the default bootstrap) would persist binds that ran \n"
                     "against unsettled configuration. Fix: build and finalize the configuration \n"
                     "first, pass it to the Spellbook before binding, then conjure. Automatic-mode \n"
-                    "worlds and worlds without an active Crystallizer are not affected.".format(
-                        early_bind_count
-                    )
+                    "worlds and worlds without an active Crystallizer are not affected."
                 )
             if self._conjured:
                 conduit_id = None
@@ -6606,7 +6607,7 @@ and logging.
                 self._block_all_spells = False
                 self._whitelist_all_spells = False
 
-    def _run_structural_phases(self) -> Dict[str, Sequence[UnitOfWork]]:
+    def _run_structural_phases(self) -> dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 
@@ -6631,7 +6632,7 @@ and logging.
 
     def _get_or_create_phase_scheduler(
             self,
-            phase_scheduler_cls: Type[PhaseScheduler],
+            phase_scheduler_cls: type[PhaseScheduler],
     ) -> PhaseScheduler:
         """
         Internal
@@ -6720,7 +6721,7 @@ and logging.
     def _run_resolution_phases_for_conduit(
             self,
             conduit_id: str,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 
@@ -6750,7 +6751,7 @@ and logging.
             self,
             conduit_id: str,
             target_spell: Spell,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 
@@ -6782,7 +6783,7 @@ and logging.
             self,
             conduit_id: str,
             target_spell: Spell,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Internal
 

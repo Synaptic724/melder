@@ -1,6 +1,7 @@
 import logging
 import threading
-from typing import Any, Callable, Dict, Iterable, Optional, Union, ClassVar
+from collections.abc import Callable, Iterable
+from typing import Any, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
@@ -62,7 +63,7 @@ class AetherUtilitySystem(Cleanable):
         kernel machinery: read it to understand the runtime, do not drive it directly.
     """
 
-    _instance: ClassVar[Optional["AetherUtilitySystem"]] = None
+    _instance: ClassVar[AetherUtilitySystem | None] = None
     _singleton_lock: ClassVar[threading.RLock] = threading.RLock()
     _initialized: ClassVar[bool] = False
     __slots__ = Cleanable.__slots__ + [
@@ -75,7 +76,7 @@ class AetherUtilitySystem(Cleanable):
             cls,
             *args: object,
             **kwargs: object,
-    ) -> "AetherUtilitySystem":
+    ) -> AetherUtilitySystem:
         """
         Ensure the utility system behaves as a singleton.
 
@@ -89,7 +90,7 @@ class AetherUtilitySystem(Cleanable):
         if cls._instance is None:
             with cls._singleton_lock:
                 if cls._instance is None:
-                    cls._instance = super(AetherUtilitySystem, cls).__new__(cls)
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self) -> None:
@@ -123,8 +124,8 @@ class AetherUtilitySystem(Cleanable):
             super().__init__()
             self._lock: threading.RLock = threading.RLock()
             self._channel_logger_activation_enabled: bool = False
-            self._channel_logger_resolver: Optional[Callable[..., Any]] = None
-            self._default_logger: Optional[logging.Logger] = None
+            self._channel_logger_resolver: Callable[..., Any] | None = None
+            self._default_logger: logging.Logger | None = None
             # BUG-146 (2026-07-17 audit): the once-only latch flips while the
             # singleton lock is still held so the unlocked fast path above can
             # only observe a fully initialized provider surface.
@@ -238,7 +239,7 @@ class AetherUtilitySystem(Cleanable):
             crystallizer = Crystallizer()
             if crystallizer.activated:
                 with self._lock:
-                    payload: Dict[str, object] = {
+                    payload: dict[str, object] = {
                         "channel_logger_activation_enabled": (
                             self._channel_logger_activation_enabled
                         ),
@@ -374,7 +375,7 @@ class AetherUtilitySystem(Cleanable):
 
     def resolve_safe_logger(
             self,
-            logger: Union[IChannelLogger, logging.Logger, None],
+            logger: IChannelLogger | logging.Logger | None,
     ) -> SafeLogger:
         """
         Resolve a plain logger-like object into a `SafeLogger`.
@@ -403,10 +404,10 @@ class AetherUtilitySystem(Cleanable):
             self,
             registrant: object,
             *,
-            groups: Optional[Iterable[str]] = None,
-            system_groups: Optional[Iterable[str]] = None,
-            props: Optional[Dict[str, Any]] = None,
-            channels: Optional[Union[str, Iterable[str]]] = None,
+            groups: Iterable[str] | None = None,
+            system_groups: Iterable[str] | None = None,
+            props: dict[str, Any] | None = None,
+            channels: str | Iterable[str] | None = None,
     ) -> SafeLogger:
         """
         Resolve a channel-style logger for one registrant.

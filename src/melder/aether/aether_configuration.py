@@ -1,10 +1,11 @@
 import logging
 import threading
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
-from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.crystallizer.crystals.aether_crystal import AetherCrystal
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -97,7 +98,7 @@ class AetherConfiguration(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._frozen: bool = False
         self._activated: bool = False
-        self._properties: Dict[str, object] = {
+        self._properties: dict[str, object] = {
             "channel_logger_activation_enabled": False,
             "channel_logger_resolver": None,
             "default_logger": None,
@@ -253,7 +254,7 @@ class AetherConfiguration(Cleanable):
         return value
 
     @property
-    def channel_logger_resolver(self) -> Optional[Callable[..., Any]]:
+    def channel_logger_resolver(self) -> Callable[..., Any] | None:
         """
         Return the configured channel logger resolver, if any.
 
@@ -286,7 +287,7 @@ class AetherConfiguration(Cleanable):
         return value
 
     @property
-    def default_logger(self) -> Optional[logging.Logger]:
+    def default_logger(self) -> logging.Logger | None:
         """
         Return the configured stdlib fallback logger, if any.
 
@@ -353,7 +354,7 @@ class AetherConfiguration(Cleanable):
             )
         return value
 
-    def with_defaults(self) -> "AetherConfiguration":
+    def with_defaults(self) -> AetherConfiguration:
         """
         Apply the default Aether logger policy.
 
@@ -384,8 +385,8 @@ class AetherConfiguration(Cleanable):
     @classmethod
     def from_recorded_payload(
             cls,
-            recorded_payload: Dict[str, object],
-    ) -> Tuple["AetherConfiguration", Dict[str, List[str]]]:
+            recorded_payload: dict[str, object],
+    ) -> tuple[AetherConfiguration, dict[str, list[str]]]:
         """
         Reload lane: rebuild one Aether configuration from its recorded
         twin payload.
@@ -425,8 +426,8 @@ class AetherConfiguration(Cleanable):
                 internal freeze.
         """
         configuration = cls()
-        missing: List[str] = []
-        code_participation: List[str] = []
+        missing: list[str] = []
+        code_participation: list[str] = []
         if "channel_logger_activation_enabled" in recorded_payload:
             configuration.set_channel_logger_activation_enabled(
                 bool(recorded_payload["channel_logger_activation_enabled"])
@@ -451,7 +452,7 @@ class AetherConfiguration(Cleanable):
     def with_channel_logger_activation_enabled(
             self,
             enabled: bool,
-    ) -> "AetherConfiguration":
+    ) -> AetherConfiguration:
         """
         Set whether automatic channel logger resolution is enabled.
 
@@ -483,8 +484,8 @@ class AetherConfiguration(Cleanable):
 
     def with_channel_logger_resolver(
             self,
-            resolver: Optional[Callable[..., Any]],
-    ) -> "AetherConfiguration":
+            resolver: Callable[..., Any] | None,
+    ) -> AetherConfiguration:
         """
         Set the channel logger resolver used by the utility system.
 
@@ -515,8 +516,8 @@ class AetherConfiguration(Cleanable):
 
     def with_default_logger(
             self,
-            logger: Optional[logging.Logger],
-    ) -> "AetherConfiguration":
+            logger: logging.Logger | None,
+    ) -> AetherConfiguration:
         """
         Set the stdlib fallback logger used by the utility system.
 
@@ -548,7 +549,7 @@ class AetherConfiguration(Cleanable):
     def with_process_wide_unique_spell_ids(
             self,
             enabled: bool,
-    ) -> "AetherConfiguration":
+    ) -> AetherConfiguration:
         """
         Set process-wide spell_id uniqueness and return this configuration.
 
@@ -609,7 +610,7 @@ class AetherConfiguration(Cleanable):
 
     def set_channel_logger_resolver(
             self,
-            resolver: Optional[Callable[..., Any]],
+            resolver: Callable[..., Any] | None,
     ) -> None:
         """
         Set the channel logger resolver.
@@ -639,7 +640,7 @@ class AetherConfiguration(Cleanable):
 
     def set_default_logger(
             self,
-            logger: Optional[logging.Logger],
+            logger: logging.Logger | None,
     ) -> None:
         """
         Set the stdlib fallback logger.
@@ -775,7 +776,7 @@ class AetherConfiguration(Cleanable):
         with self._lock:
             self._frozen = True
 
-    def finalize(self) -> "AetherConfiguration":
+    def finalize(self) -> AetherConfiguration:
         """
         Validate and freeze the configuration, then return it.
 
@@ -801,7 +802,7 @@ class AetherConfiguration(Cleanable):
         self.freeze()
         return self
 
-    def activate(self) -> "AetherConfiguration":
+    def activate(self) -> AetherConfiguration:
         """
         Validate, freeze, and mark the configuration active.
 

@@ -1,43 +1,55 @@
 import threading
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from types import CodeType, FunctionType
-from typing import TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Type, \
-    ClassVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+)
 
-
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import (
+    SpellValidity,
+)
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
 )
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
-from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
+from melder.utilities.custom_exceptions.operation_cancelled_error import (
+    OperationCancelledError,
+)
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
-from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+from melder.utilities.custom_exceptions.spellbook_validation_error import (
+    SpellbookValidationError,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
+from melder.utilities.synchronization.cancellation_event_signal import (
+    CancellationEventSignal,
+)
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
-from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
-    from melder.utilities.caching_system.caching_system import CachingSystem
-    from melder.utilities.synchronization.unit_of_work import UnitOfWork
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.utilities.caching_system.caching_system import CachingSystem
     from melder.utilities.synchronization.creation_gate_controller import (
         CreationGateController,
     )
+    from melder.utilities.synchronization.unit_of_work import UnitOfWork
 
 
 class SpellbookCreationSystem(Cleanable):
@@ -121,11 +133,11 @@ class SpellbookCreationSystem(Cleanable):
             self,
             *,
             spellbook: Spellbook,
-            policy: Optional[str],
+            policy: str | None,
             dynamic: bool,
-            name: Optional[str],
-            conduit_logger: Optional[Any],
-            phase_scheduler_cls: Type[PhaseScheduler],
+            name: str | None,
+            conduit_logger: Any | None,
+            phase_scheduler_cls: type[PhaseScheduler],
     ) -> None:
         """
         Purpose:
@@ -149,11 +161,11 @@ class SpellbookCreationSystem(Cleanable):
         """
         super().__init__()
         self._spellbook: Spellbook = spellbook
-        self._policy: Optional[str] = policy
+        self._policy: str | None = policy
         self._dynamic: bool = dynamic
-        self._name: Optional[str] = name
+        self._name: str | None = name
         self._conduit_logger = conduit_logger
-        self._phase_scheduler_cls: Type[PhaseScheduler] = phase_scheduler_cls
+        self._phase_scheduler_cls: type[PhaseScheduler] = phase_scheduler_cls
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -278,7 +290,7 @@ class SpellbookCreationSystem(Cleanable):
     def _prepare_spellbook_for_conjure(
             *,
             spellbook: Spellbook,
-            phase_scheduler_cls: Type[PhaseScheduler],
+            phase_scheduler_cls: type[PhaseScheduler],
     ) -> None:
         """
         Purpose:
@@ -307,8 +319,8 @@ class SpellbookCreationSystem(Cleanable):
     def _prepare_resolution_for_conjure(
             *,
             spellbook: Spellbook,
-            phase_scheduler_cls: Type[PhaseScheduler],
-            force_skip_plan_phases: Optional[bool] = None,
+            phase_scheduler_cls: type[PhaseScheduler],
+            force_skip_plan_phases: bool | None = None,
     ) -> str:
         """
         Purpose:
@@ -401,8 +413,8 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             dynamic: bool,
-            conduit_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+            conduit_name: str | None = None,
+    ) -> dict[str, Any]:
         """
         Build the cache-state summary used by conjure cache orchestration.
 
@@ -441,8 +453,8 @@ class SpellbookCreationSystem(Cleanable):
             for spell_id, spell in spellbook._spell_id_pool.items()
             if not spell.is_existing_creation
         }
-        caching_system: Optional[CachingSystem] = None
-        cached_spell_ids: Set[str] = set()
+        caching_system: CachingSystem | None = None
+        cached_spell_ids: set[str] = set()
         if caching_enabled:
             caching_system = spellbook._get_or_create_caching_system(
                 conduit_name=conduit_name,
@@ -508,9 +520,9 @@ class SpellbookCreationSystem(Cleanable):
     def _load_cached_spell_payloads_for_conjure(
             *,
             spellbook: Spellbook,
-            caching_system: "CachingSystem",
+            caching_system: CachingSystem,
             spell_ids: Iterable[str],
-    ) -> Set[str]:
+    ) -> set[str]:
         """
         Load cached spell payloads into live spells for the conjure path.
 
@@ -537,7 +549,7 @@ class SpellbookCreationSystem(Cleanable):
             Set[str]:
                 Spell ids successfully loaded from cache.
         """
-        loaded_spell_ids: Set[str] = set()
+        loaded_spell_ids: set[str] = set()
         requested_spell_ids = set(spell_ids)
         matched_spell_ids = requested_spell_ids.intersection(
             spellbook._spell_id_pool.keys(),
@@ -689,7 +701,7 @@ class SpellbookCreationSystem(Cleanable):
         if overrides_payload is None:
             def execute_with_overrides(
                     caller_creations: Any,
-                    overrides: Optional[dict[str, Any]],
+                    overrides: dict[str, Any] | None,
                     caller_creations_lock_held: bool = False,
             ) -> Any:
                 _ = caller_creations
@@ -706,7 +718,7 @@ class SpellbookCreationSystem(Cleanable):
 
             def execute_with_overrides(
                     caller_creations: Any,
-                    overrides: Optional[dict[str, Any]],
+                    overrides: dict[str, Any] | None,
                     caller_creations_lock_held: bool = False,
             ) -> Any:
                 override_runtime = _override_runtime_cell[0]
@@ -774,7 +786,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             spell_ids: Iterable[str],
-    ) -> Set[str]:
+    ) -> set[str]:
         """
         Emit current spell payloads through the Spellbook-owned cache path.
 
@@ -810,7 +822,7 @@ class SpellbookCreationSystem(Cleanable):
     def _resolve_conjure_policy(
             *,
             spellbook: Spellbook,
-            policy: Optional[str],
+            policy: str | None,
             dynamic: bool,
     ) -> Policies:
         """
@@ -845,12 +857,12 @@ class SpellbookCreationSystem(Cleanable):
     def _build_conduit(
             *,
             spellbook: Spellbook,
-            name: Optional[str],
-            conduit_logger: Optional[Any],
+            name: str | None,
+            conduit_logger: Any | None,
             dynamic: bool,
             policy: Policies,
             conduit_id: str,
-            creation_gate_controller: "CreationGateController",
+            creation_gate_controller: CreationGateController,
             aetheric_frame: AethericFrame,
     ) -> Conduit:
         """
@@ -896,7 +908,7 @@ class SpellbookCreationSystem(Cleanable):
     def _resolve_frame_creation_gate_controller(
             *,
             spellbook: Spellbook,
-    ) -> "CreationGateController":
+    ) -> CreationGateController:
         """
         Purpose:
             Resolve the frame-owned CreationGateController required for root
@@ -944,8 +956,8 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             conduit: Conduit,
-            hook_map: Optional[Mapping[str, List[Callable]]],
-            cache_state: Optional[Dict[str, Any]] = None,
+            hook_map: Mapping[str, list[Callable]] | None,
+            cache_state: dict[str, Any] | None = None,
     ) -> None:
         """
         Purpose:
@@ -1009,7 +1021,7 @@ class SpellbookCreationSystem(Cleanable):
     def _load_cached_creation_contexts_for_conjure(
             *,
             spellbook: Spellbook,
-            cache_state: Dict[str, Any],
+            cache_state: dict[str, Any],
     ) -> None:
         """
         Load both-lane CreationContexts from cache for a full-hit conjure.
@@ -1048,7 +1060,7 @@ class SpellbookCreationSystem(Cleanable):
     def _stage_spell_payloads_at_conjure_end(
             *,
             spellbook: Spellbook,
-            cache_state: Dict[str, Any],
+            cache_state: dict[str, Any],
     ) -> None:
         """
         Stage cache payloads for spells the conduit cache is missing.
@@ -1228,7 +1240,7 @@ class SpellbookCreationSystem(Cleanable):
                     )
 
     @staticmethod
-    def get_conjure_hook_map(spellbook: Spellbook) -> Optional[Mapping[str, List[Callable]]]:
+    def get_conjure_hook_map(spellbook: Spellbook) -> Mapping[str, list[Callable]] | None:
         """
         Purpose:
             Fetch registered conduit lifecycle hooks for the Spellbook id.
@@ -1267,7 +1279,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def fire_conjure_hooks(
             spellbook: Spellbook,
-            hook_map: Optional[Mapping[str, List[Callable]]],
+            hook_map: Mapping[str, list[Callable]] | None,
             hook_name: str,
             *args: Any,
     ) -> None:
@@ -1307,8 +1319,8 @@ class SpellbookCreationSystem(Cleanable):
     def run_resolution_phases(
             spellbook: Spellbook,
             conduit_id: str,
-            phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run structural phases followed by conduit-scoped resolution phases.
@@ -1327,7 +1339,7 @@ class SpellbookCreationSystem(Cleanable):
         spellbook.check_cleaned()
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
-        results: Dict[str, Sequence[UnitOfWork]] = {}
+        results: dict[str, Sequence[UnitOfWork]] = {}
         results.update(
             SpellbookCreationSystem.run_structural_phases(
                 spellbook=spellbook,
@@ -1346,8 +1358,8 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def run_structural_phases(
             spellbook: Spellbook,
-            phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run structural phase pipeline (requirements/symbolic/local/validation).
@@ -1464,10 +1476,10 @@ class SpellbookCreationSystem(Cleanable):
     def run_resolution_phases_for_conduit(
             spellbook: Spellbook,
             conduit_id: str,
-            phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
             *,
-            force_skip_plan_phases: Optional[bool] = None,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            force_skip_plan_phases: bool | None = None,
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run conduit-scoped resolution phases for a single conduit id.
@@ -1494,7 +1506,7 @@ class SpellbookCreationSystem(Cleanable):
             raise ValueError("conduit_id must not be empty.")
 
         resolved_skip_plan_phases = bool(force_skip_plan_phases)
-        plan_skip_state: List[Optional[bool]] = [None]
+        plan_skip_state: list[bool | None] = [None]
         compiler_system = SpellCompilerSystem()
         try:
             results = SpellbookCreationSystem._run_scheduler_with_phases(
@@ -1530,8 +1542,8 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Spellbook,
             conduit_id: str,
             target_spell: Spell,
-            phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local resolution phases for one spell within a conduit scope.
@@ -1557,7 +1569,7 @@ class SpellbookCreationSystem(Cleanable):
         if target_spell is None:
             raise ValueError("target_spell must not be None.")
 
-        results: Dict[str, Sequence[UnitOfWork]] = {}
+        results: dict[str, Sequence[UnitOfWork]] = {}
         target_spell_id = target_spell.spell_id
 
         results.update(
@@ -1626,8 +1638,8 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Spellbook,
             conduit_id: str,
             target_spell: Spell,
-            phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler] = PhaseScheduler,
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local deferred plan phases (8/9/10/11) for one spell.
@@ -1699,7 +1711,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             compiler_system: SpellCompilerSystem,
             conduit_id: str,
-            plan_skip_state: List[Optional[bool]],
+            plan_skip_state: list[bool | None],
             force_skip_plan_phases: bool = False,
     ) -> None:
         """
@@ -1776,7 +1788,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _new_phase_scheduler(
             spellbook: Spellbook,
-            phase_scheduler_cls: Type[PhaseScheduler],
+            phase_scheduler_cls: type[PhaseScheduler],
     ) -> PhaseScheduler:
         """
         Purpose:
@@ -1840,10 +1852,10 @@ class SpellbookCreationSystem(Cleanable):
     def _run_scheduler_with_phases(
             *,
             spellbook: Spellbook,
-            phase_scheduler_cls: Type[PhaseScheduler],
+            phase_scheduler_cls: type[PhaseScheduler],
             context_name: str,
             register_phases: Callable[[PhaseScheduler], None],
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run a scheduler lifecycle from phase registration through execution.
@@ -1925,7 +1937,7 @@ class SpellbookCreationSystem(Cleanable):
         )
 
     @staticmethod
-    def _collect_broken_spells(spells: Iterable[Spell]) -> List[Spell]:
+    def _collect_broken_spells(spells: Iterable[Spell]) -> list[Spell]:
         """
         Purpose:
             Collect spells that resolve as broken from a spell sequence.
@@ -1936,7 +1948,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             List[Spell]: Spells considered broken.
         """
-        broken_spells: List[Spell] = []
+        broken_spells: list[Spell] = []
         for spell in spells:
             try:
                 if spell.is_broken:
@@ -1949,7 +1961,7 @@ class SpellbookCreationSystem(Cleanable):
     def _raise_structural_validation_error(
             *,
             spellbook: Spellbook,
-            broken_spells: List[Spell],
+            broken_spells: list[Spell],
             context_name: str,
             message_prefix: str,
     ) -> None:
@@ -2007,8 +2019,8 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             conduit_id: str,
-            phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler],
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run foundational conduit resolution phases (5/6/7).
@@ -2046,8 +2058,8 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             conduit_id: str,
-            phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler],
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run conduit plan compilation phases (8/9/10/11).
@@ -2087,7 +2099,7 @@ class SpellbookCreationSystem(Cleanable):
             phase_name: str,
             target_spell_id: str,
             phase_func: Callable[..., Any],
-            args: Tuple[Any, ...],
+            args: tuple[Any, ...],
     ) -> None:
         """
         Purpose:
@@ -2126,8 +2138,8 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: str,
             target_spell: Spell,
             target_spell_id: str,
-            phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler],
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local foundational phases (root/system/change-control).
@@ -2183,7 +2195,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             target_spell: Spell,
             target_spell_id: str,
-    ) -> Tuple[Set[str], Collection[str]]:
+    ) -> tuple[set[str], Collection[str]]:
         """
         Purpose:
             Derive local spell/root scope used for cleanup and diagnostics.
@@ -2199,7 +2211,7 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates crafter/index access failures from target spell.
         """
-        scoped_spell_ids: Set[str] = {target_spell_id}
+        scoped_spell_ids: set[str] = {target_spell_id}
         system_index = target_spell._compiler_artifact._spell_system_index_phase5
         if system_index is not None:
             scoped_spell_ids.update(system_index.nodes.keys())
@@ -2220,8 +2232,8 @@ class SpellbookCreationSystem(Cleanable):
             conduit_id: str,
             target_spell: Spell,
             target_spell_id: str,
-            phase_scheduler_cls: Type[PhaseScheduler],
-    ) -> Dict[str, Sequence[UnitOfWork]]:
+            phase_scheduler_cls: type[PhaseScheduler],
+    ) -> dict[str, Sequence[UnitOfWork]]:
         """
         Purpose:
             Run target-local plan phases (occurrence/injection/patch/execution).
@@ -2282,7 +2294,7 @@ class SpellbookCreationSystem(Cleanable):
             compiler_system.cleanup()
 
     @staticmethod
-    def _extract_missing_dependency_ids(exc: PhaseExecutionError) -> List[str]:
+    def _extract_missing_dependency_ids(exc: PhaseExecutionError) -> list[str]:
         """
         Purpose:
             Extract missing dependency ids from PhaseExecutionError KeyError entries.
@@ -2294,7 +2306,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             List[str]: Missing dependency ids referenced by local plan execution.
         """
-        missing_dependency_ids: List[str] = []
+        missing_dependency_ids: list[str] = []
         for error in exc.errors:
             if not isinstance(error, KeyError):
                 continue
@@ -2329,8 +2341,8 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates state/diagnostic write failures.
         """
-        diagnostics: List[SystemDiagnostic] = []
-        seen_missing_ids: Set[str] = set()
+        diagnostics: list[SystemDiagnostic] = []
+        seen_missing_ids: set[str] = set()
         for missing_dependency_id in missing_dependency_ids:
             if missing_dependency_id in seen_missing_ids:
                 continue
@@ -2368,7 +2380,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def cleanup_phase_artifacts_after_resolution(
             spellbook: Spellbook,
-            spell_ids: Optional[Collection[str]] = None,
+            spell_ids: Collection[str] | None = None,
     ) -> None:
         """
         Purpose:
@@ -2413,7 +2425,7 @@ class SpellbookCreationSystem(Cleanable):
             compiler_system: SpellCompilerSystem,
             phase_name: str,
             phase_callable_attr: str,
-            args_factory: Callable[[Spell, Any], Tuple[Any, ...]],
+            args_factory: Callable[[Spell, Any], tuple[Any, ...]],
     ) -> Sequence[UnitOfWork]:
         """
         Purpose:
@@ -2460,9 +2472,9 @@ class SpellbookCreationSystem(Cleanable):
 
     @staticmethod
     def _chunk_spells(
-            spells: List[Spell],
+            spells: list[Spell],
             chunk_count: int,
-    ) -> List[Tuple[Spell, ...]]:
+    ) -> list[tuple[Spell, ...]]:
         """
         Purpose:
             Partition a spell batch into at most `chunk_count` contiguous
@@ -2479,7 +2491,7 @@ class SpellbookCreationSystem(Cleanable):
         total = len(spells)
         effective = min(chunk_count, total)
         base_size, remainder = divmod(total, effective)
-        chunks: List[Tuple[Spell, ...]] = []
+        chunks: list[tuple[Spell, ...]] = []
         start = 0
         for index in range(effective):
             size = base_size + (1 if index < remainder else 0)
@@ -2490,7 +2502,7 @@ class SpellbookCreationSystem(Cleanable):
     @staticmethod
     def _run_spell_chunk(
             spell_runner: Callable[[Spell], None],
-            chunk: Tuple[Spell, ...],
+            chunk: tuple[Spell, ...],
             cancel_event: Any,
             phase_name: str,
     ) -> None:
@@ -2530,7 +2542,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             scheduler: PhaseScheduler,
             phase_name: str,
-            spells: List[Spell],
+            spells: list[Spell],
             spell_runner: Callable[[Spell], None],
             chunk_multiplier: int = 1,
     ) -> Sequence[UnitOfWork]:
@@ -2579,7 +2591,7 @@ class SpellbookCreationSystem(Cleanable):
             spells,
             workers * effective_multiplier,
         )
-        units: List[UnitOfWork] = []
+        units: list[UnitOfWork] = []
         for index, chunk in enumerate(chunks):
             units.append(
                 create_unit_of_work(
@@ -2766,7 +2778,7 @@ class SpellbookCreationSystem(Cleanable):
         # candidate index over the live spell pool is built once and reused
         # by all per-spell resolutions (same lifetime contract as the
         # phase-4 `validation_pass_cache` below: dies with the units).
-        resolution_pass_cache: Dict[str, Any] = {}
+        resolution_pass_cache: dict[str, Any] = {}
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
@@ -2806,7 +2818,7 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
-        validation_pass_cache: Dict[str, Any] = {}
+        validation_pass_cache: dict[str, Any] = {}
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
@@ -2901,8 +2913,8 @@ class SpellbookCreationSystem(Cleanable):
         # full-pool spell walk and the graph-wide shape rows are built once
         # and reused by all per-spell analyses (same lifetime contract as
         # the phase-3/phase-4 pass caches: dies with the units).
-        analysis_pass_cache: Dict[str, Any] = {}
-        units: List[UnitOfWork] = []
+        analysis_pass_cache: dict[str, Any] = {}
+        units: list[UnitOfWork] = []
         for spell in eligible_spells:
             spell_id = spell.spell_id
             units.append(
@@ -2952,7 +2964,7 @@ class SpellbookCreationSystem(Cleanable):
 
         create_unit_of_work = scheduler.create_unit_of_work
         phase_func = compiler_system.run_phase_injection_plan
-        units: List[UnitOfWork] = []
+        units: list[UnitOfWork] = []
         for spell in eligible_spells:
             spell_id = spell.spell_id
             units.append(
@@ -3002,7 +3014,7 @@ class SpellbookCreationSystem(Cleanable):
 
         create_unit_of_work = scheduler.create_unit_of_work
         phase_func = compiler_system.run_phase_patch_maps
-        units: List[UnitOfWork] = []
+        units: list[UnitOfWork] = []
         for spell in eligible_spells:
             spell_id = spell.spell_id
             units.append(
@@ -3052,7 +3064,7 @@ class SpellbookCreationSystem(Cleanable):
 
         create_unit_of_work = scheduler.create_unit_of_work
         phase_func = compiler_system.run_phase_execution_plan
-        units: List[UnitOfWork] = []
+        units: list[UnitOfWork] = []
         for spell in eligible_spells:
             spell_id = spell.spell_id
             units.append(
@@ -3122,7 +3134,7 @@ class SpellbookCreationSystem(Cleanable):
 
         # Pass-scoped memo shared by every fused plan-group chunk in this
         # pass (see `phase_occurrence_plan_factory` for the contract).
-        analysis_pass_cache: Dict[str, Any] = {}
+        analysis_pass_cache: dict[str, Any] = {}
 
         def _spell_runner(spell: Spell) -> None:
             run_occurrence(spellbook, spell, analysis_pass_cache)
