@@ -940,20 +940,22 @@ def _frame(name: str):
     return book
 
 
-def test_probe_a_frame_needs_a_bind_before_a_rift_can_target_it():
-    """Lessons 29/30/32/33 claim: a rift connects INTO an object world,
-    so the world must be inhabited first.
+def test_probe_an_empty_conjured_frame_is_linkable():
+    """Lessons 29/30/32/33 claim: AN EMPTY FRAME IS A REAL FRAME.
 
-    This is semantics, not sequencing. `configure_aether_frame` declares
-    the frame's LAW and puts nothing in it. The Nexus answers "what is in
-    this frame, and who is where" from a descriptor it assembles out of
-    frame, conduit and spell records - out of CONTENTS - and a room
-    projection targets that descriptor. An empty frame has nothing to
-    describe and nothing to project, so `create_frame_link` refuses.
+    `configure_aether_frame` declares the frame's LAW and realizes
+    nothing. `conjure` gives the frame a root conduit, and THAT is what
+    publishes it to the Nexus - `_publish_nexus_state_for_conjure`
+    publishes the frame and conduit records and then loops
+    `self._spells.values()`, which iterates nothing when nothing is bound.
+    The publish gate itself (`_refresh_nexus_publish_enabled`) reads
+    `rift_enabled` and NOTHING else.
 
-    The probe drives the refusal on an uninhabited frame, then binds and
-    conjures, then links successfully."""
-    frame_name = "probe-descriptor-frame"
+    So spells are cargo, not a precondition. This probe conjures a frame
+    with ZERO spells bound and links a rift to it, then binds afterwards
+    to show late arrivals publish incrementally. It also pins the negative
+    half: before the conjure there is nothing to target."""
+    frame_name = "probe-empty-frame"
     book = _frame(frame_name)
 
     nexus = Nexus()
@@ -963,22 +965,27 @@ def test_probe_a_frame_needs_a_bind_before_a_rift_can_target_it():
     nexus.activate(config)
     rift_config = nexus.create_rift_configuration()
     rift_config.with_space_type("codegen")
-    rift = nexus.create_rift(configuration=rift_config, rift_name="probe-desc")
+    rift = nexus.create_rift(configuration=rift_config, rift_name="probe-empty")
     rift.mark_active()
 
+    # UNREALIZED: declared law, no root conduit, nothing to target yet.
     with pytest.raises(ValueError) as refusal:
         rift.create_frame_link(frame_name)
     assert "descriptor" in str(refusal.value), str(refusal.value)
 
-    class Seed:
-        def __init__(self) -> None:
-            self.ok = True
-
-    book.bind(spell=Seed, existence="unique", permissions="create",
-              binding_name="probe-desc-seed")
-    book.conjure(name="probe-desc-root")
+    # CONJURE WITH ZERO SPELLS BOUND - this is the whole claim.
+    book.conjure(name="probe-empty-root")
     rift.create_frame_link(frame_name)
-    print("descriptor order pinned: refused before the bind, accepted after")
+    print("empty frame pinned: conjured with no spells, linked fine")
+
+    # Late arrivals publish incrementally into the already-live frame.
+    class LateArrival:
+        def __init__(self) -> None:
+            self.late = True
+
+    book.bind(spell=LateArrival, existence="unique", permissions="create",
+              binding_name="probe-late")
+    print("late bind pinned: spells are cargo, not a precondition")
 
 
 def test_probe_two_visible_spells_may_not_share_a_name():

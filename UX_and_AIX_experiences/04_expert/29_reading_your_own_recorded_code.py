@@ -89,27 +89,6 @@ def quote(units: int) -> int:
 '''
 
 
-class PricingSeed:
-    """The world's first inhabitant.
-
-    A RIFT IS A CONNECTION INTO AN OBJECT WORLD, so the world has to
-    exist before you can connect to it. `configure_aether_frame` declares
-    the frame's LAW - posture, permissions, whether rifts are allowed at
-    all - but it puts NOTHING in it. The Nexus answers "what is in this
-    frame, and who is where" from a frame DESCRIPTOR it assembles out of
-    frame, conduit and spell records: out of CONTENTS. A room projection
-    targets that descriptor.
-
-    So an uninhabited frame has nothing to describe and nothing to
-    project, and linking a rift to one is putting a window on an empty
-    site. This bind and the conjure after it are not a formality to
-    satisfy a check - they are what brings the world into being.
-    """
-
-    def __init__(self) -> None:
-        self.rate = 0
-
-
 def _show(label: str, value: object) -> None:
     """Print a read's shape without pretending to know its schema."""
     if isinstance(value, dict):
@@ -142,11 +121,13 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    # INHABIT THE WORLD BEFORE CONNECTING TO IT (see PricingSeed). The
-    # frame's LAW is already declared; this is what puts something IN it.
-    # It also opens the lineage the two generated versions will extend.
-    seed = book.bind(spell=PricingSeed, existence="unique",
-                     permissions="create", binding_name="well-pricing")
+    # AN EMPTY FRAME IS A REAL FRAME. `configure_aether_frame` declares the
+    # frame's LAW; `conjure` REALIZES it by giving it a root conduit, and
+    # that realization is what publishes it to the Nexus. Publication is
+    # gated on `rift_enabled` ALONE - the spell loop it runs iterates
+    # whatever the book holds, including nothing. So the frame below is
+    # conjured EMPTY and is immediately linkable; spells are cargo, not a
+    # precondition, and everything bound after this arrives incrementally.
     conduit = book.conjure(name="well-root")
 
     nexus = md.Nexus()
@@ -174,12 +155,17 @@ def main() -> None:
     second = importlib.import_module(MODULE_V2)
 
     # TWO VERSIONS ON ONE LINEAGE, FROM TWO MODULE WORLDS - which is what
-    # gives the comparison below two genuinely different sides.
-    index = conduit.get_spell_by_id(seed).spell_index
-    v1 = conduit.bind_inactive(spell=first.Pricing, spell_index=index,
-                               existence="unique", permissions="create")
-    v2 = conduit.bind_inactive(spell=second.Pricing, spell_index=index,
-                               existence="unique", permissions="create")
+    # gives the comparison below two genuinely different sides. The first
+    # bind lands in the already-conjured frame and publishes incrementally;
+    # the second rides its spell_index as a VERSION rather than a second
+    # visible spell, which is why two classes named `Pricing` never collide.
+    v1 = book.bind(spell=first.Pricing, existence="unique",
+                   permissions="create", binding_name="well-pricing")
+    v2 = conduit.bind_inactive(
+        spell=second.Pricing,
+        spell_index=conduit.get_spell_by_id(v1).spell_index,
+        existence="unique", permissions="create",
+    )
     module_name = MODULE_V1
     print("two versions recorded:", v1[:12], "and", v2[:12])
     print("v1 module:", MODULE_V1, "| v2 module:", MODULE_V2)

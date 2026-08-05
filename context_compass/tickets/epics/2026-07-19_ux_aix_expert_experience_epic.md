@@ -1078,6 +1078,109 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-08-05T02:15:00Z
+  TYPE: FACT
+  CLAIM: I CALLED IT A GAP AND AN "UNSTATED ORDERING LAW". IT IS NEITHER, AND
+    THE OWNER CAUGHT IT: "you can't just create a rift before there's anything
+    in it right? what's in your rift if there's nothing in it". Correct, and
+    this note SUPERSEDES my 2026-08-04T23:40 framing.
+    WHAT I HAD WRITTEN: "a frame only acquires its Nexus descriptor once
+    something has bound into it" - mechanically true, and it describes the
+    TRIGGER while completely missing the MEANING. Framed that way the seed bind
+    reads as a workaround for a lazy-initialisation quirk.
+    WHAT THE CODE ACTUALLY SAYS, read after the push:
+    A RIFT IS "ONE LIVE CONNECTION INTO MELDER'S OBJECT WORLD" (rift.py) and it
+    "does not eagerly realize Nexus frames during creation - defers
+    target-frame selection to later explicit linking". THE DESCRIPTOR IS THE
+    INVENTORY: the Nexus keeps one per frame "so it can answer WHAT IS IN THIS
+    FRAME, AND WHO IS WHERE without walking the live runtime graph each time",
+    assembled from FrameRecord / ConduitRecord / SpellRecord plus secondary
+    indexes - i.e. out of CONTENTS - and it "is what a room projection targets
+    by frame". `_publish_frame_overview` builds that record by reading
+    `frame._conduits` on a "newly REALIZED" frame.
+    SO THE REFUSAL IS SEMANTICS, NOT SEQUENCING. `configure_aether_frame`
+    declares the frame's LAW - posture, permissions, rift_enabled - and puts
+    NOTHING in it. An uninhabited frame has no contents, therefore no
+    inventory, therefore nothing for a room to project. Linking a rift to it is
+    putting a window on an empty site. The bind and conjure are not a formality
+    that satisfies a validator; THEY ARE WHAT BRINGS THE WORLD INTO BEING.
+    FIXED IN ALL SIX PLACES I had written the mechanism: the seed docstrings in
+    29, 30 and 32, the inline comment in 33, and the new probe's docstring. The
+    seed classes are now documented as "the world's first inhabitant" rather
+    than as an ordering workaround.
+    THE LESSON ABOUT ME, and it is the same one as the ConduitCloud and
+    part_view misses: I explained a refusal from the stack trace that produced
+    it instead of from the object whose behaviour it was. A traceback tells you
+    WHERE something refused. It never tells you WHY that refusal is correct,
+    and shipping the WHERE as though it were the WHY is how a curriculum ends
+    up teaching mechanism as folklore.
+  EVIDENCE:
+    - src/melder/nexus/rift/rift.py (class docstring: connection INTO the
+      object world; does not eagerly realize frames)
+    - src/melder/nexus/frame_descriptor/frame_descriptor.py (System Context:
+      "what is in this frame, and who is where"; owns the derived records)
+    - src/melder/nexus/nexus_frame_manager.py:790-822, 823-880
+  IMPACT: Four lessons and one probe now teach why a rift needs an inhabited
+    world, instead of teaching a call-order superstition.
+  NEXT: none. Supersedes the ordering-law framing in the 23:40 note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 6
+
+- DATETIME: 2026-08-05T03:05:00Z
+  TYPE: FACT
+  CLAIM: WRONG TWICE ON THE SAME REFUSAL, AND THE OWNER WAS RIGHT BOTH TIMES.
+    This SUPERSEDES both the 23:40 "ordering law" note and the 02:15
+    "inhabited world" correction. The owner: "you should be able to create an
+    empty frame and initialize it and use it without any active spells." Yes.
+    ATTEMPT 1 said: a frame needs a BIND before a rift can target it. Wrong -
+    described the trigger I happened to trip over.
+    ATTEMPT 2 said: a rift needs an INHABITED world, spells are what bring it
+    into being. Also wrong, and worse, because it sounded principled.
+    WHAT THE CODE ACTUALLY SAYS, found only after being told to read the LINK
+    path instead of the descriptor helper:
+    `Spellbook._publish_nexus_state_for_conjure(conduit)` - "Publish the
+    frame/root-conduit spell state into Nexus AFTER SUCCESSFUL CONJURE WIRING"
+    - calls `_publish_frame_record(self)` then `_publish_conduit_record()` then
+    loops `for spell in self._spells.values()`. THAT LOOP ITERATES NOTHING WHEN
+    NOTHING IS BOUND, and the frame and conduit records are already published
+    before it runs. The gate is `_refresh_nexus_publish_enabled()`, which reads
+    `frame_configuration.rift_enabled` AND NOTHING ELSE - no spell term.
+    And the bind path proves the direction: `_publish_spell_record_to_nexus`
+    opens `if not self._conjured or self._conduit is None: return`. A bind
+    before conjure publishes NOTHING. My "seed bind" was doing nothing except
+    sitting in `_spells` until the conjure ran.
+    CONFIRMED INDEPENDENTLY by the Nexus-managed path: `create_nexus_frame_for
+    _rift` realizes a frame with just a root conduit and runs
+    `_ensure_descriptor_and_acl` on it - zero spells - and its `immutable` flag
+    exists precisely so a frame can "survive ZERO ATTACHMENTS".
+    THE LAW, FINALLY: `configure_aether_frame` declares the frame's LAW.
+    `conjure` REALIZES it by giving it a root conduit, and that realization
+    publishes it. An EMPTY CONJURED FRAME IS A REAL, LINKABLE FRAME. Spells are
+    cargo that arrives incrementally, not a precondition.
+    THE FIX MADE THE LESSONS SMALLER, which is the tell that it is right: three
+    seed CLASSES deleted outright (29, 30, 32), 33's disk bind moved after the
+    link where it belongs. All four now conjure EMPTY, link, then bind - which
+    demonstrates the law instead of hiding it behind a prop. 29 no longer needs
+    a seed for its lineage either: it binds v1 and rides v1's own spell_index.
+    THE PROBE NOW PROVES THE OWNER'S CLAIM rather than my wrong one:
+    `test_probe_an_empty_conjured_frame_is_linkable` drives the refusal BEFORE
+    conjure, conjures with zero spells, links successfully, then binds late.
+    WHAT I KEEP DOING: reaching for the first mechanism the traceback exposes
+    and promoting it to a principle. Twice here the real answer was one level
+    up, in the verb the owner named. "Read nexus and link frame, not get frame
+    descriptor" was the whole correction, and I needed to be told it.
+  EVIDENCE:
+    - src/melder/aether/spellbook/spellbook.py:5905-5928, 5930-5950
+    - src/melder/aether/spellbook/spellbook.py (_refresh_nexus_publish_enabled)
+    - src/melder/nexus/rift/rift.py:472-527 (the link path in full)
+    - src/melder/nexus/nexus.py:2769-2821 (create_nexus_frame_for_rift)
+    - src/melder/nexus/nexus_frame_manager.py:790-822
+  IMPACT: Four lessons teach a true and simpler law, three props deleted, and
+    the empty-frame claim is pinned by a probe.
+  NEXT: OWNER RERUN - 29, 30, 32, 33 (all restructured) and the 5 probes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 4
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

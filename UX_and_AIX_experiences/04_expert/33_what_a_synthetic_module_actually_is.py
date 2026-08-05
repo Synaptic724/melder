@@ -120,15 +120,13 @@ def main() -> None:
         ai_native=True,
     )
 
-    # INHABIT THE WORLD BEFORE CONNECTING TO IT. A rift is a connection
-    # INTO an object world; `configure_aether_frame` declared this frame's
-    # LAW but put nothing in it, and the Nexus builds its "what is in this
-    # frame" descriptor out of frame, conduit and spell records - out of
-    # CONTENTS. An empty frame has nothing to project.
-    # The file-backed spell needs no codegen, so it can be the first
-    # inhabitant; the synthetic one has to wait for the room to exist.
-    disk_spell = book.bind(spell=DiskUnit, existence="unique",
-                           permissions="create", binding_name="custody-disk")
+    # AN EMPTY FRAME IS A REAL FRAME. `configure_aether_frame` declares the
+    # frame's LAW; `conjure` REALIZES it by giving it a root conduit, and
+    # that realization is what publishes it to the Nexus. Publication is
+    # gated on `rift_enabled` ALONE - the spell loop it runs iterates
+    # whatever the book holds, including nothing. So the frame below is
+    # conjured EMPTY and is immediately linkable; spells are cargo, not a
+    # precondition, and everything bound after this arrives incrementally.
     book.conjure(name="custody-root")
 
     nexus = md.Nexus()
@@ -160,10 +158,13 @@ def main() -> None:
     print("  imported and executed: Unit().describe() ->",
           generated.Unit().describe())
 
-    # TWO BINDS, TWO AUTHORITY CLASSES, ONE VERB.
+    # TWO BINDS, TWO AUTHORITY CLASSES, ONE VERB - both landing in a frame
+    # that was already live and empty before either existed.
     synthetic_spell = book.bind(spell=generated.Unit, existence="unique",
                                 permissions="create",
                                 binding_name="custody-synthetic")
+    disk_spell = book.bind(spell=DiskUnit, existence="unique",
+                           permissions="create", binding_name="custody-disk")
     print()
     print("bound BOTH with the same verb:")
     print("  synthetic root:", synthetic_spell[:12])

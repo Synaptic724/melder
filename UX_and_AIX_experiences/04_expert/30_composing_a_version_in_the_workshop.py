@@ -109,27 +109,6 @@ def render_footer() -> str:
 '''
 
 
-class WorkshopSeed:
-    """The world's first inhabitant.
-
-    A RIFT IS A CONNECTION INTO AN OBJECT WORLD, so the world has to
-    exist before you can connect to it. `configure_aether_frame` declares
-    the frame's LAW - posture, permissions, whether rifts are allowed at
-    all - but it puts NOTHING in it. The Nexus answers "what is in this
-    frame, and who is where" from a frame DESCRIPTOR it assembles out of
-    frame, conduit and spell records: out of CONTENTS. A room projection
-    targets that descriptor.
-
-    So an uninhabited frame has nothing to describe and nothing to
-    project, and linking a rift to one is putting a window on an empty
-    site. This bind and the conjure after it are not a formality to
-    satisfy a check - they are what brings the world into being.
-    """
-
-    def __init__(self) -> None:
-        self.title = "seed"
-
-
 def _show(label: str, value: object) -> None:
     if isinstance(value, dict):
         print("  %-24s -> dict, keys: %s" % (label, sorted(value)[:5]))
@@ -162,10 +141,13 @@ def main() -> None:
         ai_native=True,
     )
 
-    # INHABIT THE WORLD BEFORE CONNECTING TO IT (see WorkshopSeed). The
-    # frame's law is declared; this is what puts something in it.
-    book.bind(spell=WorkshopSeed, existence="unique", permissions="create",
-              binding_name="workshop-seed")
+    # AN EMPTY FRAME IS A REAL FRAME. `configure_aether_frame` declares the
+    # frame's LAW; `conjure` REALIZES it by giving it a root conduit, and
+    # that realization is what publishes it to the Nexus. Publication is
+    # gated on `rift_enabled` ALONE - the spell loop it runs iterates
+    # whatever the book holds, including nothing. So the frame below is
+    # conjured EMPTY and is immediately linkable; spells are cargo, not a
+    # precondition, and everything bound after this arrives incrementally.
     book.conjure(name="workshop-root")
 
     nexus = md.Nexus()
