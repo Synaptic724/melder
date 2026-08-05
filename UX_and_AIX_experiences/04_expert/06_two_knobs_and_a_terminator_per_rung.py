@@ -42,16 +42,39 @@ GOAL: THE LAST TWO PUBLIC NAMES, and what they say about the whole
       AetherConfigurationBuilder makes you.
 
       THE LADDER, ONE LAST TIME (and this is the fourth subsystem):
-        Aether            caller activates the config   (advanced 07)
-        Crystallizer      caller activates the config   (advanced 17)
-        MutationResearch  caller activates the config   (here)
-        Nexus             enable() does it FOR you      (advanced 08)
+        Aether            caller activates the config     (advanced 07)
+        Crystallizer      caller activates the config     (advanced 17)
+        MutationResearch  caller activates the config     (here)
+        Nexus             activate() finalizes it FOR you (advanced 08)
       Three to one. Caller-driven activation is the house rule and Nexus
       is the exception - which is worth knowing before you meet a fifth
       subsystem and have to guess.
+
+      AND THE FOURTH ROOT HAS CAUGHT UP. Nexus was once the one root of
+      four with NO builder at all - its callers built the configuration
+      by hand while every other root handed one over. It now carries the
+      same three exits, so the generosity table above is no longer
+      lopsided. What has NOT changed is the two-bits rule: the builder's
+      `activate()` marks the CONFIGURATION active, and you must still
+      pass it to `Nexus.activate(...)`. Two objects, two bits.
+
+      THE EXITS ARE ONE-SHOT, WHICH IS THE POINT OF A BUILDER.
+      Each exit TRANSFERS OWNERSHIP and consumes the builder; a second
+      exit raises. That is what makes a builder different from a config
+      you keep poking - there is exactly one owner at each step, and the
+      handoff is the moment ownership moves.
+
+      AND `build()` EARNS ITS PLACE ON THIS ROOT. The builder mirrors
+      only the one knob almost everyone sets; the configuration carries a
+      far wider `with_*` surface (frame allow/deny lists, tokens, nested
+      rift policy). `build()` is the exit that hands you back something
+      still MUTABLE so you can reach the rest. A frozen-only builder
+      would have made the wide surface unreachable through it.
 SURFACE EXERCISED: md.MutationResearchConfiguration,
-                   md.MutationResearchConfigurationBuilder
-VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
+                   md.MutationResearchConfigurationBuilder,
+                   md.NexusConfiguration, md.NexusConfigurationBuilder
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness; the Nexus
+        builder section added 2026-08-04 and not yet run.
 """
 import melder as md
 
@@ -104,6 +127,47 @@ def main() -> None:
     print()
     print("AetherConfigurationBuilder offers build() only - rung 2 is yours")
     print("same pattern, different generosity. that divergence is real.")
+
+    # THE FOURTH ROOT CAUGHT UP. Nexus once had no builder at all; it now
+    # carries the same three exits as the two most generous shapes above.
+    for terminator in ("build", "finalize", "activate"):
+        assert hasattr(md.NexusConfigurationBuilder, terminator), terminator
+    print()
+    print("NexusConfigurationBuilder: build / finalize / activate")
+    print("  the root that once had NO builder now matches the table")
+
+    # BUILD() HANDS BACK SOMETHING STILL MUTABLE - and on this root that
+    # is the whole reason it exists. The builder mirrors one knob; the
+    # configuration carries the wide surface, so you need a mutable exit.
+    assert hasattr(md.NexusConfigurationBuilder, "with_rift_creation_enabled")
+    assert not hasattr(md.NexusConfigurationBuilder,
+                       "with_allowed_target_frame_names")
+    assert hasattr(md.NexusConfiguration, "with_allowed_target_frame_names")
+    print("  builder mirrors with_rift_creation_enabled, NOT the frame lists")
+    print("  -> build() is the exit that keeps the wide surface reachable")
+
+    builder = md.NexusConfigurationBuilder()
+    builder.with_defaults().with_rift_creation_enabled(True)
+    handed_over = builder.build()
+    assert isinstance(handed_over, md.NexusConfiguration)
+    assert handed_over.frozen is False, "build() hands back a MUTABLE config"
+    handed_over.with_allowed_target_frame_names(["some-frame"])
+    print("  build() -> mutable, and the wide surface still applies")
+
+    # ONE-SHOT: the exit TRANSFERS OWNERSHIP and consumes the builder.
+    try:
+        builder.build()
+        raise AssertionError("expected the builder to be consumed")
+    except RuntimeError as consumed:
+        print("  second build() REFUSED:", str(consumed)[:58])
+        print("  one owner at each step - the handoff is ownership moving")
+
+    # THE TWO BITS SURVIVE. A builder that activates the CONFIG has still
+    # not turned the Nexus on; that is a separate call on the root.
+    ready = md.NexusConfigurationBuilder().with_defaults().activate()
+    assert ready.activated is True
+    print("  builder.activate() -> config activated, Nexus still OFF")
+    print("  two objects, two bits - the rule did not bend for the builder")
 
     # THE SAME SWITCH AT TWO SCOPES. Configuration sets the default;
     # ResearchSet overrides per set.

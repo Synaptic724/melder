@@ -6,7 +6,7 @@ agent writes code into a running world, the admission plane that lets
 several of them mutate it at once, the staging half of a hot swap, and
 the documents the package hands an agent before any of it boots -
 prose it addresses, and structure it walks.
-29 lessons authored, 01-29 sequential.
+32 lessons authored, 01-32 sequential.
 
 VERIFICATION STATUS (two harness runs, both 2026-08-03)
 
@@ -1063,6 +1063,96 @@ OWNER 3.14t RUN 2026-08-04 - 26/27/28 RED, ALL AUTHOR ERROR
   guarantee working: preflight refuses at the one seam owning folded
   truth, and the message ends "nothing was built" rather than
   half-building a world and unwinding it.
+
+ARC I COMPLETE (lessons 30-32) - the record as an EDITABLE instrument.
+  Arc G made the record readable; this arc makes it something you
+  reorganise, compose into, and interrogate at subsystem grain.
+
+  30 COMPOSING A VERSION IN THE WORKSHOP - the half of a merge that
+     `join` refuses to do. Expert 23 said it outright ("compose in the
+     codegen workshop, register the multi-parent result, then join") and
+     this is that workshop. research_synthesize splices named top-level
+     parts from a donor into a base and returns a CANDIDATE - nothing
+     executes, binds or records.
+     THE SPLIT IS THE THESIS: a record that merged content FOR you would
+     be guessing about your source, so melder separates composing (yours)
+     from booking the outcome (the record's).
+     TWO THINGS THAT LOOK LIKE BUGS AND ARE NOT, both worth the lesson's
+     space: a REDISCOVERY DOES NOT CONSUME THE STAMP (identical content
+     re-entering is not your candidate arriving, so it re-stages
+     untouched); and THE STAMP SURVIVES UNTIL USED OR CLEARED - it is
+     ambient, not attached to a call, and no scope ends it. That is why
+     research_clear_staged_ancestry exists: abandon a composition without
+     it and the next innocent bind inherits parents it never had.
+     AND AN UNKNOWN DIFF STRATEGY IS NOT REROUTED - the room surfaces the
+     engine's KeyError rather than quietly answering a different
+     question than the one asked.
+
+  31 ORGANISING LANES AFTER THE FACT - attach / detach / archive, the
+     three verbs for when you got the shape wrong the first time.
+     ANCESTRY IS ORGANISATION, NOT CONTENT: all three move where a lane
+     SAYS it came from; none copies, moves or deletes a version. That
+     separation is what makes reorganising cheap - a wrong anchor is a
+     wrong LABEL, not lost work.
+     ATTACH IS ALL-OR-NOTHING and refuses before taking a lock, because
+     the anchor is the one fact a later join reasons about; a
+     "anchor to whatever the tip is" shorthand would let you record a
+     different anchor than you meant.
+     DETACH IS NOT A DELETE. A detached lane still joins, but DIVERGENTLY
+     BY DEFINITION - no anchor means nothing for the tip to agree with -
+     so it needs the same explicit force=True supersede.
+     AND THE DEFAULT LANE NEVER ARCHIVES: register_spell with no lane
+     records THERE, so a set that archived it could not serve its own
+     default. Checked at the door, not discovered later.
+
+  32 A SUBSYSTEM'S BLAST RADIUS - the two questions you actually have
+     about a composition (expert 14) once you have one.
+     IMPACT IS A UNION WITH CLOSURE MATH, NOT A SUM: it merges every
+     member's radius then splits INTERNAL vs OUTBOUND. The closure
+     fraction is the number that matters - high closure is a subsystem
+     you can change on its own terms; low closure is a subsystem in name
+     only, whose edges are really everyone else's problem. It also lifts
+     to composition grain, so "what else does this hit" is answerable in
+     subsystem vocabulary rather than as a flat list of spells.
+     DRIFT IS SOURCE_DRIFT NARROWED TO THE FOOTPRINT, and the narrowing
+     is the point: whole-world drift on a real repository is mostly other
+     people's churn, so the counts are recomputed over this subsystem's
+     modules only.
+     THE FOOTPRINT IS HONEST ABOUT WHAT IT CANNOT SEE - a member whose
+     custody is unknown reports as unknown rather than silently
+     contributing nothing. A shadow with a hole in it that claimed to be
+     complete would be worse than no shadow.
+     AND COMPOSITIONS STAY INFORMATIONAL: pinned by reference, no custody
+     crystal, gates nothing, never executes - which is exactly why these
+     questions are cheap to ask.
+     COVERAGE: closes the codegen room's research family at 34/34.
+
+AMENDMENT TO LESSON 06 (2026-08-04) - TWO STALE CLAIMS, ONE REAL GAP
+  06's ladder table named `Nexus.enable()`. THERE IS NO `enable` ON
+  NEXUS - nexus.py defines `activate` / `deactivate` and zero `def
+  enable`. The SUBSTANCE of the claim survives (nexus.py:838 finalizes
+  the installed configuration on its way through, which the other three
+  roots do not do for you, so "three to one" still holds); only the verb
+  name had drifted. Corrected in place.
+  THE REAL GAP: NexusConfigurationBuilder was the last public root name
+  no lesson referenced. Nexus was once the one root of four with NO
+  builder; it now carries all three exits, so 06's generosity table was
+  simply out of date. Added there rather than as a new lesson, because 06
+  IS the configuration lesson and the builder completes its own table.
+  THE THREE LAWS IT CARRIES: exits are ONE-SHOT ownership transfers that
+  consume the builder (one owner at each step); the builder's activate()
+  marks the CONFIGURATION active and the Nexus is still off (two
+  objects, two bits, unbent by the new shape); and build() earns its
+  place precisely BECAUSE the builder mirrors only one knob while the
+  configuration carries the wide surface - a frozen-only builder would
+  have made frame allow/deny lists unreachable through it.
+
+  FINDING FOR ANOTHER TIER, NOT ACTED ON: advanced 08's PROSE is stale
+  the same way - its code calls nexus.activate(config) but its narration
+  still says "enable" throughout ("nothing is wired until you pass it to
+  enable()", "enable seals it for you") and its SURFACE line reads
+  `create_configuration, enable, disable`. Advanced is not this epic's
+  lane; recorded here so whoever holds it does not have to rediscover it.
 
 THE TIER'S OWN SHAPE, NOW THAT IT IS DONE
   It opens with a COLD BOOT (01) and closes with a document that answers

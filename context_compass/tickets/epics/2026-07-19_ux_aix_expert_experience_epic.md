@@ -508,6 +508,296 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-08-04T14:15:00Z
+  TYPE: MEASURE
+  CLAIM: LESSON 29 AUTHORED AGAINST A MEASURED GAP RATHER THAN A GUESS. I
+    counted, by AST, which of the codegen room's 34 `research_*` commands any
+    expert lesson actually CALLS: it was 15. Nineteen were documented in the
+    component map and exercised nowhere, which means the tier was describing a
+    surface it never drove.
+    29 `reading_your_own_recorded_code` takes the largest coherent cluster of
+    those - the crystal well, owner-ruled 2026-07-11 under units-and-scales -
+    and teaches FOUR GRAINS that are not four ways to do one thing:
+    `research_source` is the whole module WORLD, `research_module` is one
+    module as a one-call DOSSIER (text, fingerprint, path, deps both ways,
+    exports, drift - so a reader stops hand-joining five reads),
+    `research_parts` is the INVENTORY that needs no names up front, and
+    `research_part` is the lookup for when you have one.
+    THE LESSON'S SPINE IS THE COMPARISON LAW: `research_part_diff` compares
+    RECORDED MATERIAL ONLY and never the live disk, and the reason is
+    correctness rather than caution - both sides of a version comparison would
+    read the SAME present-day file, so a disk-backed diff reports "no change"
+    between two genuinely different versions and is confidently wrong about
+    both. The record is the only place two versions exist at once.
+    It also carries why impact stays MODULE-grain (a part's honest radius IS
+    its module's radius, because nothing imports half a file) and catches the
+    LOUD custody refusal explicitly, because a silent empty read is
+    indistinguishable from "this world has no code" - the one answer that is
+    never true.
+    EVERY SIGNATURE WAS READ, NOT INFERRED: `research_module(spell_id,
+    module_name)` takes both positionally; `research_part(spell_id, part_name,
+    *, kind=, module_name=)`; `research_part_diff(left, right, part_name, *,
+    kind=, module_name=)`; `research_parts(spell_id, *, module_name=)`;
+    `research_impact(*, spell_id=, module_name=)` is keyword-only on both;
+    `research_source_drift()` takes nothing.
+  EVIDENCE:
+    - UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py
+    - src/melder/nexus/rift/command_system/codegen_command_system.py:1261-1472
+  IMPACT: Tier research coverage 15/34 -> 25/34, with 10 commands exercised for
+    the first time (source, module, parts, part, part_diff, module_graph,
+    source_drift, residency, history, recent). Nine remain unexercised and they
+    are a coherent set for a later lesson: the organization verbs
+    (attach/detach/archive), whole-version `diff`, the synthesis pair
+    (synthesize/stage_ancestry/clear_staged_ancestry) and two group reads
+    (group_impact/group_drift).
+  NEXT: owner run. 29 degrades honestly if custody cannot serve the reads -
+    it catches the refusal, explains why LOUD is correct there, and returns.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-04T15:05:00Z
+  TYPE: FACT
+  CLAIM: ALL FOUR NEW LESSONS TRIMMED - they were over the tier's previous
+    MAXIMUM, not just its median. 26 was 338 lines / 15,169 bytes against a
+    tier median of 181 / 7,560 and a prior max of 311 / 13,987. Now 231, 210,
+    218 and 188 lines, all under the old max.
+    WHAT WAS CUT WAS MY OWN WORKING NOTES. I had been writing authoring
+    narrative into the teaching files - "MY FIRST DRAFT OF 26 WAS WRONG", an
+    "AUTHORING NOTE" carrying the conftest postmortem, an "OPEN QUESTION"
+    block - which is ticket content. AGENTS.md is explicit: findings go on the
+    tier's epic, and a header states TIER / GOAL / SURFACE EXERCISED. Those
+    findings are already recorded here, so nothing was lost by removing them
+    from the lessons. Also cut the stacked eight-line `print()` prose blocks
+    (the tier explains once in the header and lets the code run) and fixed a
+    duplicated `# 13.` step number in 26.
+    THE TEACHING IS INTACT: two books, single residence, ledger-vs-cache, the
+    comparison law, and why research_preview is codegen-rooms-only.
+  EVIDENCE:
+    - UX_and_AIX_experiences/AGENTS.md (header contract; findings go to the epic)
+  IMPACT: The lessons read like the tier they belong to instead of like a
+    debugging diary.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-04T14:35:00Z
+  TYPE: FACT
+  CLAIM: PRIVATE-ACCESS AUDIT OF EVERYTHING I WROTE, run on owner instruction
+    ("if you think you have to reach into a private then we need to fix the
+    public api or you need to do more research"). AST walk for private
+    attribute reads, private calls and deep melder imports.
+    ALL FIVE LESSON FILES ARE CLEAN - 26, 27, 28, 29 and the edited
+    intermediate 37: zero private access, zero deep imports, every `md.*` name
+    exported. The tier law held without exception.
+    THE THREE FLAGGED FILES ARE ALL HARNESS - conftest and two probe modules -
+    where deep imports are permitted by the house rule. But I wrote the
+    conftest, so I researched whether its privates are avoidable rather than
+    leaning on precedent.
+    FINDING 1 - THE SINGLETON RESET IS AVOIDABLE, AND I AM KEEPING IT ANYWAY,
+    with the reason now written into the file. A complete PUBLIC teardown
+    exists: `Aether.cleanup()` cascades into crystallizer, mutation research,
+    nexus and utility system (aether.py:299-309), and ALL FOUR `cleanup()`
+    methods clear their own `_instance`/`_initialized` - verified by AST across
+    the four classes. So `Aether().cleanup()` is a real public reset. It is
+    still wrong for a FIXTURE: `cleanup()` does real teardown and re-raises a
+    child failure, so one broken world would fail the SETUP of every
+    subsequent test and turn one red into a file of reds.
+    `_reset_singleton_for_tests` is a guaranteed discard, is named for this
+    exact use, and is what the component suite and `test_expert_probes.py`
+    already use. Sanctioned test seam, not a reach around the API.
+    FINDING 2 - THIS ONE IS A GENUINE PUBLIC-API GAP AND IS NOT TEST-ONLY.
+    `Spellbook._aether` is a `ClassVar` bound ONCE at import
+    (`spellbook.py:172`: `_aether: ClassVar[Aether] = Aether()`), and `Conduit`
+    carries the same seam. NOTHING rebinds them when the singleton is
+    replaced - not `Aether()` construction (aether.py never assigns them) and
+    not `cleanup()`. So after any reset or teardown those class seams point at
+    a DEAD root, and every consumer is forced to write a private class
+    attribute to recover. There is no public verb for it.
+    THAT IS THE SHAPE OF THE API FOR ANYONE WHO TEARS AN AETHER DOWN AND
+    BUILDS ANOTHER IN ONE PROCESS - which expert 27 does as its whole subject.
+    27 gets away with it only because it never binds a new Spellbook after the
+    teardown; a lesson that did would silently bind into the dead root.
+  EVIDENCE:
+    - src/melder/aether/spellbook/spellbook.py:172, 287, 294
+    - src/melder/aether/aether.py:299-309, 331-332
+    - src/melder/crystallizer/crystallizer.py:331-333
+    - UX_and_AIX_experiences/pytest_examples/conftest.py (reasoning recorded)
+  IMPACT: The examples are clean. The harness private is justified and the
+    justification is now in the file rather than in someone's head. One real
+    gap surfaced that affects users, not just tests.
+  NEXT: OWNER RULING on the class-seam gap - either a public rebind verb, or
+    `Aether()` construction rebinds the seams itself, or it is declared a
+    deliberate single-Aether-per-process constraint and documented as one. I am
+    not choosing: it is public API shape and this lane is examples.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-04T18:10:00Z
+  TYPE: FACT
+  CLAIM: LESSONS 30, 31 AND 32 AUTHORED - the tier now runs 01-32 and BOTH
+    coverage measures are closed. The codegen room's research family is at
+    34/34 (it was 15/34 when this lane opened); the package's public root is
+    at 55/55 names exercised by at least one lesson across all four tiers.
+    30 COMPOSING A VERSION IN THE WORKSHOP - research_synthesize plus the
+    ancestry stamp. The stamp is AMBIENT and ONE-SHOT and no scope ends it,
+    which is the whole reason `research_clear_staged_ancestry` exists: abandon
+    a composition without clearing and the next unrelated bind inherits parents
+    it never had. A rediscovery does NOT consume the stamp - identical content
+    re-entering the world is not the candidate arriving.
+    31 ORGANISING LANES AFTER THE FACT - attach / detach / archive. All three
+    move where a lane SAYS it came from; none copies, moves or deletes a
+    version, so a wrong shape is a wrong LABEL rather than lost work. Detach is
+    not a delete: an unanchored lane joins DIVERGENTLY BY DEFINITION because
+    there is no anchor for the tip to agree with. The default lane never
+    archives - `register_spell` with no lane records there.
+    32 A SUBSYSTEM'S BLAST RADIUS - research_group_impact is a UNION WITH
+    CLOSURE MATH, not a sum, splitting internal from outbound; research_group_
+    drift is source drift narrowed to the footprint, which is what makes it
+    about your area instead of the repository's churn.
+  EVIDENCE:
+    - UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_workshop.py
+    - UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py
+    - UX_and_AIX_experiences/04_expert/32_a_subsystems_blast_radius.py
+    - src/melder/nexus/configuration/nexus_configuration_builder.py:184-248
+    - UX_and_AIX_experiences/04_expert/_concept_map.txt (ARC I recorded)
+  IMPACT: Every command in the research family and every public root name now
+    has at least one worked example behind it.
+  NEXT: none for coverage. The lessons are UNRUN - see the handoff note.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-04T18:25:00Z
+  TYPE: FACT
+  CLAIM: EXPERT 06 CARRIED A METHOD NAME THAT NO LONGER EXISTS, found by
+    chasing the last uncovered public root name rather than by reading 06.
+    06's ladder table read "Nexus  enable() does it FOR you". THERE IS NO
+    `enable` ON NEXUS - `nexus.py` defines `activate` / `deactivate` and zero
+    `def enable`. The SUBSTANCE of the claim survives and I checked it before
+    touching the line: `Nexus.activate()` finalizes the installed configuration
+    on its way through, which the other three roots do not do for you, so the
+    lesson's "three to one, Nexus is the exception" still holds. Only the verb
+    had drifted. Corrected in place.
+    THE REAL GAP BEHIND IT: `NexusConfigurationBuilder` was the last public
+    root name that NO lesson referenced. Nexus was once the one root of four
+    with no builder at all, so 06's builder-generosity table was simply out of
+    date rather than wrong. Added to 06 rather than made a new lesson - 06 IS
+    the configuration lesson, and the fourth root completes its own table.
+    THREE LAWS CAME WITH IT, all read out of the source before being written:
+    the exits are ONE-SHOT ownership transfers that consume the builder; the
+    builder's `activate()` marks the CONFIGURATION active while the Nexus stays
+    off (two objects, two bits - the rule did not bend for the new shape); and
+    `build()` earns its place precisely BECAUSE the builder mirrors only
+    `with_rift_creation_enabled` while the configuration carries the wide
+    surface, so a frozen-only builder would have made the frame allow/deny
+    lists unreachable through it.
+  EVIDENCE:
+    - src/melder/nexus/nexus.py:775-801 (factory), :838+ (activate finalizes)
+    - src/melder/nexus/configuration/nexus_configuration_builder.py:9-61, 184-272
+    - UX_and_AIX_experiences/04_expert/06_two_knobs_and_a_terminator_per_rung.py
+  IMPACT: The tier no longer teaches a verb the runtime does not have, and the
+    last unexercised public name is exercised where it belongs.
+  NEXT: OWNER RULING NOT REQUIRED. But see the advanced-08 finding below - it
+    is the same drift, in a tier this lane does not hold.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-04T18:30:00Z
+  TYPE: FINDING
+  CLAIM: ADVANCED 08'S PROSE IS STALE THE SAME WAY, AND I DID NOT TOUCH IT.
+    `03_advanced/08_nexus_enablement.py` calls `nexus.activate(config)` in its
+    code but still NARRATES the old verb throughout - "nothing is wired
+    anywhere until you pass it to enable()", "we did not seal it; enable will",
+    "enable finalized the config for us", "nexus: you hand it over, enable
+    seals it for you" - and its SURFACE EXERCISED line reads
+    `create_configuration, enable, disable`. Both `enable` and `disable` are
+    gone from the Nexus public surface.
+    Advanced is not this epic's lane, so this is recorded rather than fixed.
+    Expert 06 CITES advanced 08 for that exact claim, which is how the drift
+    propagated into a second tier in the first place.
+  EVIDENCE:
+    - UX_and_AIX_experiences/03_advanced/08_nexus_enablement.py:12, 23-26, 33,
+      41, 75-90
+    - src/melder/nexus/nexus.py (public defs: activate, deactivate; no enable)
+  IMPACT: A reader of advanced 08 learns a verb that will raise AttributeError.
+  NEXT: OWNER TO ASSIGN - advanced tier prose refresh. Cheap: it is narration
+    only, the code is already correct.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-04T20:05:00Z
+  TYPE: FACT
+  CLAIM: OWNER 3.14t RUN - 30 RED, AUTHOR ERROR, AND I HAD QUOTED THE VERB'S
+    OWN DOCSTRING BEFORE WRITING THE CALL THAT BROKE IT. Third time in this
+    lane. `research_synthesize(base, donor, take_functions=["summarise"])`
+    raised `ValueError: Donor source has no top-level function 'summarise'.
+    Available donor parts of that kind: ['_show', 'main']`.
+    TWO COMPOUNDED MISTAKES, both from writing to a mental model instead of to
+    the source:
+    (1) SYNTHESIS IS MODULE-GRAIN, NOT CLASS-GRAIN. Each id resolves through
+    `source_view` to its ROOT MODULE text (mutation_research.py:3044-3062) and
+    `take_functions` / `take_classes` name TOP-LEVEL parts of that module.
+    `summarise` is a METHOD on ReportDonor and is invisible to both. The engine
+    states the grain outright at mutation_research.py:3040 - synthesis "splices
+    ONE version's module world".
+    (2) BASE AND DONOR WERE THE SAME TEXT. ReportBase and ReportDonor are both
+    declared IN THE LESSON FILE, so both resolved to the lesson file, and the
+    traceback shows base_source == donor_source == this example's own text.
+    THE FIX MAKES BOTH FACTS THE LESSON rather than hiding them. 30 now asks
+    for the method FIRST and catches the refusal - the error names the donor's
+    real top-level parts, which is how a caller discovers the grain after
+    guessing wrong - then composes with a genuine top-level function and
+    ASSERTS `base_module == donor_module` and `action == "replaced"`. "added"
+    is unreachable while base and donor share a module, and that
+    unreachability is now taught as the PROOF that the unit is the module.
+  EVIDENCE:
+    - src/melder/mutation_research/mutation_research.py:3040, 3044-3062
+    - src/melder/mutation_research/synthesis/structural_synthesizer.py:213-223
+    - UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_workshop.py
+  IMPACT: The lesson teaches the grain instead of tripping over it. A reader
+    who makes the same wrong assumption now meets it in the first ten lines of
+    the workshop section rather than in a traceback.
+  NEXT: none. But see the pattern note below - this is a repeat.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 6
+
+- DATETIME: 2026-08-04T20:20:00Z
+  TYPE: FINDING
+  CLAIM: TWO MORE UNVERIFIED CLAIMS IN 31 AND 32, FOUND BY READING RATHER THAN
+    BY A SECOND RED RUN - the check I should have run before shipping either.
+    31's ARCHIVE DEMO PROVED NOTHING. It compared `lane_names()` before and
+    after archiving, but `lane_names()` "lists ALL lanes regardless of state,
+    including joined and archived ones" (research_set.py:660-661), so the two
+    counts are IDENTICAL and the print implied a change that never happens.
+    The real proof is the DISAGREEMENT between two reads: `heads()` drops the
+    lane (open lanes only) while `lane_names()` keeps it. That gap IS the
+    difference between hidden and unmade, and it is now asserted both ways.
+    It also surfaced a law worth teaching that I had not known: `heads()`
+    carries an open-but-empty lane with a tip of None, and "a missing name
+    means 'not open', not 'does not exist'" (research_set.py:725-729). Absent
+    and None mean different things. 31 now asserts that too.
+    32 EXTRACTED THE COMPOSITION ID BY GUESSING - a `.get("group_id") or
+    .get("id")` chain with a loop over any key ending in `_id`. That is defence
+    against not having read the payload. `GroupedResearchNode.describe()`
+    returns `group_id` plainly (grouped_research_node.py:412-422) along with
+    the `node_type: "group"` tag that lane hydration dispatches on. Replaced
+    with direct reads plus an assertion on the tag - and the tag's back-compat
+    -by-ABSENCE rule became lesson content.
+    THE PATTERN, NAMED HONESTLY: all three of these are the same failure -
+    asserting a payload's shape from its NAME instead of from its describe().
+    A `.get(...) or .get(...)` fallback in an example is a confession that the
+    author did not read the producer, and it should be treated as a smell in
+    review rather than as defensive coding.
+  EVIDENCE:
+    - src/melder/mutation_research/research_set/research_set.py:654-678 (lane_names),
+      720-751 (heads), 1977-2014 (join divergence), 2200-2216 (archive refusal)
+    - src/melder/mutation_research/research_set/grouped_research_node.py:394-422
+    - src/melder/mutation_research/research_set/research_lane.py:846-887 (describe)
+  IMPACT: 31 and 32 now assert contracts that were read, not inferred. Three
+    laws that were invisible to me before this pass are now taught.
+  NEXT: OWNER RERUN of 30, 31, 32 and the amended 06. None of the four has been
+    run since these edits; the sandbox is 3.10 and cannot run any of it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
@@ -532,3 +822,30 @@ have bundled a 922-line EOL change into a 123-line content diff.
 NOT RUN: this sandbox is Python 3.10 and melder requires >=3.14, so no green is
 claimed for any of it. TWO owner questions outstanding: the parked-candidate lookup
 behind `notch_spell` (now hit by two lessons), and nothing else blocking.
+
+ADDED 2026-08-04 (later): lessons 30, 31 and 32. The tier runs 01-32 and BOTH
+coverage measures are now closed - the codegen room's research family at 34/34
+(from 15/34 when this lane opened) and the package's public root at 55/55 names
+exercised by at least one lesson across all four tiers.
+
+THE LAST TWO NAMES WERE NOT WHAT THEY LOOKED LIKE, and the distinction matters
+for whoever measures this next. `RiftSpace` was never a gap: it is a type you
+RECEIVE from `rift.space`, never one you construct, so the fix was to ASSERT
+that law in 32 rather than to invent a constructor call. `NexusConfiguration-
+Builder` WAS a real gap, and chasing it surfaced a stale verb in expert 06 and
+the same drift in advanced 08. A coverage number is a prompt to go read, not a
+score to raise.
+
+06 IS NOW AMENDED AND ITS `VERIFY:` LINE SAYS SO. It still carries the honest
+RUN GREEN 2026-08-03 for the original body, with the Nexus builder section
+marked added-and-not-yet-run. Do not let the green on the header stand for the
+whole file at the next harness pass.
+
+LINE ENDINGS, AGAIN: lessons 26-32 are LF (HEAD is LF; the worktree CRLF is the
+pending repo-wide flip). Expert 06 and the concept map were ALREADY CRLF before
+I edited them, so their endings were preserved rather than "fixed" - normalising
+either would have bundled an EOL change into a content diff. 06's real diff was
+verified by raw byte comparison against HEAD with endings normalised away: 70
+lines added, 6 removed, and the 6 are the ladder table, the SURFACE line and the
+VERIFY line. `git diff --ignore-cr-at-eol` still MISREPORTS this repo; do not
+trust it.
