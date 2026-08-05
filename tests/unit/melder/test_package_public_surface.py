@@ -135,7 +135,6 @@ def test_user_held_work_surfaces_are_loaded():
     Contract:
         Identity with the concrete-path classes.
     """
-    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
     from melder.aether.conduit.spell_space.spell_space import SpellSpace
     from melder.crystallizer.asset_management.external_persistence_manager import (
         ExternalPersistenceManager,
@@ -154,7 +153,6 @@ def test_user_held_work_surfaces_are_loaded():
 
     import melder
 
-    assert melder.ConduitCloud is ConduitCloud
     assert melder.SpellSpace is SpellSpace
     assert melder.ExternalPersistenceManager is ExternalPersistenceManager
     assert (
@@ -270,6 +268,25 @@ def test_internal_depths_stay_off_the_root():
         # `scan_bind` (the decorator) STAYS exported - it is the user-facing
         # half and every scan lesson uses it.
         "Scan",
+        # Owner ruling 2026-08-04: ConduitCloud follows Scan off the root, and
+        # it is the stronger case of the two - the export was not merely a way
+        # around a guard, it was UNUSABLE. `ConduitCloud.__init__` requires an
+        # `AethericFrame` and a `DevopsInformationRegistry`, neither of which
+        # is exported and neither of which has a default, so `md.ConduitCloud(
+        # ...)` cannot be called from the public surface at all. Its own
+        # docstring says so: "users do not construct one".
+        # THAT MAKES IT THE OUTLIER, checked rather than assumed: every other
+        # exported work surface IS constructible from the root - FrameViewer
+        # takes `rift: Rift` (exported), Workstation takes a plain `str` plus
+        # keyword defaults, ViewSpell takes an optional exported `ViewFrame`.
+        # ConduitCloud was the only one hard-blocked.
+        # It also leaked: `get_cluster()` returns a `ConduitCluster`, which is
+        # excluded four lines above - so the root advertised a type whose own
+        # methods hand back a type the root refuses to name.
+        # The REACH is unaffected: `Conduit.get_conduit_cloud()` and
+        # `AethericFrame.conduit_cloud` still return it. Only the NAME is gone,
+        # which cost exactly one `isinstance` line in intermediate lesson 37.
+        "ConduitCloud",
     ):
         assert name not in melder.__all__
         assert name not in vars(melder)
@@ -306,7 +323,7 @@ def test_all_names_are_unique_and_sorted_groups_are_complete():
         The facade ledger stays exact: no duplicate advertisements, and
         every name in __all__ is actually present on the module.
     Contract:
-        len(set) == len(list); vars coverage for all 64 names.
+        len(set) == len(list); vars coverage for all 63 names.
     """
     import melder
 

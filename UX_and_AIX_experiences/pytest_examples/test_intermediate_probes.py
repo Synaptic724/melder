@@ -797,7 +797,14 @@ def test_probe_conduit_cloud_is_frame_owned_and_shared():
 
     Two conduits on one frame must hand back THE SAME OBJECT - identity,
     not equality. If this ever became per-conduit, "what conduits exist
-    here?" would stop having one answer."""
+    here?" would stop having one answer.
+
+    NOTE THE IMPORT. `ConduitCloud` came OFF the package root on
+    2026-08-04 (owner ruling), so this row reaches it by concrete path -
+    which a probe may do and an example may not. The type check is still
+    worth pinning; only the way we name the type changed."""
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+
     book = Spellbook(aetheric_frame="probe-cloud")
     book.bind(spell=_Ledger, existence="unique")
     root = book.conjure(name="probe-cloud-root")
@@ -805,11 +812,41 @@ def test_probe_conduit_cloud_is_frame_owned_and_shared():
         name="probe-cloud-peer")
 
     cloud = root.get_conduit_cloud()
-    assert isinstance(cloud, md.ConduitCloud)
+    assert isinstance(cloud, ConduitCloud)
     assert peer.get_conduit_cloud() is cloud
     assert root.get_conduit_cloud() is cloud
     assert cloud.frame_name == "probe-cloud"
     print("frame-owned cloud pinned: one object per frame, shared")
+
+
+def test_probe_conduit_cloud_is_not_on_the_package_root():
+    """Lesson 37's new claim, pinned in the tier that teaches it.
+
+    Owner ruling 2026-08-04: `ConduitCloud` is not a root export. The
+    reason is that it was UNUSABLE as one - its constructor requires an
+    `AethericFrame` and a `DevopsInformationRegistry`, neither exported
+    and neither defaulted, so `md.ConduitCloud(...)` could never be
+    called. Its own docstring says "users do not construct one".
+
+    THE REACH IS UNAFFECTED, which is the half that matters and the half
+    this row guards: `get_conduit_cloud()` still returns the live object.
+    A future re-export would be a decision, not an accident - and this
+    row makes it visible either way.
+
+    (The authoritative fence lives in
+    tests/unit/melder/test_package_public_surface.py; this row keeps the
+    claim honest in the tier whose lesson depends on it.)"""
+    import melder
+
+    assert "ConduitCloud" not in melder.__all__
+    assert not hasattr(melder, "ConduitCloud")
+
+    book = Spellbook(aetheric_frame="probe-cloud-unexported")
+    book.bind(spell=_Ledger, existence="unique", binding_name="unexported")
+    cloud = book.conjure(name="unexported-root").get_conduit_cloud()
+    assert cloud is not None
+    assert cloud.frame_name == "probe-cloud-unexported"
+    print("root fence pinned: name is gone, the reach still works")
 
 
 def test_probe_a_different_frame_gets_a_different_cloud():

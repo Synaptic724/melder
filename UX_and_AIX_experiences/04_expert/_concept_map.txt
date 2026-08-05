@@ -6,7 +6,7 @@ agent writes code into a running world, the admission plane that lets
 several of them mutate it at once, the staging half of a hot swap, and
 the documents the package hands an agent before any of it boots -
 prose it addresses, and structure it walks.
-25 lessons authored, 01-25 sequential.
+29 lessons authored, 01-29 sequential.
 
 VERIFICATION STATUS (two harness runs, both 2026-08-03)
 
@@ -929,6 +929,140 @@ SOURCE FIXES MADE ALONGSIDE THIS TIER (2026-08-03)
   the 8-space body indent keeps it collecting per the parser's own rule
   (`section_header.match(line) and not line.startswith(" " * 8)`).
   The file is CRLF and STAYED CRLF: 403 lines, 403 CRLF, 0 bare LF.
+
+  26 codegen_create_modify_iterate (THE LOOP TURNED MORE THAN ONCE, and
+     the two books it writes. Expert 12 drove the verbs once; this runs
+     three turns of research_preview -> validate -> execute ->
+     materialize, and takes a REFUSAL MID-LOOP so the loop is seen to
+     READ a verdict rather than break on one.
+     THE CRUX, AND THIS LESSON'S FIRST DRAFT GOT IT WRONG: a codegen
+     turn mints NO research node. It cut a lane per turn and "walked the
+     history", which would have shipped hollow. The three seams that
+     write the research book are `_record_research_world_entry(
+     staged=False)` from bind, `(staged=True)` from bind_inactive, and
+     `_record_research_promotion` from a notch - each a NO-OP unless the
+     MR root ALREADY EXISTS and is activated, never lazily constructed
+     from a bind path. `research_create_lane` records ancestry and
+     copies nothing; `research_attach` RE-ANCHORS ancestry rather than
+     placing a version.
+     So the lesson now teaches TWO BOOKS - the room keeps what CODE was
+     written (memory_system, one record per successful TOP-LEVEL call),
+     research keeps what VERSIONS exist - and ASSERTS the empty walk on
+     purpose before using `register_spell(spell_id, lane=...)`, which is
+     the verb that actually puts a version on a named lane.
+     Stops at the same public boundary as 17: promotion is the
+     runtime's rung.)
+
+  27 a_world_that_outlives_its_own_runtime (SEAL IT, THEN DESTROY THE
+     RUNTIME. Expert 24 walked the five verbs with the world still up;
+     this tears the singleton down between the seal and the unfold.
+     THE ONE FACT IT TURNS ON: the ledger is IN-PROCESS and the cache is
+     BYTES AT REST. `create_checkpoint` mints into memory, so skipping
+     `flush_checkpoint` loses the world across a teardown with NO ERROR,
+     because nothing went wrong.
+     `aether.cleanup()` IS the public reset - `_instance = None` and
+     `_initialized = False` are cleared in a `finally`, which is why a
+     failing child teardown can no longer leave a cleaned husk installed
+     as the process singleton. The private `_reset_singleton_for_tests`
+     beside it is the TEST-ISOLATION verb the harness conftest uses, and
+     this lesson deliberately does not reach for it.
+     `gc.collect()` is doing real work here, not ceremony: melder cleans
+     deterministically, so a collect is how the old world is PROVEN gone
+     rather than asserted gone.)
+
+  28 the_record_crosses_as_a_json_string (NO FILE, NO DATABASE, NO
+     DRIVER - a Python string. Two lanes merge (one clean join, one
+     refused-then-forced) so the MERGE is provably inside the text, then
+     `research_set.describe()` goes to TEXT and `md.ResearchSet.
+     from_payload(...)` brings it back with the live set deleted between.
+     THE `json.dumps` CALL PASSES NO `default=` HANDLER ON PURPOSE.
+     `describe_composition()` guarantees "PLAIN-VALUE THROUGHOUT. Every
+     nested value is JSON-safe", so the strict call turns that promise
+     into an EXECUTABLE GUARD - a `default=str` would hide the exact
+     regression worth catching, because a datetime would go out as a
+     string, come back as a string, and the trip would be silently lossy
+     with nothing failing.
+     AND THE GUARANTEE IS THE OPPOSITE OF A WORLD RESTORE: `from_payload`
+     PRESERVES the recorded `set_id`, so a hydrated set is the SAME set.
+     Expert 24/27's restored world is deliberately EQUIVALENT-not-
+     identical and hands you a translation map. Runtime objects are
+     rebuilt; the RECORD is restored.
+     AUTHORING NOTE: built first on `snapshot_network()`, which returns a
+     content-address SHA and NOT a payload - checked before shipping, and
+     the lesson was rebuilt on describe/from_payload. The mesh quartet
+     survives as a coda.)
+
+  29 reading_your_own_recorded_code (THE CRYSTAL WELL - the code your
+     world RECORDED, at four grains, plus the one comparison law that
+     makes any of it trustworthy. Expert 04 said diffs are derived never
+     stored; this is what they are derived FROM.
+     FOUR GRAINS, and they are not four ways to do one thing:
+     research_source = the whole module WORLD; research_module = ONE
+     module as a one-call DOSSIER (text, fingerprint, path, deps BOTH
+     ways, exports, drift - so you stop hand-joining five reads);
+     research_parts = the INVENTORY, which needs no names up front and is
+     what you reach for before you know what is in there; research_part =
+     the lookup for when you do.
+     THE COMPARISON LAW IS THE POINT: research_part_diff compares
+     RECORDED MATERIAL ONLY and never the live disk. Not caution -
+     correctness. Both sides of a version comparison would read the SAME
+     present-day file, so a disk-backed diff reports `no change` between
+     two genuinely different versions and is confidently wrong about
+     both. The record is the only place two versions exist at once.
+     Diff material drinks BOTH carriers (synthetic first, user-retained
+     filling gaps) so it speaks the full module either way.
+     IMPACT STAYS MODULE-GRAIN deliberately: a part's honest radius IS
+     its module's radius, because nothing imports half a file.
+     CUSTODY REFUSES LOUD and the lesson catches it and says so - a
+     silent empty read is indistinguishable from `this world has no
+     code`, which is the one answer that is never true.
+     COVERAGE: this single lesson exercises 11 research commands, 10 of
+     them previously untouched by any lesson, lifting the tier from
+     15/34 to 25/34 of the codegen room's research family.)
+
+OWNER 3.14t RUN 2026-08-04 - 26/27/28 RED, ALL AUTHOR ERROR
+  What the run VALIDATED first, because most of it held: aether.cleanup()
+  + gc.collect() freed 4827 objects and md.Aether() returned a NEW root;
+  the cache SURVIVED the teardown (76 ids, ours present) and
+  reload_cached_checkpoint returned its summary; research_walk on a cut
+  lane returned 0 nodes, confirming 26's corrected claim; room memory
+  returned 18 records for 3 turns x 4 verbs plus the lane cut, confirming
+  the command-not-turn unit; staging left the selection unchanged.
+
+  26 + 28 - SINGLE RESIDENCE VIOLATED, and I had READ the invariant and
+  QUOTED it before writing the call that broke it. bind_inactive
+  auto-declares its version into `default`; one binding-signature SHA256
+  lives in exactly ONE lane network-wide, PERMANENTLY, with no release
+  verb. So register_spell(staged_id, lane=...) raised the rediscovery
+  signal. 26 now TEACHES that refusal - it attempts the register, catches
+  the signal, and shows the correct route: create_research_set() gives an
+  INDEPENDENT residence partition, so the same id files cleanly in a
+  second investigation.
+  28 also carried a SECOND bug the first was hiding: it staged v2 BEFORE
+  the clean join, which moves the receiver's tip and would have made even
+  the clean join divergent. Lesson 23 has the correct order and passes;
+  28 now mirrors it and drops the register entirely.
+
+  27 - load_checkpoint REFUSED at admission ("owning spellbook ... is not
+  in this bundle; the custody cannot bind ... nothing was built"). CAUSE
+  UNKNOWN and deliberately not guessed. TWO explanations were formed and
+  BOTH KILLED BY READING: (1) pre-finalize() suppressing the spellbook
+  twin - refuted at spellbook_configuration.py:299-310, where the
+  already-frozen branch exists for exactly this case and still emits;
+  (2) chain truncation - refuted because plan_checkpoint_load detaches
+  the same-profile chain from the LEDGER and this world sealed exactly
+  one checkpoint.
+  WHAT THE READING DID SETTLE, and it is a real hazard for anyone else:
+  the chain comes from the ledger, and reload_cached_checkpoint restores
+  only the id you name. A world sealed across SEVERAL checkpoints and
+  partially reloaded folds an INCOMPLETE chain. Cross-teardown restores
+  want flush_checkpoint() with no argument (whole ledger).
+  27 no longer claims a completed round trip. It teaches what the run
+  PROVED - ledger vs cache, the public teardown, cache survival, ledger
+  recovery - then teaches the admission refusal as the all-or-nothing
+  guarantee working: preflight refuses at the one seam owning folded
+  truth, and the message ends "nothing was built" rather than
+  half-building a world and unwinding it.
 
 THE TIER'S OWN SHAPE, NOW THAT IT IS DONE
   It opens with a COLD BOOT (01) and closes with a document that answers

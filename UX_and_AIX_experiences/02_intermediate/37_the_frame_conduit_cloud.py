@@ -45,8 +45,26 @@ GOAL: THE CONDUIT CLOUD - the frame's shared registry of conduits, and
       pairs with has_conduit_name() so you can ask the membership question
       without paying for the object. Cheap questions before expensive
       ones, the same discipline as the describe ladder at advanced 16.
-SURFACE EXERCISED: md.ConduitCloud via conduit.get_conduit_cloud(),
-                   the frame-shared registry law, the read surface
+
+      YOU REACH THIS OBJECT; YOU NEVER NAME IT. `ConduitCloud` is NOT on
+      the package root (owner ruling 2026-08-04) and that is deliberate,
+      not an oversight. Its constructor needs an `AethericFrame` and a
+      `DevopsInformationRegistry` - neither exported, neither defaulted -
+      so `md.ConduitCloud(...)` could never have been called. Its own
+      docstring says it: "users do not construct one." An exported name
+      you cannot construct advertises a door that is painted on.
+      It is the same ruling `Scan` got: `Spellbook.scan(module)` is the
+      API because it applies the posture gate and the bind transaction,
+      so exporting the class only advertised a way around them. Here
+      there is not even a way around - just a name.
+      THE REACH IS UNCHANGED. `conduit.get_conduit_cloud()` still hands
+      you the live object and every verb below still works. What you lose
+      is `isinstance(cloud, md.ConduitCloud)`, and the honest replacement
+      is to test what the object DOES - which is what this lesson now
+      does, and arguably what it should have done from the start.
+SURFACE EXERCISED: conduit.get_conduit_cloud(), the frame-shared registry
+                   law, the read surface. NOTE: no `md.ConduitCloud` -
+                   the type is reached, never named.
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 """
 import melder as md
@@ -62,7 +80,12 @@ def main() -> None:
 
     root = book.conjure(name="cloud-root")
     cloud = root.get_conduit_cloud()
-    assert isinstance(cloud, md.ConduitCloud)
+
+    # NOT `isinstance(cloud, md.ConduitCloud)` - that name is deliberately
+    # off the root. Test what the object DOES instead: it knows which
+    # world it is the registry for, and it answers the registry surface.
+    assert cloud is not None
+    assert hasattr(cloud, "frame_name")
     print("cloud for frame:", cloud.frame_name)
     assert cloud.frame_name == "cloud-demo"
 

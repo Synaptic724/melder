@@ -81,7 +81,21 @@ Four states, and the walk through them is the maintenance loop:
 | --- | --- | --- |
 | `UNSEMANTIC` | no authored fields | author it, by reading the code |
 | `AUTHORED` | authored, source unchanged since | nothing |
-| `SEMANTICS_STALE` | authored, **its source moved underneath it** | re-read, then accept |
+| `SEMANTICS_STALE` | authored, but **not verified against the source it describes** - either its source moved, or nobody ever checked it | read the source, then accept |
+
+**An unstamped node is SEMANTICS_STALE.** The stamp means one thing: a human read
+this prose against this source. Only `--accept` creates it. Authored prose with no
+stamp has never had that done, so it is unverified, and unverified is stale.
+
+The extractor used to auto-stamp those nodes against current source so they would
+report AUTHORED - asserting, on nobody's behalf, that prose it never read matched
+code it never compared. That made `SEMANTICS_STALE: 0` reachable without a single
+node having been checked, so an epic with that success metric could pass having
+verified nothing. Removed.
+
+The first run after upgrading an existing graph will report a large stale count.
+That count is correct, and it is the number being told to you for the first time -
+not a regression.
 | `RETIRED` | gone from source, prose retained | adjudicate: move it or drop it |
 
 ```bash

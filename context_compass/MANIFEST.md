@@ -128,8 +128,8 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `agent_onboarding/default/engineer/skills/package_maintenance.md` | PACKAGE | `c4a4c6ae98ee9dc01aaf3b2d225530f2d9b5c37a6bb276f80a9c289a6188855a` |
 | `agent_onboarding/default/engineer/skills/patch_artifact_consumption.md` | PACKAGE | `5b20db99ae4debdf90e9dac96ad81c2e035a552e1bf94ef8c336cd053e7286a2` |
 | `agent_onboarding/default/engineer/skills/patch_framework_gating.md` | PACKAGE | `303738c05c8af351707b929cf7b12c0c019946d2b37af4b819e486c295c2e9d9` |
-| `agent_onboarding/default/engineer/skills/src_graph_generation.md` | PACKAGE | `783bf3b10dadcabd6cbf1a0c5757a5ac73fee69cdfac0250fb6da996f088a41c` |
-| `agent_onboarding/default/engineer/skills/src_graph_usage.md` | PACKAGE | `03de5066f06fe2c62405ac1d0e41a83a3e4315cb46383012dd1c05fde0e90b98` |
+| `agent_onboarding/default/engineer/skills/src_graph_generation.md` | PACKAGE | `b24e1861e2ecb4575d0ea10f2010ca03722c291a8c1dd30fe23bf34da4fc9ac3` |
+| `agent_onboarding/default/engineer/skills/src_graph_usage.md` | PACKAGE | `52a7015595450ba1022f2cc3baae4c6e2dffdf161da60528de0b39f1064440c6` |
 | `agent_onboarding/default/engineer/skills/staleness_protocol.md` | PACKAGE | `f9a4ffd6221f01d03e2d659238f76aafcf7e4b8813d3b9ac5ba0577f932e3f86` |
 | `agent_onboarding/default/engineer/skills/system_document_build.md` | PACKAGE | `b53ca5318f8d695929014ce745e7ff3ffd343a0fda2c23a7354fa87a14220c1e` |
 | `agent_onboarding/default/engineer/skills/system_orientation.md` | PACKAGE | `b8475054707e2c3c5f12419fab5c44a11cbb4f84b6ba441e03f28a9366099006` |
@@ -479,10 +479,10 @@ Everything outside them is STRICT: an upgrade sweeps what is not listed here.
 | `tools/migrate_boards.py` | PACKAGE | `14ff0166908e20fc6768fcb42e77ec81048ff34afecedc93fb729bb9487f06fa` |
 | `tools/package_manifest.py` | PACKAGE | `6ca3234c863193f208f729dbe85e8d48ad0fe8462d77858d47423d21e622436e` |
 | `tools/system_documents/index_document.py` | PACKAGE | `b17bcea2f4cb527fe5daf23b1e022099210ebdc9ca5c665bd09f21f94bb75753` |
-| `tools/system_documents/python/assemble_graph.py` | PACKAGE | `fda6f9e23bf3227904ea59de359842b11b8bfc477cf88e6ae9f17e31f0a9ede6` |
-| `tools/system_documents/python/extract_graph.py` | PACKAGE | `2f18c1ef0b9649be1996f434c4d1afb90be2b619d74349ea4725554e6f864848` |
-| `tools/system_documents/python/graph_semantics_tickets.py` | PACKAGE | `a4d98e644c99d4404ef62ecad3b58efd8b837b762989c2b18ca9ebc4a3341eb9` |
-| `tools/system_documents/python/graph_walker.py` | PACKAGE | `c6d0825a35c8021d9bf41eb5cc1eb934d2014d6932d8bd28fa982992600ff802` |
+| `tools/system_documents/python/assemble_graph.py` | PACKAGE | `3edd275ed237f458cf6802e2e5e93227b146fad9607b0db52eb8680575fb5ea4` |
+| `tools/system_documents/python/extract_graph.py` | PACKAGE | `d91a396e5385106125a85c3a7e9400bf7c670f8bb82f8f5f666d266f1d59781c` |
+| `tools/system_documents/python/graph_semantics_tickets.py` | PACKAGE | `2df63e9e1e85815f3bdafd1c2a20e9d78e054f938cd98ec4012c52b0f4c88102` |
+| `tools/system_documents/python/graph_walker.py` | PACKAGE | `be0aa367a5f9bd66bb5adddba7dde4294abb44a9926dd981d20ab6500e6d7a02` |
 | `tools/system_documents/python/migrate_authored_graph.py` | PACKAGE | `478b9e7e77520ab65c1cc5aaa8445a8083e48390088e1168c0557b70b03b3687` |
 | `tools/update_context_compass.py` | PACKAGE | `7fc607d29d47498b7ae682ea24d978b8540da35a44129410745b92904239caba` |
 | `user_defined/README.md` | INSTANCE | `f58639058dabcaafed2f3b589ca12b7eb94ddd45dd356a807b39f2304b90ab33` |

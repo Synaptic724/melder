@@ -460,13 +460,22 @@ def merge(new: dict[str, Any], old: dict[str, Any] | None) -> tuple[dict[str, An
         stamp = node.get("semantics_authored_against")
         current = node.get("span_sha256", "")
         if not stamp:
-            # Grandfathered: semantics predate the stamp. Assuming "current" is
-            # the only option that does not flag every existing node stale on
-            # first run, which would make the census useless on day one.
-            if current:
-                node["semantics_authored_against"] = current
-                notes.append(f"GRANDFATHERED node {nid} - semantics stamped against "
-                             f"current source; not verified against it")
+            # NOT STAMPED, AND THE EXTRACTOR DOES NOT STAMP IT.
+            #
+            # This used to auto-stamp the node against current source so it would
+            # report AUTHORED - "grandfathering". That was the extractor asserting,
+            # on nobody's behalf, that prose it never read matches code it never
+            # compared. It made `SEMANTICS_STALE: 0` reachable without a single node
+            # having been checked, and the assumption became indistinguishable from
+            # a real one the moment the run finished.
+            #
+            # The stamp means a human read this against this source. Only `--accept`
+            # can create it. An unstamped node reports SEMANTICS_STALE, because that
+            # is what it is: unverified. The first run after upgrading will show a
+            # large stale count, and that count is the truth being reported for the
+            # first time rather than a regression.
+            notes.append(f"UNVERIFIED node {nid} - authored prose with no stamp; "
+                         f"reports SEMANTICS_STALE until read and --accept'ed")
         elif current and stamp != current:
             notes.append(f"SEMANTICS_STALE node {nid} - source changed since its "
                          f"semantics were written; re-verify then re-accept")
@@ -624,8 +633,8 @@ def main() -> int:
          "RECOVERED - matched an older id; semantics carried over"),
         ("RESTORED",
          "RESTORED - back in source; retirement lifted"),
-        ("GRANDFATHERED",
-         "GRANDFATHERED - semantics predate the stamp, assumed current"),
+        ("UNVERIFIED",
+         "UNVERIFIED - authored prose nobody has checked against source"),
     ):
         hits = [n for n in all_notes if n.startswith(marker) or f" {marker} " in n]
         if not hits:

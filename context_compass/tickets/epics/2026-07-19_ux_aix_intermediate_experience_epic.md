@@ -1061,6 +1061,211 @@ restore_engine.py:1654; melder/__init__.py:68, :198.
   REREAD: OPTIONAL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-08-04T11:43:01Z
+  TYPE: FACT
+  CLAIM: ONE OF THE TWO OWED NAMES CANNOT BE TAUGHT AS WRITTEN, because it is
+    NOT a public-root name. The 2026-08-02 coverage note says "the only
+    public-root names this tier still owes are `Scan` and `ConduitCloud`".
+    `ConduitCloud` IS exported and is now taught at intermediate 37.
+    `Scan` IS NOT IN `melder.__all__`. The package root imports exactly one
+    name from that module - `from melder.aether.spellbook.bind.scan import
+    scan_bind` at `__init__.py:84` - and exports `"scan_bind"` at :258. There is
+    no `Scan` import and no `"Scan"` entry. Meanwhile `scan.py` declares its own
+    `__all__ = ("scan_bind", "Scan", "ScanBindMetadata")`, so the CLASS is
+    public at module level and simply not re-exported at the root.
+    Under the tier law - "every example is written against `import melder as md`
+    ONLY... any example forced to reach a deep path is, by definition, an
+    init-surface gap" - a `Scan` lesson cannot be written today without either
+    a deep import (forbidden) or a root export (a src change, and this tier's
+    fence forbids substrate work).
+  EVIDENCE:
+    - src/melder/__init__.py:84 (the only import from scan.py)
+    - src/melder/__init__.py:258 ("scan_bind" in __all__; no "Scan")
+    - src/melder/aether/spellbook/bind/scan.py:373 (module __all__ carries Scan)
+  IMPACT: The coverage sweep counted `Scan` as one of the 16 unexercised
+    public-root names, and it is not one of them. Either the sweep over-counted
+    or `Scan` should be exported and is not - and the answer decides whether
+    this tier owes one more lesson or zero.
+  NEXT: OWNER RULING - export `Scan` at the root (then the lesson is writable),
+    or correct the coverage note to drop it. Not decided here: adding a root
+    export is an init-surface change and belongs to the init composition story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-04T11:43:01Z
+  TYPE: FACT
+  CLAIM: WHAT A `Scan` LESSON WOULD TEACH, recorded now so the ruling above has
+    something concrete to weigh and so the reading is not repeated. Read from
+    source, not inferred.
+    TWO DOORS, DIFFERENT OWNERSHIP. `Spellbook.scan(module)` constructs
+    `Scan(self)` at spellbook.py:5357 and returns
+    `scanner.scan_module(module)` from one of two branches - and NEITHER branch
+    calls `scanner.cleanup()`, nor wraps it in try/finally. `Scan` IS a
+    `Cleanable` whose `cleanup()` drops the strong `_spellbook` reference
+    (scan.py:303-318). So `md.Scan(book).scan_module(m)` used directly is
+    currently the ONLY path on which `Scan.cleanup()` ever runs. That matches
+    the finding already recorded on this epic 2026-08-02 and is re-verified
+    here against the real line numbers.
+    THE TRANSACTION WINDOW IS CHOSEN, NOT ALWAYS OPENED (spellbook.py:5358-5370):
+    when a bind-capable transaction is already active the scan runs inside the
+    caller's window and opens nothing, so it commits or rolls back with that
+    outer window; only otherwise does it open its own `"bind"` transaction.
+    Pre-conjure books ALWAYS take the already-active branch.
+    POST-CONJURE SCANNING REQUIRES A DYNAMIC FRAME - the posture gate refuses
+    first, raising RuntimeError before any binding is attempted.
+    AND THE RE-EXPORT REFUSAL IS THE INTERESTING RULE: `scan_module` walks
+    `vars(module)` in definition order and raises ValueError when a decorated
+    object's `__module__` does not match, so a module binds only what it
+    actually DEFINES. Without it, a module that imported a decorated class
+    would bind it a second time under a different scan.
+  EVIDENCE:
+    - src/melder/aether/spellbook/spellbook.py:5348-5370
+    - src/melder/aether/spellbook/bind/scan.py:303-318, 335-370
+  IMPACT: The lesson is fully scoped and blocked only on the export ruling.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-04T12:10:00Z
+  TYPE: DECISION
+  CLAIM: BOTH OWED NAMES ARE RESOLVED, AND I HAD THE SCAN HALF WRONG. My note
+    above asked the owner to rule "export `Scan`, or drop it from the coverage
+    note". THAT RULING ALREADY EXISTED and I missed it by not reading the fence
+    test. `tests/unit/melder/test_package_public_surface.py:265-272` carries
+    `"Scan"` in the curated-exclusion list with the reasoning written out:
+    "`Spellbook.scan(module)` is the API - it applies the frame POSTURE GATE and
+    wraps the work in a BIND TRANSACTION before it constructs a Scan. Building
+    `Scan(book)` yourself skips both guards, so exporting the class only
+    advertised a way around them." Dated 2026-08-02 - the same day as the
+    coverage note that counted `Scan` as owed. The coverage note is the stale
+    one; `Scan` owes this tier nothing.
+    CONDUITCLOUD NOW FOLLOWS IT OFF THE ROOT (owner ruling 2026-08-04), and it
+    is the stronger case: `Scan`'s export advertised a way AROUND a guard, but
+    `ConduitCloud`'s export advertised a door that was painted on.
+    `ConduitCloud.__init__` requires an `AethericFrame` and a
+    `DevopsInformationRegistry` - neither exported, neither defaulted - so
+    `md.ConduitCloud(...)` was never callable. Its own docstring says "users do
+    not construct one".
+    THE OUTLIER CLAIM WAS CHECKED, NOT ASSUMED, and my first reading of it was
+    wrong. I hypothesised ConduitCloud was one of a whole class of
+    facade-reached exports and therefore not special. Reading the constructors
+    disproved that: `FrameViewer(*, rift: Rift)` takes an EXPORTED type,
+    `Workstation(owner_space_id: str, *, ...)` takes plain types with keyword
+    defaults, `ViewSpell(*, frame_view: Optional[ViewFrame])` takes an exported
+    optional. All three ARE constructible from the root. ConduitCloud was the
+    only one hard-blocked.
+    IT ALSO LEAKED: `ConduitCloud.get_cluster()` returns a `ConduitCluster`,
+    which was ALREADY in the same exclusion list - so the root advertised a type
+    whose own methods hand back a type the root refuses to name.
+  EVIDENCE:
+    - tests/unit/melder/test_package_public_surface.py:265-272 (the Scan ruling)
+    - tests/unit/melder/test_package_public_surface.py:256 (ConduitCluster excluded)
+    - src/melder/aether/aetheric_frame/conduit_cloud.py:56-57, 100-107
+    - src/melder/nexus/rift/frame_viewer/frame_viewer.py:124-129
+    - src/melder/nexus/rift/rift_space/workstation.py:98-104
+    - src/melder/nexus/rift/frame_viewer/view_spell.py:86
+  IMPACT: This tier owes ZERO further public-root lessons. The coverage note's
+    "16 remaining, two belong to intermediate" is retired: `ConduitCloud` is
+    taught at 37 through the reach rather than the name, and `Scan` is not a
+    root name at all.
+  NEXT: none for this tier. The build-asset regeneration below is the owner's.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-04T12:10:00Z
+  TYPE: FACT
+  CLAIM: WHAT LANDED FOR THE CONDUITCLOUD REMOVAL, and one edit I deliberately
+    did NOT make.
+    DONE: `src/melder/__init__.py` - import dropped, `"ConduitCloud"` dropped
+    from `__all__` (64 -> 63), and the RESOLVE line of the module docstring no
+    longer names it. `tests/unit/melder/test_package_public_surface.py` - the
+    identity assert and its import removed from
+    `test_user_held_work_surfaces_are_loaded`, `"ConduitCloud"` ADDED to
+    `test_internal_depths_stay_off_the_root` with the reasoning inline
+    (matching the Scan precedent), and the "all 64 names" docstring corrected
+    to 63. Intermediate lesson 37 - the `isinstance(cloud, md.ConduitCloud)`
+    line replaced with behavioural assertions, and the docstring now TEACHES
+    why the type is reached and never named. `test_intermediate_probes.py` -
+    the existing cloud probe now imports `ConduitCloud` by concrete path (a
+    probe may; an example may not) so the type check survives, plus a NEW row
+    `test_probe_conduit_cloud_is_not_on_the_package_root` pinning the fence in
+    the tier that teaches it.
+    NOT DONE, ON PURPOSE: I did not flip `AGENT_ACCESS: public` to internal in
+    `conduit_cloud.py`. The Scan precedent settles it - `Scan` came off the
+    root on 2026-08-02 and its docstring STILL reads `AGENT_ACCESS: public`,
+    because the marker means "public to REACH", not "importable from the root".
+    Its AGENT_PURPOSE even describes the facade call. `ConduitCloud` is still
+    reachable through `Conduit.get_conduit_cloud()` and
+    `AethericFrame.conduit_cloud`, so flipping the marker would contradict the
+    precedent AND misdescribe the object.
+    VERIFIED MECHANICALLY: `__all__` is 63 with no duplicates; ZERO examples
+    across all four tiers use a non-exported `md.*` name, checked by AST
+    attribute walk rather than by regex - the regex flagged lesson 37 and the
+    AST cleared it, because the remaining mentions are prose inside the
+    docstring explaining the ruling.
+  EVIDENCE:
+    - src/melder/__init__.py:21, 71-73, 194-258
+    - tests/unit/melder/test_package_public_surface.py:128-170, 236-292
+    - UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py:42-70
+  IMPACT: The root advertises only names a caller can actually use.
+  NEXT: OWNER - the `AGENT_PURPOSE` text of `ConduitCloud` is harvested into
+    the committed `_build_assets/_agent_documentation/` manifest. Nothing I
+    changed touches that text, so no regeneration is REQUIRED by this change -
+    but if you ever do flip the marker, the manifest must be rebuilt with
+    `python src/melder/_build_assets/_build_asset_runner.py` on 3.14t.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-04T12:30:00Z
+  TYPE: DECISION
+  CLAIM: OWNER OVERRULED MY "NOT DONE, ON PURPOSE" AND THE MARKER IS NOW FLIPPED.
+    The note above declined to change `AGENT_ACCESS` on `ConduitCloud`, reasoning
+    from the `Scan` precedent that the marker means "public to REACH". The owner
+    ruled otherwise 2026-08-04 - "conduit_cloud is public but its just not public
+    facing like you can't summon it directly, I guess make it internal" - and
+    that is the better reading: `AGENT_ACCESS` describes what an AGENT should
+    drive, and an object you cannot summon is not something an agent drives.
+    `conduit_cloud.py` now carries `AGENT_ACCESS: internal` and an
+    `AGENT_PURPOSE` rewritten to the house internal shape, ending with the
+    standard "Melder kernel machinery: read it to understand the runtime, do not
+    drive it directly." The `Registration:` section now names
+    `Conduit.get_conduit_cloud()` first (the reachable door - `AethericFrame` is
+    not public) and records that the class left the root.
+    CONDUITCLUSTER NEEDED NOTHING - CHECKED, NOT ASSUMED. The owner asked me to
+    make sure it is not public facing. It already was not, on both surfaces:
+    `conduit_cluster.py:167` already reads `AGENT_ACCESS: internal` with a
+    correctly-shaped internal `AGENT_PURPOSE`, and `"ConduitCluster"` was
+    already in the root exclusion fence at
+    `test_package_public_surface.py:256`. No edit was made to it.
+    THE MARKER WAS VERIFIED BY RUNNING THE REAL PARSER, not by eye. These are
+    HARVESTED fields and a wrong indent silently truncates them, so
+    `_agent_documentation/_builder.py` was loaded standalone by file path
+    (it is stdlib-only, so it imports on 3.10 without the melder chain) and
+    `parse_docstring_markers` was run against the real edited docstring:
+    ConduitCloud resolves `access='internal'` with 477 chars of purpose ending
+    on "do not drive it directly." - collected in full, not truncated. The rule
+    that matters is `_builder.py:290`: a line closes the block only if it is
+    ENTIRELY a Title-Case header ending in a colon AND is not indented 8+
+    spaces. Every body line here is 8-space indented and none is a bare
+    `Word:` line.
+  EVIDENCE:
+    - src/melder/aether/aetheric_frame/conduit_cloud.py:55-62, 80-89
+    - src/melder/aether/conduit/conduit_cluster.py:167-173
+    - src/melder/_build_assets/_agent_documentation/_builder.py:242-296
+    - tests/unit/melder/test_package_public_surface.py:256
+  IMPACT: The two cluster-family objects now agree with each other and with the
+    root: neither is exported, and both declare themselves internal.
+  NEXT: OWNER MUST REGENERATE THE BUILD ASSET - this change DOES move harvested
+    text, unlike the earlier root-export change. `agent_documentation_manifest.py:35`
+    still carries the OLD tuple verbatim: `('public', 'access: public.
+    Frame-scoped discovery and cluster facade...')`. The asset also carries a
+    source digest over every `src/**/*.py`, so it is now stale by digest as well
+    as by content. Run on 3.14t:
+    `python src/melder/_build_assets/_build_asset_runner.py`
+    then `--check` to confirm. NOT RUN by me: the runner imports melder and this
+    sandbox is 3.10.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

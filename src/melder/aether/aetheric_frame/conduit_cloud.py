@@ -54,7 +54,12 @@ class ConduitCloud(Cleanable):
 
     Registration:
         MELDER KERNEL - guarded. Reached through
-        `AethericFrame.conduit_cloud`; users do not construct one.
+        `Conduit.get_conduit_cloud()` or `AethericFrame.conduit_cloud`; users
+        do not construct one, and since 2026-08-04 the class is not exported
+        from the package root either. The initializer needs an `AethericFrame`
+        and a `DevopsInformationRegistry`, neither of which is public, so
+        `md.ConduitCloud(...)` was a name that could never be called - the
+        export advertised a door that was painted on. The REACH is unchanged.
 
     Subsystem Context:
         The discovery and cluster facade over frame-owned registries. It exists
@@ -77,12 +82,15 @@ class ConduitCloud(Cleanable):
         what it checks for, which is why admission reads the frame registry
         directly rather than going through `_ensure_frame`.
 
-    AGENT_ACCESS: public
+    AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: public. Frame-scoped discovery and cluster facade. Use
-        has_conduit_name(...)/has_cluster_name(...) to probe without creating, and the cluster
-        verbs to form member groups. Reached via AethericFrame.conduit_cloud.
+        access: internal. Frame-scoped conduit and cluster discovery facade, reached through
+        `Conduit.get_conduit_cloud()` or `AethericFrame.conduit_cloud` and never constructed -
+        its initializer needs an AethericFrame and a DevopsInformationRegistry, neither of which
+        is public. Use has_conduit_name(...)/has_cluster_name(...) to probe without creating, and
+        the cluster verbs to form member groups. Melder kernel machinery: read it to understand
+        the runtime, do not drive it directly.
     """
     __slots__ = Cleanable.__slots__ + [
         "_lock",

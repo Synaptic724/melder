@@ -2,12 +2,12 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-08-01-ux-aix-harness-red-remediation
-- Status: in_progress
+- Status: review
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p1
 - Created: 2026-08-01T11:18:00Z
-- Updated: 2026-08-01T11:18:00Z
+- Updated: 2026-08-04T11:43:01Z
 
 ## Objective
 Drive the 7 reds from the owner's 2026-08-01 3.14t run to green WITHOUT destroying
@@ -156,6 +156,87 @@ ruling lands. No agent claims a green run.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-08-04T11:43:01Z
+  TYPE: FACT
+  CLAIM: THE WORK IS DONE AND THE RECORD SAID OTHERWISE. Re-verified every finding
+    against the working tree rather than against these tickets, and all four are
+    implemented. The handoff summary below said "Nothing edited in examples or
+    source. Blocked on two owner rulings" - both halves were false by 2026-08-01
+    12:46, when the owner's SCOPE LOCK ruled the runtime correct and removed the
+    rulings from the lane. Corrected here rather than left for the next reader.
+    FINDING-2: `35_one_config_every_book.py:102-103` conjures `name="shared-policy-a"`
+    and `"shared-policy-b"`. The refusal it hit is correct and unchanged -
+    `aetheric_frame.py:368-372` raises "Conduit with name {0} already exists."
+    FINDING-4: fixed AND ITS FILE WAS RENUMBERED, so this ticket's path is stale -
+    `03_advanced/07_...` is now `03_advanced/05_frame_posture_cheatsheet.py`. The
+    hardcoded `== 15` is gone; `total` is derived by counting (:58-63) and :101
+    asserts `not unmapped` reflectively against the live class. That removes the
+    class of bug rather than the instance, which is what the task asked for.
+    FINDING-1: ZERO example files call `with_defaults()` together with a disposal
+    write. Every disposal write sits on a bare `SpellbookConfiguration()`
+    (`30_config_disposal_and_the_frozen_law.py:35-36`,
+    `31_spellbook_config_defined.py:50-52`, the latter carrying an explicit "NOTE the
+    absent with_defaults() call" comment), and every `configure_aether_frame(...)`
+    call passes `disposal=None`.
+    FINDING-3: self-reconciled in its own ticket at 2026-08-01T13:05.
+  EVIDENCE:
+    - UX_and_AIX_experiences/02_intermediate/35_one_config_every_book.py:102-103
+    - UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py:45-52
+    - UX_and_AIX_experiences/03_advanced/05_frame_posture_cheatsheet.py:58-63, 101
+    - src/melder/aether/aetheric_frame/aetheric_frame.py:368-372
+  IMPACT: The epic is deliverable-complete and was invisible while saying it was
+    blocked. Its four child tasks sit in `tickets/tasks/completed/` at
+    `Status: review` with no `Completed:` and no `Summary:` - moved but never
+    closed, which is why nothing downstream could tell the work had landed.
+  NEXT: Owner runs the harness on 3.14t. No agent may claim green.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-04T11:43:01Z
+  TYPE: FACT
+  CLAIM: THE DOCSTRING DEFECT THIS EPIC LEFT OPEN IS FIXED IN SOURCE, and one
+    residual survives it. The disposal task's last note recorded "the cause of all
+    four reds is STILL PRESENT in source" because `with_defaults()` documented
+    itself as "overwriting anything set earlier, so call it FIRST and override
+    afterwards". That text is GONE. `spellbook_configuration.py:1061-1073` now reads
+    "SEEDS ONLY WHAT IS MISSING... Values you set earlier are PRESERVED, not
+    replaced. Therefore it is NOT a reset."
+    THE MECHANISM IS UNCHANGED and was re-read, not assumed: `_idempotent_keys =
+    {"disposal", "disposal_method_names"}` at :148; `set_property` refuses on
+    `key in self._idempotent_keys and key in self._properties` at :232-233, which
+    tests PRESENCE not provenance; `load_default_dictionary` writes
+    `self._properties[key]` directly and only when absent at :583-585;
+    `_OPTIONAL_PROPERTY_DEFAULTS` is still a ONE-key set at :438-440, so every other
+    registered property stays hard-required at :456-458.
+    RESIDUAL, NOT FIXED: the corrected docstring still advises "Call it first if you
+    want defaults underneath your overrides." For the two set-once keys that is
+    still false - call it first and `with_disposal()` is permanently refused. It is
+    a `src/` edit and this lane is scope-locked to examples, so I did not touch it.
+  EVIDENCE:
+    - src/melder/aether/spellbook/configuration/spellbook_configuration.py:1061-1073
+    - src/melder/aether/spellbook/configuration/spellbook_configuration.py:148
+    - src/melder/aether/spellbook/configuration/spellbook_configuration.py:232-233
+    - src/melder/aether/spellbook/configuration/spellbook_configuration.py:583-585
+    - src/melder/aether/spellbook/configuration/spellbook_configuration.py:438-440
+  IMPACT: The public-prose half of the defect is closed. The set-once interaction is
+    still undocumented at the one place a user reads before hitting it.
+  NEXT: Owner call on that one sentence. Not touched unsolicited.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Four causes, four tasks, one discovery record. Nothing edited in examples or source.
-Blocked on two owner rulings; everything else is ready to execute behind them.
+CORRECTED 2026-08-04. This section previously read "Nothing edited in examples or
+source. Blocked on two owner rulings" - false on both counts since the owner's
+2026-08-01T12:46 scope lock, and the drift is the reason the lane looked stalled.
+
+TRUE STATE: all four findings are implemented in the working tree, verified against
+source this session rather than taken from these tickets. The epic had NO
+attention_board row for three days; one has been added and it is now `review`, not
+closed. The four child tasks are in `tickets/tasks/completed/` at `Status: review`
+with no `Completed:` or `Summary:` line - they were moved without being closed, and
+closing them needs the owner's acceptance walkthrough, so they are left as they are
+and flagged rather than quietly finished.
+
+NOT RUN: this sandbox is Python 3.10 and melder requires >=3.14, so no agent claim
+of green exists or should be inferred. The one outstanding action is an owner
+`pytest UX_and_AIX_experiences/pytest_examples -v` on 3.14t.

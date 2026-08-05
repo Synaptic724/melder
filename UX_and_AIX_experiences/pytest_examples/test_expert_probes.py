@@ -3,6 +3,9 @@ Expert-tier contract probes. Run on 3.14t:
 
     pytest UX_and_AIX_experiences/pytest_examples/test_expert_probes.py -v
 """
+import gc
+import json
+
 import melder as md
 import pytest
 
@@ -797,3 +800,123 @@ def test_probe_the_two_describe_doors_answer_different_questions():
     assert isinstance(contract, dict)
     print("describe doors pinned: wiring", len(wiring), "keys | contract",
           len(contract), "keys")
+
+
+# ---------------------------------------------------------------------------
+# Lessons 26-28 - the iteration loop, the runtime teardown, and the record
+#                 crossing as text
+# ---------------------------------------------------------------------------
+
+def test_probe_describe_payload_is_strictly_json_safe():
+    """Lesson 28's load-bearing claim, and the reason that example calls
+    `json.dumps` with NO `default=` handler.
+
+    `describe_composition()` states "PLAIN-VALUE THROUGHOUT. Every nested
+    value is JSON-safe". This pins it STRICTLY: a `default=str` would
+    paper over the exact regression worth catching, because a datetime
+    would go out as a string, come back as a string, and nothing would
+    notice the round trip had become lossy."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-json-safe")
+    lane_name = research_set.lane_names()[0]
+    research_set.register_spell("spell-json-one", lane=lane_name)
+    research_set.register_spell("spell-json-two", lane=lane_name)
+
+    payload = research_set.describe()
+    assert isinstance(payload, dict)
+    assert "organization" in payload, "organization is a hard requirement"
+    assert "journal" in payload, "journal is a hard requirement"
+
+    # No default= on purpose. If this raises, the guarantee has regressed
+    # and the TypeError names the offending value.
+    text = json.dumps(payload, sort_keys=True)
+    assert isinstance(text, str)
+    assert json.loads(text) == payload, "the trip must be lossless"
+    print("json-safety pinned:", len(text), "chars, strict dumps, lossless")
+
+
+def test_probe_from_payload_restores_the_recorded_identity():
+    """Lesson 28 claim, and the distinction from a WORLD restore.
+
+    `from_payload` says "RECORDED IDENTITY IS PRESERVED - the rebuilt set
+    restores the recorded `set_id` and `created_at` rather than minting
+    new ones". That is the opposite guarantee to expert 24/27, where a
+    restored world is deliberately equivalent-not-identical and hands you
+    a translation map. Runtime objects are rebuilt; the RECORD is
+    restored, and a lesson that blurred those would teach the wrong
+    mental model."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-identity")
+    lane_name = research_set.lane_names()[0]
+    research_set.register_spell("spell-identity", lane=lane_name)
+
+    original_id = research_set.set_id
+    lanes_before = sorted(research_set.lane_names())
+    text = json.dumps(research_set.describe(), sort_keys=True)
+
+    rebuilt = md.ResearchSet.from_payload(json.loads(text))
+
+    assert rebuilt.set_id == original_id, (
+        "a hydrated set is the SAME set, not an equivalent copy"
+    )
+    assert sorted(rebuilt.lane_names()) == lanes_before, (
+        "every lane must survive the text round trip"
+    )
+    assert isinstance(rebuilt.walk(lane_name), list)
+    assert isinstance(rebuilt.network_snapshot_shas(), list), (
+        "the undo ring rides the payload so restore_network still works"
+    )
+    print("identity pinned:", original_id[:12], "-> rebuilt same id,",
+          len(lanes_before), "lanes")
+
+
+def test_probe_a_lane_never_registered_into_walks_empty():
+    """Lesson 26's correction, pinned so it cannot regress into folklore.
+
+    Cutting a lane records ANCESTRY ONLY - no node is copied and none is
+    minted. A codegen turn is not a version either: only bind,
+    bind_inactive and a notch write the research book. So a lane cut and
+    never registered into must walk EMPTY, and that is correct rather
+    than a defect."""
+    research = _active_research()
+    research_set = research.create_research_set("probe-empty-lane")
+    default_lane = research_set.lane_names()[0]
+    research_set.register_spell("spell-on-default", lane=default_lane)
+
+    research_set.create_lane("never-registered", lane_type="experiment")
+    walked = research_set.walk("never-registered")
+
+    assert isinstance(walked, list)
+    assert len(walked) == 0, (
+        "a lane nobody registered into is empty - anchoring is ancestry, "
+        "not a copy"
+    )
+    assert len(research_set.walk(default_lane)) >= 1, (
+        "the control: the lane we DID register into is not empty"
+    )
+    print("empty-lane pinned: cut lane walks", len(walked),
+          "| registered lane walks", len(research_set.walk(default_lane)))
+
+
+def test_probe_aether_cleanup_clears_the_singleton():
+    """Lesson 27 claim: `cleanup()` IS the public reset, so the lesson
+    needs no private door.
+
+    Singleton bookkeeping is cleared in a `finally` (`_instance = None`,
+    `_initialized = False`), which is why a failing child teardown can no
+    longer leave a cleaned husk installed as the process singleton. The
+    private `_reset_singleton_for_tests` sitting next to it is the
+    test-isolation verb - this conftest uses it - not a lifecycle door."""
+    first = Aether()
+    assert Aether() is first, "the singleton must be a singleton first"
+
+    first.cleanup()
+    collected = gc.collect()
+
+    second = Aether()
+    assert second is not first, (
+        "cleanup() must clear the singleton - a fresh Aether() may never "
+        "return the cleaned instance"
+    )
+    print("teardown pinned: fresh root differs after cleanup;",
+          collected, "objects collected")

@@ -18,7 +18,7 @@ Workflow map - every name below is importable from this root:
 - BIND: Spellbook, SpellBinder, scan_bind (decorator), Spell,
   SpellIndex; vocabulary Existence, Permissions, Policies, SystemState.
 - RESOLVE: Conduit (meld, lesser conduits, link/sever), SpellSpace,
-  declarative descriptors SpellMap and SpellContract, ConduitCloud.
+  declarative descriptors SpellMap and SpellContract.
 - AUGMENTED RUNTIME (AR): Nexus -> Rift -> RiftSpace rooms; Workstation,
   FrameViewer and its ViewFrame/ViewConduit/ViewSpell/ViewMultiFrame;
   vocabulary NexusFrameMode, RiftSpaceType.
@@ -70,7 +70,6 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
 
 # ---- user-held work surfaces (returned by the objects above; exported so
 # ---- user code can type, isinstance, and discover them from the root) ----
-from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
 from melder.aether.conduit.conduit import Conduit
 
 # ---- front-facing enum vocabularies ----
@@ -197,7 +196,6 @@ __all__ = [
     "AetherConfigurationBuilder",
     "AethericFrameConfiguration",
     "Conduit",
-    "ConduitCloud",
     "Crystallizer",
     "CrystallizerBootstrap",
     "CrystallizerConfiguration",

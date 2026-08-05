@@ -127,6 +127,23 @@ CONFIGURATION, KNOB BY KNOB (owner-directed wave, 2026-07-26)
      question; find_conduit_id_by_name returns OPTIONAL rather than
      raising, because a lookup that can legitimately miss should not
      need a try block. Cluster verbs named, not exercised)
+     UPDATED 2026-08-04 (owner ruling): `ConduitCloud` came OFF the
+     package root, so this lesson no longer NAMES the type at all - the
+     `isinstance(cloud, md.ConduitCloud)` line is gone and the asserts
+     test what the object DOES instead. The reasoning is the sharper
+     version of the Scan ruling below: Scan's export advertised a way
+     AROUND a guard, but ConduitCloud's advertised a door that was
+     PAINTED ON - its initializer needs an AethericFrame and a
+     DevopsInformationRegistry, neither exported and neither defaulted,
+     so `md.ConduitCloud(...)` could never be called. Checked, not
+     assumed: every other exported work surface IS constructible from the
+     root (FrameViewer takes an exported Rift, Workstation takes a plain
+     str, ViewSpell an optional exported ViewFrame) - this was the only
+     one hard-blocked. THE REACH IS UNTOUCHED: get_conduit_cloud() still
+     hands you the live object and every verb above still works. Its
+     AGENT_ACCESS marker moved public -> internal in the same pass, and
+     ConduitCluster was checked and was ALREADY internal on both
+     surfaces. A new probe pins the fence in this tier's own harness.
   38 WITHDRAWN 2026-08-02 (owner). It taught `md.Scan(book)` constructed
      directly as a "second door" - IT IS NOT ONE. Spellbook.scan applies
      a POSTURE GATE and wraps the work in a BIND TRANSACTION before it
@@ -141,7 +158,13 @@ TIER SCOPE CORRECTIONS (owner)
   OUT 2026-08-01 -> ADVANCED: SpellIndex membership verbs,
       AetherConfiguration(+Builder), crystallizer activation/checkpoint
   STAYS: SpellContract (lesson 36)
-  With 37 and 38 authored, this tier owes NO further public-root names.
+  With 37 authored and 38 WITHDRAWN, this tier owes NO further
+  public-root names. (CORRECTED 2026-08-04: this line previously read
+  "With 37 and 38 authored", contradicting the withdrawal recorded
+  fourteen lines above it. The conclusion was right; the arithmetic was
+  not.) Since 2026-08-04 NEITHER of the two names that prompted the
+  question is a root export: `Scan` came off 2026-08-02, `ConduitCloud`
+  on 2026-08-04.
 
 KNOWN GAPS INSIDE THE FENCE (remaining)
   live link policies (whitelist_all/block_all/inbound_only/outbound_only)
