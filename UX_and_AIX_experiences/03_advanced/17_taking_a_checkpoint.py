@@ -8,7 +8,7 @@ GOAL: TAKING A CHECKPOINT - and settling which configuration ladder is
         lesson 07  Aether       you finalize, you activate the config,
                                 THEN aether.activate() - and handing it a
                                 merely-frozen config raises
-        lesson 08  Nexus        you hand over a config and enable()
+        lesson 08  Nexus        you hand over a config and activate()
                                 finalizes it FOR you
         lesson 17  Crystallizer ...follows AETHER.
 

@@ -42,25 +42,54 @@ SURFACE EXERCISED: research_group_register / research_group_impact /
                    research_group_view, Conduit.bind_inactive
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
+import importlib
+
 import melder as md
 
 
 FRAME = "subsystem-world"
 
+# THREE GENERATED MODULE WORLDS. A subsystem whose members all live in one
+# file has a ONE-module footprint, and a union over one module is not a
+# union - the internal/outbound split has nothing to split. Generating
+# three gives the radius something real to measure.
+MEMBERS = (
+    ("sub_intake", "Intake", "intake"),
+    ("sub_ledger", "Ledger", "ledger"),
+    ("sub_report", "Report", "report"),
+)
 
-class Intake:
+MEMBER_TEMPLATE = '''"""Generated subsystem member."""
+
+
+class {class_name}:
     def __init__(self) -> None:
-        self.name = "intake"
+        self.name = "{label}"
+
+    def run(self) -> str:
+        return "{label}:ok"
+'''
 
 
-class Ledger:
+class SubsystemSeed:
+    """The world's first inhabitant.
+
+    A RIFT IS A CONNECTION INTO AN OBJECT WORLD, so the world has to
+    exist before you can connect to it. `configure_aether_frame` declares
+    the frame's LAW - posture, permissions, whether rifts are allowed at
+    all - but it puts NOTHING in it. The Nexus answers "what is in this
+    frame, and who is where" from a frame DESCRIPTOR it assembles out of
+    frame, conduit and spell records: out of CONTENTS. A room projection
+    targets that descriptor.
+
+    So an uninhabited frame has nothing to describe and nothing to
+    project, and linking a rift to one is putting a window on an empty
+    site. This bind and the conjure after it are not a formality to
+    satisfy a check - they are what brings the world into being.
+    """
+
     def __init__(self) -> None:
-        self.name = "ledger"
-
-
-class Report:
-    def __init__(self) -> None:
-        self.name = "report"
+        self.name = "seed"
 
 
 def _show(label: str, value: object) -> None:
@@ -94,15 +123,11 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    # THREE members, so the composition is a subsystem rather than a pair.
-    intake = book.bind(spell=Intake, existence="unique",
-                       permissions="create", binding_name="sub-intake")
-    ledger = book.bind(spell=Ledger, existence="unique",
-                       permissions="create", binding_name="sub-ledger")
-    report = book.bind(spell=Report, existence="unique",
-                       permissions="create", binding_name="sub-report")
+    # INHABIT THE WORLD BEFORE CONNECTING TO IT (see SubsystemSeed). The
+    # frame's law is declared; this is what puts something in it.
+    book.bind(spell=SubsystemSeed, existence="unique", permissions="create",
+              binding_name="subsystem-seed")
     book.conjure(name="subsystem-root")
-    print("three versions declared:", intake[:10], ledger[:10], report[:10])
 
     nexus = md.Nexus()
     system_configuration = nexus.create_configuration()
@@ -122,6 +147,25 @@ def main() -> None:
     assert isinstance(rift.space, md.RiftSpace)
     assert rift.space is rift.space
     commands = rift.space.command_system
+
+    # THREE members, each its own module world, so the footprint is three
+    # modules and the union has something to be a union OF.
+    member_ids = []
+    for module_name, class_name, label in MEMBERS:
+        source = MEMBER_TEMPLATE.format(class_name=class_name, label=label)
+        commands.validate_codegen(source, frame_name=FRAME)
+        kept = commands.materialize_codegen(
+            source, module_name=module_name, frame_name=FRAME,
+        )
+        assert kept["materialized"] is True, kept
+        module = importlib.import_module(module_name)
+        member_ids.append(book.bind(
+            spell=getattr(module, class_name), existence="unique",
+            permissions="create", binding_name=module_name.replace("_", "-"),
+        ))
+    intake, ledger, report = member_ids
+    print("three versions declared from three module worlds:",
+          intake[:10], ledger[:10], report[:10])
 
     # PIN THEM AS ONE UNIT. Identity is content-addressed over the
     # canonical member list, so the same roster is the same composition.

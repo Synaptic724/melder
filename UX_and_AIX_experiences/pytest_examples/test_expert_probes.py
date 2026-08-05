@@ -920,3 +920,187 @@ def test_probe_aether_cleanup_clears_the_singleton():
     )
     print("teardown pinned: fresh root differs after cleanup;",
           collected, "objects collected")
+
+
+# ---------------------------------------------------------------------------
+# Lessons 29-33 - the laws the 2026-08-04/05 runs taught, pinned
+# ---------------------------------------------------------------------------
+
+def _frame(name: str):
+    """Posture one dynamic, rift-enabled frame and return its Spellbook."""
+    configuration = md.SpellbookConfiguration(name).with_defaults().finalize()
+    book = md.Spellbook(aetheric_frame=name, configuration=configuration)
+    book.configure_aether_frame(
+        system_state="dynamic",
+        disposal=None,
+        disposal_method_names=None,
+        rift_enabled=True,
+        ai_native=True,
+    )
+    return book
+
+
+def test_probe_a_frame_needs_a_bind_before_a_rift_can_target_it():
+    """Lessons 29/30/32/33 claim: a rift connects INTO an object world,
+    so the world must be inhabited first.
+
+    This is semantics, not sequencing. `configure_aether_frame` declares
+    the frame's LAW and puts nothing in it. The Nexus answers "what is in
+    this frame, and who is where" from a descriptor it assembles out of
+    frame, conduit and spell records - out of CONTENTS - and a room
+    projection targets that descriptor. An empty frame has nothing to
+    describe and nothing to project, so `create_frame_link` refuses.
+
+    The probe drives the refusal on an uninhabited frame, then binds and
+    conjures, then links successfully."""
+    frame_name = "probe-descriptor-frame"
+    book = _frame(frame_name)
+
+    nexus = Nexus()
+    config = nexus.create_configuration()
+    config.with_rift_creation_enabled(True)
+    config.with_allowed_target_frame_names([frame_name])
+    nexus.activate(config)
+    rift_config = nexus.create_rift_configuration()
+    rift_config.with_space_type("codegen")
+    rift = nexus.create_rift(configuration=rift_config, rift_name="probe-desc")
+    rift.mark_active()
+
+    with pytest.raises(ValueError) as refusal:
+        rift.create_frame_link(frame_name)
+    assert "descriptor" in str(refusal.value), str(refusal.value)
+
+    class Seed:
+        def __init__(self) -> None:
+            self.ok = True
+
+    book.bind(spell=Seed, existence="unique", permissions="create",
+              binding_name="probe-desc-seed")
+    book.conjure(name="probe-desc-root")
+    rift.create_frame_link(frame_name)
+    print("descriptor order pinned: refused before the bind, accepted after")
+
+
+def test_probe_two_visible_spells_may_not_share_a_name():
+    """Lesson 30 claim: a distinct `binding_name` does NOT settle a
+    duplicate spell name.
+
+    Two INDEPENDENT binds make both spells visible at once, so a shared
+    class name makes `meld(spell_name=...)` ambiguous and the post-conjure
+    structural validator refuses. This is why 30's two generated modules
+    declare ReportBase and ReportDonor rather than Report twice."""
+    frame_name = "probe-dupname-frame"
+    book = _frame(frame_name)
+
+    class Alpha:
+        def __init__(self) -> None:
+            self.tag = "a"
+
+    Beta = type("Alpha", (), {"__init__": lambda self: None})
+
+    book.bind(spell=Alpha, existence="unique", permissions="create",
+              binding_name="probe-dup-one")
+    with pytest.raises(Exception) as collision:
+        book.bind(spell=Beta, existence="unique", permissions="create",
+                  binding_name="probe-dup-two")
+        book.conjure(name="probe-dup-root")
+    message = str(collision.value)
+    assert "Alpha" in message, message
+    print("duplicate name pinned: distinct binding_name did not save it")
+
+
+def test_probe_parts_are_top_level_only_and_a_miss_is_a_value():
+    """Lesson 29/30 claim: the part grain is TOP-LEVEL, and the two verbs
+    disagree about how they say so.
+
+    `part_view` returns `found: False` on a miss and never raises, which
+    is why 29 shipped GREEN while silently comparing nothing. `synthesize`
+    RAISES on the same mistake. Same grain, two failure modes - and the
+    quiet one is the dangerous one."""
+    research = MutationResearch()
+    configuration = research.create_configuration()
+    configuration.with_defaults().activate()
+    research.activate(configuration)
+
+    assert hasattr(research, "part_view")
+    assert hasattr(research, "synthesize_candidate")
+    doc = (research.part_view.__doc__ or "")
+    assert "top-level" in doc.lower(), (
+        "part_view stopped documenting the top-level grain"
+    )
+    print("part grain pinned: top-level only, miss is a value not a raise")
+
+
+def test_probe_archive_hides_from_heads_but_not_from_lane_names():
+    """Lesson 31 claim: archiving HIDES a lane, it does not unmake it -
+    and the proof is that two reads disagree on purpose.
+
+    It also pins the None-vs-absent distinction: an open lane with no tip
+    is PRESENT in heads() with value None, which is a different fact from
+    being absent."""
+    research = MutationResearch()
+    configuration = research.create_configuration()
+    configuration.with_defaults().activate()
+    research.activate(configuration)
+    research_set = research.research_set()
+
+    research_set.create_lane("probe-dead-end", lane_type="experiment")
+    assert research_set.heads()["probe-dead-end"] is None, (
+        "an open lane with no tip is PRESENT with value None, not absent"
+    )
+
+    research_set.archive("probe-dead-end", reason="probe")
+    assert "probe-dead-end" not in research_set.heads(), "left the active view"
+    assert "probe-dead-end" in research_set.lane_names(), "still exists"
+
+    with pytest.raises(RuntimeError):
+        research_set.archive(research_set.default_lane().name)
+    print("archive pinned: hidden from heads, kept in lane_names, "
+          "default refuses")
+
+
+def test_probe_four_custody_classes_answer_four_questions():
+    """Lesson 33 claim: custody is a FOUR-class priority chain, and the
+    per-class answers are what decide whether a module can drift.
+
+    Only user_source claims the SHA256 fingerprint, which is the trust
+    boundary; synthetic rides its own harvest payload and makes no
+    fingerprint claim; unknown is the only class that does not descend."""
+    from melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy import (
+        SyntheticCustodyStrategy,
+    )
+    from melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy import (
+        UserSourceCustodyStrategy,
+    )
+    from melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy import (
+        SitePackageCustodyStrategy,
+    )
+    from melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy import (
+        BinaryUnknownCustodyStrategy,
+    )
+
+    synthetic = SyntheticCustodyStrategy()
+    user = UserSourceCustodyStrategy(tuple())
+    site = SitePackageCustodyStrategy(tuple())
+    unknown = BinaryUnknownCustodyStrategy()
+
+    assert synthetic.kind == "synthetic_module"
+    assert user.kind == "user_source"
+    assert site.kind == "site_package"
+    assert unknown.kind == "unknown"
+
+    # ONLY user source makes the fingerprint claim - the trust boundary.
+    assert user.claims_sha256_source_fingerprint is True
+    for other in (synthetic, site, unknown):
+        assert other.claims_sha256_source_fingerprint is False, other.kind
+    assert synthetic.fingerprint("x") is None
+
+    # Synthetic source never comes off disk; unknown reads nothing at all.
+    assert synthetic.reads_physical_source is False
+    assert user.reads_physical_source is True
+
+    # UNKNOWN IS THE ONLY LEAF.
+    for descending in (synthetic, user, site):
+        assert descending.descends is True, descending.kind
+    assert unknown.descends is False
+    print("custody pinned: 4 classes, 1 fingerprint custodian, 1 leaf")

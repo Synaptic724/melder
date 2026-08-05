@@ -47,26 +47,67 @@ SURFACE EXERCISED: research_source / research_module / research_parts /
                    research_history / research_recent
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
+import importlib
+
 import melder as md
 
 
 FRAME = "well-world"
+MODULE_V1 = "well_pricing_v1"
+MODULE_V2 = "well_pricing_v2"
+
+# TWO GENERATED MODULE WORLDS, so the comparison below has two genuinely
+# different recorded texts to read. Two classes typed into THIS file would
+# share one module and one snapshot - both sides of every diff would be
+# the same bytes, and the comparison law would demonstrate nothing.
+# Generated source is also the RELIABLE lane here: synthetic module
+# sources are ALWAYS harvested, while user module text rides the opt-in
+# retention lane.
+SOURCE_V1 = '''"""Recorded pricing, first version."""
 
 
-class PricingV1:
+class Pricing:
     def __init__(self) -> None:
         self.rate = 10
 
-    def quote(self, units: int) -> int:
-        return self.rate * units
+
+def quote(units: int) -> int:
+    return 10 * units
+'''
+
+SOURCE_V2 = '''"""Recorded pricing, second version."""
 
 
-class PricingV2:
+class Pricing:
     def __init__(self) -> None:
         self.rate = 25
+        self.surcharge = 5
 
-    def quote(self, units: int) -> int:
-        return (self.rate * units) + 5
+
+def quote(units: int) -> int:
+    return (25 * units) + 5
+'''
+
+
+class PricingSeed:
+    """The world's first inhabitant.
+
+    A RIFT IS A CONNECTION INTO AN OBJECT WORLD, so the world has to
+    exist before you can connect to it. `configure_aether_frame` declares
+    the frame's LAW - posture, permissions, whether rifts are allowed at
+    all - but it puts NOTHING in it. The Nexus answers "what is in this
+    frame, and who is where" from a frame DESCRIPTOR it assembles out of
+    frame, conduit and spell records: out of CONTENTS. A room projection
+    targets that descriptor.
+
+    So an uninhabited frame has nothing to describe and nothing to
+    project, and linking a rift to one is putting a window on an empty
+    site. This bind and the conjure after it are not a formality to
+    satisfy a check - they are what brings the world into being.
+    """
+
+    def __init__(self) -> None:
+        self.rate = 0
 
 
 def _show(label: str, value: object) -> None:
@@ -101,19 +142,12 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    v1 = book.bind(spell=PricingV1, existence="unique", permissions="create",
-                   binding_name="well-pricing")
+    # INHABIT THE WORLD BEFORE CONNECTING TO IT (see PricingSeed). The
+    # frame's LAW is already declared; this is what puts something IN it.
+    # It also opens the lineage the two generated versions will extend.
+    seed = book.bind(spell=PricingSeed, existence="unique",
+                     permissions="create", binding_name="well-pricing")
     conduit = book.conjure(name="well-root")
-
-    # A second version on the same lineage, so the diff has two sides.
-    v2 = conduit.bind_inactive(
-        spell=PricingV2,
-        spell_index=conduit.get_spell_by_id(v1).spell_index,
-        existence="unique", permissions="create",
-    )
-    module_name = PricingV1.__module__
-    print("two versions recorded:", v1[:12], "and", v2[:12])
-    print("both live in module:", module_name)
 
     nexus = md.Nexus()
     system_configuration = nexus.create_configuration()
@@ -128,6 +162,28 @@ def main() -> None:
     rift.create_frame_link(FRAME)
     commands = rift.space.command_system
 
+    # Now the room can write both module worlds.
+    for module_name_to_make, source in ((MODULE_V1, SOURCE_V1),
+                                        (MODULE_V2, SOURCE_V2)):
+        commands.validate_codegen(source, frame_name=FRAME)
+        kept = commands.materialize_codegen(
+            source, module_name=module_name_to_make, frame_name=FRAME,
+        )
+        assert kept["materialized"] is True, kept
+    first = importlib.import_module(MODULE_V1)
+    second = importlib.import_module(MODULE_V2)
+
+    # TWO VERSIONS ON ONE LINEAGE, FROM TWO MODULE WORLDS - which is what
+    # gives the comparison below two genuinely different sides.
+    index = conduit.get_spell_by_id(seed).spell_index
+    v1 = conduit.bind_inactive(spell=first.Pricing, spell_index=index,
+                               existence="unique", permissions="create")
+    v2 = conduit.bind_inactive(spell=second.Pricing, spell_index=index,
+                               existence="unique", permissions="create")
+    module_name = MODULE_V1
+    print("two versions recorded:", v1[:12], "and", v2[:12])
+    print("v1 module:", MODULE_V1, "| v2 module:", MODULE_V2)
+
     print()
     print("THE FOUR GRAINS, widest to narrowest:")
     try:
@@ -137,23 +193,36 @@ def main() -> None:
         _show("module(dossier)", commands.research_module(v1, module_name))
         _show("parts(inventory)", commands.research_parts(v1))
         _show("part(one lookup)",
-              commands.research_part(v1, "PricingV1", kind="class"))
+              commands.research_part(v1, "Pricing", kind="class"))
     except RuntimeError as custody:
         print("  custody read REFUSED:", str(custody)[:100])
         print("  LOUD is correct: a silent empty read would be")
         print("  indistinguishable from `this world has no code`")
         return
 
-    # An honest miss is a value, not an exception - absence is a real
-    # result when you are exploring a world you do not know.
-    _show("part(absent)", commands.research_part(v1, "NoSuchPartAnywhere"))
+    # PARTS ARE TOP-LEVEL ONLY, and a miss is a VALUE, not an exception.
+    # `__init__` is a method, so it is invisible to this grain - and the
+    # read says so honestly rather than raising.
+    absent = commands.research_part(v1, "NoSuchPartAnywhere")
+    method = commands.research_part(v1, "__init__", kind="function")
+    assert absent["found"] is False
+    assert method["found"] is False, "parts are TOP-LEVEL; __init__ is not"
+    _show("part(absent)", absent)
+    _show("part(a method)", method)
+    print("  absence is a real result when you are exploring a world you")
+    print("  do not know - so a miss returns `found: False`, never raises")
 
     print()
     print("THE COMPARISON LAW - recorded material only, never the disk:")
-    _show("part_diff(function)",
-          commands.research_part_diff(v1, v2, "quote", kind="function"))
-    _show("part_diff(class)",
-          commands.research_part_diff(v1, v2, "PricingV1", kind="class"))
+    function_diff = commands.research_part_diff(v1, v2, "quote",
+                                                kind="function")
+    class_diff = commands.research_part_diff(v1, v2, "Pricing", kind="class")
+    _show("part_diff(function)", function_diff)
+    _show("part_diff(class)", class_diff)
+    print("  both sides came from DIFFERENT module worlds, so this is a")
+    print("  real comparison. Two versions typed into one file would share")
+    print("  one snapshot and diff identical bytes - the law would hold and")
+    print("  demonstrate nothing")
 
     print()
     print("THE JOINS - a radius is only useful if you know WHO it hits:")

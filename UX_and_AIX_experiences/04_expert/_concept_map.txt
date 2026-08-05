@@ -6,7 +6,7 @@ agent writes code into a running world, the admission plane that lets
 several of them mutate it at once, the staging half of a hot swap, and
 the documents the package hands an agent before any of it boots -
 prose it addresses, and structure it walks.
-32 lessons authored, 01-32 sequential.
+33 lessons authored, 01-33 sequential.
 
 VERIFICATION STATUS (two harness runs, both 2026-08-03)
 
@@ -1126,6 +1126,74 @@ ARC I COMPLETE (lessons 30-32) - the record as an EDITABLE instrument.
      crystal, gates nothing, never executes - which is exactly why these
      questions are cheap to ask.
      COVERAGE: closes the codegen room's research family at 34/34.
+
+ARC J (lesson 33) - WHAT THE GENERATED THING ACTUALLY IS.
+  33 WHAT A SYNTHETIC MODULE ACTUALLY IS. Lessons 26, 27, 29, 30 and 32
+     all MAKE synthetic modules. None of them said what one IS, and the
+     tier shipped five lessons deep into codegen without ever defining
+     its central object. This closes that.
+     A SYNTHETIC MODULE IS A REAL MODULE WITH NO FILE - a live ModuleType
+     subclass carrying its own source and hash, registered behind a
+     meta-path finder so plain `import` resolves it. Its source IS the
+     record, so there is no file to go stale.
+     FOUR STATES, NONE INFERRED FROM ANOTHER: registration, import-hook
+     install, publication, execution. `materialize_codegen` composes all
+     four, and it PUBLISHES BEFORE IT EXECUTES on purpose - that is how
+     importlib treats real modules, so a circular import sees a
+     partially-initialised module rather than a missing one.
+     CUSTODY IS THE REAL SUBJECT. Bind classifies every module it walks
+     through FOUR authority classes, FIRST match wins:
+       synthetic_module - claims by OBJECT IDENTITY, never path, because
+         a path rule would misclassify it. No disk read. NO fingerprint
+         claim; its rebuild payload already carries source_sha256.
+       user_source - path under configured roots. THE ONLY FINGERPRINT
+         CUSTODIAN, and that is the trust boundary that makes drift
+         detectable at all.
+       site_package - descends and reads, claims NOTHING. You did not
+         write it, so its changing is not your bug.
+       unknown - the ONLY class that does not descend. An honest leaf, so
+         the manifest never implies a more complete dependency picture
+         than the source supports.
+     SO "CAN THIS DRIFT" IS ANSWERED BY CUSTODY, NOT BY CHANCE. Only user
+     source is fingerprinted, so only user source can be caught changing.
+     A synthetic module cannot drift - not unchecked, but because its
+     text IS the record. That is why a recorded row reports drifted=None:
+     there is no second copy to disagree with.
+     AND BIND FORMATS BOTH INTO ONE CRYSTAL. No synthetic crystal, no
+     file crystal - one flat module inventory, four kind-partitions over
+     it, and root_module_kind naming the lane the root took. The KIND is
+     DATA IN the crystal, which is exactly why a world can mix generated
+     and hand-written code and checkpoint as one thing.
+     ON POINTING AT INTERNALS: SyntheticModule, the custody strategies
+     and SpellCrystal are all AGENT_ACCESS: internal - "read it to
+     understand the runtime, do not drive it directly". 33 NAMES them
+     because you cannot reason about your own world without knowing they
+     exist, and drives only the public surface.
+
+THE HAND-TYPED-CLASS CORRECTION (2026-08-04) - 29, 30 AND 32
+  A run put 30 RED and the owner asked why no lesson used raw codegen.
+  Measured: of lessons 26-32 only 26 and 27 drove the authoring surface;
+  28-32 used classes typed into the example file. In THREE of them that
+  was not cosmetic, because the recorded unit is the MODULE:
+    30 - two classes in one file share one module, so base_text ==
+      donor_text, every selection was a part replaced by itself, and the
+      "added" action was UNREACHABLE. The lesson could not demonstrate
+      its own subject. It now generates two module worlds and asserts
+      BOTH actions.
+    29 - both versions shared one module snapshot, so every part_diff
+      compared identical bytes. It was GREEN and vacuous, which is worse
+      than red. It also asked for `quote` as a top-level function when
+      `quote` was a method; part_view returns `found: False` rather than
+      raising, so the miss was invisible. Now two generated modules with
+      a real top-level `quote`, and the method miss is a LABELLED
+      teaching moment instead of an accident.
+    32 - three members in one file gave a ONE-module footprint, and a
+      union over one module is not a union. Now three module worlds.
+  THE LESSON UNDER THE LESSON, and it inverts the obvious assumption:
+  GENERATED SOURCE IS THE RELIABLE INPUT, not the exotic one. "Synthetic
+  module sources are ALWAYS harvested; user module text rides the opt-in
+  retention lane." Hand-typed example classes are the FRAGILE choice for
+  anything that reads recorded material.
 
 AMENDMENT TO LESSON 06 (2026-08-04) - TWO STALE CLAIMS, ONE REAL GAP
   06's ladder table named `Nexus.enable()`. THERE IS NO `enable` ON

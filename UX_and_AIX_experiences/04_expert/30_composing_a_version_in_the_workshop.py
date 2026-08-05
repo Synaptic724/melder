@@ -1,9 +1,11 @@
 """
 TIER: expert (30)
-GOAL: THE HALF OF A MERGE THAT JOIN REFUSES TO DO. Expert 23 said it
-      outright: "Reconciliation-by-content is not a join concern: compose
-      in the codegen workshop, register the multi-parent result, then
-      join." This is that workshop.
+GOAL: THE HALF OF A MERGE THAT JOIN REFUSES TO DO, on code the room
+      actually generated. Expert 23 said it outright: "Reconciliation-by-
+      content is not a join concern: compose in the codegen workshop,
+      register the multi-parent result, then join." This is that
+      workshop, and the material is real codegen output - not classes
+      typed into this file.
 
       A record that merged content FOR you would be guessing about your
       source. So melder splits the act in two: you COMPOSE (here), and
@@ -15,9 +17,8 @@ GOAL: THE HALF OF A MERGE THAT JOIN REFUSES TO DO. Expert 23 said it
                             stage_ancestry=False)
       Take named top-level functions/classes from the DONOR's root module,
       splice them into the BASE's, and hand back the composed source with
-      a full foresight preview. Same-named parts replace, new parts
-      append. Nothing executes, binds or records - it is a candidate, not
-      a version.
+      a full foresight preview. Nothing executes, binds or records - it is
+      a candidate, not a version.
 
       SYNTHESIS IS MODULE-GRAIN. The engine says so itself: it "splices
       ONE version's module world". Each id resolves to its ROOT MODULE
@@ -26,48 +27,48 @@ GOAL: THE HALF OF A MERGE THAT JOIN REFUSES TO DO. Expert 23 said it
       raises, and the refusal NAMES what the donor actually carries -
       which is how you discover the grain if you guessed wrong.
 
-      AND THE GRAIN HAS A CONSEQUENCE THIS FILE CANNOT ESCAPE. Two spells
-      declared in the SAME module resolve to the SAME text, so every
-      selection here is a part being replaced by itself and the composed
-      candidate equals the base. That is not a bug and not a limitation
-      being apologised for - it is the grain being honest. "added" is
-      unreachable while base and donor share a module, and that
-      unreachability is the proof that the unit is the module.
-      A real composition draws its donor from a DIFFERENT module.
+      WHICH IS WHY THIS LESSON GENERATES ITS TWO MODULES. Two classes
+      typed into ONE example file resolve to the SAME module, so every
+      selection is a part replaced by itself and "added" is unreachable -
+      the splice degenerates into a no-op that proves nothing. Real
+      composition needs two module worlds, so the room writes them:
+        validate_codegen -> materialize_codegen -> import -> bind
+      That is the documented loop - materialize's own contract calls
+      binding the class inside the new module the step that "closes the
+      codegen -> synthmodule -> bind -> crystal loop".
 
-      AND THE MINT IS A SEPARATE, ONE-SHOT STAMP
+      AND GENERATED CODE IS THE MORE RELIABLE SOURCE, not the exotic one:
+      "synthetic module sources are ALWAYS harvested; user module text
+      rides the opt-in retention lane". The material a room wrote is the
+      material it can always read back.
+
+      THE MINT IS A SEPARATE, ONE-SHOT STAMP
         research_stage_ancestry([base, donor])
         research_clear_staged_ancestry()
       Staging says "the next FRESH world entry has these parents". It is
       consumed ONCE and it is ambient, not attached to any particular
-      call - the campaign pattern. `stage_ancestry=True` on synthesize is
-      the convenience that stages [base, donor] for you.
-
-      TWO THINGS THAT LOOK LIKE BUGS AND ARE NOT
-      A REDISCOVERY DOES NOT CONSUME THE STAMP. Identical content
-      re-entering the world is not the synthesized candidate arriving, so
-      the stamp is re-staged untouched and waits for the real thing.
-      AND THE STAMP SURVIVES UNTIL USED OR CLEARED. There is no scope
-      that ends it, which is why `clear_staged_ancestry` exists: abandon
-      a composition and you must clear, or the next unrelated bind
-      inherits parents it never had.
-
-      DIFF IS DERIVED, AND THE ROOM PICKS A DEFAULT
-        research_diff(left, right, strategy=None)
-      For a spell pair the room defaults to "structural" - its reasoning
-      layer. "source" is whole-module text, "parts" is per-class/function
-      grain. An explicit UNKNOWN strategy surfaces the engine's KeyError
-      rather than being quietly rerouted: the room never silently answers
-      a different question than the one asked.
-SURFACE EXERCISED: research_synthesize / research_stage_ancestry /
-                   research_clear_staged_ancestry / research_diff,
-                   Conduit.bind_inactive
+      call. A REDISCOVERY DOES NOT CONSUME IT - identical content
+      re-entering the world is not the synthesized candidate arriving.
+      AND THE STAMP SURVIVES UNTIL USED OR CLEARED. No scope ends it,
+      which is why `clear_staged_ancestry` exists: abandon a composition
+      and you must clear, or the next unrelated bind inherits parents it
+      never had.
+SURFACE EXERCISED: validate_codegen / materialize_codegen /
+                   research_synthesize / research_stage_ancestry /
+                   research_clear_staged_ancestry / research_diff
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
+import importlib
+
 import melder as md
 
 
 FRAME = "workshop-world"
+BASE_MODULE = "workshop_generated_base"
+DONOR_MODULE = "workshop_generated_donor"
+
+# THE BASE the room writes. One class, one top-level part.
+BASE_SOURCE = '''"""Generated base module."""
 
 
 class ReportBase:
@@ -75,7 +76,17 @@ class ReportBase:
         self.title = "base"
 
     def render(self) -> str:
-        return "base:%s" % self.title
+        return "base:" + self.title
+
+
+def render_header() -> str:
+    return "== report =="
+'''
+
+# THE DONOR. Same header (so a selection can REPLACE), one EXTRA
+# top-level part (so a selection can ADD), and one METHOD that
+# take_functions cannot see.
+DONOR_SOURCE = '''"""Generated donor module."""
 
 
 class ReportDonor:
@@ -83,19 +94,40 @@ class ReportDonor:
         self.title = "donor"
 
     def render(self) -> str:
-        return "donor:%s" % self.title
+        return "donor:" + self.title
 
     def summarise(self) -> str:
-        return "the part worth taking"
+        return "a METHOD - invisible to take_functions"
+
+
+def render_header() -> str:
+    return "== donor report =="
 
 
 def render_footer() -> str:
-    """A TOP-LEVEL function - the grain synthesis actually works at.
-
-    `ReportDonor.summarise` above is a METHOD and is invisible to
-    `take_functions`; this is not.
-    """
     return "-- end of report --"
+'''
+
+
+class WorkshopSeed:
+    """The world's first inhabitant.
+
+    A RIFT IS A CONNECTION INTO AN OBJECT WORLD, so the world has to
+    exist before you can connect to it. `configure_aether_frame` declares
+    the frame's LAW - posture, permissions, whether rifts are allowed at
+    all - but it puts NOTHING in it. The Nexus answers "what is in this
+    frame, and who is where" from a frame DESCRIPTOR it assembles out of
+    frame, conduit and spell records: out of CONTENTS. A room projection
+    targets that descriptor.
+
+    So an uninhabited frame has nothing to describe and nothing to
+    project, and linking a rift to one is putting a window on an empty
+    site. This bind and the conjure after it are not a formality to
+    satisfy a check - they are what brings the world into being.
+    """
+
+    def __init__(self) -> None:
+        self.title = "seed"
 
 
 def _show(label: str, value: object) -> None:
@@ -129,18 +161,12 @@ def main() -> None:
         rift_enabled=True,
         ai_native=True,
     )
-    base = book.bind(spell=ReportBase, existence="unique",
-                     permissions="create", binding_name="workshop-base")
-    conduit = book.conjure(name="workshop-root")
 
-    # A donor version on the same lineage - two recorded versions is the
-    # minimum a composition needs.
-    donor = conduit.bind_inactive(
-        spell=ReportDonor,
-        spell_index=conduit.get_spell_by_id(base).spell_index,
-        existence="unique", permissions="create",
-    )
-    print("base:", base[:12], " donor:", donor[:12])
+    # INHABIT THE WORLD BEFORE CONNECTING TO IT (see WorkshopSeed). The
+    # frame's law is declared; this is what puts something in it.
+    book.bind(spell=WorkshopSeed, existence="unique", permissions="create",
+              binding_name="workshop-seed")
+    book.conjure(name="workshop-root")
 
     nexus = md.Nexus()
     system_configuration = nexus.create_configuration()
@@ -155,7 +181,38 @@ def main() -> None:
     rift.create_frame_link(FRAME)
     commands = rift.space.command_system
 
-    # DERIVED DIFF FIRST - understand the two sides before composing.
+    # THE ROOM WRITES BOTH MODULE WORLDS. Validation gates materialization;
+    # a rejected verdict registers and publishes NOTHING.
+    print("THE ROOM WRITES ITS OWN MATERIAL:")
+    for module_name, source in ((BASE_MODULE, BASE_SOURCE),
+                                (DONOR_MODULE, DONOR_SOURCE)):
+        verdict = commands.validate_codegen(source, frame_name=FRAME)
+        kept = commands.materialize_codegen(
+            source, module_name=module_name, frame_name=FRAME,
+        )
+        assert kept["materialized"] is True, kept
+        print("  %-26s validate(%s) -> materialize(ok)"
+              % (module_name, type(verdict).__name__))
+
+    # The import hook is installed, so plain import resolves onto the
+    # world object. THIS is what gives two spells two module worlds.
+    base_module = importlib.import_module(BASE_MODULE)
+    donor_module = importlib.import_module(DONOR_MODULE)
+
+    # DISTINCT CLASS NAMES, and that is not cosmetic. These are two
+    # INDEPENDENT binds, so both spells are visible at once - and two
+    # visible spells sharing a name make `meld(spell_name=...)` ambiguous,
+    # which the structural validator refuses outright. A distinct
+    # binding_name alone does NOT settle it; the name itself has to
+    # resolve, or the pair needs a spellframe. (Two versions on ONE
+    # lineage are exempt - they are one spell, not two.)
+    base = book.bind(spell=base_module.ReportBase, existence="unique",
+                     permissions="create", binding_name="workshop-base")
+    donor = book.bind(spell=donor_module.ReportDonor, existence="unique",
+                      permissions="create", binding_name="workshop-donor")
+    print("  bound from the generated modules -> custody minted")
+    print("  base:", base[:12], " donor:", donor[:12])
+
     print()
     print("DIFF IS DERIVED, and the room defaults to `structural`:")
     try:
@@ -166,8 +223,6 @@ def main() -> None:
               commands.research_diff(base, donor, strategy="parts"))
     except RuntimeError as custody:
         print("  custody read REFUSED:", str(custody)[:100])
-        print("  these are recorded-material reads; without custody there")
-        print("  is nothing to compare. The laws above still hold")
         return
 
     # AN UNKNOWN STRATEGY IS NOT REROUTED - the room surfaces the engine's
@@ -178,9 +233,8 @@ def main() -> None:
     except KeyError as unknown:
         print("  unknown strategy -> KeyError:", str(unknown)[:70])
 
-    # THE COMPOSITION. But first: the grain, learned the way the engine
-    # teaches it. `summarise` is a METHOD on ReportDonor, not a top-level
-    # function, so this refuses and NAMES what the donor really carries.
+    # THE GRAIN, learned the way the engine teaches it. `summarise` is a
+    # METHOD on the donor's Report, not a top-level function.
     print()
     print("THE WORKSHOP - compose, do not merge:")
     try:
@@ -189,48 +243,44 @@ def main() -> None:
         raise AssertionError("a method is not a top-level function")
     except ValueError as grain:
         print("  take_functions=['summarise'] REFUSED:")
-        print("   ", str(grain)[:118])
-        print("  the refusal NAMES the donor's real top-level parts - that")
-        print("  is how you find the grain when you guessed wrong")
+        print("   ", str(grain)[:112])
+        print("  the refusal NAMES the donor's real top-level parts")
 
-    # THE GRAIN'S CONSEQUENCE. Both spells were declared in THIS module,
-    # so both resolve to THIS file. Base text and donor text are the same
-    # text, which makes every selection a replace and the candidate equal
-    # to the base.
-    synthesis = commands.research_synthesize(
+    # TWO MODULE WORLDS MEAN BOTH ACTIONS ARE REACHABLE.
+    replaced = commands.research_synthesize(
+        base, donor, take_functions=["render_header"],
+    )
+    assert replaced["base_module"] != replaced["donor_module"], (
+        "the whole point of generating two modules"
+    )
+    assert [row["action"] for row in replaced["selections"]] == ["replaced"]
+    print("  take_functions=['render_header'] -> REPLACED (base had one)")
+
+    added = commands.research_synthesize(
         base, donor, take_functions=["render_footer"],
     )
-    _show("synthesize", synthesis)
-    assert synthesis["base_module"] == synthesis["donor_module"], (
-        "both spells live in this file, so both resolve to this module"
-    )
-    actions = [row["action"] for row in synthesis["selections"]]
-    assert actions == ["replaced"], actions
-    print("  base_module == donor_module -> the SAME text on both sides")
-    print("  selection action:", actions[0], "- a part replaced by itself")
-    print("  'added' is unreachable while base and donor share a module,")
-    print("  and that unreachability IS the proof the unit is the module")
+    assert [row["action"] for row in added["selections"]] == ["added"]
+    assert "render_footer" in str(added["composed_source"])
+    _show("synthesize", added)
+    print("  take_functions=['render_footer'] -> ADDED (base had none)")
+    print("  'added' is only reachable across TWO module worlds, which is")
+    print("  why this lesson generates them instead of typing them here")
     print("  composed source + preview returned. NOTHING executed, bound")
     print("  or recorded - a candidate is not a version")
 
-    # THE MINT IS A SEPARATE STAMP, and it is ambient + one-shot.
+    # THE ANCESTRY STAMP - ambient, one-shot, survives until used.
     print()
-    print("THE ANCESTRY STAMP - ambient, one-shot, survives until used:")
+    print("THE ANCESTRY STAMP:")
     commands.research_stage_ancestry([base, donor])
     print("  staged [base, donor] for the NEXT fresh world entry")
-
-    # Abandon the composition and the stamp MUST be cleared, or an
-    # unrelated bind inherits parents it never had.
     commands.research_clear_staged_ancestry()
     print("  cleared without consuming - abandoning a composition without")
     print("  this is how a later, innocent bind acquires false parents")
 
-    # The convenience form stages both parents as part of the compose.
-    staged_synthesis = commands.research_synthesize(
+    staged = commands.research_synthesize(
         base, donor, take_functions=["render_footer"], stage_ancestry=True,
     )
-    assert staged_synthesis["ancestry_staged"] is True
-    _show("synthesize(staged)", staged_synthesis)
+    assert staged["ancestry_staged"] is True
     print("  stage_ancestry=True stages [base, donor] in the same call")
     commands.research_clear_staged_ancestry()
 

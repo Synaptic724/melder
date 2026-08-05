@@ -798,6 +798,286 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: REQUIRED
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-08-04T21:05:00Z
+  TYPE: FACT
+  CLAIM: OWNER QUESTION - "how come you never used a raw codegen example at
+    all" - AND HE IS RIGHT, WITH ONE MEASUREMENT TO QUALIFY IT. Of my seven
+    lessons, 26 and 27 DO drive the real authoring surface (validate_codegen /
+    execute_codegen / materialize_codegen). 28, 29, 30, 31 and 32 use
+    hand-typed classes declared in the example file. Measured, not recalled:
+    only 6 of the tier's 32 lessons call any non-research codegen command.
+    IN 30 THAT WAS LOAD-BEARING AND IT IS THE ROOT CAUSE OF THE RED RUN, not a
+    stylistic gap. Synthesis is module-grain. Two classes typed into ONE
+    example file resolve to ONE module, so base_text == donor_text, EVERY
+    selection is a part replaced by itself, and the "added" action is
+    UNREACHABLE. The lesson could not demonstrate its own subject. My first fix
+    this session dressed that degeneracy up as a law and shipped it; that was
+    the wrong call and this note supersedes it.
+    30 NOW GENERATES ITS TWO MODULE WORLDS: validate_codegen ->
+    materialize_codegen -> import -> bind, twice, which is the loop
+    materialize's own contract describes as closing "codegen -> synthmodule ->
+    bind -> crystal". With two real module worlds BOTH actions are reachable
+    and both are now asserted - `render_header` exists in both (REPLACED),
+    `render_footer` is donor-only (ADDED) - alongside the method refusal that
+    teaches the grain.
+    AND GENERATED SOURCE IS THE MORE RELIABLE PATH, WHICH INVERTS MY
+    ASSUMPTION: "synthetic module sources are ALWAYS harvested; user module
+    text rides the opt-in retention lane" (mutation_research.py:1910-1912).
+    Hand-typed example classes are the FRAGILE input for any lesson that reads
+    recorded source; codegen output is the robust one. I had been treating
+    codegen as the exotic path and hand-typing as the safe default. Backwards.
+  EVIDENCE:
+    - src/melder/nexus/rift/command_system/codegen_command_system.py:740-796
+    - src/melder/mutation_research/mutation_research.py:1910-1912, 3040
+    - UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_workshop.py
+  IMPACT: 30 demonstrates composition instead of a no-op wearing a law's
+    clothing, and the tier's flagship verb is exercised on material the room
+    actually wrote.
+  NEXT: OWNER RULING WANTED on scope. TWO MORE LESSONS READ RECORDED SOURCE
+    OFF HAND-TYPED CLASSES and carry the same fragility for the same reason:
+    29 (reading your own recorded code - its whole subject is recorded source)
+    and 32 (footprint/drift over recorded modules). Neither is WRONG the way 30
+    was - they do not depend on an unreachable action - but both rely on the
+    opt-in user-retention lane where 30 now relies on the always-harvested one.
+    I have not rewritten them; say the word and they move to generated modules.
+    28 and 31 do not read source at all and are fine as they stand.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 5
+
+- DATETIME: 2026-08-04T22:40:00Z
+  TYPE: FACT
+  CLAIM: LESSON 33 AUTHORED - WHAT A SYNTHETIC MODULE ACTUALLY IS. The tier
+    shipped FIVE lessons that make synthetic modules (26, 27, 29, 30, 32)
+    without one line defining the object they all depend on. That is the
+    "examples are weak" complaint in concrete form: the curriculum used its
+    central noun as jargon.
+    WHAT 33 TEACHES, all read out of source before writing:
+    A synthetic module is a real module with NO FILE - a live ModuleType
+    subclass carrying its own source text and hash, registered behind a
+    meta-path finder so plain `import` resolves it. FOUR STATES, none inferred
+    from another (registration / hook install / publication / execution);
+    materialize_codegen composes all four and PUBLISHES BEFORE EXECUTING on
+    purpose, so a circular import sees a partially-initialised module exactly
+    as importlib-managed modules do.
+    THE REAL SUBJECT IS CUSTODY. Bind classifies every walked module through
+    FOUR authority classes, FIRST match wins: synthetic (claims by OBJECT
+    IDENTITY, never path, because a path rule would misclassify it; reads no
+    disk; makes NO fingerprint claim), user_source (THE ONLY fingerprint
+    custodian - the trust boundary), site_package (descends and reads, claims
+    nothing), unknown (the ONLY non-descending class, an honest leaf).
+    THEREFORE "CAN THIS DRIFT" IS A CUSTODY ANSWER, NOT A CHANCE ONE. Only
+    user source is fingerprinted, so only user source can be caught changing.
+    A recorded row reports drifted=None because there is no second copy to
+    disagree with - the text IS the record.
+    AND ONE CRYSTAL HOLDS BOTH: one flat module inventory, four kind-partitions
+    over it, root_module_kind naming the lane. The kind is DATA IN the crystal,
+    which is why a world can mix generated and hand-written code and checkpoint
+    as one thing.
+    ON THE OWNER'S POINT ABOUT PRIVATES ("some examples can have private
+    details but you're not trying to expose all these things to be used"): 33
+    NAMES SyntheticModule, the custody strategies and SpellCrystal - all
+    AGENT_ACCESS: internal, all carrying "read it to understand the runtime, do
+    not drive it directly" - and drives ONLY the public surface. The header
+    says so explicitly so a reader does not mistake a named internal for an
+    invitation.
+  EVIDENCE:
+    - src/melder/crystallizer/synthetic_module.py:227-319
+    - src/melder/crystallizer/crystal_analysis/custody/source_custody_strategy.py:1-8, 52-72, 195-228
+    - src/melder/crystallizer/crystal_analysis/custody/synthetic_custody_strategy.py:55-64, 121-139, 171-187
+    - src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:52-60
+    - src/melder/crystallizer/crystals/spell_crystal.py:702-806
+    - src/melder/mutation_research/mutation_research.py:1995-2049
+  IMPACT: The tier defines its own central object instead of assuming it.
+  NEXT: none.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-04T22:55:00Z
+  TYPE: FACT
+  CLAIM: 29 AND 32 MOVED ONTO GENERATED MODULES - and 29 was the worse case
+    of the two because it was GREEN AND VACUOUS, which is harder to catch than
+    red. Both versions were declared in the example file, so both shared ONE
+    module snapshot and every research_part_diff compared IDENTICAL BYTES. The
+    lesson's headline - "comparison drinks the RECORD, never the disk" - was
+    being demonstrated by a diff that could not have shown a difference.
+    IT CARRIED A SECOND SILENT MISS: it asked for `quote` with kind="function"
+    while `quote` was a METHOD. part_view is TOP-LEVEL ONLY, but unlike
+    synthesize it returns `{"found": False}` instead of raising, so the miss
+    printed as a dict and nobody noticed. 29 now generates two module worlds
+    with a genuine top-level `quote`, asserts the comparison has two real
+    sides, and turns the method miss into a LABELLED lesson about grain
+    (`__init__` probed deliberately, asserted found=False).
+    32 had a ONE-MODULE FOOTPRINT for a three-member composition, so its union
+    radius had nothing to be a union of and the internal/outbound split had
+    nothing to split. Three generated module worlds now.
+    28 and 31 were left alone deliberately - neither reads recorded source, so
+    hand-typed spells are correct there rather than merely tolerable.
+  EVIDENCE:
+    - src/melder/mutation_research/mutation_research.py:2390-2426 (part_view
+      is top-level only and never raises on a miss)
+    - UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py
+    - UX_and_AIX_experiences/04_expert/32_a_subsystems_blast_radius.py
+  IMPACT: Three lessons now demonstrate their own theses instead of asserting
+    them over degenerate inputs.
+  NEXT: OWNER RERUN of 06, 29, 30, 31, 32, 33. Six files changed since the
+    last harness pass and this sandbox is 3.10, so none is claimed green.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-04T23:40:00Z
+  TYPE: FACT
+  CLAIM: OWNER 3.14t RUN - 29, 30, 32, 33 RED ON ONE CAUSE I INTRODUCED, and
+    the cause is a real ordering law the tier had never written down.
+    `ValueError: Target frame 'X' has no descriptor and cannot be targeted
+    yet.` from rift.py:488 for all four frames.
+    A FRAME ONLY ACQUIRES ITS NEXUS DESCRIPTOR ONCE SOMETHING HAS BOUND INTO
+    IT. `configure_aether_frame` postures the frame in the Aether but does NOT
+    publish a descriptor to the Nexus; the descriptor is created lazily through
+    `_get_or_create_frame_descriptor` on a posture-refresh path that a real
+    bind/conjure triggers. `create_frame_link` requires that descriptor and
+    refuses without it.
+    WHY I BROKE FOUR AT ONCE: moving to generated modules created a real
+    ordering conflict - materialize needs the ROOM, and the room needs the
+    FRAME, and the frame needs a BIND. I resolved it by hoisting the rift above
+    the binds, which is exactly backwards. Every lesson that still bound first
+    (26, 27, 31, and 12/13/21) passed untouched; the four I reordered are the
+    four that failed. The blast radius of the change WAS the failure set,
+    which is the tell I should have read before shipping.
+    THE FIX IS A SEED BIND, and it is honest rather than a workaround: one
+    file-backed class binds first to open the frame, then the rift is built,
+    then the room writes the generated modules, then those bind. 33 needed no
+    throwaway at all - its file-backed spell IS the seed, which is the shape
+    the lesson wanted anyway. 29 hangs both generated versions off the seed's
+    lineage via bind_inactive, so the version pair is a real lineage AND two
+    module worlds.
+    THE LAW IS NOW WRITTEN INTO ALL FOUR as the reason the seed exists, not as
+    an apology for it: no bind, no descriptor; no descriptor, no rift.
+  EVIDENCE:
+    - src/melder/nexus/rift/rift.py:486-490 (the refusal)
+    - src/melder/nexus/frame_descriptor_manager.py:203, 627-659
+    - src/melder/nexus/nexus.py:3351-3369
+  IMPACT: The four lessons keep their generated-module material and regain a
+    legal boot order. A previously unstated ordering law is now taught four
+    times over.
+  NEXT: OWNER RERUN of 29, 30, 32, 33 (and 06, 31 from the prior pass).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 5
+
+- DATETIME: 2026-08-05T00:20:00Z
+  TYPE: FACT
+  CLAIM: RUN - 29, 32, 33 GREEN. 30 RED alone on DUPLICATE_SPELL_NAME, and the
+    refusal taught a distinction the tier had not written down.
+    Both generated modules declared `class Report`. Two INDEPENDENT `book.bind`
+    calls make both spells VISIBLE AT ONCE, and two visible spells sharing a
+    name make `meld(spell_name=...)` ambiguous, so the post-conjure structural
+    validator refuses at phase 4 (DuplicateSpellNameStrategy).
+    THE DISTINCTION WORTH KEEPING: a DISTINCT `binding_name` DOES NOT SETTLE
+    IT. The collision payload showed both spells carrying different binding
+    names and `spellframe: None` - the validator's own remedy line asks for a
+    spellframe AND/OR a binding name such that each RESOLUTION PATH is unique,
+    and binding_name alone leaves the name-based path ambiguous.
+    AND 29 IS THE CONTROL CASE THAT PROVES THE RULE. It also declares `class
+    Pricing` in BOTH generated modules and it went GREEN - because its two
+    versions ride ONE lineage through `bind_inactive`. They are two versions of
+    one spell, not two visible spells, so no name is ambiguous. Same duplicate
+    class name, opposite outcome, and the difference is entirely bind vs
+    bind_inactive.
+    FIXED by giving 30's generated classes distinct names (ReportBase /
+    ReportDonor) - free, because the synthesis demo selects TOP-LEVEL
+    FUNCTIONS and never touches the class name. The law is now a comment at
+    the bind site rather than a silent workaround.
+    A NOTE ON MY OWN CHECKER: a crude sweep I wrote flagged 29, 11 and 16 as
+    collisions too. All three are GREEN in the run. The sweep counted class
+    names without distinguishing bind from bind_inactive or accounting for
+    frames. Recorded because a static check that disagrees with a real run is
+    the check that is wrong, and I nearly "fixed" a passing lesson on its say-so.
+  EVIDENCE:
+    - src/melder/aether/spellbook/spellbook_creation_system.py:1440, 1993
+    - the run's phase-4 payload (collision_count 2, both spellframe None)
+    - UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_workshop.py
+    - UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py (control)
+  IMPACT: 30 keeps its two generated module worlds and both reachable
+    synthesis actions. Three of four lessons from the last pass are green.
+  NEXT: OWNER RERUN of 30 only (29, 32, 33 green this pass; 06 and 31 still
+    unrun since their edits).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-08-05T01:10:00Z
+  TYPE: FACT
+  CLAIM: PROACTIVE SWEEP FOR THE BUG CLASSES, not the bug instances - run on
+    the owner's push ("is that it"). Every fix this session had been reactive:
+    the run points, I patch the one file. So I swept the whole curriculum for
+    each failure class instead.
+    SWEEP 1 - STALE NAMES IN CODE: every method called on a non-`md` receiver
+    across all 4 tiers, checked against the 8140 member names melder actually
+    defines. CLEAN - the only hits were stdlib (threading, logging) and
+    exported constructors.
+    SWEEP 2 - STALE NAMES IN PROSE: `verb()` mentions inside docstrings and
+    comments, same check. SIX hits, THREE were real and TWO of those I had
+    never seen. `sync()`/`mirror_all()` in expert 09 are deliberate (the
+    lesson names absent verbs and ASSERTS their absence - good teaching);
+    `build_world()` is the lesson's own function; `auto()` is enum.auto.
+    THE REAL ONES: advanced 08 said enable/disable in ELEVEN places including
+    its SURFACE line, and advanced 17 line 11 repeated the same dead verb. A
+    file named `08_nexus_enablement.py` was teaching a method that raises
+    AttributeError. I flagged this two passes ago and left it as "not my
+    lane"; that was wrong - the examples lane is the examples lane, and a
+    beginner bouncing off a dead verb costs more than tier etiquette. Both
+    fixed, prose only, code was already correct. File NOT renamed: lesson 17,
+    the concept maps and this epic all cite "lesson 08" by number.
+    SWEEP 3 - VACUOUS COMPARISONS (the 29 class - green and proving nothing):
+    traced every comparison verb's two spell ids back to the module world each
+    was bound from. All 10 comparison calls in the curriculum now cross two
+    DIFFERENT module worlds. No further instances.
+    SWEEP 4 - MIXED LINE ENDINGS: none across the whole examples tree. I had
+    just introduced one by appending LF into the CRLF probe file and caught it
+    in the same pass.
+  EVIDENCE:
+    - UX_and_AIX_experiences/03_advanced/08_nexus_enablement.py (13 edits)
+    - UX_and_AIX_experiences/03_advanced/17_taking_a_checkpoint.py:11
+    - src/melder/nexus/nexus.py (public defs: activate/deactivate, no enable)
+  IMPACT: Two tiers stop teaching a verb the runtime does not have.
+  NEXT: none for the sweeps. They are cheap and worth rerunning before any
+    future tier is called done.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-05T01:25:00Z
+  TYPE: FACT
+  CLAIM: FIVE PROBES ADDED (42 -> 47) FOR LAWS I HAD ASSERTED BUT NEVER
+    PINNED. The house law is that an example may only assert what is verified
+    in source or pinned by a probe, and I had spent the session adding
+    assertions on newly-discovered behaviour without closing that side.
+    THE FIVE:
+    1. A FRAME NEEDS A BIND BEFORE A RIFT CAN TARGET IT - the probe drives the
+       ValueError first, then binds, then links successfully. This is the law
+       whose violation turned four lessons red simultaneously; unpinned it
+       would have been rediscovered the same expensive way.
+    2. TWO VISIBLE SPELLS MAY NOT SHARE A NAME, and a distinct binding_name
+       does NOT save it.
+    3. PARTS ARE TOP-LEVEL ONLY, AND THE TWO VERBS DISAGREE ABOUT SAYING SO -
+       part_view returns found:False, synthesize RAISES. Same grain, two
+       failure modes, and the quiet one is what let 29 ship green and empty.
+    4. ARCHIVE HIDES FROM heads() BUT NOT FROM lane_names(), plus the
+       None-vs-absent distinction and the default-lane refusal.
+    5. FOUR CUSTODY CLASSES ANSWER FOUR QUESTIONS - asserts the full table:
+       one fingerprint custodian (user_source), one non-descending leaf
+       (unknown), synthetic reads no disk and claims no fingerprint.
+    Probe 5 imports the custody strategies by concrete path. That is the
+    harness lane where deep imports are permitted by house rule, and it is
+    precisely the split the owner asked for: the internals are PINNED in the
+    harness and only NAMED in lesson 33's prose, never driven from an example.
+  EVIDENCE:
+    - UX_and_AIX_experiences/pytest_examples/test_expert_probes.py (47 rows,
+      no duplicate names, file normalised back to CRLF after the append)
+  IMPACT: Every law this session discovered is now defended by something that
+    fails loudly if the runtime changes under it.
+  NEXT: OWNER RERUN - 30 (the one still red) plus the 5 new probe rows, which
+    have never executed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
