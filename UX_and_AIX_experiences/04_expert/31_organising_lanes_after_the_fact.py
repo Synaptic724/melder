@@ -39,8 +39,8 @@ GOAL: LANES ARE ORGANISED AFTER THE FACT, NOT PLANNED IN ADVANCE. Expert
       at the door rather than discovered later.
 SURFACE EXERCISED: research_create_lane / research_attach /
                    research_detach / research_archive / research_join /
-                   research_heads / research_walk,
-                   ResearchSet.lane_names
+                   research_heads,
+                   ResearchSet.lane_names, Conduit.bind_inactive
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import melder as md

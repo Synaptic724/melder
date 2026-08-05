@@ -48,7 +48,8 @@ SURFACE EXERCISED: md.Crystallizer create_checkpoint / flush_checkpoint /
                    list_checkpoint_ids / list_cached_checkpoint_ids /
                    reload_cached_checkpoint / load_checkpoint,
                    md.Aether cleanup, and the codegen room's
-                   validate/execute/materialize across the boundary
+                   validate_codegen / execute_codegen /
+                   materialize_codegen across the boundary
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import gc

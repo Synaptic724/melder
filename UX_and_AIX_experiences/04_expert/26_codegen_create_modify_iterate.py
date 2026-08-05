@@ -47,7 +47,7 @@ GOAL: THE LOOP TURNED MORE THAN ONCE - AND THE TWO BOOKS IT WRITES.
 SURFACE EXERCISED: CodegenCommandSystem.research_preview /
                    validate_codegen / execute_codegen /
                    materialize_codegen / research_create_lane /
-                   research_walk / research_heads,
+                   research_walk,
                    MutationResearch.research_set / create_research_set,
                    ResearchSet.register_spell / create_lane / walk,
                    Conduit.bind_inactive

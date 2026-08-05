@@ -40,11 +40,13 @@ GOAL: THE CRYSTAL WELL - reading the code your world RECORDED, at four
       from "this world has no code", which is never true. This lesson
       catches that refusal and says so rather than pretending every
       environment can serve it.
-SURFACE EXERCISED: research_source / research_module / research_parts /
+SURFACE EXERCISED: validate_codegen / materialize_codegen,
+                   research_source / research_module / research_parts /
                    research_part / research_part_diff /
                    research_module_graph / research_source_drift /
                    research_impact / research_residency /
-                   research_history / research_recent
+                   research_history / research_recent,
+                   Conduit.bind_inactive
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import importlib

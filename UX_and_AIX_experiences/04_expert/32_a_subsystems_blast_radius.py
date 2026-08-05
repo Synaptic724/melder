@@ -37,9 +37,10 @@ GOAL: ASK A WHOLE SUBSYSTEM WHAT IT WOULD BREAK. Expert 14 built
       whose custody is unknown is reported as unknown rather than
       silently contributing nothing - a shadow with a hole in it that
       claimed to be complete would be worse than no shadow.
-SURFACE EXERCISED: research_group_register / research_group_impact /
+SURFACE EXERCISED: validate_codegen / materialize_codegen,
+                   research_group_register / research_group_impact /
                    research_group_drift / research_group_footprint /
-                   research_group_view, Conduit.bind_inactive
+                   research_group_view
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import importlib

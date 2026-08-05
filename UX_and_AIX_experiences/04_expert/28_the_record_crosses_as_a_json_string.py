@@ -39,9 +39,10 @@ GOAL: NO FILE, NO DATABASE, NO DRIVER - A PYTHON STRING. Merge two
       exactly one lane, so registering it onto a branch would raise the
       rediscovery signal instead (expert 26 shows that refusal).
 SURFACE EXERCISED: md.ResearchSet.from_payload, ResearchSet.describe /
-                   lane_names / walk / heads / set_id /
+                   lane_names / walk / set_id /
                    network_snapshot_shas, research_create_lane /
-                   research_join / research_heads, and the mesh quartet
+                   research_join / research_heads,
+                   Conduit.bind_inactive, and the mesh quartet
                    (with_store_handler / with_fetch_handler)
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
