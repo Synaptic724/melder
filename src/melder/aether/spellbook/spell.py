@@ -296,7 +296,7 @@ class Spell(Cleanable):
             spell_id: str,
             permissions: Permissions,
             aetheric_frame: str,
-            spellbook: Spellbook,
+            spellbook: "Spellbook",
             profile: Any | None = None,
             existing_object: object | None = None,
             disposal_method_names: frozenset[str] = frozenset(),
@@ -424,7 +424,7 @@ class Spell(Cleanable):
         self.permissions: Permissions = permissions
 
         # Spellbook
-        self._spellbook: Spellbook = spellbook
+        self._spellbook: "Spellbook" = spellbook
         self._spellbook_cleanup: bool = False
 
         # Spell Metadata
@@ -458,7 +458,7 @@ class Spell(Cleanable):
             SpellCompilerArtifact(self.spell_id)
         )
         # Spell-owned meld execution context (created lazily by CreationContextFactory).
-        self._creation_context: CreationContext | None = None
+        self._creation_context: "CreationContext | None" = None
         # Spell-owned context factory configured at conduit ownership stamp time.
         self._creation_context_factory: CreationContextFactory | None = None
         # Spell-owned selector latch for one-leader CreationContext publication.
@@ -701,7 +701,7 @@ class Spell(Cleanable):
             self,
             *,
             dynamic_environment: bool,
-            creation_gate_controller: CreationGateController,
+            creation_gate_controller: "CreationGateController",
     ) -> None:
         """
         Internal
@@ -1350,7 +1350,7 @@ class Spell(Cleanable):
             creations: Any = None,
             *,
             dynamic_environment: bool,
-            creation_gate_controller: CreationGateController,
+            creation_gate_controller: "CreationGateController",
             caching_enabled: bool,
     ) -> None:
         """
