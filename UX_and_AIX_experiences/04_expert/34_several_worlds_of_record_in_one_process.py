@@ -4,11 +4,20 @@ GOAL: KEEP TWO SEPARATE WORLDS OF RECORD IN ONE PROCESS. Every lesson so
       far has recorded into one nameless place. It has a name - "default"
       - and you can have others.
 
-      A PROFILE IS WHERE EMISSIONS LAND. Checkpoints, twins and the whole
-      recorded ledger belong to a profile, and unqualified operations
-      resolve to the ACTIVE one. Two profiles are two independent records
-      of the same running process: a staging record and a production one,
-      or one per tenant, or a throwaway you clear between experiments.
+      A PROFILE IS WHERE EMISSIONS LAND. Twins accumulate into the active
+      profile, and unqualified operations resolve to it. Two profiles are
+      two separate bodies of recorded content in one running process: a
+      staging record and a production one, or one per tenant, or a
+      throwaway you clear between experiments.
+
+      BUT A PROFILE IS NOT A PRIVATE LEDGER, AND THIS IS THE THING TO GET
+      RIGHT. `create_checkpoint` snapshots ONE profile's window and
+      advances THAT profile's journal mark - the content is partitioned.
+      `list_checkpoint_ids()` returns "all checkpoint ids in exact ledger
+      creation order" for the PROCESS. Switching profiles does not give
+      you a filtered view and does not hide anyone else's seals.
+      Same shelf, different boxes. Assume otherwise and you will write an
+      assertion that fails - this lesson's author did exactly that.
 
       YOU CREATE WORLDS BY NAME AND NOTHING ELSE. The facade says so
       outright: "users and agents create worlds by name only;
@@ -118,40 +127,71 @@ def main() -> None:
     print("  never escapes the depths, so there is nothing to alias or")
     print("  accidentally keep alive")
 
-    # THE PARTITION IS REAL. A checkpoint sealed here is not over there.
+    # AND HERE IS THE LINE PEOPLE GET WRONG, INCLUDING THE AUTHOR OF THIS
+    # LESSON ON THE FIRST TRY. A profile decides what a checkpoint
+    # CONTAINS. It does not give you a private ledger.
     on_staging = crystallizer.create_checkpoint()
-    staging_ids = crystallizer.list_checkpoint_ids()
-    assert on_staging in staging_ids
-    assert on_default not in staging_ids, (
-        "profiles are separate records - default's checkpoint must not "
-        "appear in staging's ledger"
+    everything = crystallizer.list_checkpoint_ids()
+    assert on_staging in everything
+    assert on_default in everything, (
+        "list_checkpoint_ids returns ALL ids - the ledger is process-wide"
     )
     print("sealed a checkpoint on 'staging':", on_staging[:14], "...")
-    print("  and 'default's checkpoint is NOT in this ledger - two")
-    print("  independent records of one running process")
+    print()
+    print("list_checkpoint_ids() ->", len(everything), "ids, and BOTH are")
+    print("  here. Its contract says `all checkpoint ids in exact ledger")
+    print("  creation order` - one ledger for the process. Switching")
+    print("  profiles does not hand you a private one.")
+    print("  What the profile partitions is the CONTENT: create_checkpoint")
+    print("  snapshots ONE profile's twin window and advances THAT")
+    print("  profile's journal mark. Same shelf, different boxes.")
 
-    # SWITCHING MOVES A POINTER AND NOTHING ELSE.
+    # SWITCHING MOVES A POINTER AND NOTHING ELSE - including not moving
+    # the ledger, which is why both ids are still listed below.
     crystallizer.set_active_profile("default")
-    back_home = crystallizer.list_checkpoint_ids()
-    assert on_default in back_home
-    assert on_staging not in back_home, (
-        "switching must not migrate anything between profiles"
+    assert crystallizer.active_profile_name == "default"
+    after_switch = crystallizer.list_checkpoint_ids()
+    assert set(after_switch) == set(everything), (
+        "the switch moves a pointer; it does not copy, migrate or hide"
     )
     print()
-    print("set_active_profile('default') -> our first checkpoint is back")
-    print("  and staging's did NOT come with it. The switch moved a")
-    print("  pointer; no data was copied or migrated")
+    print("set_active_profile('default') -> the ledger is unchanged:",
+          set(after_switch) == set(everything))
+    print("  `moves the pointer only - no data is copied or migrated`")
+    print("  cuts both ways: nothing follows you, and nothing is taken")
 
-    # DESCRIBE READS THE ACTIVE ONE WHEN YOU NAME NOTHING.
-    here = crystallizer.describe_profile()
-    named = crystallizer.describe_profile("staging")
-    assert isinstance(here, dict) and isinstance(named, dict)
+    # YOU CAN ALSO NAME THE PROFILE EXPLICITLY rather than switching to
+    # it - the argument is there so a caller never has to move the
+    # pointer just to seal somewhere.
+    targeted = crystallizer.create_checkpoint(profile_name="staging")
+    assert crystallizer.active_profile_name == "default", (
+        "checkpointing another profile must not move the active pointer"
+    )
     print()
-    print("describe_profile()          -> the ACTIVE one, keys:",
-          sorted(here)[:4])
-    print("describe_profile('staging') -> that one, keys:",
-          sorted(named)[:4])
-    print("  None means ACTIVE here, not `all profiles`")
+    print("create_checkpoint(profile_name='staging') ->", targeted[:14],
+          "... and the active profile is still",
+          crystallizer.active_profile_name)
+
+    # DESCRIBE READS THE ACTIVE ONE WHEN YOU NAME NOTHING - and this is
+    # where the CONTENT partition is visible, since the ledger read is
+    # not. `describe_profile` reports per-level twin counts and the
+    # emission sequence for ONE profile.
+    active_view = crystallizer.describe_profile()
+    default_view = crystallizer.describe_profile("default")
+    staging_view = crystallizer.describe_profile("staging")
+    assert isinstance(active_view, dict)
+    assert active_view == default_view, (
+        "None must resolve to the ACTIVE profile, which is 'default' here"
+    )
+    print()
+    print("describe_profile()          -> the ACTIVE one (keys:",
+          "%s)" % sorted(active_view)[:4])
+    print("describe_profile('staging') -> that one    (keys:",
+          "%s)" % sorted(staging_view)[:4])
+    print("  None means ACTIVE, not `all profiles` - proven by the two")
+    print("  reads above being equal while 'default' is active")
+    print("  and THIS is where the partition shows: per-profile twin")
+    print("  counts and emission sequence, not the shared ledger")
 
     # CLEAR EMPTIES AND KEEPS. DELETE REMOVES.
     crystallizer.clear_profile("staging")

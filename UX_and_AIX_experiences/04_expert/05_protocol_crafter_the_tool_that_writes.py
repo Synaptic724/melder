@@ -47,32 +47,34 @@ GOAL: THE ONE TOOL THAT WRITES TO DISK. Every surface in this curriculum
           add_protocol_to_interface_file
           remove_protocol_from_interface_file
 
-      THAT SPLIT IS THE SAFETY FEATURE. Every write verb has a craft
-      twin, so you can always see exactly what would land before anything
-      lands. "Show me" and "do it" are different verbs, and a tool that
-      only offered the second would be one you had to trust blindly.
+      THE SPLIT IS NOT A CLEAN 1:1 PAIRING, and the real shape is better
+      than a pairing would be. Two of the writes DO have craft twins - the
+      ones that generate a whole module from a source file, and the joined
+      variant. The two interface-file writes have no twin at all.
+      That looks like a gap until you read their signatures:
+        add_protocol_to_interface_file(path, PROTOCOL_CODE)
+      The crafted code is the ARGUMENT. You cannot add a protocol you have
+      not crafted, because the crafted string is what you pass in. The
+      preview is not a parallel verb you are trusted to remember to call -
+      it is the input, and there is no route to the file that skips it.
 
-      THIS LESSON ONLY CRAFTS. It calls nothing that writes - the point
-      is to show the tool and the boundary, not to edit your tree.
-SURFACE EXERCISED: md.ProtocolCrafter - the craft/write split, bounded
-                   block updates (craft lanes only; nothing is written)
-VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
+      AND THE BOUNDED-BLOCK RULES ARE THE REST OF IT. `add` refuses by
+      NAME if that protocol is already present rather than appending a
+      second copy, `remove` deletes one named block and leaves the rest of
+      your file alone, and both RETURN the updated contents so the result
+      is inspectable rather than assumed.
+SURFACE EXERCISED: md.ProtocolCrafter.craft_protocol_code (twice, for
+                   determinism), add_protocol_to_interface_file including
+                   its duplicate refusal, and
+                   remove_protocol_from_interface_file - all against a
+                   temporary directory that removes itself
+VERIFY: rewritten 2026-08-05; the write lanes are now exercised against a
+        throwaway file instead of only being named. Not yet run.
 """
+import tempfile
+from pathlib import Path
+
 import melder as md
-
-
-CRAFT_LANES = (
-    "craft_protocol_code",
-    "craft_protocol_module_code_from_source_file",
-    "craft_joined_protocol_module_code",
-)
-
-WRITE_LANES = (
-    "write_protocol_module_from_source_file",
-    "write_joined_protocol_module",
-    "add_protocol_to_interface_file",
-    "remove_protocol_from_interface_file",
-)
 
 
 class PaymentGateway:
@@ -90,19 +92,6 @@ def main() -> None:
     assert isinstance(crafter, md.ProtocolCrafter)
     print("crafter:", crafter.id)
 
-    # THE TWO GROUPS. Every write verb has a craft twin - that is the
-    # safety property, not a convenience.
-    print()
-    print("CRAFT lanes (return code, touch nothing):")
-    for lane in CRAFT_LANES:
-        assert hasattr(crafter, lane), lane
-        print("   ", lane)
-
-    print("WRITE lanes (put it on disk):")
-    for lane in WRITE_LANES:
-        assert hasattr(crafter, lane), lane
-        print("   ", lane)
-
     # CRAFT A PROTOCOL FROM A LIVE CLASS. Nothing is written; this is a
     # string. Look at it before you let anything near your tree.
     code = crafter.craft_protocol_code(PaymentGateway)
@@ -112,6 +101,15 @@ def main() -> None:
     for line in code.splitlines()[:12]:
         print("   ", line)
 
+    # PURITY, CHECKED RATHER THAN CLAIMED. Craft is a pure read, so the
+    # same input must produce byte-identical output and leave no trace.
+    again = crafter.craft_protocol_code(PaymentGateway)
+    assert again == code, "craft must be deterministic - it is a pure read"
+    print()
+    print("crafted twice -> byte-identical:", again == code)
+    print("  a verb that wrote something, cached something, or consumed")
+    print("  state would not survive being called twice")
+
     # The generated shape should describe what the class actually offers.
     assert "Protocol" in code
     for method in ("charge", "refund"):
@@ -119,13 +117,51 @@ def main() -> None:
     print()
     print("both public methods appear in the crafted protocol")
 
-    # AND NOTHING WAS WRITTEN. The craft lane is pure - that is the whole
-    # reason it exists separately from its write twin.
-    print("nothing touched the filesystem - craft is a read-shaped verb")
+    # THE WRITE LANES, ON A THROWAWAY FILE. Nothing here goes near your
+    # tree - the temporary directory removes itself.
+    with tempfile.TemporaryDirectory() as scratch:
+        interface_file = Path(scratch) / "interfaces.py"
+
+        # YOU CANNOT WRITE WHAT YOU HAVE NOT CRAFTED, because the crafted
+        # code IS the argument. That is a stronger guarantee than a
+        # parallel preview verb: there is no path to the file that skips
+        # the string you already looked at.
+        updated = crafter.add_protocol_to_interface_file(interface_file, code)
+        assert "Protocol" in updated
+        assert interface_file.exists()
+        print()
+        print("add_protocol_to_interface_file(path, THE CRAFTED CODE)")
+        print("  ->", len(updated), "chars, and it RETURNS the new contents")
+        print("  the crafted string is the ARGUMENT, so there is no route")
+        print("  to the file that skips the thing you already read")
+
+        # ADDING IT TWICE REFUSES BY NAME. Not a silent second copy.
+        try:
+            crafter.add_protocol_to_interface_file(interface_file, code)
+            raise AssertionError("expected a refusal on a duplicate protocol")
+        except ValueError as duplicate:
+            print()
+            print("adding the same protocol again ->", str(duplicate)[:78])
+            print("  it refuses by NAME rather than appending a second copy")
+
+        # AND REMOVAL IS BY NAME, BOUNDED TO THAT BLOCK.
+        name = next(line.split()[1].split("(")[0]
+                    for line in code.splitlines()
+                    if line.startswith("class "))
+        after_removal = crafter.remove_protocol_from_interface_file(
+            interface_file, name,
+        )
+        assert name not in after_removal, after_removal
+        print()
+        print("remove_protocol_from_interface_file(path, %r) -> gone" % name)
+        print("  it owns a DELIMITED BLOCK, not your file: the rest of the")
+        print("  contents is untouched, which is what makes it safe to")
+        print("  point at a file you did not generate")
 
     print()
-    print("bounded updates: it owns a DELIMITED BLOCK, not your file")
-    print("every write verb has a craft twin - see it before you land it")
+    print("craft returns code and touches nothing; the write lanes take")
+    print("that code as their argument. The preview is not a parallel")
+    print("verb you are trusted to call - it is the input.")
 
 
 if __name__ == "__main__":

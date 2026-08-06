@@ -113,10 +113,26 @@ def main() -> None:
     print()
     print("residence_of() on an unknown spell -> None, not an exception")
 
-    # The read surface over history.
-    for verb in ("heads", "walk", "history", "campaign_view", "journal"):
-        assert hasattr(research_set, verb), verb
-    print("history reads:", "heads / walk / history / campaign_view / journal")
+    # THE READ SURFACE, ON A SET NOTHING HAS BEEN REGISTERED INTO. An
+    # empty record is PRESENT AND EMPTY, not absent - which is the shape
+    # you have to be able to tell apart from "no record at all".
+    heads = research_set.heads()
+    assert isinstance(heads, dict)
+    assert "default" in heads, heads
+    assert heads["default"] is None, heads
+    print()
+    print("heads() on a fresh set ->", heads)
+    print("  the default lane is THERE with a tip of None. Open-but-empty")
+    print("  and absent are different facts, and melder spells them")
+    print("  differently: a missing key means `not open`, a None value")
+    print("  means `open, nothing in it yet`")
+
+    walked = research_set.walk("default")
+    assert isinstance(walked, list) and walked == [], walked
+    print("walk('default') ->", len(walked),
+          "rows - somewhere for history to go before any has happened")
+    print("  (history / campaign_view are driven in expert 29 and 15,")
+    print("   where there is something recorded to read)")
 
     # CAMPAIGNS - group work across lanes without threading an id around.
     assert research.active_campaign is None

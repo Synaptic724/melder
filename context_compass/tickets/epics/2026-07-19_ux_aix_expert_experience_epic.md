@@ -1648,6 +1648,48 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: REQUIRED
   SCORE_0_TO_10: 3
 
+- DATETIME: 2026-08-05T15:20:00Z
+  TYPE: FACT
+  CLAIM: 34 WENT RED ON MY ASSERTION, NOT THE HARNESS - and the true
+    behaviour is a better lesson than the one I assumed.
+    I READ SIX PROFILE VERBS AND NONE OF THE CHECKPOINT ONES, then asserted a
+    checkpoint consequence. `create_profile`, `set_active_profile`,
+    `describe_profile`, `list_profile_names`, `clear_profile`,
+    `delete_profile` - all read in full. `create_checkpoint` and
+    `list_checkpoint_ids` - not read, and those are the two the assertion
+    depended on. Reading adjacent verbs is not reading the ones you assert on.
+    WHAT I ASSUMED: a profile is a private record, so a checkpoint sealed on
+    'staging' would not appear in 'default's ledger.
+    WHAT THE CODE SAYS: `create_checkpoint(profile_name=None)` snapshots ONE
+    profile's twin window and advances THAT profile's journal mark - the
+    CONTENT is partitioned. But `list_checkpoint_ids()` returns "all
+    checkpoint ids in exact ledger creation order" for the PROCESS, takes no
+    profile argument, and `describe_checkpoint(id)` is a global id lookup.
+    ONE LEDGER, MANY PROFILES. Same shelf, different boxes.
+    THIS IS NOW THE LESSON'S SPINE rather than a footnote, because it is
+    exactly the assumption a reader arrives with - switching profiles does
+    NOT hand you a filtered view and does not hide anyone else's seals. The
+    lesson says so and says the author got it wrong first, which is worth
+    more than a clean narrative.
+    IT ALSO GAINED A VERB I HAD MISSED: `create_checkpoint(profile_name=...)`
+    seals INTO another profile without moving the active pointer. The
+    argument exists so a caller never has to switch just to seal somewhere,
+    and the lesson now proves the pointer stays put.
+    AND `describe_profile` IS WHERE THE PARTITION IS ACTUALLY VISIBLE - per
+    profile twin counts and emission sequence. The ledger read cannot show
+    it; that read is process-wide. The lesson asserts `describe_profile()`
+    equals `describe_profile("default")` while default is active, which pins
+    the None-means-ACTIVE rule with evidence rather than prose.
+  EVIDENCE:
+    - src/melder/crystallizer/crystallizer.py:1842-1886 (create_checkpoint)
+    - src/melder/crystallizer/crystallizer.py:1918-1941 (list_checkpoint_ids)
+    - src/melder/crystallizer/crystallizer.py:1623-1841 (the profile verbs)
+  IMPACT: 34 teaches the partition line correctly, including the half that
+    is NOT partitioned - which is the half that surprises people.
+  NEXT: OWNER RERUN of 34. 36 is new and also unrun.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 5
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

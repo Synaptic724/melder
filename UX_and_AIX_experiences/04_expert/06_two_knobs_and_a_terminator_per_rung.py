@@ -106,20 +106,33 @@ def main() -> None:
     print()
     print("config ladder: with_defaults -> finalize (sealed) -> activate (in force)")
 
-    # THE BUILDER: ONE TERMINATOR PER RUNG. Pick your exit.
-    for terminator in ("build", "finalize", "activate"):
-        assert hasattr(md.MutationResearchConfigurationBuilder, terminator)
+    # THE BUILDER: ONE TERMINATOR PER RUNG. Take each exit and look at
+    # what it hands back - that is what proves the rungs are different,
+    # where checking the three names exist would only prove they exist.
     print()
-    print("builder terminators: build / finalize / activate - one per rung")
+    print("builder terminators, each one actually taken:")
 
     built = md.MutationResearchConfigurationBuilder().with_defaults().build()
     assert isinstance(built, md.MutationResearchConfiguration)
-    print("  build()    ->", type(built).__name__, "| activated:", built.activated)
+    assert built.frozen is False and built.activated is False
+    print("  build()    -> mutable  | frozen:", built.frozen,
+          "activated:", built.activated)
 
-    ready = md.MutationResearchConfigurationBuilder().with_defaults().activate()
+    sealed = (md.MutationResearchConfigurationBuilder()
+              .with_defaults().finalize())
+    assert sealed.frozen is True and sealed.activated is False, (
+        "finalize FREEZES without activating - that is its own rung"
+    )
+    print("  finalize() -> frozen   | frozen:", sealed.frozen,
+          "activated:", sealed.activated)
+
+    ready = (md.MutationResearchConfigurationBuilder()
+             .with_defaults().activate())
     assert isinstance(ready, md.MutationResearchConfiguration)
-    assert ready.activated is True
-    print("  activate() -> already in force, no manual rung 2")
+    assert ready.frozen is True and ready.activated is True
+    print("  activate() -> in force | frozen:", ready.frozen,
+          "activated:", ready.activated)
+    print("  three exits, three DIFFERENT states - no manual rung 2")
 
     # THE CONTRAST THAT MAKES THE POINT. Aether's builder offers ONE exit
     # and leaves the rest to you.
@@ -129,11 +142,17 @@ def main() -> None:
     print("same pattern, different generosity. that divergence is real.")
 
     # THE FOURTH ROOT CAUGHT UP. Nexus once had no builder at all; it now
-    # carries the same three exits as the two most generous shapes above.
-    for terminator in ("build", "finalize", "activate"):
-        assert hasattr(md.NexusConfigurationBuilder, terminator), terminator
+    # carries the same three exits, and each is taken here for the same
+    # reason as above - the states differ, so show the states.
+    nexus_built = md.NexusConfigurationBuilder().with_defaults().build()
+    assert nexus_built.frozen is False
+    nexus_sealed = md.NexusConfigurationBuilder().with_defaults().finalize()
+    assert nexus_sealed.frozen is True and nexus_sealed.activated is False
     print()
-    print("NexusConfigurationBuilder: build / finalize / activate")
+    print("NexusConfigurationBuilder takes the same three exits:")
+    print("  build() frozen:", nexus_built.frozen,
+          "| finalize() frozen:", nexus_sealed.frozen,
+          "activated:", nexus_sealed.activated)
     print("  the root that once had NO builder now matches the table")
 
     # BUILD() HANDS BACK SOMETHING STILL MUTABLE - and on this root that
