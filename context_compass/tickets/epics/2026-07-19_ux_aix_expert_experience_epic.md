@@ -1527,6 +1527,127 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-08-05T12:00:00Z
+  TYPE: FACT
+  CLAIM: I HAD BEEN MEASURING COVERAGE IN A WAY THAT HID FIVE WHOLE
+    SUBSYSTEMS. "55/55 public root" counts NAMES on the package root; "34/34"
+    is one command family. Neither says anything about METHOD-level coverage
+    on the roots themselves, and I never measured it until the owner asked
+    why the tier stopped at 33.
+    THE REAL NUMBERS: Crystallizer 65 public methods, 44 never touched.
+    Nexus 55 public, 41 never touched. Discounting false alarms - most of
+    MutationResearch's 29 ARE driven through the room, and Crystallizer's
+    emit_*/create_*_crystal are kernel machinery - five user-facing clusters
+    had ZERO lessons: frame ACL/projections (~14 verbs), rift gates (~10),
+    profiles (8), formations (6), index grafts (5).
+    34 WIDENING WHAT AN AGENT MAY WRITE - the ACL projection. This was the
+    most damaging gap because expert 07 now PROMISES it ("a widening ACL
+    projection is what turns imports on") with nothing behind it, and it is
+    the first question anyone asks after reading 07.
+    THE SHIPPED LADDER IS A PROGRESSION, NOT A SLIDER: precision is 18
+    pure-computation roots with no clock, no filesystem, no introspection;
+    hybrid adds csv/dataclasses/inspect/pathlib/pprint/time; permissive adds
+    os/sys/io/subprocess/socket/shutil/importlib; full_access drops the
+    allow-list entirely. The step from precision to hybrid is the first
+    posture where generated code can observe anything outside its own
+    arithmetic - that is the line worth teaching, not the module count.
+    TWO RULES THAT WILL BITE A GUESSER, both from _import_root_is_denied:
+    DENY BEATS ALLOW (the denied set is tested first and returns
+    immediately - which is why `ctypes` sits in the shipped deny list while
+    appearing in no allow list, so widening later cannot re-admit it); and
+    AN EMPTY ALLOW-LIST MEANS ALLOW EVERYTHING (empty allowed set returns
+    not-denied without consulting anything). An empty tuple is the most
+    permissive value, and it is exactly what someone assuming allow-list
+    semantics would reach for to lock a frame DOWN.
+    35 THE GATE THAT WAITS FOR READERS. RiftGate / CreationGate / LoadGate
+    "all exist because some operations must wait for READERS rather than for
+    other writers" - which is what makes expert 16's rewiring and 17's live
+    swap safe, and neither of those lessons says so.
+    THE HONEST TRIANGLE IS THE SELLING POINT: no single verb proves a rift
+    empty, and melder documents that rather than implying otherwise.
+    `disable_rift_gate` stops new entry and "does NOT wait for threads
+    already inside"; `close_and_wait_rift` drains but its timeout bounds the
+    wait so "a return does not by itself prove the rift is empty";
+    `count_active_rift_threads` is "a DIAGNOSTIC, not a synchronization
+    primitive - do not spin on it". Quiescence is close-and-wait FOLLOWED BY
+    a count check. Most libraries ship a drain() that implies a guarantee it
+    cannot make.
+    AND ONE TRAP RECORDED: disable/enable SILENTLY NO-OP on an unknown rift
+    id. A typo succeeds and changes nothing.
+    THE LESSON IS DEMONSTRABLE SINGLE-THREADED because entry_mode="raise"
+    turns a closed gate into an immediate refusal. It also warns that "wait"
+    mode plus a closed gate on one thread is a deadlock by definition, not a
+    bug.
+  EVIDENCE:
+    - src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py
+    - .../validation/strategies/codegen_import_policy_strategy.py:172-195
+    - src/melder/nexus/acl/builder/frame_acl_builder.py:326-349
+    - src/melder/nexus/acl/builder/frame_acl_codegen_builder.py:310-468
+    - src/melder/nexus/rift/rift_gate/rift_gate.py:9-68, admit()
+    - src/melder/nexus/nexus.py:1512-1620
+  IMPACT: Tier is 35 lessons. Nexus method coverage 41 untouched -> 33.
+  NEXT: OWNER RUN - 34 and 35 are new. Still unauthored and worth having:
+    PROFILES + FORMATIONS (the persistence story is half-taught - checkpoints
+    are covered but nothing says what a profile IS or when a formation beats
+    a checkpoint), INDEX GRAFTS (5 verbs, and I do not yet understand them
+    well enough to teach), and BOOT MELDS from the 2026-07-20 owner epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-05T13:10:00Z
+  TYPE: FACT
+  CLAIM: I LEAKED INTERNALS INTO TWO NEW LESSONS AND THE OWNER CAUGHT IT.
+    34 is WITHDRAWN and 35 is corrected. This supersedes the 12:00 note's
+    claim that both were shippable.
+    THE ROOT CAUSE IS MY HYGIENE CHECK, WHICH HAS BEEN BLIND ALL LANE. It
+    flags `a.attr.startswith("_")` - leading underscores - and nothing else.
+    Melder does not mark privacy with underscores. It marks it with
+    `AGENT_ACCESS: internal` on the class and an `Internal` first line in the
+    method docstring. My checker has reported "priv=-" on every lesson while
+    being structurally incapable of seeing the actual marker. Every clean
+    hygiene result I have reported this lane carries that caveat.
+    34 IS UNTEACHABLE FROM THE PUBLIC SURFACE. `FrameACLBuilder`,
+    `FrameACLCodegenBuilder` and `FrameACLCodegenConfiguration` are all
+    AGENT_ACCESS: internal, each carrying "read it to understand the runtime,
+    do not drive it directly", and FrameACLBuilder's Registration adds that it
+    is "obtained through the container, not constructed directly". The lesson
+    drove that chain end to end.
+    THE DISTINCTION THAT MATTERS: `Nexus.get_frame_acl_builder` is NOT itself
+    marked Internal, so the door is public - but a public door onto an
+    internal object does not make the object public. I had treated
+    "reachable" as "sanctioned" and they are different questions.
+    PRECEDENT FOLLOWED: expert 13 hit exactly this with the accessible-frames
+    enumeration and recorded it as a FINDING rather than teaching it. 34 is
+    now a withdrawal notice stating the same reasoning, and the material -
+    the precision/hybrid/permissive/full_access ladder, the exact import
+    sets, DENY-BEATS-ALLOW, the empty-allow-list trap - is preserved in the
+    12:00 note so the lesson can be written the day a public door exists.
+    07 CORRECTED TOO: it promised the widening projection without saying the
+    promise is currently unreachable. It now says so and points at 34.
+    35 SURVIVES, and the correction sharpened it. The five gate FACADES on
+    Nexus are genuinely public - none docstring-marked Internal, all carrying
+    caller-facing contracts. My one leak was printing `type(gate).__name__`,
+    which puts an internal class name in front of a reader as if it were
+    surface. `enable_rift_gate`'s own contract prescribes the right use:
+    "a typo'd id looks like success. Confirm with get_rift_gate(...) when the
+    id is not known-good." So the lesson now uses it as an EXISTENCE CHECK -
+    the documented idiom - and never touches the gate object.
+  EVIDENCE:
+    - src/melder/nexus/acl/builder/frame_acl_builder.py:49-105 (read in full)
+    - src/melder/nexus/nexus.py:1449-1511 (get_rift_gate / enable_rift_gate)
+    - src/melder/nexus/nexus.py:1696-1727 (set_rift_gate_entry_mode)
+    - UX_and_AIX_experiences/04_expert/13 (the precedent, recorded there)
+  IMPACT: One lesson withdrawn before it could train anyone against an
+    unsanctioned surface; one corrected to the documented idiom.
+  NEXT: OWNER DECISION on whether the ACL authoring surface should get a
+    public door. Until then 34 stays withdrawn.
+    AND A REAL DEBT: the hygiene checker must read AGENT_ACCESS and the
+    `Internal` docstring marker, not underscores. Until it does, no "clean"
+    hygiene result from this lane should be trusted on the privacy axis -
+    including the ones I have already reported.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 3
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

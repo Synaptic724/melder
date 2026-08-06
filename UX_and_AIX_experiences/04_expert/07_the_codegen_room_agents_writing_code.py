@@ -162,8 +162,10 @@ def main() -> None:
     print("    reason :", denied_import.get("reason"))
     print("    issue  :", import_issues[0])
     print("    imports are OFF in the shipped posture, so the refusal is")
-    print("    about the STATEMENT - a widening ACL projection is what")
-    print("    turns them on and supplies an allow-list to be named by")
+    print("    about the STATEMENT rather than about `socket` - there is")
+    print("    no allow-list to fail yet. A widening ACL projection is")
+    print("    what turns them on, and it is NOT reachable from the")
+    print("    public surface today (see expert 34, withdrawn)")
 
     # A DENIED BUILTIN. This one DOES name the offender, because the
     # denylist is per-name.
