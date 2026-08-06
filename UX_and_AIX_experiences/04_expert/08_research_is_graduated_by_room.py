@@ -70,7 +70,6 @@ VERIFY: RUN GREEN 2026-08-03; the three-state section added 2026-08-05
 """
 import melder as md
 
-
 # The 13 verbs a codegen room adds - every one writes to the record.
 CODEGEN_ONLY = (
     "research_create_lane", "research_attach", "research_detach",
