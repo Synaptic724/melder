@@ -23,9 +23,23 @@ def main() -> None:
     book.bind(spell=Mailer, existence="unique")
     conduit = book.conjure()
 
-    print(welcome_new_user(conduit, "ada"))
-    print(welcome_new_user(conduit, "grace"))
-    print("one world handle, passed where needed")
+    first = welcome_new_user(conduit, "ada")
+    second = welcome_new_user(conduit, "grace")
+    print(first)
+    print(second)
+
+    # The function got a real world handle, not a copy of one.
+    assert first == "sent to ada"
+    assert second == "sent to grace"
+
+    # AND IT IS THE SAME WORLD. `existence="unique"` means one Mailer, so
+    # two calls in two different functions melded the SAME object. That is
+    # the whole reason to pass the conduit instead of re-conjuring: a
+    # second conjure would have built a second world with its own Mailer,
+    # and these two would not be the same object.
+    assert conduit.meld(spell=Mailer) is conduit.meld(spell=Mailer)
+    print("one world handle, passed where needed - and the SAME Mailer")
+    print("  answered both calls, which is what re-conjuring would break")
 
 
 if __name__ == "__main__":
