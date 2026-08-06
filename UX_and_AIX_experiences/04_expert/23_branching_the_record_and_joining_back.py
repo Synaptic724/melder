@@ -50,10 +50,13 @@ GOAL: BRANCHING, AND WHY A JOIN CAN REFUSE. Research lanes are melder's
                                   readable in the joined source lane
       Residence transfers with whatever moves, and the source is marked
       joined - it accepts no further work afterwards.
-SURFACE EXERCISED: research_create_lane (anchored and not),
-                   research_walk, research_heads, research_join with and
-                   without force, and the lane describe payload
-VERIFY: rides the owner's 3.14t harness; asserts are the contract.
+SURFACE EXERCISED: research_create_lane (anchored, half-anchored and
+                   refused), research_heads, research_join with and
+                   without force, Conduit.bind_inactive to move the
+                   receiver, and the lane payload create_lane returns
+                   (a lane describe() snapshot: lane_type, anchor, nodes)
+VERIFY: rides the owner's 3.14t harness; asserts are the contract. The
+        SURFACE line was corrected 2026-08-05; executable code unchanged.
 """
 import melder as md
 

@@ -1,148 +1,237 @@
 """
 TIER: expert (07)
 GOAL: THE CODEGEN ROOM - where an agent writes code that becomes part of
-      a running world. Advanced 11 took static and capability apart and
-      deliberately stopped there. This is the third room kind, and it is
-      expert material because it is the only one where the caller
-      supplies EXECUTABLE SOURCE.
+      a running world, and the gate it has to get through first. This is
+      the only room kind where the caller supplies EXECUTABLE SOURCE, so
+      it is the only one that has to answer "may I" before "did it work".
 
-      THE THREE VERBS, AND THE ORDER IS NOT OPTIONAL
+      THE DEFAULT POSTURE IS DENY, AND THE DENYLIST IS THE THREAT MODEL
+      WRITTEN DOWN. A codegen room with no widening projection ships with
+      imports OFF entirely and thirteen builtins refused by name:
 
-        validate_codegen(code, frame_name=...)   would this be allowed?
-        execute_codegen(code, frame_name=...)    run it in the frame
-        materialize_codegen(...)                 make it durable
+        __import__  breakpoint  compile  dir     eval    exec   getattr
+        globals     input       locals   setattr delattr vars
 
-      Validate is a SEPARATE VERB, not a flag on execute. That is the
-      design decision worth the lesson: an agent can ask "would this be
-      permitted" WITHOUT running anything. Every other "safe execution"
-      story collapses those into one call and forces you to attempt the
-      thing to learn whether you were allowed to attempt it.
+      Read that list as a document rather than a setting. Every entry is a
+      door OUT of the namespace contract: `eval`/`exec`/`compile` execute
+      text the gate never saw, `__import__` bypasses the import rules,
+      `getattr`/`setattr`/`vars`/`dir` reach attributes by computed name,
+      and `globals`/`locals` hand back the environment itself. Somebody
+      enumerated the ways out and wrote them down where you can read them.
 
-      SEVEN STRATEGIES GATE WHAT AN AGENT MAY WRITE
+      A REFUSAL IS A VALUE, AND IT NAMES THE OFFENDER.
+      `validate_codegen` returns a payload, not an exception and not a
+      bare boolean:
+        {"accepted": bool, "frame_name": str, "reason": str,
+         "validation_issues": (str, ...)}
+      Rejected source comes back as `accepted: False` with a message that
+      names the specific thing - "Builtin 'eval' is not allowed in this
+      codegen mode" - because a bare False would force you to re-run
+      validation with different instrumentation just to learn why.
 
-        ast_structure       code SHAPES outside the governed subset
-        import_policy       which imports the posture permits
-        builtin_policy      dangerous builtins
-        attribute_access    unsafe attribute patterns
-        name_resolution     ast.Name against the namespace contract
-        reflection_policy   introspection helpers
-        recursive_control   codegen that calls codegen
+      THE CHAIN IS ORDERED AND IT SHORT-CIRCUITS. Syntax is checked first
+      (a parse failure never reaches a gate), then seven strategies run in
+      a fixed sequence and the FIRST refusal returns immediately:
 
-      Read that last one twice. `recursive_control` exists because
-      generated code that generates code is how a bounded system stops
-      being bounded. The presence of that specific strategy tells you
-      someone thought about an agent trying to escape its own sandbox by
-      writing a smaller one.
+        ast_structure -> import_policy -> builtin_policy ->
+        name_resolution -> attribute_access -> reflection_policy ->
+        recursive_control
 
-      AND `frame_name` IS REQUIRED ON BOTH VERBS.
-      Not optional, not defaulted - the same law advanced 13 hit on the
-      viewer. Executing generated code needs to know WHICH WORLD it lands
-      in, and there is no sane default for that. A codegen call that
-      guessed its target frame would be the worst possible bug.
+      So `validation_issues` is normally ONE issue: the first gate that
+      objected, not an audit of everything wrong. Fix it and re-ask - the
+      next answer may well name a different gate. And the order is
+      observable, which is why it is worth knowing rather than guessing:
+      `eval('1 + 1')` is refused by builtin_policy, which sits BEFORE
+      name_resolution, so you get the builtin message rather than an
+      unresolved-name one.
 
-      THE ROOM OVERRIDES A THIRD PROPERTY.
-      Advanced 11 found static and capability each override TWO things -
-      `command_system` (what you may DO) and `frame_viewer` (what you may
-      SEE). CodegenRiftSpace adds `codegen_system`: what you may MAKE.
-      Do / see / make, each swapped by handing over a different class
-      rather than guarding a shared one.
+      READ `recursive_control` TWICE. It is last in the chain and it
+      exists because generated code that generates code is how a bounded
+      system stops being bounded. Someone thought about an agent escaping
+      its sandbox by writing a smaller one inside it.
 
-      MEMORY IS NOT OPTIONAL EITHER: both verbs "emit one FULL-SOURCE
-      codegen memory record" when room memory is enabled. The room keeps
-      what the agent wrote, not a summary of it - which is the only
-      version that is useful afterwards.
-SURFACE EXERCISED: CodegenCommandSystem via a codegen room -
-                   validate_codegen / execute_codegen / materialize_codegen,
-                   the seven validation strategies, frame_name as required
-VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
+      VALIDATION RUNS BEFORE THE ENVIRONMENT EXISTS, AND THAT ORDERING IS
+      THE POINT. The gates read the AST, not a live namespace. The
+      execution environment has not been built when they run - and
+      building it to find out whether building it was allowed "would be
+      exactly the escape the gate exists to prevent". That is why
+      `validate_codegen` is a separate verb rather than a flag on execute:
+      you can learn a boundary without approaching it.
+
+      AND MELDER DOES NOT CLAIM THIS IS A PROOF. In its own words, the
+      checks reject OBVIOUS violations, because "static analysis of Python
+      cannot be exhaustive, so the validation chain is defence in depth
+      alongside the namespace denylists and the ACL posture, not a proof
+      of safety on its own". Three layers, named, with the honest limit
+      stated. A system that claimed a guarantee here would be lying, and
+      the willingness to write that down is worth more than the claim.
+
+      THE ROOM OVERRIDES A THIRD PROPERTY. Advanced 11 found static and
+      capability each swap TWO - `command_system` (what you may DO) and
+      `frame_viewer` (what you may SEE). CodegenRiftSpace adds
+      `codegen_system`: what you may MAKE. Do / see / make, each by
+      handing over a different class rather than guarding a shared one.
+SURFACE EXERCISED: validate_codegen driven against accepted source, a
+                   denied import and a denied builtin; the validation
+                   payload shape; RiftSpace.space_kind / command_system /
+                   frame_viewer / codegen_system;
+                   list_supported_command_methods
+VERIFY: rewritten 2026-08-05 to DRIVE the validator instead of listing
+        gate names; not yet re-run.
 """
 import melder as md
 
 
-CODEGEN_VERBS = ("validate_codegen", "execute_codegen", "materialize_codegen")
+FRAME = "gate-world"
 
-GATES = (
-    "ast_structure",
-    "import_policy",
-    "builtin_policy",
-    "attribute_access",
-    "name_resolution",
-    "reflection_policy",
-    "recursive_control",
+SAFE = "result = 2 + 2\n"
+IMPORTING = "import socket\nresult = socket\n"
+EVALUATING = "result = eval('1 + 1')\n"
+
+# The shipped deny list for a room with no widening projection. Named
+# here so the lesson can CHECK the refusals against it rather than assert
+# a number it typed.
+DENIED_BUILTINS = (
+    "__import__", "breakpoint", "compile", "dir", "eval", "exec",
+    "getattr", "globals", "input", "locals", "setattr", "delattr", "vars",
 )
 
 
 def main() -> None:
-    nexus = md.Nexus()
-    system_config = nexus.create_configuration()
-    system_config.with_rift_creation_enabled(True)
-    nexus.activate(system_config)
+    spellbook_configuration = (
+        md.SpellbookConfiguration(FRAME).with_defaults().finalize()
+    )
+    book = md.Spellbook(aetheric_frame=FRAME,
+                        configuration=spellbook_configuration)
+    book.configure_aether_frame(
+        system_state="dynamic",
+        disposal=None,
+        disposal_method_names=None,
+        rift_enabled=True,
+        ai_native=True,
+    )
+    # An empty conjured frame is a real frame - `conjure` realizes it and
+    # publishes it to the Nexus, and spells are cargo rather than a
+    # precondition (expert 33).
+    book.conjure(name="gate-root")
 
-    # THE THIRD ROOM KIND. static and capability were advanced 11;
-    # codegen is the one that accepts source.
-    rift_config = nexus.create_rift_configuration()
-    rift_config.with_space_type("codegen")
-    rift = nexus.create_rift(configuration=rift_config, rift_name="workshop")
+    nexus = md.Nexus()
+    system_configuration = nexus.create_configuration()
+    system_configuration.with_rift_creation_enabled(True)
+    system_configuration.with_allowed_target_frame_names([FRAME])
+    nexus.activate(system_configuration)
+    rift_configuration = nexus.create_rift_configuration()
+    rift_configuration.with_space_type("codegen")
+    rift = nexus.create_rift(configuration=rift_configuration,
+                             rift_name="workshop")
     rift.mark_active()
+    rift.create_frame_link(FRAME)
 
     room = rift.space
-    print("room kind:", room.space_kind)
-    assert room.space_kind == "codegen"
-    print("room class:", type(room).__name__)
-
-    # THREE PROPERTIES SWAP BY KIND - do / see / make.
     commands = room.command_system
-    print()
-    print("command_system:", type(commands).__name__, "  (what you may DO)")
-    print("frame_viewer:  ", type(room.frame_viewer).__name__,
-          " (what you may SEE)")
+
+    # DO / SEE / MAKE - three properties, three classes, one room kind.
+    assert room.space_kind == "codegen"
+    print("room kind:", room.space_kind, "->", type(room).__name__)
+    print("  command_system:", type(commands).__name__, "(what you may DO)")
+    print("  frame_viewer  :", type(room.frame_viewer).__name__,
+          "(what you may SEE)")
     assert hasattr(room, "codegen_system"), "the codegen room adds a third"
-    print("codegen_system:", type(room.codegen_system).__name__,
-          "     (what you may MAKE)")
+    print("  codegen_system:", type(room.codegen_system).__name__,
+          "(what you may MAKE)")
 
-    # THE THREE VERBS. Validate is its own verb - an agent can ask
-    # permission without acting.
+    # ACCEPTED SOURCE. The payload is a verdict, not a boolean.
     print()
-    print("the codegen verbs:")
-    for verb in CODEGEN_VERBS:
-        assert hasattr(commands, verb), verb
-        print("   ", verb)
+    print("ASKING PERMISSION, WITHOUT RUNNING ANYTHING:")
+    accepted = commands.validate_codegen(SAFE, frame_name=FRAME)
+    assert isinstance(accepted, dict), accepted
+    assert accepted["accepted"] is True, accepted
+    assert accepted["frame_name"] == FRAME
+    print("  validate(result = 2 + 2)  -> accepted:", accepted["accepted"],
+          "| reason:", accepted.get("reason"))
 
-    # frame_name IS REQUIRED on validate and execute. Generated code has
-    # to land in a named world; guessing would be the worst kind of bug.
-    import inspect
-    for verb in ("validate_codegen", "execute_codegen"):
-        parameters = inspect.signature(getattr(commands, verb)).parameters
-        assert parameters["frame_name"].default is inspect.Parameter.empty, (
-            f"{verb} must not default its target frame"
-        )
-        assert parameters["code"].default is inspect.Parameter.empty
+    # A DENIED IMPORT. The shipped posture has imports OFF entirely, so
+    # the refusal is about the STATEMENT, not about `socket` specifically.
+    denied_import = commands.validate_codegen(IMPORTING, frame_name=FRAME)
+    assert denied_import["accepted"] is False, denied_import
+    import_issues = denied_import.get("validation_issues", ())
+    assert import_issues, denied_import
     print()
-    print("code and frame_name are BOTH required - no default world")
+    print("  validate(import socket)   -> accepted:",
+          denied_import["accepted"])
+    print("    reason :", denied_import.get("reason"))
+    print("    issue  :", import_issues[0])
+    print("    imports are OFF in the shipped posture, so the refusal is")
+    print("    about the STATEMENT - a widening ACL projection is what")
+    print("    turns them on and supplies an allow-list to be named by")
 
-    # THE SEVEN GATES. Each one names a way generated code could escape
-    # the posture it was granted.
+    # A DENIED BUILTIN. This one DOES name the offender, because the
+    # denylist is per-name.
+    denied_builtin = commands.validate_codegen(EVALUATING, frame_name=FRAME)
+    assert denied_builtin["accepted"] is False, denied_builtin
+    builtin_issues = denied_builtin.get("validation_issues", ())
+    assert builtin_issues, denied_builtin
+    assert "eval" in builtin_issues[0], builtin_issues
     print()
-    print("what an agent's code is checked against:")
-    for gate in GATES:
-        print("   ", gate)
-    assert len(GATES) == 7
+    print("  validate(eval('1 + 1'))   -> accepted:",
+          denied_builtin["accepted"])
+    print("    issue  :", builtin_issues[0])
+    print("    it NAMES the builtin. A bare False would make you re-run")
+    print("    validation with different instrumentation to learn why")
 
+    # ONE ISSUE, NOT AN AUDIT. The chain returns on the FIRST refusal, so
+    # a rejected payload carries the first gate's objection and stops.
+    assert len(builtin_issues) == 1, builtin_issues
+    print("    and exactly ONE issue came back - the chain short-circuits,")
+    print("    so this is the first gate that objected, not a list of")
+    print("    everything wrong. Fix it and ask again; the next answer")
+    print("    may name a different gate.")
+
+    # NOTHING RAN. Three verdicts, zero execution - which is the whole
+    # reason validate is its own verb.
     print()
-    print("recursive_control is the telling one - codegen that writes")
-    print("codegen is how a bounded system stops being bounded.")
+    print("three verdicts so far and NOTHING has executed. The gates read")
+    print("the AST; the namespace does not exist yet. Building it to find")
+    print("out whether building it was permitted would be exactly the")
+    print("escape the gate exists to prevent.")
 
-    # The room enumerates its own authority, same AIX door as advanced 11.
+    # THE DENYLIST AS A DOCUMENT.
+    print()
+    print("the shipped builtin denylist -", len(DENIED_BUILTINS), "names:")
+    print("   ", " ".join(DENIED_BUILTINS[:7]))
+    print("   ", " ".join(DENIED_BUILTINS[7:]))
+    print("  every one is a door OUT of the namespace contract:")
+    print("    eval / exec / compile  run text the gate never saw")
+    print("    __import__             bypasses the import rules")
+    print("    getattr / setattr /")
+    print("    vars / dir             reach attributes by computed name")
+    print("    globals / locals       hand back the environment itself")
+
+    # MALFORMED REQUEST IS A DIFFERENT FAILURE FROM DISALLOWED CODE.
+    for bad_code, bad_frame in (("", FRAME), (SAFE, "")):
+        try:
+            commands.validate_codegen(bad_code, frame_name=bad_frame)
+            raise AssertionError("expected ValueError on an empty argument")
+        except ValueError:
+            pass
+    print()
+    print("empty code or empty frame_name RAISE ValueError - a malformed")
+    print("REQUEST is a different failure from disallowed CODE, and they")
+    print("are not spelled the same way")
+
+    # The room enumerates its own authority (the AIX door from advanced 11).
     supported = commands.list_supported_command_methods()
     assert isinstance(supported, tuple)
-    codegen_on_surface = [v for v in CODEGEN_VERBS if v in supported]
+    assert "validate_codegen" in supported
     print()
-    print("room reports", len(supported), "command methods;",
-          len(codegen_on_surface), "are the codegen verbs")
+    print("the room reports", len(supported), "command methods it will answer")
 
     print()
-    print("validate is a SEPARATE verb - ask permission without acting")
-    print("do / see / make: three properties, three classes, one room kind")
+    print("validate is a SEPARATE verb - learn a boundary without")
+    print("approaching it. And melder does not call this a proof: the")
+    print("checks reject OBVIOUS violations, and the honest claim is")
+    print("defence in depth across gates, namespace denylists and the ACL")
+    print("posture. A system promising a guarantee here would be lying.")
 
 
 if __name__ == "__main__":

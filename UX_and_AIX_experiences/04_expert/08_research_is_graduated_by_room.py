@@ -51,9 +51,22 @@ GOAL: HOW AN AGENT REACHES MUTATION RESEARCH - and the discovery that
       Two independent "would this work" questions, both answerable
       WITHOUT acting. Most systems make an agent choose between acting
       blindly and not acting at all.
+      AND A VERB HAS THREE STATES, NOT TWO. It can be ABSENT (static has
+      no research surface at all), PRESENT BUT REFUSING (the room carries
+      it, the research root is not up, and the call raises a teach-grade
+      RuntimeError), or WORKING. The command path takes a NON-CONSTRUCTING
+      peek at the root precisely so that asking for research never boots
+      one behind your back - and someone who ASKED deserves an error
+      rather than an empty answer that reads like "nothing was recorded".
+      Collapsing those two into one reply is how a reader concludes a
+      world has no history when what it has is no ROOT.
 SURFACE EXERCISED: the research_* gradient across static / capability /
-                   codegen rooms; read-vs-write as the dividing line
-VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
+                   codegen rooms computed off the live surfaces;
+                   read-vs-write as the dividing line; and research_heads
+                   driven from a capability room both before and after
+                   MutationResearch is activated
+VERIFY: RUN GREEN 2026-08-03; the three-state section added 2026-08-05
+        and not yet re-run.
 """
 import melder as md
 
@@ -141,6 +154,46 @@ def main() -> None:
         assert hasattr(codegen, verb), verb
         print("   ", verb)
 
+    # AND THERE IS A THIRD STATE, which presence alone cannot show.
+    # A verb can be ABSENT, or PRESENT BUT REFUSING, or WORKING - and
+    # melder spells all three differently.
+    #
+    # Right now MutationResearch is not up. The verb is on the surface and
+    # it REFUSES LOUDLY rather than returning None, because the command
+    # path takes a NON-CONSTRUCTING peek at the research root: asking for
+    # research must never quietly boot one behind your back, and a user
+    # who ASKED deserves an error rather than an empty answer that reads
+    # like "there is nothing recorded".
+    try:
+        capability.research_heads()
+        raise AssertionError("expected a refusal: research is not active")
+    except RuntimeError as inactive:
+        print()
+        print("capability.research_heads() with research DOWN refused:")
+        print("  ", str(inactive)[:104])
+
+    # NOW BRING IT UP and the same call answers. Same verb, same room.
+    research = md.MutationResearch()
+    configuration = research.create_configuration()
+    configuration.with_defaults().activate()
+    research.activate(configuration)
+
+    heads = capability.research_heads()
+    assert isinstance(heads, dict), heads
+    print()
+    print("...and with research UP the SAME call answers:", sorted(heads))
+    print("  three states, spelled three ways: ABSENT on static,")
+    print("  PRESENT-BUT-REFUSING while the root is down, WORKING once it")
+    print("  is up. Collapsing any two of those into one answer is how a")
+    print("  reader concludes a world has no history when it has no ROOT.")
+
+    # The write half is still refused by ABSENCE, even now that research
+    # is live - the gradient is about AUTHORITY, not about availability.
+    assert not hasattr(capability, "research_create_lane"), (
+        "activating research must not hand capability the write verbs"
+    )
+    print("  and a live research root does NOT hand capability the writes")
+
     # AUTHORITY BY ABSENCE, one plane up from advanced 11.
     assert not hasattr(static, "research_walk")
     assert not hasattr(capability, "research_create_lane")
@@ -157,7 +210,8 @@ def main() -> None:
 
     print()
     print("capability READS the record; only codegen may WRITE it")
-    print("the room that may fabricate code is the room that may restate the past")
+    print("the room that may fabricate code is the room that may restate")
+    print("the past - both powers arrive together, never separately")
 
 
 if __name__ == "__main__":

@@ -64,10 +64,15 @@ GOAL: THE CODEGEN LOOP, ACTUALLY RUN. Expert 07 introduced the room and
       named world and there is no sane default for that - a codegen call
       that guessed its target frame would be the worst possible bug.
 SURFACE EXERCISED: CodegenCommandSystem.validate_codegen /
-                   execute_codegen / materialize_codegen, the
+                   execute_codegen / research_preview, the
                    CodegenValidationResult / CodegenExecutionResult
-                   verdicts, and RiftSpace.memory_system callbacks
-VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
+                   verdicts, and RiftSpace.memory_system callbacks.
+                   materialize_codegen is DESCRIBED here, not called - the
+                   third rung is a separate decision and expert 26 takes
+                   it; running is not keeping.
+VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness. The SURFACE
+        line above was corrected 2026-08-05; executable code unchanged
+        since that run, so the green still stands.
 """
 import melder as md
 

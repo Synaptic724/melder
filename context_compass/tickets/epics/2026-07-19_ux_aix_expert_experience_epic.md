@@ -1379,6 +1379,154 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: REQUIRED
   SCORE_0_TO_10: 5
 
+- DATETIME: 2026-08-05T07:40:00Z
+  TYPE: FACT
+  CLAIM: OLDER-TIER SURFACE DRIFT FIXED BY READING EACH LESSON, and reading
+    changed the verdict on two of the seven I had flagged.
+    MY EARLIER SWEEP WAS PARTLY WRONG. It reported drift in 07, 08, 09, 12,
+    13, 14, 23. Reading them shows 08 and 14 are CORRECT - their lines say
+    `research_*` and `research_group_*`, and my regex split on the wildcard
+    and reported the stem as a phantom claim. Two false accusations out of
+    seven, from a checker I had already been burned by twice.
+    THE FIVE REAL ONES, and four of them share one root cause: a SURFACE line
+    that lists a verb the lesson INSPECTS rather than INVOKES.
+    07 claimed validate/execute/materialize; it calls none of them. It checks
+    they exist, checks `frame_name` cannot default via inspect.signature, and
+    calls `list_supported_command_methods` - which the line omitted entirely.
+    Now says the verbs are INSPECTED, names the room properties actually
+    read, and points at 12/26/30 for the lessons that drive them.
+    12 claimed materialize_codegen; section 6 only PRINTS its signature and
+    explains that running is not keeping. It does call `research_preview`,
+    which was missing. Both corrected.
+    13 drove validate/execute once per frame and claimed neither, saying only
+    "per-frame codegen calls".
+    09 was a false-ish positive with a real edge: both describe doors ARE
+    called, but the push/pull/list/retention verbs are hasattr-only, which the
+    line implied were exercised. Now states which half is which and why
+    (driving them needs a real mesh).
+    23 claimed `research_walk`, which it never calls, and omitted
+    `Conduit.bind_inactive` - the verb that MOVES THE RECEIVER and is the
+    whole reason the divergent join refuses. Omitting it hid the mechanism.
+    THE RULE THIS SETTLES, and it is worth more than the five edits: a
+    SURFACE EXERCISED line is a CLAIM ABOUT BEHAVIOUR, so "the lesson
+    inspects this verb" and "the lesson runs this verb" cannot be spelled the
+    same way. Four of five defects were exactly that conflation.
+  EVIDENCE:
+    - UX_and_AIX_experiences/04_expert/07,09,12,13,23 (SURFACE lines)
+    - 08 and 14 read and left unchanged; their lines were already true
+  IMPACT: Every expert lesson's declared surface now matches what it does,
+    and distinguishes inspected from invoked.
+  NEXT: none. Older lessons were otherwise untouched - no code changed in any
+    of the five, prose only.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-08-05T09:15:00Z
+  TYPE: FACT
+  CLAIM: 07 AND 09 REWRITTEN FROM SHAPE-DESCRIPTION INTO DEMONSTRATION, on
+    the owner's instruction to stop shipping superficial lessons and think
+    about what the product actually SELLS. Both were `hasattr` tours: 07
+    printed a HARDCODED tuple of seven gate names and never validated a line
+    of code; 09 asserted the push/pull verbs exist and never wired a mesh.
+    Neither showed melder doing anything.
+    07 NOW DRIVES THE VALIDATOR and the material came out of the engine:
+    THE SHIPPED POSTURE IS DENY. A codegen room with no widening projection
+    has imports OFF entirely and thirteen builtins refused by name
+    (codegen_system.py:422-441): __import__ breakpoint compile dir eval exec
+    getattr globals input locals setattr delattr vars. That list is a THREAT
+    MODEL WRITTEN DOWN - eval/exec/compile run text the gate never saw,
+    __import__ bypasses the import rules, getattr/setattr/vars/dir reach
+    attributes by computed name, globals/locals hand back the environment.
+    A REFUSAL IS A VALUE THAT NAMES THE OFFENDER: the payload is
+    {accepted, frame_name, reason, validation_issues}, and the builtin gate
+    says "Builtin 'eval' is not allowed in this codegen mode". The result
+    type's own System Context explains why: "a bare boolean would force the
+    caller to re-run validation with different instrumentation to learn why".
+    THE ORDERING IS THE SAFETY PROPERTY: gates read the AST, and the
+    namespace does not exist yet - "building it to find out would be exactly
+    the escape the gate exists to prevent". That is the real answer to why
+    validate is a separate verb.
+    AND THE HONESTY IS THE SELLING POINT, which is what I would have missed
+    by skimming: melder does NOT claim a guarantee. The import strategy says
+    its checks reject OBVIOUS violations because "static analysis of Python
+    cannot be exhaustive, so the validation chain is defence in depth
+    alongside the namespace denylists and the ACL posture, not a proof of
+    safety on its own". Every competitor pitch overclaims exactly here. The
+    lesson now states the limit in melder's own words.
+    09 NOW WIRES A REAL MESH: four dict-backed callables, a real
+    create_checkpoint, a real flush, and the writes arriving. The headline is
+    the contract's own line - "one callable, one table with a kind column,
+    any DB stack - melder never imports it". No driver, no dialect, no
+    connection string anywhere in the library.
+    TWO LAWS CARRIED WITH IT. Callables live in a SEPARATE configuration and
+    the record exposes "handler PRESENCE flags, never callable objects",
+    because code cannot be serialized into a world record - so a recorded
+    world stays CODE-FREE AND PORTABLE. The lesson asserts that by scanning
+    the wiring payload for anything callable. And an EMPTY configuration will
+    not freeze: upload-on-flush defaults True, so a read-only deployment has
+    to say so out loud.
+    THE SHARPEST BIT IS WHAT 09 REFUSES TO ASSERT. The remote leg is lenient,
+    so a clean flush return proves the LOCAL SEAL and nothing about your
+    database. The lesson asserts the local seal and only REPORTS the mesh
+    writes - asserting the remote would teach a reader to trust the half the
+    return value does not cover.
+  EVIDENCE:
+    - src/melder/nexus/rift/codegen_system/codegen_system.py:404-475
+    - .../validation/codegen_validation_result.py:32-40, 293-310
+    - .../validation/strategies/codegen_import_policy_strategy.py:42-51, 115-169
+    - .../validation/strategies/codegen_builtin_policy_strategy.py:111-127
+    - src/melder/crystallizer/asset_management/
+      external_persistence_manager_configuration.py:53-70, 488-570
+  IMPACT: The two lessons that described the product now demonstrate it.
+  NEXT: OWNER RUN - both are rewrites and neither has executed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-08-05T10:30:00Z
+  TYPE: FACT
+  CLAIM: 08 GAINED THE STATE IT WAS MISSING, and the tier's VERIFY lines were
+    audited for stale green claims.
+    08 WAS NOT SUPERFICIAL AND I NEARLY "FIXED" IT ON THAT ASSUMPTION. It
+    computes the gradient off `dir()` on the LIVE command surfaces, asserts
+    `capability_verbs < codegen_verbs` as a strict subset, and its `hasattr`
+    calls assert ABSENCE - which is a real behavioural claim, not the weak
+    presence pattern. Reading it changed my verdict.
+    ITS ONE REAL GAP: the shared reads were proven PRESENT and never proven to
+    WORK. And that hid a third state the lesson never named. A research verb
+    can be ABSENT (static carries none), PRESENT BUT REFUSING (the room has
+    it, the research root is down), or WORKING. The command path takes a
+    NON-CONSTRUCTING peek at the root - `_require_live_mutation_research`
+    raises rather than returning None, and its own contract says why: "a user
+    ASKING for research deserves an error, not a None". Collapsing those two
+    replies into one is how a reader concludes a world has no HISTORY when
+    what it has is no ROOT. 08 now drives `research_heads()` from a capability
+    room before and after activation and asserts both outcomes, then asserts a
+    live research root does NOT hand capability the write verbs - the gradient
+    is about AUTHORITY, not availability.
+    VERIFIED BEFORE WRITING, because the rooms in 08 have no frame link:
+    `_entered_command_action(frame_name=None)` does no frame resolution - it
+    enters the hook scope, takes the rift gate if one exists, and passes the
+    name through only for memory emission. No link required.
+    VERIFY-LINE AUDIT: compared every expert lesson against HEAD and, where it
+    differed, compared the AST with the module docstring STRIPPED - so
+    "prose changed" and "code changed" are separated by evidence rather than
+    by memory. 12, 13 and 23 are prose-only: executable code byte-identical to
+    the last green run, so their claims stand and now SAY so explicitly.
+    07, 08 and 09 have genuinely changed code and their VERIFY lines say
+    not-yet-re-run.
+    NOTE FOR THE NEXT AGENT: 26-33 now read "same" against HEAD, meaning the
+    owner has committed them. The green they carry is from the runs recorded
+    above, not from a fresh pass.
+  EVIDENCE:
+    - src/melder/nexus/rift/command_system/command_system.py:1010-1065
+    - src/melder/nexus/rift/command_system/codegen_command_system.py:895-918
+    - UX_and_AIX_experiences/04_expert/08 (three-state section), 12, 13, 23
+  IMPACT: No lesson in the tier now claims a green run it did not have, and
+    the difference between a prose edit and a code edit is recorded per file.
+  NEXT: OWNER RUN - 07, 08, 09.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

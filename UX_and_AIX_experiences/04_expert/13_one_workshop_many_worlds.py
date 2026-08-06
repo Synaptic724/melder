@@ -55,10 +55,12 @@ GOAL: ONE CODEGEN ROOM, SEVERAL WORLDS. Expert 11 attached a rift to a
       One qualifying world does not qualify its neighbours.
 SURFACE EXERCISED: several postured frames, the Nexus target-frame policy
                    and budget knobs, one codegen rift with several frame
-                   links, per-frame codegen calls, and the
-                   accessible-frames enumeration
+                   links, validate_codegen / execute_codegen once PER
+                   FRAME through the one room, and the accessible-frames
+                   enumeration
 VERIFY: went RED 2026-08-03 and was fixed the same day; awaiting
-        re-run. See the header note for what the failure taught.
+        re-run. See the header note for what the failure taught. The
+        SURFACE line was corrected 2026-08-05; executable code unchanged.
 """
 import melder as md
 
