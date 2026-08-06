@@ -208,6 +208,15 @@ def main() -> None:
 
     # A different SET is its own residence partition, so the same id
     # files cleanly there.
+    #
+    # AND THIS IS THE ONE PLACE THE LESSON LEAVES THE ROOM COMMANDS ON
+    # PURPOSE. `research_create_lane` / `research_walk` and the rest of the
+    # room's 34 verbs all resolve through `research_set()` - the room's OWN
+    # set - and take no set argument. A SECOND set is therefore unreachable
+    # through them by design, so the only way to show that residence is
+    # per-set is to hold the second set directly. `ResearchSet` is public
+    # surface, not a private door; this is a different LAYER of the public
+    # API, not a way around it. Everywhere the room can answer, ask the room.
     audit = research.create_research_set("codegen-audit")
     audit.create_lane("turns", lane_type="experiment")
     audit.register_spell(staged, lane="turns", reason="independent audit")

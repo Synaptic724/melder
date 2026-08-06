@@ -1060,8 +1060,10 @@ def test_probe_archive_hides_from_heads_but_not_from_lane_names():
     assert "probe-dead-end" not in research_set.heads(), "left the active view"
     assert "probe-dead-end" in research_set.lane_names(), "still exists"
 
+    # `default_lane` is a PROPERTY, not a method - it resolves the lane by
+    # its well-known name on every read rather than holding a reference.
     with pytest.raises(RuntimeError):
-        research_set.archive(research_set.default_lane().name)
+        research_set.archive(research_set.default_lane.name)
     print("archive pinned: hidden from heads, kept in lane_names, "
           "default refuses")
 

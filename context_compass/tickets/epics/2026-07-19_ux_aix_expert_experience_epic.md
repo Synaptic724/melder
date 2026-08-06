@@ -1181,6 +1181,68 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: REQUIRED
   SCORE_0_TO_10: 4
 
+- DATETIME: 2026-08-05T04:10:00Z
+  TYPE: FACT
+  CLAIM: PROBE RED - `ResearchSet.default_lane` IS A @property AND I CALLED IT.
+    `TypeError: 'ResearchLane' object is not callable`. Already corrected on
+    disk (`research_set.default_lane.name`, with the reason in a comment).
+    THE CHECKER LESSON IS THE REAL ONE. I built a static sweep for exactly
+    this bug class - "melder name that is always a @property, called with ()"
+    - and it reported CLEAN while the bug sat in the file. Two separate
+    defects in my own tooling:
+    (1) NAME COLLISION SWALLOWED IT at first. `signature` is a property on
+    `Package`, so every `inspect.signature(...)` in the tree lit up as a false
+    positive; I widened the exclusions to quiet the noise and in doing so
+    stopped trusting the report.
+    (2) THE SWEEP RAN AGAINST A FILE THAT NO LONGER HAD THE BUG, so "clean"
+    was true and meaningless. I read a green checker as evidence about code I
+    had not re-read.
+    A static check that disagrees with a run is the check that is wrong - I
+    wrote that on this epic four hours ago about a DIFFERENT checker, and then
+    trusted this one anyway. Sweeps are for finding candidates to read. They
+    are not evidence.
+  EVIDENCE:
+    - src/melder/mutation_research/research_set/research_set.py:564-565
+    - UX_and_AIX_experiences/pytest_examples/test_expert_probes.py:1063-1066
+  IMPACT: One probe row fixed; my confidence in un-reviewed sweep output
+    should be treated as zero.
+  NEXT: OWNER RERUN of the probe row.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 4
+
+- DATETIME: 2026-08-05T04:25:00Z
+  TYPE: FACT
+  CLAIM: OWNER RULE - "in your examples you should be using the public API
+    unless you're doing a special demonstration." Audited every direct object
+    call in lessons 26-33 against the 34 room commands that could serve it.
+    RESULT: exactly TWO sites, both in lesson 26, and both are FORCED rather
+    than lazy. Every room verb resolves through `research_set()` - the room's
+    OWN set - and none takes a set argument, so a SECOND research set is
+    unreachable through the room by design. Since 26's whole point at that
+    moment is that residence is PER-SET (the same id refused on the first set,
+    accepted in a second), holding the second set directly is the only way to
+    show it. `ResearchSet` is exported public surface, so this is a different
+    LAYER of the public API, not a bypass of it.
+    THE FIX IS DOCUMENTARY, NOT STRUCTURAL: the lesson now states why it steps
+    outside the room there, and closes with "everywhere the room can answer,
+    ask the room" - so a reader does not learn reaching-past-the-room as a
+    habit from an example that had a real reason.
+    EVERYTHING ELSE IS ALREADY CLEAN: zero private attribute access, zero deep
+    imports, every `md.*` name exported, across all 33 expert lessons. The
+    deep imports that DO exist are confined to the probe harness, where the
+    house rule permits them, and the one that reaches custody internals is the
+    special demonstration - it pins the four-class table that lesson 33 only
+    NAMES.
+  EVIDENCE:
+    - src/melder/nexus/rift/command_system/codegen_command_system.py (all 34
+      research verbs route through `research_set()`, no set parameter)
+    - UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py:209
+  IMPACT: The one justified departure from the room API is now labelled as
+    one, with the general rule stated next to it.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
