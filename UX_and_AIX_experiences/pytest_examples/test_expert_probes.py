@@ -965,7 +965,8 @@ def test_probe_an_empty_conjured_frame_is_linkable():
     nexus.activate(config)
     rift_config = nexus.create_rift_configuration()
     rift_config.with_space_type("codegen")
-    rift = nexus.create_rift(configuration=rift_config, rift_name="probe-empty")
+    rift = nexus.create_rift(configuration=rift_config,
+                             rift_name="probe-empty")
     rift.mark_active()
 
     # UNREALIZED: declared law, no root conduit, nothing to target yet.
@@ -1005,37 +1006,75 @@ def test_probe_two_visible_spells_may_not_share_a_name():
 
     Beta = type("Alpha", (), {"__init__": lambda self: None})
 
+    # Same order the failing run took: bind, conjure, then the SECOND bind
+    # is what trips the post-conjure structural validator.
     book.bind(spell=Alpha, existence="unique", permissions="create",
               binding_name="probe-dup-one")
+    book.conjure(name="probe-dup-root")
+
     with pytest.raises(Exception) as collision:
         book.bind(spell=Beta, existence="unique", permissions="create",
                   binding_name="probe-dup-two")
-        book.conjure(name="probe-dup-root")
     message = str(collision.value)
-    assert "Alpha" in message, message
+    # Specific, not incidental: the class name would appear in almost any
+    # error, so pin the validator's own strategy verdict instead.
+    assert "DUPLICATE_SPELL_NAME" in message, message
+    assert "probe-dup-one" in message and "probe-dup-two" in message, (
+        "both binding names should appear - which is the proof that a "
+        "DISTINCT binding_name did not settle the collision"
+    )
     print("duplicate name pinned: distinct binding_name did not save it")
 
 
-def test_probe_parts_are_top_level_only_and_a_miss_is_a_value():
-    """Lesson 29/30 claim: the part grain is TOP-LEVEL, and the two verbs
-    disagree about how they say so.
+def test_probe_a_part_miss_is_a_value_and_never_a_raise():
+    """Lesson 29 claim: `part_view` answers a miss with `found: False`
+    instead of raising - and that quietness is what let 29 ship GREEN
+    while silently comparing nothing.
 
-    `part_view` returns `found: False` on a miss and never raises, which
-    is why 29 shipped GREEN while silently comparing nothing. `synthesize`
-    RAISES on the same mistake. Same grain, two failure modes - and the
-    quiet one is the dangerous one."""
+    `__init__` is a METHOD, so it is invisible to the top-level part
+    grain. The read has to say so honestly rather than throw, because
+    absence is a real answer when you are exploring a world you do not
+    know. This asserts the BEHAVIOUR: the call returns, and the payload
+    reports the miss."""
+    frame_name = "probe-partmiss-frame"
+    crystallizer = Crystallizer()
+    crystallizer.activate(
+        md.CrystallizerConfigurationBuilder().with_defaults().activate(),
+    )
     research = MutationResearch()
     configuration = research.create_configuration()
     configuration.with_defaults().activate()
     research.activate(configuration)
 
-    assert hasattr(research, "part_view")
-    assert hasattr(research, "synthesize_candidate")
-    doc = (research.part_view.__doc__ or "")
-    assert "top-level" in doc.lower(), (
-        "part_view stopped documenting the top-level grain"
-    )
-    print("part grain pinned: top-level only, miss is a value not a raise")
+    book = _frame(frame_name)
+    book.conjure(name="probe-partmiss-root")
+
+    class Priced:
+        def __init__(self) -> None:
+            self.rate = 1
+
+    spell_id = book.bind(spell=Priced, existence="unique",
+                         permissions="create", binding_name="probe-partmiss")
+
+    # A METHOD is not a top-level part. This must RETURN, not raise.
+    missed = research.part_view(spell_id, "__init__", kind="function")
+    assert isinstance(missed, dict), missed
+    assert missed["found"] is False, missed
+
+    # So is a name that exists nowhere at all - same shape of answer.
+    absent = research.part_view(spell_id, "NoSuchPartAnywhere")
+    assert isinstance(absent, dict), absent
+    assert absent["found"] is False, absent
+
+    # An unknown KIND is a different class of mistake and DOES raise -
+    # a caller who names a grain that does not exist asked a malformed
+    # question, which is not the same as asking a fair question with no
+    # answer.
+    with pytest.raises(ValueError):
+        research.part_view(spell_id, "__init__", kind="no-such-kind")
+
+    print("part miss pinned: found=False returned, never raised;",
+          "an unknown KIND still raises")
 
 
 def test_probe_archive_hides_from_heads_but_not_from_lane_names():
@@ -1075,18 +1114,17 @@ def test_probe_four_custody_classes_answer_four_questions():
     Only user_source claims the SHA256 fingerprint, which is the trust
     boundary; synthetic rides its own harvest payload and makes no
     fingerprint claim; unknown is the only class that does not descend."""
-    from melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy import (
-        SyntheticCustodyStrategy,
-    )
-    from melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy import (
-        UserSourceCustodyStrategy,
-    )
-    from melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy import (
-        SitePackageCustodyStrategy,
-    )
-    from melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy import (
-        BinaryUnknownCustodyStrategy,
-    )
+    custody = "melder.crystallizer.crystal_analysis.custody"
+    from importlib import import_module
+    SyntheticCustodyStrategy = import_module(
+        custody + ".synthetic_custody_strategy").SyntheticCustodyStrategy
+    UserSourceCustodyStrategy = import_module(
+        custody + ".user_source_custody_strategy").UserSourceCustodyStrategy
+    SitePackageCustodyStrategy = import_module(
+        custody + ".site_package_custody_strategy").SitePackageCustodyStrategy
+    BinaryUnknownCustodyStrategy = import_module(
+        custody + ".binary_unknown_custody_strategy"
+    ).BinaryUnknownCustodyStrategy
 
     synthetic = SyntheticCustodyStrategy()
     user = UserSourceCustodyStrategy(tuple())

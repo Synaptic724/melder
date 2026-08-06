@@ -1332,6 +1332,53 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: REQUIRED
   SCORE_0_TO_10: 3
 
+- DATETIME: 2026-08-05T06:30:00Z
+  TYPE: FACT
+  CLAIM: OWNER ASKED WHETHER THE PROBES I WROTE WERE ROTTEN FOR THE SAME
+    REASON. Audited all 47. ONE WAS, AND IT WAS THE NEWEST ONE - written by me
+    hours ago while I was explicitly claiming to be pinning laws.
+    `test_probe_parts_are_top_level_only_and_a_miss_is_a_value` asserted
+    `hasattr(research, "part_view")`, `hasattr(research, "synthesize_
+    candidate")`, and then `"top-level" in research.part_view.__doc__.lower()`.
+    IT ASSERTED ON A DOCSTRING. It never called `part_view` once, despite its
+    own name promising to pin miss behaviour. It would pass if the behaviour
+    inverted completely and fail if someone reworded a sentence.
+    REPLACED with `test_probe_a_part_miss_is_a_value_and_never_a_raise`, which
+    binds a real spell and calls the verb: `__init__` (a METHOD) returns
+    `found: False`, a name that exists nowhere returns `found: False`, and an
+    unknown KIND still RAISES ValueError - because a malformed question is a
+    different thing from a fair question with no answer.
+    A SECOND ONE HAD A SCOPE BUG, mine from the same batch:
+    `test_probe_two_visible_spells_may_not_share_a_name` wrapped BOTH the
+    second bind and the conjure in one broad `pytest.raises(Exception)`, so a
+    failure on the first line would have passed the test for the wrong reason.
+    It also asserted `"Alpha" in message`, which any error mentioning the class
+    would satisfy. Now: bind, conjure, THEN the second bind under `raises`
+    alone (the order the failing run actually took), asserting
+    `DUPLICATE_SPELL_NAME` and BOTH binding names appear - the latter being
+    the actual proof that a distinct binding_name did not settle it.
+    THE OLDER 42 HOLD UP, and reading them was the humbling part. The knob
+    probe counts off `dir()` rather than a hand-list so a third knob turns it
+    red. The terminator probe uses `hasattr` for PRESENCE but then really
+    calls `activate()` and asserts `activated is True`, and its `not hasattr`
+    on AetherConfigurationBuilder is an ABSENCE law - a real claim. And the
+    enforcement probe opens with the exact standard I violated:
+      "Asserting both attributes exist proves nothing."
+    I wrote that line in an earlier session and then broke it in this one.
+    THE DISTINCTION WORTH KEEPING: `hasattr` asserting ABSENCE is a real
+    behavioural claim (the surface must NOT carry this). `hasattr` asserting
+    PRESENCE is weak on its own and must be followed by a call.
+  EVIDENCE:
+    - UX_and_AIX_experiences/pytest_examples/test_expert_probes.py:443-465
+      (knob probe, counted off dir()), :486-493 (the standard, stated),
+      :991-1016 (scope fixed), :1019-1064 (docstring probe replaced)
+  IMPACT: 47 probes, none asserting on prose, none passing for a wrong reason
+    that I can still see.
+  NEXT: OWNER RERUN - the 5 new rows have still never executed, and two of
+    them changed shape after this audit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 5
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
