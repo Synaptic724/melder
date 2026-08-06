@@ -185,7 +185,7 @@ def main() -> None:
     # THE DEFAULT LANE NEVER ARCHIVES.
     try:
         commands.research_archive("default")
-        raise AssertionError("expected a refusal: the default lane is guaranteed")
+        raise AssertionError("expected a refusal: default is guaranteed")
     except RuntimeError as refusal:
         print()
         print("archive('default') refused -", str(refusal)[:100])
@@ -198,7 +198,8 @@ def main() -> None:
     open_lanes = commands.research_heads()
     assert set(open_lanes) == {"default"}, sorted(open_lanes)
     print()
-    print("open lanes now:", sorted(open_lanes), "- a join finishes its source")
+    print("open lanes now:", sorted(open_lanes),
+          "- a join finishes its source")
     print()
     print("attach, detach, archive - all organisation, none content")
     print("nodes never move, so a wrong shape is a wrong label, not lost work")

@@ -195,13 +195,13 @@ def main() -> None:
         for key in ("identity_translation", "identity_translation_map",
                     "translation_map", "identity_map"):
             if key in report:
-                print("   %s: %d remapped identities" % (key, len(report[key])))
+                print("   %s: %d remapped" % (key, len(report[key])))
                 print("  rebuilt objects get NEW ids - the world that comes")
                 print("  back is EQUIVALENT, not identical")
                 break
 
     print()
-    print("the CACHE outlived the runtime that minted it; the ledger is memory")
+    print("the CACHE outlived the runtime that minted it; ledger is memory")
     print("cleanup() IS the reset, and it is public")
     print("the last rung wants a COMPLETE bundle, checked before it builds")
 

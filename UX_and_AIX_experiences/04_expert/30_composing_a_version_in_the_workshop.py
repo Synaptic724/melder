@@ -42,6 +42,20 @@ GOAL: THE HALF OF A MERGE THAT JOIN REFUSES TO DO, on code the room
       rides the opt-in retention lane". The material a room wrote is the
       material it can always read back.
 
+      AND THE DIFF DEFAULT IS KIND-AWARE, not a single fallback.
+        research_diff(left, right, strategy=None)
+      With no strategy the room asks what you handed it. Two SPELLS get
+      "structural" - the room's reasoning layer - pinned for them. Two
+      COMPOSITIONS get nothing pinned at all: the room passes no strategy
+      and the engine's own "members" default answers. One verb, two
+      vocabularies, selected by KIND. ("source" is whole-module text,
+      "parts" is per-class/function grain; both are always yours by
+      asking.)
+      A DEFAULT IS A KINDNESS FOR SILENCE, NEVER AN OVERRIDE. Name a
+      strategy and it travels down untouched - an unknown one surfaces the
+      engine's KeyError rather than being quietly answered by a different
+      question than the one asked.
+
       THE MINT IS A SEPARATE, ONE-SHOT STAMP
         research_stage_ancestry([base, donor])
         research_clear_staged_ancestry()
@@ -195,8 +209,16 @@ def main() -> None:
     print("  bound from the generated modules -> custody minted")
     print("  base:", base[:12], " donor:", donor[:12])
 
+    # THE DEFAULT IS KIND-AWARE, not a single fallback. Asked for a diff
+    # with no strategy, the room checks whether BOTH sides are
+    # compositions. If they are not, it pins "structural" - its reasoning
+    # layer - and calls down. If they ARE, it passes NO strategy at all and
+    # lets the engine's own "members" default answer. One verb, two
+    # vocabularies, chosen by what you handed it.
     print()
-    print("DIFF IS DERIVED, and the room defaults to `structural`:")
+    print("DIFF IS DERIVED, and its default is KIND-AWARE:")
+    print("  spell pair       -> the room pins `structural`")
+    print("  composition pair -> the room stands back; engine says `members`")
     try:
         _show("diff(default)", commands.research_diff(base, donor))
         _show("diff(source)",
@@ -206,14 +228,18 @@ def main() -> None:
     except RuntimeError as custody:
         print("  custody read REFUSED:", str(custody)[:100])
         return
+    print("  these two are spells, so `structural` was chosen FOR them")
 
-    # AN UNKNOWN STRATEGY IS NOT REROUTED - the room surfaces the engine's
-    # KeyError rather than quietly answering a different question.
+    # AN EXPLICIT ASK IS NEVER REROUTED. The room pins a default only when
+    # you supplied none; the moment you name a strategy it goes down
+    # untouched, and an unknown name surfaces the engine's own KeyError
+    # rather than being quietly answered by a different question.
     try:
         commands.research_diff(base, donor, strategy="no-such-strategy")
         raise AssertionError("expected the engine's KeyError")
     except KeyError as unknown:
         print("  unknown strategy -> KeyError:", str(unknown)[:70])
+        print("  a default is a KINDNESS FOR SILENCE, never an override")
 
     # THE GRAIN, learned the way the engine teaches it. `summarise` is a
     # METHOD on the donor's Report, not a top-level function.

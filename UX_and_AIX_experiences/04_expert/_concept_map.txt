@@ -1195,6 +1195,32 @@ THE HAND-TYPED-CLASS CORRECTION (2026-08-04) - 29, 30 AND 32
   retention lane." Hand-typed example classes are the FRAGILE choice for
   anything that reads recorded material.
 
+THE KIND-AWARE DIFF DEFAULT (2026-08-05) - 30 AND 32 NOW TEACH BOTH HALVES
+  Found by reading `research_diff` in full instead of extracting its
+  signature. 30 previously said "the room defaults to `structural`", which
+  is true for spells and WRONG as a general statement.
+  THE ACTUAL BRANCH: with no strategy the room asks
+  `is_composition(left) and is_composition(right)`. If they are NOT both
+  compositions it pins "structural" and calls down. If they ARE, it passes
+  NO strategy at all and lets the engine's own "members" default answer.
+  One verb, two vocabularies, selected by KIND rather than one fallback.
+  AND A DEFAULT IS A KINDNESS FOR SILENCE, NEVER AN OVERRIDE: the moment a
+  caller names a strategy it travels down untouched, and an unknown name
+  surfaces the engine's KeyError (BUG-044 law, stated in the docstring).
+  30 states the law and demonstrates the SPELL half. 32 now demonstrates
+  the COMPOSITION half, which it can do honestly because `recompose` gives
+  it a second composition to compare against.
+
+  AND 32 GAINED THE RECOMPOSE LAW WITH IT. Evolving a composition is
+  ADD/REMOVE, not replacement - "unlisted members are retained" - so
+  dropping one member is a one-word ask rather than a re-declaration of the
+  roster. The previous composition is untouched, because identity is
+  content-addressed over the members: a different roster is a DIFFERENT
+  composition, not an edited one. That is why `members` is the right
+  default vocabulary for a composition pair - the useful question about two
+  subsystems is which MEMBERS changed, and each moved pair descends into
+  the spell grains on the agent's NEXT call.
+
 AMENDMENT TO LESSON 06 (2026-08-04) - TWO STALE CLAIMS, ONE REAL GAP
   06's ladder table named `Nexus.enable()`. THERE IS NO `enable` ON
   NEXUS - nexus.py defines `activate` / `deactivate` and zero `def

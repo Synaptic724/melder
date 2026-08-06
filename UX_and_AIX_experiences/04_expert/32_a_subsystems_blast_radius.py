@@ -37,10 +37,25 @@ GOAL: ASK A WHOLE SUBSYSTEM WHAT IT WOULD BREAK. Expert 14 built
       whose custody is unknown is reported as unknown rather than
       silently contributing nothing - a shadow with a hole in it that
       claimed to be complete would be worse than no shadow.
+
+      EVOLVING ONE IS ADD/REMOVE, NOT REPLACEMENT. `recompose` says it
+      outright - "unlisted members are retained" - so dropping a member is
+      a one-word ask rather than a re-declaration of the roster. The
+      previous composition is untouched by it, because identity is
+      content-addressed over the members: a different roster is simply a
+      DIFFERENT composition, not an edited one.
+
+      AND IT COMPLETES EXPERT 30'S DIFF LAW. There you met `research_diff`
+      on two SPELLS, where the room pins `structural` for you. Hand the
+      same verb two COMPOSITIONS and it pins NOTHING - it stands back and
+      lets the engine's `members` default answer, because the useful
+      question about two subsystems is which MEMBERS changed, not how
+      their text reads. One verb, two vocabularies, chosen by kind.
 SURFACE EXERCISED: validate_codegen / materialize_codegen,
-                   research_group_register / research_group_impact /
-                   research_group_drift / research_group_footprint /
-                   research_group_view
+                   research_group_register / research_group_recompose /
+                   research_group_impact / research_group_drift /
+                   research_group_footprint / research_group_view /
+                   research_group_diff / research_diff
 VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import importlib
@@ -191,6 +206,37 @@ def main() -> None:
     print("  and it is honest about members whose custody it cannot see -")
     print("  a shadow with a hole in it that claimed to be complete would")
     print("  be worse than no shadow at all")
+
+    # EVOLVING ONE IS ADD/REMOVE, NOT REPLACEMENT. `recompose` states this
+    # outright: "unlisted members are retained". So dropping one member is
+    # a one-word ask, not a re-declaration of the roster - and the original
+    # composition is untouched, because a new roster is a NEW identity.
+    print()
+    print("EVOLVING A SUBSYSTEM:")
+    evolved = commands.research_group_recompose(
+        group_id, remove=[report], reason="report split out",
+    )
+    assert evolved["node_type"] == "group"
+    evolved_id = evolved["group_id"]
+    assert set(evolved["member_spell_ids"]) == {intake, ledger}
+    assert evolved_id != group_id, "a different roster is a different id"
+    print("  recompose(remove=[report]) ->", evolved_id[:14], "...")
+    print("  intake and ledger were never mentioned and were RETAINED")
+
+    # AND THIS IS WHERE THE KIND-AWARE DIFF DEFAULT SHOWS ITS OTHER HALF.
+    # Expert 30 met `research_diff` on two SPELLS, where the room pins
+    # `structural` for you. Hand it two COMPOSITIONS and it pins nothing -
+    # it stands back and lets the engine's own `members` default answer,
+    # because the useful question about two subsystems is which MEMBERS
+    # changed, not how their text differs.
+    _show("diff(compositions)",
+          commands.research_diff(group_id, evolved_id))
+    _show("group_diff(explicit)",
+          commands.research_group_diff(group_id, evolved_id))
+    print("  same verb as expert 30, different vocabulary - chosen by KIND")
+    print("  `members` answers added/removed plus lane-evidenced version")
+    print("  moves; each moved pair descends into the spell grains on your")
+    print("  NEXT call, so the subsystem answer stays a subsystem answer")
 
     print()
     print("a composition is INFORMATIONAL - it pins members by reference,")
