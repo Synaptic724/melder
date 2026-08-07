@@ -234,9 +234,17 @@ class Cleanable(ABC):
                     If the context has already exited and dropped its owner.
             """
             self._lock.acquire()
-            if self._owner is None:
-                raise RuntimeError("Cleanup context no longer owns a live object.")
-            return self._owner
+            try:
+                if self._owner is None:
+                    raise RuntimeError("Cleanup context no longer owns a live object.")
+                return self._owner
+            except BaseException:
+                # The guard below raises AFTER the lock is taken. When __enter__
+                # raises, Python never calls __exit__, so the release in __exit__'s
+                # `finally` never runs and the RLock stays held for the life of the
+                # process. Release here before propagating.
+                self._lock.release()
+                raise
 
         def __exit__(
                 self,
@@ -285,7 +293,101 @@ class Cleanable(ABC):
                 self._lock.release()
 
 
-    def using_cleanup(self) -> "_CleanupContext":
+    class _AsyncCleanupContext:
+        """
+        Async counterpart to `_CleanupContext`, driving `async_cleanup()`.
+
+        Contract:
+            - Does not rely on the owner's own `__aenter__` / `__aexit__`.
+            - Awaits `owner.async_cleanup()` at most once.
+            - Drops the strong owner reference after exit.
+            - Never suppresses exceptions raised by the caller's block.
+
+        Note:
+            Defined at class scope, not inside `async_using_cleanup()`. A class
+            body nested in a method is rebuilt on every single call; this one is
+            built once at import.
+        """
+        __slots__ = ("_owner", "_cleaned", "_lock")
+
+        _cleaned: bool
+
+        def __init__(self, owner: "Cleanable") -> None:
+            """
+            Bind the helper context to one cleanable owner.
+
+            Args:
+                owner:
+                    The cleanable object this context cleans up exactly once on
+                    exit.
+            """
+            self._owner: Optional["Cleanable"] = owner
+            self._cleaned: bool = False
+            self._lock: threading.RLock = threading.RLock()
+
+        async def __aenter__(self) -> "Cleanable":
+            """
+            Enter the async cleanup helper context and return the owner.
+
+            Returns:
+                Cleanable:
+                    The owner object protected by this helper.
+
+            Raises:
+                RuntimeError:
+                    If the context has already exited and dropped its owner.
+            """
+            self._lock.acquire()
+            try:
+                if self._owner is None:
+                    raise RuntimeError("Cleanup context no longer owns a live object.")
+                return self._owner
+            except BaseException:
+                # Same hazard as the sync __enter__: a raise after acquire means
+                # __aexit__ never runs, so the release must happen here.
+                self._lock.release()
+                raise
+
+        async def __aexit__(
+                self,
+                exc_type: Optional[Type[BaseException]],
+                exc: Optional[BaseException],
+                tb: Optional[TracebackType],
+        ) -> Literal[False]:
+            """
+            Exit the async cleanup helper context and await owner cleanup once.
+
+            Contract:
+                - Awaits `owner.async_cleanup()` AT MOST ONCE across repeated
+                  exits, swallowing any exception it raises (best-effort
+                  teardown), then drops the strong owner reference.
+                - Never suppresses exceptions from the caller's `async with`
+                  block.
+                - Releases the context lock in a `finally`.
+
+            Returns:
+                Literal[False]:
+                    Always False so caller exceptions are never suppressed.
+            """
+            try:
+                owner = self._owner
+                if owner is not None and not self._cleaned:
+                    self._cleaned = True
+                    try:
+                        await owner.async_cleanup()
+                    except Exception:
+                        pass
+
+                # Explicitly drop the reference so nothing is leaked.
+                self._owner = None
+
+                # Do NOT suppress user exceptions.
+                return False
+            finally:
+                self._lock.release()
+
+
+    def using_cleanup(self) -> "Cleanable._CleanupContext":
         """
         Return a helper context manager that guarantees `cleanup()` on exit.
 
@@ -299,3 +401,20 @@ class Cleanable(ABC):
                 Helper context manager bound to this object.
         """
         return Cleanable._CleanupContext(self)
+
+    def async_using_cleanup(self) -> "Cleanable._AsyncCleanupContext":
+        """
+        Return an async context manager that awaits `async_cleanup()` on exit.
+
+        This method itself is NOT async. It returns an object implementing
+        `__aenter__` / `__aexit__`, which is what `async with` requires.
+
+        Contract:
+        - Independent of any context-manager behavior implemented by the owner.
+        - Mirrors `using_cleanup()` exactly, but drives the async teardown hook.
+
+        Returns:
+            Cleanable._AsyncCleanupContext:
+                Async helper context manager bound to this object.
+        """
+        return Cleanable._AsyncCleanupContext(self)

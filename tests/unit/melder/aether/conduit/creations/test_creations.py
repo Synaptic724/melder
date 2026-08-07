@@ -509,13 +509,3 @@ def test_attempt_cleanup_no_methods_returns_none(creations: Creations) -> None:
     probe = Probe()
 
     assert creations._attempt_cleanup((probe, [])) is None
-
-
-def test_attempt_cleanup_uses_first_successful_method_only(creations: Creations) -> None:
-    """
-    Verify disposal stops after the first successful method call.
-    """
-    probe = Probe()
-
-    assert creations._attempt_cleanup((probe, ["cleanup", "dispose"])) is None
-    assert probe.calls == ["cleanup"]

@@ -780,7 +780,6 @@ class Meld(Cleanable, ABC):
             MeldExecutionError: If change-control reports the root as dirty for
                 the active conduit.
         """
-        state = spell.system_state
         conduit_id = self._resolution_conduit_id
         if conduit_id:
             spellbook = spell._spellbook
@@ -804,7 +803,7 @@ class Meld(Cleanable, ABC):
                 except Exception:
                     # If change-control is unavailable, proceed with existing validity gate.
                     pass
-
+        state = spell.system_state
         if state is None:
             return True
 

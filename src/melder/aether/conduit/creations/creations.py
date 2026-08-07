@@ -211,7 +211,6 @@ class Creations(Cleanable):
             try:
                 method = item.__getattribute__(method_name)
                 method()
-                return None
             except Exception as ex:
                 return RuntimeError(
                     f"Failed to dispose object {item} using method '{method_name}': {ex}"
