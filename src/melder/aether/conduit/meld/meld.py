@@ -616,7 +616,6 @@ class Meld(Cleanable, ABC):
             MeldExecutionError: If change-control reports the root as dirty for
                 the active resolution conduit.
         """
-        state = spell.system_state
         # Structural gating
         if self._gated_validation_required(spell):
             with spell._lock:
@@ -625,9 +624,9 @@ class Meld(Cleanable, ABC):
                         self._spellbook,
                         spell,
                     )
-
                     # If structural validation produced errors, hard-pin to invalid and bail.
                     if spell.is_broken:
+                        state = spell.system_state
                         if state is not None:
                             state.set_validity(SpellValidity.invalid)
                         raise SpellbookValidationError([spell])
