@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "799045c63fd20ab7ec2de26cd3ee308deb1fb5f2c529a55b6133dcb23d3c89a4"
-ENTRY_COUNT = 626
+BUILT_FOR_VERSION = "0.1.2"
+SOURCE_SHA256 = "9cb92088a74cafee985b613db62b79921fd5331f3f9fd1b7c7595d2241b58817"
+ENTRY_COUNT = 628
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -618,6 +618,7 @@ ENTRIES = (
     ('melder.utilities.data_structures.weak_data_structures.weak_ref_node', 'WeakRefNode'),
     ('melder.utilities.general_base.abstract_elastic_pool', 'AbstractElasticPool'),
     ('melder.utilities.general_base.cleanable', 'Cleanable'),
+    ('melder.utilities.general_base.cleanable', 'Cleanable._AsyncCleanupContext'),
     ('melder.utilities.general_base.cleanable', 'Cleanable._CleanupContext'),
     ('melder.utilities.general_base.sync', 'Sync'),
     ('melder.utilities.helpers.class_surface_ast_describer', 'ClassMemberDescription'),
@@ -629,6 +630,7 @@ ENTRIES = (
     ('melder.utilities.helpers.id_builder', 'IDBuilder'),
     ('melder.utilities.helpers.init_helpers', 'InitHelpers'),
     ('melder.utilities.helpers.package', 'Package'),
+    ('melder.utilities.helpers.ulid_factory', 'ULID_Factory'),
     ('melder.utilities.interfaces.ichannellogger', 'IChannelLogger'),
     ('melder.utilities.interfaces.icleanable', 'ICleanable'),
     ('melder.utilities.logger.safe_logger', 'SafeLogger'),

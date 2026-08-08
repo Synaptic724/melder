@@ -287,8 +287,21 @@ class Package(Cleanable, Generic[P, R]):
             args = tuple(self._args)
             kwargs = dict(self._kwargs)
 
-            # 2. Perform cleanup of internal state
-            self.cleanup()
+            # 2. Perform cleanup of internal state.
+            # Deliberately INLINE rather than calling self.cleanup(). cleanup()
+            # ends in _cleanup_core(), which is documented to run outside the
+            # lock context - calling it from in here would execute the whole
+            # teardown, including `del self._lock`, while this frame still holds
+            # that lock. `_args`/`_kwargs` are plain list/dict and own nothing,
+            # so dropping the references IS the teardown.
+            self._cleaned = True
+            del self._func
+            del self._wrapped_func
+            del self._async_func
+            del self._args
+            del self._kwargs
+            del self._signature_cache
+            del self._lock
 
         # 5. Return the extracted components
         return func, args, kwargs
@@ -328,25 +341,31 @@ class Package(Cleanable, Generic[P, R]):
         """
         return self._is_async
 
-    def __getattribute__(self, name: str) -> object:
+    @property
+    def __doc__(self) -> str:
         """
-        Override doc lookup to always proxy the wrapped callable's docstring.
+        Proxy the wrapped callable's docstring.
 
-        Args:
-            name:
-                Requested attribute name.
+        Contract:
+            - Returns "" rather than None when the wrapped callable has no
+              docstring, so callers can concatenate without a None check.
+            - Returns "" on a cleaned package instead of raising; the owned
+              slots are deleted by then and a docstring lookup is not worth an
+              exception.
 
-        Returns:
-            object: Resolved attribute value.
+        Note:
+            This was a `__getattribute__` override, which is correct but puts a
+            Python-level hook on EVERY attribute access of the runtime's hottest
+            object - every `self._lock`, `self._args`, `self._func` inside this
+            class included. A property costs nothing until `__doc__` is actually
+            read.
         """
-        if name == "__doc__":
-            try:
-                func = object.__getattribute__(self, "_func")
-                doc = getattr(func, "__doc__", "")
-                return "" if doc is None else doc
-            except Exception:
-                return ""
-        return super().__getattribute__(name)
+        try:
+            func = object.__getattribute__(self, "_func")
+            doc = getattr(func, "__doc__", "")
+            return "" if doc is None else doc
+        except Exception:
+            return ""
 
     def get_coroutine(self) -> Callable[..., Awaitable[object]]:
         """
@@ -902,9 +921,35 @@ class Package(Cleanable, Generic[P, R]):
         if cleaned:
             raise RuntimeError(f"{type(self).__name__} has already been cleaned. ")
         try:
-            return object.__getattribute__(self, "_func")
+            func = object.__getattribute__(self, "_func")
         except AttributeError:
             raise AttributeError(item) from None
+
+        # Two contracts meet here and both are pinned by tests:
+        #   - PROXY when the wrapped callable actually has `item`. `pkg.__name__`
+        #     must be the name string, and `inspect.signature(pkg)` must find the
+        #     real parameters by following `pkg.__wrapped__` to the original
+        #     function rather than to the forwarding lambda.
+        #   - FALL BACK to the callable itself when it does not. That is what
+        #     `pkg.some_missing_attribute` is documented to yield, and the caller
+        #     gets something callable rather than an AttributeError.
+        # Returning `func` unconditionally satisfies only the second; proxying
+        # unconditionally satisfies only the first.
+        try:
+            return getattr(func, item)
+        except AttributeError:
+            pass
+
+        # NEVER fall back for a dunder. Protocol lookups must be allowed to FAIL:
+        # `inspect.signature(pkg)` probes `__signature__`, and answering that with
+        # a function object makes inspect raise
+        # "unexpected object ... in __signature__ attribute" instead of moving on
+        # to `__wrapped__`. The same applies to every duck-typing check in the
+        # stdlib - `__iter__`, `__len__`, `__enter__` - which test for absence.
+        if item.startswith("__") and item.endswith("__"):
+            raise AttributeError(item)
+
+        return func
 
     def __dir__(self) -> List[str]:
         """
@@ -917,7 +962,18 @@ class Package(Cleanable, Generic[P, R]):
         )
 
     def __repr__(self) -> str:
-        """Return a debug-oriented representation of the wrapped callable and bindings."""
+        """
+        Return a debug-oriented representation of the wrapped callable and bindings.
+
+        Contract:
+            - RAISES RuntimeError on a cleaned package, deliberately. The owned
+              slots are deleted by `_cleanup_core()`, so `self._lock` lands in
+              `__getattr__`, which surfaces the canonical cleaned-object error.
+              `test_bug269_operations_after_cleanup_raise_canonical_runtimeerror`
+              asserts exactly that for `repr()` alongside `unpack()` and `()`.
+              A defensive repr that returns a placeholder instead would silence a
+              use-after-clean bug this was written to expose.
+        """
         with self._lock:
             func = self._func
             args = self._args

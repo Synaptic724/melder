@@ -136,6 +136,13 @@ from melder.nexus.rift.rift_space.workstation import Workstation
 # ---- agent/tooling helpers ----
 from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
 
+# ---- id generation ----
+from melder.utilities.helpers.ulid_factory import ULID_Factory, new_ulid
+
+# ---- shared base + callable wrapper (CommandOps consumes both) ----
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.package import Pack, Package
+
 # ---- user-catchable error vocabulary (raised through public verbs) ----
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
@@ -195,6 +202,7 @@ __all__ = [
     "AetherConfiguration",
     "AetherConfigurationBuilder",
     "AethericFrameConfiguration",
+    "Cleanable",
     "Conduit",
     "Crystallizer",
     "CrystallizerBootstrap",
@@ -218,6 +226,8 @@ __all__ = [
     "NexusConfiguration",
     "NexusConfigurationBuilder",
     "NexusFrameMode",
+    "Pack",
+    "Package",
     "Permissions",
     "PhaseExecutionError",
     "PhaseSchedulerError",
@@ -240,6 +250,7 @@ __all__ = [
     "SpellbookConfiguration",
     "SpellbookValidationError",
     "SystemState",
+    "ULID_Factory",
     "ViewConduit",
     "ViewFrame",
     "ViewMultiFrame",
@@ -253,5 +264,6 @@ __all__ = [
     "__graph_network__",
     "__license__",
     "__version__",
+    "new_ulid",
     "scan_bind",
 ]

@@ -19,11 +19,11 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "799045c63fd20ab7ec2de26cd3ee308deb1fb5f2c529a55b6133dcb23d3c89a4"
-MARKED_COUNT = 451
+BUILT_FOR_VERSION = "0.1.2"
+SOURCE_SHA256 = "9cb92088a74cafee985b613db62b79921fd5331f3f9fd1b7c7595d2241b58817"
+MARKED_COUNT = 452
 EXEMPT_COUNT = 163
-PENDING_COUNT = 12
+PENDING_COUNT = 13
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -463,6 +463,7 @@ AGENT_METADATA = {
     ('melder.utilities.helpers.general_helpers', 'SpellInputUtils'): ('public', "access: public. Static namespace for spell address normalization. Compose (frame_key, bind_key) via normalize_spell_key(...) so bind and lookup agree exactly. Use DEFAULT_BINDING_NAME rather than hardcoding '__default__' - a call site inventing its own spelling silently misses."),
     ('melder.utilities.helpers.id_builder', 'IDBuilder'): ('public', 'access: public. Static namespace for building dotted lineage ids. create_id() mints a fresh ULID segment; compose() and the conduit/ward helpers join an object chain into the canonical dotted form. Stateless - call the methods directly, never instantiate.'),
     ('melder.utilities.helpers.init_helpers', 'InitHelpers'): ('public', 'access: public. Static seam every runtime constructor uses to obtain a logger. resolve_channel_logger(...) asks the hosted provider (returns a null SafeLogger when channel logging is off - the default, so Melder is silent until policy is installed); resolve_safe_logger(...) wraps a logger you already have.'),
+    ('melder.utilities.helpers.ulid_factory', 'ULID_Factory'): ('public', 'access: public. Static namespace for ULID values. new_ulid() mints; timestamp_ms()/timestamp()/datetime() read the creation time back out; randomness() breaks same-millisecond ties; is_ulid() validates. Stateless - call the methods directly, never instantiate.'),
     ('melder.utilities.logger.safe_logger', 'SafeLogger'): ('public', "access: public. One logging surface over channel loggers, stdlib loggers, or nothing at all. Wrapping None is legal and silent, which is why every runtime object can take a logger during boot without checking whether logging is configured. Cleaned LAST in an owner's teardown so children can still log while being torn down."),
     ('melder.utilities.synchronization.cancellation_event_signal', 'CancellationEvent'): ('internal', 'access: internal. Read-only view of a shared cancellation flag. Poll is_set (lock-free) or call throw_if_set() to abort cooperatively. You cannot cancel through this type - only the owning CancellationEventSignal can. Borrowed: never clean up a view you were handed, it is shared by every observer.'),
     ('melder.utilities.synchronization.cancellation_event_signal', 'CancellationEventSignal'): ('internal', 'access: internal. Coordinator side of cooperative cancellation. Call cancel() to stop every observer; hand workers the .event view so they can poll without contending. WARNING: cleanup() cancels as part of teardown - it is an abort, not a release.'),
@@ -651,6 +652,7 @@ PENDING = (
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictKeysView'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictValuesView'),
+    ('melder.utilities.general_base.cleanable', 'Cleanable._AsyncCleanupContext'),
     ('melder.utilities.general_base.cleanable', 'Cleanable._CleanupContext'),
     ('melder.utilities.helpers.class_surface_ast_describer', 'ClassMemberDescription'),
     ('melder.utilities.helpers.class_surface_ast_describer', 'ClassSurfaceDescription'),
