@@ -11,6 +11,15 @@ Purpose
 When to use
 - Before any code edits, investigations, or architectural changes.
 
+The order, in one line
+`src_architecture.md` → the relevant parts of `src_components.md` → the wiring in
+`src_graph.md` if you are going to code → **then the code itself, always, before you
+change anything.** The documents narrow the search. Only the code settles what is
+true, because only the code cannot be out of date.
+
+`grep` and AST are guesses - they find a name, they do not explain a function. Use
+them to pick where to start reading, then read and trace the call path.
+
 Required flow - descend the hierarchy, do not enter in the middle
 1. `system_docs/src_architecture.md` - which part of the system. Baseline read;
    you already hold it.

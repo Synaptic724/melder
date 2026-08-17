@@ -35,12 +35,15 @@ Required flow
   - use the provided name if the user already gave one in the current trigger event
   - otherwise use `AGENT_NAME: REQUIRED_FROM_USER`
 - For ONBOARD/REONBOARD attestations, keep declarations concise with
-  `ROLE_SKILLS_READ`, `AGENT_NAME`, and `NO_ACTION_TAKEN_YET: true`.
+  `ROLES`, `AGENT_NAME`, and `NO_ACTION_TAKEN_YET: true`.
 - Summarize that onboarding is complete and request approval.
 - Require the approval message to include:
   - `AGENT_NAME: <name>`
   - the exact token `CERTIFY: APPROVED`.
-- Do not use tools or edit files until the user provides that token.
+- Do not use tools or edit files until the user provides that token, **except
+  tools needed to READ onboarding documents, boards and tickets.** Reads are
+  permitted before certification; writes are not, which is why check-in happens
+  immediately after it. Root `AGENTS.MD` "Certification gating" is authoritative.
 
 Certification record
 - Track certification in the session narrative and update `attention_board.md`

@@ -5,11 +5,14 @@
 Purpose
 - Define active user-defined overlay skills for the
   `synaptic_python_developer` role.
+- **Ships as a working example of a user-defined overlay.** It is INSTANCE-class:
+  yours outright, never replaced or removed by an upgrade in any mode. Edit it
+  freely, or copy it as the starting point for your own role. Because upgrades
+  never touch this lane, a correction made in the package will NOT reach a copy
+  already installed - fix those by hand.
 
 Inheritance
 - `INHERITS_SKILLS_FROM: agent_onboarding/default/engineer/SKILLS.MD`
-
-  `general`).
 
 Skill classes (non-negotiable)
 - This role ADDS one section of its own: **Active skills**, below. It is baseline -

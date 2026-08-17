@@ -54,16 +54,17 @@ Active skills
 - `agent_onboarding/default/general/skills/context_management.md`
 - `context_management/context_board.md`
 
-Note on the three board paths above. `attention_board.md`, `artifact_board.md` and
-`context_management/context_board.md` are baseline reads, but they are **live
-mutable state, not policy**. You open them to learn what is happening right now, not
-to learn a rule. They therefore satisfy `READ_INTEGRITY_PROOF` by naming current
-state rather than a rule callout - see the live-state clause in
-`agent_onboarding/default/general/skills/compaction_requirements.md`. Do not invent
-a rule to quote from a routing table.
 - `agent_onboarding/default/general/behavioral_guidelines/agent_lifecycle_and_heartbeat.md`
 - `agent_onboarding/default/general/behavioral_guidelines/work_intake_and_execution.md`
 - `agent_onboarding/default/general/behavioral_guidelines/onboarding_summary.md`
+
+Note on the three board paths in that list. `attention_board.md`,
+`artifact_board.md` and `context_management/context_board.md` are baseline reads,
+but they are **live mutable state, not policy**. You open them to learn what is
+happening right now, not to learn a rule. They therefore get no attestation proof
+line - they are covered by the one-line `RESUMING` field instead. See
+`agent_onboarding/default/general/skills/compaction_requirements.md`. Do not invent
+a rule to quote from a routing table.
 
 On-demand skills
 Read only when the trigger is met. Not part of the baseline, and claiming one

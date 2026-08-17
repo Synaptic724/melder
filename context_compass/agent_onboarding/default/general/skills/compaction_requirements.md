@@ -79,45 +79,60 @@ README policy
 - README reads are allowed only for `new` first-time onboarding.
 - Non-`new` profile re-entry MUST use `SKILLS.MD` + skill/policy docs (not README).
 
-Mandatory REONBOARD attestation format
+## Attestation format (CANONICAL - this is the only definition)
+
+One shape for both events. Swap the first token: `ONBOARD: COMPLETE` for a fresh
+session, `REONBOARD: COMPLETE` after compaction or handoff. Every other document
+in this package points here rather than restating the field list.
+
 ```text
-REONBOARD: COMPLETE
-ROLE_SKILLS_READ:
-- <role_name>
-- <role_name>
+ONBOARD: COMPLETE                     # or REONBOARD: COMPLETE
 AGENT_NAME: <name|REQUIRED_FROM_USER>
-FILES_REREAD:
-- attention_board.md
-- <active ticket path>
-READ_INTEGRITY_PROOF:
-- <path>: <rule callout> -> <what this changes in my behavior>
-- <path>: <rule callout> -> <what this changes in my behavior>
+ROLES:
+- general: <one rule from this role that changes what I do>
+- <role>:  <one rule from this role that changes what I do>
+RESUMING: <active ticket + next action, or "no active work">   # REONBOARD only
 NO_ACTION_TAKEN_YET: true
 ```
 
-READ_INTEGRITY_PROOF (requirements)
-- `READ_INTEGRITY_PROOF` is a comprehension proof, NOT tool logs.
-- Default requirement: include **one line per required baseline document** in the resolved `SKILLS.MD` chain.
-  - Each line MUST include (a) a specific, checkable rule/constraint from that doc and
-    (b) what it changes in your behavior.
-  - Generic restatements ("be direct", "follow policy") are invalid.
-  - Do NOT reuse the same callout across multiple docs; each callout must be doc-specific.
-- **Live-state entries prove differently, because they carry no rules.** Some baseline
-  entries are mutable state, not policy: `attention_board.md`, `artifact_board.md`,
-  and `context_management/context_board.md`. A routing table has no
-  rule/constraint to call out, so the requirement above cannot be met for them and
-  demanding it produces invented rules - the exact confabulation this proof exists
-  to catch.
-  - For those three, prove **current state** instead: name the active row or entry
-    you routed from (or state that the board is empty), and the one action it sets
-    up next. Same one-line-per-document shape, same specificity bar.
-  - Example: `attention_board.md: active row -> tickets/tasks/2026-08-01_x_task.md,
-    mode=implementation, next=finish the parser -> I resume there rather than
-    re-planning.`
-  - This substitution applies ONLY to those three paths. Every other baseline
-    document owes a rule callout.
-- If the proof would be too long, you MUST ask the user for permission to compress/group it.
-  - Do not unilaterally shorten the proof as a convenience.
+**Six or seven lines. One line per ROLE in the chain - never per document, and
+never a list of files.**
+
+A file list is the cheapest thing to fabricate and the least useful thing to read.
+It proves nothing (any agent can name a path it did not open) and costs tokens
+proportional to the readset, which on a user-defined role runs past ninety
+documents. What a reader actually needs is: which roles are in force, and what each
+one changes about your behaviour. That is the whole point of resolving a chain.
+
+So: no `FILES_REREAD`, no per-document proof, no readset manifest. If a specific
+document changed your plan in a way the role line would bury, add one line and say
+so - but more lines are not more proof.
+
+ROLES (requirements)
+- One line per role in the resolved chain, parent-first, `general` always first.
+- Each line names **a specific, checkable rule from that role** and what it changes
+  about what you will do. Not a summary of the role's purpose.
+- Generic restatements ("be direct", "follow policy", "use tickets") are invalid -
+  they could be written without reading anything, which is exactly what this is
+  meant to detect.
+- Do NOT reuse a rule across roles. If two roles produce the same callout, you have
+  not read the child.
+- `special_instructions/` gets its own line when the directory is non-empty, because
+  it is project policy and outranks role defaults.
+- **Boards are not roles and get no proof line.** `attention_board.md`,
+  `artifact_board.md` and `context_management/context_board.md` are live state, not
+  policy. A routing table has no rule to call out, and demanding one produces
+  invented rules - the exact confabulation this is meant to catch. They are covered
+  by `RESUMING`, below.
+- **Do not ask permission to keep it short.** This form IS the requirement, not a
+  concession, so there is nothing to request and no round-trip to spend.
+
+RESUMING (REONBOARD only)
+- One line: the active ticket you routed to and the next concrete action, taken from
+  `attention_board.md`. Or `no active work` if the board carries none.
+- Omit it entirely on a fresh `ONBOARD` - nothing has been resumed.
+- This replaces the old `FILES_REREAD` list. What matters after compaction is where
+  the work continues, not which paths were opened to find that out.
 
 Attestation contract
 - Emit the attestation immediately after re-onboarding and BEFORE certification.

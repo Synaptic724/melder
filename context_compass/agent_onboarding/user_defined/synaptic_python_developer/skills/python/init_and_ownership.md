@@ -19,8 +19,8 @@ Rules
 - If a field is injected and not owned, document that contract explicitly.
 - Dataclasses are value-only: allowed fields are None, bool, int, float, str, and
   containers (list, tuple, set, dict) whose elements are themselves those value
-  types - the same rule as `banned_patterns.md`. Objects and resources are what
-  is banned, not containers.
+  types - the same rule as `banned_patterns.md`. Objects and resources are what is
+  banned, not containers.
 - Do not store object instances or resources in dataclasses. If a model needs
   objects or cleanup, use a normal class with cleanup.
 

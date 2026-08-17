@@ -10,8 +10,11 @@ Certification is denied unless the resolved SKILLS chain is satisfied exactly.
   skills**, **Required baseline skills**, **Baseline system orientation** - and a
   role may add another. Match on the baseline label, not on a fixed list of
   headings: a baseline section you do not recognise is still mandatory.
-- **On-demand** skills are NOT part of baseline certification, but become mandatory
-  when triggered by the active task. If triggered, you MUST read them before proceeding.
+- Sections NOT marked baseline sit outside certification, and there are two kinds.
+  **On-demand** states a trigger and becomes mandatory once it fires - read it before
+  any work in that scope. **Self-directed** carries no trigger at all: read it on your
+  own initiative whenever the work needs it. Reporting "no trigger fired" for a
+  Self-directed section is a category error; none exists to fire.
 - You MUST NOT claim a skill was read unless it was actually read.
 
 No policy negotiation
@@ -267,9 +270,12 @@ Cleanup teardown contract:
 - Prefer fail-fast contracts over silent fallback behavior.
 - Dataclasses are value-only: allowed fields are `None`, `bool`, `int`,
   `float`, `str`, and containers (`list`, `tuple`, `set`, `dict`) whose elements
-  are themselves those value types - the same rule as `banned_patterns.md`.
-  Objects and resources are what is banned, not containers. Do not store object instances or resources in
+  are themselves those value types. Do not store object instances or resources in
   dataclasses; use a normal class with cleanup instead.
+  - The container allowance is the same one stated in
+    `skills/python/banned_patterns.md`. A `list[str]` field is fine; a
+    `list[SomeService]` is not, because the ban is on holding objects and
+    resources, not on the container itself.
 - Use `typing.TYPE_CHECKING` for guarded imports when the dependency is
   typing-only and a runtime import would create unnecessary dependency
   pressure.
