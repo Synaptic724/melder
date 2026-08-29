@@ -80,6 +80,7 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| sanitize_publication_history | in_progress | validation | cowork | codex_1 | two noncommit Codex refs bypass history filters | Run and validate byte-aware callback in disposable clone. | Sanitized local history preserving source and canonical tickets. | All local validation passes with no commit or remote mutation. | tickets/tasks/2026-08-29_sanitize_publication_history_task.md | 2026-08-29T23:42:57Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
