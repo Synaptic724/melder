@@ -1,0 +1,51 @@
+flowchart LR
+    accTitle: Linked dynamic subsystem use cases
+    accDescr: An architect creates named normal Conduits in one dynamic AethericFrame. Runtime operators link peers, apply Policies and per-spell Permissions, create contract visibility, organize automatic sharing through ConduitCluster, transfer spell ownership, sever relationships, and inspect topology. Structural mutations are scope-admitted and the next meld lazily revalidates affected roots.
+
+    architect["Application architect"]
+    operator["Runtime operator / agent"]
+    workload["Application workload"]
+
+    subgraph dynamic["One dynamic AethericFrame · linked subsystems"]
+        direction TB
+        roots(["Conjure named normal Conduits"])
+        manage(["Manage + inspect topology<br/>links · clusters · ownership"])
+        link(["Link peer Conduits"])
+        policy(["Apply Policies + Permissions"])
+        contract(["Borrow provider lineages<br/>through contracts"])
+        cluster(["Auto-share root lineages<br/>through ConduitCluster"])
+        transfer(["Transfer ownership<br/>preflight + gated move"])
+        sever(["Sever relationship<br/>remove contract both sides"])
+        revalidate(["Lazy revalidation<br/>affected roots gated<br/>next meld recompiles"])
+
+        roots -.->|"precondition"| link
+        policy -.->|"governs"| link
+        manage -.-> link
+        manage -.-> cluster
+        manage -.-> transfer
+        manage -.-> sever
+        link -.->|"creates"| contract
+        cluster -.->|"alternative sharing"| contract
+        transfer -.-> revalidate
+        sever -.-> revalidate
+        contract -.-> revalidate
+    end
+
+    constraints["Hard boundary<br/>dynamic posture · normal Conduits · same frame"]
+    architect --> roots
+    architect --> policy
+    operator --> manage
+    workload --> revalidate
+    constraints -.-> roots
+    constraints -.-> link
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    classDef boundary fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    class architect,operator,workload actor
+    class roots,policy definition
+    class link,contract,cluster,revalidate execution
+    class manage,transfer,sever governance
+    class constraints boundary

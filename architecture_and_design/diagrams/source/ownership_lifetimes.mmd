@@ -1,0 +1,42 @@
+flowchart TB
+    accTitle: Melder ownership and lifetime map
+    accDescr: Aetheric frames contain frame-wide unique objects and root conduits. Conduits own scoped objects, lineages may share objects with child conduits, spell spaces own request-local objects, and many creates a fresh object per meld. Cleanup moves from narrow scopes toward broad owners.
+
+    frame["AethericFrame\nunique"]
+    conduit["Conduit\nunique_per_conduit"]
+
+    subgraph shared["Shared runtime scopes"]
+        direction TB
+        lineage["Conduit lineage\nunique_per_conduit_lineage"]
+        cluster["Conduit cluster\nunique_per_conduit_cluster"]
+    end
+
+    subgraph narrow["Narrow work scopes"]
+        direction TB
+        spellspace["SpellSpace\nunique_per_spell_space"]
+        many["Meld call\nmany"]
+    end
+
+    cleanup["Cleanup order\nnarrow scopes before owners\nnewest creations first"]
+
+    frame -->|"owns root scope"| conduit
+    conduit -->|"shares down tree"| lineage
+    conduit -->|"joins named group"| cluster
+    conduit -->|"opens request-local scope"| spellspace
+    conduit -->|"creates fresh"| many
+
+    lineage -.-> cleanup
+    cluster -.-> cleanup
+    spellspace -.-> cleanup
+    many -.-> cleanup
+    cleanup -.->|"before owner"| conduit
+    conduit -.->|"before frame"| frame
+
+    classDef broad fill:#fff4dc,stroke:#9a6b12,color:#452d00,stroke-width:2px
+    classDef scope fill:#e8f0ff,stroke:#315a99,color:#10213d
+    classDef narrow fill:#eaf7ef,stroke:#3f7a56,color:#153824
+    classDef note fill:#f7f9fc,stroke:#7b8ba8,color:#10213d
+    class frame broad
+    class conduit,lineage,cluster scope
+    class spellspace,many narrow
+    class cleanup note

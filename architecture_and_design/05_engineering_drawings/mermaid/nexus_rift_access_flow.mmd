@@ -1,0 +1,43 @@
+sequenceDiagram
+    accTitle: Nexus and Rift access flow
+    accDescr: An operator configures Nexus and creates a Rift with one room. The operator creates or recovers a managed frame, Rift attaches it only after policy, descriptor, and ACL checks, Nexus compiles projections, and Rift applies them to room assets. ACL revisions drain Rift gates before refreshing impacted projections.
+
+    actor Agent as Operator / agent
+    participant Nexus
+    participant Policy as Frame managers + ACL
+    participant Rift
+    participant Room as RiftSpace
+    participant Runtime as AethericFrame runtime
+
+    rect rgb(231,247,250)
+        Agent->>Nexus: configure + enable
+        Agent->>Nexus: create_rift(room posture)
+        Nexus->>Rift: construct + register
+        Rift->>Room: create one primary room
+    end
+    rect rgb(244,234,255)
+        Agent->>Nexus: create/get managed frame
+        Nexus->>Runtime: Spellbook.conjure(dynamic=True)
+        Runtime-->>Agent: rooted Conduit
+        Agent->>Rift: create_frame_link(frame)
+        Rift->>Nexus: validate target policy
+        Nexus->>Policy: require descriptor + frame ACL
+        Policy-->>Nexus: selected contracts
+        Nexus-->>Rift: compiled projection set
+        Rift->>Room: apply viewer + command projections
+    end
+    rect rgb(234,247,239)
+        Agent->>Room: inspect · bind target · command
+        Room->>Rift: acquire RiftGate ticket
+        Room->>Runtime: allowed operation
+        Runtime-->>Room: current object / result
+        Room-->>Agent: bounded response
+    end
+    rect rgb(255,240,232)
+        Policy->>Nexus: ACL family revision
+        Nexus->>Rift: disable gate + drain
+        Nexus->>Policy: compile changed-frame subset
+        Policy-->>Rift: refreshed projections
+        Rift->>Room: merge + reapply assets
+        Nexus->>Rift: reopen gate
+    end

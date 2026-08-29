@@ -1,0 +1,48 @@
+flowchart LR
+    accTitle: Continuity and research use cases
+    accDescr: A live application emits structural truth, an operator checkpoints and restores it through Crystallizer, an external store holds detached records, and an agent uses MutationResearch to declare versions, inspect evidence, rehearse candidates, stage ancestry, and promote or revert deliberately.
+
+    app["Live application"]
+    operator["Operator"]
+    agent["Tool / agent"]
+    store[("External persistence<br/>(optional)")]
+
+    subgraph advanced["Crystallizer + MutationResearch"]
+        direction TB
+        activate(["Configure and activate<br/>recording"])
+        emit(["Record structural twins<br/>at lifecycle seams"])
+        checkpoint(["Create and flush<br/>a checkpoint"])
+        restore(["Reload, preflight, and<br/>restore a fresh world"])
+        declare(["Declare versions,<br/>lanes, and compositions"])
+        inspect(["Inspect residence, source,<br/>drift, diff, and impact"])
+        preview(["Preview or synthesize<br/>a candidate"])
+        stage(["Stage ancestry or<br/>an inactive version"])
+        promote(["Promote or revert<br/>through a governed notch"])
+
+        activate -.->|"enables"| emit
+        emit -.->|"feedstock for"| checkpoint
+        declare -.-> inspect
+        inspect -.-> preview
+        preview -.-> stage
+        stage -.-> promote
+    end
+
+    app --> emit
+    operator --> activate
+    operator --> checkpoint
+    operator --> restore
+    agent --> declare
+    agent --> inspect
+    agent --> preview
+    agent --> stage
+    agent --> promote
+    checkpoint -.->|"detached records"| store
+    store -.->|"checkpoint payload"| restore
+    promote -.->|"new live selection"| app
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef continuity fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    classDef research fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    class app,operator,agent,store actor
+    class activate,emit,checkpoint,restore continuity
+    class declare,inspect,preview,stage,promote research

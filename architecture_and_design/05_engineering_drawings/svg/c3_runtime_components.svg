@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1600"
+     height="1060"
+     viewBox="0 0 1600 1060"
+     role="img"
+     aria-labelledby="c3-title c3-desc">
+  <title id="c3-title">Melder C3 runtime components</title>
+  <desc id="c3-desc">
+    Aether owns an AethericFrame object world and hosts mediated access,
+    persistence, and research roots. Inside a frame, Spellbook and SpellCompiler
+    define the graph, Conduit and Meld resolve through Creations, and Frame DevOps
+    governs validity and structural change.
+  </desc>
+
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#172033" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#40536d"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#315a99"/>
+    </marker>
+    <style>
+      .canvas { fill: #f8fafc; }
+      .title { font: 700 34px "Segoe UI", Arial, sans-serif; fill: #10213d; }
+      .subtitle { font: 400 18px "Segoe UI", Arial, sans-serif; fill: #52627a; }
+      .eyebrow { font: 700 14px "Segoe UI", Arial, sans-serif; letter-spacing: 1.6px; fill: #315a99; }
+      .system-boundary { fill: #ffffff; stroke: #315a99; stroke-width: 3; }
+      .group-core { fill: #f9fbff; stroke: #7c9ac8; stroke-width: 2.5; stroke-dasharray: 10 7; }
+      .group-access { fill: #f5fcfd; stroke: #4093a0; stroke-width: 2.5; }
+      .group-continuity { fill: #fff9f5; stroke: #b56b42; stroke-width: 2.5; }
+      .group-title { font: 700 18px "Segoe UI", Arial, sans-serif; fill: #23344d; }
+      .group-caption { font: 400 13px "Segoe UI", Arial, sans-serif; fill: #64748b; }
+      .owner { fill: #fff3d6; stroke: #9a6700; stroke-width: 3; }
+      .definition { fill: #e8f0ff; stroke: #315a99; stroke-width: 2.5; }
+      .execution { fill: #eaf7ef; stroke: #3f7a56; stroke-width: 2.5; }
+      .governance { fill: #f4eaff; stroke: #7552a3; stroke-width: 2.5; }
+      .access { fill: #e7f7fa; stroke: #287a88; stroke-width: 2.5; }
+      .continuity { fill: #fff0e8; stroke: #a4552a; stroke-width: 2.5; }
+      .node-title { font: 700 19px "Segoe UI", Arial, sans-serif; fill: #172033; }
+      .node-body { font: 400 14px "Segoe UI", Arial, sans-serif; fill: #42526a; }
+      .node-small { font: 600 12px "Segoe UI", Arial, sans-serif; fill: #52627a; }
+      .edge { fill: none; stroke: #40536d; stroke-width: 3; marker-end: url(#arrow); }
+      .edge-blue { fill: none; stroke: #315a99; stroke-width: 3.5; marker-end: url(#arrow-blue); }
+      .edge-dashed { fill: none; stroke: #596d64; stroke-width: 2.7; stroke-dasharray: 8 6; marker-end: url(#arrow); }
+      .owner-line { fill: none; stroke: #9a6700; stroke-width: 2.5; marker-end: url(#arrow); }
+      .label-bg { fill: #ffffff; opacity: 0.96; }
+      .edge-label { font: 600 12px "Segoe UI", Arial, sans-serif; fill: #34445b; }
+      .depth-line { stroke: #cbd5e1; stroke-width: 3; }
+      .depth-active { fill: #315a99; }
+      .depth-idle { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; }
+      .depth-text { font: 700 14px "Segoe UI", Arial, sans-serif; fill: #ffffff; }
+      .depth-idle-text { font: 700 14px "Segoe UI", Arial, sans-serif; fill: #52627a; }
+      .legend-label { font: 600 13px "Segoe UI", Arial, sans-serif; fill: #42526a; }
+      .footer { font: 400 13px "Segoe UI", Arial, sans-serif; fill: #64748b; }
+    </style>
+  </defs>
+
+  <rect class="canvas" x="0" y="0" width="1600" height="1060"/>
+  <text class="eyebrow" x="70" y="58">SYSTEM DOCUMENTS · C3</text>
+  <text class="title" x="70" y="104">Runtime components and ownership</text>
+  <text class="subtitle" x="70" y="137">
+    One object world, three collaboration planes: core execution, mediated access, and continuity.
+  </text>
+
+  <line class="depth-line" x1="1262" y1="82" x2="1482" y2="82"/>
+  <circle class="depth-idle" cx="1262" cy="82" r="25"/>
+  <circle class="depth-active" cx="1372" cy="82" r="25"/>
+  <circle class="depth-idle" cx="1482" cy="82" r="25"/>
+  <text class="depth-idle-text" x="1262" y="87" text-anchor="middle">C4</text>
+  <text class="depth-text" x="1372" y="87" text-anchor="middle">C3</text>
+  <text class="depth-idle-text" x="1482" y="87" text-anchor="middle">C2</text>
+
+  <rect class="system-boundary" x="70" y="174" width="1460" height="790" rx="26"/>
+  <rect x="104" y="158" width="352" height="34" rx="8" fill="#ffffff"/>
+  <text class="group-title" x="120" y="182">Melder dependency graph runtime</text>
+
+  <rect class="owner" x="635" y="214" width="330" height="92" rx="18" filter="url(#shadow)"/>
+  <text class="node-title" x="800" y="250" text-anchor="middle">Aether</text>
+  <text class="node-body" x="800" y="276" text-anchor="middle">process owner + hosted roots</text>
+  <rect x="710" y="286" width="180" height="18" rx="9" fill="#ffffff" stroke="#d8b15d"/>
+  <text class="node-small" x="800" y="300" text-anchor="middle">one per interpreter</text>
+
+  <rect class="group-core" x="112" y="360" width="925" height="526" rx="22"/>
+  <rect x="142" y="344" width="350" height="34" rx="8" fill="#f9fbff"/>
+  <text class="group-title" x="158" y="368">AethericFrame · owned object world</text>
+  <text class="group-caption" x="160" y="394">Definition, activation, scoped instances, and frame-local governance</text>
+
+  <rect class="definition" x="160" y="434" width="255" height="122" rx="16" filter="url(#shadow)"/>
+  <text class="node-title" x="288" y="470" text-anchor="middle">Spellbook</text>
+  <text class="node-body" x="288" y="498" text-anchor="middle">bindings + graph authority</text>
+  <text class="node-small" x="288" y="530" text-anchor="middle">owns spell registries</text>
+
+  <rect class="execution" x="482" y="434" width="225" height="122" rx="16" filter="url(#shadow)"/>
+  <text class="node-title" x="595" y="470" text-anchor="middle">Conduit</text>
+  <text class="node-body" x="595" y="498" text-anchor="middle">runtime scope</text>
+  <text class="node-small" x="595" y="530" text-anchor="middle">owns gates + scope stores</text>
+
+  <rect class="governance" x="773" y="434" width="218" height="122" rx="16" filter="url(#shadow)"/>
+  <text class="node-title" x="882" y="470" text-anchor="middle">Frame DevOps</text>
+  <text class="node-body" x="882" y="498" text-anchor="middle">validity + change control</text>
+  <text class="node-small" x="882" y="530" text-anchor="middle">dirty roots + transactions</text>
+
+  <rect class="definition" x="160" y="670" width="255" height="116" rx="16" filter="url(#shadow)"/>
+  <text class="node-title" x="288" y="706" text-anchor="middle">SpellCompiler</text>
+  <text class="node-body" x="288" y="734" text-anchor="middle">phases 1–11</text>
+  <text class="node-small" x="288" y="762" text-anchor="middle">validation + executable artifacts</text>
+
+  <rect class="execution" x="482" y="670" width="225" height="116" rx="16" filter="url(#shadow)"/>
+  <text class="node-title" x="595" y="706" text-anchor="middle">Meld</text>
+  <text class="node-body" x="595" y="734" text-anchor="middle">lookup + runtime gates</text>
+  <text class="node-small" x="595" y="762" text-anchor="middle">reuse or instantiate</text>
+
+  <rect class="execution" x="773" y="670" width="218" height="116" rx="16" filter="url(#shadow)"/>
+  <text class="node-title" x="882" y="706" text-anchor="middle">Creations</text>
+  <text class="node-body" x="882" y="734" text-anchor="middle">lifetime stores</text>
+  <text class="node-small" x="882" y="762" text-anchor="middle">+ request-local SpellSpace</text>
+
+  <rect class="group-access" x="1080" y="360" width="400" height="278" rx="22"/>
+  <rect x="1110" y="344" width="240" height="34" rx="8" fill="#f5fcfd"/>
+  <text class="group-title" x="1126" y="368">Mediated access plane</text>
+
+  <rect class="access" x="1122" y="406" width="316" height="62" rx="14"/>
+  <text class="node-title" x="1280" y="434" text-anchor="middle">Nexus</text>
+  <text class="node-body" x="1280" y="456" text-anchor="middle">AR policy root</text>
+
+  <rect class="access" x="1122" y="496" width="316" height="62" rx="14"/>
+  <text class="node-title" x="1280" y="524" text-anchor="middle">Rift</text>
+  <text class="node-body" x="1280" y="546" text-anchor="middle">live mediated connection</text>
+
+  <rect class="access" x="1122" y="586" width="316" height="62" rx="14"/>
+  <text class="node-title" x="1280" y="614" text-anchor="middle">RiftSpace</text>
+  <text class="node-body" x="1280" y="636" text-anchor="middle">viewer + workstation + commands</text>
+
+  <rect class="group-continuity" x="1080" y="696" width="400" height="190" rx="22"/>
+  <rect x="1110" y="680" width="272" height="34" rx="8" fill="#fff9f5"/>
+  <text class="group-title" x="1126" y="704">Continuity and evolution</text>
+
+  <rect class="continuity" x="1118" y="740" width="162" height="82" rx="14"/>
+  <text class="node-title" x="1199" y="770" text-anchor="middle">Crystallizer</text>
+  <text class="node-body" x="1199" y="794" text-anchor="middle">record + restore</text>
+
+  <rect class="continuity" x="1300" y="740" width="154" height="82" rx="14"/>
+  <text class="node-title" x="1377" y="770" text-anchor="middle">Research</text>
+  <text class="node-body" x="1377" y="794" text-anchor="middle">governed evolution</text>
+
+  <ellipse cx="1286" cy="858" rx="74" ry="19" fill="#fff0e8" stroke="#a4552a" stroke-width="2.5"/>
+  <path d="M 1212 858 v32 c0 10 33 19 74 19 s74-9 74-19 v-32"
+        fill="#fff0e8" stroke="#a4552a" stroke-width="2.5"/>
+  <text class="node-small" x="1286" y="880" text-anchor="middle">optional persistence</text>
+
+  <path class="owner-line" d="M 800 306 V 334 H 574 V 360"/>
+  <rect class="label-bg" x="610" y="316" width="66" height="22" rx="5"/>
+  <text class="edge-label" x="643" y="332" text-anchor="middle">owns</text>
+
+  <path class="owner-line" d="M 965 260 H 1280 V 406"/>
+  <rect class="label-bg" x="1086" y="244" width="64" height="22" rx="5"/>
+  <text class="edge-label" x="1118" y="260" text-anchor="middle">hosts</text>
+
+  <path class="owner-line" d="M 965 280 H 1038 V 720 H 1199 V 740"/>
+  <path class="owner-line" d="M 1038 720 H 1377 V 740"/>
+
+  <path class="edge-blue" d="M 415 492 H 482"/>
+  <rect class="label-bg" x="420" y="460" width="58" height="22" rx="5"/>
+  <text class="edge-label" x="449" y="476" text-anchor="middle">conjures</text>
+
+  <path class="edge-blue" d="M 288 556 V 670"/>
+  <rect class="label-bg" x="300" y="596" width="116" height="22" rx="5"/>
+  <text class="edge-label" x="358" y="612" text-anchor="middle">compiles through</text>
+
+  <path class="edge" d="M 595 556 V 670"/>
+  <rect class="label-bg" x="606" y="596" width="86" height="22" rx="5"/>
+  <text class="edge-label" x="649" y="612" text-anchor="middle">delegates</text>
+
+  <path class="edge" d="M 707 728 H 773"/>
+  <rect class="label-bg" x="708" y="696" width="62" height="22" rx="5"/>
+  <text class="edge-label" x="739" y="712" text-anchor="middle">lifetime</text>
+
+  <path class="edge-dashed" d="M 773 472 H 722 V 410 H 288 V 434"/>
+  <rect class="label-bg" x="535" y="396" width="122" height="22" rx="5"/>
+  <text class="edge-label" x="596" y="412" text-anchor="middle">admits change</text>
+
+  <path class="edge-dashed" d="M 882 556 V 630 H 595 V 670"/>
+  <rect class="label-bg" x="696" y="616" width="134" height="22" rx="5"/>
+  <text class="edge-label" x="763" y="632" text-anchor="middle">gates stale roots</text>
+
+  <path class="edge" d="M 1280 468 V 496"/>
+  <path class="edge" d="M 1280 558 V 586"/>
+
+  <path class="edge-dashed" d="M 1122 618 H 1062 V 584 H 1037"/>
+  <rect class="label-bg" x="998" y="552" width="128" height="22" rx="5"/>
+  <text class="edge-label" x="1062" y="568" text-anchor="middle">projects + acts</text>
+
+  <path class="edge-dashed" d="M 1037 826 H 1080 V 780 H 1118"/>
+  <rect class="label-bg" x="996" y="836" width="128" height="22" rx="5"/>
+  <text class="edge-label" x="1060" y="852" text-anchor="middle">emits twins</text>
+
+  <path class="edge-dashed" d="M 1300 781 H 1280"/>
+  <path class="edge-dashed" d="M 1377 822 V 934 H 1018 V 870 H 991"/>
+  <rect class="label-bg" x="1152" y="920" width="132" height="22" rx="5"/>
+  <text class="edge-label" x="1218" y="936" text-anchor="middle">stages change</text>
+
+  <path class="edge-dashed" d="M 1199 822 V 846 H 1212"/>
+  <path class="edge-dashed" d="M 1377 822 V 846 H 1360"/>
+
+  <rect x="130" y="918" width="18" height="18" rx="4" class="definition"/>
+  <text class="legend-label" x="158" y="932">definition</text>
+  <rect x="260" y="918" width="18" height="18" rx="4" class="execution"/>
+  <text class="legend-label" x="288" y="932">execution</text>
+  <rect x="390" y="918" width="18" height="18" rx="4" class="governance"/>
+  <text class="legend-label" x="418" y="932">governance</text>
+  <rect x="540" y="918" width="18" height="18" rx="4" class="access"/>
+  <text class="legend-label" x="568" y="932">mediated access</text>
+  <rect x="710" y="918" width="18" height="18" rx="4" class="continuity"/>
+  <text class="legend-label" x="738" y="932">continuity / evolution</text>
+
+  <text class="footer" x="70" y="1015">
+    Solid arrows are owned runtime collaboration. Dashed arrows are mediated control, access, or recording.
+  </text>
+  <text class="footer" x="1530" y="1015" text-anchor="end">
+    Authored static view · source changes do not regenerate this drawing
+  </text>
+</svg>

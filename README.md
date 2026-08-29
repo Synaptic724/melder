@@ -223,15 +223,18 @@ Every section below is tagged with the level it belongs to. **Read in order and
 stop wherever you have what you need** — nothing later is required to use
 anything earlier.
 
-| | Level | What it means | Who it's for |
-|:--|:---|:---|:---|
-| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. |
-| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. |
-| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. |
-| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. |
+| | Level | What it means | Who it's for | Runnable examples |
+|:--|:---|:---|:---|:---|
+| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | [`01_beginner/`](UX_and_AIX_experiences/01_beginner/) |
+| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | [`02_intermediate/`](UX_and_AIX_experiences/02_intermediate/) |
+| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | [`03_advanced/`](UX_and_AIX_experiences/03_advanced/) |
+| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | [`04_expert/`](UX_and_AIX_experiences/04_expert/) |
 
-This README is the tour. Step-by-step guides, deeper worked examples, and video
-walkthroughs live in the [documentation](#documentation).
+This README is the tour. For system shape and design decisions, open
+[Architecture and design](architecture_and_design/README.md); for the visual path,
+start with the [engineering drawings](architecture_and_design/05_engineering_drawings/README.md).
+The folders above contain runnable scripts, verified together by the
+[`pytest_examples/` harness](UX_and_AIX_experiences/pytest_examples/).
 
 **If you just want dependency injection, the 🟢 sections are the entire
 product.** You can stop at the end of them and never open Part II. Everything
@@ -1014,6 +1017,10 @@ the full API surface, and video walkthroughs of the systems above.
 
 | | Where | What's there |
 |:--|:---|:---|
+| 🗺️ | **[Architecture and design](architecture_and_design/README.md)** | High-level pictures, runtime structure, utilization stories, and tradeoffs |
+| 🖼️ | **[Engineering drawings](architecture_and_design/05_engineering_drawings/README.md)** | DI comparison, C4/C3/C2 views, use cases, lifecycle, coordination, recovery, and advanced flows |
+| 🧪 | **[Runnable examples](UX_and_AIX_experiences/)** | Beginner-to-expert scripts organized by the same level ladder used in this README |
+| ✅ | **[Example verification](UX_and_AIX_experiences/pytest_examples/)** | Pytest harness and contract probes for the runnable curriculum |
 | 📘 | **[Getting started](https://www.synapticaisystems.com/melder/intro/)** | The guided introduction — start here after this page |
 | 📚 | **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)** | Full API reference and technical documentation |
 | ▶️ | **[Synaptic AI on YouTube](https://www.youtube.com/@SynapticAISystems)** | Walkthroughs, deep dives, and live builds |

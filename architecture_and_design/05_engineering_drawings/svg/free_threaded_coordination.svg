@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-labelledby="thread-title thread-desc">
+  <title id="thread-title">Melder free-threaded coordination model</title>
+  <desc id="thread-desc">Concurrent callers coordinate through per-instance reentrant locks, deterministic SafeGuard ordering for peer locks, thread-local scope state, a separate Spellbook phase-run lock and scheduler barrier, proportional structural scope claims, and admission gates that stop new entrants and drain active work. Disjoint owners and scopes remain concurrent. The higher Aetheric Mediator is excluded because it is not wired into the live runtime.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#172033" flood-opacity=".12"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L12 6 L0 12z" fill="#40536d"/></marker>
+    <style>
+      .canvas{fill:#f8fafc}.title{font:700 34px "Segoe UI",Arial,sans-serif;fill:#10213d}.subtitle{font:400 18px "Segoe UI",Arial,sans-serif;fill:#52627a}.eyebrow{font:700 14px "Segoe UI",Arial,sans-serif;letter-spacing:1.6px;fill:#3f7a56}
+      .band{fill:#fff;stroke:#94a3b8;stroke-width:2.3}.phase-band{fill:#f7faff;stroke:#6889bb;stroke-width:2.3}.govern-band{fill:#fbf7ff;stroke:#8b6bb0;stroke-width:2.3}.gate-band{fill:#f5fcfd;stroke:#4093a0;stroke-width:2.3}.band-title{font:700 18px "Segoe UI",Arial,sans-serif;fill:#23344d}
+      .actor{fill:#fff3d6;stroke:#9a6700;stroke-width:2.5}.local{fill:#eaf7ef;stroke:#3f7a56;stroke-width:2.5}.phase{fill:#e8f0ff;stroke:#315a99;stroke-width:2.5}.govern{fill:#f4eaff;stroke:#7552a3;stroke-width:2.5}.gate{fill:#e7f7fa;stroke:#287a88;stroke-width:2.5}.law{fill:#fff0e8;stroke:#a4552a;stroke-width:2.5}.excluded{fill:#f1f5f9;stroke:#94a3b8;stroke-width:2;stroke-dasharray:7 5}
+      .node-title{font:700 16px "Segoe UI",Arial,sans-serif;fill:#172033}.node-body{font:400 13px "Segoe UI",Arial,sans-serif;fill:#42526a}.edge{fill:none;stroke:#40536d;stroke-width:2.7;marker-end:url(#arrow)}.edge-dashed{fill:none;stroke:#64748b;stroke-width:2.2;stroke-dasharray:8 6;marker-end:url(#arrow)}.label{font:600 12px "Segoe UI",Arial,sans-serif;fill:#34445b}.footer{font:400 13px "Segoe UI",Arial,sans-serif;fill:#64748b}
+    </style>
+  </defs>
+  <rect class="canvas" width="1600" height="1080"/>
+  <text class="eyebrow" x="70" y="58">ENGINEERING DRAWINGS · CONCURRENCY</text>
+  <text class="title" x="70" y="104">Free-threaded coordination without one global runtime lock</text>
+  <text class="subtitle" x="70" y="137">Local owners protect local state; cross-object changes pay only for the locks, claims, or drains they actually need.</text>
+  <rect class="actor" x="70" y="190" width="240" height="95" rx="18" filter="url(#shadow)"/><text class="node-title" x="190" y="225" text-anchor="middle">Concurrent callers</text><text class="node-body" x="190" y="252" text-anchor="middle">Python 3.14t threads</text><text class="node-body" x="190" y="273" text-anchor="middle">independent work enters</text>
+
+  <rect class="band" x="350" y="180" width="1180" height="210" rx="22"/><rect x="382" y="164" width="310" height="34" rx="8" fill="#fff"/><text class="band-title" x="398" y="188">Local ownership · short critical sections</text>
+  <rect class="local" x="390" y="235" width="245" height="105" rx="15"/><text class="node-title" x="512" y="268" text-anchor="middle">Per-instance RLocks</text><text class="node-body" x="512" y="295" text-anchor="middle">Spellbook · Meld · Creations</text><text class="node-body" x="512" y="318" text-anchor="middle">Frame · Rift · Crystallizer</text>
+  <rect class="local" x="680" y="235" width="235" height="105" rx="15"/><text class="node-title" x="798" y="268" text-anchor="middle">SafeGuard</text><text class="node-body" x="798" y="295" text-anchor="middle">deduplicate peer locks</text><text class="node-body" x="798" y="318" text-anchor="middle">acquire by sorted identity</text>
+  <rect class="local" x="960" y="235" width="235" height="105" rx="15"/><text class="node-title" x="1078" y="268" text-anchor="middle">Thread-local state</text><text class="node-body" x="1078" y="295" text-anchor="middle">SpellSpace stacks</text><text class="node-body" x="1078" y="318" text-anchor="middle">transaction sessions</text>
+  <rect class="local" x="1240" y="235" width="245" height="105" rx="15"/><text class="node-title" x="1362" y="268" text-anchor="middle">Immutable shared reads</text><text class="node-body" x="1362" y="295" text-anchor="middle">document views · enums</text><text class="node-body" x="1362" y="318" text-anchor="middle">no lock required</text>
+  <path class="edge" d="M310 237 H390"/><path class="edge" d="M635 287 H680"/>
+  <path class="edge-dashed" d="M310 257 V360 H1078 V340"/><path class="edge-dashed" d="M310 277 V375 H1362 V340"/>
+
+  <rect class="phase-band" x="70" y="445" width="690" height="250" rx="22"/><rect x="104" y="429" width="288" height="34" rx="8" fill="#f7faff"/><text class="band-title" x="120" y="453">Phase runs · ordered barrier</text>
+  <rect class="phase" x="105" y="520" width="180" height="105" rx="15"/><text class="node-title" x="195" y="553" text-anchor="middle">Spellbook _lock</text><text class="node-body" x="195" y="580" text-anchor="middle">conjure ordering</text><text class="node-body" x="195" y="603" text-anchor="middle">registries + policy</text>
+  <rect class="phase" x="325" y="520" width="180" height="105" rx="15"/><text class="node-title" x="415" y="553" text-anchor="middle">_phase_run_lock</text><text class="node-body" x="415" y="580" text-anchor="middle">one run registry</text><text class="node-body" x="415" y="603" text-anchor="middle">never lock in reverse</text>
+  <rect class="phase" x="545" y="520" width="180" height="105" rx="15"/><text class="node-title" x="635" y="553" text-anchor="middle">PhaseScheduler</text><text class="node-body" x="635" y="580" text-anchor="middle">queue + workers</text><text class="node-body" x="635" y="603" text-anchor="middle">per-phase latch</text>
+  <path class="edge" d="M285 572 H325"/><path class="edge" d="M505 572 H545"/><text class="label" x="305" y="554" text-anchor="middle">one-way</text>
+
+  <rect class="govern-band" x="800" y="445" width="730" height="250" rx="22"/><rect x="834" y="429" width="316" height="34" rx="8" fill="#fbf7ff"/><text class="band-title" x="850" y="453">Structural mutation · scope claims</text>
+  <rect class="govern" x="835" y="520" width="190" height="105" rx="15"/><text class="node-title" x="930" y="553" text-anchor="middle">TransactionMediator</text><text class="node-body" x="930" y="580" text-anchor="middle">frame-local ingress</text><text class="node-body" x="930" y="603" text-anchor="middle">wait outside lock</text>
+  <rect class="govern" x="1065" y="520" width="190" height="105" rx="15"/><text class="node-title" x="1160" y="553" text-anchor="middle">x · s · ix claims</text><text class="node-body" x="1160" y="580" text-anchor="middle">atomic claim set</text><text class="node-body" x="1160" y="603" text-anchor="middle">blocking evidence</text>
+  <rect class="govern" x="1295" y="500" width="200" height="145" rx="15"/><text class="node-title" x="1395" y="536" text-anchor="middle">Proportional result</text><text class="node-body" x="1395" y="566" text-anchor="middle">disjoint scopes parallel</text><text class="node-body" x="1395" y="590" text-anchor="middle">true overlap waits</text><text class="node-body" x="1395" y="614" text-anchor="middle">release wakes waiters</text>
+  <path class="edge" d="M1025 572 H1065"/><path class="edge" d="M1255 572 H1295"/>
+
+  <rect class="gate-band" x="70" y="750" width="1110" height="205" rx="22"/><rect x="104" y="734" width="270" height="34" rx="8" fill="#f5fcfd"/><text class="band-title" x="120" y="758">Quiescence barriers · change safely</text>
+  <rect class="gate" x="105" y="815" width="230" height="90" rx="15"/><text class="node-title" x="220" y="847" text-anchor="middle">CreationGate</text><text class="node-body" x="220" y="876" text-anchor="middle">stop new meld entrants</text>
+  <rect class="gate" x="390" y="815" width="230" height="90" rx="15"/><text class="node-title" x="505" y="847" text-anchor="middle">RiftGate</text><text class="node-body" x="505" y="876" text-anchor="middle">drain room actions</text>
+  <rect class="gate" x="675" y="815" width="230" height="90" rx="15"/><text class="node-title" x="790" y="847" text-anchor="middle">LoadGate</text><text class="node-body" x="790" y="876" text-anchor="middle">foreign root work waits</text>
+  <rect class="gate" x="960" y="805" width="185" height="110" rx="15"/><text class="node-title" x="1052" y="840" text-anchor="middle">Gate sequence</text><text class="node-body" x="1052" y="868" text-anchor="middle">disable · drain</text><text class="node-body" x="1052" y="891" text-anchor="middle">change · reopen</text>
+  <path class="edge" d="M335 860 H390"/><path class="edge" d="M620 860 H675"/><path class="edge" d="M905 860 H960"/>
+
+  <rect class="law" x="1230" y="750" width="300" height="130" rx="18" filter="url(#shadow)"/><text class="node-title" x="1380" y="790" text-anchor="middle">Coordination law</text><text class="node-body" x="1380" y="820" text-anchor="middle">owners serialize only</text><text class="node-body" x="1380" y="844" text-anchor="middle">the state they own</text><text class="node-body" x="1380" y="868" text-anchor="middle">no global runtime lock</text>
+  <rect class="excluded" x="1230" y="900" width="300" height="55" rx="13"/><text class="node-body" x="1380" y="924" text-anchor="middle">Excluded from live flow:</text><text class="node-body" x="1380" y="945" text-anchor="middle">Aetheric Mediator is unwired</text>
+  <text class="footer" x="70" y="1025">Locks protect owned state; claims protect structural overlap; gates establish quiescence only for bounded transitions.</text><text class="footer" x="1530" y="1025" text-anchor="end">Authored static view · not source-generated</text>
+</svg>

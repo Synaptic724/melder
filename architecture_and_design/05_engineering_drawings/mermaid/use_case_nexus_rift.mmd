@@ -1,0 +1,48 @@
+flowchart LR
+    accTitle: Nexus and Rift use cases
+    accDescr: An operator configures Nexus, managed frames, ACL families, and projection refresh. A tool or agent creates a Rift, attaches an eligible frame, inspects projections, binds selected assets in a workstation, and executes commands allowed by the room posture. Codegen is an optional extension.
+
+    operator["Operator / frame author"]
+    agent["Tool / orchestrator / agent"]
+    runtime["Melder frame owner"]
+
+    subgraph ar["Nexus + Rift mediated access"]
+        direction TB
+        configure(["Configure and enable Nexus"])
+        create_rift(["Create a Rift<br/>choose static · capability · codegen"])
+        frame(["Create or recover<br/>a managed frame"])
+        attach(["Attach an eligible frame<br/>descriptor + ACL contract"])
+        inspect(["Inspect current projections<br/>viewer helpers"])
+        workstation(["Bind assets and select<br/>a workstation target"])
+        command(["Execute an allowed<br/>room command"])
+        codegen(["Validate and execute code<br/>(codegen room only)"])
+        refresh(["Revise ACL families and<br/>refresh impacted Rifts"])
+
+        configure -.->|"required by"| create_rift
+        create_rift -.->|"owns one room"| attach
+        attach -.->|"enables"| inspect
+        inspect -.->|"selects assets for"| workstation
+        workstation -.->|"target for"| command
+        codegen -.->|"extends"| command
+    end
+
+    operator --> configure
+    operator --> frame
+    operator --> refresh
+    agent --> create_rift
+    agent --> attach
+    agent --> inspect
+    agent --> workstation
+    agent --> command
+    agent --> codegen
+    runtime -.->|"publishes descriptor truth"| attach
+    runtime -.->|"receives refreshed policy"| refresh
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef policy fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    classDef access fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef action fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    class operator,agent,runtime actor
+    class configure,frame,refresh policy
+    class create_rift,attach,inspect access
+    class workstation,command,codegen action

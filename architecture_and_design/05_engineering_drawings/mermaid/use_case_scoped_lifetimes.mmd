@@ -1,0 +1,47 @@
+flowchart LR
+    accTitle: Scoped lifetime use cases
+    accDescr: A developer selects an Existence policy when binding. Application code resolves objects whose reuse boundary may be the AethericFrame, conduit lineage or cluster, one Conduit, an active SpellSpace, or one meld call. Operators can inspect live-creation status without constructing and clean scopes deterministically in narrow-to-broad order.
+
+    developer["Developer / service author"]
+    app["Application workload"]
+    operator["Operator / test harness"]
+
+    subgraph runtime["Melder lifetime routing"]
+        direction TB
+        choose(["Choose Existence at bind"])
+        resolve(["Resolve by Existence<br/>route to the owning scope"])
+        frame(["Frame singleton<br/>unique"])
+        shared(["Shared subsystem instance<br/>unique_per_conduit_lineage<br/>unique_per_conduit_cluster"])
+        conduit(["Conduit-local instance<br/>unique_per_conduit"])
+        request(["Active request instance<br/>unique_per_spell_space"])
+        transient(["New instance per resolve<br/>many"])
+        probe(["Inspect live status<br/>no-create probe<br/>presence · scope · count"])
+        cleanup(["Clean deterministic scopes<br/>narrow before broad"])
+
+        choose -.->|"configures"| resolve
+        resolve -.->|"selects"| frame
+        resolve -.->|"selects"| shared
+        resolve -.->|"selects"| conduit
+        resolve -.->|"selects"| request
+        resolve -.->|"selects"| transient
+        request -.->|"requires"| cleanup
+        conduit -.->|"owned by"| cleanup
+        shared -.->|"owned by"| cleanup
+        frame -.->|"owned by"| cleanup
+    end
+
+    developer --> choose
+    app --> resolve
+    operator --> probe
+    operator --> cleanup
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef shared fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    class developer,app,operator actor
+    class choose definition
+    class frame,shared shared
+    class resolve,conduit,request,transient execution
+    class probe,cleanup governance
