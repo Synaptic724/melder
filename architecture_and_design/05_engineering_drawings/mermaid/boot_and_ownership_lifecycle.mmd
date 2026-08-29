@@ -1,0 +1,62 @@
+flowchart TB
+    accTitle: Melder boot and ownership lifecycle
+    accDescr: Import creates the Aether process owner and hosted roots but no frames. The first Spellbook lazily establishes a named AethericFrame, binds definitions, and conjures one root Conduit. Conduits own execution, gating, relationship, pool, and lifetime services. Narrow scopes and created objects clean before their owners, while loggers are released last.
+
+    import["import melder"]
+    app["Application constructs<br/>a Spellbook"]
+
+    subgraph boot["Boot · establish the runtime world"]
+        direction LR
+        aether["Aether<br/>one process owner"]
+        roots["Hosted roots<br/>utilities · LoadGate · Crystallizer · Nexus<br/>MutationResearch lazy"]
+        frame["AethericFrame<br/>named world + posture"]
+        book["Spellbook<br/>definitions + one conjure"]
+        conduit["Root Conduit<br/>runtime scope"]
+
+        aether -->|"hosts"| roots
+        aether -->|"owns"| frame
+        book -->|"joins + configures"| frame
+        book -->|"conjures one"| conduit
+    end
+
+    subgraph owned["Conduit-owned execution surface"]
+        direction LR
+        services["Meld · CreationGate<br/>ConduitWard · pools"]
+        creations["ConduitCreations<br/>lifetime registry"]
+        lesser["Lesser Conduits<br/>narrower lineage scopes"]
+        spellspace["SpellSpace<br/>thread-local request scope"]
+        objects["Resolved objects<br/>creation order retained"]
+
+        conduit -->|"owns"| services
+        conduit -->|"owns"| creations
+        conduit -->|"creates + owns"| lesser
+        conduit -->|"opens"| spellspace
+        creations --> objects
+        lesser --> objects
+        spellspace --> objects
+    end
+
+    subgraph teardown["Deterministic teardown · narrow before broad"]
+        direction LR
+        stop["Stop new work"] --> drain["Drain active tickets"]
+        drain --> narrow["Clean SpellSpace + lesser scopes"]
+        narrow --> reverse["Dispose objects<br/>reverse creation order"]
+        reverse --> runtime["Clean Meld · Ward · Creations"]
+        runtime --> frame_down["Detach Conduit / frame state"]
+        frame_down --> roots_down["Clean hosted roots<br/>logger last"]
+    end
+
+    import --> aether
+    app --> book
+    objects -.->|"shutdown begins"| stop
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef owner fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef scope fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef teardown fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    class import,app actor
+    class aether,roots,frame,book owner
+    class conduit,services,creations,objects execution
+    class lesser,spellspace scope
+    class stop,drain,narrow,reverse,runtime,frame_down,roots_down teardown

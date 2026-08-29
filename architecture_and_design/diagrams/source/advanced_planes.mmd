@@ -1,0 +1,29 @@
+flowchart TB
+    accTitle: Melder core and advanced planes
+    accDescr: The core dependency graph runtime remains central. Nexus and Rift provide mediated access, Crystallizer records and restores structural state, and MutationResearch organizes version and composition history. External storage remains optional and caller supplied.
+
+    core["Core Dependency Graph Runtime\nAether · Frame · Spellbook · Conduit · Meld"]
+
+    subgraph planes["Optional advanced planes"]
+        direction LR
+        access["Nexus + Rift\nviewer · workstation · command · codegen"]
+        continuity["Crystallizer\nrecord · checkpoint · restore"]
+        research["MutationResearch\nlanes · history · diff · impact · preview"]
+    end
+
+    storage[("Caller-owned storage")]
+    operator["Tool / orchestrator / agent"]
+
+    core -->|"publishes bounded live truth"| access
+    core -->|"emits structural twins"| continuity
+    core -->|"declares world entries"| research
+    operator -->|"enters a configured room"| access
+    continuity -.->|"stores detached records"| storage
+    research -.->|"records composition twin"| continuity
+
+    classDef core fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef plane fill:#eaf7ef,stroke:#3f7a56,color:#153824
+    classDef external fill:#fff4dc,stroke:#9a6b12,color:#452d00
+    class core core
+    class access,continuity,research plane
+    class storage,operator external

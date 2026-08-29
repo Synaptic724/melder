@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040"
+     viewBox="0 0 1600 1040" role="img"
+     aria-labelledby="rift-uc-title rift-uc-desc">
+  <title id="rift-uc-title">Nexus and Rift use cases</title>
+  <desc id="rift-uc-desc">
+    An operator configures Nexus, frame policy, ACLs, and projection refresh.
+    A tool or agent creates a Rift, attaches a frame, inspects projections, works
+    with selected assets, executes commands, and optionally uses validated codegen.
+  </desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#172033" flood-opacity=".12"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L12 6 L0 12z" fill="#40536d"/></marker>
+    <style>
+      .canvas{fill:#f8fafc}.title{font:700 34px "Segoe UI",Arial,sans-serif;fill:#10213d}.subtitle{font:400 18px "Segoe UI",Arial,sans-serif;fill:#52627a}
+      .eyebrow{font:700 14px "Segoe UI",Arial,sans-serif;letter-spacing:1.6px;fill:#287a88}.boundary{fill:#fff;stroke:#287a88;stroke-width:3}
+      .boundary-title{font:700 18px "Segoe UI",Arial,sans-serif;fill:#123b43}.actor{fill:#fff3d6;stroke:#9a6700;stroke-width:2.5}
+      .policy{fill:#f4eaff;stroke:#7552a3;stroke-width:2.5}.access{fill:#e7f7fa;stroke:#287a88;stroke-width:2.5}.action{fill:#eaf7ef;stroke:#3f7a56;stroke-width:2.5}
+      .node-title{font:700 17px "Segoe UI",Arial,sans-serif;fill:#172033}.node-body{font:400 13px "Segoe UI",Arial,sans-serif;fill:#42526a}.actor-title{font:700 18px "Segoe UI",Arial,sans-serif;fill:#172033}
+      .edge{fill:none;stroke:#40536d;stroke-width:2.8;marker-end:url(#arrow)}.relation{fill:none;stroke:#64748b;stroke-width:2.4;stroke-dasharray:8 6;marker-end:url(#arrow)}
+      .edge-label{font:600 12px "Segoe UI",Arial,sans-serif;fill:#34445b}.label-bg{fill:#fff;opacity:.96}.footer{font:400 13px "Segoe UI",Arial,sans-serif;fill:#64748b}
+    </style>
+  </defs>
+  <rect class="canvas" width="1600" height="1040"/>
+  <text class="eyebrow" x="70" y="58">ENGINEERING DRAWINGS · USE CASE</text>
+  <text class="title" x="70" y="104">How tools and agents operate through Nexus and Rift</text>
+  <text class="subtitle" x="70" y="137">Policy is authored by operators; bounded runtime work happens inside one configured room.</text>
+
+  <rect class="boundary" x="300" y="170" width="1000" height="760" rx="28"/>
+  <rect x="336" y="154" width="300" height="34" rx="8" fill="#fff"/>
+  <text class="boundary-title" x="352" y="178">Nexus + Rift mediated access</text>
+
+  <rect class="actor" x="48" y="250" width="200" height="125" rx="18" filter="url(#shadow)"/>
+  <circle cx="92" cy="292" r="18" fill="#fff" stroke="#9a6700" stroke-width="2"/><path d="M66 352 Q92 320 118 352" fill="#fff" stroke="#9a6700" stroke-width="2"/>
+  <text class="actor-title" x="178" y="299" text-anchor="middle">Operator</text><text class="node-body" x="174" y="330" text-anchor="middle">authors policy + frames</text>
+  <rect class="actor" x="48" y="580" width="200" height="125" rx="18" filter="url(#shadow)"/>
+  <path d="M70 626 h32 l12 16 -12 16 H70 l-12-16z" fill="#fff" stroke="#9a6700" stroke-width="2"/>
+  <text class="actor-title" x="177" y="629" text-anchor="middle">Tool / agent</text><text class="node-body" x="174" y="660" text-anchor="middle">works inside a room</text>
+  <rect class="actor" x="1350" y="410" width="200" height="125" rx="18" filter="url(#shadow)"/>
+  <rect x="1375" y="444" width="50" height="43" rx="7" fill="#fff" stroke="#9a6700" stroke-width="2"/>
+  <text class="actor-title" x="1482" y="452" text-anchor="middle">Frame owner</text><text class="node-body" x="1460" y="483" text-anchor="middle">publishes live truth</text>
+
+  <ellipse class="policy" cx="500" cy="270" rx="145" ry="66" filter="url(#shadow)"/><text class="node-title" x="500" y="263" text-anchor="middle">Configure Nexus</text><text class="node-body" x="500" y="289" text-anchor="middle">enable policy + budgets</text>
+  <ellipse class="policy" cx="500" cy="465" rx="145" ry="66" filter="url(#shadow)"/><text class="node-title" x="500" y="458" text-anchor="middle">Create / recover frame</text><text class="node-body" x="500" y="484" text-anchor="middle">rooted managed workspace</text>
+  <ellipse class="policy" cx="500" cy="765" rx="145" ry="66" filter="url(#shadow)"/><text class="node-title" x="500" y="758" text-anchor="middle">Revise ACL families</text><text class="node-body" x="500" y="784" text-anchor="middle">drain · refresh · reopen</text>
+
+  <ellipse class="access" cx="805" cy="270" rx="145" ry="66" filter="url(#shadow)"/><text class="node-title" x="805" y="263" text-anchor="middle">Create Rift</text><text class="node-body" x="805" y="289" text-anchor="middle">choose room posture</text>
+  <ellipse class="access" cx="805" cy="465" rx="145" ry="66" filter="url(#shadow)"/><text class="node-title" x="805" y="458" text-anchor="middle">Attach eligible frame</text><text class="node-body" x="805" y="484" text-anchor="middle">descriptor + ACL contract</text>
+  <ellipse class="access" cx="805" cy="635" rx="145" ry="66" filter="url(#shadow)"/><text class="node-title" x="805" y="628" text-anchor="middle">Inspect projections</text><text class="node-body" x="805" y="654" text-anchor="middle">frame · conduit · spell</text>
+
+  <ellipse class="action" cx="1110" cy="420" rx="150" ry="66" filter="url(#shadow)"/><text class="node-title" x="1110" y="413" text-anchor="middle">Bind workstation assets</text><text class="node-body" x="1110" y="439" text-anchor="middle">select one active target</text>
+  <ellipse class="action" cx="1110" cy="610" rx="150" ry="66" filter="url(#shadow)"/><text class="node-title" x="1110" y="603" text-anchor="middle">Execute room command</text><text class="node-body" x="1110" y="629" text-anchor="middle">projection + gate enforced</text>
+  <ellipse class="action" cx="1110" cy="790" rx="150" ry="66" filter="url(#shadow)"/><text class="node-title" x="1110" y="783" text-anchor="middle">Validate / execute code</text><text class="node-body" x="1110" y="809" text-anchor="middle">codegen room extension</text>
+
+  <path class="edge" d="M248 285 H355"/><path class="edge" d="M248 315 H320 V465 H355"/><path class="edge" d="M248 345 H290 V765 H355"/>
+  <path class="edge" d="M248 620 H660"/><path class="edge" d="M248 650 H620 V465 H660"/><path class="edge" d="M248 680 H660 V635"/>
+  <path class="edge" d="M248 690 H970 V610"/><path class="edge" d="M248 700 H940 V790 H960"/>
+  <path class="edge" d="M1350 465 H950"/><path class="edge" d="M1350 500 H1285 V765 H645"/>
+  <path class="relation" d="M645 270 H660"/><path class="relation" d="M805 336 V399"/><path class="relation" d="M950 465 H960 V420"/>
+  <path class="relation" d="M805 531 V569"/><path class="relation" d="M950 635 H960 V610"/><path class="relation" d="M1110 724 V676"/>
+  <rect class="label-bg" x="660" y="250" width="88" height="22" rx="5"/><text class="edge-label" x="704" y="266" text-anchor="middle">required</text>
+  <rect class="label-bg" x="1120" y="690" width="72" height="22" rx="5"/><text class="edge-label" x="1156" y="706" text-anchor="middle">extends</text>
+  <text class="footer" x="70" y="985">Static, capability, and codegen rooms expose different authority over the same lower runtime truth.</text>
+  <text class="footer" x="1530" y="985" text-anchor="end">Authored static view · not source-generated</text>
+</svg>

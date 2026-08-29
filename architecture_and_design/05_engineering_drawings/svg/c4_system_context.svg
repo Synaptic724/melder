@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1600"
+     height="960"
+     viewBox="0 0 1600 960"
+     role="img"
+     aria-labelledby="c4-title c4-desc">
+  <title id="c4-title">Melder C4 system context</title>
+  <desc id="c4-desc">
+    A developer operates application code inside a Python process. Application code
+    uses Melder to bind, conjure, and meld an object world. An optional orchestrator
+    enters through Rift. Melder emits optional structural records and diagnostics.
+  </desc>
+
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#172033" flood-opacity="0.13"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#40536d"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#315a99"/>
+    </marker>
+    <style>
+      .canvas { fill: #f8fafc; }
+      .title { font: 700 34px "Segoe UI", Arial, sans-serif; fill: #10213d; }
+      .subtitle { font: 400 18px "Segoe UI", Arial, sans-serif; fill: #52627a; }
+      .eyebrow { font: 700 14px "Segoe UI", Arial, sans-serif; letter-spacing: 1.6px; fill: #315a99; }
+      .boundary { fill: #ffffff; stroke: #315a99; stroke-width: 3; stroke-dasharray: 12 8; }
+      .boundary-label { font: 700 18px "Segoe UI", Arial, sans-serif; fill: #315a99; }
+      .person { fill: #fff3d6; stroke: #9a6700; stroke-width: 2.5; }
+      .external { fill: #ecf8f0; stroke: #3f7a56; stroke-width: 2.5; }
+      .application { fill: #ffffff; stroke: #65758b; stroke-width: 2.5; }
+      .melder { fill: #e8f0ff; stroke: #315a99; stroke-width: 3.5; }
+      .runtime { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 2; }
+      .node-title { font: 700 21px "Segoe UI", Arial, sans-serif; fill: #172033; }
+      .node-body { font: 400 16px "Segoe UI", Arial, sans-serif; fill: #42526a; }
+      .node-small { font: 600 14px "Segoe UI", Arial, sans-serif; fill: #52627a; }
+      .edge { fill: none; stroke: #40536d; stroke-width: 3; marker-end: url(#arrow); }
+      .edge-blue { fill: none; stroke: #315a99; stroke-width: 3.5; marker-end: url(#arrow-blue); }
+      .edge-dashed { fill: none; stroke: #567064; stroke-width: 3; stroke-dasharray: 9 7; marker-end: url(#arrow); }
+      .edge-label-bg { fill: #ffffff; opacity: 0.95; }
+      .edge-label { font: 600 14px "Segoe UI", Arial, sans-serif; fill: #34445b; }
+      .depth-line { stroke: #cbd5e1; stroke-width: 3; }
+      .depth-active { fill: #315a99; }
+      .depth-idle { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; }
+      .depth-text { font: 700 14px "Segoe UI", Arial, sans-serif; fill: #ffffff; }
+      .depth-idle-text { font: 700 14px "Segoe UI", Arial, sans-serif; fill: #52627a; }
+      .footer { font: 400 13px "Segoe UI", Arial, sans-serif; fill: #64748b; }
+    </style>
+  </defs>
+
+  <rect class="canvas" x="0" y="0" width="1600" height="960"/>
+
+  <text class="eyebrow" x="70" y="58">SYSTEM DOCUMENTS · C4</text>
+  <text class="title" x="70" y="104">Melder in its operating environment</text>
+  <text class="subtitle" x="70" y="137">
+    The system boundary, its human and agent actors, and the external services it can use.
+  </text>
+
+  <line class="depth-line" x1="1262" y1="82" x2="1482" y2="82"/>
+  <circle class="depth-active" cx="1262" cy="82" r="25"/>
+  <circle class="depth-idle" cx="1372" cy="82" r="25"/>
+  <circle class="depth-idle" cx="1482" cy="82" r="25"/>
+  <text class="depth-text" x="1262" y="87" text-anchor="middle">C4</text>
+  <text class="depth-idle-text" x="1372" y="87" text-anchor="middle">C3</text>
+  <text class="depth-idle-text" x="1482" y="87" text-anchor="middle">C2</text>
+
+  <rect class="boundary" x="340" y="190" width="930" height="610" rx="24"/>
+  <rect x="372" y="174" width="258" height="34" rx="8" fill="#ffffff"/>
+  <text class="boundary-label" x="388" y="198">Python application process</text>
+
+  <rect class="person" x="60" y="282" width="220" height="124" rx="18" filter="url(#shadow)"/>
+  <circle cx="96" cy="326" r="18" fill="#ffffff" stroke="#9a6700" stroke-width="2"/>
+  <path d="M 70 382 Q 96 350 122 382" fill="#ffffff" stroke="#9a6700" stroke-width="2"/>
+  <text class="node-title" x="188" y="326" text-anchor="middle">Developer</text>
+  <text class="node-body" x="188" y="354" text-anchor="middle">operator / maintainer</text>
+  <text class="node-small" x="188" y="385" text-anchor="middle">defines the application</text>
+
+  <rect class="external" x="60" y="528" width="220" height="124" rx="18" filter="url(#shadow)"/>
+  <path d="M 93 571 h30 l12 16 -12 16 h-30 l-12-16 z" fill="#ffffff" stroke="#3f7a56" stroke-width="2"/>
+  <text class="node-title" x="196" y="572" text-anchor="middle">Orchestrator</text>
+  <text class="node-body" x="170" y="600" text-anchor="middle">or agent (optional)</text>
+  <text class="node-small" x="170" y="631" text-anchor="middle">bounded access only</text>
+
+  <rect class="external" x="1320" y="282" width="220" height="124" rx="18" filter="url(#shadow)"/>
+  <ellipse cx="1373" cy="320" rx="31" ry="12" fill="#ffffff" stroke="#3f7a56" stroke-width="2"/>
+  <path d="M 1342 320 v38 c0 7 14 12 31 12 s31-5 31-12 v-38" fill="#ffffff" stroke="#3f7a56" stroke-width="2"/>
+  <text class="node-title" x="1475" y="326" text-anchor="middle">Persistence</text>
+  <text class="node-body" x="1475" y="354" text-anchor="middle">external store</text>
+  <text class="node-small" x="1430" y="385" text-anchor="middle">optional structural records</text>
+
+  <rect class="external" x="1320" y="528" width="220" height="124" rx="18" filter="url(#shadow)"/>
+  <rect x="1344" y="558" width="54" height="50" rx="8" fill="#ffffff" stroke="#3f7a56" stroke-width="2"/>
+  <line x1="1356" y1="572" x2="1386" y2="572" stroke="#3f7a56" stroke-width="2"/>
+  <line x1="1356" y1="583" x2="1386" y2="583" stroke="#3f7a56" stroke-width="2"/>
+  <line x1="1356" y1="594" x2="1378" y2="594" stroke="#3f7a56" stroke-width="2"/>
+  <text class="node-title" x="1464" y="572" text-anchor="middle">Logging</text>
+  <text class="node-body" x="1430" y="600" text-anchor="middle">provider (optional)</text>
+  <text class="node-small" x="1430" y="631" text-anchor="middle">diagnostics + failures</text>
+
+  <rect class="application" x="415" y="330" width="300" height="230" rx="20" filter="url(#shadow)"/>
+  <rect x="415" y="330" width="300" height="54" rx="20" fill="#edf2f7"/>
+  <path d="M 415 364 v20 h300 v-20" fill="#edf2f7"/>
+  <text class="node-title" x="565" y="365" text-anchor="middle">Application code</text>
+  <text class="node-body" x="565" y="422" text-anchor="middle">Domain services</text>
+  <text class="node-body" x="565" y="452" text-anchor="middle">Entrypoints and workflows</text>
+  <text class="node-body" x="565" y="482" text-anchor="middle">User-defined object graph</text>
+  <rect x="458" y="510" width="214" height="28" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text class="node-small" x="565" y="530" text-anchor="middle">owns business behavior</text>
+
+  <rect class="melder" x="840" y="292" width="350" height="308" rx="22" filter="url(#shadow)"/>
+  <rect x="840" y="292" width="350" height="62" rx="22" fill="#315a99"/>
+  <path d="M 840 332 v22 h350 v-22" fill="#315a99"/>
+  <text x="1015" y="331" text-anchor="middle"
+        style="font:700 24px 'Segoe UI',Arial,sans-serif;fill:#ffffff">Melder</text>
+  <text class="node-body" x="1015" y="390" text-anchor="middle">Dependency Graph Runtime</text>
+  <line x1="886" y1="418" x2="1144" y2="418" stroke="#9bb8e8" stroke-width="2"/>
+  <text class="node-body" x="1015" y="456" text-anchor="middle">Defines + validates structure</text>
+  <text class="node-body" x="1015" y="488" text-anchor="middle">Activates scoped object worlds</text>
+  <text class="node-body" x="1015" y="520" text-anchor="middle">Mediates runtime access</text>
+  <text class="node-body" x="1015" y="552" text-anchor="middle">Preserves governed evolution</text>
+  <rect x="900" y="568" width="230" height="28" rx="14" fill="#ffffff" stroke="#9bb8e8"/>
+  <text class="node-small" x="1015" y="588" text-anchor="middle">owns object-world mechanics</text>
+
+  <rect class="runtime" x="555" y="690" width="500" height="66" rx="16"/>
+  <text class="node-title" x="805" y="720" text-anchor="middle">Python 3.14+ free-threaded runtime</text>
+  <text class="node-small" x="805" y="744" text-anchor="middle">process, memory, threads, imports, filesystem</text>
+
+  <path class="edge" d="M 280 344 H 350 V 405 H 415"/>
+  <rect class="edge-label-bg" x="296" y="354" width="126" height="24" rx="6"/>
+  <text class="edge-label" x="359" y="371" text-anchor="middle">defines + operates</text>
+
+  <path class="edge-blue" d="M 715 418 H 840"/>
+  <rect class="edge-label-bg" x="730" y="384" width="96" height="24" rx="6"/>
+  <text class="edge-label" x="778" y="401" text-anchor="middle">bind · conjure</text>
+  <rect class="edge-label-bg" x="742" y="428" width="72" height="24" rx="6"/>
+  <text class="edge-label" x="778" y="445" text-anchor="middle">meld →</text>
+
+  <path class="edge-blue" d="M 840 530 H 760 V 520 H 715"/>
+  <rect class="edge-label-bg" x="735" y="536" width="116" height="24" rx="6"/>
+  <text class="edge-label" x="793" y="553" text-anchor="middle">scoped objects</text>
+
+  <path class="edge-dashed" d="M 280 590 H 760 V 566 H 840"/>
+  <rect class="edge-label-bg" x="512" y="574" width="168" height="24" rx="6"/>
+  <text class="edge-label" x="596" y="591" text-anchor="middle">bounded Rift access</text>
+
+  <path class="edge-dashed" d="M 1190 365 H 1320"/>
+  <rect class="edge-label-bg" x="1198" y="329" width="116" height="24" rx="6"/>
+  <text class="edge-label" x="1256" y="346" text-anchor="middle">records</text>
+
+  <path class="edge-dashed" d="M 1190 548 H 1320"/>
+  <rect class="edge-label-bg" x="1195" y="558" width="122" height="24" rx="6"/>
+  <text class="edge-label" x="1256" y="575" text-anchor="middle">diagnostics</text>
+
+  <path d="M 565 560 V 690" fill="none" stroke="#94a3b8" stroke-width="2"/>
+  <path d="M 1015 600 V 690" fill="none" stroke="#94a3b8" stroke-width="2"/>
+
+  <text class="footer" x="70" y="900">
+    Solid arrows are primary runtime interaction. Dashed arrows are optional mediated integrations.
+  </text>
+  <text class="footer" x="1530" y="900" text-anchor="end">
+    Authored static view · source changes do not regenerate this drawing
+  </text>
+</svg>

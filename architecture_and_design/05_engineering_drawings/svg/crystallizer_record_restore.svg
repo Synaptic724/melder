@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040"
+     viewBox="0 0 1600 1040" role="img"
+     aria-labelledby="crystal-flow-title crystal-flow-desc">
+  <title id="crystal-flow-title">Crystallizer record and restore pipeline</title>
+  <desc id="crystal-flow-desc">
+    A live dynamic runtime emits structural twins into Crystallizer and an active
+    persistence profile. Checkpoints are detached and stored. A fresh process reloads,
+    preflights, and rebuilds the world through public verbs with fresh identities.
+  </desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#172033" flood-opacity=".12"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L12 6 L0 12z" fill="#40536d"/></marker>
+    <style>
+      .canvas{fill:#f8fafc}.title{font:700 34px "Segoe UI",Arial,sans-serif;fill:#10213d}.subtitle{font:400 18px "Segoe UI",Arial,sans-serif;fill:#52627a}
+      .eyebrow{font:700 14px "Segoe UI",Arial,sans-serif;letter-spacing:1.6px;fill:#a4552a}.group-live{fill:#f7faff;stroke:#6889bb;stroke-width:2.5}.group-fresh{fill:#f5fbf7;stroke:#5b8d6c;stroke-width:2.5}
+      .group-title{font:700 18px "Segoe UI",Arial,sans-serif;fill:#23344d}.runtime{fill:#e8f0ff;stroke:#315a99;stroke-width:2.5}.continuity{fill:#fff0e8;stroke:#a4552a;stroke-width:2.5}
+      .restore{fill:#eaf7ef;stroke:#3f7a56;stroke-width:2.5}.report{fill:#f4eaff;stroke:#7552a3;stroke-width:2.5}.node-title{font:700 17px "Segoe UI",Arial,sans-serif;fill:#172033}
+      .node-body{font:400 13px "Segoe UI",Arial,sans-serif;fill:#42526a}.edge{fill:none;stroke:#40536d;stroke-width:3;marker-end:url(#arrow)}.edge-dashed{fill:none;stroke:#64748b;stroke-width:2.5;stroke-dasharray:8 6;marker-end:url(#arrow)}
+      .edge-label{font:600 12px "Segoe UI",Arial,sans-serif;fill:#34445b}.label-bg{fill:#fff;opacity:.96}.number{fill:#315a99}.number-text{font:700 12px "Segoe UI",Arial,sans-serif;fill:#fff}
+      .invariant{fill:#fff3d6;stroke:#d7ad53;stroke-width:1.8}.invariant-text{font:600 12px "Segoe UI",Arial,sans-serif;fill:#4b3410}.footer{font:400 13px "Segoe UI",Arial,sans-serif;fill:#64748b}
+    </style>
+  </defs>
+  <rect class="canvas" width="1600" height="1040"/>
+  <text class="eyebrow" x="70" y="58">ENGINEERING DRAWINGS · ADVANCED FLOW</text>
+  <text class="title" x="70" y="104">Crystallizer: from live emissions to a fresh reconstructed world</text>
+  <text class="subtitle" x="70" y="137">The record is passive, checkpoints are detached values, and restore uses normal runtime verbs.</text>
+
+  <rect class="group-live" x="70" y="190" width="1460" height="310" rx="24"/><rect x="104" y="174" width="284" height="34" rx="8" fill="#f7faff"/><text class="group-title" x="120" y="198">Live process · passive recording</text>
+  <rect class="group-fresh" x="70" y="620" width="1460" height="300" rx="24"/><rect x="104" y="604" width="282" height="34" rx="8" fill="#f5fbf7"/><text class="group-title" x="120" y="628">Fresh process · admitted rebuild</text>
+
+  <rect class="runtime" x="110" y="285" width="230" height="116" rx="16" filter="url(#shadow)"/><text class="node-title" x="225" y="323" text-anchor="middle">Live Melder world</text><text class="node-body" x="225" y="352" text-anchor="middle">Aether · frames · books</text><text class="node-body" x="225" y="376" text-anchor="middle">conduits · links · spells</text>
+  <rect class="continuity" x="405" y="285" width="220" height="116" rx="16" filter="url(#shadow)"/><circle class="number" cx="428" cy="307" r="14"/><text class="number-text" x="428" y="311" text-anchor="middle">1</text><text class="node-title" x="515" y="323" text-anchor="middle">Crystallizer</text><text class="node-body" x="515" y="352" text-anchor="middle">configured + active facade</text><text class="node-body" x="515" y="376" text-anchor="middle">passive emission sink</text>
+  <rect class="continuity" x="690" y="285" width="220" height="116" rx="16" filter="url(#shadow)"/><circle class="number" cx="708" cy="307" r="14"/><text class="number-text" x="708" y="311" text-anchor="middle">2</text><text class="node-title" x="800" y="323" text-anchor="middle">PersistenceSystem</text><text class="node-body" x="800" y="352" text-anchor="middle">active profile + journal</text><text class="node-body" x="800" y="376" text-anchor="middle">replace current twins</text>
+  <rect class="continuity" x="975" y="285" width="220" height="116" rx="16" filter="url(#shadow)"/><circle class="number" cx="998" cy="307" r="14"/><text class="number-text" x="998" y="311" text-anchor="middle">3</text><text class="node-title" x="1085" y="323" text-anchor="middle">Checkpoint</text><text class="node-body" x="1085" y="352" text-anchor="middle">sealed profile window</text><text class="node-body" x="1085" y="376" text-anchor="middle">self-describing values</text>
+  <ellipse cx="1380" cy="310" rx="105" ry="26" fill="#fff0e8" stroke="#a4552a" stroke-width="2.5"/><path d="M1275 310 v66 c0 14 47 26 105 26s105-12 105-26v-66" fill="#fff0e8" stroke="#a4552a" stroke-width="2.5"/><circle class="number" cx="1302" cy="342" r="14"/><text class="number-text" x="1302" y="346" text-anchor="middle">4</text><text class="node-title" x="1380" y="347" text-anchor="middle">Asset custody</text><text class="node-body" x="1380" y="374" text-anchor="middle">cache + external handlers</text>
+
+  <path class="edge" d="M340 343 H405"/><text class="edge-label" x="372" y="329" text-anchor="middle">emit twins</text>
+  <path class="edge" d="M625 343 H690"/><text class="edge-label" x="658" y="329" text-anchor="middle">record</text>
+  <path class="edge" d="M910 343 H975"/><text class="edge-label" x="942" y="329" text-anchor="middle">seal</text>
+  <path class="edge" d="M1195 343 H1275"/><text class="edge-label" x="1235" y="329" text-anchor="middle">flush</text>
+
+  <path class="edge-dashed" d="M1380 402 V555 H210 V690"/><rect class="label-bg" x="720" y="535" width="192" height="24" rx="6"/><text class="edge-label" x="816" y="552" text-anchor="middle">original process ends · detached records survive</text>
+
+  <rect class="restore" x="110" y="690" width="200" height="116" rx="16" filter="url(#shadow)"/><text class="node-title" x="210" y="728" text-anchor="middle">CrystalLoader</text><text class="node-body" x="210" y="757" text-anchor="middle">reload cached / remote</text><text class="node-body" x="210" y="781" text-anchor="middle">records into feedstock</text>
+  <rect class="restore" x="375" y="690" width="210" height="116" rx="16" filter="url(#shadow)"/><text class="node-title" x="480" y="728" text-anchor="middle">LoadAdmission</text><text class="node-body" x="480" y="757" text-anchor="middle">scope + chain + preflight</text><text class="node-body" x="480" y="781" text-anchor="middle">blockers refuse before build</text>
+  <rect class="restore" x="650" y="690" width="210" height="116" rx="16" filter="url(#shadow)"/><text class="node-title" x="755" y="728" text-anchor="middle">RestoreEngine</text><text class="node-body" x="755" y="757" text-anchor="middle">LoadPlan stage order</text><text class="node-body" x="755" y="781" text-anchor="middle">reverse cleanup on failure</text>
+  <rect class="restore" x="925" y="690" width="230" height="116" rx="16" filter="url(#shadow)"/><text class="node-title" x="1040" y="728" text-anchor="middle">Public runtime verbs</text><text class="node-body" x="1040" y="757" text-anchor="middle">configure · bind · conjure</text><text class="node-body" x="1040" y="781" text-anchor="middle">link · cluster · research</text>
+  <rect class="runtime" x="1220" y="690" width="220" height="116" rx="16" filter="url(#shadow)"/><text class="node-title" x="1330" y="728" text-anchor="middle">Fresh object world</text><text class="node-body" x="1330" y="757" text-anchor="middle">new runtime identities</text><text class="node-body" x="1330" y="781" text-anchor="middle">re-emission intended</text>
+
+  <path class="edge" d="M310 748 H375"/><path class="edge" d="M585 748 H650"/><path class="edge" d="M860 748 H925"/><path class="edge" d="M1155 748 H1220"/>
+  <rect class="report" x="700" y="845" width="520" height="58" rx="14"/><text class="node-title" x="960" y="870" text-anchor="middle">Restore report · identity translation · shortfalls · built units</text><path class="edge-dashed" d="M755 806 V845"/>
+
+  <rect class="invariant" x="170" y="440" width="300" height="46" rx="10"/><text class="invariant-text" x="320" y="468" text-anchor="middle">Inactive Crystallizer: emission is a no-op</text>
+  <rect class="invariant" x="650" y="440" width="300" height="46" rx="10"/><text class="invariant-text" x="800" y="468" text-anchor="middle">Records contain values, never live objects</text>
+  <rect class="invariant" x="1130" y="440" width="300" height="46" rx="10"/><text class="invariant-text" x="1280" y="468" text-anchor="middle">Recorded ULIDs are translated, not revived</text>
+  <text class="footer" x="70" y="990">Continuity preserves reconstructable structure and explicit state—not object identity across process death.</text>
+  <text class="footer" x="1530" y="990" text-anchor="end">Authored static view · not source-generated</text>
+</svg>

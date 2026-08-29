@@ -1,0 +1,26 @@
+flowchart TB
+    accTitle: Melder system context
+    accDescr: A Python application uses Melder as its dependency graph runtime. Developers define the object world, optional orchestrators or agents use bounded Rift access, and optional persistence stores structural records.
+
+    developer["Developer / operator"]
+    agent["Orchestrator / agent\n(optional)"]
+    persistence[("External persistence\n(optional)")]
+
+    subgraph process["Python application process"]
+        direction LR
+        application["Application code"]
+        melder["Melder\nDependency Graph Runtime"]
+        application -->|"bind · conjure · meld"| melder
+        melder -->|"resolved objects"| application
+    end
+
+    developer -->|"defines the object world"| application
+    agent -.->|"bounded Rift access"| melder
+    melder -.->|"structural records"| persistence
+
+    classDef person fill:#fff4dc,stroke:#9a6b12,color:#452d00
+    classDef external fill:#eaf7ef,stroke:#3f7a56,color:#153824
+    classDef core fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    class developer person
+    class application,agent,persistence external
+    class melder core

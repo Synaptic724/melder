@@ -1,0 +1,42 @@
+flowchart LR
+    accTitle: Application runtime use cases
+    accDescr: Developers define and validate an object world, application code resolves objects and opens narrower scopes, and operators inspect and clean the runtime. Dynamic applications may also link or sever independently owned subsystems.
+
+    developer["Developer"]
+    app["Application code"]
+    operator["Operator"]
+
+    subgraph melder["Melder dependency graph runtime"]
+        direction TB
+        register(["Register object definitions<br/>bind · scan"])
+        configure(["Configure lifetimes<br/>policies · hooks"])
+        conjure(["Conjure a validated<br/>root graph"])
+        resolve(["Resolve a scoped object<br/>meld + runtime gates"])
+        scopes(["Open narrower work scopes<br/>lesser conduit · SpellSpace"])
+        link(["Link or sever subsystems<br/>(dynamic world)"])
+        inspect(["Inspect graph and<br/>runtime status"])
+        cleanup(["Clean up deterministically<br/>narrow scopes before owners"])
+
+        register -.->|"required by"| conjure
+        configure -.->|"required by"| conjure
+        conjure -.->|"enables"| resolve
+        resolve -.->|"may enter"| scopes
+    end
+
+    developer --> register
+    developer --> configure
+    developer --> conjure
+    developer --> link
+    app --> resolve
+    app --> scopes
+    operator --> inspect
+    operator --> cleanup
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    class developer,app,operator actor
+    class register,configure,conjure definition
+    class resolve,scopes,link execution
+    class inspect,cleanup governance

@@ -1,0 +1,23 @@
+flowchart TB
+    accTitle: Melder capability ladder
+    accDescr: Melder starts with binding and resolution, then adds scoped ownership, linked subsystems, isolated frames, bounded Rift access, and finally continuity and governed evolution. Higher levels are optional.
+
+    basic["1 · Bind, conjure, meld\ncompiled dependency world"]
+    scopes["2 · Scoped ownership\nconduits, lineages, spell spaces"]
+    links["3 · Linked subsystems\ncontracts + permissions"]
+    frames["4 · Isolated worlds\naetheric frames"]
+    rift["5 · Mediated live access\nviewer · workstation · command"]
+    continuity["6 · Continuity + evolution\ncheckpoint · restore · research · notch"]
+
+    basic -->|"narrower lifetimes"| scopes
+    scopes -->|"independent ownership"| links
+    links -->|"harder boundaries"| frames
+    frames -->|"bounded operators"| rift
+    rift -->|"durable, deliberate change"| continuity
+
+    classDef core fill:#e8f0ff,stroke:#315a99,color:#10213d
+    classDef middle fill:#eaf7ef,stroke:#3f7a56,color:#153824
+    classDef ceiling fill:#fff4dc,stroke:#9a6b12,color:#452d00
+    class basic,scopes core
+    class links,frames middle
+    class rift,continuity ceiling

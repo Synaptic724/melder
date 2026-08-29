@@ -1,0 +1,36 @@
+flowchart LR
+    accTitle: Melder C4 system context
+    accDescr: A developer operates application code that uses Melder as a dependency graph runtime. An optional agent enters through bounded Rift access. Melder can emit structural records to external persistence and diagnostics to a logging provider.
+
+    developer["Developer / operator"]
+    agent["Orchestrator / agent<br/>(optional)"]
+    persistence[("External Persistence<br/>(optional)")]
+    logging["Logging provider<br/>(optional)"]
+
+    subgraph process["Python application process"]
+        direction LR
+        application["Application code<br/>domain services + entrypoints"]
+        melder["Melder<br/>Dependency Graph Runtime<br/><br/>Defines, validates, activates,<br/>and evolves an object world"]
+        runtime["Python 3.14+<br/>free-threaded runtime"]
+
+        application -->|"bind · conjure · meld"| melder
+        melder -->|"scoped objects"| application
+        runtime --- application
+        runtime --- melder
+    end
+
+    developer -->|"defines + operates"| application
+    agent -.->|"bounded Rift access"| melder
+    melder -.->|"structural records"| persistence
+    melder -.->|"diagnostics"| logging
+
+    classDef person fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef external fill:#ecf8f0,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef application fill:#f8fafc,stroke:#65758b,color:#172033,stroke-width:2px
+    classDef core fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:3px
+    classDef platform fill:#f1f5f9,stroke:#94a3b8,color:#334155,stroke-dasharray:4 3
+    class developer person
+    class agent,persistence,logging external
+    class application application
+    class melder core
+    class runtime platform

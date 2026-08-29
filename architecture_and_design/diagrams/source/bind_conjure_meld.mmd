@@ -1,0 +1,21 @@
+sequenceDiagram
+    accTitle: Bind, conjure, and meld
+    accDescr: Application code registers objects in a Spellbook, conjure runs compiler and validation phases and returns a Conduit, then meld resolves through creation state and returns a scoped object.
+
+    actor App as Application
+    participant Book as Spellbook
+    participant Compiler as SpellCompiler
+    participant Scope as Conduit
+    participant Runtime as Meld + Creations
+
+    App->>Book: bind(Config, Repository, Service)
+    Book-->>App: spell ids
+    App->>Book: conjure()
+    Book->>Compiler: compile + validate graph
+    Compiler-->>Book: executable graph artifacts
+    Book->>Scope: create root runtime scope
+    Scope-->>App: conduit
+    App->>Scope: meld(Service)
+    Scope->>Runtime: resolve compiled creation context
+    Runtime-->>Scope: reuse or construct by lifetime
+    Scope-->>App: scoped Service instance
