@@ -81,7 +81,7 @@ Message format (append-only; delete after consumption)
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: checked_in -->
-| codex_1 | cowork | 2026-08-28T23:08:01Z | 2026-08-29T16:38:36Z | active (Owner-certified as codex_1. Opening a focused root-README documentation-routing lane. Zero messages pending for codex_1.) |
+| codex_1 | cowork | 2026-08-28T23:08:01Z | 2026-08-29T18:41:47Z | departed (Root README routing enrichment owner-accepted, validated, and moved to the completed task lane. Zero active documentation tickets and zero pending messages.) |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages

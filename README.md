@@ -33,6 +33,11 @@ your object graph and then forget it. Melder keeps it** — as a live,
 inspectable, permissioned structure you can query, snapshot, restore, and change
 while the process is running.
 
+For the one-picture distinction, open
+[DI container versus Melder](architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg).
+For the system-level view, start with
+[Architecture and design](architecture_and_design/README.md).
+
 ### How it works
 
 Three verbs. That's the entire mental model.
@@ -235,6 +240,15 @@ This README is the tour. For system shape and design decisions, open
 start with the [engineering drawings](architecture_and_design/05_engineering_drawings/README.md).
 The folders above contain runnable scripts, verified together by the
 [`pytest_examples/` harness](UX_and_AIX_experiences/pytest_examples/).
+
+**Pick a route:**
+
+- **Evaluating Melder:** read [What Melder is](architecture_and_design/01_overview/what_melder_is.md),
+  then scan the [engineering drawings](architecture_and_design/05_engineering_drawings/README.md).
+- **Building an application:** enter [Part I](#part-i--the-basics), then work through
+  the [`01_beginner/` examples](UX_and_AIX_experiences/01_beginner/).
+- **Building runtime or agent infrastructure:** enter [Part II](#part-ii--the-ceiling),
+  then continue into the [`04_expert/` examples](UX_and_AIX_experiences/04_expert/).
 
 **If you just want dependency injection, the 🟢 sections are the entire
 product.** You can stop at the end of them and never open Part II. Everything
@@ -1012,8 +1026,9 @@ both from the first line.
 
 ## Documentation
 
-This README is the tour. The guides go deeper — worked examples for every level,
-the full API surface, and video walkthroughs of the systems above.
+Use the routes below to choose source-controlled architecture, runnable examples,
+hosted reference, or video walkthroughs. This README stays the runnable tour;
+long-form guides and API reference belong in the hosted documentation site.
 
 | | Where | What's there |
 |:--|:---|:---|

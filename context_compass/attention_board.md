@@ -80,13 +80,13 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| root_readme_documentation_routes | review | handoff | cowork | codex_1 | none | Owner reviews and accepts the focused README routing enrichment. | Add a compact pointer-first navigation layer without duplicating deeper docs. | Owner confirms the routes are useful and the existing Part I/Part II narrative remains intact. | tickets/tasks/2026-08-29_root_readme_documentation_routes_task.md | 2026-08-29T16:43:25Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| root_readme_documentation_routes | done | codex_1 | tickets/tasks/completed/2026-08-29_root_readme_documentation_routes_task.md | Compact architecture, examples, purpose-route, and hosted-docs pointers accepted. | 2026-08-29T18:41:47Z |
 | architecture_and_design_documentation | done | codex_1 | tickets/epics/completed/2026-08-28_architecture_and_design_documentation_epic.md | Full public documentation program accepted and closed. | 2026-08-29T16:31:01Z |
 | system_document_engineering_drawings | done | codex_1 | tickets/tasks/completed/2026-08-29_system_document_engineering_drawings_task.md | Seventeen validated SVG/Mermaid engineering pairs accepted. | 2026-08-29T16:31:01Z |
 | architecture_docs_foundation | done | codex_1 | tickets/stories/completed/2026-08-28_architecture_docs_foundation_story.md | Foundation story accepted and closed. | 2026-08-29T16:31:01Z |

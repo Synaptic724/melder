@@ -1,13 +1,18 @@
 # Task: Add compact documentation routes to the root README
 
+- Completed: 2026-08-29T18:41:47Z
+- Summary: Enriched the root README with compact architecture, engineering-drawing,
+  tiered-example, verification, purpose-route, and hosted-docs pointers without
+  duplicating deep content or restructuring the runnable tour.
+
 ## Metadata
 - Task ID: TASK-2026-08-29-root-readme-documentation-routes
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-08-29T16:38:36Z
-- Updated: 2026-08-29T16:43:25Z
+- Updated: 2026-08-29T18:41:47Z
 
 ## Objective
 Enrich the root README with a compact routing layer that points readers to the
@@ -47,6 +52,24 @@ their content.
 - transition_reason: Compact README routes are implemented and passed target,
   documentation, focused-test, and diff validation.
 
+## State Transition Event (Simple Hosted-Docs Enrichment)
+- from_state: review
+- to_state: in_progress
+- transition_reason: Owner chose future ReadTheDocs/Docusaurus-style hosted depth
+  over a larger root README and authorized a few additional compact pointers.
+
+## State Transition Event (Final Review)
+- from_state: in_progress
+- to_state: review
+- transition_reason: The compact comparison, purpose-route, examples, architecture,
+  and hosted-docs pointers passed link, documentation, focused-test, and diff gates.
+
+## State Transition Event (Closure)
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted the final README enrichment and explicitly
+  requested all remaining tickets be closed.
+
 ## Steps / Checklist
 - [x] Identify the least disruptive insertion points.
 - [x] Verify stable architecture and example destinations.
@@ -83,7 +106,7 @@ their content.
 - [x] Routing copy added
 - [x] Link targets verified
 - [x] Validation passed
-- [ ] Owner acceptance confirmed
+- [x] Owner acceptance confirmed
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -175,8 +198,77 @@ their content.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-08-29T18:36:00Z
+  TYPE: DECISION
+  CLAIM: Keep the root README platform-agnostic and avoid a generated contents wall
+    or new examples landing page. Add only three compact enrichments: one direct
+    DI-comparison/architecture pointer near `What Melder Is`, three purpose-based
+    reader routes near `How to Read This`, and one note that long-form guides and API
+    reference belong in the future hosted documentation site.
+  EVIDENCE:
+  - README.md:20-45
+  - README.md:220-247
+  - README.md:1013-1027
+  IMPACT: The README becomes easier to route from while remaining a runnable tour,
+    independent of whether hosted docs ultimately use ReadTheDocs or Docusaurus.
+  NEXT: Apply the three compact README additions and rerun focused validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T18:37:12Z
+  TYPE: FACT
+  CLAIM: The second compact enrichment is implemented. `What Melder Is` now links
+    the DI comparison and architecture landing; `How to Read This` adds three
+    purpose routes for evaluators, application builders, and runtime/agent builders;
+    and the Documentation section states that the README remains the runnable tour
+    while long-form guides and API reference belong in the hosted docs site.
+  EVIDENCE:
+  - README.md:25-45
+  - README.md:220-260
+  - README.md:1028-1048
+  IMPACT: Readers get stronger next-step guidance without a full contents block,
+    examples index, platform commitment, or duplicated deep documentation.
+  NEXT: Revalidate every added route, documentation checks, focused tests, and diff
+    hygiene.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T18:38:38Z
+  TYPE: MEASURE
+  CLAIM: Final README enrichment validation passed. Nine local destinations and both
+    explicit Part I/Part II anchors resolve; the architecture documentation checker
+    passed; 18 focused tests passed; `git diff --check` exited zero; and the pytest
+    temp directory was removed. The only diff output is the pre-existing root README
+    LF-to-CRLF warning.
+  EVIDENCE:
+  - README.md:25-45
+  - README.md:220-260
+  - README.md:1028-1048
+  - architecture_and_design/tools/architecture_docs.py:1-416
+  - tests/unit/architecture_and_design/test_architecture_docs_tool.py
+  IMPACT: The README remains a simple runnable tour while offering direct paths to
+    comparison, architecture, pictures, tiered examples, verification, and future
+    hosted documentation depth.
+  NEXT: Present the final compact enrichment for owner acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T18:41:47Z
+  TYPE: DECISION
+  CLAIM: The owner accepted the compact README routing/enrichment as complete and
+    explicitly requested the remaining ticket be closed.
+  EVIDENCE:
+  - README.md:25-45
+  - README.md:220-260
+  - README.md:1028-1048
+  IMPACT: Task closure is authorized; move it to the completed lane and synchronize
+    attention/mailbox state in the same pass.
+  NEXT: Complete closure synchronization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-README routing is implemented and validated; awaiting owner acceptance.
+All compact README enrichments are implemented, validated, and owner-accepted.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->
