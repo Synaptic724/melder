@@ -1,0 +1,36 @@
+flowchart LR
+    accTitle: MutationResearch governed evolution loop
+    accDescr: A dynamic world entry is declared into a ResearchSet and one residence lane. Agents inspect recorded source, drift, diff, and impact before previewing or synthesizing a candidate. Accepted code is staged as ancestry or an inactive index member, promoted through a governed notch, realized by meld, and recorded back into research and persistence. A retained prior member enables deliberate revert.
+
+    entry["Live world entry<br/>bind / bind_inactive"]
+    declare["ResearchSet declaration<br/>single residence + lane"]
+    evidence["Foresight reads<br/>source · drift · diff · impact"]
+    preview["Preview / synthesize<br/>no execution or bind"]
+    stage["Stage candidate<br/>ancestry + inactive member"]
+    notch["Governed notch<br/>DevOps transaction"]
+    meld["Meld selected version<br/>validate + realize"]
+    record["Record promotion<br/>journal + composition twin"]
+    revert["Deliberate revert<br/>notch retained prior member"]
+
+    entry --> declare --> evidence --> preview --> stage --> notch --> meld --> record
+    record -.->|"new evidence"| evidence
+    meld -.->|"retain prior"| revert
+    revert -.-> notch
+
+    subgraph invariants["Invariant core"]
+        residence["One spell identity<br/>lives in one lane"]
+        journal["Journal is append-only<br/>organization can rewind"]
+        boundary["Evidence is not execution<br/>preview changes nothing"]
+    end
+
+    declare -.-> residence
+    declare -.-> journal
+    preview -.-> boundary
+
+    classDef runtime fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef research fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    classDef governance fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef invariant fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    class entry,notch,meld,revert runtime
+    class declare,evidence,preview,stage,record research
+    class residence,journal,boundary invariant

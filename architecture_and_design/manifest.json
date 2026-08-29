@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "documentation": {
+    "melder_version": "0.1.2",
+    "verified_commit": "7b31be6d7665",
+    "last_verified": "2026-08-29",
+    "last_rendered": "2026-08-29T01:31:02Z",
+    "renderer_package": "@mermaid-js/mermaid-cli",
+    "renderer_version": "11.15.0",
+    "renderer_config": "diagrams/mermaid-config.json"
+  },
+  "documents": [
+    {
+      "path": "README.md",
+      "audience": [
+        "evaluator",
+        "adopter",
+        "integrator",
+        "contributor"
+      ],
+      "depth": "high",
+      "status": "current",
+      "source_anchors": [
+        "README.md",
+        "pyproject.toml",
+        "LICENSE",
+        "NOTICE"
+      ]
+    },
+    {
+      "path": "01_overview/what_melder_is.md",
+      "audience": [
+        "evaluator",
+        "adopter"
+      ],
+      "depth": "high",
+      "status": "current",
+      "source_anchors": [
+        "README.md",
+        "src/melder/aether/aether.py",
+        "src/melder/aether/spellbook/spellbook.py",
+        "src/melder/aether/conduit/conduit.py"
+      ]
+    },
+    {
+      "path": "01_overview/capability_ladder.md",
+      "audience": [
+        "evaluator",
+        "adopter",
+        "integrator"
+      ],
+      "depth": "high",
+      "status": "current",
+      "source_anchors": [
+        "README.md",
+        "src/melder/aether/conduit/conduit.py",
+        "src/melder/nexus/nexus.py"
+      ]
+    },
+    {
+      "path": "02_architecture/system_context.md",
+      "audience": [
+        "evaluator",
+        "adopter",
+        "integrator"
+      ],
+      "depth": "high",
+      "status": "current",
+      "source_anchors": [
+        "README.md",
+        "pyproject.toml",
+        "src/melder/aether/aether.py",
+        "src/melder/nexus/nexus.py"
+      ]
+    },
+    {
+      "path": "02_architecture/runtime_model.md",
+      "audience": [
+        "adopter",
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "src/melder/aether/aether.py",
+        "src/melder/aether/aetheric_frame/aetheric_frame.py",
+        "src/melder/aether/spellbook/spellbook.py",
+        "src/melder/aether/conduit/conduit.py",
+        "src/melder/aether/conduit/meld/meld.py"
+      ]
+    },
+    {
+      "path": "02_architecture/ownership_and_lifetimes.md",
+      "audience": [
+        "adopter",
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "src/melder/aether/spellbook/existence/existence.py",
+        "src/melder/aether/conduit/creations/creations.py",
+        "src/melder/aether/conduit/spell_space/spell_space.py"
+      ]
+    },
+    {
+      "path": "03_usage/compose_an_application.md",
+      "audience": [
+        "adopter"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "README.md",
+        "tests/integration/melder/live_sim/bootstrap.py",
+        "tests/integration/melder/spellbook/test_spellbook_integration_public_api.py"
+      ]
+    },
+    {
+      "path": "03_usage/scope_work.md",
+      "audience": [
+        "adopter",
+        "integrator"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "tests/integration/melder/conduit/test_conduit_integration_scope_ordering_matrix.py",
+        "tests/integration/melder/conduit/test_conduit_integration_spellspace_scope_safety.py",
+        "src/melder/aether/conduit/creations/creations.py"
+      ]
+    },
+    {
+      "path": "03_usage/connect_subsystems.md",
+      "audience": [
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "tests/integration/melder/live_sim/bootstrap.py",
+        "tests/integration/melder/live_sim/test_live_sim_dynamic.py",
+        "src/melder/aether/conduit/conduit_ward/conduit_ward.py"
+      ]
+    },
+    {
+      "path": "03_usage/isolate_worlds.md",
+      "audience": [
+        "integrator"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "tests/integration/melder/aether/test_aether_integration_frames.py",
+        "src/melder/aether/aether.py",
+        "src/melder/aether/aetheric_frame/aetheric_frame.py"
+      ]
+    },
+    {
+      "path": "04_tradeoffs/design_tradeoffs.md",
+      "audience": [
+        "evaluator",
+        "adopter",
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "README.md",
+        "src/melder/aether/spellbook/spellbook.py",
+        "src/melder/aether/conduit/creations/creations.py",
+        "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py"
+      ]
+    },
+    {
+      "path": "02_architecture/governance_and_change.md",
+      "audience": [
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py",
+        "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py",
+        "tests/integration/melder/aether/test_aether_integration_change_control_transactions.py"
+      ]
+    },
+    {
+      "path": "02_architecture/continuity_and_evolution.md",
+      "audience": [
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "src/melder/crystallizer/crystallizer.py",
+        "src/melder/crystallizer/persistence/persistence_system.py",
+        "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
+        "src/melder/mutation_research/mutation_research.py",
+        "tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py"
+      ]
+    },
+    {
+      "path": "02_architecture/mediated_access.md",
+      "audience": [
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "src/melder/nexus/nexus.py",
+        "src/melder/nexus/rift/rift.py",
+        "src/melder/nexus/rift/rift_space/rift_space.py",
+        "src/melder/nexus/rift/command_system/command_system.py",
+        "tests/integration/melder/aether/test_capability_space_frame_and_workstation_integration.py"
+      ]
+    },
+    {
+      "path": "03_usage/operate_through_a_rift.md",
+      "audience": [
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "tests/integration/melder/aether/test_capability_space_frame_and_workstation_integration.py",
+        "tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py",
+        "tests/integration/melder/aether/rift/test_codegen_rift_json_testbench_integration.py"
+      ]
+    },
+    {
+      "path": "03_usage/preserve_and_evolve.md",
+      "audience": [
+        "integrator",
+        "contributor"
+      ],
+      "depth": "mid",
+      "status": "current",
+      "source_anchors": [
+        "tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py",
+        "tests/integration/melder/mutation_research/test_mutation_research_root_integration.py",
+        "tests/integration/melder/aether/conduit/test_index_link_notch_follow_integration.py"
+      ]
+    },
+    {
+      "path": "05_engineering_drawings/README.md",
+      "audience": [
+        "evaluator",
+        "adopter",
+        "integrator",
+        "contributor"
+      ],
+      "depth": "high-to-source-bridge",
+      "status": "current",
+      "source_anchors": [
+        "README.md",
+        "src/melder/_build_assets/_system_documents/diagrams/README.md",
+        "src/melder/aether/aether.py",
+        "src/melder/aether/spellbook/spellbook.py",
+        "src/melder/aether/conduit/conduit.py",
+        "src/melder/aether/conduit/meld/meld.py",
+        "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
+        "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py",
+        "src/melder/nexus/nexus.py",
+        "src/melder/crystallizer/crystallizer.py",
+        "src/melder/mutation_research/mutation_research.py"
+      ]
+    },
+    {
+      "path": "diagrams/README.md",
+      "audience": [
+        "contributor"
+      ],
+      "depth": "source-bridge",
+      "status": "current",
+      "source_anchors": [
+        "architecture_and_design/manifest.json"
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "name": "system_context",
+      "source": "diagrams/source/system_context.mmd",
+      "rendered": "diagrams/rendered/system_context.svg",
+      "source_sha256": "955bca1501d7accb1f5b99ac8444f30fcbc695ba4d913e7190f0e6dabacd6eab",
+      "rendered_sha256": "6b226fe4ece1df96c235872cb7e390e5976e9e159346bda0e4e3ef9cb2a4bb14"
+    },
+    {
+      "name": "runtime_process",
+      "source": "diagrams/source/runtime_process.mmd",
+      "rendered": "diagrams/rendered/runtime_process.svg",
+      "source_sha256": "b391d55962fec490d9882e7a7460f39a0781364b24b7ac261b4258d1ef53c613",
+      "rendered_sha256": "802ab7226d2f45f611f05f081113d303ccaba7c1e0980db66733707c7069b7e7"
+    },
+    {
+      "name": "capability_ladder",
+      "source": "diagrams/source/capability_ladder.mmd",
+      "rendered": "diagrams/rendered/capability_ladder.svg",
+      "source_sha256": "2bcd3773736ad855e192b085a502fcaad4f9322829a5dd63b6e9a45a912a90dd",
+      "rendered_sha256": "6a4769bf5b1f7e8bac10db7d26fd5c99c4f03a82c0ccf07a6735ad360a08dcee"
+    },
+    {
+      "name": "core_runtime_components",
+      "source": "diagrams/source/core_runtime_components.mmd",
+      "rendered": "diagrams/rendered/core_runtime_components.svg",
+      "source_sha256": "f7060fcc760e741cbe4095c22b397c45eac2cfcf1eca71bf12c00626bfec5832",
+      "rendered_sha256": "b54f917c5fa25373136f8635b942596e70915ad039a40e1bc5485f297a63e868"
+    },
+    {
+      "name": "ownership_lifetimes",
+      "source": "diagrams/source/ownership_lifetimes.mmd",
+      "rendered": "diagrams/rendered/ownership_lifetimes.svg",
+      "source_sha256": "3af5b5656e910f5deb16841eef6481a0b91d064be674a0dfbbeb2dcc8398cc68",
+      "rendered_sha256": "61654e7f64d9ddbdf12c0328effe8d327f7272e83e0f10626b750b123cc25b75"
+    },
+    {
+      "name": "bind_conjure_meld",
+      "source": "diagrams/source/bind_conjure_meld.mmd",
+      "rendered": "diagrams/rendered/bind_conjure_meld.svg",
+      "source_sha256": "19493a298389abbf5fb8b64e960b05f0a65131ce2dd776a00058c6a5b6cfd3fb",
+      "rendered_sha256": "f42b96072c584ca022d5a3a99059aad943b9652f504a1db2365be116df209b14"
+    },
+    {
+      "name": "link_contract_meld",
+      "source": "diagrams/source/link_contract_meld.mmd",
+      "rendered": "diagrams/rendered/link_contract_meld.svg",
+      "source_sha256": "06b6e1e5a35d370c151c200f287666f220b5fa887d7877f99ebd3e74eb55e732",
+      "rendered_sha256": "47793c6b4d5b15e7d954bee3a624613bc30705291380ff82138c548a5520aba4"
+    },
+    {
+      "name": "advanced_planes",
+      "source": "diagrams/source/advanced_planes.mmd",
+      "rendered": "diagrams/rendered/advanced_planes.svg",
+      "source_sha256": "feebf01a8215adb1b4b1789f25c670ea4860d4c3a5baf5c9c4009678d5135aa3",
+      "rendered_sha256": "98dbf3902ff3cc34420c5f518b65783ce8af18ba001d3450163eed8c87753ffc"
+    },
+    {
+      "name": "checkpoint_restore",
+      "source": "diagrams/source/checkpoint_restore.mmd",
+      "rendered": "diagrams/rendered/checkpoint_restore.svg",
+      "source_sha256": "2333e198fe52c6d24de31bd6ef3a0cfcef5a2257d54bbb46dc0a1e041e132823",
+      "rendered_sha256": "e5653eaa959fbd0d3088d9da27d5cc959542068e97e7080beff36782f79146fb"
+    },
+    {
+      "name": "governed_change_loop",
+      "source": "diagrams/source/governed_change_loop.mmd",
+      "rendered": "diagrams/rendered/governed_change_loop.svg",
+      "source_sha256": "6d7cdcdbefc5b49a50397a4feb0647a44002f32b0630d949e4b6cf365a9f08e2",
+      "rendered_sha256": "9741b4b42707302f96c5e5ea53a02e165df3f1367f259712667b9b7e8e06f3d8"
+    }
+  ]
+}

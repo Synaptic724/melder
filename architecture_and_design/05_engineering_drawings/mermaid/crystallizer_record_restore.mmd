@@ -1,0 +1,44 @@
+flowchart LR
+    accTitle: Crystallizer record and restore pipeline
+    accDescr: A configured dynamic runtime emits structural twins into Crystallizer. PersistenceSystem replaces current profile truth and seals checkpoints. AssetManagement stores detached records locally or externally. A fresh process reloads through LoadAdmission and RestoreEngine, which preflight and rebuild through public runtime verbs with fresh identities and an explicit report.
+
+    subgraph live["Live process · passive recording"]
+        runtime["Aether · frames · books · conduits"]
+        facade["Crystallizer facade<br/>configured + active"]
+        profile["PersistenceSystem<br/>active profile + journal"]
+        checkpoint["Detached checkpoint<br/>self-describing value records"]
+        assets["AssetManagementSystem<br/>cache + external handlers"]
+
+        runtime -->|"lifecycle emissions"| facade
+        facade -->|"replace current twins"| profile
+        profile -->|"seal profile window"| checkpoint
+        checkpoint -->|"flush"| assets
+    end
+
+    process_end{{"Original process ends"}}
+    assets -.-> process_end
+
+    subgraph fresh["Fresh process · admitted rebuild"]
+        loader["CrystalLoaderSystem"]
+        admission["LoadAdmission<br/>scope + preflight + blockers"]
+        engine["RestoreEngine<br/>LoadPlan stages"]
+        rebuilt["Fresh Melder world<br/>new runtime identities"]
+        report["Restore report<br/>translation map + shortfalls"]
+
+        loader --> admission
+        admission -->|"accepted plan"| engine
+        engine -->|"configure · bind · conjure · link"| rebuilt
+        engine --> report
+    end
+
+    assets -->|"reload detached records"| loader
+    process_end -.-> loader
+
+    classDef live fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef continuity fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    classDef restore fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef report fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    class runtime live
+    class facade,profile,checkpoint,assets continuity
+    class loader,admission,engine,rebuilt restore
+    class report report

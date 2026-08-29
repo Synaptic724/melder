@@ -1,0 +1,27 @@
+sequenceDiagram
+    accTitle: Preview, stage, notch, meld, and revert
+    accDescr: An operator reads research and previews a candidate without mutation. The accepted version is staged as an inactive index member. A mediated notch promotes it and marks affected truth for validation. Meld realizes the selected version, and a later notch can deliberately restore the retained prior member.
+
+    actor Operator as Operator / agent
+    participant Research as MutationResearch
+    participant Conduit as Conduit + SpellIndex
+    participant Control as Frame DevOps
+    participant Runtime as Meld
+
+    Operator->>Research: residence + source + impact
+    Operator->>Research: preview_candidate(code)
+    Research-->>Operator: diff + radius + verdict
+    Operator->>Conduit: bind_inactive(candidate)
+    Conduit-->>Operator: staged member id
+    Operator->>Conduit: notch_spell(candidate)
+    Conduit->>Control: admit notch transaction
+    Control-->>Conduit: scopes granted
+    Conduit->>Conduit: park old · select new · mark dirty
+    Operator->>Conduit: meld(new member)
+    Conduit->>Runtime: validate/recompile if required
+    Runtime-->>Operator: selected live instance
+    opt deliberate revert
+        Operator->>Conduit: notch_spell(previous member)
+        Conduit->>Control: admit reverse selection change
+        Control-->>Conduit: scopes granted
+    end

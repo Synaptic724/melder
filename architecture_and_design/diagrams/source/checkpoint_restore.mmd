@@ -1,0 +1,23 @@
+sequenceDiagram
+    accTitle: Record, checkpoint, cold boot, and restore
+    accDescr: A live world emits structural twins to Crystallizer, which records them and seals a checkpoint. Assets are stored locally or through caller handlers. A fresh process reloads, preflights, and rebuilds the world through normal runtime verbs before returning a report.
+
+    actor App as Live application
+    participant Crystal as Crystallizer
+    participant Record as Persistence record
+    participant Store as Cache / external store
+    participant Fresh as Fresh process + RestoreEngine
+
+    App->>Crystal: configure + activate
+    App->>Crystal: bind / conjure / link lifecycle emits
+    Crystal->>Record: replace current structural twins
+    App->>Crystal: create_checkpoint()
+    Crystal->>Record: seal profile window
+    Record-->>Crystal: detached checkpoint
+    Crystal->>Store: flush checkpoint
+    Note over App,Store: original process ends
+    Fresh->>Store: reload profile / newest checkpoint
+    Store-->>Fresh: detached records
+    Fresh->>Fresh: verify chain + preflight
+    Fresh->>Fresh: rebuild via configure / bind / conjure / link
+    Fresh-->>App: restore report + fresh runtime identities

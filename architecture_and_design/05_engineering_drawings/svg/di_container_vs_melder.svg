@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="di-compare-title di-compare-desc">
+  <title id="di-compare-title">From dependency injection to a governed object runtime</title>
+  <desc id="di-compare-desc">A typical dependency injection container registers providers, resolves and injects an object graph, applies familiar lifetimes, and cleans a scope. Melder retains that core and adds explicit runtime ownership, validated and gated execution, live topology under change control, mediated access, persistence, restore, and research.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#172033" flood-opacity=".12"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L12 6 L0 12z" fill="#40536d"/></marker>
+    <style>
+      .canvas{fill:#f8fafc}.title{font:700 36px "Segoe UI",Arial,sans-serif;fill:#10213d}.subtitle{font:400 18px "Segoe UI",Arial,sans-serif;fill:#52627a}.eyebrow{font:700 14px "Segoe UI",Arial,sans-serif;letter-spacing:1.6px;fill:#315a99}
+      .di-panel{fill:#f8fafc;stroke:#7a8799;stroke-width:2.7}.melder-panel{fill:#f7faff;stroke:#315a99;stroke-width:3}.panel-title{font:700 22px "Segoe UI",Arial,sans-serif;fill:#172033}.panel-subtitle{font:400 14px "Segoe UI",Arial,sans-serif;fill:#52627a}
+      .baseline{fill:#f1f5f9;stroke:#65758b;stroke-width:2.4}.core{fill:#e8f0ff;stroke:#315a99;stroke-width:2.5}.execution{fill:#eaf7ef;stroke:#3f7a56;stroke-width:2.5}.popup{fill:#f4eaff;stroke:#7552a3;stroke-width:2.3}.bridge{fill:#fff0e8;stroke:#a4552a;stroke-width:2.5}.question{fill:#fff3d6;stroke:#d7ad53;stroke-width:1.8}
+      .node-title{font:700 17px "Segoe UI",Arial,sans-serif;fill:#172033}.node-body{font:400 13px "Segoe UI",Arial,sans-serif;fill:#42526a}.popup-title{font:700 15px "Segoe UI",Arial,sans-serif;fill:#35214f}.popup-body{font:400 12.5px "Segoe UI",Arial,sans-serif;fill:#4b3b5e}.edge{fill:none;stroke:#40536d;stroke-width:2.8;marker-end:url(#arrow)}.relation{fill:none;stroke:#7552a3;stroke-width:2.1;stroke-dasharray:7 5;marker-end:url(#arrow)}.bridge-edge{fill:none;stroke:#a4552a;stroke-width:3;marker-end:url(#arrow)}.footer{font:400 13px "Segoe UI",Arial,sans-serif;fill:#64748b}
+    </style>
+  </defs>
+  <rect class="canvas" width="1600" height="1000"/>
+  <text class="eyebrow" x="70" y="58">MELDER · INTRODUCTION</text>
+  <text class="title" x="70" y="108">From dependency injection to a governed object runtime</text>
+  <text class="subtitle" x="70" y="143">Melder keeps providers, resolution, lifetimes, and cleanup—then adds explicit worlds, validation, live change, access, and continuity.</text>
+
+  <rect class="di-panel" x="70" y="195" width="500" height="675" rx="26"/>
+  <text class="panel-title" x="110" y="242">Typical DI container</text><text class="panel-subtitle" x="110" y="270">Core job · construct and supply an object graph</text>
+  <rect class="baseline" x="140" y="320" width="360" height="82" rx="15" filter="url(#shadow)"/><text class="node-title" x="320" y="350" text-anchor="middle">1 · Register providers</text><text class="node-body" x="320" y="378" text-anchor="middle">types · factories · existing instances</text>
+  <rect class="baseline" x="140" y="445" width="360" height="82" rx="15" filter="url(#shadow)"/><text class="node-title" x="320" y="475" text-anchor="middle">2 · Resolve / inject</text><text class="node-body" x="320" y="503" text-anchor="middle">construct the requested object graph</text>
+  <rect class="baseline" x="140" y="570" width="360" height="82" rx="15" filter="url(#shadow)"/><text class="node-title" x="320" y="600" text-anchor="middle">3 · Apply familiar lifetimes</text><text class="node-body" x="320" y="628" text-anchor="middle">singleton · scoped · transient</text>
+  <rect class="baseline" x="140" y="695" width="360" height="82" rx="15" filter="url(#shadow)"/><text class="node-title" x="320" y="725" text-anchor="middle">4 · Clean the scope</text><text class="node-body" x="320" y="753" text-anchor="middle">dispose objects owned by that container scope</text>
+  <path class="edge" d="M320 402 V445"/><path class="edge" d="M320 527 V570"/><path class="edge" d="M320 652 V695"/>
+  <rect class="question" x="120" y="810" width="400" height="42" rx="11"/><text class="node-body" x="320" y="836" text-anchor="middle">Focus · construct and supply the requested object graph</text>
+
+  <rect class="bridge" x="590" y="430" width="155" height="170" rx="22" filter="url(#shadow)"/><text class="node-title" x="668" y="474" text-anchor="middle">DI core retained</text><text class="node-body" x="668" y="505" text-anchor="middle">providers</text><text class="node-body" x="668" y="529" text-anchor="middle">resolution</text><text class="node-body" x="668" y="553" text-anchor="middle">lifetimes</text><text class="node-body" x="668" y="577" text-anchor="middle">cleanup</text>
+  <path class="bridge-edge" d="M570 515 H590"/><path class="bridge-edge" d="M745 515 H775"/>
+
+  <rect class="melder-panel" x="775" y="195" width="755" height="675" rx="26"/>
+  <text class="panel-title" x="815" y="242">Melder · Dependency Graph Runtime</text><text class="panel-subtitle" x="815" y="270">DI core + runtime ownership, governance, access, and continuity</text>
+  <rect class="core" x="825" y="320" width="195" height="92" rx="15" filter="url(#shadow)"/><text class="node-title" x="922" y="350" text-anchor="middle">Bind definitions</text><text class="node-body" x="922" y="378" text-anchor="middle">types · factories · instances</text><text class="node-body" x="922" y="399" text-anchor="middle">Existence + permissions</text>
+  <rect class="core" x="1060" y="320" width="195" height="92" rx="15" filter="url(#shadow)"/><text class="node-title" x="1158" y="350" text-anchor="middle">Validate + compile</text><text class="node-body" x="1158" y="378" text-anchor="middle">phases 1–11</text><text class="node-body" x="1158" y="399" text-anchor="middle">executable graph artifacts</text>
+  <rect class="execution" x="1295" y="320" width="185" height="92" rx="15" filter="url(#shadow)"/><text class="node-title" x="1388" y="350" text-anchor="middle">Conduit + Meld</text><text class="node-body" x="1388" y="378" text-anchor="middle">gated resolution</text><text class="node-body" x="1388" y="399" text-anchor="middle">scoped live objects</text>
+  <path class="edge" d="M1020 366 H1060"/><path class="edge" d="M1255 366 H1295"/>
+  <rect class="popup" x="825" y="550" width="300" height="105" rx="17" filter="url(#shadow)"/><text class="popup-title" x="975" y="582" text-anchor="middle">Explicit runtime ownership</text><text class="popup-body" x="975" y="610" text-anchor="middle">AethericFrame · Conduit · SpellSpace</text><text class="popup-body" x="975" y="633" text-anchor="middle">ownership and cleanup remain visible</text>
+  <rect class="popup" x="1170" y="550" width="300" height="105" rx="17" filter="url(#shadow)"/><text class="popup-title" x="1320" y="582" text-anchor="middle">Validated, gated execution</text><text class="popup-body" x="1320" y="610" text-anchor="middle">validation · dirty roots · phase reruns</text><text class="popup-body" x="1320" y="633" text-anchor="middle">CreationGate · change control</text>
+  <rect class="popup" x="825" y="700" width="300" height="105" rx="17" filter="url(#shadow)"/><text class="popup-title" x="975" y="732" text-anchor="middle">Live topology under change control</text><text class="popup-body" x="975" y="760" text-anchor="middle">links · clusters · ownership transfer</text><text class="popup-body" x="975" y="783" text-anchor="middle">proportional structural claims</text>
+  <rect class="popup" x="1170" y="700" width="300" height="105" rx="17" filter="url(#shadow)"/><text class="popup-title" x="1320" y="732" text-anchor="middle">Mediated access and continuity</text><text class="popup-body" x="1320" y="760" text-anchor="middle">Nexus + Rift · Crystallizer</text><text class="popup-body" x="1320" y="783" text-anchor="middle">restore · MutationResearch</text>
+  <path class="relation" d="M922 412 V550"/><path class="relation" d="M1388 412 V520 H1320 V550"/><path class="relation" d="M1158 412 V680 H975 V700"/><path class="relation" d="M1388 412 H1500 V752 H1470"/>
+  <rect class="question" x="825" y="820" width="645" height="34" rx="10"/><text class="node-body" x="1148" y="842" text-anchor="middle">Beyond construction · validate, operate, change, preserve, and restore the runtime</text>
+  <text class="footer" x="70" y="940">Baseline comparison; individual DI libraries may cover more than the common core shown here.</text><text class="footer" x="1530" y="940" text-anchor="end">Authored static view · not source-generated</text>
+</svg>

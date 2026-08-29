@@ -1,0 +1,56 @@
+flowchart LR
+    accTitle: From dependency injection to a governed object runtime
+    accDescr: A typical dependency injection container emphasizes provider registration, object-graph construction, familiar lifetimes, injection, and scope cleanup. Melder retains that core and adds explicit runtime ownership, validated and gated execution, live topology under change control, mediated access, persistence, restore, and research.
+
+    app["Application code"]
+
+    subgraph di["Typical DI container · common baseline"]
+        direction TB
+        register["Register providers"]
+        resolve["Resolve / inject"]
+        object_graph["Construct object graph"]
+        lifetime["Singleton · scoped · transient"]
+        dispose["Clean the scope"]
+        register --> resolve --> object_graph
+        lifetime -.-> object_graph
+        object_graph --> dispose
+    end
+
+    retained["DI core retained<br/>providers · resolution<br/>lifetimes · cleanup"]
+
+    subgraph melder["Melder · Dependency Graph Runtime"]
+        direction TB
+        bind["Bind definitions + Existence"]
+        compile["Validate and compile phases 1–11"]
+        world["AethericFrame + Conduits"]
+        meld["Gated Meld resolution"]
+        objects["Scoped live object world"]
+        bind --> compile --> world --> meld --> objects
+
+        runtime["Explicit runtime ownership<br/>frame · conduit · SpellSpace"]
+        governance["Validated, gated execution<br/>validity · dirty roots · gates"]
+        topology["Live topology under change control<br/>links · clusters · ownership transfer"]
+        advanced["Mediated access and continuity<br/>Rift · Crystallizer · Research"]
+
+        world -.-> runtime
+        compile -.-> governance
+        world -.-> topology
+        objects -.-> advanced
+    end
+
+    app --> register
+    app --> bind
+    dispose --> retained --> bind
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef baseline fill:#f1f5f9,stroke:#65758b,color:#172033,stroke-width:2px
+    classDef bridge fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    classDef core fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef popup fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    class app actor
+    class register,resolve,object_graph,lifetime,dispose baseline
+    class retained bridge
+    class bind,compile,world core
+    class meld,objects execution
+    class runtime,governance,topology,advanced popup

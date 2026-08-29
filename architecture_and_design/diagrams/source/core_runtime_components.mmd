@@ -1,0 +1,31 @@
+flowchart TB
+    accTitle: Melder core runtime components
+    accDescr: Aether owns frames. Within a frame, Spellbook defines and compiles the graph, Conduit hosts runtime scope, Meld resolves, Creations owns instances, and DevOps governs structural change and validity.
+
+    aether["Aether\nprocess owner"]
+    frame["AethericFrame\nworld boundary"]
+    spellbook["Spellbook\nbindings + graph authority"]
+    compiler["SpellCompiler\nphases + validation"]
+    conduit["Conduit\nruntime scope"]
+    meld["Meld\nlookup + execution gates"]
+    creations["Creations / SpellSpace\nreuse + teardown"]
+    devops["Frame DevOps\ntransactions + dirty roots"]
+
+    aether -->|"owns"| frame
+    frame -->|"hosts"| spellbook
+    spellbook -->|"compiles through"| compiler
+    spellbook -->|"conjures"| conduit
+    conduit -->|"delegates resolution"| meld
+    meld -->|"reuses or constructs"| creations
+    frame -->|"owns"| devops
+    devops -.->|"admits structural change"| spellbook
+    devops -.->|"gates stale resolution"| meld
+
+    classDef owner fill:#fff4dc,stroke:#9a6b12,color:#452d00,stroke-width:2px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f
+    class aether,frame owner
+    class spellbook,compiler definition
+    class conduit,meld,creations execution
+    class devops governance

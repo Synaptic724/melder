@@ -1,0 +1,52 @@
+flowchart LR
+    accTitle: Isolated runtime world use cases
+    accDescr: One host process owns Aether and lazily creates named AethericFrames. Each frame owns its posture, registries, DevOps control plane, Conduits, and frame-unique objects. Workloads resolve independently, operators attach Rifts to explicitly eligible frames or restore a formation into a target frame, and one frame can be cleaned without collapsing its siblings. Peer Conduit links never cross frame boundaries.
+
+    host["Host application"]
+    workload["Independent workloads"]
+    operator["Operator / tool / agent"]
+
+    subgraph process["One Python process · one Aether owner"]
+        direction TB
+        create(["Lazily create named frames"])
+        posture(["Bind frame posture<br/>before Spellbooks"])
+        isolate(["Isolate owned state<br/>registries · DevOps · Conduits<br/>and unique objects"])
+        resolve(["Resolve independent object worlds"])
+        resolve_assigned(["Resolve inside an assigned frame"])
+        operate(["Operate one named frame"])
+        attach(["Attach Rift to an explicitly<br/>eligible named frame"])
+        restore(["Restore a formation into<br/>one target frame"])
+        cleanup(["Clean one frame without<br/>collapsing sibling worlds"])
+
+        create -.-> posture -.-> isolate -.-> resolve
+        resolve_assigned -.-> resolve
+        operate -.-> attach
+        operate -.-> restore
+        operate -.-> cleanup
+        isolate -.-> attach
+        isolate -.-> restore
+        resolve -.-> cleanup
+    end
+
+    frame_a["Frame A<br/>own posture + control plane"]
+    frame_b["Frame B<br/>own posture + control plane"]
+    boundary["Isolation law<br/>unique is per frame<br/>Conduit links are same-frame only"]
+
+    host --> create
+    workload --> resolve_assigned
+    operator --> operate
+    isolate --> frame_a
+    isolate --> frame_b
+    boundary -.-> frame_a
+    boundary -.-> frame_b
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef access fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef boundary fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    class host,workload,operator actor
+    class create,posture,isolate definition
+    class resolve,resolve_assigned,cleanup,frame_a,frame_b execution
+    class operate,attach,restore access
+    class boundary boundary

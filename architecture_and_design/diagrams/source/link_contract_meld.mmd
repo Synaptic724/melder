@@ -1,0 +1,19 @@
+sequenceDiagram
+    accTitle: Link, contract, validate, and meld
+    accDescr: Provider and consumer subsystems conjure separate conduits. The provider links to the consumer, the consumer pulls selected spell permissions into its contract, validates, and then resolves its root using the provider.
+
+    actor App as Application
+    participant Provider as Platform conduit
+    participant Consumer as Services conduit
+    participant Runtime as Meld
+
+    App->>Provider: conjure(dynamic=True)
+    App->>Consumer: conjure()
+    App->>Provider: link(Consumer) through transaction plane
+    Provider->>Consumer: establish link contract
+    App->>Consumer: pull provider spell + permission
+    Consumer->>Provider: record contracted visibility
+    App->>Consumer: validate contracts
+    App->>Consumer: meld(Service)
+    Consumer->>Runtime: resolve local root + contracted provider
+    Runtime-->>App: composed Service instance

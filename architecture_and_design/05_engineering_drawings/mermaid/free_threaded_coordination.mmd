@@ -1,0 +1,73 @@
+flowchart TB
+    accTitle: Melder free-threaded coordination model
+    accDescr: Melder coordinates free-threaded work with per-instance reentrant locks, deterministic multi-object lock ordering, a separate phase-run lock and scheduler barrier, proportional structural scope claims, and admission gates that stop new entrants before draining active work. Disjoint scopes remain concurrent and there is no single global runtime lock.
+
+    threads["Concurrent callers<br/>Python 3.14t"]
+
+    subgraph local["Local ownership · short critical sections"]
+        direction LR
+        locks["Per-instance RLocks<br/>Spellbook · Meld · Creations<br/>Frame · Nexus/Rift · Crystallizer"]
+        safeguard["SafeGuard<br/>sort peer locks by identity"]
+        threadlocal["threading.local<br/>SpellSpace stacks + sessions"]
+        immutable["Immutable views / enums<br/>lock-free shared reads"]
+    end
+
+    subgraph phases["Compilation and lazy revalidation"]
+        direction LR
+        book_lock["Spellbook _lock"]
+        run_lock["_phase_run_lock<br/>one run registry at a time"]
+        scheduler["PhaseScheduler<br/>shared queue + worker pool"]
+        barrier["Per-phase latch<br/>all units report once"]
+        book_lock -->|"conjure order"| run_lock
+        run_lock --> scheduler --> barrier
+    end
+
+    subgraph structural["Structural mutation · proportional claims"]
+        direction LR
+        mediator["Frame TransactionMediator"]
+        claims["Scope claims<br/>x · s · ix"]
+        parallel["Disjoint scopes<br/>admit concurrently"]
+        waiting["Conflicts wait in slices<br/>outside mediator lock"]
+        mediator --> claims
+        claims --> parallel
+        claims -.-> waiting
+    end
+
+    subgraph gates["Quiescence barriers"]
+        direction LR
+        creation["CreationGate<br/>stop meld entrants"]
+        rift["RiftGate<br/>drain room actions for refresh"]
+        load["LoadGate<br/>one load authority;<br/>foreign roots wait"]
+        drain["Disable · drain · change · reopen"]
+        creation --> drain
+        rift --> drain
+        load --> drain
+    end
+
+    law["Coordination law<br/>no single global runtime lock;<br/>owners serialize only the state they own"]
+    excluded["Not in the live path<br/>Aetheric Mediator is built but unwired"]
+
+    threads --> locks
+    threads --> threadlocal
+    locks --> safeguard
+    locks --> book_lock
+    threads --> mediator
+    threads --> creation
+    immutable --> law
+    barrier --> law
+    parallel --> law
+    drain --> law
+    excluded -.-> law
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef local fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef phase fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    classDef gate fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef law fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    class threads actor
+    class locks,safeguard,threadlocal,immutable local
+    class book_lock,run_lock,scheduler,barrier phase
+    class mediator,claims,parallel,waiting governance
+    class creation,rift,load,drain gate
+    class law,excluded law

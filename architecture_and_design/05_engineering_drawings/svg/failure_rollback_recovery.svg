@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="failure-title failure-desc">
+  <title id="failure-title">Melder failure rollback and recovery model</title>
+  <desc id="failure-desc">Five defense layers refuse or contain failure. Compiler validation prevents broken graphs from activating. Meld lazily revalidates gated lineages and returns typed refusals. Structural transactions release claims on commit or abort. Restore preflight refuses blockers before replay and reverse-cleans partial builds. Cleanup attempts every disposer in reverse creation order and reports aggregated failures afterwards.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#172033" flood-opacity=".12"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L12 6 L0 12z" fill="#40536d"/></marker>
+    <style>
+      .canvas{fill:#f8fafc}.title{font:700 34px "Segoe UI",Arial,sans-serif;fill:#10213d}.subtitle{font:400 18px "Segoe UI",Arial,sans-serif;fill:#52627a}.eyebrow{font:700 14px "Segoe UI",Arial,sans-serif;letter-spacing:1.6px;fill:#b23b4a}
+      .header{font:700 14px "Segoe UI",Arial,sans-serif;fill:#52627a;letter-spacing:.8px}.row{fill:#fff;stroke:#cbd5e1;stroke-width:2}.entry{fill:#e8f0ff;stroke:#315a99;stroke-width:2.4}.gate{fill:#f4eaff;stroke:#7552a3;stroke-width:2.4}.failure{fill:#fff1f2;stroke:#b23b4a;stroke-width:2.4}.safe{fill:#eaf7ef;stroke:#3f7a56;stroke-width:2.4}.recovery{fill:#e7f7fa;stroke:#287a88;stroke-width:2.4}
+      .node-title{font:700 16px "Segoe UI",Arial,sans-serif;fill:#172033}.node-body{font:400 13px "Segoe UI",Arial,sans-serif;fill:#42526a}.number{fill:#b23b4a}.number-text{font:700 13px "Segoe UI",Arial,sans-serif;fill:#fff}.edge{fill:none;stroke:#40536d;stroke-width:2.7;marker-end:url(#arrow)}.edge-dashed{fill:none;stroke:#64748b;stroke-width:2.2;stroke-dasharray:8 6;marker-end:url(#arrow)}.footer{font:400 13px "Segoe UI",Arial,sans-serif;fill:#64748b}
+    </style>
+  </defs>
+  <rect class="canvas" width="1600" height="1120"/>
+  <text class="eyebrow" x="70" y="58">ENGINEERING DRAWINGS · FAILURE MODEL</text>
+  <text class="title" x="70" y="104">Refuse early, bound mutation, unwind partial construction, report honestly</text>
+  <text class="subtitle" x="70" y="137">Each boundary preserves a different invariant; recovery does not collapse every failure into one generic exception.</text>
+  <text class="header" x="160" y="188">BOUNDARY</text><text class="header" x="515" y="188">DECISION / CONTROL</text><text class="header" x="900" y="188">FAILURE OUTCOME</text><text class="header" x="1280" y="188">PRESERVED GUARANTEE</text>
+
+  <rect class="row" x="70" y="210" width="1460" height="145" rx="20"/><circle class="number" cx="105" cy="282" r="20"/><text class="number-text" x="105" y="287" text-anchor="middle">1</text>
+  <rect class="entry" x="145" y="242" width="270" height="80" rx="14" filter="url(#shadow)"/><text class="node-title" x="280" y="270" text-anchor="middle">Conjure validation</text><text class="node-body" x="280" y="297" text-anchor="middle">SpellCompiler phases 1–7</text>
+  <rect class="gate" x="490" y="242" width="270" height="80" rx="14"/><text class="node-title" x="625" y="270" text-anchor="middle">Broken graph?</text><text class="node-body" x="625" y="297" text-anchor="middle">strategies + system checks</text>
+  <rect class="failure" x="835" y="232" width="320" height="100" rx="14"/><text class="node-title" x="995" y="265" text-anchor="middle">SpellbookValidationError</text><text class="node-body" x="995" y="294" text-anchor="middle">activation stops at the boundary</text><text class="node-body" x="995" y="316" text-anchor="middle">diagnostics stay attached</text>
+  <rect class="safe" x="1230" y="242" width="255" height="80" rx="14"/><text class="node-title" x="1358" y="270" text-anchor="middle">No Conduit activated</text><text class="node-body" x="1358" y="297" text-anchor="middle">no live object world exposed</text>
+  <path class="edge" d="M415 282 H490"/><path class="edge" d="M760 282 H835"/><path class="edge" d="M1155 282 H1230"/>
+
+  <rect class="row" x="70" y="375" width="1460" height="145" rx="20"/><circle class="number" cx="105" cy="447" r="20"/><text class="number-text" x="105" y="452" text-anchor="middle">2</text>
+  <rect class="entry" x="145" y="407" width="270" height="80" rx="14" filter="url(#shadow)"/><text class="node-title" x="280" y="435" text-anchor="middle">Meld resolution</text><text class="node-body" x="280" y="462" text-anchor="middle">lineage + dirty-root gates</text>
+  <rect class="gate" x="490" y="397" width="270" height="100" rx="14"/><text class="node-title" x="625" y="430" text-anchor="middle">Unknown or gated?</text><text class="node-body" x="625" y="458" text-anchor="middle">rerun phases 1–4 and 5–11</text><text class="node-body" x="625" y="480" text-anchor="middle">then re-check</text>
+  <rect class="failure" x="835" y="397" width="320" height="100" rx="14"/><text class="node-title" x="995" y="430" text-anchor="middle">Typed refusal</text><text class="node-body" x="995" y="458" text-anchor="middle">validation · dirty root · hook · scope</text><text class="node-body" x="995" y="480" text-anchor="middle">failure class partitions blame</text>
+  <rect class="safe" x="1230" y="407" width="255" height="80" rx="14"/><text class="node-title" x="1358" y="435" text-anchor="middle">No object constructed</text><text class="node-body" x="1358" y="462" text-anchor="middle">or valid context executes</text>
+  <path class="edge" d="M415 447 H490"/><path class="edge" d="M760 447 H835"/><path class="edge" d="M1155 447 H1230"/>
+
+  <rect class="row" x="70" y="540" width="1460" height="145" rx="20"/><circle class="number" cx="105" cy="612" r="20"/><text class="number-text" x="105" y="617" text-anchor="middle">3</text>
+  <rect class="entry" x="145" y="572" width="270" height="80" rx="14" filter="url(#shadow)"/><text class="node-title" x="280" y="600" text-anchor="middle">Structural mutation</text><text class="node-body" x="280" y="627" text-anchor="middle">bind · link · transfer · notch</text>
+  <rect class="gate" x="490" y="562" width="270" height="100" rx="14"/><text class="node-title" x="625" y="595" text-anchor="middle">Scope admission</text><text class="node-body" x="625" y="623" text-anchor="middle">atomic proportional claims</text><text class="node-body" x="625" y="645" text-anchor="middle">commit or abort session</text>
+  <rect class="recovery" x="835" y="572" width="320" height="80" rx="14"/><text class="node-title" x="995" y="600" text-anchor="middle">Terminal finalization</text><text class="node-body" x="995" y="627" text-anchor="middle">hooks finish; claims release</text>
+  <rect class="safe" x="1230" y="572" width="255" height="80" rx="14"/><text class="node-title" x="1358" y="600" text-anchor="middle">Waiters wake</text><text class="node-body" x="1358" y="627" text-anchor="middle">no abandoned scope lock</text>
+  <path class="edge" d="M415 612 H490"/><path class="edge" d="M760 612 H835"/><path class="edge" d="M1155 612 H1230"/>
+
+  <rect class="row" x="70" y="705" width="1460" height="170" rx="20"/><circle class="number" cx="105" cy="790" r="20"/><text class="number-text" x="105" y="795" text-anchor="middle">4</text>
+  <rect class="entry" x="145" y="750" width="270" height="80" rx="14" filter="url(#shadow)"/><text class="node-title" x="280" y="778" text-anchor="middle">Checkpoint restore</text><text class="node-body" x="280" y="805" text-anchor="middle">detached folded truth</text>
+  <rect class="gate" x="490" y="735" width="270" height="110" rx="14"/><text class="node-title" x="625" y="769" text-anchor="middle">LoadAdmission</text><text class="node-body" x="625" y="797" text-anchor="middle">blockers refuse before replay</text><text class="node-body" x="625" y="820" text-anchor="middle">warnings continue into report</text>
+  <rect class="failure" x="835" y="725" width="320" height="130" rx="14"/><text class="node-title" x="995" y="760" text-anchor="middle">Restore stage fails</text><text class="node-body" x="995" y="790" text-anchor="middle">reverse-clean every built unit</text><text class="node-body" x="995" y="814" text-anchor="middle">raise with original cause chained</text><text class="node-body" x="995" y="838" text-anchor="middle">record identity + shortfall evidence</text>
+  <rect class="safe" x="1230" y="750" width="255" height="80" rx="14"/><text class="node-title" x="1358" y="778" text-anchor="middle">All-or-nothing build</text><text class="node-body" x="1358" y="805" text-anchor="middle">fresh identities or clean unwind</text>
+  <path class="edge" d="M415 790 H490"/><path class="edge" d="M760 790 H835"/><path class="edge" d="M1155 790 H1230"/>
+
+  <rect class="row" x="70" y="895" width="1460" height="145" rx="20"/><circle class="number" cx="105" cy="967" r="20"/><text class="number-text" x="105" y="972" text-anchor="middle">5</text>
+  <rect class="entry" x="145" y="927" width="270" height="80" rx="14" filter="url(#shadow)"/><text class="node-title" x="280" y="955" text-anchor="middle">Scope cleanup</text><text class="node-body" x="280" y="982" text-anchor="middle">detach live registries first</text>
+  <rect class="gate" x="490" y="917" width="270" height="100" rx="14"/><text class="node-title" x="625" y="950" text-anchor="middle">Dispose newest first</text><text class="node-body" x="625" y="978" text-anchor="middle">attempt every tracked object</text><text class="node-body" x="625" y="1000" text-anchor="middle">logger remains available</text>
+  <rect class="failure" x="835" y="927" width="320" height="80" rx="14"/><text class="node-title" x="995" y="955" text-anchor="middle">ExceptionGroup after teardown</text><text class="node-body" x="995" y="982" text-anchor="middle">all disposal failures reported together</text>
+  <rect class="safe" x="1230" y="927" width="255" height="80" rx="14"/><text class="node-title" x="1358" y="955" text-anchor="middle">No stranded siblings</text><text class="node-body" x="1358" y="982" text-anchor="middle">one bad disposer cannot stop all</text>
+  <path class="edge" d="M415 967 H490"/><path class="edge" d="M760 967 H835"/><path class="edge" d="M1155 967 H1230"/>
+  <text class="footer" x="70" y="1080">Failure is surfaced at the boundary that owns the invariant; recovery reports what happened instead of silently guessing.</text><text class="footer" x="1530" y="1080" text-anchor="end">Authored static view · not source-generated</text>
+</svg>

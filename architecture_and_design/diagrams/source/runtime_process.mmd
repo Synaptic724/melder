@@ -1,0 +1,34 @@
+flowchart TB
+    accTitle: Melder runtime inside one Python process
+    accDescr: Aether owns process roots and aetheric frames. Each frame contains spellbooks, conduits, resolution, creations, and a frame-local control plane. Optional advanced roots remain process-owned.
+
+    subgraph process["Python process"]
+        direction TB
+        aether["Aether\nprocess owner"]
+
+        subgraph frame["Aetheric frame · isolated world"]
+            direction TB
+            spellbook["Spellbook\ndefinition + compilation"]
+            conduit["Conduit\nruntime scope"]
+            meld["Meld\nresolution"]
+            creations["Creations\nlive objects + teardown"]
+            devops["Frame DevOps\nmutation + validity"]
+
+            spellbook -->|"conjure"| conduit
+            conduit -->|"resolve"| meld
+            meld -->|"reuse or create"| creations
+            devops -.->|"governs change"| spellbook
+            devops -.->|"guards stale roots"| meld
+        end
+
+        advanced["Optional process roots\nCrystallizer · MutationResearch · Nexus"]
+        aether -->|"owns"| frame
+        aether -.->|"hosts"| advanced
+    end
+
+    classDef owner fill:#fff4dc,stroke:#9a6b12,color:#452d00,stroke-width:2px
+    classDef core fill:#e8f0ff,stroke:#315a99,color:#10213d
+    classDef control fill:#eaf7ef,stroke:#3f7a56,color:#153824
+    class aether owner
+    class spellbook,conduit,meld,creations core
+    class devops,advanced control

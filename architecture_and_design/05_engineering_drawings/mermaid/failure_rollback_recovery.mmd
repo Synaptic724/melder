@@ -1,0 +1,80 @@
+flowchart TB
+    accTitle: Melder failure rollback and recovery model
+    accDescr: Melder refuses invalid work at the earliest available boundary, lazily revalidates gated resolution, releases structural claims on terminal transaction paths, refuses restore blockers before replay, tears down partially restored units in reverse order, aggregates disposal failures after attempting every cleanup, and reports warnings, identity translations, and shortfalls explicitly.
+
+    request["Requested work<br/>conjure · meld · mutation · restore · cleanup"]
+
+    subgraph validate["1 · Refuse before activation"]
+        direction LR
+        compile["SpellCompiler validation"]
+        broken{"Broken graph?"}
+        conjure_refusal["SpellbookValidationError<br/>activation stops at the boundary"]
+        no_conduit["No Conduit activated<br/>no live object world exposed"]
+        compile --> broken
+        broken -->|"yes"| conjure_refusal --> no_conduit
+    end
+
+    subgraph runtime["2 · Gate before object execution"]
+        direction LR
+        meld["Meld resolution<br/>lineage + dirty-root gates"]
+        gated{"Unknown / gated?"}
+        rerun["Rerun phases 1–4<br/>then 5–11"]
+        execute["Execute CreationContext"]
+        typed["Typed refusal<br/>validation · dirty root · hook · scope"]
+        meld --> gated
+        gated -->|"yes"| rerun --> gated
+        gated -->|"valid + clean"| execute
+        gated -->|"invalid / dirty"| typed
+    end
+
+    subgraph mutation["3 · Bound structural mutation"]
+        direction LR
+        admit["Scope admission<br/>atomic proportional claims"]
+        work["Apply mediated change"]
+        terminal{"Commit or abort"}
+        release["Terminal finalization<br/>hooks finish; claims release"]
+        admit --> work --> terminal --> release
+    end
+
+    subgraph restore["4 · All-or-nothing reconstruction"]
+        direction LR
+        preflight["LoadAdmission preflight"]
+        blockers{"Blockers?"}
+        before["Refuse before replay<br/>teach-grade evidence"]
+        stages["RestoreEngine stages<br/>public runtime verbs"]
+        failed{"Stage failed?"}
+        unwind["Restore stage fails<br/>reverse-clean every built unit<br/>raise with cause chained"]
+        report["Restore report<br/>translations · warnings · shortfalls"]
+        preflight --> blockers
+        blockers -->|"yes"| before
+        blockers -->|"no"| stages --> failed
+        failed -->|"yes"| unwind --> report
+        failed -->|"no"| report
+    end
+
+    subgraph cleanup["5 · Complete teardown despite bad disposers"]
+        direction LR
+        detach["Detach live registries"]
+        dispose["Dispose every object<br/>reverse creation order"]
+        aggregate["Aggregate failures<br/>ExceptionGroup after cleanup"]
+        detach --> dispose --> aggregate
+    end
+
+    request --> compile
+    request --> meld
+    request --> admit
+    request --> preflight
+    request --> detach
+
+    classDef actor fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    classDef recovery fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef failure fill:#fff1f2,stroke:#b23b4a,color:#511820,stroke-width:2px
+    class request actor
+    class compile,broken definition
+    class meld,gated,rerun,execute execution
+    class admit,work,terminal,release governance
+    class preflight,blockers,stages,failed,report,detach,dispose recovery
+    class conjure_refusal,no_conduit,typed,before,unwind,aggregate failure

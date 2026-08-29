@@ -1,0 +1,54 @@
+flowchart TB
+    accTitle: Melder self-documentation build and reading descent
+    accDescr: Authored architecture, component, and graph document-index pairs are verified at build time and emitted as an eager manifest, deferred section tables, lazy Python text payloads, and graph adjacency. Runtime publishes four package-root query views. A reader descends from architecture orientation through component slices and graph traversal to source code. The handmade engineering drawings remain a separate static documentation lane.
+
+    subgraph build["Build-time capture · repository to package"]
+        direction LR
+        maps["Authored maps + indexes<br/>architecture · components · graph"]
+        runner["Asset runner<br/>discovers _builder.py"]
+        verify["Verification gate<br/>system-document builder<br/>line count + SHA-256"]
+        manifest["Generated Python assets<br/>manifest · section tables<br/>payloads · graph adjacency"]
+        loader["system_documents.py<br/>construct query views"]
+        roots["Package-root surfaces<br/>__architecture__ · __components__<br/>__graph_network__ · __graph_details__"]
+
+        maps --> runner --> verify --> manifest --> loader --> roots
+    end
+
+    subgraph lazy["Runtime cost is deferred"]
+        direction LR
+        eager["Import: manifest + four lightweight views"]
+        index["First index/get:<br/>load section table"]
+        payload["First text read:<br/>load one document payload"]
+        adjacency["First graph walk:<br/>load adjacency"]
+        eager --> index
+        index --> payload
+        index --> adjacency
+    end
+
+    subgraph read["Agent / contributor reading descent"]
+        direction LR
+        architecture["1 · Architecture<br/>read broad orientation"]
+        components["2 · Components<br/>index then focused get"]
+        network["3 · Graph network<br/>walk nodes + edges"]
+        details["4 · Graph details<br/>open source-path section"]
+        code["5 · Source code<br/>behavioral authority"]
+        architecture --> components --> network --> details --> code
+    end
+
+    drawings["Engineering drawings<br/>manual SVG + Mermaid companions<br/>not ingested or regenerated"]
+
+    roots --> eager
+    roots --> architecture
+    maps -.-> drawings
+    drawings -.->|"visual orientation"| architecture
+
+    classDef authored fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef build fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef lazy fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef read fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef static fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    class maps authored
+    class runner,verify,manifest,loader,roots build
+    class eager,index,payload,adjacency lazy
+    class architecture,components,network,details,code read
+    class drawings static
