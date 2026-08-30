@@ -1597,7 +1597,7 @@
         "bytes": 10755456,
         "lines": 275385,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "b19eb79660e7292e91ada3041f1d26cb1540dc05616bd8a60359850b3b58ddc2"
+        "sha256": "6ff937983b33fc89716b6cbed64d21f45024a18d8b830193796e8537a00c19de"
       },
       "content_bytes": 10399426,
       "content_lines": 270707,
@@ -1660,7 +1660,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 313,
           "content_lines": 12,
-          "content_sha256": "3ee0e39d1d7d5b89ff113531277652f54bf1b63b777aba2840a6f35b03a019fb",
+          "content_sha256": "13b8b09768bfcba9fdd38ef4ba211800aa1f9c2f4f81b437b69ae073d5aa51d6",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -5112,9 +5112,9 @@
         "bytes": 115327,
         "lines": 606,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "182c09817777996eae0da14f8e02670b084675432c2510d36bf83ccc134ee4d7"
+        "sha256": "cc63dea012a2acf5d71b53205f279834807b5ac971f6b95233a8e687818711b9"
       },
-      "source_fingerprint": "c1ee18a09303f7831e188e2d5aea9ea13e6112b7dd01ddf179f5a99efe0645a9"
+      "source_fingerprint": "bce97c450bf0f816082d373e7485f5d53ab02a8678e45f89c73396ff72085a5a"
     },
     "tests": {
       "bundle": {

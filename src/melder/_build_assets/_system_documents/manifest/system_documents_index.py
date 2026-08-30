@@ -17,7 +17,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.1.2"
+BUILT_FOR_VERSION = "0.2.0"
 TABLE_COUNT = 3
 SECTION_COUNT = 773
 

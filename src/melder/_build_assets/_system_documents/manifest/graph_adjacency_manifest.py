@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.1.2"
+BUILT_FOR_VERSION = "0.2.0"
 NODE_COUNT = 1224
 EDGE_COUNT = 1452
 WHY_COUNT = 989

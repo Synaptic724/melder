@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: c1ee18a09303f7831e188e2d5aea9ea13e6112b7dd01ddf179f5a99efe0645a9
+SOURCE FINGERPRINT: bce97c450bf0f816082d373e7485f5d53ab02a8678e45f89c73396ff72085a5a
 FILE COUNT: 584
 
 ================================================================================
@@ -597,7 +597,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 3ee0e39d1d7d5b89ff113531277652f54bf1b63b777aba2840a6f35b03a019fb
+CONTENT SHA256: 13b8b09768bfcba9fdd38ef4ba211800aa1f9c2f4f81b437b69ae073d5aa51d6
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -611,7 +611,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
