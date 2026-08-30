@@ -8,7 +8,7 @@
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T15:55:48Z
-- Updated: 2026-08-30T16:04:06Z
+- Updated: 2026-08-30T18:47:05Z
 
 ## Objective
 Replace the minimal publication workflow with a release-gated Melder pipeline that
@@ -18,12 +18,15 @@ publishes to PyPI through OIDC only when the event commit is current `prod` HEAD
 ## Ticket Contract
 - ENTRY_GATE: Owner approved upgrading the existing staged workflow after comparison
   with the ContextCompass reference.
-- EXECUTION_BOUNDARY: `.github/workflows/python-publish.yml` plus this task and
-  attention-board routing only.
+- EXECUTION_BOUNDARY: `.github/workflows/python-publish.yml`, the two cached
+  build-asset fingerprint implementations and manifests, the system-document
+  builder warning, one focused regression-test file, `.gitattributes`
+  commentary, and ContextCompass tracking.
 - DEPENDENCIES: Existing `pyproject.toml` dependency groups, build-asset runner,
   supported unit/component/integration test tiers, and PyPI trusted publishing.
-- EXIT_GATE: Workflow is structurally validated; prod gate, test matrix, distribution
-  checks, isolated install smoke, and OIDC publish job are all present.
+- EXIT_GATE: The workflow remains structurally valid, cached-asset fingerprints
+  are checkout-EOL independent, the build-asset check passes without the reported
+  SyntaxWarning, and focused regression tests pass.
 - FAILURE_ESCALATION: Stop on ambiguity in the PyPI environment name or on any
   validation result that requires changing package/runtime behavior.
 
@@ -34,21 +37,27 @@ publishes to PyPI through OIDC only when the event commit is current `prod` HEAD
   - build-asset, wheel/sdist, version/tag, and installed-wheel verification
   - current official action major upgrades
   - OIDC-only PyPI publishing through the existing `pypi` environment
+  - cross-platform source fingerprints for agent documentation and bind guard
+  - removal of the system-document builder's invalid-escape warning
 - Out of scope:
   - publishing a release
   - changing PyPI or GitHub environment configuration
-  - changing package source, tests, versions, or dependencies
+  - changing runtime behavior, public APIs, versions, or dependencies
   - copying ContextCompass-specific payload/CLI checks
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: The owner approved the tailored workflow upgrade.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Portable fingerprints, warning cleanup, deterministic
+  regeneration, focused tests, the exact asset check, and diff hygiene pass.
 
 ## Steps / Checklist
 - [x] Replace the minimal workflow with the tailored release pipeline.
 - [x] Validate trigger/gate, job dependencies, action versions, and embedded scripts.
 - [x] Inspect the exact diff and report remaining GitHub/PyPI configuration requirements.
+- [x] Diagnose and correct Linux-only false staleness in cached build assets.
+- [x] Add cross-platform fingerprint regression coverage and remove the invalid escape.
+- [x] Regenerate assets and rerun the complete build-assets validation lane.
 - [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -57,9 +66,18 @@ publishes to PyPI through OIDC only when the event commit is current `prod` HEAD
 
 ## Deliverables
 - A production-ready `python-publish.yml` for Melder.
+- Checkout-EOL-independent source fingerprints for the two cached assets.
+- Warning-clean build-asset source under Python 3.14.
 
 ## Files / Paths Impacted
 - `.github/workflows/python-publish.yml`
+- `.gitattributes`
+- `src/melder/_build_assets/_agent_documentation/_builder.py`
+- `src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py`
+- `src/melder/_build_assets/_bind_guard/_builder.py`
+- `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
+- `src/melder/_build_assets/_system_documents/_builder.py`
+- `tests/unit/melder/build_assets/test_build_asset_runner.py`
 - `context_compass/attention_board.md`
 - This task.
 
@@ -69,6 +87,9 @@ publishes to PyPI through OIDC only when the event commit is current `prod` HEAD
 - Real wheel/sdist verifier rehearsal: pass.
 - Isolated installed-wheel runtime/document smoke: pass.
 - Build-asset check and diff hygiene: pass.
+- Cross-platform fingerprint regression: pass (`2 passed, 35 deselected`).
+- Complete build-assets unit lane: pass (`116 passed`).
+- Asset check with `SyntaxWarning` promoted to error: pass (three key matches).
 
 ## Risks / Rollback Notes
 - A mismatched GitHub environment name breaks PyPI OIDC after all earlier jobs pass.
@@ -111,6 +132,141 @@ publishes to PyPI through OIDC only when the event commit is current `prod` HEAD
 - Keep notes append-only and evidence-backed.
 
 ## Notes
+- DATETIME: 2026-08-30T18:47:05Z
+  TYPE: MEASURE
+  CLAIM: Final local validation passes. The complete build-assets unit lane
+    reports `116 passed`; the exact asset check passes all three assets with
+    `SyntaxWarning` promoted to an error; and `git diff --check` exits zero.
+    Generated changes remain limited to the two expected source-key stamps,
+    with 452 agent-documentation entries and 628 bind-guard entries unchanged.
+  EVIDENCE:
+  - `tests/unit/melder/build_assets/test_build_asset_runner.py:557-590`
+  - `src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py:20-26`
+  - `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:15-19`
+  IMPACT: The local defect is corrected and the branch is ready for signed
+    commit/promotion. A GitHub Linux rerun remains external verification and
+    cannot occur until the change is pushed.
+  NEXT: Review the final diff, then create the signed commit in the intended
+    branch lane and rerun GitHub Actions; do not publish from this worktree.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T18:45:59Z
+  TYPE: FACT
+  CLAIM: Canonical regeneration completed for all three discovered assets. The
+    generated diff changes exactly the two expected `SOURCE_SHA256` stamps to
+    the same canonical key; agent-documentation remains 452 marked entries,
+    bind guard remains 628 entries, and every system-document output is
+    byte-identical.
+  EVIDENCE:
+  - `src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py:20-26`
+  - `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:15-19`
+  IMPACT: Regeneration did not alter policy membership, documentation payloads,
+    graph data, or runtime source. The repository is ready for the full focused
+    build-asset validation lane.
+  NEXT: Run the entire build-assets unit-test directory unsandboxed, run the
+    canonical `--check` with SyntaxWarning promoted to error, and check diff hygiene.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T18:45:11Z
+  TYPE: MEASURE
+  CLAIM: The unsandboxed focused regression executes both real builder cases
+    and passes (`2 passed, 35 deselected`). Warning-as-error compilation also
+    passes for the agent-documentation, bind-guard, and system-document builders.
+  EVIDENCE:
+  - `tests/unit/melder/build_assets/test_build_asset_runner.py:557-590`
+  - `src/melder/_build_assets/_agent_documentation/_builder.py:133-177`
+  - `src/melder/_build_assets/_bind_guard/_builder.py:116-165`
+  - `src/melder/_build_assets/_system_documents/_builder.py:644-648`
+  IMPACT: The source fix and warning cleanup are validated independently of
+    generated outputs. Deterministic regeneration can now restamp the two keys.
+  NEXT: Run the canonical build-asset runner once, then inspect every generated
+    diff before accepting the regeneration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T18:44:43Z
+  TYPE: BLOCKER
+  CLAIM: Warning-as-error compilation passes for all three touched builders.
+    The focused pytest selection did not execute either regression assertion;
+    both cases failed during `tmp_path` setup because the sandbox cannot scan
+    the host temp root `pytest-of-Mark`. This is an environment ACL failure,
+    not a test or implementation failure.
+  EVIDENCE:
+  - `tests/unit/melder/build_assets/test_build_asset_runner.py:557-590`
+  - `.venv_new/Scripts/python.exe -m pytest -q tests/unit/melder/build_assets/test_build_asset_runner.py -k fingerprints_ignore_checkout_line_endings`
+  IMPACT: Focused pytest status remains unverified. No source correction follows
+    from a fixture that never ran the test body.
+  NEXT: Rerun the identical focused pytest command with unsandboxed filesystem
+    access, then record its actual assertion result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T18:43:45Z
+  TYPE: FACT
+  CLAIM: The authored fix is implemented and reread. Both builders now hash
+    newline-canonical source bytes through a typed, documented pure helper; the
+    regression covers both real builders and proves LF/CRLF equivalence plus
+    genuine text-change sensitivity. The invalid escape is removed, and no
+    publish-workflow or runtime API code changed.
+  EVIDENCE:
+  - `src/melder/_build_assets/_agent_documentation/_builder.py:133-177`
+  - `src/melder/_build_assets/_bind_guard/_builder.py:116-165`
+  - `src/melder/_build_assets/_system_documents/_builder.py:644-648`
+  - `tests/unit/melder/build_assets/test_build_asset_runner.py:543-591`
+  - `.gitattributes:25-29`
+  IMPACT: The change is ready for focused tests and warning-as-error compilation
+    before any generated manifest is rewritten.
+  NEXT: Run the focused build-asset tests, compile all three builders with
+    SyntaxWarning promoted to an error, and inspect any failure before regeneration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T18:41:46Z
+  TYPE: PLAN
+  CLAIM: Normalize CRLF and lone CR to LF inside both cached-asset source
+    fingerprints while preserving every other byte and the existing path hash.
+    Add one parametrized regression for both real builders, update the runner
+    test's raw-byte explanation and `.gitattributes` commentary, reword the
+    invalid escape, then regenerate through the canonical runner. The publish
+    workflow itself does not change.
+  EVIDENCE:
+  - `src/melder/_build_assets/_agent_documentation/_builder.py:134-160`
+  - `src/melder/_build_assets/_bind_guard/_builder.py:116-147`
+  - `src/melder/_build_assets/_system_documents/_builder.py:646-647`
+  - `tests/unit/melder/build_assets/test_build_asset_runner.py:543-555`
+  - `.gitattributes:25-28`
+  IMPACT: Linux and Windows calculate one source key for one Git tree without
+    pinning hundreds of Python files to a new checkout-EOL policy or weakening
+    semantic staleness detection.
+  NEXT: Apply the exact authored-file patch, reread every touched section, and
+    inspect the diff before regeneration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T18:39:44Z
+  TYPE: FACT
+  CLAIM: The Linux failure is a cross-platform false-staleness defect. Both
+    failing builders hash raw working-tree bytes. This Windows checkout uses
+    CRLF for the scanned Python files while Git stores their LF-normalized
+    blobs, and `.gitattributes` intentionally supplies no Python EOL rule.
+    Linux therefore computes different source keys over identical repository
+    content. The separate SyntaxWarning comes from backslash-backtick escapes
+    in the system-document builder's `parse_graph_adjacency` docstring.
+  EVIDENCE:
+  - `src/melder/_build_assets/_agent_documentation/_builder.py:134-160`
+  - `src/melder/_build_assets/_bind_guard/_builder.py:116-147`
+  - `src/melder/_build_assets/_system_documents/_builder.py:646-647`
+  - `.gitattributes:25-28`
+  IMPACT: Regenerating again on Windows cannot fix CI; it only restamps the same
+    platform-specific keys. Fingerprinting must canonicalize text line endings
+    while retaining path and textual-content sensitivity.
+  NEXT: Read the existing build-asset tests fully, then define the smallest
+    regression test and implementation boundary for both builders.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-08-30T16:04:06Z
   TYPE: MEASURE
   CLAIM: Generated rehearsal and egg-info directories were removed. Final diff
@@ -185,11 +341,12 @@ publishes to PyPI through OIDC only when the event commit is current `prod` HEAD
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-The tailored workflow is implemented and locally rehearsed. It publishes only when
-the event commit equals current prod HEAD, tests CPython 3.14 and 3.14t on Linux and
-Windows, verifies Melder distributions/assets/versions, installs the wheel, and uses
-OIDC-only PyPI publication. GitHub's default branch must contain this workflow, and
-the existing `pypi` environment name must match Melder's PyPI trusted publisher.
+The tailored workflow is implemented and locally rehearsed. The first promoted
+Linux run exposed raw-checkout-byte fingerprints in agent documentation and bind
+guard plus one invalid docstring escape. The fingerprints now canonicalize source
+line endings, both real builders have regression coverage, manifests are restamped,
+and the complete build-assets lane passes. GitHub's default branch must contain the
+workflow, and a fresh Linux run after push is the remaining external proof.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

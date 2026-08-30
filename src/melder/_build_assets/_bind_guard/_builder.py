@@ -113,6 +113,25 @@ def manifest_path() -> pathlib.Path:
     )
 
 
+def _canonical_source_bytes(source: bytes) -> bytes:
+    """
+    Normalize physical source-line endings for checkout-independent hashing.
+
+    Contract:
+        Converts CRLF and lone CR line endings to LF. Every other byte is
+        preserved, including a UTF-8 BOM, so only Git checkout newline spelling
+        is ignored. Textual formatting and content changes still move the
+        source fingerprint.
+
+    Args:
+        source: Raw bytes read from one Python source file.
+
+    Returns:
+        bytes: Source bytes with LF line endings.
+    """
+    return source.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
 def source_fingerprint() -> str:
     """
     SHA256 over the scanned source tree, WITHOUT parsing any of it.
@@ -121,15 +140,15 @@ def source_fingerprint() -> str:
         Make staleness a KEY COMPARISON instead of a rebuild.
 
     Contract:
-        Hashes each scanned file's repo-relative path and raw bytes, in sorted
-        order, into one digest. Reading bytes is roughly an order of magnitude
-        cheaper than the AST parse + render the previous `--check` performed on
-        every invocation, and it is exact: any content change, rename, addition
-        or deletion moves the digest.
+        Hashes each scanned file's repo-relative path and newline-canonical
+        source bytes, in sorted order, into one digest. Reading bytes is roughly
+        an order of magnitude cheaper than the AST parse + render the previous
+        `--check` performed on every invocation. Any textual content change,
+        rename, addition, or deletion moves the digest.
 
-        Deliberately hashes BYTES, not parsed content - a formatting-only edit
-        moves the digest and triggers one regeneration, which is the safe
-        direction to be wrong in.
+        Deliberately hashes canonical BYTES, not parsed content. A formatting
+        edit moves the digest, while checkout-only LF/CRLF differences do not.
+        That distinction keeps one Git tree current on Windows and Linux.
 
         This gates MANIFEST vs SOURCE and is a BUILD-TIME concern only. Cache
         vs manifest is a different question, answered at runtime by
@@ -143,7 +162,7 @@ def source_fingerprint() -> str:
     digest = hashlib.sha256()
     for path in _iter_source_files(root):
         digest.update(str(path.relative_to(root)).replace("\\", "/").encode("utf-8"))
-        digest.update(path.read_bytes())
+        digest.update(_canonical_source_bytes(path.read_bytes()))
     return digest.hexdigest()
 
 
