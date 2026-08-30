@@ -1,4 +1,4 @@
-name: build-assets
+name: build-src-assets
 
 # WHY THIS GATE EXISTS
 # --------------------
@@ -15,17 +15,17 @@ name: build-assets
 #
 # KILL SWITCH
 # -----------
-# Set the repository variable BUILD_ASSETS_GATE to `off` to stop this gate
+# Set the repository variable BUILD_SRC_ASSETS_GATE to `off` to stop this gate
 # running on push and pull_request:
 #
 #     Settings -> Secrets and variables -> Actions -> Variables tab
-#     New repository variable:  BUILD_ASSETS_GATE = off
+#     New repository variable:  BUILD_SRC_ASSETS_GATE = off
 #
 # Or from the CLI, no commit and no file edit either way:
 #
-#     gh variable set BUILD_ASSETS_GATE --body off      # disable
-#     gh variable set BUILD_ASSETS_GATE --body on       # re-enable
-#     gh variable delete BUILD_ASSETS_GATE              # re-enable (unset)
+#     gh variable set BUILD_SRC_ASSETS_GATE --body off      # disable
+#     gh variable set BUILD_SRC_ASSETS_GATE --body on       # re-enable
+#     gh variable delete BUILD_SRC_ASSETS_GATE              # re-enable (unset)
 #
 # Two deliberate choices about how the switch behaves:
 #
@@ -44,7 +44,7 @@ name: build-assets
 # the guardrail, not part of the check.
 #
 # To silence this workflow entirely without touching either, use the Actions tab
-# -> build-assets -> "..." -> Disable workflow. That is GitHub-side state, so it
+# -> build-src-assets -> "..." -> Disable workflow. That is GitHub-side state, so it
 # leaves no trace in the repo, which cuts both ways.
 
 on:
@@ -56,17 +56,17 @@ on:
     # leave the gate off by accident.
     paths:
       - "src/melder/**/*.py"
-      - ".github/workflows/build-assets.yml"
+      - ".github/workflows/build-src-assets.yml"
   pull_request:
     paths:
       - "src/melder/**/*.py"
-      - ".github/workflows/build-assets.yml"
+      - ".github/workflows/build-src-assets.yml"
   workflow_dispatch:
 
 # A push to a branch that already has an open PR fires this twice. Cancelling
 # superseded runs per ref keeps the newest one and drops the rest.
 concurrency:
-  group: build-assets-${{ github.ref }}
+  group: build-src-assets-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -79,14 +79,14 @@ jobs:
         # a `${{ }}` substitution inside `run:` is pasted in as raw shell text, so
         # a variable value containing shell metacharacters would execute.
         env:
-          GATE: ${{ vars.BUILD_ASSETS_GATE }}
+          GATE: ${{ vars.BUILD_SRC_ASSETS_GATE }}
         run: |
           # Lowercased on purpose. GitHub Actions `!=` on strings is CASE
           # INSENSITIVE, so `OFF` and `Off` disable the job below. A
           # case-sensitive test here would then report "armed" while the gate
           # was actually off - the one lie this job exists to prevent.
           if [ "${GATE,,}" = "off" ]; then
-            echo "::warning title=Build-asset gate is DISABLED::BUILD_ASSETS_GATE=${GATE} - committed manifests are NOT being verified. Re-arm with: gh variable delete BUILD_ASSETS_GATE"
+            echo "::warning title=Build-asset gate is DISABLED::BUILD_SRC_ASSETS_GATE=${GATE} - committed manifests are NOT being verified. Re-arm with: gh variable delete BUILD_SRC_ASSETS_GATE"
           else
             echo "Build-asset gate is armed."
           fi
@@ -94,13 +94,13 @@ jobs:
   assets-current:
     name: durable build assets are current
     # Runs unless explicitly switched off; manual dispatch always runs.
-    if: vars.BUILD_ASSETS_GATE != 'off' || github.event_name == 'workflow_dispatch'
+    if: vars.BUILD_SRC_ASSETS_GATE != 'off' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           # The runner never imports melder - it loads builders by file path and
           # parses source with `ast` - so it does not need the 3.14t free-threaded

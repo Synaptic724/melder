@@ -80,6 +80,7 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| llm_support_compilation_pipeline | review | handoff | cowork | codex_1 | none | Review generated LLM assets and separated workflow gates; confirm acceptance. | Deterministic three-corpus LLM assets and separated src/repo asset workflows. | Owner confirms acceptance for story/task closure and artifact promotion. | tickets/tasks/2026-08-30_implement_llm_support_compilation_pipeline_task.md | 2026-08-30T22:32:04Z | REQUIRED |
 | human_meld_identity_api | review | handoff | cowork | codex_1 | none | Review the final human/name/ID/override contract and confirm acceptance. | Public Meld calls use short `override=` while internal execution semantics stay unchanged. | Owner confirms acceptance for ticket closure and patch-artifact disposition. | tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md | 2026-08-30T21:31:49Z | REQUIRED |
 | upgrade_python_publish_workflow | review | handoff | cowork | codex_1 | none | Review the portable fingerprint fix, then place it in the intended signed branch lane; do not publish. | Deterministic build-asset checks on Windows and Linux without warnings. | Fresh GitHub Linux run passes and owner confirms acceptance. | tickets/tasks/2026-08-30_upgrade_python_publish_workflow_task.md | 2026-08-30T18:47:05Z | REQUIRED |
 | sanitize_publication_history | review | handoff | cowork | codex_1 | none | Review committed sanitation result; do not push. | Sanitized local history preserving source and canonical tickets. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-29_sanitize_publication_history_task.md | 2026-08-30T00:13:00Z | REQUIRED |
@@ -100,7 +101,7 @@ Message alert rules
 | architecture_docs_advanced_ceiling_task | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_docs_advanced_ceiling_task.md | Advanced implementation validated and closed. | 2026-08-29T16:31:01Z |
 | architecture_and_design_docs_discovery | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_and_design_documentation_discovery_task.md | Ten-step AGPL-corrected design accepted and promoted to implementation. | 2026-08-29T00:44:49Z |
 | full_src_components_read | done | codex_1 | tickets/tasks/completed/2026-08-28_full_src_components_read_task.md | Complete 8,370-line read accepted; integrity verified. | 2026-08-29T00:25:46Z |
-| cleanup_other_agent_board_state | done | codex_1 | tickets/tasks/completed/2026-08-28_cleanup_other_agent_board_state_task.md | Board-only clean slate accepted; other-agent state removed and pre-existing tickets untouched. | 2026-08-28T23:24:52Z |
+| llm_support_compilation_pipeline_discovery | done | codex_1 | tickets/tasks/completed/2026-08-30_llm_support_compilation_pipeline_discovery_task.md | Three-corpus indexed build design accepted and promoted to implementation. | 2026-08-30T22:07:25Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

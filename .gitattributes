@@ -44,3 +44,7 @@
 #     git add --renormalize .
 
 context_compass/system_docs/**/*.md text eol=lf
+
+# LLM support bundles carry byte hashes and line-range indexes. Pin the whole
+# generated/support lane so Windows and Linux produce identical proofs.
+llm_support/** text eol=lf

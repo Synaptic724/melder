@@ -1,0 +1,58 @@
+name: build-repo-assets
+
+# Repository-wide generated assets are committed truth for external LLM tools.
+# This workflow is deliberately check-only: Actions run after a commit exists,
+# so bot write-back would create a second commit rather than repair the first.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-repo-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate-status:
+    name: gate status
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report whether the gate is armed
+        env:
+          GATE: ${{ vars.BUILD_REPO_ASSETS_GATE }}
+        run: |
+          if [ "${GATE,,}" = "off" ]; then
+            echo "::warning title=Repository-asset gate is DISABLED::BUILD_REPO_ASSETS_GATE=${GATE} - committed LLM bundles are not being verified."
+          else
+            echo "Repository-asset gate is armed."
+          fi
+
+  repo-assets-current:
+    name: repository assets are current
+    if: vars.BUILD_REPO_ASSETS_GATE != 'off' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: List repository asset inputs
+        run: python llm_support/_builder.py --list
+
+      - name: Verify repository assets
+        run: python llm_support/_builder.py --check
+
+      - name: Explain failure
+        if: failure()
+        run: |
+          echo "::error::Committed repository assets are stale or hand-edited."
+          echo "Regenerate locally and commit the results:"
+          echo "    python llm_support/_builder.py"
