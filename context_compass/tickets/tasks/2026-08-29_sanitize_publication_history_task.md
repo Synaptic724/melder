@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-08-29-sanitize-publication-history
 - Story: none
-- Status: in_progress
+- Status: review
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-29T22:22:13Z
-- Updated: 2026-08-29T23:42:57Z
+- Updated: 2026-08-30T00:13:00Z
 
 ## Objective
 Rewrite the local `melder_private` Git history to remove the owner-approved
@@ -17,9 +17,10 @@ tickets, authorship, chronology, and current uncommitted work.
 
 ## Ticket Contract
 - ENTRY_GATE: Owner approved the targeted sanitation plan and explicitly selected
-  `<local-path>\PycharmProjects\melder_private` as the local rewrite target.
-- EXECUTION_BOUNDARY: Local repository, verified local backup, temporary tooling,
-  and ContextCompass tracking only. No commit, remote mutation, push, or PyPI action.
+  the current `melder_private` repository as the only rewrite target.
+- EXECUTION_BOUNDARY: Local `melder_private` repository, verified external backup,
+  temporary tooling, ContextCompass tracking, and deliberate local commits only.
+  No sibling `melder` write, remote mutation, push, visibility change, or PyPI action.
 - DEPENDENCIES: The audit and removal plan in
   `tickets/tasks/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md`.
 - EXIT_GATE: Backups verify; forbidden historical paths/text are absent; tickets
@@ -36,7 +37,7 @@ tickets, authorship, chronology, and current uncommitted work.
   - narrow GTM/persona history sanitation
   - post-rewrite Git, path, blob, secret, and tree-equivalence validation
 - Out of scope:
-  - `git commit`
+  - any write in the sibling `melder` repository
   - pushing, changing remotes, changing repository visibility, or publishing
   - broad ticket removal or clean-slate history
   - copied competitor-source removal because audit proved it was never committed
@@ -58,12 +59,12 @@ tickets, authorship, chronology, and current uncommitted work.
 - [x] Prove forbidden paths and private text are absent.
 - [x] Prove source/ticket preservation outside the approved manifest.
 - [x] Rerun Gitleaks and large-blob inventory.
-- [ ] Run Git integrity, build-asset, packaging, and supported test checks.
+- [x] Run Git integrity, build-asset, packaging, and supported test checks.
 - [ ] Report local state and recovery locations; do not commit or push.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further
+- [x] Document each meaningful finding immediately in `## Notes` before further
       execution.
 
 ## Deliverables
@@ -81,6 +82,7 @@ tickets, authorship, chronology, and current uncommitted work.
 - Supported test tiers: pass (`10,959 passed`, exit code 0).
 - Wheel/sdist build, member scan, and isolated install smoke: pass.
 - Full Git fsck after immediate prune: pass; zero unreachable objects.
+- Final Gitleaks: one verified assignment false positive; zero verified secrets.
 - Required:
   - `git fsck --full`
   - forbidden-path and forbidden-text history scans
@@ -97,22 +99,23 @@ tickets, authorship, chronology, and current uncommitted work.
   compare pre/post inventories before acceptance.
 
 ## Applicable Anti-Patterns
-- [ ] No rewrite before backup verification.
-- [ ] No `git reset --hard` or destructive checkout.
-- [ ] No `git push --mirror`.
-- [ ] No broad ContextCompass or ticket deletion.
-- [ ] No generic large-blob stripping that would remove intentional build assets.
-- [ ] No commit, remote mutation, push, or publication.
-- [ ] No status transition without evidence-backed transition reason.
+- [x] No rewrite before backup verification.
+- [x] No `git reset --hard` or destructive checkout.
+- [x] No `git push --mirror`.
+- [x] No broad ContextCompass or ticket deletion.
+- [x] No generic large-blob stripping that would remove intentional build assets.
+- [x] No remote mutation, push, visibility change, or publication; local commits
+      must remain scoped and reviewable.
+- [x] No status transition without evidence-backed transition reason.
 - [ ] No closure without acceptance confirmation and board sync.
 
 ## Done Checklist
 - [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed
-- [ ] Notes quality maintained
-- [ ] Applicable anti-pattern checks are clear or escalated
+- [x] Deliverables produced and linked
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed
+- [x] Notes quality maintained
+- [x] Applicable anti-pattern checks are clear or escalated
 - [ ] Acceptance criteria reviewed with user and confirmed
 - [ ] Board sync completed
 
@@ -138,6 +141,424 @@ tickets, authorship, chronology, and current uncommitted work.
 - Promote `UNKNOWN` to `FACT` only with direct evidence.
 
 ## Notes
+
+- DATETIME: 2026-08-30T00:13:00Z
+  TYPE: MEASURE
+  CLAIM: Final index contains exactly the four reviewed paths, with zero
+    unstaged or non-ignored untracked residue and a clean staged diff check.
+  EVIDENCE:
+  - `.github/workflows/build-assets.yml`
+  - `attention_board.md:80-84`
+  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tests/experiments/cprofile_testing/results/.gitignore:1-2`
+  IMPACT: The authorized local commit boundary is exact and contains no runtime
+    source, unrelated file, or sibling-repository content.
+  NEXT: Create the local commit and stop; do not push.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:12:11Z
+  TYPE: BLOCKER
+  CLAIM: The first exact four-path `git add` wrote nothing because the sandbox
+    denied creation of `.git/index.lock`. This is the same managed `.git` write
+    boundary encountered by prior local Git mutations, not an index conflict;
+    no lock file or partial staging was created.
+  EVIDENCE:
+  - `.git/index`
+  IMPACT: Final staging requires one escalated local Git index write. The approved
+    four-path boundary remains unchanged.
+  NEXT: Rerun the identical `git add` with escalated filesystem access, then
+    require exact staged paths and zero unstaged/untracked residue.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:11:43Z
+  TYPE: PLAN
+  CLAIM: Final diff review approves an exact four-path local commit boundary:
+    delete the pre-authorized build-assets workflow, update the sanitation task
+    and attention route to review, and add the preserved two-line results ignore
+    file. No runtime source or build-asset file is in the diff. The supported
+    10,959-test result and package validation remain applicable because fresh
+    tree comparison proves zero source changes after that run.
+  EVIDENCE:
+  - `.github/workflows/build-assets.yml`
+  - `attention_board.md:80-84`
+  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tests/experiments/cprofile_testing/results/.gitignore:1-2`
+  IMPACT: The local finalization commit is scoped, reviewable, and does not need
+    another three-minute test run over an unchanged source tree.
+  NEXT: Stage only these four paths, run staged diff/status checks, and create one
+    local commit without push or remote mutation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:10:55Z
+  TYPE: MEASURE
+  CLAIM: The sole final Gitleaks finding is verified false positive. Historical
+    line 997 assigns `self._occurrence_plan_phase8.root_instance_key` to a typed
+    local variable; there is no quoted value, token, key literal, or credential.
+    No verified secret remains across the 2,057-commit scan.
+  EVIDENCE:
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:991-1000`
+  IMPACT: Final secret gate passes with the known generic-assignment limitation
+    documented rather than suppressed.
+  NEXT: Inspect the exact four-path worktree diff, update ticket/board to review,
+    stage only those paths, run staged checks, and create the deliberate local
+    finalization commit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:10:24Z
+  TYPE: BLOCKER
+  CLAIM: Final Gitleaks scan covered 2,057 commits and 141.39 MB, reporting one
+    `generic-api-key` match at a historical assignment in
+    `spell_crafter.py:997`. Its fingerprint matches the previously classified
+    false positive, but final closure requires direct historical-source
+    re-verification after the last rewrite.
+  EVIDENCE:
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:997-997`
+  IMPACT: Secret validation is pending classification of this single finding;
+    no additional finding appeared.
+  NEXT: Open the historical function around line 997, confirm the right-hand side
+    is an attribute expression with no credential literal, then record the ruling.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:09:34Z
+  TYPE: MEASURE
+  CLAIM: Final decoded/raw scan covers all 29,792 reachable blobs, every commit
+    message, and the current worktree. It finds zero user-home paths, GTM strategy
+    terms, retired preview label, or private package names in all three surfaces.
+  EVIDENCE:
+  - `.git`
+  IMPACT: Both text and UTF-16/binary publication-text gates pass after the
+    callback rewrite and restored current work.
+  NEXT: Run the verified external Gitleaks executable over all reachable history,
+    classify any finding, then prepare the explicit staged commit boundary.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:07:11Z
+  TYPE: MEASURE
+  CLAIM: Final exact path scan evaluates all 46 approved removal rules against
+    9,449 reachable unique paths and finds zero matches. Every remaining ref is
+    commit-typed; no noncommit/harness ref can anchor excluded content.
+  EVIDENCE:
+  - `<external-recovery>/filter_manifests/remove_paths.txt`
+  - `.git`
+  IMPACT: All approved database, private-instruction, legacy-agent, output,
+    profile, result, and snapshot path families are absent from reachable history.
+  NEXT: Run decoded all-blob private-text scan, commit-message scan, current
+    worktree scan, and final Gitleaks pass.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:06:25Z
+  TYPE: MEASURE
+  CLAIM: Final reflog expiry and immediate garbage collection completed. Strict
+    fsck passes, unreachable count is zero, live rewritten stash remains exactly
+    `4f92d5f7...`, and the object store contains one 36.86 MiB pack with no loose,
+    prune-packable, or garbage objects.
+  EVIDENCE:
+  - `.git`
+  IMPACT: No original or intermediate path-bearing objects remain reachable or
+    retained by local reflogs; all rollback state is external or in the live
+    sanitized stash.
+  NEXT: Run exact removal-manifest, forbidden-text/message, final Gitleaks, and
+    status scans before staging the final commit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:05:49Z
+  TYPE: FACT
+  CLAIM: All nine unreachable objects are the obsolete first retry-stash commit,
+    its index/untracked parents, and their trees/blobs. They contain only older
+    versions of the current attention/task changes plus the identical results
+    `.gitignore`. Current rewritten stash `4f92d5f7...` holds newer versions, and
+    the same state is independently covered by the post-checkpoint bundle/patch
+    and untracked copy.
+  EVIDENCE:
+  - `.git`
+  - `<external-recovery>/post_checkpoint_pre_binary_rewrite_all_refs.bundle`
+  - `<external-recovery>/post_checkpoint_pre_binary_rewrite_worktree.patch`
+  - `<external-recovery>/post_checkpoint_pre_binary_rewrite_untracked`
+  IMPACT: Immediate prune removes no unique user work or live recovery ref.
+  NEXT: Expire current reflogs and run immediate GC, then require strict fsck,
+    zero unreachable objects, and retained current stash.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:05:02Z
+  TYPE: MEASURE
+  CLAIM: Final Git surface checks pass for strict fsck, worktree/index diff
+    hygiene, commit-only refs, zero Codex tree refs, absent validation temp roots,
+    and unchanged single `gitea` remote configuration. The intended remaining
+    worktree is four paths: restored workflow deletion, attention/task updates,
+    and the preserved results `.gitignore` (`*` plus `!.gitignore`).
+  EVIDENCE:
+  - `.git`
+  - `.github/workflows/build-assets.yml`
+  - `tests/experiments/cprofile_testing/results/.gitignore:1-2`
+  IMPACT: The final commit boundary is small and explicit. No sibling `melder`
+    repository or remote was touched.
+  NEXT: Inspect nine unreachable objects created by stash turnover, prove their
+    content is backed/redundant, then prune and require zero unreachable objects.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:04:14Z
+  TYPE: MEASURE
+  CLAIM: Final deterministic build-asset check passes for `_agent_documentation`,
+    `_bind_guard`, and `_system_documents`; each reports version 0.1.2, schema
+    2.0.0, and a matching source key.
+  EVIDENCE:
+  - `src/melder/_build_assets/_build_asset_runner.py:268-350`
+  IMPACT: The history rewrite and restored workflow deletion did not disturb any
+    generated asset or its preserved 452/628/four-entry content.
+  NEXT: Run strict fsck, unreachable-object, diff-hygiene, temporary-path, ref,
+    stash, status, and remote-configuration checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:03:49Z
+  TYPE: MEASURE
+  CLAIM: Current-worktree validation passes. The typecheck report remains valid
+    UTF-16LE with BOM and 254 lines, with 74 `<repo-root>` substitutions. The
+    DevOps artifact remains valid UTF-16LE JSON with BOM and 859 lines, with 19
+    substitutions. Neither contains a user-home path, and the full UTF-8
+    worktree scan also returns zero user-home matches.
+  EVIDENCE:
+  - `artifacts/spellbook_typecheck_report.txt:1-254`
+  - `artifacts/dev_ops_typecheck_scan.json:1-859`
+  IMPACT: Binary artifact structure and current working-copy sanitation both pass;
+    no artifact was deleted or normalized to a different encoding.
+  NEXT: Run all three build-asset checks, full strict fsck, diff hygiene, ref and
+    remote checks, then rerun supported tests if no content drift is found.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:03:04Z
+  TYPE: MEASURE
+  CLAIM: The exact pre-existing deletion of
+    `.github/workflows/build-assets.yml` is restored. The path is absent and Git
+    reports one unstaged tracked deletion; no other old patch content was replayed.
+  EVIDENCE:
+  - `.github/workflows/build-assets.yml`
+  - `<external-recovery>/working_tree_against_head.patch:1-127`
+  IMPACT: Original user dirty state is preserved again. The deleted workflow is
+    recoverable from current HEAD and every external recovery bundle until the
+    final scoped commit records its removal.
+  NEXT: Validate current UTF-16 artifacts/JSON, current-worktree path residue,
+    build assets, Git integrity, and full status before staging the final commit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:02:35Z
+  TYPE: FACT
+  CLAIM: The original verified worktree patch records deletion of
+    `.github/workflows/build-assets.yml`, but the file is present and clean in
+    current HEAD/worktree and absent from both the fresh patch and rewritten
+    stash. The harness checkpoint transition restored it before the fresh backup,
+    so one item of pre-existing user state was lost from the live worktree.
+  EVIDENCE:
+  - `<external-recovery>/working_tree_against_head.patch:1-127`
+  - `.github/workflows/build-assets.yml`
+  IMPACT: Dirty-state preservation is incomplete until that exact tracked-file
+    deletion is restored. Replaying the whole old patch would duplicate already
+    committed EOL/profile changes and is not safe.
+  NEXT: Delete only `.github/workflows/build-assets.yml` with an explicit file
+    patch, then verify status shows that single restored deletion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:01:42Z
+  TYPE: MEASURE
+  CLAIM: Fresh-bundle comparison passes for every head and gitea tracking ref.
+    File and commit counts are identical, with zero additions/deletions and zero
+    unexpected blob changes. Prod/dev/preprod and their tracking refs change
+    only the two UTF-16 artifacts; local codex_features2 changes those two plus
+    its committed sanitation task; test is byte-identical.
+  EVIDENCE:
+  - `.git`
+  - `<external-recovery>/pre_binary_compare.git`
+  IMPACT: The callback changed only mapped path-bearing content and preserved
+    source trees, tickets outside the sanitation task, history topology, and ref
+    counts. Head/tracking-ref equivalence passes.
+  NEXT: Validate the newly created post-bundle stash and restored worktree
+    separately, including the original workflow-deletion state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-30T00:00:20Z
+  TYPE: MEASURE
+  CLAIM: Post-rewrite binary-aware scan traversed all 29,792 reachable blobs and
+    found zero decoded user-home path blobs across heads, rewritten tracking
+    refs, and stash.
+  EVIDENCE:
+  - `.git`
+  IMPACT: The UTF-16/binary blind spot that invalidated the first sanitation
+    claim is closed across the entire reachable object graph.
+  NEXT: Compare every current ref tree and commit count to the fresh
+    post-checkpoint recovery bundle, allowing only content changes in mapped
+    artifacts and the sanitation task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:59:24Z
+  TYPE: MEASURE
+  CLAIM: The active binary-aware rewrite completed in `melder_private` only.
+    Local HEAD is `28acc23d...`; prod/dev/preprod are `17d9b356...`; test is
+    unchanged. All expected heads, rewritten gitea tracking refs, and rewritten
+    stash remain commit refs; no Codex tree refs remain. The filter left a clean
+    worktree and strict fsck passed. Rewritten stash `4f92d5f7...` was applied
+    successfully and retained as a recovery point.
+  EVIDENCE:
+  - `.git`
+  IMPACT: The 82-blob path repair is implemented without deleting any artifact,
+    changing the sibling repository, or contacting a remote.
+  NEXT: Run the binary-aware all-blob scan, compare rewritten trees/counts to the
+    fresh recovery bundle, and validate UTF-16/JSON/current worktree content.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:57:31Z
+  TYPE: BLOCKER
+  CLAIM: The first active filter command was refused before parsing any commit
+    because `--sensitive-data-removal` cannot be introduced on a follow-up
+    filter-repo invocation. No history changed. Restoring the verified stash
+    applied the worktree successfully, but automatic stash deletion failed
+    because the earlier approved reflog expiry left `refs/stash` without a
+    reflog; the stash object remains intact at `17fa51c...`.
+  EVIDENCE:
+  - `.git`
+  IMPACT: There is no data loss and the callback remains probe-proven. The retry
+    must omit only the incompatible reporting mode and create a fresh stash from
+    the restored worktree before filtering.
+  NEXT: Stash the restored work again, require a clean worktree, and rerun the
+    identical callback without `--sensitive-data-removal`/`--no-fetch`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:55:24Z
+  TYPE: MEASURE
+  CLAIM: Fresh post-checkpoint recovery verifies at local HEAD `4d1b5e10...`.
+    The all-ref bundle is 36,913,765 bytes with SHA-256
+    `3090e8f9b116a7d43528630e9bbd01bd898cbe89607289c4bd354753ffc154eb`;
+    the worktree patch is 10,555 bytes with SHA-256
+    `bd232fb4704c27b4dd2793e12b04d21b08478d4014b182d2c5713b918ab9e3ca`;
+    the one non-ignored untracked file was hash-verified.
+  EVIDENCE:
+  - `<external-recovery>/post_checkpoint_pre_binary_rewrite_all_refs.bundle`
+  - `<external-recovery>/post_checkpoint_pre_binary_rewrite_worktree.patch`
+  - `<external-recovery>/post_checkpoint_pre_binary_rewrite_untracked`
+  IMPACT: The latest local commit/ref graph and remaining dirty state have an
+    independent rollback point before the active callback rewrite.
+  NEXT: Stash current work including the untracked result-ignore file, require a
+    clean worktree, and delete only the two freshly backed-up noncommit Codex refs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:54:40Z
+  TYPE: DECISION
+  CLAIM: The owner now authorizes deliberate local commits and directs completion
+    specifically in `melder_private`. The existing local checkpoint commit may be
+    retained and rewritten; no mixed reset is required. The sibling `melder`
+    repository remains strictly outside scope.
+  EVIDENCE:
+  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  IMPACT: The no-commit blocker is cleared. Local history may be finalized with
+    a scoped commit after binary-aware sanitation and full validation.
+  NEXT: Capture a fresh post-checkpoint recovery set, stash current work, remove
+    the backed-up noncommit Codex refs, and apply the proven callback locally.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:48:17Z
+  TYPE: CONFLICT
+  CLAIM: Commit `4d1b5e104a92468fac4fb5c7dcb89c561080f8db` is a real local
+    commit created at 2026-08-29T17:43:04-06:00 with parent `278ba706...`.
+    It stages 107 files: the two sanitation tasks, patch-document EOL changes,
+    board/mailbox state, and two regenerated manifest fingerprints. The agent
+    issued no commit command. Only local `codex_features2` moved; the gitea
+    tracking ref remains `278ba706...`, prod/dev/preprod are unchanged, and no
+    remote operation occurred.
+  EVIDENCE:
+  - `.git`
+  IMPACT: This conflicts with the owner's explicit no-commit boundary and also
+    invalidates the probe bundle's codex branch comparison. Correcting the branch
+    pointer is a separate local ref mutation requiring owner direction.
+  NEXT: Obtain owner approval for `git reset --mixed 278ba706...`, which removes
+    only the unintended local commit while preserving all 107 file changes in
+    the worktree; do not use hard reset or discard any file.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:47:30Z
+  TYPE: BLOCKER
+  CLAIM: The probe discrepancy is external branch movement, not callback drift.
+    During validation, local `codex_features2` advanced from the second bundle's
+    `278ba706...` to `4d1b5e10...` and its new tree absorbed the two task files
+    plus the prior dirty patch/manifest state. No agent-issued `git commit` ran
+    and no remote was contacted; this appears to be harness turn-checkpointing.
+  EVIDENCE:
+  - `.git`
+  - `<external-recovery>/post_prune_pre_binary_rewrite_all_refs.bundle`
+  IMPACT: The probe is equivalent to its bundle input, but no longer to the live
+    branch. User's no-commit boundary requires the new local commit's provenance
+    and contents to be inspected before any active rewrite or ref correction.
+  NEXT: Read the new commit metadata, parents, reflog, and full name-status diff;
+    verify prod/dev/preprod and remotes did not move.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:46:41Z
+  TYPE: BLOCKER
+  CLAIM: Probe content scan passes with zero decoded user-home blobs, and prod
+    preserves all 4,284 files with only two expected artifact blob changes and
+    identical 2,107 commits. However, the first codex_features2 comparison
+    reports two ticket removals and 105 unexpected changes matching the active
+    dirty-worktree set. Callback approval is withheld until this discrepancy is
+    proven to be comparison error, bundle/ref contamination, or filter behavior.
+  EVIDENCE:
+  - `<external-recovery>/binary_rewrite_probe.git`
+  - `.git`
+  IMPACT: The active rewrite remains blocked; applying a probe with unexplained
+    tree drift could lose current ticket and patch state.
+  NEXT: Query old/new codex_features2 trees directly, inspect the pre-filter
+    bundle ref tree, and compare those hashes without the PowerShell map helper.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:44:55Z
+  TYPE: MEASURE
+  CLAIM: The disposable callback rewrite completed after enabling probe long
+    paths. It parsed 2,110 commits, rewrote 1,363 descendant commits from the
+    first affected blob onward, retained every expected commit ref and stash,
+    removed only the two pre-backed-up tree refs, and passes strict fsck.
+    The active repository remains unfiltered.
+  EVIDENCE:
+  - `<external-recovery>/binary_rewrite_probe.git`
+  IMPACT: Callback execution is mechanically valid; content and tree-equivalence
+    gates must pass before it is allowed against the active repository.
+  NEXT: Require zero binary-aware path matches, identical commit/file counts,
+    no source-tree changes, valid UTF-16/JSON outputs, and expected ref topology.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-29T23:43:44Z
+  TYPE: BLOCKER
+  CLAIM: Probe filtering has not started. Deleting the first disposable Codex
+    tree ref succeeded, but the second ref exceeded Windows' default path limit
+    because the new bare clone did not inherit `core.longpaths=true`. The active
+    repository remains unchanged.
+  EVIDENCE:
+  - `<external-recovery>/binary_rewrite_probe.git`
+  IMPACT: The probe must enable long paths and delete the one exact remaining
+    tree ref before filter-repo can run safely.
+  NEXT: Set `core.longpaths=true` in the probe, retry the remaining exact ref,
+    require zero probe Codex refs, then run the callback.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
 - DATETIME: 2026-08-29T23:42:57Z
   TYPE: MEASURE
@@ -906,10 +1327,11 @@ tickets, authorship, chronology, and current uncommitted work.
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-History, security, and build-asset validation pass. Both sandboxed supported-tier
-runs are ACL-blocked regardless of temp location; run once with escalated filesystem
-access, then continue with package and final garbage-collection validation. No commit,
-push, remote mutation, visibility change, or PyPI publication is authorized.
+Initial history, security, build-asset, test, and package validation passed. A final
+binary-aware scan found 82 UTF-16/UTF-8 artifact blobs missed by ordinary text
+filtering. The callback is proven in a disposable clone. Finish only in
+`melder_private`; local commits are authorized. No sibling-repository write, push,
+remote mutation, visibility change, or PyPI publication is authorized.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->
