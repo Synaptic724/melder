@@ -80,6 +80,7 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| sanitize_publication_history | review | handoff | cowork | codex_1 | none | Review committed sanitation result; do not push. | Sanitized local history preserving source and canonical tickets. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-29_sanitize_publication_history_task.md | 2026-08-30T00:13:00Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
