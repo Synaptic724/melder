@@ -644,7 +644,7 @@ def parse_graph_adjacency(
 
     Contract:
         Parses only what the document states outright:
-          - `- id: \`x\`` under a `#### \`Name\` (kind)` heading -> a node
+          - an `id` field beneath a level-four node heading -> a node
           - six-column `Edges out` rows -> an edge
 
         Edge CANDIDATES are deliberately skipped. `src_graph_usage.md` measures
