@@ -25,7 +25,8 @@
 #   No `* text=auto`, and no blanket `*.py eol=lf`. 439 of the 588 tracked
 #   Python files under `src/` are currently CRLF on disk; pinning them would
 #   rewrite all 439 on the next renormalisation - a repo-wide diff that fixes no
-#   observed problem. Python does not care, and nothing hashes those bytes.
+#   observed problem. Python does not care, and source-tree build fingerprints
+#   canonicalize CRLF and lone CR to LF before hashing.
 #
 #   No rule for `_build_assets/_system_documents/payloads/*.py` either. Those
 #   embed the documents verbatim and looked like they needed the same

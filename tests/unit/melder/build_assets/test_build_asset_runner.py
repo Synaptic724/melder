@@ -543,16 +543,49 @@ def test_a_builder_without_the_optional_contract_still_checks(runner, fake_asset
 # The real repository -------------------------------------------------------
 #
 # There is deliberately NO test here asserting the committed assets are current
-# against the live tree. `source_fingerprint()` hashes the raw bytes of every
-# source file, so a comment, a blank line, or a docstring typo moves the key and
-# reports stale even when the regenerated manifest would be byte-identical. In a
-# repository under active edit that test is red almost continuously, for reasons
-# unrelated to whatever is being tested - and a check that is red by default
-# stops being read, which costs more than it protects.
+# against the live tree. `source_fingerprint()` hashes every source path plus
+# newline-canonical source bytes, so a comment, blank line, or docstring typo
+# moves the key while checkout-only LF/CRLF differences do not. In a repository
+# under active edit that test is red almost continuously, for reasons unrelated
+# to whatever is being tested - and a check that is red by default stops being
+# read, which costs more than it protects.
 #
 # Currency is a BUILD concern, answered by running the builder. The tests above
 # cover what actually needs testing: that the staleness mechanism itself works,
 # against synthetic fixtures where the inputs are controlled.
+
+
+@pytest.mark.parametrize("asset_name", ("_agent_documentation", "_bind_guard"))
+def test_shipped_source_fingerprints_ignore_checkout_line_endings(
+        asset_name: str,
+        tmp_path: pathlib.Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Prove cached-asset keys describe repository text, not checkout EOL policy.
+
+    Contract:
+        LF and CRLF encodings of identical Python source produce one key for
+        both real cached-asset builders. Changing source text still moves it.
+    """
+    live = _load_runner()
+    builder_path = next(
+        path for path in live.discover_builders() if path.parent.name == asset_name
+    )
+    builder = live._load_builder(builder_path)
+    package = tmp_path / "melder"
+    package.mkdir()
+    source = package / "sample.py"
+    monkeypatch.setattr(builder, "package_root", lambda: package)
+
+    source.write_bytes(b"class Sample:\n    value = 1\n")
+    lf_fingerprint = builder.source_fingerprint()
+
+    source.write_bytes(b"class Sample:\r\n    value = 1\r\n")
+    assert builder.source_fingerprint() == lf_fingerprint
+
+    source.write_bytes(b"class Sample:\r\n    value = 2\r\n")
+    assert builder.source_fingerprint() != lf_fingerprint
 
 
 @pytest.mark.parametrize("asset_name", _shipped_asset_names())
