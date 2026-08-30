@@ -137,13 +137,13 @@ def test_generalized_manifest_strategy_experiment() -> None:
         # ------------------------------------------------------------------
         # Live melds through the manifest-first generalized family.
         # ------------------------------------------------------------------
-        live_plain = conduit.meld(spell=root_spell_id)
+        live_plain = conduit.meld(spell_id=root_spell_id)
         assert isinstance(live_plain, _Root)
         assert live_plain.label == "default"
 
         live_overridden = conduit.meld(
-            spell=root_spell_id,
-            spell_override={"label": "patched"},
+            spell_id=root_spell_id,
+            override={"label": "patched"},
         )
         assert isinstance(live_overridden, _Root)
         assert live_overridden.label == "patched"
@@ -206,15 +206,15 @@ def test_generalized_manifest_strategy_experiment() -> None:
         # ------------------------------------------------------------------
         # Behavior parity through the reloaded doors.
         # ------------------------------------------------------------------
-        reloaded_plain = conduit.meld(spell=root_spell_id)
+        reloaded_plain = conduit.meld(spell_id=root_spell_id)
         assert isinstance(reloaded_plain, _Root)
         assert reloaded_plain.label == "default"
         assert reloaded_plain is not live_plain
         assert reloaded_plain.leaf is live_plain.leaf
 
         reloaded_overridden = conduit.meld(
-            spell=root_spell_id,
-            spell_override={"label": "reloaded"},
+            spell_id=root_spell_id,
+            override={"label": "reloaded"},
         )
         assert isinstance(reloaded_overridden, _Root)
         assert reloaded_overridden.label == "reloaded"
@@ -235,7 +235,7 @@ def test_generalized_manifest_strategy_experiment() -> None:
         cold_no_overrides_door = lazy_context._no_overrides_executor
         cold_overrides_door = lazy_context._overrides_executor
 
-        lazy_plain = conduit.meld(spell=root_spell_id)
+        lazy_plain = conduit.meld(spell_id=root_spell_id)
         assert isinstance(lazy_plain, _Root)
         assert lazy_plain.label == "default"
         assert lazy_plain.leaf is live_plain.leaf
@@ -244,8 +244,8 @@ def test_generalized_manifest_strategy_experiment() -> None:
         assert lazy_context._overrides_executor is not cold_overrides_door
 
         lazy_overridden = conduit.meld(
-            spell=root_spell_id,
-            spell_override={"label": "lazy"},
+            spell_id=root_spell_id,
+            override={"label": "lazy"},
         )
         assert isinstance(lazy_overridden, _Root)
         assert lazy_overridden.label == "lazy"

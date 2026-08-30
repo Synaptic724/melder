@@ -119,12 +119,12 @@ def test_lineage_dependency_under_many_root_shares_across_lineage() -> None:
     spellbook, root, spell_ids = _build_root()
     try:
         parent_id = spell_ids[_ManyParentWithLineageDep]
-        root_parent = root.meld(spell=parent_id)
+        root_parent = root.meld(spell_id=parent_id)
         lesser_parents: List[Any] = []
         for _ in range(2):
             lesser = root.create_lesser_conduit()
             try:
-                lesser_parents.append(lesser.meld(spell=parent_id))
+                lesser_parents.append(lesser.meld(spell_id=parent_id))
             finally:
                 lesser.cleanup()
 

@@ -110,8 +110,8 @@ def _resolve_owner_and_borrower_service(existence: Existence) -> Tuple[Any, Any]
             )
         assert borrower.validate_contracts_and_define()
 
-        owner_service = owner.meld(spell=service_id)
-        borrower_instance = borrower.meld(spell=consumer_id)
+        owner_service = owner.meld(spell_id=service_id)
+        borrower_instance = borrower.meld(spell_id=consumer_id)
         borrower_service = borrower_instance.service
 
         assert isinstance(owner_service, ContractServicePrimary)
@@ -191,8 +191,8 @@ def test_lineage_borrowed_service_with_override_isolates_and_applies() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        owner_service = owner.meld(spell=service_id)
-        borrower_instance = borrower.meld(spell=consumer_id)
+        owner_service = owner.meld(spell_id=service_id)
+        borrower_instance = borrower.meld(spell_id=consumer_id)
         borrower_service = borrower_instance.service
 
         assert isinstance(borrower_service, ContractServicePrimary)
@@ -251,16 +251,16 @@ def test_lineage_meldtime_override_caches_in_borrower_root_not_owner() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        b1 = borrower.meld(spell=service_id, spell_override={"marker": "meld-override"})
+        b1 = borrower.meld(spell_id=service_id, override={"marker": "meld-override"})
         assert b1.marker == "meld-override"
 
-        b2 = borrower.meld(spell=service_id)
+        b2 = borrower.meld(spell_id=service_id)
         assert b2 is b1, (
             "meld-time override instance must be cached in the borrower's "
             "lineage-root store (so the plain re-meld reuses it)"
         )
 
-        owner_service = owner.meld(spell=service_id)
+        owner_service = owner.meld(spell_id=service_id)
         assert owner_service is not b1, "owner store must not hold the borrower's instance"
         assert owner_service.marker == "contract-primary", (
             "owner's lineage instance must not be polluted by the borrower's override"

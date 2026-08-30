@@ -31,7 +31,7 @@ def test_live_sim_automatic_bootstrap_melds_application() -> None:
     """
     context = bootstrap_live_sim_automatic()
     try:
-        app = context.conduit.meld(spell=context.application_id)
+        app = context.conduit.meld(spell_id=context.application_id)
 
         assert isinstance(app, LiveSimApplication)
         assert isinstance(app.worker, LiveSimWorker)

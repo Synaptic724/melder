@@ -79,26 +79,26 @@ def test_conduit_spellspace_nesting_and_cleanup() -> None:
     try:
         assert conduit.get_active_spellspace() is None
         with conduit.enter_spellspace() as outer:
-            outer_instance = outer.meld(spell=spell_id)
-            outer_again = outer.meld(spell=spell_id)
+            outer_instance = outer.meld(spell_id=spell_id)
+            outer_again = outer.meld(spell_id=spell_id)
             assert outer_again is outer_instance
             assert conduit.get_active_spellspace() is outer
 
             with conduit.enter_spellspace() as inner:
-                inner_instance = inner.meld(spell=spell_id)
-                inner_again = inner.meld(spell=spell_id)
+                inner_instance = inner.meld(spell_id=spell_id)
+                inner_again = inner.meld(spell_id=spell_id)
                 assert inner_again is inner_instance
                 assert inner_instance is not outer_instance
                 assert conduit.get_active_spellspace() is inner
                 assert inner.id != outer.id
 
             assert conduit.get_active_spellspace() is outer
-            outer_after_inner = outer.meld(spell=spell_id)
+            outer_after_inner = outer.meld(spell_id=spell_id)
             assert outer_after_inner is outer_instance
 
         assert conduit.get_active_spellspace() is None
         with conduit.enter_spellspace() as next_space:
-            outer_after_cleanup = next_space.meld(spell=spell_id)
+            outer_after_cleanup = next_space.meld(spell_id=spell_id)
             assert outer_after_cleanup is not outer_instance
     finally:
         conduit.permanent_cleanup()
@@ -265,7 +265,7 @@ def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
                 conduit=owner,
                 permissions="create",
             ) == {service_id: True, config_id: True}
-        assert owner.meld(spell=service_id) is not None
+        assert owner.meld(spell_id=service_id) is not None
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.remove_spell_from_contract(spell_id=service_id, conduit=owner) is True
         assert owner.sever_link(borrower) is True

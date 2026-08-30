@@ -129,7 +129,7 @@ def test_creation_context_cache_asset_experiment() -> None:
             )
 
         root_spell = _get_spell(spellbook, root_spell_id)
-        first_instance = conduit.meld(spell=root_spell_id)
+        first_instance = conduit.meld(spell_id=root_spell_id)
         assert isinstance(first_instance, _CachedRoot)
 
         cache_asset = build_creation_context_cache_asset(spell=root_spell)
@@ -180,7 +180,7 @@ def test_creation_context_cache_asset_experiment() -> None:
             print("CREATION_CONTEXT_CACHE_ASSET_AFTER_LOAD")
             print(after_load)
 
-            rebuilt_instance = conduit.meld(spell=root_spell_id)
+            rebuilt_instance = conduit.meld(spell_id=root_spell_id)
             assert isinstance(rebuilt_instance, _CachedRoot)
         finally:
             root_spell._compiler_artifact = original_compiler_artifact

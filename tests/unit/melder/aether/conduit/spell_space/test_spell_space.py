@@ -243,17 +243,16 @@ def test_meld_delegates_to_owned_meld_runtime_and_returns_result(
     space._meld = delegate
 
     result = space.meld(
-        spell_name="spell-x",
-        spell="spell-id",
+        spell_id="spell-id",
         spellframe="frame-1",
         binding_name="bind-1",
-        spell_override={"k": "v"},
+        override={"k": "v"},
     )
 
     assert result is expected
     assert delegate.meld_calls == [
         {
-            "spell_name": "spell-x",
+            "spell_name": None,
             "spell": "spell-id",
             "spellframe": "frame-1",
             "binding_name": "bind-1",

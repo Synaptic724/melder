@@ -87,8 +87,8 @@ def test_bind_conjure_and_meld_method_spell_unique() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert service.calls == 1
     finally:

@@ -43,7 +43,7 @@ services.add_spell_to_contract(
     permissions="create",
 )
 services.validate_contracts_and_define()
-service = services.meld(spell=Service)
+service = services.meld("Service")
 ```
 
 The provider keeps ownership. The borrower receives only the contracted visibility and

@@ -8,7 +8,7 @@ GOAL: THE OTHER TWO OVERRIDE FORMS. Lesson 01 taught the PATH form -
         UNIQUE     *param    "there is exactly one of these, find it"
         BROADCAST  **param   "hit every one"
 
-      You still pass a plain dict to meld(spell_override=...). The
+      You still pass a plain dict to meld(override=...). The
       grammar lives in the KEY.
 
       WHY THE OTHER TWO EXIST
@@ -51,7 +51,7 @@ GOAL: THE OTHER TWO OVERRIDE FORMS. Lesson 01 taught the PATH form -
       lasts. Override into `unique` and you have changed the world.
       Everything below is bound `many` so each meld builds its own graph
       and the fixtures cannot escape the call.
-SURFACE EXERCISED: meld(spell_override={"*param": obj}) and {"**param": obj}
+SURFACE EXERCISED: meld(override={"*param": obj}) and {"**param": obj}
 VERIFY: rides the owner's 3.14t run; asserts are the contract.
 
 NOTE ON WHAT IS NOT TAUGHT HERE: `SpellOverrider` is the runtime helper
@@ -112,7 +112,7 @@ def main() -> None:
     # under it, so the wildcard resolves without naming the path.
     mail = conduit.meld(
         spell=MailPipeline,
-        spell_override={"*credentials": fixture},
+        override={"*credentials": fixture},
     )
     assert mail.transport.credentials is fixture
     print("*credentials found the single socket:",
@@ -124,7 +124,7 @@ def main() -> None:
     try:
         conduit.meld(
             spell=BackupPipeline,
-            spell_override={"*credentials": fixture},
+            override={"*credentials": fixture},
         )
         raise AssertionError("expected a refusal - *param matched twice")
     except Exception as error:
@@ -134,7 +134,7 @@ def main() -> None:
     # exactly what was asked for.
     backup = conduit.meld(
         spell=BackupPipeline,
-        spell_override={"**credentials": fixture},
+        override={"**credentials": fixture},
     )
     assert backup.transport.credentials is fixture
     assert backup.archive.credentials is fixture
@@ -147,7 +147,7 @@ def main() -> None:
     try:
         conduit.meld(
             spell=MailPipeline,
-            spell_override={"**nosuchparam": fixture},
+            override={"**nosuchparam": fixture},
         )
         raise AssertionError("expected a refusal - **param matched nothing")
     except Exception as error:
@@ -159,7 +159,7 @@ def main() -> None:
     specific.source = "archive-only"
     mixed = conduit.meld(
         spell=BackupPipeline,
-        spell_override={
+        override={
             "**credentials": fixture,
             "archive>credentials": specific,
         },

@@ -380,7 +380,7 @@ def _measure_cycle_meld1_ns(
     def cycle() -> None:
         lesser = conduit.create_lesser_conduit()
         try:
-            resolved = lesser.meld(spell=cycle_root_id)
+            resolved = lesser.meld(spell_id=cycle_root_id)
             if resolved is None:
                 raise AssertionError("cycle root meld returned None.")
         finally:
@@ -412,7 +412,7 @@ def _measure_spellspace_cycle_meld1_ns(
             context_manager = lesser.enter_spellspace()
             space = context_manager.__enter__()
             try:
-                resolved = space.meld(spell=space_root_id)
+                resolved = space.meld(spell_id=space_root_id)
                 if resolved is None:
                     raise AssertionError("space root meld returned None.")
             finally:
@@ -441,10 +441,10 @@ def _measure_threaded_warm_ns(
         lesser = conduit.create_lesser_conduit()
         try:
             for _ in range(warmup):
-                lesser.meld(spell=spell_id)
+                lesser.meld(spell_id=spell_id)
             barrier.wait()
             for _ in range(iterations):
-                lesser.meld(spell=spell_id)
+                lesser.meld(spell_id=spell_id)
             done.wait()
         finally:
             lesser.cleanup()
@@ -468,20 +468,20 @@ def _assert_differential_semantics(
     """
     Assert the identity contract every flag posture must satisfy.
     """
-    u1_a = conduit.meld(spell=spell_ids["u1"])
-    u1_b = conduit.meld(spell=spell_ids["u1"])
+    u1_a = conduit.meld(spell_id=spell_ids["u1"])
+    u1_b = conduit.meld(spell_id=spell_ids["u1"])
     if u1_a is not u1_b:
         raise AssertionError("unique dep identity is not stable across melds.")
-    many_a = conduit.meld(spell=spell_ids["many2"])
-    many_b = conduit.meld(spell=spell_ids["many2"])
+    many_a = conduit.meld(spell_id=spell_ids["many2"])
+    many_b = conduit.meld(spell_id=spell_ids["many2"])
     if many_a is many_b:
         raise AssertionError("many root returned a cached instance.")
     if many_a.u1 is not u1_a:
         raise AssertionError("many root did not receive the shared unique dep.")
     lesser_one = conduit.create_lesser_conduit()
     try:
-        cycle_a = lesser_one.meld(spell=spell_ids["cycle_root"])
-        cycle_b = lesser_one.meld(spell=spell_ids["cycle_root"])
+        cycle_a = lesser_one.meld(spell_id=spell_ids["cycle_root"])
+        cycle_b = lesser_one.meld(spell_id=spell_ids["cycle_root"])
         if cycle_a is not cycle_b:
             raise AssertionError("unique_per_conduit root not cached in scope.")
         if cycle_a.u1 is not u1_a:
@@ -490,7 +490,7 @@ def _assert_differential_semantics(
         lesser_one.cleanup()
     lesser_two = conduit.create_lesser_conduit()
     try:
-        cycle_c = lesser_two.meld(spell=spell_ids["cycle_root"])
+        cycle_c = lesser_two.meld(spell_id=spell_ids["cycle_root"])
         if cycle_c is cycle_a:
             raise AssertionError("unique_per_conduit root leaked across scopes.")
     finally:
@@ -520,20 +520,20 @@ def test_singleton_specialization_efficacy_probe() -> None:
             # Install/settle: after warm melds the executor slot must be
             # stable in BOTH postures (specialized swap settles once). The
             # context is built lazily at FIRST meld, so meld before reading it.
-            conduit.meld(spell=spell_ids["many8"])
-            conduit.meld(spell=spell_ids["many8"])
+            conduit.meld(spell_id=spell_ids["many8"])
+            conduit.meld(spell_id=spell_ids["many8"])
             many8_context = spells["many8"]._creation_context
             if many8_context is None:
                 raise AssertionError("many8 context missing after melds.")
             settled = many8_context._no_overrides_executor
-            conduit.meld(spell=spell_ids["many8"])
+            conduit.meld(spell_id=spell_ids["many8"])
             if many8_context._no_overrides_executor is not settled:
                 raise AssertionError("executor slot did not settle post-install.")
 
             lane_ns: Dict[str, float] = {}
             for lane in lanes:
                 lane_ns[lane] = _measure_average_ns(
-                    lambda lane_id=spell_ids[lane]: conduit.meld(spell=lane_id),
+                    lambda lane_id=spell_ids[lane]: conduit.meld(spell_id=lane_id),
                     iterations=iterations,
                     warmup=warmup,
                 )
@@ -560,13 +560,13 @@ def test_singleton_specialization_efficacy_probe() -> None:
             if flag:
                 # Deopt control: bump one captured dep's epoch; identity
                 # semantics must hold and the lane must not error.
-                live_u1 = conduit.meld(spell=spell_ids["u1"])
+                live_u1 = conduit.meld(spell_id=spell_ids["u1"])
                 spells["u1"]._door_epoch += 1
-                deopt_many = conduit.meld(spell=spell_ids["many2"])
+                deopt_many = conduit.meld(spell_id=spell_ids["many2"])
                 if deopt_many.u1 is not live_u1:
                     raise AssertionError("deopt broke dependency identity.")
                 lane_ns["deopt_many2"] = _measure_average_ns(
-                    lambda: conduit.meld(spell=spell_ids["many2"]),
+                    lambda: conduit.meld(spell_id=spell_ids["many2"]),
                     iterations=iterations,
                     warmup=warmup,
                 )

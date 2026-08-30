@@ -154,7 +154,7 @@ def test_forced_phase14_wipe_after_late_bind_single_spell_experiment() -> None:
         print("FORCED_PHASE14_SINGLE_AFTER_WIPE")
         print(_artifact_snapshot(root_spell))
 
-        created = conduit.meld(spell=root_spell_id)
+        created = conduit.meld(spell_id=root_spell_id)
         print("FORCED_PHASE14_SINGLE_AFTER_MELD")
         print(_artifact_snapshot(root_spell))
 
@@ -217,7 +217,7 @@ def test_forced_phase14_wipe_after_late_bind_pair_experiment() -> None:
             }
         )
 
-        created = conduit.meld(spell=consumer_id)
+        created = conduit.meld(spell_id=consumer_id)
         print("FORCED_PHASE14_PAIR_AFTER_MELD")
         print(
             {

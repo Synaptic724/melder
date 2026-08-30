@@ -68,7 +68,7 @@ def test_live_sim_dynamic_bootstrap_links_and_melds_application() -> None:
         assert state.has_errors() is False
         assert state.get_root_validity(context.application_id) is SpellValidity.valid
 
-        app = borrower.conduit.meld(spell=context.application_id)
+        app = borrower.conduit.meld(spell_id=context.application_id)
         assert isinstance(app, LiveSimApplication)
         assert isinstance(app.worker, LiveSimWorker)
         assert isinstance(app.worker.handler, LiveSimHandler)

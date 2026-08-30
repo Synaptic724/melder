@@ -84,7 +84,7 @@ def test_creation_gate_ticket_tracking_success(
     """
     meld_mock = MagicMock(return_value="ok")
     monkeypatch.setattr(ConduitMeld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
-    result = conduit_dynamic_normal.meld(spell="spell-id")
+    result = conduit_dynamic_normal.meld(spell_id="spell-id")
     assert result == "ok"
     assert conduit_dynamic_normal._creation_gate.active_ticket_count() == 0
 
@@ -102,7 +102,7 @@ def test_creation_gate_ticket_tracking_exception(
     meld_mock = MagicMock(side_effect=RuntimeError("boom"))
     monkeypatch.setattr(ConduitMeld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
     with pytest.raises(RuntimeError, match="boom"):
-        conduit_dynamic_normal.meld(spell="spell-id")
+        conduit_dynamic_normal.meld(spell_id="spell-id")
     assert conduit_dynamic_normal._creation_gate.active_ticket_count() == 0
 
 
@@ -185,4 +185,4 @@ def test_creation_gate_controller_close_and_wait(
     meld_mock = MagicMock(return_value="ok")
     monkeypatch.setattr(ConduitMeld, "meld", lambda self, *args, **kwargs: meld_mock(*args, **kwargs))
     with pytest.raises(RuntimeError, match="CreationGate is closed"):
-        conduit_dynamic_normal.meld(spell="spell-id")
+        conduit_dynamic_normal.meld(spell_id="spell-id")

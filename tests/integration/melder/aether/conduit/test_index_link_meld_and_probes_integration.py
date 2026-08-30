@@ -57,7 +57,7 @@ def _make_spellbook() -> Spellbook:
 
 def _resolves(conduit: Conduit, spell_id: str) -> bool:
     try:
-        return conduit.meld(spell=spell_id) is not None
+        return conduit.meld(spell_id=spell_id) is not None
     except Exception:
         return False
 
@@ -108,7 +108,7 @@ def _two_member_linked() -> Iterator[tuple]:
 def test_borrower_melds_active_member_through_index_link():
     with _single_linked("create") as (ob, bb, owner, borrower, id_a, index):
         assert borrower.validate_contracts_and_define()
-        assert isinstance(borrower.meld(spell=id_a), _ServiceA)
+        assert isinstance(borrower.meld(spell_id=id_a), _ServiceA)
 
 
 def test_borrower_loses_meld_after_index_unlink():
@@ -124,7 +124,7 @@ def test_borrower_melds_new_active_after_owner_notch():
     with _two_member_linked() as (ob, bb, owner, borrower, id_a, id_b, index, spell_b):
         owner.notch_spell(spell_index=index, spell=spell_b)
         assert borrower.validate_contracts_and_define()
-        assert isinstance(borrower.meld(spell=id_b), _ServiceB)
+        assert isinstance(borrower.meld(spell_id=id_b), _ServiceB)
 
 
 # --- existence spreads lineage-wide ----------------------------------------
@@ -214,7 +214,7 @@ def test_notch_to_already_active_is_noop():
         spell_a = book.find_spell_by_id(id_a)
         conduit.notch_spell(spell_index=spell_a.spell_index, spell=spell_a)  # already active
         assert spell_a.spell_index.selected_spell_id == id_a
-        assert isinstance(conduit.meld(spell=id_a), _ServiceA)
+        assert isinstance(conduit.meld(spell_id=id_a), _ServiceA)
     finally:
         conduit.cleanup()
 
@@ -238,7 +238,7 @@ def test_transfer_multi_member_target_melds_active():
     spell_b = owner_book._get_owned_spell(id_b)
     try:
         owner.transfer_spell_ownership(spell=id_a, target_conduit=target)
-        assert isinstance(target.meld(spell=id_a), _ServiceA)
+        assert isinstance(target.meld(spell_id=id_a), _ServiceA)
     finally:
         target.permanent_cleanup()
         owner.permanent_cleanup()
@@ -289,6 +289,6 @@ def test_notched_away_id_is_evicted_from_resolution():
         conduit.notch_spell(spell_index=index, spell=spell_b)
         # The outgoing id A is off the resolution surface; the new active B melds.
         assert _resolves(conduit, id_a) is False
-        assert isinstance(conduit.meld(spell=id_b), _ServiceB)
+        assert isinstance(conduit.meld(spell_id=id_b), _ServiceB)
     finally:
         conduit.cleanup()

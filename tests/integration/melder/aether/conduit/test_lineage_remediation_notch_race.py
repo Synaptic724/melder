@@ -196,7 +196,7 @@ def test_notch_during_open_remediation_window_cannot_poison_post_settle_truth(
 
         def melder() -> None:
             try:
-                meld_outcome["value"] = conduit.meld(spell=id_a)
+                meld_outcome["value"] = conduit.meld(spell_id=id_a)
             except Exception as error:  # legal refusal is a finding, not a fail
                 meld_outcome["error"] = error
 
@@ -275,7 +275,7 @@ def test_notch_during_open_remediation_window_cannot_poison_post_settle_truth(
                else "completed DURING the window")
         )
         try:
-            fresh = conduit.meld(spell=id_b)
+            fresh = conduit.meld(spell_id=id_b)
         except Exception as poison:
             pytest.fail(
                 "POISONING VERDICT: post-settle meld of the notched-in "
@@ -314,4 +314,4 @@ def test_sequential_notch_control_lane():
     with _two_member_index() as (book, conduit, id_a, id_b, index, spell_b):
         conduit.notch_spell(spell_index=index, spell=spell_b)
         assert index.selected_spell_id == id_b
-        assert isinstance(conduit.meld(spell=id_b), _RaceBeta)
+        assert isinstance(conduit.meld(spell_id=id_b), _RaceBeta)

@@ -85,8 +85,8 @@ def test_upgrade_to_normal_flips_lineage_root_pointer_to_self() -> None:
             "a lesser's lineage-root pointer must be the root's creations"
         )
         # ...and that pointer drives behavior: root + lesser share one instance.
-        inst_root = root.meld(spell=spell_id)
-        inst_lesser = lesser.meld(spell=spell_id)
+        inst_root = root.meld(spell_id=spell_id)
+        inst_lesser = lesser.meld(spell_id=spell_id)
         assert inst_lesser is inst_root, "lineage instance must be shared pre-upgrade"
 
         # Promote the lesser to its own normal/root conduit.

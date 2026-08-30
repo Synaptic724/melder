@@ -20,7 +20,7 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.2"
-SOURCE_SHA256 = "29e8e8c803df9621c3f8eef77656ff780d0dadda0437731c56199feea6e440ea"
+SOURCE_SHA256 = "8ce5365168b924bef7920c5851746c4b10b5ad86e3b4706c5bb0d3773fef7d7c"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -52,8 +52,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_components.md',
         'payload_module': 'src_components_payload',
-        'line_count': 8370,
-        'content_sha256': 'c7701f1174533ef29676309e9ec4ce19ae50430e48ce972ce068783bcfa99fc7',
+        'line_count': 8376,
+        'content_sha256': '158ea89ea5a16df3ec5e764446fba574394d4f8d98d5918ce63c16e06c5c8c7c',
     },
     '__graph_network__': {
         'name': '__graph_network__',

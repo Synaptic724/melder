@@ -101,7 +101,7 @@ def main() -> None:
     services.add_spell_to_contract(                                  # 4) pull
         spell_id=config_id, conduit=platform, permissions="create",
     )
-    service = services.meld(spell=service_id)                        # 5) meld after the fact
+    service = services.meld(spell_id=service_id)                        # 5) meld after the fact
 
     # ---- EDGE 2: services feeds workflows (same cycle, one level up) ----
     workflows = workflows_book.conjure(dynamic=True, name="workflows")
@@ -109,7 +109,7 @@ def main() -> None:
     workflows.add_spell_to_contract(
         spell_id=service_id, conduit=services, permissions="create",
     )
-    workflow = workflows.meld(spell=workflow_id)
+    workflow = workflows.meld(spell_id=workflow_id)
 
     assert workflow.service is service  # the finished product crossed the edge
     print("category chain resolved:", workflow.run())

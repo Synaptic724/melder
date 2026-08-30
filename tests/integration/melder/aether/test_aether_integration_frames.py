@@ -261,7 +261,7 @@ def test_bottom_up_frame_cleanup_cleans_conduits_and_removes_frame() -> None:
     with pytest.raises(ValueError, match="does not exist"):
         aether._get_conduit_by_id(conduit_id, frame_name)
     with pytest.raises(RuntimeError, match="already been cleaned"):
-        conduit.meld(spell=spell_id)
+        conduit.meld(spell_id=spell_id)
 
 
 def test_aether_configuration_bound_on_conjure_and_shared_by_frame() -> None:

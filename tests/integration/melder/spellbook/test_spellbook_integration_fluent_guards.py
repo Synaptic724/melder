@@ -135,8 +135,8 @@ def test_spellbinder_singular_hooks_execute() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert events == ["pre", "activation", "post", "pre", "post"]
     finally:

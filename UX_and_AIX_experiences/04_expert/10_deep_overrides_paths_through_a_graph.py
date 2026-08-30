@@ -39,7 +39,7 @@ GOAL: OVERRIDES WHEN THE GRAPH IS DEEP. Advanced 19 taught the three
       Every one of these is the never-substitute law again: melder would
       rather refuse than guess which socket you meant. Advanced 19 proved
       it on counts; this proves it on addresses.
-SURFACE EXERCISED: conduit.meld(spell_override=...) with multi-hop paths,
+SURFACE EXERCISED: conduit.meld(override=...) with multi-hop paths,
                    branch replacement, path-beats-broadcast precedence,
                    and the refusal on an unresolvable path
 VERIFY: RUN GREEN 2026-08-03 on the owner's 3.14t harness.
@@ -93,7 +93,7 @@ def main() -> None:
     swapped.label = "gateway-only"
     one = conduit.meld(
         spell=Edge,
-        spell_override={"gateway>upstream>credentials": swapped},
+        override={"gateway>upstream>credentials": swapped},
     )
     assert one.gateway.upstream.credentials.label == "gateway-only"
     assert one.mirror.upstream.credentials.label == "real"
@@ -106,7 +106,7 @@ def main() -> None:
     grafted_credentials.label = "grafted"
     grafted = conduit.meld(
         spell=Edge,
-        spell_override={"mirror>upstream": Upstream(grafted_credentials)},
+        override={"mirror>upstream": Upstream(grafted_credentials)},
     )
     assert grafted.mirror.upstream.credentials.label == "grafted"
     assert grafted.gateway.upstream.credentials.label == "real"
@@ -115,7 +115,7 @@ def main() -> None:
     # 3. AMBIGUITY IS THE NORMAL CASE AT DEPTH. `*credentials` matches
     #    twice here, and melder refuses rather than picking one.
     try:
-        conduit.meld(spell=Edge, spell_override={"*credentials": swapped})
+        conduit.meld(spell=Edge, override={"*credentials": swapped})
         raise AssertionError("expected a refusal: *param matched twice")
     except Exception as error:
         print()
@@ -127,7 +127,7 @@ def main() -> None:
     everywhere.label = "all"
     broad = conduit.meld(
         spell=Edge,
-        spell_override={"**credentials": everywhere},
+        override={"**credentials": everywhere},
     )
     assert broad.gateway.upstream.credentials.label == "all"
     assert broad.mirror.upstream.credentials.label == "all"
@@ -139,7 +139,7 @@ def main() -> None:
     pinned.label = "pinned"
     mixed = conduit.meld(
         spell=Edge,
-        spell_override={
+        override={
             "**credentials": everywhere,
             "gateway>upstream>credentials": pinned,
         },
@@ -156,7 +156,7 @@ def main() -> None:
     try:
         conduit.meld(
             spell=Edge,
-            spell_override={"gateway>upstrem>credentials": swapped},
+            override={"gateway>upstrem>credentials": swapped},
         )
         raise AssertionError("expected a refusal: no such path")
     except Exception as error:

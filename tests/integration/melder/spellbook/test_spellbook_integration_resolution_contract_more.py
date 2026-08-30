@@ -307,7 +307,7 @@ def test_type_hint_di_by_concrete_class_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        service = conduit.meld(spell=service_id)
+        service = conduit.meld(spell_id=service_id)
         assert isinstance(service.dep, _Dependency)
         assert service.dep.marker == "dep"
     finally:
@@ -381,7 +381,7 @@ def test_spellmap_default_with_string_frame_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        service = conduit.meld(spell=service_id)
+        service = conduit.meld(spell_id=service_id)
         assert isinstance(service.cfg, _Config)
         assert service.cfg.marker == "config"
     finally:
@@ -553,7 +553,7 @@ def test_spellmap_default_with_function_spell_resolves() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        service = conduit.meld(spell=service_id)
+        service = conduit.meld(spell_id=service_id)
         assert service.product is not None
         assert calls == ["called"]
     finally:
@@ -662,7 +662,7 @@ def test_collection_di_by_protocol_includes_all_bindings() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -1401,8 +1401,8 @@ def test_meld_by_spell_id_resolves_class_instance_unique() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert first.marker == "unique"
     finally:
@@ -1453,7 +1453,7 @@ def test_meld_by_spell_id_resolves_existing_instance_identity() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        resolved = conduit.meld(spell=spell_id)
+        resolved = conduit.meld(spell_id=spell_id)
         assert resolved is config_obj
         assert resolved.label == "existing"
     finally:
@@ -2065,7 +2065,7 @@ def test_meld_by_class_with_spell_override_dict_applies_kwargs() -> None:
     try:
         instance = conduit.meld(
             spell=_Service,
-            spell_override={"value": 5, "label": "root"},
+            override={"value": 5, "label": "root"},
         )
         assert instance.value == 5
         assert instance.label == "root"

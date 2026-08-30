@@ -37,7 +37,7 @@ root = book.conjure()
 request_scope = root.create_lesser_conduit()
 
 try:
-    handler = request_scope.meld(spell=RequestHandler)
+    handler = request_scope.meld("RequestHandler")
     handler.handle()
 finally:
     request_scope.cleanup()

@@ -154,19 +154,19 @@ def test_conduit_integration_creations_extract_restore_reuses_instances() -> Non
     conduit = spellbook.conjure(name="root")
     try:
         creations = conduit._creations
-        unique_instance = conduit.meld(spell=unique_id)
+        unique_instance = conduit.meld(spell_id=unique_id)
 
         unique_snapshot = creations.extract_spell_creations(unique_id)
         creations.restore_spell_creations(unique_id, unique_snapshot)
 
-        reused_unique = conduit.meld(spell=unique_id)
+        reused_unique = conduit.meld(spell_id=unique_id)
         assert reused_unique is unique_instance
 
         with conduit.enter_spellspace() as space:
-            spellspace_instance = space.meld(spell=spellspace_id)
+            spellspace_instance = space.meld(spell_id=spellspace_id)
             spellspace_snapshot = creations.extract_spell_creations(spellspace_id)
             creations.restore_spell_creations(spellspace_id, spellspace_snapshot)
-            reused_spellspace = space.meld(spell=spellspace_id)
+            reused_spellspace = space.meld(spell_id=spellspace_id)
             assert reused_spellspace is spellspace_instance
     finally:
         conduit.cleanup()
@@ -204,16 +204,16 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
     root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
-        unique_instance = lesser.meld(spell=unique_id)
-        many_instance = lesser.meld(spell=many_id)
+        unique_instance = lesser.meld(spell_id=unique_id)
+        many_instance = lesser.meld(spell_id=many_id)
 
         lesser.upgrade_to_normal(name="upgraded")
 
         assert isinstance(lesser._creations, Creations)
-        reused_unique = lesser.meld(spell=unique_id)
+        reused_unique = lesser.meld(spell_id=unique_id)
         assert reused_unique is unique_instance
 
-        many_after = lesser.meld(spell=many_id)
+        many_after = lesser.meld(spell_id=many_id)
         assert many_after is not many_instance
         bucket = lesser._creations._disposable_creations.get(many_id)
         assert bucket is not None

@@ -83,7 +83,7 @@ def test_spellbook_context_manager_allows_binding_and_meld() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
     finally:
         conduit.cleanup()

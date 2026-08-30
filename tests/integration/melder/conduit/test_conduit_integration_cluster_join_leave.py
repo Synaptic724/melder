@@ -62,14 +62,14 @@ def test_cluster_join_into_live_cluster_shares_leader_instance() -> None:
         cloud.refresh_cluster_shares_for_conduit(owner)
         cloud.get_cluster("cluster-a").elect_leader(owner.id)
 
-        owner_instance = owner.meld(spell=spell_id)
+        owner_instance = owner.meld(spell_id=spell_id)
 
         # Borrower joins the LIVE cluster: handle_join binds its facade to the
         # leader store and the refresh shares the cluster spell to it.
         cloud.add_conduit_to_cluster(borrower, "cluster-a")
         cloud.refresh_cluster_shares_for_conduit(owner)
 
-        borrower_instance = borrower.meld(spell=spell_id)
+        borrower_instance = borrower.meld(spell_id=spell_id)
         assert borrower_instance is owner_instance
     finally:
         borrower.cleanup()
@@ -89,13 +89,13 @@ def test_cluster_non_leader_leave_keeps_leader_active() -> None:
         cloud.refresh_cluster_shares_for_conduit(owner)
         cloud.get_cluster("cluster-a").elect_leader(owner.id)
 
-        owner_instance = owner.meld(spell=spell_id)
-        assert borrower.meld(spell=spell_id) is owner_instance
+        owner_instance = owner.meld(spell_id=spell_id)
+        assert borrower.meld(spell_id=spell_id) is owner_instance
 
         cloud.remove_conduit_from_cluster(borrower, "cluster-a")
 
         # The leader is untouched: it still resolves the same shared instance.
-        assert owner.meld(spell=spell_id) is owner_instance
+        assert owner.meld(spell_id=spell_id) is owner_instance
         # The leaver's team-store facade was dropped.
         assert borrower._cluster_creations.is_active() is False
     finally:
@@ -116,8 +116,8 @@ def test_cluster_leader_leave_dissolves_and_hard_errors() -> None:
         cloud.refresh_cluster_shares_for_conduit(owner)
         cloud.get_cluster("cluster-a").elect_leader(owner.id)
 
-        owner_instance = owner.meld(spell=spell_id)
-        assert borrower.meld(spell=spell_id) is owner_instance
+        owner_instance = owner.meld(spell_id=spell_id)
+        assert borrower.meld(spell_id=spell_id) is owner_instance
 
         cloud.remove_conduit_from_cluster(owner, "cluster-a")
 
@@ -125,7 +125,7 @@ def test_cluster_leader_leave_dissolves_and_hard_errors() -> None:
         # Spell, but the team-store facade is now disabled and the meld door
         # hard-errors.
         with pytest.raises(RuntimeError, match="no elected cluster leader"):
-            owner.meld(spell=spell_id)
+            owner.meld(spell_id=spell_id)
         assert cloud.get_cluster("cluster-a").master_conduit_id is None
     finally:
         borrower.cleanup()

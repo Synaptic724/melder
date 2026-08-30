@@ -124,7 +124,7 @@ def test_spell_contract_resolves_by_explicit_spell_class_binding_normalized() ->
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert isinstance(instance.service, ContractServicePrimary)
     finally:
@@ -162,7 +162,7 @@ def test_spell_contract_string_frame_missing_provider_raises() -> None:
     try:
         assert conduit.validate_contracts_and_define() == {}
         with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
-            conduit.meld(spell=consumer_id)
+            conduit.meld(spell_id=consumer_id)
     finally:
         conduit.cleanup()
 
@@ -206,7 +206,7 @@ def test_spell_contract_dual_occurrence_many_providers_distinct() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert isinstance(instance.left, ContractServicePrimary)
         assert isinstance(instance.right, ContractServicePrimary)
@@ -255,7 +255,7 @@ def test_spell_contract_dual_occurrence_unique_providers_shared() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert isinstance(instance.left, ContractServicePrimary)
         assert instance.left is instance.right
@@ -303,7 +303,7 @@ def test_spell_contract_override_list_payload_applies() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert instance.service.marker == "override-list"
     finally:
@@ -350,7 +350,7 @@ def test_spell_contract_override_tuple_payload_applies() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert instance.service.marker == "override-tuple"
     finally:
@@ -397,7 +397,7 @@ def test_spell_contract_override_dict_args_payload_applies() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert instance.service.marker == "override-dict-args"
     finally:
@@ -427,7 +427,7 @@ def test_spell_contract_missing_provider_raises() -> None:
     conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
-            conduit.meld(spell=consumer_id)
+            conduit.meld(spell_id=consumer_id)
     finally:
         conduit.cleanup()
 
@@ -523,7 +523,7 @@ def test_spell_contract_missing_dependency_does_not_gate_provider_state() -> Non
         assert provider_state.validity is SpellValidity.valid
 
         with pytest.raises(SpellbookValidationError):
-            borrower.meld(spell=consumer_id)
+            borrower.meld(spell_id=consumer_id)
 
         assert provider_state.validity is SpellValidity.valid
     finally:
@@ -596,7 +596,7 @@ def test_spell_contract_runtime_error_does_not_gate_provider_state() -> None:
         assert provider_state.validity is SpellValidity.valid
 
         with pytest.raises(MeldExecutionError):
-            borrower.meld(spell=consumer_id)
+            borrower.meld(spell_id=consumer_id)
 
         assert provider_state.validity is SpellValidity.valid
     finally:
@@ -651,7 +651,7 @@ def test_spell_contract_contract_removed_raises_without_provider() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert isinstance(instance.service, ContractServiceRemote)
 
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -659,7 +659,7 @@ def test_spell_contract_contract_removed_raises_without_provider() -> None:
         assert borrower.validate_contracts_and_define() == {}
 
         with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
-            borrower.meld(spell=consumer_id)
+            borrower.meld(spell_id=consumer_id)
     finally:
         borrower.cleanup()
         owner.cleanup()
@@ -704,7 +704,7 @@ def test_spell_contract_secondary_binding_resolves() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert isinstance(instance.service, ContractServiceSecondary)
     finally:
         borrower.cleanup()
@@ -750,7 +750,7 @@ def test_spell_contract_config_frame_resolves() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert isinstance(instance.config, ContractConfigPrimary)
     finally:
         borrower.cleanup()
@@ -797,7 +797,7 @@ def test_spell_contract_transfer_ownership_force_unshare_blocks_contract() -> No
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert isinstance(instance.service, ContractServicePrimary)
 
         owner.transfer_spell_ownership(
@@ -814,7 +814,7 @@ def test_spell_contract_transfer_ownership_force_unshare_blocks_contract() -> No
                 SpellbookValidationError,
                 match="Spellbook validation failed",
         ):
-            borrower.meld(spell=consumer_id)
+            borrower.meld(spell_id=consumer_id)
     finally:
         borrower.cleanup()
         owner.cleanup()

@@ -137,10 +137,10 @@ def test_unique_shared_across_root_and_lesser() -> None:
     sid = book.bind(spell=_Leaf, existence=_UNIQUE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_inst = root.meld(spell=sid)
+        root_inst = root.meld(spell_id=sid)
         lesser = root.create_lesser_conduit()
         try:
-            assert lesser.meld(spell=sid) is root_inst
+            assert lesser.meld(spell_id=sid) is root_inst
         finally:
             lesser.cleanup()
     finally:
@@ -154,12 +154,12 @@ def test_unique_shared_across_nested_lesser() -> None:
     sid = book.bind(spell=_Leaf, existence=_UNIQUE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_inst = root.meld(spell=sid)
+        root_inst = root.meld(spell_id=sid)
         lesser = root.create_lesser_conduit()
         try:
             nested = lesser.create_lesser_conduit()
             try:
-                assert nested.meld(spell=sid) is root_inst
+                assert nested.meld(spell_id=sid) is root_inst
             finally:
                 nested.cleanup()
         finally:
@@ -176,12 +176,12 @@ def test_unique_dependency_shared_across_lessers() -> None:
     parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
-        root_parent = root.meld(spell=parent_id)
+        root_leaf = root.meld(spell_id=leaf_id)
+        root_parent = root.meld(spell_id=parent_id)
         assert root_parent.dep is root_leaf
         lesser = root.create_lesser_conduit()
         try:
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         assert lesser_parent.dep is root_leaf, (
@@ -200,12 +200,12 @@ def test_unique_dependency_shared_across_many_holders_on_multiple_lessers() -> N
     parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         deps: List[Any] = []
         for _ in range(3):
             lesser = root.create_lesser_conduit()
             try:
-                deps.append(lesser.meld(spell=parent_id).dep)
+                deps.append(lesser.meld(spell_id=parent_id).dep)
             finally:
                 lesser.cleanup()
         assert all(d is root_leaf for d in deps), (
@@ -225,7 +225,7 @@ def test_upc_stable_within_a_single_conduit() -> None:
     sid = book.bind(spell=_Leaf, existence=_UPC, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        assert root.meld(spell=sid) is root.meld(spell=sid)
+        assert root.meld(spell_id=sid) is root.meld(spell_id=sid)
     finally:
         root.permanent_cleanup()
         book.cleanup()
@@ -237,10 +237,10 @@ def test_upc_distinct_between_root_and_lesser() -> None:
     sid = book.bind(spell=_Leaf, existence=_UPC, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_inst = root.meld(spell=sid)
+        root_inst = root.meld(spell_id=sid)
         lesser = root.create_lesser_conduit()
         try:
-            assert lesser.meld(spell=sid) is not root_inst
+            assert lesser.meld(spell_id=sid) is not root_inst
         finally:
             lesser.cleanup()
     finally:
@@ -255,10 +255,10 @@ def test_upc_dependency_is_per_conduit() -> None:
     parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_parent = root.meld(spell=parent_id)
+        root_parent = root.meld(spell_id=parent_id)
         lesser = root.create_lesser_conduit()
         try:
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         assert root_parent.dep is not lesser_parent.dep, (
@@ -282,11 +282,11 @@ def test_upc_shared_across_spellspaces_of_one_conduit() -> None:
     sid = book.bind(spell=_Leaf, existence=_UPC, permissions="create")
     root = book.conjure(dynamic=True, name="root")
     try:
-        direct = root.meld(spell=sid)
+        direct = root.meld(spell_id=sid)
         with root.enter_spellspace() as s1:
-            in_s1 = s1.meld(spell=sid)
+            in_s1 = s1.meld(spell_id=sid)
         with root.enter_spellspace() as s2:
-            in_s2 = s2.meld(spell=sid)
+            in_s2 = s2.meld(spell_id=sid)
         assert in_s1 is direct, (
             "a unique_per_conduit melded inside a spellspace must be the conduit's instance"
         )
@@ -311,8 +311,8 @@ def test_upc_dependency_distinct_per_lesser_across_many_holders() -> None:
         for _ in range(3):
             lesser = root.create_lesser_conduit()
             try:
-                first = lesser.meld(spell=parent_id)
-                second = lesser.meld(spell=parent_id)
+                first = lesser.meld(spell_id=parent_id)
+                second = lesser.meld(spell_id=parent_id)
                 assert first.dep is second.dep, (
                     "two many holders on one conduit share that conduit's upc dependency"
                 )
@@ -336,10 +336,10 @@ def test_lineage_shared_across_root_and_lesser() -> None:
     sid = book.bind(spell=_Leaf, existence=_LINEAGE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_inst = root.meld(spell=sid)
+        root_inst = root.meld(spell_id=sid)
         lesser = root.create_lesser_conduit()
         try:
-            assert lesser.meld(spell=sid) is root_inst
+            assert lesser.meld(spell_id=sid) is root_inst
         finally:
             lesser.cleanup()
     finally:
@@ -353,12 +353,12 @@ def test_lineage_shared_across_nested_lesser() -> None:
     sid = book.bind(spell=_Leaf, existence=_LINEAGE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_inst = root.meld(spell=sid)
+        root_inst = root.meld(spell_id=sid)
         lesser = root.create_lesser_conduit()
         try:
             nested = lesser.create_lesser_conduit()
             try:
-                assert nested.meld(spell=sid) is root_inst, (
+                assert nested.meld(spell_id=sid) is root_inst, (
                     "nested lesser must still share the lineage-root instance"
                 )
             finally:
@@ -377,10 +377,10 @@ def test_lineage_dependency_into_many_parent_resolves_root_instance() -> None:
     parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser = root.create_lesser_conduit()
         try:
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         assert lesser_parent.dep is root_leaf, (
@@ -398,10 +398,10 @@ def test_lineage_dependency_into_upc_parent_resolves_root_instance() -> None:
     parent_id = book.bind(spell=_Parent, existence=_UPC, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser = root.create_lesser_conduit()
         try:
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         assert lesser_parent.dep is root_leaf, (
@@ -419,12 +419,12 @@ def test_lineage_legal_dependency_on_unique_resolves_shared() -> None:
     parent_id = book.bind(spell=_Parent, existence=_LINEAGE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_unique = root.meld(spell=leaf_id)
-        root_parent = root.meld(spell=parent_id)
+        root_unique = root.meld(spell_id=leaf_id)
+        root_parent = root.meld(spell_id=parent_id)
         assert root_parent.dep is root_unique
         lesser = root.create_lesser_conduit()
         try:
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         assert lesser_parent is root_parent, "lineage holder is shared across the lineage"
@@ -443,7 +443,7 @@ def test_many_is_fresh_on_every_meld() -> None:
     sid = book.bind(spell=_Leaf, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        assert root.meld(spell=sid) is not root.meld(spell=sid)
+        assert root.meld(spell_id=sid) is not root.meld(spell_id=sid)
     finally:
         root.permanent_cleanup()
         book.cleanup()
@@ -456,8 +456,8 @@ def test_many_dependency_is_fresh_per_holder() -> None:
     parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        p1 = root.meld(spell=parent_id)
-        p2 = root.meld(spell=parent_id)
+        p1 = root.meld(spell_id=parent_id)
+        p2 = root.meld(spell_id=parent_id)
         assert p1 is not p2
         assert p1.dep is not p2.dep, "many dependency must not be reused across holders"
     finally:
@@ -475,7 +475,7 @@ def test_spellspace_shared_within_one_scope() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as space:
-            assert space.meld(spell=sid) is space.meld(spell=sid)
+            assert space.meld(spell_id=sid) is space.meld(spell_id=sid)
     finally:
         root.permanent_cleanup()
         book.cleanup()
@@ -488,9 +488,9 @@ def test_spellspace_distinct_across_scopes() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as s1:
-            first = s1.meld(spell=sid)
+            first = s1.meld(spell_id=sid)
         with root.enter_spellspace() as s2:
-            second = s2.meld(spell=sid)
+            second = s2.meld(spell_id=sid)
         assert first is not second, "each spellspace scope owns its own instance"
     finally:
         root.permanent_cleanup()
@@ -505,8 +505,8 @@ def test_spellspace_dependency_within_scope() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as space:
-            leaf = space.meld(spell=leaf_id)
-            parent = space.meld(spell=parent_id)
+            leaf = space.meld(spell_id=leaf_id)
+            parent = space.meld(spell_id=parent_id)
             assert parent.dep is leaf
     finally:
         root.permanent_cleanup()
@@ -521,11 +521,11 @@ def test_spellspace_holder_on_lesser_resolves_root_lineage_dependency() -> None:
     parent_id = book.bind(spell=_Parent, existence=_SPELLSPACE, permissions="create")
     root = book.conjure(dynamic=True, name="root")
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser = root.create_lesser_conduit()
         try:
             with lesser.enter_spellspace() as space:
-                parent = space.meld(spell=parent_id)
+                parent = space.meld(spell_id=parent_id)
                 assert parent.dep is root_leaf, (
                     "spellspace holder on a lesser must resolve the ROOT lineage dep"
                 )
@@ -557,7 +557,7 @@ def test_cluster_meld_without_elected_leader_raises() -> None:
         cloud.add_conduit_to_cluster(owner, "cluster-a")
         cloud.refresh_cluster_shares_for_conduit(owner)
         with pytest.raises(RuntimeError):
-            owner.meld(spell=spell_id)
+            owner.meld(spell_id=spell_id)
     finally:
         owner.permanent_cleanup()
 
@@ -574,8 +574,8 @@ def test_cluster_meld_with_elected_leader_is_stable_in_leader_store() -> None:
         cloud.refresh_cluster_shares_for_conduit(owner)
         cloud.get_cluster("cluster-a").elect_leader(owner.id)
 
-        first = owner.meld(spell=spell_id)
-        second = owner.meld(spell=spell_id)
+        first = owner.meld(spell_id=spell_id)
+        second = owner.meld(spell_id=spell_id)
         assert first is second, "cluster spell is a singleton in the leader store"
         assert owner._cluster_creations.resolved_store() is owner._creations, (
             "the elected leader's cluster store is the leader conduit's own store"
@@ -626,7 +626,7 @@ def test_concurrent_meld_unique_yields_single_instance() -> None:
 
     def _worker() -> None:
         barrier.wait()
-        inst = root.meld(spell=sid)
+        inst = root.meld(spell_id=sid)
         with lock:
             results.append(inst)
 
@@ -651,7 +651,7 @@ def test_concurrent_lineage_dependency_resolves_single_root_instance() -> None:
     leaf_id = book.bind(spell=_Leaf, existence=_LINEAGE, permissions="create")
     parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
-    root_leaf = root.meld(spell=leaf_id)
+    root_leaf = root.meld(spell_id=leaf_id)
     deps: List[Any] = []
     lock = threading.Lock()
     barrier = threading.Barrier(8)
@@ -660,7 +660,7 @@ def test_concurrent_lineage_dependency_resolves_single_root_instance() -> None:
         lesser = root.create_lesser_conduit()
         try:
             barrier.wait()
-            holder = lesser.meld(spell=parent_id)
+            holder = lesser.meld(spell_id=parent_id)
             with lock:
                 deps.append(holder.dep)
         finally:

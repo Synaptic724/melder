@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8370
-CONTENT_SHA256 = 'c7701f1174533ef29676309e9ec4ce19ae50430e48ce972ce068783bcfa99fc7'
+LINE_COUNT = 8376
+CONTENT_SHA256 = '158ea89ea5a16df3ec5e764446fba574394d4f8d98d5918ce63c16e06c5c8c7c'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -2444,8 +2444,10 @@ Responsibilities:
 - `ConduitMeld` owns conduit-front-door runtime routing.
 - `SpellSpaceMeld` owns spellspace-front-door runtime routing.
 - Resolve spells by spell_id or by normalized (spell/spellframe/binding_name) keys.
-- Support root entry modes: spell_name (logical name), spell object, spellframe, or spell_id string.
-- Normalize per-call `spell_override` payloads (dict/list/tuple) into runtime-friendly maps.
+- Support root entry modes: positional SpellName string, concrete spell object,
+  spellframe, or explicit `spell_id=` machine identity.
+- Accept public per-call `override` payloads (dict/list/tuple) and pass them
+  unchanged into internal `spell_override` normalization.
 - Expose no-create live-creation probes that reuse meld lookup semantics:
   `has_live_creation(...)` and `describe_live_creation_status(...)`.
 - Enforce reuse vs instantiate based on Existence, including EXISTING_CREATION spells returning stored objects.
@@ -2461,8 +2463,9 @@ Responsibilities:
   `_spell_codegen_creation` handoff for constructed spells.
 
 Inputs:
-- Spellbook maps and spell identifiers (`spell_name`, `spell`, `spellframe`, `binding_name`).
-- Optional `spell_override` payloads (dict/list/tuple).
+- Spellbook maps and public identifiers (`spell`, `spell_id`, `spellframe`, `binding_name`).
+- Optional public `override` payloads (dict/list/tuple), carried internally as
+  `spell_override`.
 
 Outputs:
 - Constructed instances.
@@ -2491,9 +2494,10 @@ Concurrency/Threading:
   dependency chain deeper than one.
 
 Invariants/Guarantees:
-- At least one of `spell_name`, `spell`, or `spellframe` is required to resolve a target.
-- `spell` as a string is treated as a spell_id; `spell_name` is treated as a logical name key.
-- `spell_name` without an explicit spell/spellframe resolves via SpellInputUtils name normalization.
+- At least one of `spell`, `spell_id`, or `spellframe` is required at a public facade.
+- A public positional/`spell=` string is a logical SpellName; machine SHA identity
+  uses explicit `spell_id=` and is forwarded into the internal positional ID lane.
+- Human SpellNames resolve via SpellInputUtils name normalization.
 - The live-creation probe mirrors the same spell-resolution path as `meld(...)`
   but stops before construction.
 - EXISTING_CREATION spells bypass the runtime and return the stored object.
@@ -2511,7 +2515,7 @@ Invariants/Guarantees:
 Failure Modes:
 - ValueError when no identity inputs are provided.
 - KeyError when a spell_id or lookup key cannot be resolved.
-- TypeError when `spell_override` has an unsupported shape.
+- TypeError when public `override` has an unsupported shape.
 - RuntimeError for missing runtime state or EXISTING_CREATION spells without a backing instance.
 - `SpellSpaceScopeError` for `unique_per_spell_space` without an active
   spellspace. Raised by `SpellSpaceThreadState`
@@ -2618,7 +2622,7 @@ Spec overview (Sections A-H):
 - Root meld entry modes:
   - By spell_id (string) and by spell object (class/function).
   - By Protocol/frame type and by binding_name for disambiguation.
-  - Root-level `spell_override` payload (dict/list/tuple).
+  - Root-level public `override` payload (dict/list/tuple).
   - By SpellName string (logical name) using a `(frame_key, bind_key)` index.
 - Constructor DI shapes:
   - Type-hint DI by concrete class and Protocol frame.
@@ -2648,8 +2652,9 @@ Spec vs implementation notes:
   numbering as advisory and follow the content as authoritative.
 - Decision: Post-init SpellMap deep scan is not planned; users should express
   dependencies via constructor DI (SpellMap defaults/type hints).
-- Decision: Conduit.meld public contract supports spell_id, spell object,
-  spellframe, and spell_name; docstrings updated to reflect this multi-entry API.
+- Decision: `Conduit.meld` supports positional human SpellName, concrete spell
+  object, spellframe, and explicit `spell_id=` machine identity. Internal Meld
+  doors retain their positional ID contract.
 - Implementation: Phase 4 `DuplicateSpellNameStrategy` scans local + contracted
   spells by `spell_name` and raises `DUPLICATE_SPELL_NAME` errors to prevent
   name-based resolution ambiguity.
@@ -5314,7 +5319,8 @@ These flows describe concrete method sequences for core behaviors.
    - Fires pre/activated/post hooks and wires Conduit into spells.
 
 ### Flow: Conduit.meld -> Meld -> CreationContext -> Creations
-1. `Conduit.meld(...)` validates identity inputs, fires pre-resolve hook, and delegates to Meld.
+1. `Conduit.meld(...)` separates positional human SpellNames from explicit
+   `spell_id=`, validates conflicting inputs, and delegates to its internal Meld door.
 2. `Meld.meld(...)` normalizes `spell_override` (dict/list/tuple) into a map.
 3. `Meld._resolve_spell(...)` resolves by spell_id (string `spell`) or by lookup key derived from `spell_name`/`spellframe`/`binding_name` via SpellInputUtils.
 4. `Meld` gates validity (`_ensure_lineage_resolvable`) and executes pre-cast hooks.

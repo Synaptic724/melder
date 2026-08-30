@@ -43,7 +43,7 @@ viewer = space.frame_viewer
 workstation = space.workstation
 command = space.command_system
 
-service = root.meld(spell=ReportService)
+service = root.meld("ReportService")
 workstation.bind_object("service", service, weak_ref=False)
 workstation.set_target("service")
 ```

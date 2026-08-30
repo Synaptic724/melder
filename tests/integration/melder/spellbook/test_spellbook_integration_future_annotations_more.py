@@ -225,7 +225,7 @@ def test_future_annotations_optional_string_inner_resolves_by_name() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ExtraRepo)
         assert instance.repo.marker == "extra"
     finally:
@@ -278,7 +278,7 @@ def test_future_annotations_typing_optional_string_inner_resolves_by_name() -> N
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ExtraRepo)
         assert instance.repo.marker == "extra"
     finally:
@@ -331,7 +331,7 @@ def test_future_annotations_union_string_inner_resolves_by_name() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ExtraRepo)
         assert instance.repo.marker == "extra"
     finally:
@@ -384,7 +384,7 @@ def test_future_annotations_typing_union_string_inner_resolves_by_name() -> None
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ExtraRepo)
         assert instance.repo.marker == "extra"
     finally:
@@ -445,7 +445,7 @@ def test_future_annotations_list_string_inner_protocol_resolves_all() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -506,7 +506,7 @@ def test_future_annotations_typing_list_string_inner_protocol_resolves_all() -> 
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -567,7 +567,7 @@ def test_future_annotations_list_string_spellframe_resolves_all() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"primary", "secondary"}
     finally:
@@ -621,7 +621,7 @@ def test_future_annotations_string_literal_frame_annotation_resolves_single() ->
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FramePrimaryRepo)
         assert instance.repo.marker == "primary"
     finally:
@@ -690,7 +690,7 @@ def test_future_annotations_spellmap_default_string_frame_binding_resolves_speci
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FramePrimaryRepo)
         assert instance.repo.marker == "primary"
     finally:
@@ -748,7 +748,7 @@ def test_future_annotations_spellmap_default_explicit_spell_ignores_string_annot
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ExtraRepoAlt)
         assert instance.repo.marker == "alt"
     finally:

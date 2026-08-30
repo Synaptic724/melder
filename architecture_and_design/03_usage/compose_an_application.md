@@ -40,7 +40,7 @@ book.bind(spell=Repository, existence="unique")
 book.bind(spell=Service, existence="unique_per_conduit")
 
 conduit = book.conjure()
-service = conduit.meld(spell=Service)
+service = conduit.meld("Service")
 ```
 
 Constructor annotations or explicit `SpellMap` values define dependency edges. Conjure

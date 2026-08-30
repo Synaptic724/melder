@@ -302,8 +302,8 @@ def test_component_meld_spell_override_path_targets_nested_param() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=service_id,
-            spell_override={"repo>name": "override"},
+            spell_id=service_id,
+            override={"repo>name": "override"},
         )
         assert isinstance(instance, ServiceWithRepo)
         assert isinstance(instance.repo, BasicRepo)
@@ -338,8 +338,8 @@ def test_component_meld_spell_override_unique_replaces_dependency() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=service_id,
-            spell_override={"*repo": override_repo},
+            spell_id=service_id,
+            override={"*repo": override_repo},
         )
         assert isinstance(instance, ServiceWithRepo)
         assert instance.repo is override_repo
@@ -378,8 +378,8 @@ def test_component_meld_spell_override_broadcast_targets_multiple_nodes() -> Non
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=service_id,
-            spell_override={"**name": "broadcast"},
+            spell_id=service_id,
+            override={"**name": "broadcast"},
         )
         assert isinstance(instance, ServiceWithRepoAndLogger)
         assert instance.repo.name == "broadcast"
@@ -417,8 +417,8 @@ def test_component_meld_spell_override_specificity_prefers_path() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=service_id,
-            spell_override={
+            spell_id=service_id,
+            override={
                 "**repo": broadcast_repo,
                 "*repo": unique_repo,
                 "repo": path_repo,
@@ -457,8 +457,8 @@ def test_component_meld_spell_override_conflicting_path_raises() -> None:
     try:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=service_id,
-                spell_override={
+                spell_id=service_id,
+                override={
                     "repo>name": "first",
                     "repo > name": "second",
                 },

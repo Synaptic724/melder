@@ -101,7 +101,7 @@ def test_add_to_spell_index_makes_index_multi_member():
 def test_add_to_spell_index_leaves_active_meld_unchanged():
     with _two_member_index() as (book, conduit, id_a, id_b, index, spell_b):
         # B joined as INACTIVE, so meld still resolves the active member A.
-        assert isinstance(conduit.meld(spell=id_a), _ServiceA)
+        assert isinstance(conduit.meld(spell_id=id_a), _ServiceA)
 
 
 # --- notch repoints the active member --------------------------------------
@@ -116,7 +116,7 @@ def test_notch_changes_what_melds():
     with _two_member_index() as (book, conduit, id_a, id_b, index, spell_b):
         conduit.notch_spell(spell_index=index, spell=spell_b)
         # The index now resolves to B's class.
-        assert isinstance(conduit.meld(spell=id_b), _ServiceB)
+        assert isinstance(conduit.meld(spell_id=id_b), _ServiceB)
 
 
 def test_notch_does_not_reduce_the_index():
@@ -148,7 +148,7 @@ def test_notch_back_restores_original_active():
         spell_a = book._get_owned_spell(id_a)
         conduit.notch_spell(spell_index=index, spell=spell_a)
         assert index.selected_spell_id == id_a
-        assert isinstance(conduit.meld(spell=id_a), _ServiceA)
+        assert isinstance(conduit.meld(spell_id=id_a), _ServiceA)
 
 
 # --- remove_from_spell_index reduces the index -----------------------------

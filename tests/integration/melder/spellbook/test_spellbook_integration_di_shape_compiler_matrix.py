@@ -883,7 +883,7 @@ def test_e2e_meld_by_spell_id_resolves_instance() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        instance = conduit.meld(spell=engine_id)
+        instance = conduit.meld(spell_id=engine_id)
         assert isinstance(instance, Engine)
     finally:
         if conduit is not None:
@@ -913,7 +913,7 @@ def test_e2e_meld_by_spell_name_resolves_instance() -> None:
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        instance = conduit.meld(spell_name="Engine")
+        instance = conduit.meld(spell="Engine")
         assert isinstance(instance, Engine)
     finally:
         if conduit is not None:
@@ -961,8 +961,8 @@ def test_e2e_existence_unique_reuses_instance() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        first = conduit.meld(spell=engine_id)
-        second = conduit.meld(spell=engine_id)
+        first = conduit.meld(spell_id=engine_id)
+        second = conduit.meld(spell_id=engine_id)
         assert first is second
     finally:
         if conduit is not None:
@@ -977,8 +977,8 @@ def test_e2e_existence_many_creates_new_instances() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.many, permissions="create")
         conduit = spellbook.conjure(name="root")
-        first = conduit.meld(spell=engine_id)
-        second = conduit.meld(spell=engine_id)
+        first = conduit.meld(spell_id=engine_id)
+        second = conduit.meld(spell_id=engine_id)
         assert first is not second
     finally:
         if conduit is not None:

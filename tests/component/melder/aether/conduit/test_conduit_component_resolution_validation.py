@@ -488,7 +488,7 @@ def test_component_meld_revalidation_uses_local_phase_lane(
                 permissions="create",
             )
 
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         assert instance is not None
         assert counters["root_blueprints"] == 0
         assert counters["system_validation"] == 0

@@ -83,7 +83,7 @@ def test_bind_conjure_and_meld_existing_creation() -> None:
         assert spell is not None
         assert spell.owner_conduit_info == (conduit.id, conduit.name)
 
-        resolved = conduit.meld(spell=spell_id)
+        resolved = conduit.meld(spell_id=spell_id)
         assert resolved is service
         assert resolved.value == "alpha"
     finally:

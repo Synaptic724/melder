@@ -108,9 +108,9 @@ def test_transfer_flips_meld_resolution_to_target() -> None:
     try:
         owner.transfer_spell_ownership(spell=spell_id, target_conduit=target)
 
-        assert isinstance(target.meld(spell=spell_id), BasicService)
+        assert isinstance(target.meld(spell_id=spell_id), BasicService)
         with pytest.raises(KeyError, match="No spell found"):
-            owner.meld(spell=spell_id)
+            owner.meld(spell_id=spell_id)
     finally:
         target.permanent_cleanup()
         owner.permanent_cleanup()

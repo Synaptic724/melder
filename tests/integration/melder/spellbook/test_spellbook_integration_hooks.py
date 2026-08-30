@@ -115,8 +115,8 @@ def test_hooks_execute_and_activation_runs_once_for_unique() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert pre_calls == ["pre", "pre"]
         assert post_calls == ["post", "post"]

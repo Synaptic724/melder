@@ -150,7 +150,7 @@ class CapabilityRiftJsonBench:
             dynamic=(not automatic),
         )
         self.initial_lesser = self.left_conduit.create_lesser_conduit()
-        self.live_spell_object = self.left_conduit.meld(spell=self.left_spell_id)
+        self.live_spell_object = self.left_conduit.meld(spell_id=self.left_spell_id)
 
         self.nexus = self._build_nexus()
         self.rift = self._build_rift()

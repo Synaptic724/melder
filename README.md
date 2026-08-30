@@ -282,10 +282,10 @@ book = md.Spellbook()
 book.bind(spell=Greeter, existence="unique")
 conduit = book.conjure()
 
-greeter = conduit.meld(spell=Greeter)
+greeter = conduit.meld("Greeter")
 print(greeter.greet())
 
-assert conduit.meld(spell=Greeter) is greeter   # `unique` → same instance
+assert conduit.meld("Greeter") is greeter   # `unique` → same instance
 ```
 
 Your classes stay plain Python. Everything lives on `md.*` — if you ever need a
@@ -305,7 +305,7 @@ book.bind(spell=Server, existence="many")
 conduit = book.conjure()
 
 # 3. meld everywhere
-server = conduit.meld(spell=Server)
+server = conduit.meld("Server")
 ```
 
 **`conjure()` is where the work happens.** Requirements extraction, graph
@@ -329,7 +329,7 @@ One rule governs all resolution:
 book.bind(spell=PostgresStore, existence="unique", binding_name="primary")
 book.bind(spell=SqliteStore,   existence="unique", binding_name="local")
 
-primary = conduit.meld(spell=PostgresStore, binding_name="primary")
+primary = conduit.meld("PostgresStore", binding_name="primary")
 ```
 
 ## 🟢 Spellframes — Categories Inside a World
@@ -373,7 +373,7 @@ book.bind(spell=Database, existence="unique")
 book.bind(spell=ReportService, existence="unique")
 conduit = book.conjure()
 
-report = conduit.meld(spell=ReportService)
+report = conduit.meld("ReportService")
 ```
 
 When an annotation isn't specific enough — two implementations of one shape, or
@@ -465,8 +465,8 @@ error aborting the rest of your cleanup.
 root = book.conjure()
 child = root.create_lesser_conduit()
 
-assert root.meld(spell=Config) is child.meld(spell=Config)      # shared
-assert root.meld(spell=Session) is not child.meld(spell=Session) # per-scope
+assert root.meld("Config") is child.meld("Config")      # shared
+assert root.meld("Session") is not child.meld("Session") # per-scope
 ```
 ## 🟡 Declarative Binding by Module
 <sub>**Intermediate.** Register where the class lives.</sub>
@@ -500,7 +500,7 @@ book = md.Spellbook()
 bound = book.scan(services)        # ← binds every tagged class in the module
 conduit = book.conjure()
 
-hub = conduit.meld(spell=services.MetricsHub)
+hub = conduit.meld("MetricsHub")
 ```
 
 The decorator **stores intent only** — nothing touches the runtime until
@@ -542,7 +542,7 @@ borrower.add_spell_to_contract(            # ← the BORROWER asks
     permissions="create",
 )
 
-shared = borrower.meld(spell=SharedDirectory)   # resolves the owner's spell
+shared = borrower.meld("SharedDirectory")   # resolves the owner's spell
 ```
 
 **Sharing is a pull, never a push.** The conduit that wants the spell asks for
@@ -581,7 +581,7 @@ platform.link(services)                                          # 3. link — A
 services.add_spell_to_contract(                                  # 4. consumer pulls
     spell_id=config_id, conduit=platform, permissions="create",
 )
-service = services.meld(spell=service_id)                        # 5. meld completes the binding
+service = services.meld(spell_id=service_id)                    # 5. meld completes the binding
 ```
 
 Assemble the chain edge by edge, in dependency order. `services` can then feed
@@ -656,7 +656,7 @@ Real surfaces this page doesn't walk through — all covered in the
 | 🟡 | **`SpellBinder`** | A fluent chained alternative to `bind(...)` |
 | 🟡 | **Ownership transfer** | Move a spell's stewardship between conduits at runtime, repointing borrowers and clusters |
 | 🟠 | **Conduit clusters** | A named group of scopes sharing one instance, with an elected leader |
-| 🟠 | **Deep override paths** | Inject a variant into the *middle* of a live graph at meld time — `spell_override={"transport>credentials": obj}` — without rebinding anything |
+| 🟠 | **Deep override paths** | Inject a variant into the *middle* of a live graph at meld time — `override={"transport>credentials": obj}` — without rebinding anything |
 
 ---
 
@@ -735,7 +735,7 @@ The **workstation** is where an agent keeps what it's working on — bind a live
 object to a name, make it the active target, then operate on it:
 
 ```python
-service = root.meld(spell=ReportService)
+service = root.meld("ReportService")
 
 workstation.bind_object("svc", service)   # park a LIVE object on the bench
 workstation.set_target("svc")             # make it the active target
@@ -959,7 +959,7 @@ conduit.notch_spell(spell_index=index, spell=spell_v2)
 assert index.selected_spell_id == id_v2
 
 # 3. MELD — the very next resolution builds the NEW version.
-service = conduit.meld(spell=id_v2)      # → ReportServiceV2
+service = conduit.meld(spell_id=id_v2)   # → ReportServiceV2
 ```
 
 And because the old member is **parked, not destroyed**, rollback is the same

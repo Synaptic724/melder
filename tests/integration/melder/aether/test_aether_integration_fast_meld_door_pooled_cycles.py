@@ -151,7 +151,7 @@ def test_integration_fast_door_stays_correct_across_pooled_lesser_cycles() -> No
     """
     _spellbook, conduit, spell_ids = _build_runtime()
     try:
-        shared_baseline = conduit.meld(spell=spell_ids["shared"])
+        shared_baseline = conduit.meld(spell_id=spell_ids["shared"])
 
         previous_lesser: Conduit | None = None
         previous_session: _SessionService | None = None
@@ -166,24 +166,24 @@ def test_integration_fast_door_stays_correct_across_pooled_lesser_cycles() -> No
                     assert lesser is previous_lesser
                     assert spell_ids["session"] in lesser._meld._fast_meld_doors
 
-                session_first = lesser.meld(spell=spell_ids["session"])
-                session_second = lesser.meld(spell=spell_ids["session"])
+                session_first = lesser.meld(spell_id=spell_ids["session"])
+                session_second = lesser.meld(spell_id=spell_ids["session"])
                 assert session_second is session_first
                 if previous_session is not None:
                     # Creations reset on pool return: a new cycle must build a
                     # fresh session object even through a warm fast door.
                     assert session_first is not previous_session
 
-                assert lesser.meld(spell=spell_ids["shared"]) is shared_baseline
+                assert lesser.meld(spell_id=spell_ids["shared"]) is shared_baseline
 
                 with lesser.enter_spellspace() as space:
-                    marker_first = space.meld(spell=spell_ids["marker"])
-                    marker_second = space.meld(spell=spell_ids["marker"])
+                    marker_first = space.meld(spell_id=spell_ids["marker"])
+                    marker_second = space.meld(spell_id=spell_ids["marker"])
                     assert marker_second is marker_first
                     if previous_marker is not None:
                         assert marker_first is not previous_marker
                     # Outer scope propagates into the request scope.
-                    assert space.meld(spell=spell_ids["session"]) is session_first
+                    assert space.meld(spell_id=spell_ids["session"]) is session_first
                     previous_marker = marker_first
 
                 previous_session = session_first
@@ -208,7 +208,7 @@ def test_integration_fast_door_multithreaded_scope_cycles_stay_isolated() -> Non
     """
     _spellbook, conduit, spell_ids = _build_runtime()
     try:
-        shared_baseline = conduit.meld(spell=spell_ids["shared"])
+        shared_baseline = conduit.meld(spell_id=spell_ids["shared"])
         errors: list[BaseException] = []
 
         def _worker() -> None:
@@ -216,17 +216,17 @@ def test_integration_fast_door_multithreaded_scope_cycles_stay_isolated() -> Non
                 for _ in range(6):
                     lesser = conduit.create_lesser_conduit()
                     try:
-                        session = lesser.meld(spell=spell_ids["session"])
-                        assert lesser.meld(spell=spell_ids["session"]) is session
+                        session = lesser.meld(spell_id=spell_ids["session"])
+                        assert lesser.meld(spell_id=spell_ids["session"]) is session
                         assert (
-                            lesser.meld(spell=spell_ids["shared"])
+                            lesser.meld(spell_id=spell_ids["shared"])
                             is shared_baseline
                         )
                         with lesser.enter_spellspace() as space:
-                            marker = space.meld(spell=spell_ids["marker"])
-                            assert space.meld(spell=spell_ids["marker"]) is marker
+                            marker = space.meld(spell_id=spell_ids["marker"])
+                            assert space.meld(spell_id=spell_ids["marker"]) is marker
                             assert (
-                                space.meld(spell=spell_ids["session"]) is session
+                                space.meld(spell_id=spell_ids["session"]) is session
                             )
                     finally:
                         lesser.cleanup()

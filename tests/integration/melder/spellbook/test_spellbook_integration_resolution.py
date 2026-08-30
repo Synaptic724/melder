@@ -96,8 +96,8 @@ def test_bind_conjure_and_meld_resolves_direct_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        service = conduit.meld(spell=service_id)
-        dependency = conduit.meld(spell=dep_id)
+        service = conduit.meld(spell_id=service_id)
+        dependency = conduit.meld(spell_id=dep_id)
         assert service.dep is dependency
         assert dependency.marker == "dep"
     finally:
@@ -196,10 +196,10 @@ def test_meld_resolves_multiple_dependencies_and_reuses_singletons() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=service_id)
-        second = conduit.meld(spell=service_id)
-        dep_a = conduit.meld(spell=dep_a_id)
-        dep_b = conduit.meld(spell=dep_b_id)
+        first = conduit.meld(spell_id=service_id)
+        second = conduit.meld(spell_id=service_id)
+        dep_a = conduit.meld(spell_id=dep_a_id)
+        dep_b = conduit.meld(spell_id=dep_b_id)
         assert first is not second
         assert first.dep_a is dep_a
         assert second.dep_a is dep_a
@@ -301,9 +301,9 @@ def test_meld_resolves_dependency_chain_and_reuses_nodes() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        service = conduit.meld(spell=service_id)
-        repo = conduit.meld(spell=repo_id)
-        logger = conduit.meld(spell=logger_id)
+        service = conduit.meld(spell_id=service_id)
+        repo = conduit.meld(spell_id=repo_id)
+        logger = conduit.meld(spell_id=logger_id)
         assert service.repo is repo
         assert repo.logger is logger
         assert logger.marker == "log"

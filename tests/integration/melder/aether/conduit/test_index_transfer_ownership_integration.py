@@ -101,9 +101,9 @@ def test_transfer_flips_meld_resolution_to_target():
     owner_book, target_book, owner, target, id_a = _single_member_transfer_ready()
     try:
         owner.transfer_spell_ownership(spell=id_a, target_conduit=target)
-        assert isinstance(target.meld(spell=id_a), _ServiceA)
+        assert isinstance(target.meld(spell_id=id_a), _ServiceA)
         with pytest.raises(Exception):
-            owner.meld(spell=id_a)
+            owner.meld(spell_id=id_a)
     finally:
         target.permanent_cleanup()
         owner.permanent_cleanup()

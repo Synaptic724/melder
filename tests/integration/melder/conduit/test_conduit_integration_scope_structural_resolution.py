@@ -149,8 +149,8 @@ def test_lineage_dependency_on_root_is_masked_and_passes() -> None:
     holder_id = book.bind(spell=_Holder, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
-        root_holder = root.meld(spell=holder_id)
+        root_leaf = root.meld(spell_id=leaf_id)
+        root_holder = root.meld(spell_id=holder_id)
         assert root_holder.dep is root_leaf, (
             "on the root the dependency path coincidentally matches the direct path"
         )
@@ -174,10 +174,10 @@ def test_lineage_dependency_identity_is_invariant_to_melding_conduit() -> None:
     holder_id = book.bind(spell=_Holder, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_holder = root.meld(spell=holder_id)
+        root_holder = root.meld(spell_id=holder_id)
         lesser = root.create_lesser_conduit()
         try:
-            lesser_holder = lesser.meld(spell=holder_id)
+            lesser_holder = lesser.meld(spell_id=holder_id)
         finally:
             lesser.cleanup()
         assert root_holder.dep is lesser_holder.dep, (
@@ -204,11 +204,11 @@ def test_lineage_dependency_yields_exactly_one_instance_across_lineage() -> None
     root = book.conjure(name="root", dynamic=False)
     seen: List[Any] = []
     try:
-        seen.append(root.meld(spell=holder_id).dep)
+        seen.append(root.meld(spell_id=holder_id).dep)
         for _ in range(n_lessers):
             lesser = root.create_lesser_conduit()
             try:
-                seen.append(lesser.meld(spell=holder_id).dep)
+                seen.append(lesser.meld(spell_id=holder_id).dep)
             finally:
                 lesser.cleanup()
         assert len({id(x) for x in seen}) == 1, (
@@ -234,11 +234,11 @@ def test_lineage_direct_and_dependency_paths_agree_on_lesser() -> None:
     holder_id = book.bind(spell=_Holder, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser = root.create_lesser_conduit()
         try:
-            lesser_direct = lesser.meld(spell=leaf_id)
-            lesser_dep = lesser.meld(spell=holder_id).dep
+            lesser_direct = lesser.meld(spell_id=leaf_id)
+            lesser_dep = lesser.meld(spell_id=holder_id).dep
         finally:
             lesser.cleanup()
         assert lesser_direct is root_leaf, "direct lineage meld on a lesser is correct"
@@ -264,10 +264,10 @@ def test_lineage_transitive_dependency_through_lesser_resolves_root() -> None:
     top_id = book.bind(spell=_Top, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser = root.create_lesser_conduit()
         try:
-            lesser_top = lesser.meld(spell=top_id)
+            lesser_top = lesser.meld(spell_id=top_id)
         finally:
             lesser.cleanup()
         assert lesser_top.mid.leaf is root_leaf, (
@@ -292,11 +292,11 @@ def test_lineage_two_distinct_holders_on_lesser_share_one_instance() -> None:
     holder_b = book.bind(spell=_HolderB, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser = root.create_lesser_conduit()
         try:
-            a = lesser.meld(spell=holder_a)
-            b = lesser.meld(spell=holder_b)
+            a = lesser.meld(spell_id=holder_a)
+            b = lesser.meld(spell_id=holder_b)
         finally:
             lesser.cleanup()
         assert a.dep is b.dep, "both holders must share one lineage instance"
@@ -320,15 +320,15 @@ def test_lineage_dependency_is_durable_across_sibling_lesser_churn() -> None:
     holder_id = book.bind(spell=_Holder, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser_a = root.create_lesser_conduit()
         try:
-            dep_a = lesser_a.meld(spell=holder_id).dep
+            dep_a = lesser_a.meld(spell_id=holder_id).dep
         finally:
             lesser_a.cleanup()
         lesser_b = root.create_lesser_conduit()
         try:
-            dep_b = lesser_b.meld(spell=holder_id).dep
+            dep_b = lesser_b.meld(spell_id=holder_id).dep
         finally:
             lesser_b.cleanup()
         assert dep_a is root_leaf and dep_b is root_leaf, (
@@ -372,8 +372,8 @@ def test_spellspace_dependency_into_many_holder_resolves_scope_instance() -> Non
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as space:
-            direct = space.meld(spell=leaf_id)
-            holder = space.meld(spell=holder_id)
+            direct = space.meld(spell_id=leaf_id)
+            holder = space.meld(spell_id=holder_id)
             assert holder.dep is direct, (
                 "a many holder's spellspace dependency must be the active scope instance"
             )

@@ -252,7 +252,7 @@ def _bind_and_meld(
 
         conduit = spellbook.conjure(name="root")
         result["conjure_success"] = True
-        root_object = conduit.meld(spell=spell_id)
+        root_object = conduit.meld(spell_id=spell_id)
         result["meld_success"] = True
         result["meld_value"] = root_object.read()
         return result

@@ -104,28 +104,28 @@ def test_nested_spellspace_scopes_keep_per_level_storage_until_their_own_exit() 
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as scope_a:
-            marker_a = scope_a.meld(spell=marker_id)
+            marker_a = scope_a.meld(spell_id=marker_id)
             with conduit.enter_spellspace() as scope_b:
-                marker_b = scope_b.meld(spell=marker_id)
+                marker_b = scope_b.meld(spell_id=marker_id)
                 assert marker_b is not marker_a
                 with conduit.enter_spellspace() as scope_c:
-                    marker_c = scope_c.meld(spell=marker_id)
+                    marker_c = scope_c.meld(spell_id=marker_id)
                     assert marker_c is not marker_b
                     assert marker_c is not marker_a
                     with conduit.enter_spellspace() as scope_d:
-                        marker_d = scope_d.meld(spell=marker_id)
+                        marker_d = scope_d.meld(spell_id=marker_id)
                         assert marker_d is not marker_c
-                        assert scope_d.meld(spell=marker_id) is marker_d
+                        assert scope_d.meld(spell_id=marker_id) is marker_d
                     # Inside C's body: D's exit left C's storage intact.
                     assert (
                         scope_c._creations.get_creation(marker_id) is marker_c
                     )
-                    assert scope_c.meld(spell=marker_id) is marker_c
+                    assert scope_c.meld(spell_id=marker_id) is marker_c
                 # Inside B's body: C's exit left B's storage intact.
                 assert scope_b._creations.get_creation(marker_id) is marker_b
-                assert scope_b.meld(spell=marker_id) is marker_b
+                assert scope_b.meld(spell_id=marker_id) is marker_b
             # Inside A's body: B's exit left A's storage intact.
             assert scope_a._creations.get_creation(marker_id) is marker_a
-            assert scope_a.meld(spell=marker_id) is marker_a
+            assert scope_a.meld(spell_id=marker_id) is marker_a
     finally:
         conduit.permanent_cleanup()

@@ -218,7 +218,7 @@ def test_component_conduit_meld_with_creation_gate_blocks_until_enabled() -> Non
 
         def _worker() -> None:
             started.set()
-            result["value"] = conduit.meld(spell=spell_id)
+            result["value"] = conduit.meld(spell_id=spell_id)
             finished.set()
 
         thread = threading.Thread(target=_worker, daemon=True)
@@ -249,7 +249,7 @@ def test_component_conduit_meld_with_creation_gate_terminal_close_raises() -> No
         conduit._creation_gate = CreationGate()
         conduit._creation_gate.close_and_wait_until_free(timeout=0.1, interval=0.01)
         with pytest.raises(RuntimeError, match="CreationGate is closed"):
-            conduit.meld(spell=spell_id)
+            conduit.meld(spell_id=spell_id)
     finally:
         conduit.cleanup()
 
@@ -271,7 +271,7 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_success(
             "meld",
             lambda self, *args, **kwargs: meld_mock(*args, **kwargs),
         )
-        result = conduit.meld(spell="spell-id")
+        result = conduit.meld(spell_id="spell-id")
         assert result == "ok"
         assert conduit._creation_gate.active_ticket_count() == 0
     finally:
@@ -296,7 +296,7 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_exception(
             lambda self, *args, **kwargs: meld_mock(*args, **kwargs),
         )
         with pytest.raises(RuntimeError, match="boom"):
-            conduit.meld(spell="spell-id")
+            conduit.meld(spell_id="spell-id")
         assert conduit._creation_gate.active_ticket_count() == 0
     finally:
         conduit.cleanup()

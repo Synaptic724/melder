@@ -269,7 +269,7 @@ def _build_melder_spellspace_runtime(
 
     def meld_in_scope(handle: Any) -> Any:
         _, space = handle
-        root = space.meld(spell=root_id)
+        root = space.meld(spell_id=root_id)
         if not isinstance(root, shape.root_type):
             raise AssertionError("Melder spellspace bench returned wrong root type.")
         return root
@@ -323,7 +323,7 @@ def _measure_normal_and_lesser_conduit_cycle(
 
         def meld_once(handle: Any) -> Any:
             _, conduit, root_id = handle
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             if not isinstance(root, shape.root_type):
                 raise AssertionError("Melder conduit bench returned wrong root type.")
             return root
@@ -370,7 +370,7 @@ def _measure_normal_and_lesser_conduit_cycle(
                 return root_conduit.create_lesser_conduit()
 
             def meld_once(lesser: Any) -> Any:
-                root = lesser.meld(spell=root_id)
+                root = lesser.meld(spell_id=root_id)
                 if not isinstance(root, shape.root_type):
                     raise AssertionError("Melder lesser-conduit bench returned wrong root type.")
                 return root

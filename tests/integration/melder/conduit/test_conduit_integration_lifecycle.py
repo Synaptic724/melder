@@ -118,7 +118,7 @@ def test_conduit_cleanup_is_idempotent_and_blocks_meld() -> None:
     conduit.permanent_cleanup()
 
     with pytest.raises(RuntimeError, match="already been cleaned"):
-        conduit.meld(spell=spell_id)
+        conduit.meld(spell_id=spell_id)
 
 
 def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
@@ -246,9 +246,9 @@ def test_conduit_cleanup_cleans_lesser_conduits() -> None:
         assert lesser.cleaned is True
         assert nested.cleaned is True
         with pytest.raises(RuntimeError, match="already been cleaned"):
-            lesser.meld(spell=spell_id)
+            lesser.meld(spell_id=spell_id)
         with pytest.raises(RuntimeError, match="already been cleaned"):
-            nested.meld(spell=spell_id)
+            nested.meld(spell_id=spell_id)
     finally:
         nested.permanent_cleanup()
         lesser.permanent_cleanup()
@@ -346,7 +346,7 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
                 existence=Existence.unique,
                 permissions="create",
             )
-        assert isinstance(lesser.meld(spell=config_id), BasicConfig)
+        assert isinstance(lesser.meld(spell_id=config_id), BasicConfig)
         cloud = root._spellbook._aether.get_conduit_cloud(root._aetheric_frame_name)
         assert cloud.get_conduit_by_name("upgraded") is lesser
     finally:
@@ -415,9 +415,9 @@ def test_conduit_transfer_spell_ownership_moves_registry_and_meld() -> None:
         assert summary["source"] == owner.id
         assert summary["target"] == target.id
         assert owner.get_conduit_by_spell_id(spell_id) is target
-        assert isinstance(target.meld(spell=spell_id), BasicService)
+        assert isinstance(target.meld(spell_id=spell_id), BasicService)
         with pytest.raises(KeyError, match="No spell found"):
-            owner.meld(spell=spell_id)
+            owner.meld(spell_id=spell_id)
     finally:
         target.permanent_cleanup()
         owner.permanent_cleanup()
@@ -447,7 +447,7 @@ def test_conduit_transfer_spell_ownership_with_dependencies() -> None:
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
     try:
-        owner.meld(spell=depth3_ids[Depth3Root])
+        owner.meld(spell_id=depth3_ids[Depth3Root])
 
         summary = owner.transfer_spell_ownership(
             spell=depth3_ids[Depth3Root],
@@ -494,7 +494,7 @@ def test_conduit_transfer_spell_ownership_ignores_spellspace_local_creations() -
     target = target_book.conjure(dynamic=True, name="target")
     try:
         source_space = owner.create_spellspace()
-        source_instance = source_space.meld(spell=spell_id)
+        source_instance = source_space.meld(spell_id=spell_id)
 
         summary = owner.transfer_spell_ownership(
             spell=spell_id,
@@ -507,10 +507,10 @@ def test_conduit_transfer_spell_ownership_ignores_spellspace_local_creations() -
         assert owner.get_conduit_by_spell_id(spell_id) is target
 
         with pytest.raises(KeyError, match="No spell found"):
-            source_space.meld(spell=spell_id)
+            source_space.meld(spell_id=spell_id)
 
         with target.enter_spellspace() as target_space:
-            target_instance = target_space.meld(spell=spell_id)
+            target_instance = target_space.meld(spell_id=spell_id)
             assert target_instance is not source_instance
     finally:
         try:

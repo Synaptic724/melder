@@ -74,7 +74,7 @@ def test_conduit_enter_spellspace_cleans_on_exception() -> None:
             with conduit.enter_spellspace() as space:
                 active_space = space
                 assert conduit.get_active_spellspace() is space
-                space.meld(spell=spell_id)
+                space.meld(spell_id=spell_id)
                 raise RuntimeError("boom")
         assert active_space is not None
         assert active_space.cleaned is False

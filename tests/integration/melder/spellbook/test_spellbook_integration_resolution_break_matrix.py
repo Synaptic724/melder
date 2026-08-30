@@ -243,7 +243,7 @@ def test_a1_meld_after_conduit_cleanup_raises() -> None:
         conduit = spellbook.conjure(name="root")
         conduit.cleanup()
         with pytest.raises(RESOLUTION_ERRORS):
-            conduit.meld(spell=engine_id)
+            conduit.meld(spell_id=engine_id)
     finally:
         spellbook.cleanup()
 
@@ -289,7 +289,7 @@ def test_a5_override_unknown_kwarg_is_rejected() -> None:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         with pytest.raises(RESOLUTION_ERRORS):
-            conduit.meld(spell=Engine, spell_override={"not_a_param": 1})
+            conduit.meld(spell=Engine, override={"not_a_param": 1})
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -304,7 +304,7 @@ def test_a5_override_too_many_positional_args_raises() -> None:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         with pytest.raises(RESOLUTION_ERRORS):
-            conduit.meld(spell=Engine, spell_override=[1, 2, 3, 4])
+            conduit.meld(spell=Engine, override=[1, 2, 3, 4])
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -318,7 +318,7 @@ def test_a5_override_supplies_required_plain_param() -> None:
     try:
         spellbook.bind(spell=NamedService, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        instance = conduit.meld(spell=NamedService, spell_override={"name": "explicit"})
+        instance = conduit.meld(spell=NamedService, override={"name": "explicit"})
         assert instance.name == "explicit"
     finally:
         if conduit is not None:
@@ -335,7 +335,7 @@ def test_a5_override_wins_over_injected_dependency() -> None:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", spellframe=IEngine)
         spellbook.bind(spell=NeedsEngineProtocol, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        instance = conduit.meld(spell=NeedsEngineProtocol, spell_override={"engine": sentinel})
+        instance = conduit.meld(spell=NeedsEngineProtocol, override={"engine": sentinel})
         assert instance.engine is sentinel
     finally:
         if conduit is not None:
@@ -350,7 +350,7 @@ def test_a5_empty_dict_override_falls_back_to_normal_resolution() -> None:
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert isinstance(conduit.meld(spell=Engine, spell_override={}), Engine)
+        assert isinstance(conduit.meld(spell=Engine, override={}), Engine)
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -368,7 +368,7 @@ def test_a6_empty_spell_name_raises() -> None:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         with pytest.raises(RESOLUTION_ERRORS):
-            conduit.meld(spell_name="")
+            conduit.meld(spell="")
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -382,7 +382,7 @@ def test_a6_class_object_as_spell_name_is_leniently_resolved() -> None:
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert isinstance(conduit.meld(spell_name=Engine), Engine)
+        assert isinstance(conduit.meld(spell=Engine), Engine)
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -396,7 +396,7 @@ def test_a6_spell_name_is_case_insensitive() -> None:
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert isinstance(conduit.meld(spell_name="ENGINE"), Engine)
+        assert isinstance(conduit.meld(spell="ENGINE"), Engine)
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -411,7 +411,7 @@ def test_a6_spell_name_with_wrong_binding_raises() -> None:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", binding_name="primary")
         conduit = spellbook.conjure(name="root")
         with pytest.raises(RESOLUTION_ERRORS):
-            conduit.meld(spell_name="Engine", binding_name="secondary")
+            conduit.meld(spell="Engine", binding_name="secondary")
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -520,7 +520,7 @@ def test_b3_override_beats_spellmap_default() -> None:
         spellbook.bind(spell=Config, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=NeedsConfigViaMap, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        instance = conduit.meld(spell=NeedsConfigViaMap, spell_override={"config": sentinel})
+        instance = conduit.meld(spell=NeedsConfigViaMap, override={"config": sentinel})
         assert instance.config is sentinel
     finally:
         if conduit is not None:
@@ -831,7 +831,7 @@ def test_g_unique_same_instance_across_entry_modes() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert conduit.meld(spell=Engine) is conduit.meld(spell=engine_id)
+        assert conduit.meld(spell=Engine) is conduit.meld(spell_id=engine_id)
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -845,7 +845,7 @@ def test_g_many_distinct_across_repeated_melds() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.many, permissions="create")
         conduit = spellbook.conjure(name="root")
-        seen = {id(conduit.meld(spell=engine_id)) for _ in range(3)}
+        seen = {id(conduit.meld(spell_id=engine_id)) for _ in range(3)}
         assert len(seen) == 3
     finally:
         if conduit is not None:

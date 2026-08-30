@@ -131,9 +131,9 @@ def test_conduit_public_api_context_manager_allows_meld() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with conduit as ctx:
-            instance = ctx.meld(spell=spell_id)
+            instance = ctx.meld(spell_id=spell_id)
             assert isinstance(instance, BasicService)
-        assert isinstance(conduit.meld(spell=spell_id), BasicService)
+        assert isinstance(conduit.meld(spell_id=spell_id), BasicService)
     finally:
         conduit.cleanup()
 
@@ -163,8 +163,8 @@ def test_conduit_meld_with_spell_override_round_trip() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=spell_id,
-            spell_override={"marker": "override"},
+            spell_id=spell_id,
+            override={"marker": "override"},
         )
         assert isinstance(instance, BuiltArtifact)
         assert instance.marker == "override"
@@ -202,12 +202,12 @@ def test_conduit_public_api_spellspace_lifecycle() -> None:
         assert conduit.get_active_spellspace() is None
 
         inactive = conduit.create_spellspace()
-        instance = inactive.meld(spell=spell_id)
+        instance = inactive.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
 
         with conduit.enter_spellspace() as active:
             assert conduit.get_active_spellspace() is active
-            instance = active.meld(spell=spell_id)
+            instance = active.meld(spell_id=spell_id)
             assert isinstance(instance, BasicService)
 
         assert conduit.get_active_spellspace() is None
@@ -335,7 +335,7 @@ def test_conduit_public_api_begin_transaction_bind_allows_post_conjure_bind() ->
         )
         conduit.end_transaction("bind")
 
-        resolved = conduit.meld(spell=config_id)
+        resolved = conduit.meld(spell_id=config_id)
         assert isinstance(resolved, BasicConfig)
     finally:
         conduit.cleanup()
@@ -413,7 +413,7 @@ def test_conduit_public_api_cleanup_lesser_conduits() -> None:
     try:
         conduit.cleanup_lesser_conduits()
         with pytest.raises(RuntimeError, match="cleaned"):
-            lesser.meld(spell=spell_id)
+            lesser.meld(spell_id=spell_id)
         assert conduit.get_lesser_conduit(lesser_id) is None
     finally:
         conduit.cleanup()

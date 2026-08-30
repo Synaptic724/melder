@@ -572,7 +572,7 @@ def test_component_conduit_meld_does_not_reemit_after_conjure_staged_cache() -> 
     assert caching_system.bundle_path.exists() is True
     bundle_mtime_ns = caching_system.bundle_path.stat().st_mtime_ns
 
-    instance = spellbook._conduit.meld(spell=spell_id)
+    instance = spellbook._conduit.meld(spell_id=spell_id)
 
     assert isinstance(instance, BasicService)
     assert caching_system.bundle_path.exists() is True

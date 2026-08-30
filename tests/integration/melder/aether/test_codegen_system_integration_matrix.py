@@ -238,12 +238,12 @@ result = spell_id
             "generated_service",
         )
         creation = conduit.meld(
-            spell_name="GeneratedService",
+            spell="GeneratedService",
             spellframe="generated_runtime",
             binding_name="generated_service",
         )
         repeated_creation = conduit.meld(
-            spell_name="GeneratedService",
+            spell="GeneratedService",
             spellframe="generated_runtime",
             binding_name="generated_service",
         )

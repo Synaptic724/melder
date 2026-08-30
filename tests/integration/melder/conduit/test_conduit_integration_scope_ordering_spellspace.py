@@ -168,9 +168,9 @@ def test_spellspace_may_depend_on_unique_positive_control() -> None:
     )
     root = book.conjure(dynamic=True, name="root")
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         with root.enter_spellspace() as space:
-            parent = space.meld(spell=parent_id)
+            parent = space.meld(spell_id=parent_id)
             assert isinstance(parent, _SpellspaceParent)
             assert parent.dep is root_leaf, (
                 "spellspace parent must resolve the shared unique singleton"

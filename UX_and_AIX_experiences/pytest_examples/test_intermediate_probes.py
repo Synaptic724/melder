@@ -140,7 +140,7 @@ def test_probe_spell_contract_closes_across_linked_categories():
     assert services.add_spell_to_contract(
         spell_id=store_id, conduit=platform, permissions="create")
 
-    consumer = services.meld(spell=consumer_id)
+    consumer = services.meld(spell_id=consumer_id)
     assert isinstance(consumer, NeedsStore)
     assert consumer.store.get("region") == "region-ok"
     print("contract socket closed across the link")
@@ -200,7 +200,7 @@ def test_probe_two_hop_chain_canonical_order():
     assert platform.link(services) is True
     assert services.add_spell_to_contract(
         spell_id=conf_id, conduit=platform, permissions="create")
-    service = services.meld(spell=svc_id)
+    service = services.meld(spell_id=svc_id)
     assert service.report() == "r(region-v)"
 
     # EDGE 2: same cycle one level up.
@@ -208,7 +208,7 @@ def test_probe_two_hop_chain_canonical_order():
     assert services.link(workflows) is True
     assert workflows.add_spell_to_contract(
         spell_id=svc_id, conduit=services, permissions="create")
-    flow = workflows.meld(spell=flow_id)
+    flow = workflows.meld(spell_id=flow_id)
 
     assert isinstance(flow, Flow)
     assert flow.svc is service  # the edge handed over the finished product
@@ -217,7 +217,7 @@ def test_probe_two_hop_chain_canonical_order():
 
 
 def test_probe_spell_override_targets_spells_inside_the_graph():
-    """spell_override, both forms pinned. Flat dict = keyword overrides
+    """Public override, both forms pinned. Flat dict = keyword overrides
     for the ROOT spell's own constructor (intermediate lesson 08 - kept
     simple on purpose). ">"-path key = walks dependency parameter names
     and REPLACES the actual object at that socket inside the graph
@@ -254,19 +254,19 @@ def test_probe_spell_override_targets_spells_inside_the_graph():
 
     # FORM 1: flat dict -> root ctor kwargs.
     mailer = conduit.meld(spell=Mailer,
-                          spell_override={"host": "h", "port": 9})
+                          override={"host": "h", "port": 9})
     assert (mailer.host, mailer.port) == ("h", 9)
 
     # FORM 2: ">"-path -> replace the object at a socket in the graph.
     replacement = OtherLeaf()
     replacement.marker = "replaced"
     root = conduit.meld(spell=Root,
-                        spell_override={"left>right": replacement})
+                        override={"left>right": replacement})
     assert root.left.right is replacement
     assert root.left.right.marker == "replaced"
     assert root.right.right is not replacement  # untargeted socket kept
     assert root.right.right.marker == "other-default"
-    print("spell_override proven: root kwargs + inside-the-graph path swap")
+    print("override proven: root kwargs + inside-the-graph path swap")
 
 
 def test_probe_sever_link_kills_the_contract():

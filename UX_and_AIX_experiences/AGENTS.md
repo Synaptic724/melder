@@ -91,10 +91,11 @@ a probe here first; the probe's printed outcome then hardens the example.
   bound "many".
 - THE ADDRESS LAW: every spell lives at exactly one (frame_key, binding_key)
   address - frame_key = spellframe else normalized spell name; binding_key =
-  binding_name else the default slot. Meld forms construct that key: spell
-  object / spell_name derive the frame key from the NAME (so they miss framed
-  binds), and a bind with binding_name answers only when the meld carries the
-  same binding_name. binding_name alone is refused with ValueError.
+  binding_name else the default slot. Public positional strings and `spell=`
+  strings are human SpellNames; classes/Protocols remain supported; opaque SHA
+  identity uses explicit `spell_id=`. Human-name/class forms derive the frame key
+  from the NAME (so they miss framed binds), and a bind with binding_name answers
+  only when the meld carries the same binding_name. binding_name alone is refused.
 - Spell NAMES are unique per book at conjure - CURRENT behavior refuses any
   name collision regardless of binding names, frames, or content SHA.
   DIVERGENCE FLAG: owner design intent (twice stated) is SHA256 content
@@ -108,7 +109,7 @@ a probe here first; the probe's printed outcome then hardens the example.
   refused at BIND time (RuntimeError).
 - bind(**kwargs) is the hook channel and SWALLOWS unknown keys silently
   (flagged as a fail-fast design question); constructor config rides
-  factories, prebuilt instances, or meld(spell_override={...}).
+  factories, prebuilt instances, or meld(override={...}).
 - Disposal (disposal_method_names) fires at conduit.cleanup().
 - Harness isolation: reset the Aether singleton + rebind Spellbook/
   Conduit._aether around every test (component-suite fixture, verbatim).

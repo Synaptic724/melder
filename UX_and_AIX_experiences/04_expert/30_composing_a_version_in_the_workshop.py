@@ -197,7 +197,7 @@ def main() -> None:
 
     # DISTINCT CLASS NAMES, and that is not cosmetic. These are two
     # INDEPENDENT binds, so both spells are visible at once - and two
-    # visible spells sharing a name make `meld(spell_name=...)` ambiguous,
+    # visible spells sharing a name make `meld("SpellName")` ambiguous,
     # which the structural validator refuses outright. A distinct
     # binding_name alone does NOT settle it; the name itself has to
     # resolve, or the pair needs a spellframe. (Two versions on ONE

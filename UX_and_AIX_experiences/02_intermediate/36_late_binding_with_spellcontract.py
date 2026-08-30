@@ -87,7 +87,7 @@ def main() -> None:
 
     # Now meld normally. The consumer never mentions PlatformStore, never
     # touches the platform conduit, and never knew who filled the socket.
-    consumer = services.meld(spell=consumer_id)
+    consumer = services.meld(spell_id=consumer_id)
     assert isinstance(consumer, NeedsStore)
     assert consumer.store.get("region") == "region-ok"
     print("contract socket closed across the link:",

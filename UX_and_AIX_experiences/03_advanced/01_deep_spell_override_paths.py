@@ -1,9 +1,9 @@
 """
 TIER: advanced (01)
-GOAL: Deep spell_override - the ">"-path form. A path of parameter
+GOAL: Deep override - the ">"-path form. A path of parameter
       names walks the dependency graph from the melded root and
       REPLACES the actual object at that socket:
-          spell_override={"transport>credentials": my_object}
+          override={"transport>credentials": my_object}
       Untargeted sockets keep their DI-resolved defaults WITHIN the call; a
       path that matches nothing refuses. But read the second half of this
       lesson before you reach for it: under a singleton lifetime the
@@ -12,7 +12,7 @@ GOAL: Deep spell_override - the ">"-path form. A path of parameter
       fixture or a variant into the MIDDLE of a real graph at meld time
       without rebinding anything. The simple top-level form (flat dict
       into the root's own constructor) is intermediate lesson 08.
-SURFACE EXERCISED: meld(spell_override={"path>to>socket": object})
+SURFACE EXERCISED: meld(override={"path>to>socket": object})
 """
 import melder as md
 
@@ -45,7 +45,7 @@ def main() -> None:
     test_credentials.source = "test-fixture"
     pipeline = conduit.meld(
         spell=MailPipeline,
-        spell_override={"transport>credentials": test_credentials},
+        override={"transport>credentials": test_credentials},
     )
     assert pipeline.transport.credentials is test_credentials
     print("replaced a spell two levels deep:",

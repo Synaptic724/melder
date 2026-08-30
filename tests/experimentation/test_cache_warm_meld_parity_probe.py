@@ -508,17 +508,17 @@ def _measure_workloads(
     space_root_id = spell_ids["space_root"]
 
     def warm_many() -> None:
-        if conduit.meld(spell=many_root_id) is None:
+        if conduit.meld(spell_id=many_root_id) is None:
             raise AssertionError("many root meld returned None.")
 
     def warm_unique() -> None:
-        if conduit.meld(spell=unique_id) is None:
+        if conduit.meld(spell_id=unique_id) is None:
             raise AssertionError("unique leaf meld returned None.")
 
     def cycle() -> None:
         lesser = conduit.create_lesser_conduit()
         try:
-            if lesser.meld(spell=cycle_root_id) is None:
+            if lesser.meld(spell_id=cycle_root_id) is None:
                 raise AssertionError("cycle root meld returned None.")
         finally:
             lesser.cleanup()
@@ -543,7 +543,7 @@ def _measure_workloads(
             context_manager = space_host.enter_spellspace()
             space = context_manager.__enter__()
             try:
-                if space.meld(spell=space_root_id) is None:
+                if space.meld(spell_id=space_root_id) is None:
                     raise AssertionError("space root meld returned None.")
             finally:
                 context_manager.__exit__(None, None, None)
@@ -558,7 +558,7 @@ def _measure_workloads(
         hot_space = hot_manager.__enter__()
         try:
             def space_hot_many() -> None:
-                if hot_space.meld(spell=many_root_id) is None:
+                if hot_space.meld(spell_id=many_root_id) is None:
                     raise AssertionError("space many meld returned None.")
 
             lanes["space_hot_many"] = _measure_average_ns(
@@ -583,11 +583,11 @@ def _assert_identity_semantics(
         - `unique` identity is stable across melds.
         - `many` root is fresh per meld and threads the SAME unique deps.
     """
-    first_unique = conduit.meld(spell=spell_ids["ua"])
-    second_unique = conduit.meld(spell=spell_ids["ua"])
+    first_unique = conduit.meld(spell_id=spell_ids["ua"])
+    second_unique = conduit.meld(spell_id=spell_ids["ua"])
     assert first_unique is second_unique, "unique identity drifted."
-    first_root = conduit.meld(spell=spell_ids["many_root"])
-    second_root = conduit.meld(spell=spell_ids["many_root"])
+    first_root = conduit.meld(spell_id=spell_ids["many_root"])
+    second_root = conduit.meld(spell_id=spell_ids["many_root"])
     assert second_root is not first_root, "many root was not fresh per meld."
     assert first_root.a is second_root.a, "unique dep identity drifted."
 

@@ -207,7 +207,7 @@ def test_cleanup_dependency_forces_dependent_recheck_experiment() -> None:
         ccm_post = ccm.describe()
         meld_outcome = None
         try:
-            created = conduit.meld(spell=root_id)
+            created = conduit.meld(spell_id=root_id)
             meld_outcome = f"meld succeeded -> {type(created).__name__}"
         except Exception as exc:
             meld_outcome = f"{type(exc).__name__}: {exc}"

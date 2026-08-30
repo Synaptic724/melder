@@ -336,7 +336,7 @@ def test_future_annotations_single_di_resolves_module_forward_ref_class() -> Non
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
         assert instance.repo.marker == "future"
     finally:
@@ -393,7 +393,7 @@ def test_future_annotations_single_di_resolves_module_forward_ref_protocol() -> 
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=consumer_id)
+        instance = conduit.meld(spell_id=consumer_id)
         assert isinstance(instance.worker, _FutureHandlerA)
     finally:
         conduit.cleanup()
@@ -435,7 +435,7 @@ def test_future_annotations_collection_di_protocol_list_resolves_all() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -478,7 +478,7 @@ def test_future_annotations_collection_di_class_frame_list_resolves_all() -> Non
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -513,7 +513,7 @@ def test_future_annotations_optional_forward_ref_injects_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
     finally:
         conduit.cleanup()
@@ -568,7 +568,7 @@ def test_future_annotations_typing_optional_forward_ref_injects_dependency() -> 
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
     finally:
         conduit.cleanup()
@@ -602,7 +602,7 @@ def test_future_annotations_union_forward_ref_injects_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
     finally:
         conduit.cleanup()
@@ -657,7 +657,7 @@ def test_future_annotations_typing_union_forward_ref_injects_dependency() -> Non
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
     finally:
         conduit.cleanup()
@@ -691,7 +691,7 @@ def test_future_annotations_pep604_forward_ref_injects_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
     finally:
         conduit.cleanup()
@@ -754,7 +754,7 @@ def test_future_annotations_typing_list_forward_ref_collection_resolves_all() ->
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -829,7 +829,7 @@ def test_future_annotations_local_optional_forward_ref_resolves_by_name() -> Non
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _LocalRepo)
         assert instance.repo.marker == "optional"
     finally:
@@ -904,7 +904,7 @@ def test_future_annotations_local_pep604_forward_ref_resolves_by_name() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _LocalRepo)
         assert instance.repo.marker == "pep604"
     finally:
@@ -939,7 +939,7 @@ def test_future_annotations_spellmap_default_overrides_unresolved_annotation() -
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _FutureLateRepo)
     finally:
         conduit.cleanup()
@@ -1013,7 +1013,7 @@ def test_future_annotations_local_forward_ref_resolves_by_name() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _LocalRepo)
         assert instance.repo.marker == "local"
     finally:
@@ -1123,7 +1123,7 @@ def test_future_annotations_local_forward_ref_collection_resolves_by_name() -> N
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -1233,7 +1233,7 @@ def test_future_annotations_local_protocol_forward_ref_collection_resolves_by_na
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:

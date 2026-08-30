@@ -310,7 +310,7 @@ def _warm_and_capture(
     """
     # Warm: build the root once so every unique singleton is live in its owner
     # store and the root's executor is hydrated (cold->hot slot swap).
-    conduit.meld(spell=root_id)
+    conduit.meld(spell_id=root_id)
 
     deps: List[CapturedDep] = []
     for spell_id in singleton_ids:
@@ -325,7 +325,7 @@ def _warm_and_capture(
                 f"Stage0: singleton {spell_id!r} has no _owner_creations store; "
                 f"capture invalid (is it really Existence.unique?)."
             )
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         if instance is None:
             raise RuntimeError(f"Stage0: singleton {spell_id!r} melded to None.")
         deps.append(
@@ -405,7 +405,7 @@ def _assert_di_wired(captured: CapturedGraph) -> None:
         RuntimeError: if DI did not wire as expected (so the timing below is
             never trusted on a broken graph).
     """
-    melded_root = captured.conduit.meld(spell=captured.root_id)
+    melded_root = captured.conduit.meld(spell_id=captured.root_id)
     n = len(captured.deps)
     for index in range(n):
         attr = f"s{index}"
@@ -564,7 +564,7 @@ def _run_anchor(width: int) -> None:
         singletons, transient_cls, root_cls
     )
     try:
-        conduit.meld(spell=root_id)  # warm singletons + hydrate executor
+        conduit.meld(spell_id=root_id)  # warm singletons + hydrate executor
         print(f"\n--- real meld#1 anchor (width={width}, recycled scope) ---")
         for thread_count in THREAD_SWEEP:
             per_op = _anchor_sweep(conduit, root_id, thread_count)
@@ -589,7 +589,7 @@ def _anchor_sweep(conduit: Any, root_id: str, thread_count: int) -> float:
             lesser = conduit.create_lesser_conduit()
             try:
                 start = perf()
-                lesser.meld(spell=root_id)
+                lesser.meld(spell_id=root_id)
                 samples.append(float(perf() - start))
             finally:
                 lesser.cleanup()

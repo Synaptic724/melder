@@ -77,8 +77,8 @@ def test_meld_overrides_path_targets_root_params() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=spell_id,
-            spell_override={"value": 7, "label": "dict"},
+            spell_id=spell_id,
+            override={"value": 7, "label": "dict"},
         )
         assert instance.value == 7
         assert instance.label == "dict"
@@ -157,8 +157,8 @@ def test_meld_overrides_unique_targets_dependency() -> None:
     try:
         override_dep = _Dependency(label="override")
         instance = conduit.meld(
-            spell=spell_id,
-            spell_override={"*dep": override_dep},
+            spell_id=spell_id,
+            override={"*dep": override_dep},
         )
         assert instance.dep is override_dep
     finally:
@@ -235,8 +235,8 @@ def test_meld_overrides_path_targets_nested_dependency_param() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=service_id,
-            spell_override={"dep>label": "nested"},
+            spell_id=service_id,
+            override={"dep>label": "nested"},
         )
         assert instance.dep.label == "nested"
     finally:
@@ -340,8 +340,8 @@ def test_meld_overrides_broadcast_targets_multiple_labels() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=service_id,
-            spell_override={"**label": "shared"},
+            spell_id=service_id,
+            override={"**label": "shared"},
         )
         assert instance.dep_a.label == "shared"
         assert instance.dep_b.label == "shared"
@@ -421,8 +421,8 @@ def test_meld_overrides_path_precedes_broadcast_for_root_params() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         instance = conduit.meld(
-            spell=service_id,
-            spell_override={
+            spell_id=service_id,
+            override={
                 "**label": "broadcast",
                 "label": "root",
             },
@@ -533,8 +533,8 @@ def test_meld_overrides_unique_raises_on_multiple_matches() -> None:
             match=r"Unique override '\*label' matched 2 sockets; expected exactly one\.",
         ):
             conduit.meld(
-                spell=service_id,
-                spell_override={"*label": "override"},
+                spell_id=service_id,
+                override={"*label": "override"},
             )
     finally:
         conduit.cleanup()
@@ -611,8 +611,8 @@ def test_meld_overrides_broadcast_raises_when_missing_param() -> None:
             match=r"No sockets found for broadcast override '\*\*missing'\.",
         ):
             conduit.meld(
-                spell=service_id,
-                spell_override={"**missing": "value"},
+                spell_id=service_id,
+                override={"**missing": "value"},
             )
     finally:
         conduit.cleanup()

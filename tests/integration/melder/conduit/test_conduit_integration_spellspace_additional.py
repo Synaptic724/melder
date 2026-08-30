@@ -95,7 +95,7 @@ def test_conduit_spellspace_context_isolation_across_threads() -> None:
         try:
             with conduit.enter_spellspace() as space:
                 barrier.wait(timeout=5)
-                instance = space.meld(spell=spell_id)
+                instance = space.meld(spell_id=spell_id)
                 assert conduit.get_active_spellspace() is space
             with lock:
                 instances.append(instance)
@@ -164,7 +164,7 @@ def test_conduit_spellspace_pool_reuses_ids_after_concurrent_threads() -> None:
                 barrier.wait(timeout=5)
                 with lock:
                     worker_ids.append(space.id)
-                _ = space.meld(spell=spell_id)
+                _ = space.meld(spell_id=spell_id)
         except Exception as exc:
             with lock:
                 errors.append(exc)
@@ -221,13 +221,13 @@ def test_conduit_spellspace_direct_handles_retain_own_scope_between_nested_space
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as outer:
-            outer_instance = outer.meld(spell=spell_id)
+            outer_instance = outer.meld(spell_id=spell_id)
             with conduit.enter_spellspace() as inner:
-                inner_instance = inner.meld(spell=spell_id)
+                inner_instance = inner.meld(spell_id=spell_id)
                 assert inner_instance is not outer_instance
-                outer_during_inner = outer.meld(spell=spell_id)
+                outer_during_inner = outer.meld(spell_id=spell_id)
                 assert outer_during_inner is outer_instance
-            outer_after = outer.meld(spell=spell_id)
+            outer_after = outer.meld(spell_id=spell_id)
             assert outer_after is outer_instance
     finally:
         conduit.cleanup()
@@ -257,13 +257,13 @@ def test_conduit_spellspace_isolation_between_root_and_lesser() -> None:
     lesser = root.create_lesser_conduit()
     try:
         with root.enter_spellspace() as root_space:
-            root_instance = root_space.meld(spell=spell_id)
+            root_instance = root_space.meld(spell_id=spell_id)
             with lesser.enter_spellspace() as lesser_space:
-                lesser_instance = lesser_space.meld(spell=spell_id)
+                lesser_instance = lesser_space.meld(spell_id=spell_id)
                 assert root.get_active_spellspace() is root_space
                 assert lesser.get_active_spellspace() is lesser_space
                 assert lesser_instance is not root_instance
-            root_again = root_space.meld(spell=spell_id)
+            root_again = root_space.meld(spell_id=spell_id)
             assert root_again is root_instance
     finally:
         lesser.cleanup()
@@ -304,15 +304,15 @@ def test_conduit_spellspace_contract_isolation_between_owner_and_borrower() -> N
             ) is True
 
         with owner.enter_spellspace() as owner_space:
-            owner_instance = owner_space.meld(spell=spell_id)
+            owner_instance = owner_space.meld(spell_id=spell_id)
             with borrower.enter_spellspace() as borrower_space:
-                borrower_instance = borrower_space.meld(spell=spell_id)
-                borrower_again = borrower_space.meld(spell=spell_id)
+                borrower_instance = borrower_space.meld(spell_id=spell_id)
+                borrower_again = borrower_space.meld(spell_id=spell_id)
                 assert borrower_again is borrower_instance
                 assert borrower_instance is not owner_instance
 
         with borrower.enter_spellspace() as borrower_space:
-            borrower_new = borrower_space.meld(spell=spell_id)
+            borrower_new = borrower_space.meld(spell_id=spell_id)
             assert borrower_new is not borrower_instance
     finally:
         borrower.cleanup()

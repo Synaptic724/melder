@@ -1019,7 +1019,7 @@ class CapabilityCommandSystem(CommandSystem):
             spellframe: Optional[object] = None,
             binding_name: Optional[str] = None,
             frame_name: Optional[str] = None,
-            spell_override: Optional[dict | list | tuple] = None,
+            override: Optional[dict | list | tuple] = None,
     ) -> object:
         """
         Resolve and activate one spell through a command-selected conduit.
@@ -1038,7 +1038,7 @@ class CapabilityCommandSystem(CommandSystem):
             frame_name:
                 Optional hosted frame name. When omitted, the room default
                 frame is used.
-            spell_override:
+            override:
                 Optional per-call override payload forwarded to the conduit.
 
         Returns:
@@ -1054,12 +1054,25 @@ class CapabilityCommandSystem(CommandSystem):
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
+            if isinstance(spell, str):
+                return conduit.meld(
+                    spell_id=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    override=override,
+                )
+            if spell is not None:
+                return conduit.meld(
+                    spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    override=override,
+                )
             return conduit.meld(
-                spell_name=spell_name,
-                spell=spell,
+                spell_name,
                 spellframe=spellframe,
                 binding_name=binding_name,
-                spell_override=spell_override,
+                override=override,
             )
 
     def meld_existing_spell(

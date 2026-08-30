@@ -603,7 +603,7 @@ def test_meld_requires_identifier(conduit_lesser: Conduit) -> None:
     Verify meld requires at least one identifier input.
 
     Contract:
-        - Calling meld without spell_name, spell, or spellframe raises ValueError.
+        - Calling meld without spell, spell_id, or spellframe raises ValueError.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
@@ -615,13 +615,13 @@ def test_meld_requires_identifier(conduit_lesser: Conduit) -> None:
         conduit_lesser.meld()
 
 
-def test_meld_forwards_non_string_spell_name(conduit_lesser: Conduit) -> None:
+def test_meld_forwards_explicit_spell_id(conduit_lesser: Conduit) -> None:
     """
-    Verify meld forwards non-string spell_name values to Meld.
+    Verify meld forwards explicit machine identity into the internal ID lane.
 
     Contract:
-        - Conduit does not type-validate spell_name.
-        - spell_name is delegated unchanged to Meld.meld.
+        - `spell_id=` becomes the internal positional spell value.
+        - Human spell-name normalization is bypassed.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
@@ -632,14 +632,12 @@ def test_meld_forwards_non_string_spell_name(conduit_lesser: Conduit) -> None:
     conduit_lesser._meld = MagicMock()
     conduit_lesser._meld.meld.return_value = "result"
 
-    result = conduit_lesser.meld(spell_name=123)
+    result = conduit_lesser.meld(spell_id="sha-1")
 
     assert result == "result"
-    # Delegation contract: `spell` rides positionally end to end; all other
-    # entry modes stay keyword-only.
     conduit_lesser._meld.meld.assert_called_once_with(
-        None,
-        spell_name=123,
+        "sha-1",
+        spell_name=None,
         spellframe=None,
         binding_name=None,
         spell_override=None,
@@ -663,14 +661,12 @@ def test_meld_forwards_non_string_binding_name(conduit_lesser: Conduit) -> None:
     conduit_lesser._meld = MagicMock()
     conduit_lesser._meld.meld.return_value = "result"
 
-    result = conduit_lesser.meld(spell="sha-1", binding_name=5)
+    result = conduit_lesser.meld("Spell", binding_name=5)
 
     assert result == "result"
-    # Delegation contract: `spell` rides positionally end to end; all other
-    # entry modes stay keyword-only.
     conduit_lesser._meld.meld.assert_called_once_with(
-        "sha-1",
-        spell_name=None,
+        None,
+        spell_name="Spell",
         spellframe=None,
         binding_name=5,
         spell_override=None,
@@ -695,18 +691,15 @@ def test_meld_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
     conduit_lesser._meld.meld.return_value = "result"
 
     result = conduit_lesser.meld(
-        spell_name="Spell",
-        spell="sha-1",
+        spell_id="sha-1",
         spellframe="frame",
         binding_name="bind",
-        spell_override={"k": "v"},
+        override={"k": "v"},
     )
 
-    # Delegation contract: `spell` rides positionally end to end; all other
-    # entry modes stay keyword-only.
     conduit_lesser._meld.meld.assert_called_once_with(
         "sha-1",
-        spell_name="Spell",
+        spell_name=None,
         spellframe="frame",
         binding_name="bind",
         spell_override={"k": "v"},
@@ -845,7 +838,7 @@ def test_meld_does_not_fire_conduit_level_meld_hooks(
         }
     )
 
-    result = conduit_lesser.meld(spell="sha-1")
+    result = conduit_lesser.meld(spell_id="sha-1")
 
     assert result == "result"
     assert events == []
@@ -879,7 +872,7 @@ def test_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
         lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
     )
 
-    result = conduit_lesser.meld(spell="sha-1")
+    result = conduit_lesser.meld(spell_id="sha-1")
 
     assert result == "result"
     fire_conduit_hooks.assert_not_called()
@@ -913,7 +906,7 @@ def test_dynamic_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
         lambda self, *args, **kwargs: fire_conduit_hooks(*args, **kwargs),
     )
 
-    result = conduit_dynamic_normal.meld(spell="sha-1")
+    result = conduit_dynamic_normal.meld(spell_id="sha-1")
 
     assert result == "result"
     fire_conduit_hooks.assert_not_called()
@@ -946,7 +939,7 @@ def test_dynamic_meld_waits_then_rechecks_closed_before_ticket_registration(
     conduit_dynamic_normal._creation_gate = gate
 
     with pytest.raises(RuntimeError, match="CreationGate is closed"):
-        conduit_dynamic_normal.meld(spell="sha-1")
+        conduit_dynamic_normal.meld(spell_id="sha-1")
 
     gate.admit_ticket.assert_called_once_with()
     gate.unregister_ticket.assert_not_called()
@@ -976,7 +969,7 @@ def test_dynamic_meld_admits_ticket_first_and_unregisters_after(
     gate = MagicMock()
     conduit_dynamic_normal._creation_gate = gate
 
-    result = conduit_dynamic_normal.meld(spell="sha-1")
+    result = conduit_dynamic_normal.meld(spell_id="sha-1")
 
     assert result == "result"
     gate.admit_ticket.assert_called_once_with()

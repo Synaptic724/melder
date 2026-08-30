@@ -192,7 +192,7 @@ def test_meld_by_spell_id_resolves_class_instance() -> None:
     Purpose:
         Validate direct resolution by spell_id.
     Contract:
-        - Conduit.meld(spell=<spell_id>) returns a concrete instance.
+        - Conduit.meld(spell_id=<spell_id>) returns a concrete instance.
     Returns:
         None.
     Raises:
@@ -228,7 +228,7 @@ def test_meld_by_spell_id_resolves_class_instance() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         assert isinstance(instance, _Service)
         assert instance.marker == "id"
     finally:
@@ -240,7 +240,7 @@ def test_meld_by_spell_name_resolves_class_instance() -> None:
     Purpose:
         Validate resolution by spell_name string.
     Contract:
-        - Conduit.meld(spell_name="<ClassName>") resolves the default binding.
+        - Conduit.meld(spell="<ClassName>") resolves the default binding.
     Returns:
         None.
     Raises:
@@ -276,7 +276,7 @@ def test_meld_by_spell_name_resolves_class_instance() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell_name=_Service.__name__)
+        instance = conduit.meld(spell=_Service.__name__)
         assert isinstance(instance, _Service)
         assert instance.marker == "name"
     finally:
@@ -468,7 +468,7 @@ def test_type_hint_di_forward_ref_string_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ForwardRefRepo)
         assert instance.repo.marker == "forward"
     finally:
@@ -512,7 +512,7 @@ def test_collection_di_forward_ref_list_injects_all() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -620,7 +620,7 @@ def test_type_hint_di_forward_ref_optional_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ForwardRefRepo)
     finally:
         conduit.cleanup()
@@ -675,7 +675,7 @@ def test_type_hint_di_forward_ref_union_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ForwardRefRepo)
     finally:
         conduit.cleanup()
@@ -738,7 +738,7 @@ def test_type_hint_di_forward_ref_typing_list_protocol_resolves_all() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -848,7 +848,7 @@ def test_type_hint_di_forward_ref_list_class_frame_resolves_all() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -923,7 +923,7 @@ def test_type_hint_di_forward_ref_local_class_resolves_by_name() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _LocalRepo)
         assert instance.repo.marker == "local"
     finally:
@@ -1033,7 +1033,7 @@ def test_type_hint_di_forward_ref_local_protocol_collection_resolves_by_name() -
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -1068,7 +1068,7 @@ def test_type_hint_di_forward_ref_module_scope_defined_late_resolves() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _LateForwardRepo)
         assert instance.repo.marker == "late"
     finally:
@@ -1124,7 +1124,7 @@ def test_type_hint_di_forward_ref_spellmap_default_wins_over_unresolved() -> Non
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _ForwardRefRepo)
     finally:
         conduit.cleanup()
@@ -1188,7 +1188,7 @@ def test_type_hint_di_forward_ref_list_includes_all_binding_names() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -1298,7 +1298,7 @@ def test_type_hint_di_forward_ref_typing_list_class_frame_resolves_all() -> None
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:
@@ -1381,7 +1381,7 @@ def test_type_hint_di_by_protocol_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _Repo)
         assert instance.repo.marker == "repo"
     finally:
@@ -1454,7 +1454,7 @@ def test_spellmap_default_explicit_class_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.repo, _Repo)
         assert instance.repo.marker == "explicit"
     finally:
@@ -1537,7 +1537,7 @@ def test_spellmap_default_frame_only_resolves_dependency() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=service_id)
+        instance = conduit.meld(spell_id=service_id)
         assert isinstance(instance.cfg, _Config)
         assert instance.cfg.marker == "frame-only"
     finally:
@@ -1757,7 +1757,7 @@ def test_collection_di_by_list_frame_injects_all() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        pipeline = conduit.meld(spell=pipeline_id)
+        pipeline = conduit.meld(spell_id=pipeline_id)
         markers = {handler.marker for handler in pipeline.handlers}
         assert markers == {"A", "B"}
     finally:

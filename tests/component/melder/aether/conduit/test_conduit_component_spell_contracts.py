@@ -119,8 +119,8 @@ def test_component_spell_contract_path_override_targets_dependency() -> None:
 
         override_instance = ContractServicePrimary(marker="path")
         instance = borrower.meld(
-            spell=consumer_id,
-            spell_override={"service": override_instance},
+            spell_id=consumer_id,
+            override={"service": override_instance},
         )
         assert instance.service is override_instance
     finally:
@@ -167,8 +167,8 @@ def test_component_spell_contract_broadcast_override_targets_dependency() -> Non
 
         override_instance = ContractServicePrimary(marker="broadcast")
         instance = borrower.meld(
-            spell=consumer_id,
-            spell_override={"**service": override_instance},
+            spell_id=consumer_id,
+            override={"**service": override_instance},
         )
         assert instance.service is override_instance
     finally:
@@ -215,8 +215,8 @@ def test_component_spell_contract_unique_override_replaces_dependency() -> None:
         assert borrower.validate_contracts_and_define()
 
         instance = borrower.meld(
-            spell=consumer_id,
-            spell_override={"*service": override_instance},
+            spell_id=consumer_id,
+            override={"*service": override_instance},
         )
         assert instance.service is override_instance
     finally:
@@ -263,8 +263,8 @@ def test_component_spell_contract_path_override_beats_contract_override() -> Non
 
         override_instance = ContractServicePrimary(marker="meld")
         instance = borrower.meld(
-            spell=consumer_id,
-            spell_override={"service": override_instance},
+            spell_id=consumer_id,
+            override={"service": override_instance},
         )
         assert instance.service is override_instance
     finally:
@@ -309,7 +309,7 @@ def test_component_spell_contract_multiple_contract_overrides_on_many_allowed() 
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert instance.left.marker == "override-left"
         assert instance.right.marker == "override-right"
     finally:
@@ -355,7 +355,7 @@ def test_component_spell_contract_override_list_contracted() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert instance.service.marker == "override-list"
     finally:
         borrower.cleanup()
@@ -400,7 +400,7 @@ def test_component_spell_contract_override_tuple_contracted() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert instance.service.marker == "override-tuple"
     finally:
         borrower.cleanup()
@@ -445,7 +445,7 @@ def test_component_spell_contract_override_dict_args_contracted() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
         assert instance.service.marker == "override-dict-args"
     finally:
         borrower.cleanup()
@@ -527,8 +527,8 @@ def test_component_spell_contract_broadcast_override_targets_dual_dependencies()
 
         override_instance = ContractServicePrimary(marker="broadcast")
         instance = borrower.meld(
-            spell=consumer_id,
-            spell_override={"**service": override_instance},
+            spell_id=consumer_id,
+            override={"**service": override_instance},
         )
         assert instance.service is override_instance
         assert instance.child.service is override_instance

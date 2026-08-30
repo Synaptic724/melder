@@ -274,8 +274,8 @@ def test_component_conduit_meld_many_registers_multiple_creations() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         creations = conduit._creations
-        instance_a = conduit.meld(spell=spell_id)
-        instance_b = conduit.meld(spell=spell_id)
+        instance_a = conduit.meld(spell_id=spell_id)
+        instance_b = conduit.meld(spell_id=spell_id)
 
         assert instance_a is not instance_b
         bucket = creations._creations.get(spell_id)
@@ -305,7 +305,7 @@ def test_component_conduit_meld_unique_per_conduit_lineage_registers_in_lineage_
     conduit = spellbook.conjure(name="root")
     try:
         creations = conduit._creations
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         entry = creations._creations.get(spell_id)
         assert entry is not None
         assert entry is instance
@@ -344,7 +344,7 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
         cloud.get_cluster("cluster-a").elect_leader(conduit.id)
 
         creations = conduit._creations
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         entry = creations._creations.get(spell_id)
         assert entry is not None
         assert entry is instance
@@ -376,9 +376,9 @@ def test_component_conduit_cleanup_disposes_across_scopes() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        unique_instance = conduit.meld(spell=unique_id)
-        many_instance_a = conduit.meld(spell=many_id)
-        many_instance_b = conduit.meld(spell=many_id)
+        unique_instance = conduit.meld(spell_id=unique_id)
+        many_instance_a = conduit.meld(spell_id=many_id)
+        many_instance_b = conduit.meld(spell_id=many_id)
 
         conduit.permanent_cleanup()
 
@@ -415,16 +415,16 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
     root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
-        unique_instance = lesser.meld(spell=unique_id)
-        many_instance = lesser.meld(spell=many_id)
+        unique_instance = lesser.meld(spell_id=unique_id)
+        many_instance = lesser.meld(spell_id=many_id)
 
         lesser.upgrade_to_normal(name="upgraded")
 
         assert isinstance(lesser._creations, Creations)
-        reused_unique = lesser.meld(spell=unique_id)
+        reused_unique = lesser.meld(spell_id=unique_id)
         assert reused_unique is unique_instance
 
-        many_instance_after = lesser.meld(spell=many_id)
+        many_instance_after = lesser.meld(spell_id=many_id)
         assert many_instance_after is not many_instance
 
         bucket = lesser._creations._creations.get(many_id)
@@ -465,9 +465,9 @@ def test_component_conduit_cleanup_disposes_lifo() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        conduit.meld(spell=spell_id)
-        conduit.meld(spell=spell_id)
-        conduit.meld(spell=spell_id)
+        conduit.meld(spell_id=spell_id)
+        conduit.meld(spell_id=spell_id)
+        conduit.meld(spell_id=spell_id)
 
         conduit.permanent_cleanup()
 

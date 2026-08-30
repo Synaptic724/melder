@@ -107,7 +107,7 @@ def test_full_lifecycle_stage_add_notch_meld():
         assert index.spells_in_index() == {id_a, id_b}     # staged + moved
         conduit.notch_spell(spell_index=index, spell=spell_b)
         assert index.selected_spell_id == id_b             # notched
-        assert isinstance(conduit.meld(spell=id_b), _ServiceB)  # melds the new active
+        assert isinstance(conduit.meld(spell_id=id_b), _ServiceB)  # melds the new active
     finally:
         conduit.cleanup()
 
@@ -119,7 +119,7 @@ def test_lifecycle_notch_back_restores_and_melds_original():
         spell_a = book._get_owned_spell(id_a)
         conduit.notch_spell(spell_index=index, spell=spell_a)
         assert index.selected_spell_id == id_a
-        assert isinstance(conduit.meld(spell=id_a), _ServiceA)
+        assert isinstance(conduit.meld(spell_id=id_a), _ServiceA)
     finally:
         conduit.cleanup()
 
@@ -132,7 +132,7 @@ def test_cleanup_inactive_member_leaves_index_and_active():
         conduit.cleanup_spell(spell=spell_b)   # dispose the inactive member
         assert index.spells_in_index() == {id_a}
         assert index.selected_spell_id == id_a
-        assert isinstance(conduit.meld(spell=id_a), _ServiceA)
+        assert isinstance(conduit.meld(spell_id=id_a), _ServiceA)
     finally:
         conduit.cleanup()
 
@@ -212,7 +212,7 @@ def test_borrower_cleanup_leaves_owner_index_resolvable():
     try:
         borrower.cleanup()
         # The owner still owns and can resolve its index after the borrower leaves.
-        assert isinstance(owner.meld(spell=id_a), _ServiceA)
+        assert isinstance(owner.meld(spell_id=id_a), _ServiceA)
     finally:
         owner.cleanup()
 
@@ -235,6 +235,6 @@ def test_add_to_index_keeps_source_creations_untouched_for_active():
     book, conduit, id_a, id_b, index, spell_b = _two_member_conduit()
     try:
         # Moving the inactive B onto A's index does not disturb A's resolution.
-        assert isinstance(conduit.meld(spell=id_a), _ServiceA)
+        assert isinstance(conduit.meld(spell_id=id_a), _ServiceA)
     finally:
         conduit.cleanup()

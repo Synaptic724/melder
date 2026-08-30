@@ -171,7 +171,7 @@ def test_meld_unknown_spell_name_raises() -> None:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         with pytest.raises(Exception):
-            conduit.meld(spell_name="DoesNotExist")
+            conduit.meld(spell="DoesNotExist")
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -246,7 +246,7 @@ def test_meld_invalid_override_type_raises() -> None:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         with pytest.raises(Exception):
-            conduit.meld(spell=engine_id, spell_override=12345)
+            conduit.meld(spell_id=engine_id, override=12345)
     finally:
         if conduit is not None:
             conduit.cleanup()

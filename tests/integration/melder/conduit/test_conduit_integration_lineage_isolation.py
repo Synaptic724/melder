@@ -86,12 +86,12 @@ def test_dependency_many_parent_resolves_root_lineage_instance() -> None:
     parent_id = book.bind(spell=_ManyParentWithLineageDep, existence=_MANY, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_parent = root.meld(spell=parent_id)
-        root_leaf = root.meld(spell=leaf_id)
+        root_parent = root.meld(spell_id=parent_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         assert root_parent.dep is root_leaf
         lesser = root.create_lesser_conduit()
         try:
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         assert lesser_parent is not root_parent, "many parents are per-conduit"
@@ -110,10 +110,10 @@ def test_dependency_upc_parent_resolves_root_lineage_instance() -> None:
     parent_id = book.bind(spell=_UpcParentWithLineageDep, existence=_UPC, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_leaf = root.meld(spell=leaf_id)
+        root_leaf = root.meld(spell_id=leaf_id)
         lesser = root.create_lesser_conduit()
         try:
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         assert lesser_parent.dep is root_leaf, (

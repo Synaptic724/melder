@@ -118,9 +118,9 @@ def _bind_cluster_thing(book: Spellbook) -> Any:
 def test_single_cluster_leader_and_members_share() -> None:
     _ob, leader, members, _cloud, spell_id = _form_cluster("single", 3, _bind_cluster_thing)
     try:
-        leader_instance = leader.meld(spell=spell_id)
+        leader_instance = leader.meld(spell_id=spell_id)
         for member in members:
-            assert member.meld(spell=spell_id) is leader_instance
+            assert member.meld(spell_id=spell_id) is leader_instance
     finally:
         for member in members:
             member.cleanup()
@@ -130,9 +130,9 @@ def test_single_cluster_leader_and_members_share() -> None:
 def test_many_members_all_share() -> None:
     _ob, leader, members, _cloud, spell_id = _form_cluster("many", 6, _bind_cluster_thing)
     try:
-        leader_instance = leader.meld(spell=spell_id)
+        leader_instance = leader.meld(spell_id=spell_id)
         for member in members:
-            assert member.meld(spell=spell_id) is leader_instance
+            assert member.meld(spell_id=spell_id) is leader_instance
     finally:
         for member in members:
             member.cleanup()
@@ -150,11 +150,11 @@ def test_two_distinct_cluster_spells_each_shared() -> None:
     id_a, id_b = bound
     member = members[0]
     try:
-        a = leader.meld(spell=id_a)
-        b = leader.meld(spell=id_b)
+        a = leader.meld(spell_id=id_a)
+        b = leader.meld(spell_id=id_b)
         assert a is not b
-        assert member.meld(spell=id_a) is a
-        assert member.meld(spell=id_b) is b
+        assert member.meld(spell_id=id_a) is a
+        assert member.meld(spell_id=id_b) is b
     finally:
         member.cleanup()
         leader.cleanup()
@@ -172,9 +172,9 @@ def test_dependency_resolves_shared_cluster_instance() -> None:
     leaf_id, parent_id = bound
     member = members[0]
     try:
-        leader_parent = leader.meld(spell=parent_id)
-        leader_leaf = leader.meld(spell=leaf_id)
-        member_leaf = member.meld(spell=leaf_id)
+        leader_parent = leader.meld(spell_id=parent_id)
+        leader_leaf = leader.meld(spell_id=leaf_id)
+        member_leaf = member.meld(spell_id=leaf_id)
         assert member_leaf is leader_leaf, "cluster leaf must be shared in the cluster"
         assert leader_parent.dep is leader_leaf, (
             "parent dependency must resolve the cluster's shared instance"
@@ -205,11 +205,11 @@ def test_dependency_on_leader_lesser_resolves_cluster_instance() -> None:
     _ob, leader, _members, _cloud, bound = _form_cluster("deplesser", 0, _bind)
     leaf_id, parent_id = bound
     try:
-        leader_leaf = leader.meld(spell=leaf_id)
+        leader_leaf = leader.meld(spell_id=leaf_id)
         lesser = leader.create_lesser_conduit()
         try:
-            lesser_leaf = lesser.meld(spell=leaf_id)
-            lesser_parent = lesser.meld(spell=parent_id)
+            lesser_leaf = lesser.meld(spell_id=leaf_id)
+            lesser_parent = lesser.meld(spell_id=parent_id)
         finally:
             lesser.cleanup()
         # precheck: a DIRECT cluster meld on the lesser shares the leader instance

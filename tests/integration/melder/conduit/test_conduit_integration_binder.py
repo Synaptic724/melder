@@ -162,15 +162,15 @@ def test_conduit_binder_defaults_apply_permissions_and_existence() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        binder = SpellBinder(conduit._spellbook, 
+        binder = SpellBinder(conduit._spellbook,
             default_existence=Existence.many,
             default_permissions="read",
         )
         with spellbook.transaction("bind"):
             spell_id = binder.bind(BasicConfig).finalize()
 
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is not second
         assert conduit.get_spell_permissions(spell_id) == "read"
     finally:
@@ -214,7 +214,7 @@ def test_conduit_binder_named_spellframe_resolution_and_lookup() -> None:
 
         resolved = conduit.meld(spellframe=IService, binding_name="primary")
         assert isinstance(resolved, BasicService)
-        assert conduit.meld(spell=spell_id) is resolved
+        assert conduit.meld(spell_id=spell_id) is resolved
 
         resolved_id = conduit.find_spell_id(IService, BasicService.__name__, "primary")
         assert resolved_id == spell_id
@@ -296,10 +296,9 @@ def test_conduit_binder_hooks_execute_in_order() -> None:
                 .finalize()
             )
 
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert events == ["pre", "activation", "post", "pre", "post"]
     finally:
         conduit.cleanup()
-

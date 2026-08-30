@@ -205,7 +205,7 @@ def test_integration_spell_compiler_system_full_pipeline_then_meld_returns_root_
 
         conduit = spellbook.conjure(name="root")
         try:
-            result = conduit.meld(spell=consumer_id)
+            result = conduit.meld(spell_id=consumer_id)
             assert isinstance(result, Consumer)
             assert isinstance(result.service, BasicService)
         finally:
@@ -235,7 +235,7 @@ def test_integration_spell_compiler_system_full_pipeline_then_meld_returns_colle
 
         conduit = spellbook.conjure(name="root")
         try:
-            result = conduit.meld(spell=consumer_id)
+            result = conduit.meld(spell_id=consumer_id)
             assert isinstance(result, Consumer)
             assert len(result.services) == 2
         finally:
@@ -265,7 +265,7 @@ def test_integration_spell_compiler_system_full_pipeline_then_meld_returns_spell
 
         conduit = spellbook.conjure(name="root")
         try:
-            result = conduit.meld(spell=consumer_id)
+            result = conduit.meld(spell_id=consumer_id)
             assert isinstance(result, Consumer)
             assert isinstance(result.config, BasicConfig)
         finally:

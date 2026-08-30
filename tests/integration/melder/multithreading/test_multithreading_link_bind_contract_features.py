@@ -194,7 +194,7 @@ class _LeaderDrivenWorker:
                 self._done_events[step].set()
                 return
             try:
-                result = self._conduit.meld(spell=self._spell_id)
+                result = self._conduit.meld(spell_id=self._spell_id)
                 with self._lock:
                     self._results[step] = result
             except Exception as exc:

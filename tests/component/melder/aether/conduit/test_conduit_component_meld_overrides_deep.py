@@ -395,8 +395,8 @@ def test_component_meld_overrides_depth3_path_targets_leaf(
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={override_path: override_leaf},
+            spell_id=root_id,
+            override={override_path: override_leaf},
         )
         assert _walk_path(root, attr_path) is override_leaf
         expected = _depth3_default_markers()
@@ -436,8 +436,8 @@ def test_component_meld_overrides_depth3_path_trims_whitespace(
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={override_path: override_leaf},
+            spell_id=root_id,
+            override={override_path: override_leaf},
         )
         assert _walk_path(root, attr_path) is override_leaf
 
@@ -460,8 +460,8 @@ def test_component_meld_overrides_depth3_multiple_paths_apply() -> None:
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={
+            spell_id=root_id,
+            override={
                 "left>left": left_override,
                 "right>right": right_override,
             },
@@ -506,8 +506,8 @@ def test_component_meld_overrides_depth3_path_replaces_branch(
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={override_path: override_layer},
+            spell_id=root_id,
+            override={override_path: override_layer},
         )
         branch = getattr(root, override_path)
         assert branch is override_layer
@@ -546,8 +546,8 @@ def test_component_meld_overrides_depth3_missing_path_raises(
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=root_id,
-                spell_override={override_path: Depth3LeafA()},
+                spell_id=root_id,
+                override={override_path: Depth3LeafA()},
             )
 
 
@@ -571,8 +571,8 @@ def test_component_meld_overrides_depth3_unique_raises_on_multiple_matches(
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=root_id,
-                spell_override={override_key: Depth3LeafA()},
+                spell_id=root_id,
+                override={override_key: Depth3LeafA()},
             )
 
 
@@ -608,8 +608,8 @@ def test_component_meld_overrides_depth5_path_targets_deep_leaf(
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={override_path: override_leaf},
+            spell_id=root_id,
+            override={override_path: override_leaf},
         )
         assert _walk_path(root, attr_path) is override_leaf
         control_path = _alternate_depth5_path(attr_path)
@@ -636,8 +636,8 @@ def test_component_meld_overrides_depth5_multiple_paths_apply() -> None:
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={
+            spell_id=root_id,
+            override={
                 "left>left>left>left": left_override,
                 "right>right>right>right": right_override,
             },
@@ -673,8 +673,8 @@ def test_component_meld_overrides_depth5_missing_path_raises(
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=root_id,
-                spell_override={override_path: Depth5LeafA()},
+                spell_id=root_id,
+                override={override_path: Depth5LeafA()},
             )
 
 
@@ -708,8 +708,8 @@ def test_component_meld_overrides_depth5_path_trims_whitespace(
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={override_path: override_leaf},
+            spell_id=root_id,
+            override={override_path: override_leaf},
         )
         assert _walk_path(root, attr_path) is override_leaf
 
@@ -729,7 +729,7 @@ def test_component_meld_overrides_custom_many_instances_are_distinct() -> None:
     root_id = _bind_custom_graph(spellbook)
 
     with _conjured(spellbook) as conduit:
-        root = conduit.meld(spell=root_id)
+        root = conduit.meld(spell_id=root_id)
         assert root.service is not root.mixed.left.service
 
 
@@ -761,8 +761,8 @@ def test_component_meld_overrides_custom_path_targets_nested_values(
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={override_path: value},
+            spell_id=root_id,
+            override={override_path: value},
         )
         target = _walk_path(root, attr_path)
         assert getattr(target, attr_name) == value
@@ -784,8 +784,8 @@ def test_component_meld_overrides_custom_multiple_paths_apply() -> None:
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={
+            spell_id=root_id,
+            override={
                 "mixed>left>service>marker": "multi-left",
                 "mixed>right>config>label": "multi-right",
                 "service>marker": "multi-root",
@@ -812,8 +812,8 @@ def test_component_meld_overrides_custom_broadcast_marker_targets_all() -> None:
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={"**marker": "broadcast"},
+            spell_id=root_id,
+            override={"**marker": "broadcast"},
         )
         assert root.service.marker == "broadcast"
         assert root.mixed.left.service.marker == "broadcast"
@@ -836,8 +836,8 @@ def test_component_meld_overrides_custom_broadcast_service_targets_all() -> None
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={"**service": override_service},
+            spell_id=root_id,
+            override={"**service": override_service},
         )
         assert root.service is override_service
         assert root.mixed.left.service is override_service
@@ -859,8 +859,8 @@ def test_component_meld_overrides_custom_broadcast_with_path_precedence() -> Non
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={
+            spell_id=root_id,
+            override={
                 "**marker": "broadcast",
                 "mixed>left>service>marker": "path",
             },
@@ -886,8 +886,8 @@ def test_component_meld_overrides_custom_unique_right_targets_single() -> None:
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={"*right": override_node},
+            spell_id=root_id,
+            override={"*right": override_node},
         )
         assert root.mixed.right is override_node
         assert root.mixed.right.config.label == "override"
@@ -911,8 +911,8 @@ def test_component_meld_overrides_custom_unique_over_broadcast() -> None:
 
     with _conjured(spellbook) as conduit:
         root = conduit.meld(
-            spell=root_id,
-            spell_override={
+            spell_id=root_id,
+            override={
                 "**config": broadcast_config,
                 "*config": unique_config,
             },
@@ -936,11 +936,11 @@ def test_component_meld_overrides_custom_shared_existing_instance_raises() -> No
     root_id = _bind_custom_graph(spellbook)
 
     with _conjured(spellbook) as conduit:
-        conduit.meld(spell=root_id)
+        conduit.meld(spell_id=root_id)
         with pytest.raises(MeldExecutionError, match="already exists"):
             conduit.meld(
-                spell=root_id,
-                spell_override={"service>marker": "override"},
+                spell_id=root_id,
+                override={"service>marker": "override"},
             )
 
 
@@ -964,11 +964,11 @@ def test_component_meld_overrides_custom_shared_dependency_existing_raises() -> 
     )
 
     with _conjured(spellbook) as conduit:
-        conduit.meld(spell=root_id)
+        conduit.meld(spell_id=root_id)
         with pytest.raises(MeldExecutionError, match="already exists"):
             conduit.meld(
-                spell=root_id,
-                spell_override={"service>marker": "override"},
+                spell_id=root_id,
+                override={"service>marker": "override"},
             )
 
 
@@ -989,8 +989,8 @@ def test_component_meld_overrides_custom_unique_missing_raises() -> None:
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=root_id,
-                spell_override={"*missing": BasicConfig(label="missing")},
+                spell_id=root_id,
+                override={"*missing": BasicConfig(label="missing")},
             )
 
 
@@ -1011,8 +1011,8 @@ def test_component_meld_overrides_custom_unique_conflict_raises() -> None:
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=root_id,
-                spell_override={
+                spell_id=root_id,
+                override={
                     "*config": BasicConfig(label="a"),
                     "* config": BasicConfig(label="b"),
                 },
@@ -1048,7 +1048,7 @@ def test_component_meld_overrides_custom_invalid_keys_raise(
 
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
-            conduit.meld(spell=root_id, spell_override=override_map)
+            conduit.meld(spell_id=root_id, override=override_map)
 
 
 def test_component_meld_overrides_custom_conflicting_broadcast_raises() -> None:
@@ -1068,8 +1068,8 @@ def test_component_meld_overrides_custom_conflicting_broadcast_raises() -> None:
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=root_id,
-                spell_override={
+                spell_id=root_id,
+                override={
                     "**marker": "a",
                     "** marker": "b",
                 },
@@ -1093,8 +1093,8 @@ def test_component_meld_overrides_custom_conflicting_path_raises() -> None:
     with _conjured(spellbook) as conduit:
         with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):
             conduit.meld(
-                spell=root_id,
-                spell_override={
+                spell_id=root_id,
+                override={
                     "mixed>left>service>marker": "a",
                     " mixed > left > service > marker ": "b",
                 },

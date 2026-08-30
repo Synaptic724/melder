@@ -77,7 +77,7 @@ def test_meld_by_spell_name_string_resolves_default_binding() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell_name=_Service.__name__)
+        instance = conduit.meld(spell=_Service.__name__)
         assert isinstance(instance, _Service)
         assert instance.marker == "by-name"
     finally:
@@ -664,7 +664,7 @@ def test_meld_by_spell_id_returns_existing_instance() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        resolved = conduit.meld(spell=spell_id)
+        resolved = conduit.meld(spell_id=spell_id)
         assert resolved is existing
     finally:
         conduit.cleanup()
@@ -712,7 +712,7 @@ def test_meld_by_missing_spell_id_raises_keyerror() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with pytest.raises(KeyError):
-            conduit.meld(spell="missing-spell-id")
+            conduit.meld(spell_id="missing-spell-id")
     finally:
         conduit.cleanup()
 
@@ -766,12 +766,12 @@ def test_spellindex_update_propagates_owned_id_map_for_meld() -> None:
 
         spell_index.update(new_id)
 
-        instance = conduit.meld(spell=new_id)
+        instance = conduit.meld(spell_id=new_id)
         assert isinstance(instance, _Service)
         assert instance.marker == "owned"
 
         with pytest.raises(KeyError):
-            conduit.meld(spell=old_id)
+            conduit.meld(spell_id=old_id)
     finally:
         conduit.cleanup()
 
@@ -836,12 +836,12 @@ def test_spellindex_update_propagates_contracted_id_map_for_meld() -> None:
 
         spell_index.update(new_id)
 
-        instance = borrower.meld(spell=new_id)
+        instance = borrower.meld(spell_id=new_id)
         assert isinstance(instance, _Service)
         assert instance.marker == "contracted"
 
         with pytest.raises(KeyError):
-            borrower.meld(spell=old_id)
+            borrower.meld(spell_id=old_id)
     finally:
         borrower.cleanup()
         owner.cleanup()

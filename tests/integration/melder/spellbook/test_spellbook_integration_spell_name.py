@@ -72,7 +72,7 @@ def test_meld_by_spell_name_string_resolves_default_binding() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell_name=_Service.__name__)
+        instance = conduit.meld(spell=_Service.__name__)
         assert isinstance(instance, _Service)
         assert instance.marker == "by-name"
     finally:
@@ -122,7 +122,7 @@ def test_meld_by_spell_name_with_binding_name_resolves_named_binding() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell_name=_Service.__name__, binding_name="PRIMARY")
+        instance = conduit.meld(spell=_Service.__name__, binding_name="PRIMARY")
         assert isinstance(instance, _Service)
         assert instance.marker == "named"
     finally:
@@ -171,7 +171,7 @@ def test_meld_by_spell_name_string_is_case_insensitive() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         spell_name = _Service.__name__
-        instance = conduit.meld(spell_name=spell_name.swapcase())
+        instance = conduit.meld(spell=spell_name.swapcase())
         assert isinstance(instance, _Service)
         assert instance.marker == "case"
     finally:
@@ -199,6 +199,6 @@ def test_meld_by_spell_name_missing_raises_key_error() -> None:
             KeyError,
             match=r"No spell found for frame='.*', binding='__default__'",
         ):
-            conduit.meld(spell_name="MissingService")
+            conduit.meld(spell="MissingService")
     finally:
         conduit.cleanup()

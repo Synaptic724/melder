@@ -160,7 +160,7 @@ def test_a1_meld_by_spell_id() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert isinstance(conduit.meld(spell=engine_id), Engine)
+        assert isinstance(conduit.meld(spell_id=engine_id), Engine)
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -202,7 +202,7 @@ def test_a5_root_spell_override_applies_kwargs() -> None:
     try:
         spellbook.bind(spell=NamedService, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        instance = conduit.meld(spell=NamedService, spell_override={"name": "overridden"})
+        instance = conduit.meld(spell=NamedService, override={"name": "overridden"})
         assert instance.name == "overridden"
     finally:
         if conduit is not None:
@@ -217,7 +217,7 @@ def test_a6_meld_by_spell_name() -> None:
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert isinstance(conduit.meld(spell_name="Engine"), Engine)
+        assert isinstance(conduit.meld(spell="Engine"), Engine)
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -427,7 +427,7 @@ def test_g_unique_existence_reuses_instance() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert conduit.meld(spell=engine_id) is conduit.meld(spell=engine_id)
+        assert conduit.meld(spell_id=engine_id) is conduit.meld(spell_id=engine_id)
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -441,7 +441,7 @@ def test_g_many_existence_creates_new_instances() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.many, permissions="create")
         conduit = spellbook.conjure(name="root")
-        assert conduit.meld(spell=engine_id) is not conduit.meld(spell=engine_id)
+        assert conduit.meld(spell_id=engine_id) is not conduit.meld(spell_id=engine_id)
     finally:
         if conduit is not None:
             conduit.cleanup()

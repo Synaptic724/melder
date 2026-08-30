@@ -136,7 +136,7 @@ def test_component_conduit_meld_blocks_dirty_root_change_control() -> None:
         assert change_control_manager.is_root_dirty(conduit_id, spell_id) is True
 
         with pytest.raises(MeldExecutionError, match="dirty"):
-            conduit.meld(spell=spell_id)
+            conduit.meld(spell_id=spell_id)
     finally:
         conduit.cleanup()
 
@@ -168,7 +168,7 @@ def test_component_conduit_meld_blocks_invalid_system_state() -> None:
         state.set_validity(SpellValidity.invalid)
 
         with pytest.raises(SpellbookValidationError):
-            conduit.meld(spell=spell_id)
+            conduit.meld(spell_id=spell_id)
     finally:
         conduit.cleanup()
 
@@ -200,7 +200,7 @@ def test_component_conduit_meld_blocks_disabled_system_state() -> None:
         state.set_validity(SpellValidity.disabled)
 
         with pytest.raises(SpellbookValidationError):
-            conduit.meld(spell=spell_id)
+            conduit.meld(spell_id=spell_id)
     finally:
         conduit.cleanup()
 
@@ -232,7 +232,7 @@ def test_component_conduit_creation_gate_blocks_until_enabled() -> None:
 
         def _worker() -> None:
             started.set()
-            result["value"] = conduit.meld(spell=spell_id)
+            result["value"] = conduit.meld(spell_id=spell_id)
             finished.set()
 
         thread = threading.Thread(target=_worker, daemon=True)

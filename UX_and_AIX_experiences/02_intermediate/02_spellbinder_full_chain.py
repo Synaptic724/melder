@@ -41,12 +41,12 @@ def main() -> None:
     conduit = book.conjure()
     client = conduit.meld(
         spell=HttpClient, spellframe="network", binding_name="payments-api",
-        spell_override={"base_url": "https://pay.example", "timeout": 30},
+        override={"base_url": "https://pay.example", "timeout": 30},
     )
     assert client.base_url == "https://pay.example" and client.timeout == 30
-    print("ctor config via spell_override:", client.base_url)
+    print("ctor config via override:", client.base_url)
     # NOTE: with_kwargs passes BIND parameters (here: disposal list);
-    # constructor arguments ride spell_override at meld time.
+    # Constructor arguments ride override= at meld time.
 
     child = conduit.create_lesser_conduit()
     policy_root = conduit.meld(spell=RetryPolicy, spellframe="network")

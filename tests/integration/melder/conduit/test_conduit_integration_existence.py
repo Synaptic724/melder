@@ -61,8 +61,8 @@ def test_conduit_unique_reuses_across_lineage() -> None:
     conduit = spellbook.conjure(name="root")
     lesser = conduit.create_lesser_conduit()
     try:
-        root_instance = conduit.meld(spell=spell_id)
-        lesser_instance = lesser.meld(spell=spell_id)
+        root_instance = conduit.meld(spell_id=spell_id)
+        lesser_instance = lesser.meld(spell_id=spell_id)
         assert root_instance is lesser_instance
         assert isinstance(root_instance, BasicService)
     finally:
@@ -94,11 +94,11 @@ def test_conduit_unique_per_conduit_isolated_per_conduit() -> None:
     conduit = spellbook.conjure(name="root")
     lesser = conduit.create_lesser_conduit()
     try:
-        root_instance = conduit.meld(spell=spell_id)
-        lesser_instance = lesser.meld(spell=spell_id)
+        root_instance = conduit.meld(spell_id=spell_id)
+        lesser_instance = lesser.meld(spell_id=spell_id)
         assert root_instance is not lesser_instance
-        assert conduit.meld(spell=spell_id) is root_instance
-        assert lesser.meld(spell=spell_id) is lesser_instance
+        assert conduit.meld(spell_id=spell_id) is root_instance
+        assert lesser.meld(spell_id=spell_id) is lesser_instance
     finally:
         lesser.cleanup()
         conduit.cleanup()
@@ -126,8 +126,8 @@ def test_conduit_many_creates_new_each_time() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is not second
     finally:
         conduit.cleanup()
@@ -157,9 +157,9 @@ def test_conduit_unique_per_conduit_lineage_reuses_across_lineage() -> None:
     lesser = conduit.create_lesser_conduit()
     nested = lesser.create_lesser_conduit()
     try:
-        root_instance = conduit.meld(spell=spell_id)
-        lesser_instance = lesser.meld(spell=spell_id)
-        nested_instance = nested.meld(spell=spell_id)
+        root_instance = conduit.meld(spell_id=spell_id)
+        lesser_instance = lesser.meld(spell_id=spell_id)
+        nested_instance = nested.meld(spell_id=spell_id)
         assert root_instance is lesser_instance is nested_instance
     finally:
         nested.cleanup()
@@ -193,14 +193,14 @@ def test_conduit_unique_per_spell_space_scopes_instances() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as space:
-            first = space.meld(spell=spell_id)
-            second = space.meld(spell=spell_id)
+            first = space.meld(spell_id=spell_id)
+            second = space.meld(spell_id=spell_id)
             assert first is second
         with conduit.enter_spellspace() as space:
-            third = space.meld(spell=spell_id)
+            third = space.meld(spell_id=spell_id)
             assert third is not first
         with pytest.raises(RuntimeError, match="BasicService.*spellspace"):
-            conduit.meld(spell=spell_id)
+            conduit.meld(spell_id=spell_id)
     finally:
         conduit.cleanup()
 
@@ -281,8 +281,8 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     )
 
     try:
-        owner_instance = owner.meld(spell=spell_id)
-        borrower_instance = borrower.meld(spell=spell_id)
+        owner_instance = owner.meld(spell_id=spell_id)
+        borrower_instance = borrower.meld(spell_id=spell_id)
         assert owner_instance is borrower_instance
     finally:
         borrower.cleanup()
@@ -334,7 +334,7 @@ def test_conduit_contract_by_spell_id_dynamic_link() -> None:
         assert any(spell_index.has_spell(spell_id) for spell_index in contracted_spells.keys())
         assert any(spell.spell_id == spell_id for spell in contracted_spells.values())
 
-        instance = borrower.meld(spell=spell_id)
+        instance = borrower.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
     finally:
         borrower.cleanup()
@@ -399,7 +399,7 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
             f"inspected_target_id={inspected_target_id}, spell_in_contracts={spell_in_contracts}"
         )
 
-        instance = borrower.meld(spell=spell_id)
+        instance = borrower.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
     finally:
         borrower.cleanup()

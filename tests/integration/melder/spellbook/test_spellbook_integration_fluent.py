@@ -71,7 +71,7 @@ def test_spellbook_fluent_bind_inline_arguments_resolve() -> None:
 
         spell_index = spellbook.find_spell_index(IService, BasicService.__name__, "primary")
         assert spellbook.get_spell_permissions(spell_index) == "read"
-        assert conduit.meld(spell=spell_id) is instance
+        assert conduit.meld(spell_id=spell_id) is instance
     finally:
         conduit.cleanup()
 
@@ -96,7 +96,7 @@ def test_spellbook_fluent_with_permissions_sets_permissions() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        assert isinstance(conduit.meld(spell=spell_id), BasicService)
+        assert isinstance(conduit.meld(spell_id=spell_id), BasicService)
         spell_index = spellbook.find_spell_index("BasicService", BasicService.__name__, "__default__")
         assert spellbook.get_spell_permissions(spell_index) == "read"
     finally:
@@ -151,7 +151,7 @@ def test_spellbook_fluent_with_kwargs_overrides_hooks() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        _instance = conduit.meld(spell=spell_id)
+        _instance = conduit.meld(spell_id=spell_id)
         assert calls == ["second"]
     finally:
         conduit.cleanup()
@@ -245,8 +245,8 @@ def test_spellbook_fluent_multiple_hook_lists_preserve_order() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert calls == [
             "pre-1",
@@ -283,8 +283,8 @@ def test_spellbook_fluent_as_many_creates_new_instances() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is not second
     finally:
         conduit.cleanup()
@@ -312,10 +312,10 @@ def test_spellbook_fluent_as_unique_per_conduit_reuses_per_conduit() -> None:
     conduit = spellbook.conjure(name="root")
     lesser = conduit.create_lesser_conduit()
     try:
-        root_first = conduit.meld(spell=spell_id)
-        root_second = conduit.meld(spell=spell_id)
-        lesser_first = lesser.meld(spell=spell_id)
-        lesser_second = lesser.meld(spell=spell_id)
+        root_first = conduit.meld(spell_id=spell_id)
+        root_second = conduit.meld(spell_id=spell_id)
+        lesser_first = lesser.meld(spell_id=spell_id)
+        lesser_second = lesser.meld(spell_id=spell_id)
 
         assert root_first is root_second
         assert lesser_first is lesser_second
@@ -345,8 +345,8 @@ def test_spellbook_fluent_as_unique_per_conduit_lineage_shares_lineage() -> None
     conduit = spellbook.conjure(name="root")
     lesser = conduit.create_lesser_conduit()
     try:
-        root_instance = conduit.meld(spell=spell_id)
-        lesser_instance = lesser.meld(spell=spell_id)
+        root_instance = conduit.meld(spell_id=spell_id)
+        lesser_instance = lesser.meld(spell_id=spell_id)
         assert root_instance is lesser_instance
     finally:
         conduit.cleanup()
@@ -376,16 +376,16 @@ def test_spellbook_fluent_as_unique_per_spell_space_scopes_instances() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as spellspace:
-            first = spellspace.meld(spell=spell_id)
-            second = spellspace.meld(spell=spell_id)
+            first = spellspace.meld(spell_id=spell_id)
+            second = spellspace.meld(spell_id=spell_id)
             assert first is second
 
         with conduit.enter_spellspace() as spellspace:
-            third = spellspace.meld(spell=spell_id)
+            third = spellspace.meld(spell_id=spell_id)
             assert third is not first
 
         with pytest.raises(RuntimeError, match="BasicService.*spellspace"):
-            conduit.meld(spell=spell_id)
+            conduit.meld(spell_id=spell_id)
     finally:
         conduit.cleanup()
 
@@ -425,8 +425,8 @@ def test_spellbook_fluent_as_unique_per_conduit_cluster_shares_across_cluster() 
         # resolve the same leader-owned instance.
         cloud.get_cluster("cluster-a").elect_leader(owner.id)
 
-        owner_instance = owner.meld(spell=spell_id)
-        borrower_instance = borrower.meld(spell=spell_id)
+        owner_instance = owner.meld(spell_id=spell_id)
+        borrower_instance = borrower.meld(spell_id=spell_id)
         assert owner_instance is borrower_instance
     finally:
         borrower.cleanup()
@@ -453,8 +453,8 @@ def test_spellbook_fluent_with_existence_overrides_default() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
     finally:
         conduit.cleanup()

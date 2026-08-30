@@ -672,7 +672,7 @@ def _benchmark_forced_family_meld_no_overrides(
                 if meld_mode == "cold_create":
                     reset = space._creations.clear_all
                 return _measure_meld(
-                    action=lambda: space.meld(spell=root_spell_id),
+                    action=lambda: space.meld(spell_id=root_spell_id),
                     reset=reset,
                     iterations=iterations,
                     warmup=warmup,
@@ -682,7 +682,7 @@ def _benchmark_forced_family_meld_no_overrides(
         if meld_mode == "cold_create":
             reset = conduit._creations.clear_all
         return _measure_meld(
-            action=lambda: conduit.meld(spell=root_spell_id),
+            action=lambda: conduit.meld(spell_id=root_spell_id),
             reset=reset,
             iterations=iterations,
             warmup=warmup,

@@ -113,12 +113,12 @@ def test_root_and_lessers_share_one_instance_in_root_store() -> None:
     spell_id = book.bind(spell=_LineageThing, existence=_LINEAGE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_instance = root.meld(spell=spell_id)
+        root_instance = root.meld(spell_id=spell_id)
         assert root._creations.get_creation(spell_id) is root_instance
         for _ in range(3):
             lesser = root.create_lesser_conduit()
             try:
-                assert lesser.meld(spell=spell_id) is root_instance
+                assert lesser.meld(spell_id=spell_id) is root_instance
             finally:
                 lesser.cleanup()
     finally:
@@ -131,12 +131,12 @@ def test_deep_lesser_shares_root_instance() -> None:
     spell_id = book.bind(spell=_LineageThing, existence=_LINEAGE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_instance = root.meld(spell=spell_id)
+        root_instance = root.meld(spell_id=spell_id)
         lesser = root.create_lesser_conduit()
         deep = lesser.create_lesser_conduit()
         try:
-            assert lesser.meld(spell=spell_id) is root_instance
-            assert deep.meld(spell=spell_id) is root_instance
+            assert lesser.meld(spell_id=spell_id) is root_instance
+            assert deep.meld(spell_id=spell_id) is root_instance
         finally:
             deep.cleanup()
             lesser.cleanup()
@@ -151,13 +151,13 @@ def test_two_distinct_lineage_spells_isolated() -> None:
     id_b = book.bind(spell=_LineageAlt, existence=_LINEAGE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        a = root.meld(spell=id_a)
-        b = root.meld(spell=id_b)
+        a = root.meld(spell_id=id_a)
+        b = root.meld(spell_id=id_b)
         assert a is not b
         lesser = root.create_lesser_conduit()
         try:
-            assert lesser.meld(spell=id_a) is a
-            assert lesser.meld(spell=id_b) is b
+            assert lesser.meld(spell_id=id_a) is a
+            assert lesser.meld(spell_id=id_b) is b
         finally:
             lesser.cleanup()
     finally:
@@ -172,12 +172,12 @@ def test_lineage_shared_but_unique_per_conduit_is_not() -> None:
     upc_id = book.bind(spell=_UpcThing, existence=_UPC, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        root_lin = root.meld(spell=lin_id)
-        root_upc = root.meld(spell=upc_id)
+        root_lin = root.meld(spell_id=lin_id)
+        root_upc = root.meld(spell_id=upc_id)
         lesser = root.create_lesser_conduit()
         try:
-            assert lesser.meld(spell=lin_id) is root_lin
-            assert lesser.meld(spell=upc_id) is not root_upc
+            assert lesser.meld(spell_id=lin_id) is root_lin
+            assert lesser.meld(spell_id=upc_id) is not root_upc
         finally:
             lesser.cleanup()
     finally:
@@ -190,7 +190,7 @@ def test_remeld_is_idempotent() -> None:
     spell_id = book.bind(spell=_LineageThing, existence=_LINEAGE, permissions="create")
     root = book.conjure(name="root", dynamic=False)
     try:
-        assert root.meld(spell=spell_id) is root.meld(spell=spell_id)
+        assert root.meld(spell_id=spell_id) is root.meld(spell_id=spell_id)
     finally:
         root.permanent_cleanup()
         book.cleanup()

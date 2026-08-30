@@ -1,13 +1,13 @@
 """
 TIER: intermediate (08)
 GOAL: Two honest ways to construct with configuration: a factory that
-      closes over its config (bind-site), and spell_override at meld -
+      closes over its config (bind-site), and override at meld -
       a FLAT dict of keyword overrides for the melded spell's OWN
       constructor. Simple and top-level on purpose; targeting objects
       DEEPER in the graph is an advanced-tier lesson.
       (bind(**kwargs) is a different channel entirely: it lands on
       spell.metadata - lesson 06.)
-SURFACE EXERCISED: factory spells, meld(spell_override={...})
+SURFACE EXERCISED: factory spells, meld(override={...})
 """
 import melder as md
 
@@ -36,7 +36,7 @@ def main() -> None:
 
     overridden = conduit.meld(
         spellframe="mail", binding_name="raw-mailer",
-        spell_override={"host": "smtp.test.local", "port": 1025},
+        override={"host": "smtp.test.local", "port": 1025},
     )
     assert (overridden.host, overridden.port) == ("smtp.test.local", 1025)
     print("meld-site override:", overridden.host, overridden.port)

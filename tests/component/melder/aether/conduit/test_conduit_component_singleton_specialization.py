@@ -393,13 +393,13 @@ def _settled_root_slot(
         Tuple[object, object]: (creation_context, settled slot value).
     """
     for _ in range(3):
-        assert conduit.meld(spell=root_id) is not None
+        assert conduit.meld(spell_id=root_id) is not None
     spell = spellbook._spell_id_pool[root_id]
     context = spell._creation_context
     assert context is not None, "root context missing after warm melds"
     settled = context._no_overrides_executor
     for _ in range(2):
-        conduit.meld(spell=root_id)
+        conduit.meld(spell_id=root_id)
     assert context._no_overrides_executor is settled, (
         "published door slot did not settle after specialization window"
     )
@@ -424,12 +424,12 @@ def test_component_specialization_flag_on_installs_specialized_door() -> None:
         assert _door_binds_executor_named(settled, SPECIALIZED_EXECUTOR_NAME), (
             "flag-ON capture graph did not publish the specialized door"
         )
-        first = conduit.meld(spell=ids["root"])
-        second = conduit.meld(spell=ids["root"])
+        first = conduit.meld(spell_id=ids["root"])
+        second = conduit.meld(spell_id=ids["root"])
         assert second is not first
         assert second.u1 is first.u1
         assert second.u2 is first.u2
-        assert conduit.meld(spell=ids["u1"]) is first.u1
+        assert conduit.meld(spell_id=ids["u1"]) is first.u1
     finally:
         conduit.permanent_cleanup()
 
@@ -450,8 +450,8 @@ def test_component_specialization_flag_off_keeps_generic_door() -> None:
         assert not _door_binds_executor_named(
             settled, SPECIALIZED_EXECUTOR_NAME
         ), "flag OFF must never publish a specialized door"
-        first = conduit.meld(spell=ids["root"])
-        second = conduit.meld(spell=ids["root"])
+        first = conduit.meld(spell_id=ids["root"])
+        second = conduit.meld(spell_id=ids["root"])
         assert second is not first
         assert second.u1 is first.u1
     finally:
@@ -489,12 +489,12 @@ def test_component_specialization_declines_zero_capture_graph() -> None:
         assert not _door_binds_executor_named(
             settled, SPECIALIZED_EXECUTOR_NAME
         ), "zero-capture graph must decline specialization"
-        first = conduit.meld(spell=root_id)
-        second = conduit.meld(spell=root_id)
+        first = conduit.meld(spell_id=root_id)
+        second = conduit.meld(spell_id=root_id)
         assert second is not first
         assert second.scoped is first.scoped
         assert second.leaf is not first.leaf
-        assert conduit.meld(spell=scoped_id) is first.scoped
+        assert conduit.meld(spell_id=scoped_id) is first.scoped
     finally:
         conduit.permanent_cleanup()
 
@@ -527,8 +527,8 @@ def test_component_specialization_declines_root_only_capture_route() -> None:
         assert not _door_binds_executor_named(
             settled, SPECIALIZED_EXECUTOR_NAME
         ), "root-only capture on a short-circuit route must decline"
-        first = conduit.meld(spell=root_id)
-        assert conduit.meld(spell=root_id) is first
+        first = conduit.meld(spell_id=root_id)
+        assert conduit.meld(spell_id=root_id) is first
     finally:
         conduit.permanent_cleanup()
 
@@ -558,19 +558,19 @@ def _collect_differential_facts(
     )
     conduit = spellbook.conjure(name="root")
     try:
-        root_a = conduit.meld(spell=ids["root"])
-        root_b = conduit.meld(spell=ids["root"])
-        u1_live = conduit.meld(spell=ids["u1"])
+        root_a = conduit.meld(spell_id=ids["root"])
+        root_b = conduit.meld(spell_id=ids["root"])
+        u1_live = conduit.meld(spell_id=ids["u1"])
         lesser_one = conduit.create_lesser_conduit()
         try:
-            scoped_a = lesser_one.meld(spell=scoped_id)
-            scoped_b = lesser_one.meld(spell=scoped_id)
-            u1_from_lesser = lesser_one.meld(spell=ids["u1"])
+            scoped_a = lesser_one.meld(spell_id=scoped_id)
+            scoped_b = lesser_one.meld(spell_id=scoped_id)
+            u1_from_lesser = lesser_one.meld(spell_id=ids["u1"])
         finally:
             lesser_one.cleanup()
         lesser_two = conduit.create_lesser_conduit()
         try:
-            scoped_c = lesser_two.meld(spell=scoped_id)
+            scoped_c = lesser_two.meld(spell_id=scoped_id)
         finally:
             lesser_two.cleanup()
         return {
@@ -641,14 +641,14 @@ def _collect_error_parity_facts(
     conduit = spellbook.conjure(name="root")
     try:
         for _ in range(3):
-            assert conduit.meld(spell=flaky_id) is not None
+            assert conduit.meld(spell_id=flaky_id) is not None
         _FlakyRoot.explode = True
         try:
             with pytest.raises(Exception) as exc_info:
-                conduit.meld(spell=flaky_id)
+                conduit.meld(spell_id=flaky_id)
         finally:
             _FlakyRoot.explode = False
-        assert conduit.meld(spell=flaky_id) is not None
+        assert conduit.meld(spell_id=flaky_id) is not None
         return type(exc_info.value).__qualname__, str(exc_info.value)
     finally:
         try:
@@ -702,10 +702,10 @@ def test_component_specialization_deopt_epoch_bump_keeps_semantics() -> None:
     try:
         context, settled = _settled_root_slot(spellbook, conduit, ids["root"])
         assert _door_binds_executor_named(settled, SPECIALIZED_EXECUTOR_NAME)
-        live_u1 = conduit.meld(spell=ids["u1"])
+        live_u1 = conduit.meld(spell_id=ids["u1"])
         spellbook._spell_id_pool[ids["u1"]]._door_epoch += 1
-        deopt_a = conduit.meld(spell=ids["root"])
-        deopt_b = conduit.meld(spell=ids["root"])
+        deopt_a = conduit.meld(spell_id=ids["root"])
+        deopt_b = conduit.meld(spell_id=ids["root"])
         assert deopt_a is not deopt_b
         assert deopt_a.u1 is live_u1
         assert deopt_b.u1 is live_u1

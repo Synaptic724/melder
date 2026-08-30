@@ -231,7 +231,7 @@ def test_conduit_integration_teardown_visits_dependents_before_dependencies() ->
     )
 
     conduit = spellbook.conjure(dynamic=True, name="root")
-    session = conduit.meld(spell=session_id)
+    session = conduit.meld(spell_id=session_id)
     assert isinstance(session, _Session)
 
     conduit.cleanup()
@@ -266,7 +266,7 @@ def test_conduit_integration_dependent_sees_its_dependency_still_usable() -> Non
     )
 
     conduit = spellbook.conjure(dynamic=True, name="root")
-    session = conduit.meld(spell=session_id)
+    session = conduit.meld(spell_id=session_id)
     pool = session._pool
 
     conduit.cleanup()
@@ -304,7 +304,7 @@ def test_conduit_integration_spellspace_scope_disposes_newest_first() -> None:
     conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with conduit.enter_spellspace() as space:
-            session = space.meld(spell=session_id)
+            session = space.meld(spell_id=session_id)
             assert isinstance(session, _Session)
 
         assert _TeardownLog.entries == ["session", "pool", "engine"]
@@ -329,9 +329,9 @@ def test_conduit_integration_many_bucket_disposes_newest_instance_first() -> Non
     )
 
     conduit = spellbook.conjure(dynamic=True, name="root")
-    first = conduit.meld(spell=worker_id)
-    second = conduit.meld(spell=worker_id)
-    third = conduit.meld(spell=worker_id)
+    first = conduit.meld(spell_id=worker_id)
+    second = conduit.meld(spell_id=worker_id)
+    third = conduit.meld(spell_id=worker_id)
     assert (first.ordinal, second.ordinal, third.ordinal) == (1, 2, 3)
 
     conduit.cleanup()

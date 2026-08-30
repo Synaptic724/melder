@@ -1377,7 +1377,7 @@ def test_probe_unique_wildcard_resolves_a_single_socket():
     fixture = _Creds()
     fixture.source = "test-fixture"
     built = conduit.meld(spell=_OneSocket,
-                         spell_override={"*credentials": fixture})
+                         override={"*credentials": fixture})
     assert built.transport.credentials is fixture
     print("*param pinned: single socket resolved without a path")
 
@@ -1398,7 +1398,7 @@ def test_probe_unique_wildcard_refuses_when_it_matches_twice():
     fixture = _Creds()
     with pytest.raises(Exception) as refused:
         conduit.meld(spell=_TwoSockets,
-                     spell_override={"*credentials": fixture})
+                     override={"*credentials": fixture})
     print("*param two-match refusal:", type(refused.value).__name__)
 
 
@@ -1409,7 +1409,7 @@ def test_probe_broadcast_hits_every_match():
     fixture = _Creds()
     fixture.source = "test-fixture"
     built = conduit.meld(spell=_TwoSockets,
-                         spell_override={"**credentials": fixture})
+                         override={"**credentials": fixture})
     assert built.transport.credentials is fixture
     assert built.archive.credentials is fixture
     print("**param pinned: every matching socket took the override")
@@ -1421,7 +1421,7 @@ def test_probe_broadcast_refuses_when_it_matches_nothing():
     conduit = _override_conduit("probe-ovr-zero")
     with pytest.raises(Exception) as refused:
         conduit.meld(spell=_OneSocket,
-                     spell_override={"**nosuchparam": _Creds()})
+                     override={"**nosuchparam": _Creds()})
     print("**param zero-match refusal:", type(refused.value).__name__)
 
 
@@ -1437,7 +1437,7 @@ def test_probe_exact_path_beats_broadcast_on_overlap():
     exact.source = "archive-only"
     built = conduit.meld(
         spell=_TwoSockets,
-        spell_override={"**credentials": broad,
+        override={"**credentials": broad,
                         "archive>credentials": exact},
     )
     assert built.transport.credentials is broad
@@ -1452,7 +1452,7 @@ def test_probe_many_keeps_override_blast_radius_inside_the_call():
     conduit = _override_conduit("probe-ovr-blast")
     fixture = _Creds()
     fixture.source = "test-fixture"
-    conduit.meld(spell=_TwoSockets, spell_override={"**credentials": fixture})
+    conduit.meld(spell=_TwoSockets, override={"**credentials": fixture})
     clean = conduit.meld(spell=_TwoSockets)
     assert clean.transport.credentials is not fixture
     assert clean.archive.credentials.source == "vault"

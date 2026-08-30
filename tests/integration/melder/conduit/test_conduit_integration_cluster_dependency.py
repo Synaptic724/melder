@@ -185,7 +185,7 @@ def test_two_roots_share_cluster_instance_direct() -> None:
         "share2", leaf_cls=_ClusterThing,
     )
     try:
-        instances = [root.meld(spell=leaf_id) for root in roots]
+        instances = [root.meld(spell_id=leaf_id) for root in roots]
         assert instances[1] is instances[0], (
             "both cluster roots must resolve one shared cluster instance"
         )
@@ -205,15 +205,15 @@ def test_cluster_dependency_many_parent_on_every_root() -> None:
         parents=[(_ManyParentClusterDepA, _MANY), (_ManyParentClusterDepB, _MANY)],
     )
     try:
-        shared = roots[0].meld(spell=leaf_id)
+        shared = roots[0].meld(spell_id=leaf_id)
         # precheck: every cluster member resolves the one shared leaf instance
         for index, root in enumerate(roots):
-            assert root.meld(spell=leaf_id) is shared, (
+            assert root.meld(spell_id=leaf_id) is shared, (
                 f"root{index}: direct cluster meld must resolve the shared instance"
             )
         # the SpellContract parents live on the consumer roots (roots[1:])
         parents = [
-            roots[i + 1].meld(spell=parent_ids[i]) for i in range(len(parent_ids))
+            roots[i + 1].meld(spell_id=parent_ids[i]) for i in range(len(parent_ids))
         ]
         for index, parent in enumerate(parents):
             assert parent.dep is shared, (
@@ -232,13 +232,13 @@ def test_cluster_dependency_upc_parent_on_every_root() -> None:
         parents=[(_UpcParentClusterDepA, _UPC), (_UpcParentClusterDepB, _UPC)],
     )
     try:
-        shared = roots[0].meld(spell=leaf_id)
+        shared = roots[0].meld(spell_id=leaf_id)
         for index, root in enumerate(roots):
-            assert root.meld(spell=leaf_id) is shared, (
+            assert root.meld(spell_id=leaf_id) is shared, (
                 f"root{index}: direct cluster meld must resolve the shared instance"
             )
         for i in range(len(parent_ids)):
-            parent = roots[i + 1].meld(spell=parent_ids[i])
+            parent = roots[i + 1].meld(spell_id=parent_ids[i])
             assert parent.dep is shared, (
                 f"consumer{i}: unique_per_conduit parent dependency must resolve the shared instance"
             )

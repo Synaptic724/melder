@@ -115,7 +115,7 @@ def test_spellspace_same_instance_within_one_scope() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as space:
-            assert space.meld(spell=sid) is space.meld(spell=sid)
+            assert space.meld(spell_id=sid) is space.meld(spell_id=sid)
     finally:
         root.permanent_cleanup()
         book.cleanup()
@@ -128,9 +128,9 @@ def test_spellspace_distinct_across_two_scopes() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as s1:
-            first = s1.meld(spell=sid)
+            first = s1.meld(spell_id=sid)
         with root.enter_spellspace() as s2:
-            second = s2.meld(spell=sid)
+            second = s2.meld(spell_id=sid)
         assert first is not second
     finally:
         root.permanent_cleanup()
@@ -150,9 +150,9 @@ def test_spellspace_exactly_one_instance_within_scope() -> None:
     seen: List[Any] = []
     try:
         with root.enter_spellspace() as space:
-            seen.append(space.meld(spell=leaf_id))
+            seen.append(space.meld(spell_id=leaf_id))
             for _ in range(n_holders):
-                seen.append(space.meld(spell=holder_id).dep)
+                seen.append(space.meld(spell_id=holder_id).dep)
         assert len({id(x) for x in seen}) == 1, (
             f"one spellspace instance per scope; saw {len({id(x) for x in seen})}"
         )
@@ -172,8 +172,8 @@ def test_spellspace_dependency_into_many_holder_resolves_scope_instance() -> Non
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as space:
-            direct = space.meld(spell=leaf_id)
-            holder = space.meld(spell=holder_id)
+            direct = space.meld(spell_id=leaf_id)
+            holder = space.meld(spell_id=holder_id)
             assert holder.dep is direct
     finally:
         root.permanent_cleanup()
@@ -192,8 +192,8 @@ def test_spellspace_transitive_dependency_resolves_scope_instance() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as space:
-            direct = space.meld(spell=leaf_id)
-            top = space.meld(spell=top_id)
+            direct = space.meld(spell_id=leaf_id)
+            top = space.meld(spell_id=top_id)
             assert top.mid.leaf is direct
     finally:
         root.permanent_cleanup()
@@ -212,9 +212,9 @@ def test_spellspace_two_holders_share_one_scope_instance() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as space:
-            direct = space.meld(spell=leaf_id)
-            a = space.meld(spell=holder_a)
-            b = space.meld(spell=holder_b)
+            direct = space.meld(spell_id=leaf_id)
+            a = space.meld(spell_id=holder_a)
+            b = space.meld(spell_id=holder_b)
             assert a.dep is b.dep
             assert a.dep is direct
     finally:
@@ -236,8 +236,8 @@ def test_spellspace_dependency_on_lesser_resolves_lesser_scope_instance() -> Non
         lesser = root.create_lesser_conduit()
         try:
             with lesser.enter_spellspace() as space:
-                direct = space.meld(spell=leaf_id)
-                holder = space.meld(spell=holder_id)
+                direct = space.meld(spell_id=leaf_id)
+                holder = space.meld(spell_id=holder_id)
                 assert holder.dep is direct, (
                     "a lesser's scope dependency must be that scope's instance"
                 )
@@ -255,11 +255,11 @@ def test_spellspace_lesser_scope_isolated_from_root_scope() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as root_space:
-            root_inst = root_space.meld(spell=leaf_id)
+            root_inst = root_space.meld(spell_id=leaf_id)
             lesser = root.create_lesser_conduit()
             try:
                 with lesser.enter_spellspace() as lesser_space:
-                    lesser_inst = lesser_space.meld(spell=leaf_id)
+                    lesser_inst = lesser_space.meld(spell_id=leaf_id)
                     assert lesser_inst is not root_inst, (
                         "each conduit's scope owns its own spellspace instance"
                     )
@@ -281,9 +281,9 @@ def test_spellspace_reentry_yields_fresh_instance() -> None:
     root = book.conjure(dynamic=True, name="root")
     try:
         with root.enter_spellspace() as s1:
-            first = s1.meld(spell=holder_id).dep
+            first = s1.meld(spell_id=holder_id).dep
         with root.enter_spellspace() as s2:
-            second = s2.meld(spell=holder_id).dep
+            second = s2.meld(spell_id=holder_id).dep
         assert first is not second, "a re-entered scope must not reuse the old instance"
     finally:
         root.permanent_cleanup()
@@ -309,7 +309,7 @@ def test_spellspace_concurrent_scopes_are_isolated() -> None:
         try:
             barrier.wait()
             with lesser.enter_spellspace() as space:
-                inst = space.meld(spell=leaf_id)
+                inst = space.meld(spell_id=leaf_id)
             with lock:
                 results.append(inst)
         finally:

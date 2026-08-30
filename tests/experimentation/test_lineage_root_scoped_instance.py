@@ -125,12 +125,12 @@ def _meld_in_lineage(spell_id: str) -> Tuple[Any, Any, List[Any]]:
     """
     spellbook, root, spell_ids = _build_root()
     try:
-        root_instance = root.meld(spell=spell_id)
+        root_instance = root.meld(spell_id=spell_id)
         lesser_instances: List[Any] = []
         for _ in range(2):
             lesser = root.create_lesser_conduit()
             try:
-                lesser_instances.append(lesser.meld(spell=spell_id))
+                lesser_instances.append(lesser.meld(spell_id=spell_id))
             finally:
                 lesser.cleanup()
         # Capture root presence before teardown.

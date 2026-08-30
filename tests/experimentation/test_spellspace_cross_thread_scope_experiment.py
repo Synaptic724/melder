@@ -145,7 +145,7 @@ def test_spellspace_direct_use_without_any_active_scope_reuses_across_threads() 
         def worker(results: Queue[Tuple[str, str, Optional[int]]]) -> None:
             """Attempt a direct meld from the worker without any active scope."""
             try:
-                obj = shared_space.meld(spell=spell_id)
+                obj = shared_space.meld(spell_id=spell_id)
             except Exception as exc:
                 results.put(("err", type(exc).__name__, None))
             else:
@@ -182,7 +182,7 @@ def test_spellspace_active_context_is_not_required_for_spawned_threads() -> None
             def worker(results: Queue[Tuple[str, str, Optional[int]]]) -> None:
                 """Attempt a meld from a spawned worker while the active scope exists."""
                 try:
-                    obj = shared_space.meld(spell=spell_id)
+                    obj = shared_space.meld(spell_id=spell_id)
                 except Exception as exc:
                     results.put(("err", type(exc).__name__, None))
                 else:
@@ -219,7 +219,7 @@ def test_spellspace_can_be_forced_active_in_multiple_threads() -> None:
             """Force the same SpellSpace active in the worker context, then meld."""
             conduit._spellspace_stack.set([shared_space])
             try:
-                obj = shared_space.meld(spell=spell_id)
+                obj = shared_space.meld(spell_id=spell_id)
             except Exception as exc:
                 results.put(("err", type(exc).__name__, None))
             else:

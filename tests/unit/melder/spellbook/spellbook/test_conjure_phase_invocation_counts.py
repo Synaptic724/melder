@@ -297,7 +297,7 @@ def test_component_meld_revalidation_uses_local_phase_5_6_7(
             permissions="create",
         )
         spellbook.end_transaction("bind")
-        resolved = conduit.meld(spell=local_spell_id)
+        resolved = conduit.meld(spell_id=local_spell_id)
 
         assert resolved is not None
         assert counters["root_blueprints"] == 0
@@ -389,7 +389,7 @@ def test_component_meld_revalidation_phase_8_to_11_runs_for_target_only(
             permissions="create",
         )
         spellbook.end_transaction("bind")
-        resolved = conduit.meld(spell=local_spell_id)
+        resolved = conduit.meld(spell_id=local_spell_id)
 
         assert resolved is not None
         assert records["occurrence"] == [local_spell_id]

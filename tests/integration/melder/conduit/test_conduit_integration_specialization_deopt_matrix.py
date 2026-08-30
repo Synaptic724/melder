@@ -250,7 +250,7 @@ def _run_posture(
     conduit = spellbook.conjure(name="root", dynamic=dynamic)
     try:
         for _ in range(3):
-            assert conduit.meld(spell=ids["root"]) is not None
+            assert conduit.meld(spell_id=ids["root"]) is not None
         return scenario(spellbook, conduit, ids)
     finally:
         try:
@@ -306,14 +306,14 @@ def test_integration_deopt_hook_attach_on_captured_dep() -> None:
             conduit: Conduit,
             ids: Dict[str, str],
     ) -> Dict[str, object]:
-        live_u1 = conduit.meld(spell=ids["u1"])
+        live_u1 = conduit.meld(spell_id=ids["u1"])
         fired: List[bool] = []
         spellbook._spell_id_pool[ids["u1"]]._set_hooks(
             post_hooks=[lambda: fired.append(True)],
         )
-        root_a = conduit.meld(spell=ids["root"])
-        root_b = conduit.meld(spell=ids["root"])
-        direct_u1 = conduit.meld(spell=ids["u1"])
+        root_a = conduit.meld(spell_id=ids["root"])
+        root_b = conduit.meld(spell_id=ids["root"])
+        direct_u1 = conduit.meld(spell_id=ids["u1"])
         return {
             "roots_fresh": root_a is not root_b,
             "dep_live_after_bump": root_a.u1 is live_u1 and root_b.u1 is live_u1,
@@ -341,13 +341,13 @@ def test_integration_deopt_context_rebuild_on_root() -> None:
             conduit: Conduit,
             ids: Dict[str, str],
     ) -> Dict[str, object]:
-        live_u1 = conduit.meld(spell=ids["u1"])
+        live_u1 = conduit.meld(spell_id=ids["u1"])
         root_spell = spellbook._spell_id_pool[ids["root"]]
         root_spell._cleanup_creation_context()
         root_spell.resolution_required = True
         root_spell.resolution_complete = False
-        rebuilt_a = conduit.meld(spell=ids["root"])
-        rebuilt_b = conduit.meld(spell=ids["root"])
+        rebuilt_a = conduit.meld(spell_id=ids["root"])
+        rebuilt_b = conduit.meld(spell_id=ids["root"])
         return {
             "rebuild_serves": rebuilt_a is not None and rebuilt_b is not None,
             "roots_fresh": rebuilt_a is not rebuilt_b,
@@ -374,13 +374,13 @@ def test_integration_deopt_context_rebuild_on_captured_dep() -> None:
             conduit: Conduit,
             ids: Dict[str, str],
     ) -> Dict[str, object]:
-        pre_u1 = conduit.meld(spell=ids["u1"])
+        pre_u1 = conduit.meld(spell_id=ids["u1"])
         dep_spell = spellbook._spell_id_pool[ids["u1"]]
         dep_spell._cleanup_creation_context()
         dep_spell.resolution_required = True
         dep_spell.resolution_complete = False
-        post_u1 = conduit.meld(spell=ids["u1"])
-        root_after = conduit.meld(spell=ids["root"])
+        post_u1 = conduit.meld(spell_id=ids["u1"])
+        root_after = conduit.meld(spell_id=ids["root"])
         return {
             "dep_identity_stable": post_u1 is pre_u1,
             "root_threads_current_dep": root_after.u1 is post_u1,
@@ -422,8 +422,8 @@ def test_integration_deopt_transfer_spell_ownership_parity() -> None:
                 target_conduit=target,
             )
             try:
-                root_after = conduit.meld(spell=ids["root"])
-                dep_now = conduit.meld(spell=ids["u1"])
+                root_after = conduit.meld(spell_id=ids["root"])
+                dep_now = conduit.meld(spell_id=ids["u1"])
                 facts["outcome"] = "served"
                 facts["root_threads_current_dep"] = root_after.u1 is dep_now
             except Exception as exc:
@@ -470,7 +470,7 @@ def test_integration_concurrent_melds_through_specialization_window() -> None:
             try:
                 barrier.wait()
                 for _ in range(melds_per_thread):
-                    root = conduit.meld(spell=ids["root"])
+                    root = conduit.meld(spell_id=ids["root"])
                     local_dep_ids.append(id(root.u1))
                     local_root_ids.append(id(root))
             except Exception as exc:
@@ -492,7 +492,7 @@ def test_integration_concurrent_melds_through_specialization_window() -> None:
         root_spell = spellbook._spell_id_pool[ids["root"]]
         context = root_spell._creation_context
         settled = context._no_overrides_executor
-        conduit.meld(spell=ids["root"])
+        conduit.meld(spell_id=ids["root"])
         return {
             "errors": tuple(sorted(set(errors))),
             "single_dep_identity": len(set(dep_ids_seen)) == 1,

@@ -134,7 +134,7 @@ def _try_meld(conduit: Any, spell_id: str) -> Tuple[bool, str]:
         succeeds; resolved=False with the exception text if meld breaks.
     """
     try:
-        obj = conduit.meld(spell=spell_id)
+        obj = conduit.meld(spell_id=spell_id)
         return (True, type(obj).__name__)
     except Exception as exc:
         return (False, f"{type(exc).__name__}: {exc}")

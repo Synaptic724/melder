@@ -150,7 +150,7 @@ def test_component_spellspace_cleanup_disposes_and_clears_bucket() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as space:
-            instance = space.meld(spell=spell_id)
+            instance = space.meld(spell_id=spell_id)
             creation = space._creations.get_creation(spell_id)
             assert creation is not None
             assert creation is instance
@@ -181,9 +181,9 @@ def test_component_spellspace_cleanup_preserves_other_spellspaces() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as outer:
-            outer_instance = outer.meld(spell=spell_id)
+            outer_instance = outer.meld(spell_id=spell_id)
             with conduit.enter_spellspace() as inner:
-                inner.meld(spell=spell_id)
+                inner.meld(spell_id=spell_id)
             assert inner._creations.get_creation(spell_id) is None
             outer_creation = outer._creations.get_creation(spell_id)
             assert outer_creation is not None
@@ -214,14 +214,14 @@ def test_component_creations_extract_restore_spellspace_reuses_instance() -> Non
     try:
         with conduit.enter_spellspace() as space:
             creations = space._creations
-            instance = space.meld(spell=spell_id)
+            instance = space.meld(spell_id=spell_id)
             snapshot = creations.extract_spell_creations(spell_id)
             assert len(snapshot) == 1
             entry = snapshot[0]
             assert entry["scope"] == "unique"
             assert creations.get_creation(spell_id) is None
             creations.restore_spell_creations(spell_id, snapshot)
-            restored = space.meld(spell=spell_id)
+            restored = space.meld(spell_id=spell_id)
             assert restored is instance
     finally:
         conduit.permanent_cleanup()
@@ -247,7 +247,7 @@ def test_component_creations_extract_restore_unique_per_conduit_reuses_instance(
     )
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         creations = conduit._creations
         snapshot = creations.extract_spell_creations(spell_id)
         assert len(snapshot) == 1
@@ -255,7 +255,7 @@ def test_component_creations_extract_restore_unique_per_conduit_reuses_instance(
         assert entry["scope"] == "unique"
         assert creations._creations.get(spell_id) is None
         creations.restore_spell_creations(spell_id, snapshot)
-        restored = conduit.meld(spell=spell_id)
+        restored = conduit.meld(spell_id=spell_id)
         assert restored is instance
     finally:
         conduit.permanent_cleanup()

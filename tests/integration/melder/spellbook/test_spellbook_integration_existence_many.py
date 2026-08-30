@@ -75,8 +75,8 @@ def test_bind_conjure_and_meld_class_spell_many() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is not second
         assert init_calls == ["init", "init"]
     finally:

@@ -394,7 +394,7 @@ def test_conduit_spell_contract_resolves_after_dynamic_link() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert isinstance(instance, ContractConsumer)
         assert isinstance(instance.service, BasicService)
@@ -482,7 +482,7 @@ def test_conduit_spell_contract_missing_provider_raises() -> None:
     try:
         assert conduit.validate_contracts_and_define() == {}
         with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
-            conduit.meld(spell=consumer_id)
+            conduit.meld(spell_id=consumer_id)
     finally:
         conduit.cleanup()
 
@@ -584,7 +584,7 @@ def test_conduit_spell_contract_prefers_contracted_spell() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert isinstance(instance, ContractConsumer)
         assert isinstance(instance.service, BasicService)
@@ -661,7 +661,7 @@ def test_conduit_spell_contract_applies_override_payload() -> None:
             )
         assert borrower.validate_contracts_and_define()
 
-        instance = borrower.meld(spell=consumer_id)
+        instance = borrower.meld(spell_id=consumer_id)
 
         assert isinstance(instance, ContractConsumer)
         assert isinstance(instance.service, BasicService)

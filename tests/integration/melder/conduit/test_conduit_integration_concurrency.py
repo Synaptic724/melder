@@ -328,7 +328,7 @@ def _run_concurrent_melds(
         """
         try:
             barrier.wait(timeout=5)
-            root = conduit.meld(spell=spell_id)
+            root = conduit.meld(spell_id=spell_id)
             validator(root)
             with lock:
                 results[key] = root
@@ -524,7 +524,7 @@ def test_conduit_concurrent_meld_same_conduit_reuses_unique_per_conduit() -> Non
         """
         try:
             barrier.wait(timeout=5)
-            root = conduit.meld(spell=depth3_ids[Depth3Root])
+            root = conduit.meld(spell_id=depth3_ids[Depth3Root])
             _assert_depth3_root(root)
             with lock:
                 results.append(root)
@@ -659,7 +659,7 @@ def test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_insta
             """
             try:
                 barrier.wait(timeout=5)
-                instance = conduit.meld(spell=spell_id)
+                instance = conduit.meld(spell_id=spell_id)
                 with lock:
                     results.append(instance)
             except Exception as exc:
@@ -789,7 +789,7 @@ def test_conduit_lineage_concurrent_meld_unique_per_conduit_lineage_shared_insta
         """
         try:
             barrier.wait(timeout=5)
-            instance = target.meld(spell=spell_id)
+            instance = target.meld(spell_id=spell_id)
             with lock:
                 results.append(instance)
         except Exception as exc:
@@ -863,7 +863,7 @@ def test_conduit_concurrent_shared_unique_contract_reuses_owner_instance() -> No
             """
             try:
                 barrier.wait(timeout=5)
-                instance = target.meld(spell=spell_id)
+                instance = target.meld(spell_id=spell_id)
                 with lock:
                     results.append(instance)
             except Exception as exc:
@@ -1229,7 +1229,7 @@ def test_conduit_concurrent_meld_many_across_borrowers_distinct_instances() -> N
             Returns:
                 BasicService: New instance.
             """
-            instance = owner.meld(spell=spell_id)
+            instance = owner.meld(spell_id=spell_id)
             _assert_basic_service(instance)
             return instance
 
@@ -1253,7 +1253,7 @@ def test_conduit_concurrent_meld_many_across_borrowers_distinct_instances() -> N
                 Returns:
                     BasicService: New instance.
                 """
-                instance = borrower.meld(spell=spell_id)
+                instance = borrower.meld(spell_id=spell_id)
                 _assert_basic_service(instance)
                 return instance
             return _meld
@@ -1316,7 +1316,7 @@ def test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instanc
             Returns:
                 BasicService: Shared instance.
             """
-            instance = owner.meld(spell=spell_id)
+            instance = owner.meld(spell_id=spell_id)
             _assert_basic_service(instance)
             return instance
 
@@ -1340,7 +1340,7 @@ def test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instanc
                 Returns:
                     BasicService: Shared instance.
                 """
-                instance = borrower.meld(spell=spell_id)
+                instance = borrower.meld(spell_id=spell_id)
                 _assert_basic_service(instance)
                 return instance
             return _meld
@@ -1390,7 +1390,7 @@ def test_conduit_concurrent_meld_mixed_spells_same_conduit() -> None:
             Returns:
                 BasicService: Shared instance.
             """
-            instance = conduit.meld(spell=basic_id)
+            instance = conduit.meld(spell_id=basic_id)
             _assert_basic_service(instance)
             return instance
 
@@ -1403,7 +1403,7 @@ def test_conduit_concurrent_meld_mixed_spells_same_conduit() -> None:
             Returns:
                 Depth3Root: Shared instance.
             """
-            root = conduit.meld(spell=depth3_ids[Depth3Root])
+            root = conduit.meld(spell_id=depth3_ids[Depth3Root])
             _assert_depth3_root(root)
             return root
 
@@ -1510,7 +1510,7 @@ def test_conduit_concurrent_meld_repeated_rounds_unique_per_conduit() -> None:
             Returns:
                 Depth3Root: Shared instance.
             """
-            root = conduit.meld(spell=depth3_ids[Depth3Root])
+            root = conduit.meld(spell_id=depth3_ids[Depth3Root])
             _assert_depth3_root(root)
             return root
 
@@ -1650,7 +1650,7 @@ def test_concurrent_lesser_creation_from_one_root_links_each_child_once() -> Non
                 with lock:
                     assert lesser._id not in active_ids
                     active_ids.add(lesser._id)
-                melded = lesser.meld(spell=depth3_ids[Depth3Root])
+                melded = lesser.meld(spell_id=depth3_ids[Depth3Root])
                 _assert_depth3_root(melded)
                 with lock:
                     active_ids.discard(lesser._id)
@@ -1671,7 +1671,7 @@ def test_concurrent_lesser_creation_from_one_root_links_each_child_once() -> Non
         assert root._conduit_ward._lesser_conduits == {}
         # Root still issues working lessers after the storm.
         survivor = root.create_lesser_conduit()
-        _assert_depth3_root(survivor.meld(spell=depth3_ids[Depth3Root]))
+        _assert_depth3_root(survivor.meld(spell_id=depth3_ids[Depth3Root]))
         survivor.cleanup()
     finally:
         root.cleanup()

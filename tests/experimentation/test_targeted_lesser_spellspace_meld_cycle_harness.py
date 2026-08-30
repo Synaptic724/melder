@@ -530,11 +530,11 @@ def _measure_spellspace_cycle_with_use_components(
         active_spellspace = lesser.get_active_spellspace()
         if active_spellspace is None:
             raise AssertionError("Active spellspace was not established.")
-        if active_spellspace.meld(spell=spellspace_spell_id) is None:
+        if active_spellspace.meld(spell_id=spellspace_spell_id) is None:
             raise AssertionError("Spellspace-scoped meld returned None.")
-        if active_spellspace.meld(spell=conduit_spell_id) is None:
+        if active_spellspace.meld(spell_id=conduit_spell_id) is None:
             raise AssertionError("Conduit-scoped spellspace meld returned None.")
-        if active_spellspace.meld(spell=shared_spell_id) is None:
+        if active_spellspace.meld(spell_id=shared_spell_id) is None:
             raise AssertionError("Shared spellspace meld returned None.")
         use_t2 = time.perf_counter_ns()
         spellspace_context.__exit__(None, None, None)
@@ -593,7 +593,7 @@ def _measure_lesser_meld_route(
         raise AssertionError("Targeted lesser meld route requires a cold reset callable.")
 
     def cold_action() -> None:
-        resolved = lesser.meld(spell=spell_id)
+        resolved = lesser.meld(spell_id=spell_id)
         if resolved is None:
             raise AssertionError("Targeted lesser meld route returned None.")
 
@@ -634,7 +634,7 @@ def _measure_spellspace_meld_route(
         raise AssertionError("Targeted spellspace meld route requires a cold reset callable.")
 
     def cold_action() -> None:
-        resolved = space.meld(spell=spell_id)
+        resolved = space.meld(spell_id=spell_id)
         if resolved is None:
             raise AssertionError("Targeted spellspace meld route returned None.")
 
@@ -675,7 +675,7 @@ def _measure_many_meld_route(
         raise AssertionError("Targeted many meld route requires a cold reset callable.")
 
     def action() -> None:
-        resolved = lesser.meld(spell=spell_id)
+        resolved = lesser.meld(spell_id=spell_id)
         if resolved is None:
             raise AssertionError("Targeted many meld route returned None.")
 

@@ -119,7 +119,7 @@ def _conjure(spellbook: Spellbook, *, conduit_name: str, dynamic: bool) -> Condu
 def _seed_cache(conduit: Conduit, spell_ids: Dict[type, str]) -> None:
     """Publish cache packages by melding each bound spell once."""
     for spell_id in spell_ids.values():
-        conduit.meld(spell=spell_id)
+        conduit.meld(spell_id=spell_id)
 
 
 def _get_spell(spellbook: Spellbook, spell_id: str):
@@ -180,7 +180,7 @@ def test_cache_integration_first_meld_emits_file_and_payload(dynamic: bool) -> N
     spell_ids = _bind_simple_spells(spellbook)
     conduit = _conjure(spellbook, conduit_name="root", dynamic=dynamic)
     try:
-        conduit.meld(spell=spell_ids[BasicService])
+        conduit.meld(spell_id=spell_ids[BasicService])
         caching_system = spellbook._get_or_create_caching_system()
         assert caching_system.bundle_path.exists() is True
         assert caching_system.has_spell_payload(spell_ids[BasicService]) is True

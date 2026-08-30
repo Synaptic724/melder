@@ -218,10 +218,10 @@ def test_component_fast_door_builds_entry_and_serves_warm_hits() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
         assert spell_id in conduit._meld._fast_meld_doors
         spy = _install_lane_spy(conduit._meld)
-        second = conduit.meld(spell=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert second is first
         # The warm meld served from the fast lane: it returns before the
         # normal-lane spell-id-pool read, so the spy never fired.
@@ -256,14 +256,14 @@ def test_component_fast_door_preserves_reuse_semantics_per_existence() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        unique_first = conduit.meld(spell=unique_id)
-        per_conduit_first = conduit.meld(spell=per_conduit_id)
-        many_first = conduit.meld(spell=many_id)
+        unique_first = conduit.meld(spell_id=unique_id)
+        per_conduit_first = conduit.meld(spell_id=per_conduit_id)
+        many_first = conduit.meld(spell_id=many_id)
 
         # Warm passes ride the fast lane for all three routes.
-        assert conduit.meld(spell=unique_id) is unique_first
-        assert conduit.meld(spell=per_conduit_id) is per_conduit_first
-        many_second = conduit.meld(spell=many_id)
+        assert conduit.meld(spell_id=unique_id) is unique_first
+        assert conduit.meld(spell_id=per_conduit_id) is per_conduit_first
+        many_second = conduit.meld(spell_id=many_id)
         assert many_second is not many_first
         assert isinstance(many_second, _ManyService)
     finally:
@@ -286,12 +286,12 @@ def test_component_fast_door_skipped_for_override_payloads() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        plain = conduit.meld(spell=spell_id)
+        plain = conduit.meld(spell_id=spell_id)
         assert plain.value == 0
         assert spell_id in conduit._meld._fast_meld_doors
 
         spy = _install_lane_spy(conduit._meld)
-        overridden = conduit.meld(spell=spell_id, spell_override={"value": 7})
+        overridden = conduit.meld(spell_id=spell_id, override={"value": 7})
         assert overridden.value == 7
         # Override payloads always take the normal lane (the fast lane cannot
         # apply overrides), proven by the spell-id-pool read.
@@ -317,11 +317,11 @@ def test_component_fast_door_guard_trips_on_validation_required() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
         spy = _install_lane_spy(conduit._meld)
 
         spellbook._set_spellbook_validation_required(True)
-        bypassed = conduit.meld(spell=spell_id)
+        bypassed = conduit.meld(spell_id=spell_id)
         assert bypassed is first
         # validation_required forces the normal lane, proven by the pool read.
         assert spy.normal_lane_entered
@@ -330,7 +330,7 @@ def test_component_fast_door_guard_trips_on_validation_required() -> None:
         # returns before the pool read.
         spellbook._set_spellbook_validation_required(False)
         spy.normal_lane_entered = False
-        assert conduit.meld(spell=spell_id) is first
+        assert conduit.meld(spell_id=spell_id) is first
         assert not spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
@@ -353,14 +353,14 @@ def test_component_fast_door_guard_trips_on_spell_hooks() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
         spy = _install_lane_spy(conduit._meld)
 
         hook_calls: list[str] = []
         spell = spellbook._spell_id_pool[spell_id]
         spell._set_hooks(pre_hooks=[lambda: hook_calls.append("pre")])
 
-        hooked = conduit.meld(spell=spell_id)
+        hooked = conduit.meld(spell_id=spell_id)
         assert hooked is first
         # The pre-cast hook fires only on the normal hook lane (the fast lane
         # fires no hooks); the pool read confirms the bypass.
@@ -371,9 +371,9 @@ def test_component_fast_door_guard_trips_on_spell_hooks() -> None:
         # the fast lane again on the next warm pass.
         spell._set_hooks(pre_hooks=[])
         del conduit._meld._fast_meld_doors[spell_id]
-        rebuilt = conduit.meld(spell=spell_id)
+        rebuilt = conduit.meld(spell_id=spell_id)
         assert rebuilt is first
-        assert conduit.meld(spell=spell_id) is first
+        assert conduit.meld(spell_id=spell_id) is first
     finally:
         conduit.permanent_cleanup()
 
@@ -397,7 +397,7 @@ def test_component_fast_door_guard_trips_on_meld_hooks_in_place_mutation() -> No
     )
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
         spy = _install_lane_spy(conduit._meld)
 
         hook_calls: list[object] = []
@@ -409,7 +409,7 @@ def test_component_fast_door_guard_trips_on_meld_hooks_in_place_mutation() -> No
             lambda target: hook_calls.append(target)
         ]
 
-        hooked = conduit.meld(spell=spell_id)
+        hooked = conduit.meld(spell_id=spell_id)
         assert hooked is first
         # The live `not self._meld_hooks` guard read sees the in-place mutation
         # and routes to the normal lane: the meld hook fires and the pool read
@@ -444,7 +444,7 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
         spy = _install_lane_spy(conduit._meld)
 
         spell = spellbook._spell_id_pool[spell_id]
@@ -454,7 +454,7 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
         spell.resolution_required = True
         spell.resolution_complete = False
 
-        rebuilt = conduit.meld(spell=spell_id)
+        rebuilt = conduit.meld(spell_id=spell_id)
         assert rebuilt is first
         # Context invalidation forces the normal lane (pool read), which
         # rebuilds the entry against the fresh context.
@@ -462,7 +462,7 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
 
         # Entry was replaced in place by the normal-lane pass: a warm hit now
         # serves the rebuilt executor against the new context.
-        assert conduit.meld(spell=spell_id) is first
+        assert conduit.meld(spell_id=spell_id) is first
         entry = conduit._meld._fast_meld_doors[spell_id]
         assert entry[1] is spell._creation_context
     finally:
@@ -489,7 +489,7 @@ def test_component_fast_door_epoch_invalidates_on_hook_attach() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
         entry = conduit._meld._fast_meld_doors[spell_id]
         spell = spellbook._spell_id_pool[spell_id]
         assert entry[2] == spell._door_epoch
@@ -498,7 +498,7 @@ def test_component_fast_door_epoch_invalidates_on_hook_attach() -> None:
         spell._set_hooks(post_hooks=[lambda: fired.append(True)])
         assert spell._door_epoch != entry[2]
 
-        again = conduit.meld(spell=spell_id)
+        again = conduit.meld(spell_id=spell_id)
         assert again is first
         # Hook executed => the meld took the normal hook lane, not the
         # stale fast entry.
@@ -524,7 +524,7 @@ def test_component_fast_door_mutation_override_requires_dynamic_pin() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        conduit.meld(spell=spell_id)
+        conduit.meld(spell_id=spell_id)
         spell = spellbook._spell_id_pool[spell_id]
         with pytest.raises(RuntimeError, match="[Dd]ynamic"):
             spell.apply_mutation_override({"value": 1})
@@ -549,7 +549,7 @@ def test_component_fast_door_registry_deleted_on_cleanup() -> None:
     )
     conduit = spellbook.conjure(name="root")
     meld = conduit._meld
-    conduit.meld(spell=spell_id)
+    conduit.meld(spell_id=spell_id)
     assert spell_id in meld._fast_meld_doors
 
     conduit.permanent_cleanup()
@@ -593,27 +593,27 @@ def test_component_positional_meld_matches_keyword_meld_per_existence() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         # Cold positional meld runs the full lane and builds the entry.
-        unique_first = conduit.meld(unique_id)
+        unique_first = conduit.meld(spell_id=unique_id)
         assert isinstance(unique_first, _SharedUniqueService)
         assert unique_id in conduit._meld._fast_meld_doors
 
         # Warm positional and keyword melds agree on reuse identity.
-        assert conduit.meld(unique_id) is unique_first
-        assert conduit.meld(spell=unique_id) is unique_first
+        assert conduit.meld(spell_id=unique_id) is unique_first
+        assert conduit.meld(spell_id=unique_id) is unique_first
 
-        per_conduit_first = conduit.meld(spell=per_conduit_id)
-        assert conduit.meld(per_conduit_id) is per_conduit_first
+        per_conduit_first = conduit.meld(spell_id=per_conduit_id)
+        assert conduit.meld(spell_id=per_conduit_id) is per_conduit_first
 
-        many_first = conduit.meld(many_id)
-        many_second = conduit.meld(many_id)
+        many_first = conduit.meld(spell_id=many_id)
+        many_second = conduit.meld(spell_id=many_id)
         assert isinstance(many_second, _ManyService)
         assert many_second is not many_first
 
         with conduit.enter_spellspace() as space:
-            marker = space.meld(marker_id)
+            marker = space.meld(spell_id=marker_id)
             assert isinstance(marker, _SpaceMarkerService)
-            assert space.meld(marker_id) is marker
-            assert space.meld(spell=marker_id) is marker
+            assert space.meld(spell_id=marker_id) is marker
+            assert space.meld(spell_id=marker_id) is marker
     finally:
         conduit.permanent_cleanup()
 
@@ -635,9 +635,9 @@ def test_component_positional_meld_warm_call_executes_fast_lane() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        conduit.meld(spell_id)
+        conduit.meld(spell_id=spell_id)
         spy = _install_lane_spy(conduit._meld)
-        conduit.meld(spell_id)
+        conduit.meld(spell_id=spell_id)
         # The warm positional meld served from the fast lane: it returned
         # before the normal-lane spell-id-pool read.
         assert not spy.normal_lane_entered
@@ -662,7 +662,7 @@ def test_component_positional_meld_class_input_resolves_via_normalization() -> N
     )
     conduit = spellbook.conjure(name="root")
     try:
-        by_id = conduit.meld(spell_id)
+        by_id = conduit.meld(spell_id=spell_id)
         by_class = conduit.meld(_UniquePerConduitService)
         assert by_class is by_id
     finally:
@@ -684,10 +684,10 @@ def test_component_positional_meld_raises_canonical_error_after_cleanup() -> Non
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
-    conduit.meld(spell_id)
+    conduit.meld(spell_id=spell_id)
     conduit.permanent_cleanup()
     with pytest.raises(RuntimeError, match="cleaned"):
-        conduit.meld(spell_id)
+        conduit.meld(spell_id=spell_id)
 
 
 def test_component_spellspace_nested_scope_stack_isolation() -> None:
@@ -722,16 +722,16 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as scope_a:
-            marker_a = scope_a.meld(spell=marker_id)
+            marker_a = scope_a.meld(spell_id=marker_id)
             with conduit.enter_spellspace() as scope_b:
-                marker_b = scope_b.meld(spell=marker_id)
+                marker_b = scope_b.meld(spell_id=marker_id)
                 assert marker_b is not marker_a
                 with conduit.enter_spellspace() as scope_c:
-                    marker_c = scope_c.meld(spell=marker_id)
+                    marker_c = scope_c.meld(spell_id=marker_id)
                     assert marker_c is not marker_b
                     assert marker_c is not marker_a
                     with conduit.enter_spellspace() as scope_d:
-                        marker_d = scope_d.meld(spell=marker_id)
+                        marker_d = scope_d.meld(spell_id=marker_id)
                         # Shells, stores, and markers must all be distinct
                         # at full depth.
                         assert (
@@ -762,7 +762,7 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                         assert len(distinct) == 4
                         # Each scope's own warm re-meld stays scope-correct
                         # at full depth.
-                        assert scope_d.meld(spell=marker_id) is marker_d
+                        assert scope_d.meld(spell_id=marker_id) is marker_d
                     # LIFO unwind step 1: D's exit must not disturb C's
                     # storage. These assertions run INSIDE scope_c's body
                     # (one dedent level, not two) - asserting per-scope
@@ -780,17 +780,17 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                             scope_c._meld._spellspace_creations
                             is scope_c._creations
                         ), "scope_c meld bound a foreign spellspace store"
-                    assert scope_c.meld(spell=marker_id) is marker_c
+                    assert scope_c.meld(spell_id=marker_id) is marker_c
                 # LIFO unwind step 2: C's exit must not disturb B's storage.
                 assert (
                     scope_b._creations.get_creation(marker_id) is marker_b
                 ), "scope_b store lost marker_b after scope_c exit"
-                assert scope_b.meld(spell=marker_id) is marker_b
+                assert scope_b.meld(spell_id=marker_id) is marker_b
             # LIFO unwind step 3: B's exit must not disturb A's storage.
             assert (
                 scope_a._creations.get_creation(marker_id) is marker_a
             ), "scope_a store lost marker_a after scope_b exit"
-            assert scope_a.meld(spell=marker_id) is marker_a
+            assert scope_a.meld(spell_id=marker_id) is marker_a
         # The yielded object is the spellspace itself (no wrapper exists).
         from melder.aether.conduit.spell_space.spell_space import SpellSpace
 
@@ -822,14 +822,14 @@ def test_component_enter_spellspace_manual_protocol_compatibility() -> None:
         manual_cm = conduit.enter_spellspace()
         space = manual_cm.__enter__()
         assert space is manual_cm
-        marker = space.meld(spell=marker_id)
-        assert space.meld(spell=marker_id) is marker
+        marker = space.meld(spell_id=marker_id)
+        assert space.meld(spell_id=marker_id) is marker
         manual_cm.__exit__(None, None, None)
 
         # Pooled reuse: same shell, fresh scope contents.
         with conduit.enter_spellspace() as next_space:
             assert next_space is space
-            assert next_space.meld(spell=marker_id) is not marker
+            assert next_space.meld(spell_id=marker_id) is not marker
     finally:
         conduit.permanent_cleanup()
 
@@ -861,7 +861,7 @@ def test_component_prewarm_pools_retain_idle_shells() -> None:
         with conduit.enter_spellspace() as space:
             # Acquisition drains the idle pool instead of constructing.
             assert conduit._spellspace_pool.idle_count == 2
-            assert isinstance(space.meld(spell=marker_id), _SpaceMarkerService)
+            assert isinstance(space.meld(spell_id=marker_id), _SpaceMarkerService)
         assert conduit._spellspace_pool.idle_count == 3
 
         ensured_lessers = conduit.prewarm_lesser_conduits(2)
@@ -908,14 +908,14 @@ def test_component_fast_door_spellspace_scopes_stay_isolated() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         with conduit.enter_spellspace() as space:
-            first = space.meld(spell=marker_id)
-            assert space.meld(spell=marker_id) is first
+            first = space.meld(spell_id=marker_id)
+            assert space.meld(spell_id=marker_id) is first
             assert marker_id in space._meld._fast_meld_doors
 
         with conduit.enter_spellspace() as next_space:
-            second = next_space.meld(spell=marker_id)
+            second = next_space.meld(spell_id=marker_id)
             assert isinstance(second, _SpaceMarkerService)
             assert second is not first
-            assert next_space.meld(spell=marker_id) is second
+            assert next_space.meld(spell_id=marker_id) is second
     finally:
         conduit.permanent_cleanup()

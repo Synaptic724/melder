@@ -5,6 +5,7 @@ import weakref
 from types import SimpleNamespace
 from typing import Callable
 from typing import Dict, Optional, Tuple
+from unittest.mock import Mock
 
 import pytest
 
@@ -4935,6 +4936,9 @@ def test_capability_room_can_meld_through_command_surface() -> None:
     """
     Verify capability can call the shared command-level `meld(...)` helper.
 
+    Contract:
+        - Public `override=` is forwarded unchanged to the selected Conduit.
+
     Returns:
         None.
     """
@@ -4963,8 +4967,10 @@ def test_capability_room_can_meld_through_command_surface() -> None:
     )
     _attach_projection_backed_viewer(space, viewer)
     runtime_object = object()
+    override_payload = {"tag": object()}
+    owner_meld = Mock(return_value=runtime_object)
     owner_conduit = SimpleNamespace(
-        meld=lambda **kwargs: runtime_object,
+        meld=owner_meld,
     )
     space.command_system._aether = SimpleNamespace(
         get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
@@ -4974,9 +4980,16 @@ def test_capability_room_can_meld_through_command_surface() -> None:
         "ops-conduit",
         spell="sha-1",
         frame_name="ops",
+        override=override_payload,
     )
 
     assert result is runtime_object
+    owner_meld.assert_called_once_with(
+        spell_id="sha-1",
+        spellframe=None,
+        binding_name=None,
+        override=override_payload,
+    )
 
 
 def test_capability_room_can_meld_existing_spell_through_command_surface() -> None:

@@ -81,7 +81,7 @@ def _validity(book: Spellbook, spell_id: str) -> str:
 def _resolves(conduit: Conduit, spell_id: str) -> bool:
     """True iff meld returns a non-None instance without raising."""
     try:
-        return conduit.meld(spell=spell_id) is not None
+        return conduit.meld(spell_id=spell_id) is not None
     except Exception:
         return False
 

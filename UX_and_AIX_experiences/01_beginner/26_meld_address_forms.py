@@ -7,7 +7,7 @@ GOAL: THE ADDRESS LAW (run-proven + doc-canon): every spell lives at
       three ways to CONSTRUCT that key - so a frameless, nameless bind
       answers to the spell object and to spell_name; a framed+named
       bind answers only at (frame, name).
-SURFACE EXERCISED: meld(spell=...), meld(spell_name=...),
+SURFACE EXERCISED: meld(Class), meld("SpellName"), meld(spell_id=...),
                    meld(spellframe=..., binding_name=...)
 """
 import melder as md
@@ -32,9 +32,9 @@ def main() -> None:
     conduit = book.conjure()
 
     by_object = conduit.meld(spell=BillingService)
-    by_name = conduit.meld(spell_name="BillingService")
-    # the FOURTH form (doc-canon): spell as a STRING is a spell_id
-    by_id = conduit.meld(spell=spell_id)
+    by_name = conduit.meld(spell="BillingService")
+    # Explicit machine form: SHA identity never shares the human string slot.
+    by_id = conduit.meld(spell_id=spell_id)
     assert by_object is by_name is by_id
     print("default-address spell answers all three:", by_object.total())
 
@@ -43,7 +43,7 @@ def main() -> None:
     print("framed spell answers at (frame, name)")
 
     try:
-        conduit.meld(spell_name="LedgerService")
+        conduit.meld(spell="LedgerService")
     except KeyError as err:
         print("name-derived key misses a framed bind:", err)
 

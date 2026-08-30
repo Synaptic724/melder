@@ -99,13 +99,13 @@ def _linked_pair() -> Iterator[tuple]:
 
 def test_bind_then_meld_returns_instance():
     with _owner_only() as (book, owner, service_id):
-        instance = owner.meld(spell=service_id)
+        instance = owner.meld(spell_id=service_id)
         assert isinstance(instance, ContractServicePrimary)
 
 
 def test_meld_by_positional_spell_id():
     with _owner_only() as (book, owner, service_id):
-        assert isinstance(owner.meld(service_id), ContractServicePrimary)
+        assert isinstance(owner.meld(spell_id=service_id), ContractServicePrimary)
 
 
 # --- spell contract lifecycle ----------------------------------------------
@@ -117,7 +117,7 @@ def test_add_spell_contract_lets_borrower_meld_borrowed_spell():
                 spell_id=service_id, conduit=owner, permissions="create",
             )
         assert borrower.validate_contracts_and_define()
-        instance = borrower.meld(spell=service_id)
+        instance = borrower.meld(spell_id=service_id)
         assert isinstance(instance, ContractServicePrimary)
 
 
@@ -146,7 +146,7 @@ def test_add_index_contract_lets_borrower_meld_active_member():
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
         assert borrower.validate_contracts_and_define()
-        instance = borrower.meld(spell=service_id)
+        instance = borrower.meld(spell_id=service_id)
         assert isinstance(instance, ContractServicePrimary)
 
 

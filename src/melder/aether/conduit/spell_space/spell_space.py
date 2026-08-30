@@ -444,46 +444,55 @@ class SpellSpace(Cleanable):
             self,
             spell: Optional[Union[str, object]] = None,
             *,
-            spell_name: Optional[str] = None,
+            spell_id: Optional[str] = None,
             spellframe: Optional[Union[str, object]] = None,
             binding_name: Optional[str] = None,
-            spell_override: Optional[Union[dict, list, tuple]] = None,
+            override: Optional[Union[dict, list, tuple]] = None,
     ) -> object:
         """
         Delegate one meld call through the injected Meld runtime.
 
         Call shape:
-            `spell` is the only positional parameter, so the dominant warm
-            pattern is the cheapest possible call: `meld(spell_id)` passes
-            one positional argument with no keyword marshaling straight
-            through to the spellspace door's id-string fast lane. All other
-            entry modes are keyword-only.
+            Positional strings are human SpellNames. Machine callers use
+            keyword-only `spell_id=...`, which is forwarded positionally to the
+            spellspace door's existing ID fast lane.
 
         Contract:
             - Delegates resolution and lifecycle behavior to the shared
               conduit meld runtime through its spellspace front door.
+            - Keeps human `spell` and machine `spell_id` identities mutually
+              exclusive.
             - Propagates runtime failures from the meld pipeline unchanged.
 
         Returns:
             object: The resolved runtime object returned by the shared meld runtime.
 
         Args:
-            spell_input:
-                Spell id, spell object, spellframe, or spell name to resolve.
-            spell_override:
+            spell:
+                Human SpellName string or concrete spell/frame object.
+            spell_id:
+                Optional canonical SHA256 machine identity.
+            override:
                 Optional positional or keyword override payload.
         """
-        # Hot path: `spell` rides positionally end to end so the dominant
-        # id-string call never pays keyword marshaling.
+        if spell is not None and spell_id is not None:
+            raise ValueError("meld accepts either `spell` or `spell_id`, not both.")
+
+        internal_spell = spell
+        internal_spell_name = None
+        if spell_id is not None:
+            internal_spell = spell_id
+        elif isinstance(spell, str):
+            internal_spell = None
+            internal_spell_name = spell
+
         return self._meld.meld(
-            spell,
-            spell_name=spell_name,
+            internal_spell,
+            spell_name=internal_spell_name,
             spellframe=spellframe,
             binding_name=binding_name,
-            spell_override=spell_override,
+            spell_override=override,
         )
 
-    # Note: a dedicated `meld_id(spell_id, /)` fast entry briefly existed on
-    # this scope. It was removed in favor of the single `meld(...)` API:
-    # `spell` rides the positional seat, so `meld(spell_id)` is the supported
-    # minimal-arity warm call shape and reaches the same door fast lane.
+    # Machine identity remains explicit at the public boundary via `spell_id=`;
+    # this scope forwards it positionally into the internal ID fast lane.

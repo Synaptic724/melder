@@ -80,6 +80,7 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| human_meld_identity_api | review | handoff | cowork | codex_1 | none | Review the final human/name/ID/override contract and confirm acceptance. | Public Meld calls use short `override=` while internal execution semantics stay unchanged. | Owner confirms acceptance for ticket closure and patch-artifact disposition. | tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md | 2026-08-30T21:31:49Z | REQUIRED |
 | upgrade_python_publish_workflow | review | handoff | cowork | codex_1 | none | Review the portable fingerprint fix, then place it in the intended signed branch lane; do not publish. | Deterministic build-asset checks on Windows and Linux without warnings. | Fresh GitHub Linux run passes and owner confirms acceptance. | tickets/tasks/2026-08-30_upgrade_python_publish_workflow_task.md | 2026-08-30T18:47:05Z | REQUIRED |
 | sanitize_publication_history | review | handoff | cowork | codex_1 | none | Review committed sanitation result; do not push. | Sanitized local history preserving source and canonical tickets. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-29_sanitize_publication_history_task.md | 2026-08-30T00:13:00Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->

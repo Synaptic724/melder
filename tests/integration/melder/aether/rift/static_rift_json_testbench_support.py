@@ -415,24 +415,24 @@ class StaticRiftJsonBench:
             None.
         """
         self._live_objects_by_case_name["unique_live"] = self.root_conduit.meld(
-            spell=self._bound_spell_ids_by_case_name["unique_live"]
+            spell_id=self._bound_spell_ids_by_case_name["unique_live"]
         )
         self._live_objects_by_case_name["unique_per_conduit_live"] = (
             self.root_conduit.meld(
-                spell=self._bound_spell_ids_by_case_name["unique_per_conduit_live"]
+                spell_id=self._bound_spell_ids_by_case_name["unique_per_conduit_live"]
             )
         )
         self._live_objects_by_case_name["unique_per_lineage_live"] = (
             self.root_conduit.meld(
-                spell=self._bound_spell_ids_by_case_name["unique_per_lineage_live"]
+                spell_id=self._bound_spell_ids_by_case_name["unique_per_lineage_live"]
             )
         )
         self._live_objects_by_case_name["many_live"] = self.root_conduit.meld(
-            spell=self._bound_spell_ids_by_case_name["many_live"]
+            spell_id=self._bound_spell_ids_by_case_name["many_live"]
         )
         with self.root_conduit.enter_spellspace() as spellspace:
             self._live_objects_by_case_name["spellspace_live"] = spellspace.meld(
-                spell=self._bound_spell_ids_by_case_name["spellspace_live"]
+                spell_id=self._bound_spell_ids_by_case_name["spellspace_live"]
             )
 
     def _build_manifest(self) -> Dict[str, object]:

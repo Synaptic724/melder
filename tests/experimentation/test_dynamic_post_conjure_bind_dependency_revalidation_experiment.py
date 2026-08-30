@@ -180,7 +180,7 @@ def test_dynamic_post_conjure_bind_dependency_revalidation_experiment() -> None:
         print("DYNAMIC_POST_CONJURE_BIND_EXPERIMENT_BEFORE")
         print(before_snapshot)
 
-        created = conduit.meld(spell=consumer_id)
+        created = conduit.meld(spell_id=consumer_id)
 
         after_snapshot = {
             "provider_a": _artifact_snapshot(provider_a_spell),

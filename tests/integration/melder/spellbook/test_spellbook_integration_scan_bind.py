@@ -193,9 +193,9 @@ def test_scan_bind_integration_returns_ids_in_module_order() -> None:
     spell_ids = spellbook.scan(scan_bind_module_core)
     conduit = spellbook.conjure(name="scan_root_order")
     try:
-        first = conduit.meld(spell=spell_ids[0])
-        second = conduit.meld(spell=spell_ids[1])
-        third = conduit.meld(spell=spell_ids[2])
+        first = conduit.meld(spell_id=spell_ids[0])
+        second = conduit.meld(spell_id=spell_ids[1])
+        third = conduit.meld(spell_id=spell_ids[2])
         assert first.marker == "alpha"
         assert second.marker == "beta"
         assert third == "hello"
@@ -253,7 +253,7 @@ def test_scan_bind_integration_conjure_meld_class_by_spell_id() -> None:
     spell_id = spell_ids[1]
     conduit = spellbook.conjure(name="scan_root_class_id")
     try:
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         assert instance.marker == "beta"
     finally:
         conduit.permanent_cleanup()
@@ -294,8 +294,8 @@ def test_scan_bind_integration_lambda_unique_cached() -> None:
     spell_id = spell_ids[0]
     conduit = spellbook.conjure(name="scan_root_lambda")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert scan_bind_module_lambda.LAMBDA_CALLS == ["called"]
     finally:
@@ -440,7 +440,7 @@ def test_conduit_scan_integration_melds_after_scan() -> None:
     try:
         with conduit.transaction("bind"):
             spell_ids = conduit.scan(scan_bind_module_core)
-        instance = conduit.meld(spell=spell_ids[1])
+        instance = conduit.meld(spell_id=spell_ids[1])
         assert instance.marker == "beta"
     finally:
         conduit.permanent_cleanup()
@@ -462,7 +462,7 @@ def test_scan_bind_integration_spellbook_scan_after_conjure_registers_in_aether(
             spell_ids = spellbook.scan(scan_bind_module_core)
         found_id = spellbook.inspect_spell(scan_bind_module_core.ScanCoreAlpha)
         assert found_id == spell_ids[0]
-        instance = conduit.meld(spell=spell_ids[0])
+        instance = conduit.meld(spell_id=spell_ids[0])
         assert instance.marker == "alpha"
     finally:
         conduit.permanent_cleanup()

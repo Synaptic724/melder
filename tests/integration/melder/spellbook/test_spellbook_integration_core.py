@@ -78,7 +78,7 @@ def test_spellbook_integration_config_shared_and_locked() -> None:
         with pytest.raises(RuntimeError, match="frozen"):
             sibling_config.set_property("phase_scheduler_workers_per_spellbook", 2)
 
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
     finally:
         conduit.permanent_cleanup()
@@ -116,7 +116,7 @@ def test_spellbook_integration_create_new_preset_spellbook_shares_config() -> No
 
     conduit = preset.conjure(name="preset-root")
     try:
-        instance = conduit.meld(spell=preset_spell_id)
+        instance = conduit.meld(spell_id=preset_spell_id)
         assert isinstance(instance, BasicConfig)
     finally:
         conduit.permanent_cleanup()
@@ -319,7 +319,7 @@ def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -
         assert spellbook.is_configuration_locked() is True
         assert spellbook.get_configuration() is config
         assert Spellbook._aether._get_configuration(frame) is config
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
     finally:
         conduit.permanent_cleanup()
@@ -605,7 +605,7 @@ def test_spellbook_integration_existing_object_bind_after_conjure_reuses_instanc
                 existence=Existence.unique,
                 permissions="create",
             )
-        resolved = conduit.meld(spell=spell_id)
+        resolved = conduit.meld(spell_id=spell_id)
         assert resolved is existing
     finally:
         conduit.permanent_cleanup()
@@ -643,7 +643,7 @@ def test_spellbook_integration_begin_transaction_bind_allows_post_conjure_bind()
         )
         spellbook.end_transaction("bind")
 
-        resolved = conduit.meld(spell=spell_id)
+        resolved = conduit.meld(spell_id=spell_id)
         assert isinstance(resolved, BasicConfig)
     finally:
         conduit.permanent_cleanup()
@@ -804,7 +804,7 @@ def test_spellbook_integration_fluent_binding_resolves_by_spellframe_and_name() 
 
         spell_key = spellbook.find_spell_key(IService, BasicService.__name__, "primary")
         assert isinstance(spell_key, tuple)
-        assert conduit.meld(spell=spell_id) is instance
+        assert conduit.meld(spell_id=spell_id) is instance
     finally:
         conduit.permanent_cleanup()
 
@@ -840,7 +840,7 @@ def test_spellbook_integration_fluent_binding_case_insensitive_keys() -> None:
 
         spell_key = spellbook.find_spell_key("ISERVICE", BasicService.__name__, "PRIMARY")
         assert isinstance(spell_key, tuple)
-        assert conduit.meld(spell=spell_id) is instance
+        assert conduit.meld(spell_id=spell_id) is instance
     finally:
         conduit.permanent_cleanup()
 
@@ -908,8 +908,8 @@ def test_spellbook_integration_fluent_binding_hooks_execute() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert pre_calls == ["pre", "pre"]
         assert post_calls == ["post", "post"]
@@ -996,8 +996,8 @@ def test_spellbook_integration_fluent_binding_hooks_execute_from_kwargs() -> Non
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is second
         assert pre_calls == ["pre-1", "pre-2", "pre-1", "pre-2"]
         assert post_calls == ["post", "post"]
@@ -1029,8 +1029,8 @@ def test_spellbook_integration_fluent_binding_reuse_registers_multiple_spells() 
 
     conduit = spellbook.conjure(name="root")
     try:
-        assert isinstance(conduit.meld(spell=service_id), BasicService)
-        assert isinstance(conduit.meld(spell=config_id), BasicConfig)
+        assert isinstance(conduit.meld(spell_id=service_id), BasicService)
+        assert isinstance(conduit.meld(spell_id=config_id), BasicConfig)
     finally:
         conduit.permanent_cleanup()
 
@@ -1055,8 +1055,8 @@ def test_spellbook_integration_fluent_defaults_apply_for_many() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        first = conduit.meld(spell=spell_id)
-        second = conduit.meld(spell=spell_id)
+        first = conduit.meld(spell_id=spell_id)
+        second = conduit.meld(spell_id=spell_id)
         assert first is not second
     finally:
         conduit.permanent_cleanup()
@@ -1083,7 +1083,7 @@ def test_spellbook_integration_fluent_defaults_permissions_apply() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        assert isinstance(conduit.meld(spell=spell_id), BasicService)
+        assert isinstance(conduit.meld(spell_id=spell_id), BasicService)
         spell_index = spellbook.find_spell_index("BasicService", BasicService.__name__, "__default__")
         assert spellbook.get_spell_permissions(spell_index) == "read"
     finally:
@@ -1112,7 +1112,7 @@ def test_spellbook_integration_fluent_binding_existing_object_reuses_instance() 
         binder = SpellBinder(spellbook, )
         with spellbook.transaction("bind"):
             spell_id = binder.bind(existing).as_unique().finalize()
-        assert conduit.meld(spell=spell_id) is existing
+        assert conduit.meld(spell_id=spell_id) is existing
     finally:
         conduit.permanent_cleanup()
 
@@ -1166,7 +1166,7 @@ def test_spellbook_integration_create_binder_fluent_bind_and_meld() -> None:
 
     conduit = spellbook.conjure(name="root")
     try:
-        instance = conduit.meld(spell=spell_id)
+        instance = conduit.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
         assert instance.marker == "service"
     finally:
@@ -1201,7 +1201,7 @@ def test_spellbook_integration_inspect_spell_returns_registered_id() -> None:
         inspected = spellbook.inspect_spell(existing)
         assert inspected == spell_id
 
-        resolved = conduit.meld(spell=spell_id)
+        resolved = conduit.meld(spell_id=spell_id)
         assert resolved is existing
     finally:
         conduit.permanent_cleanup()
@@ -1248,7 +1248,7 @@ def test_spellbook_integration_contracted_spells_visible() -> None:
             spell_index.has_spell(spell_id) for spell_index in contracted.keys()
         )
 
-        instance = borrower.meld(spell=spell_id)
+        instance = borrower.meld(spell_id=spell_id)
         assert isinstance(instance, BasicService)
     finally:
         borrower.permanent_cleanup()

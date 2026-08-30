@@ -139,7 +139,7 @@ def test_creation_context_override_cache_asset_experiment() -> None:
             )
 
         consumer_spell = _get_spell(spellbook, consumer_id)
-        first_instance = conduit.meld(spell=consumer_id, spell_override=override_payload)
+        first_instance = conduit.meld(spell_id=consumer_id, override=override_payload)
         assert isinstance(first_instance, _OverrideConsumer)
         assert first_instance.provider is override_value
 
@@ -182,8 +182,8 @@ def test_creation_context_override_cache_asset_experiment() -> None:
             print(_snapshot(consumer_spell))
 
             rebuilt_instance = conduit.meld(
-                spell=consumer_id,
-                spell_override=override_payload,
+                spell_id=consumer_id,
+                override=override_payload,
             )
             assert isinstance(rebuilt_instance, _OverrideConsumer)
             assert rebuilt_instance.provider is override_value

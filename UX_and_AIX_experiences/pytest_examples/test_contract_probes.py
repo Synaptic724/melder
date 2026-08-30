@@ -38,11 +38,11 @@ def test_probe_bind_swallows_unknown_kwargs_silently():
 
 
 def test_probe_spell_override_delivers_ctor_kwargs():
-    """meld(spell_override=dict) is the documented ctor-override lane."""
+    """meld(override=dict) is the documented constructor-override lane."""
     book = md.Spellbook()
     book.bind(spell=Probe, existence="many")
     conduit = book.conjure()
-    probe = conduit.meld(spell=Probe, spell_override={"tag": "overridden"})
+    probe = conduit.meld(spell=Probe, override={"tag": "overridden"})
     assert probe is not None
     assert probe.tag == "overridden"
 
@@ -66,9 +66,9 @@ def test_probe_meld_by_binding_name_alone_is_refused():
         conduit.meld(binding_name="the-probe")
     # the bind placed the spell at ("probe", "the-probe") - so the name
     # form must carry the binding_name to construct the same key
-    assert conduit.meld(spell_name="Probe", binding_name="the-probe") is not None
+    assert conduit.meld(spell="Probe", binding_name="the-probe") is not None
     with pytest.raises(KeyError):
-        conduit.meld(spell_name="Probe")  # default slot is empty
+        conduit.meld(spell="Probe")  # default slot is empty
 
 
 def test_probe_meld_by_spell_name_form():
@@ -77,7 +77,7 @@ def test_probe_meld_by_spell_name_form():
     book.bind(spell=Probe, existence="unique")
     conduit = book.conjure()
     try:
-        result = conduit.meld(spell_name="Probe")
+        result = conduit.meld(spell="Probe")
         print("meld(spell_name=...) ->", type(result).__name__)
     except Exception as err:
         print("meld(spell_name=...) raised:", type(err).__name__)
