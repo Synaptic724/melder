@@ -2,14 +2,14 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2271312,
-        "lines": 57894,
+        "bytes": 2262561,
+        "lines": 57678,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "6dcd7817039ea59522afefebe40a7a14fadb3da647c5dda39e47d9421c8df9d5"
+        "sha256": "461cfdff90e02ea0ad3b7e28463bb37c0fe2b9e4bcc98611f307d1a3ac5debbd"
       },
-      "content_bytes": 2119669,
-      "content_lines": 55784,
-      "file_count": 263,
+      "content_bytes": 2111414,
+      "content_lines": 55576,
+      "file_count": 262,
       "files": {
         ".gitattributes": {
           "content_bytes": 2466,
@@ -57,12 +57,6 @@
           "content_bytes": 45844,
           "content_lines": 1076,
           "content_sha256": "25d9c15dfc08c9ad67fc5b9599e7d175a89db98d052a49dfa74e1720ca4ee64f",
-          "source_encoding": "utf-8"
-        },
-        "RELEASE_NOTES_0.2.0.md": {
-          "content_bytes": 8255,
-          "content_lines": 208,
-          "content_sha256": "4065ef1c4177b069309a991b5a57cfadb35de696f47ca6b84626eb0a37654b8f",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/01_beginner/01_hello_meld.py": {
@@ -1591,12 +1585,12 @@
         }
       },
       "index": {
-        "bytes": 46779,
-        "lines": 285,
+        "bytes": 46646,
+        "lines": 284,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "91f27f29f75009eeb8f1aa648d444c96704e9e0363ce39396f2a8610bfe46b57"
+        "sha256": "0aa583e6ab6dff40013a432863930b1a92a11cdbbcd27116c4555dce30631b7b"
       },
-      "source_fingerprint": "f257cadc9dbd8343a592e96e86cc928ba2dc23929f3fc1cc6014611907970af2"
+      "source_fingerprint": "316268acd0a9fc0c9fa9eb3b577efe8757f2851fab3329a3e2af68981472dc73"
     },
     "src": {
       "bundle": {
