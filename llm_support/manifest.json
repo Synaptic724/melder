@@ -2,12 +2,12 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2271308,
+        "bytes": 2271312,
         "lines": 57894,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "eb2061c98a31e27b60bd783a66c7a1c93375585d910e7781486cb29672f121f4"
+        "sha256": "6dcd7817039ea59522afefebe40a7a14fadb3da647c5dda39e47d9421c8df9d5"
       },
-      "content_bytes": 2119665,
+      "content_bytes": 2119669,
       "content_lines": 55784,
       "file_count": 263,
       "files": {
@@ -54,9 +54,9 @@
           "source_encoding": "utf-8"
         },
         "README.md": {
-          "content_bytes": 45840,
+          "content_bytes": 45844,
           "content_lines": 1076,
-          "content_sha256": "0ebb5e1762d06a7f0c498975183b4d787e65a18d4e9c06fd4029e31b8fd25843",
+          "content_sha256": "25d9c15dfc08c9ad67fc5b9599e7d175a89db98d052a49dfa74e1720ca4ee64f",
           "source_encoding": "utf-8"
         },
         "RELEASE_NOTES_0.2.0.md": {
@@ -1594,9 +1594,9 @@
         "bytes": 46779,
         "lines": 285,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "cc95e917ac1f5da06ab3c07282ec833926a394e2cecc8084c682ded09424e3aa"
+        "sha256": "91f27f29f75009eeb8f1aa648d444c96704e9e0363ce39396f2a8610bfe46b57"
       },
-      "source_fingerprint": "8a10c5258ecbc15878225a0207cb6c8c99be529b51cd238b4693bda269ae3113"
+      "source_fingerprint": "f257cadc9dbd8343a592e96e86cc928ba2dc23929f3fc1cc6014611907970af2"
     },
     "src": {
       "bundle": {

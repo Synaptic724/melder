@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 8a10c5258ecbc15878225a0207cb6c8c99be529b51cd238b4693bda269ae3113 |
-| bundle_sha256 | eb2061c98a31e27b60bd783a66c7a1c93375585d910e7781486cb29672f121f4 |
+| source_fingerprint | f257cadc9dbd8343a592e96e86cc928ba2dc23929f3fc1cc6014611907970af2 |
+| bundle_sha256 | 6dcd7817039ea59522afefebe40a7a14fadb3da647c5dda39e47d9421c8df9d5 |
 | bundle_line_count | 57894 |
 | bundle_line_ending | lf |
 | files | 263 |
@@ -27,7 +27,7 @@ Line numbers are 1-based and inclusive.
 | 614-846 | 619-843 | 5502 | utf-8 | f0ca9f453ed4e10718232641f8ee7fc64a4b59a84ed44c8bc805fe8e38192617 | .gitignore |
 | 847-1515 | 852-1512 | 34522 | utf-8 | b54857356e43422ea6a6f5fe84f58e8b105ab27af45ba7dbf792bf6c20ac1827 | LICENSE |
 | 1516-1599 | 1521-1596 | 3039 | utf-8 | f52bb06e0d0c9ff56c8d83387b1577a6221063ea8d5da0160407c1dac45718e2 | NOTICE |
-| 1600-2683 | 1605-2680 | 45840 | utf-8 | 0ebb5e1762d06a7f0c498975183b4d787e65a18d4e9c06fd4029e31b8fd25843 | README.md |
+| 1600-2683 | 1605-2680 | 45844 | utf-8 | 25d9c15dfc08c9ad67fc5b9599e7d175a89db98d052a49dfa74e1720ca4ee64f | README.md |
 | 2684-2899 | 2689-2896 | 8255 | utf-8 | 4065ef1c4177b069309a991b5a57cfadb35de696f47ca6b84626eb0a37654b8f | RELEASE_NOTES_0.2.0.md |
 | 2900-2942 | 2905-2939 | 988 | utf-8 | c1e68d2c38d81d41b78a594e268afe8e40426392c68801a0fb38512b2bc9f067 | UX_and_AIX_experiences/01_beginner/01_hello_meld.py |
 | 2943-2987 | 2948-2984 | 993 | utf-8 | 644a5e7dfd11eb5cca967e5c180bf49284d3ff3135b078c305bf3eeea49e27a5 | UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py |

@@ -13,7 +13,7 @@
 [![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 
 ### SUPPORT US
-If you like the work we're doing, [please give us a star on GitHub](https://github.com/meld-ai/melder).
+If you like the work we're doing, [please give us a star on GitHub](https://github.com/Synaptic724/melder).
 </div>
 
 ```bash

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 8a10c5258ecbc15878225a0207cb6c8c99be529b51cd238b4693bda269ae3113
+SOURCE FINGERPRINT: f257cadc9dbd8343a592e96e86cc928ba2dc23929f3fc1cc6014611907970af2
 FILE COUNT: 263
 
 ================================================================================
@@ -1599,7 +1599,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 0ebb5e1762d06a7f0c498975183b4d787e65a18d4e9c06fd4029e31b8fd25843
+CONTENT SHA256: 25d9c15dfc08c9ad67fc5b9599e7d175a89db98d052a49dfa74e1720ca4ee64f
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -1617,7 +1617,7 @@ SOURCE ENCODING: utf-8
 [![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 
 ### SUPPORT US
-If you like the work we're doing, [please give us a star on GitHub](https://github.com/meld-ai/melder).
+If you like the work we're doing, [please give us a star on GitHub](https://github.com/Synaptic724/melder).
 </div>
 
 ```bash
