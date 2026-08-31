@@ -1603,7 +1603,7 @@
         "bytes": 10756154,
         "lines": 275397,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "723a538f498aa506a385d10ad0cf18c0d5c7ff25eb0b827fb7bfa52f910f9b52"
+        "sha256": "c3e5b6c6fd9362a1fc88070affbfad4bcbf95f6618818ec7b879868438fea95c"
       },
       "content_bytes": 10400124,
       "content_lines": 270719,
@@ -1666,7 +1666,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 313,
           "content_lines": 12,
-          "content_sha256": "13b8b09768bfcba9fdd38ef4ba211800aa1f9c2f4f81b437b69ae073d5aa51d6",
+          "content_sha256": "508c0d84cc5bb3a72699a1dc62993bc9095708042d6b7d046df07659dbb8125e",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -5118,19 +5118,19 @@
         "bytes": 115327,
         "lines": 606,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "5fa7f1820707db93ebc4b7162b688d6dad3fd76ca9d2b0a72dd3ad4fe097d4b6"
+        "sha256": "22743f0c56a3703ad9892925385226a80f2ac011f214edf23943cc1951ec91c0"
       },
-      "source_fingerprint": "b46e83f483a68245a55189236420d66b7242b46b53e9f83b5d3e9967fc66dbe7"
+      "source_fingerprint": "9891280eadc9559f7360beb88da70124060fe8d1d06f5f6c37c67e17f29f151d"
     },
     "tests": {
       "bundle": {
-        "bytes": 10573165,
-        "lines": 305359,
+        "bytes": 10571776,
+        "lines": 305322,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "6332a46859cd37efce508bd6b3205ac6a58b520c8e4ff7eed27a0979fc4cfd95"
+        "sha256": "b281c47416ea0a20c1cdbd55c52136817ee092ac6b55d9674dea7ad631c46f8f"
       },
-      "content_bytes": 10095935,
-      "content_lines": 299001,
+      "content_bytes": 10094546,
+      "content_lines": 298964,
       "file_count": 794,
       "files": {
         "tests/_codegen_system_support.py": {
@@ -7402,9 +7402,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context_factory.py": {
-          "content_bytes": 15897,
-          "content_lines": 443,
-          "content_sha256": "9b67c02841798a51a1f7b9912c7ba0c4f97267d81854330017dee2f95a0d299f",
+          "content_bytes": 14508,
+          "content_lines": 406,
+          "content_sha256": "a719c39265b0ea2fbea2224c3eb28b40631e5398df1aa083d15ae055b43b4ea8",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/meld/overrides/test_spell_overrider.py": {
@@ -9902,9 +9902,9 @@
         "bytes": 153394,
         "lines": 816,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "4bea678cb318364c6d25c49b197248041e84041bcd366a776603d2ec913f947b"
+        "sha256": "6a2bd64c307c2e38677283205d14bc6079397b907e382e863f7f14cc91ff4307"
       },
-      "source_fingerprint": "6b19719c96383dc6b350f6ef83a39a4ea55c0376094d00e4f3fdee0d05e52b63"
+      "source_fingerprint": "329d92e7648d119960317ffbf0e924f781373eb4649c5925b1cc648ad0a857e3"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

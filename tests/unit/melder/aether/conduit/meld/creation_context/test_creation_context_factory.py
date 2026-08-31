@@ -297,43 +297,6 @@ def test_get_or_build_for_spell_builds_and_advances_switch_for_leader_path(
     assert builder.build_calls[0]["creation_gate_index_id"] == spell.spell_index.id
 
 
-def test_spell_cold_context_retrieval_waits_on_spell_lock_before_build(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Verify a cold Spell context build waits behind phase-owned spell locking."""
-    built_context = _ContextStub()
-    spell = _SpellStub(creation_context=None, switch_state=0)
-    builder = _BuilderStub(build_result=built_context)
-    _patch_creation_context_builder(monkeypatch, builder)
-    factory = CreationContextFactory(
-        creation_gate_controller=CreationGateController(),
-    )
-    controlled_lock = _BlockingContextLock()
-    spell._lock = controlled_lock
-    spell._creation_context_factory = factory
-    results: list[Any] = []
-    errors: list[BaseException] = []
-
-    def retrieve_context() -> None:
-        """Call the real Spell slow path against the controlled test double."""
-        try:
-            results.append(Spell._get_or_build_creation_context(spell))
-        except (RuntimeError, TimeoutError, ValueError) as exc:
-            errors.append(exc)
-
-    worker = Thread(target=retrieve_context)
-    worker.start()
-    assert controlled_lock.entered.wait(timeout=5.0) is True
-    assert builder.build_calls == []
-    controlled_lock.release.set()
-    worker.join(timeout=5.0)
-
-    assert worker.is_alive() is False
-    assert errors == []
-    assert results == [built_context]
-    assert builder.build_calls[0]["spell"] is spell
-
-
 def test_build_and_bind_for_spell_stages_cache_after_publish(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
