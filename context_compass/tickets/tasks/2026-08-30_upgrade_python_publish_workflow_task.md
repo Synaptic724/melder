@@ -8,13 +8,13 @@
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T15:55:48Z
-- Updated: 2026-08-31T00:27:58Z
+- Updated: 2026-08-31T01:01:03Z
 
 ## Objective
 Deliver a release-gated Melder pipeline that tests supported Python 3.14
 runtimes, corrects matrix-exposed concurrency/test defects, validates durable
-assets and distributions, and publishes through PyPI OIDC only from current
-`prod` HEAD.
+assets and distributions, and publishes with the owner-configured PyPI token
+only from current `prod` HEAD.
 
 ## Ticket Contract
 - ENTRY_GATE: Owner approved upgrading the existing staged workflow after comparison
@@ -52,9 +52,8 @@ assets and distributions, and publishes through PyPI OIDC only from current
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: All supplied matrix failures plus one additional
-  GIL-scheduling probe are corrected; complete 3.14 and 3.14t suites and all
-  deterministic asset/static gates pass locally.
+- transition_reason: Token authentication is wired through the configured
+  environment secret; YAML, secret-boundary, and diff checks pass.
 
 ## Steps / Checklist
 - [x] Replace the minimal workflow with the tailored release pipeline.
@@ -101,6 +100,8 @@ assets and distributions, and publishes through PyPI OIDC only from current
 - This task.
 
 ## Validation
+- Token publish wiring: pass (YAML parse, exact secret reference, no OIDC permission,
+  attestations disabled, and diff hygiene clean).
 - YAML structure and workflow semantic assertions: pass.
 - Embedded Python syntax: pass (two heredocs).
 - Real wheel/sdist verifier rehearsal: pass.
@@ -799,6 +800,34 @@ assets and distributions, and publishes through PyPI OIDC only from current
   IMPACT: The upgraded workflow will refuse non-prod releases and prevent a green
     build from publishing incomplete or internally inconsistent archives.
   NEXT: Replace the workflow in one scoped edit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-31T01:00:05Z
+  TYPE: DECISION
+  CLAIM: Use the owner-configured `PYPI_API_TOKEN` environment secret for the
+    publish action instead of OIDC. Remove `id-token: write`, pass the standard
+    `__token__` user and secret-backed password, and disable OIDC-only attestations.
+  EVIDENCE:
+  - `.github/workflows/python-publish.yml:322-346`
+  - Owner direction in the active conversation, 2026-08-31T01:00:05Z
+  IMPACT: The existing PyPI token becomes the sole upload credential and its
+    value remains outside the repository.
+  NEXT: Patch the publish job and validate YAML structure, secret wiring, and diff hygiene.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-08-31T01:01:03Z
+  TYPE: MEASURE
+  CLAIM: Token-mode workflow validation passes. The YAML composes successfully,
+    `PYPI_API_TOKEN` is the sole credential reference, `id-token` is absent,
+    attestations are disabled, and scoped diff hygiene exits zero.
+  EVIDENCE:
+  - `.github/workflows/python-publish.yml:322-346`
+  IMPACT: The configured environment secret is ready to authenticate the PyPI
+    upload without committing or printing its value.
+  NEXT: Review and commit the workflow change, promote it to `prod`, then trigger
+    the release workflow from current `prod` HEAD.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

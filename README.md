@@ -12,6 +12,8 @@
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 
+### SUPPORT US
+If you like the work we're doing, [please give us a star on GitHub](https://github.com/meld-ai/melder).
 </div>
 
 ```bash
@@ -37,6 +39,8 @@ For the one-picture distinction, open
 [DI container versus Melder](architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg).
 For the system-level view, start with
 [Architecture and design](architecture_and_design/README.md).
+
+
 
 ### How it works
 
