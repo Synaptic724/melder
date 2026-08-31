@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: bce97c450bf0f816082d373e7485f5d53ab02a8678e45f89c73396ff72085a5a
+SOURCE FINGERPRINT: bc3e564e5d4aba41f09ac855f81a92c5e3bd783779832490e0a55ac86fd892fa
 FILE COUNT: 584
 
 ================================================================================
@@ -67929,7 +67929,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 0b1b94673d055ec88056c903f1d34900b5be5061ede48fc855a66d870aa7a2bc
+CONTENT SHA256: 2361e450c1d754e631be466cd9b36dffad87ffc97b7cd65afd30c8cb3838132c
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -68686,8 +68686,20 @@ class Spell(Cleanable):
 
         Contract:
             - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Serializes only the cold/rebuild path under the spell RLock and
+              rechecks readiness after acquiring it. A conduit-local phase run
+              owns the same lock while it clears and republishes phase-11
+              state, so a competing conduit cannot build from the transient
+              artifact gap.
             - Delegates build/get policy to CreationContextFactory.
             - Returns a live CreationContext instance bound to this spell.
+
+        Threading:
+            The normal ready-context path remains one lock-free state read and
+            one context read. Only state 0/1 retrieval takes `_lock`; the lock
+            is re-entrant because phase and ownership callers may already hold
+            it while requesting a rebuild.
 
         Returns:
             Any:
@@ -68700,10 +68712,13 @@ class Spell(Cleanable):
         creation_context_switch = self._creation_context_switch
         if creation_context_switch.state >= 2:
             return self._creation_context
-        creation_context_factory = self._creation_context_factory
-        if creation_context_factory is None:
-            raise RuntimeError("Spell has no configured CreationContextFactory.")
-        return creation_context_factory.get_or_build_for_spell(self)
+        with self._lock:
+            if creation_context_switch.state >= 2:
+                return self._creation_context
+            creation_context_factory = self._creation_context_factory
+            if creation_context_factory is None:
+                raise RuntimeError("Spell has no configured CreationContextFactory.")
+            return creation_context_factory.get_or_build_for_spell(self)
 
     def emit_cache(self) -> bool:
         """

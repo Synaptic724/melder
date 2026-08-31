@@ -400,26 +400,54 @@ def test_gated_mediator_parks_foreign_roots_until_release() -> None:
     gate = LoadGate()
     request, staged, mediator = _build_gated_bundle(gate, 10.0)
     outcomes = {}
+    holder_acquired = threading.Event()
+    holder_release = threading.Event()
+    worker_started = threading.Event()
+    worker_completed = threading.Event()
+    holder_errors: list[BaseException] = []
+    worker_errors: list[BaseException] = []
+
+    def hold_gate() -> None:
+        """Hold the gate on one live thread until the test permits release."""
+        try:
+            gate.acquire("parking_load")
+            holder_acquired.set()
+            if not holder_release.wait(timeout=5.0):
+                raise RuntimeError("Timed out waiting for test-directed gate release.")
+            gate.release()
+        except (RuntimeError, ValueError) as exc:
+            holder_errors.append(exc)
 
     def foreign_root() -> None:
-        session = mediator.begin_frame(request=request, staged=staged)
-        outcomes["session"] = session
+        worker_started.set()
+        try:
+            session = mediator.begin_frame(request=request, staged=staged)
+            outcomes["session"] = session
+        except (RuntimeError, ValueError) as exc:
+            worker_errors.append(exc)
+        finally:
+            worker_completed.set()
 
-    holder = threading.Thread(target=gate.acquire, args=("parking_load",))
+    holder = threading.Thread(target=hold_gate)
     holder.start()
-    holder.join()
-    # The gate is now held by a FINISHED thread - the current thread is
-    # foreign to it, so a root start here would park. Run the root start
-    # in a worker and release from this thread.
+    assert holder_acquired.wait(timeout=5.0) is True
     worker = threading.Thread(target=foreign_root)
-    worker.start()
-    time.sleep(0.2)
-    assert "session" not in outcomes
+    try:
+        worker.start()
+        assert worker_started.wait(timeout=5.0) is True
+        assert worker_completed.wait(timeout=0.2) is False
+        assert "session" not in outcomes
+    finally:
+        holder_release.set()
+        holder.join(timeout=5.0)
+        worker.join(timeout=5.0)
+        gate.cleanup()
 
-    # Release must come from the holder thread; it is gone, so cleanup
-    # (terminal open, wakes waiters) stands in for release here.
-    gate.cleanup()
-    worker.join(timeout=5.0)
+    assert holder.is_alive() is False
+    assert worker.is_alive() is False
+    assert holder_errors == []
+    assert worker_errors == []
+    assert worker_completed.is_set() is True
     assert outcomes["session"].request is request
 
 

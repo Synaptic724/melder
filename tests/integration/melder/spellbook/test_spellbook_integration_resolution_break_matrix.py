@@ -845,8 +845,9 @@ def test_g_many_distinct_across_repeated_melds() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.many, permissions="create")
         conduit = spellbook.conjure(name="root")
-        seen = {id(conduit.meld(spell_id=engine_id)) for _ in range(3)}
-        assert len(seen) == 3
+        instances = [conduit.meld(spell_id=engine_id) for _ in range(3)]
+        assert all(isinstance(instance, Engine) for instance in instances)
+        assert len({id(instance) for instance in instances}) == 3
     finally:
         if conduit is not None:
             conduit.cleanup()

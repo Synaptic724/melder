@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8376
-CONTENT_SHA256 = '158ea89ea5a16df3ec5e764446fba574394d4f8d98d5918ce63c16e06c5c8c7c'
+LINE_COUNT = 8394
+CONTENT_SHA256 = 'a4255336b803535e86a0954f6f5d5c0483adb8177783ea73d81a2a2551a32439'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -2492,6 +2492,12 @@ Concurrency/Threading:
   because resolution is RECURSIVE: resolving a spell resolves its dependencies
   through the same object, so a non-reentrant lock would deadlock on any
   dependency chain deeper than one.
+- Spell-owned CreationContext retrieval has a second, narrower boundary. A
+  ready state-2 context remains a lock-free read. A missing or invalidated
+  context takes `spell._lock`, rechecks readiness, and enters factory election
+  only if a build is still required. Conduit-local phase revalidation owns the
+  same RLock while Phase 5 clears and Phase 11 republishes context inputs, so a
+  competing conduit cannot build from that transient artifact gap.
 
 Invariants/Guarantees:
 - At least one of `spell`, `spell_id`, or `spellframe` is required at a public facade.
@@ -2511,6 +2517,8 @@ Invariants/Guarantees:
 - Change control may block dirty roots.
 - Change-control checks are best-effort; failures to access change control do not block.
 - Gated validity triggers Phase 1-4 and Phase 5-11 reruns under spell lock.
+- A cold context build cannot interleave with a Phase 5-11 rebuild for the same
+  spell; the ready context/executor hot path remains outside the spell lock.
 
 Failure Modes:
 - ValueError when no identity inputs are provided.
@@ -2546,6 +2554,7 @@ Key Files (C1):
 - `src/melder/aether/conduit/meld/spellspace_meld.py`
 - `src/melder/aether/conduit/conduit.py`
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+- `src/melder/aether/spellbook/spell.py`
 
 
 #### Architecture narrative (folded in from `src_architecture.md`, 2026-08-01)
@@ -4660,9 +4669,12 @@ Contract/Interface:
 Data Structures:
 - Spellbook lookup maps and creation manager.
 Concurrency/Threading:
-- Meld RLock.
+- Meld RLock serializes one door's recursive resolution. Spell RLock serializes
+  only a missing/invalidated CreationContext rebuild against Phase 5-11; a ready
+  state-2 context remains lock-free.
 Key Files (C1):
 - `src/melder/aether/conduit/meld/meld.py`
+- `src/melder/aether/spellbook/spell.py`
 
 ### Subcomponent: Meld Runtime Gating
 Parent Component: Meld Resolution Runtime
@@ -8269,6 +8281,12 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+RELEASE-MATRIX CONCURRENCY REPAIR (2026-08-30): the Meld Resolution Runtime
+contract now records the shared-spell boundary exposed by concurrent owner and
+borrower melds. Phase 5-11 revalidation and cold CreationContext build share the
+spell RLock; the state-2 ready-context path remains lock-free. This is an
+internal correctness boundary with no public interface or existence change.
 
 WHAT COMPONENT CONTRACTS CHANGED (2026-08-01): this document was recomposed to
 the Required Section Contract in `src_components_instructions.md`. The component

@@ -752,8 +752,20 @@ class Spell(Cleanable):
 
         Contract:
             - Requires the spell to have an initialized factory.
+            - Returns a ready state-2 context without locking.
+            - Serializes only the cold/rebuild path under the spell RLock and
+              rechecks readiness after acquiring it. A conduit-local phase run
+              owns the same lock while it clears and republishes phase-11
+              state, so a competing conduit cannot build from the transient
+              artifact gap.
             - Delegates build/get policy to CreationContextFactory.
             - Returns a live CreationContext instance bound to this spell.
+
+        Threading:
+            The normal ready-context path remains one lock-free state read and
+            one context read. Only state 0/1 retrieval takes `_lock`; the lock
+            is re-entrant because phase and ownership callers may already hold
+            it while requesting a rebuild.
 
         Returns:
             Any:

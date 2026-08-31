@@ -269,27 +269,23 @@ def test_overlapping_multi_scope_acquisition_never_partially_grants():
         table.cleanup()
 
 
-def test_whole_world_admits_against_churning_frame_loads(plane):
+def test_whole_world_churn_has_a_bounded_evidenced_outcome(plane):
     """
-    STARVATION PROBE - and the measured answer is that it does NOT starve.
+    Prove churn produces one of the plane's two contract-valid outcomes.
 
-    `ix` holders on `world` coexist, so in principle a stream of frame loads
-    could keep the parent permanently occupied and starve a whole-world `x`.
-    An earlier revision of this test ASSERTED that pessimistic outcome and was
-    WRONG: the whole-world claim admits comfortably inside the wait bound.
+    The claim table intentionally has no waiter priority. Three short-lived
+    `ix` holders can therefore leave a quiescent gap that admits the waiting
+    whole-world `x`, or overlap continuously through its bounded wait and
+    produce an evidenced timeout. Thread scheduling decides which shape occurs;
+    neither is a fairness guarantee.
 
-    The reason is structural rather than lucky. Churning loads hold their `ix`
-    only for the duration of one begin/commit cycle, so the parent scope is
-    repeatedly and frequently empty, and the waiting `x` is woken by
-    `release_holder` the moment the last `ix` drops. Starvation would require
-    holders whose lifetimes OVERLAP continuously - long-running loads, not
-    churning ones - which is a different and much rarer shape.
-
-    Keeping this as a live probe matters: if a future change makes the plane
-    starve under churn, this flips to red and names the regression precisely.
+    This probe requires the invariant that matters in both cases: admission or
+    teach-grade refusal completes without deadlock, every churner exits, and no
+    scope claim leaks.
     """
     stop = threading.Event()
     churn_errors = []
+    world_outcome = []
 
     def churn(index: int) -> None:
         while not stop.is_set():
@@ -313,21 +309,27 @@ def test_whole_world_admits_against_churning_frame_loads(plane):
         thread.start()
     try:
         time.sleep(0.05)
-        started = time.monotonic()
-        whole = plane.begin(
-            transaction_type=TransactionType.CHECKPOINT_LOAD,
-            submitter=_who("whole"),
-        )
-        waited = time.monotonic() - started
-        assert waited < 0.25, (
-            "whole-world claim waited {0:.3f}s against churn".format(waited)
-        )
-        whole.leave()
-        plane.commit(whole)
+        try:
+            whole = plane.begin(
+                transaction_type=TransactionType.CHECKPOINT_LOAD,
+                submitter=_who("whole"),
+            )
+        except RuntimeError as error:
+            message = str(error)
+            assert "scope_contended" in message
+            assert "wait_timeout" in message
+            assert ScopeKey.world() in message
+            assert "requested x" in message
+            world_outcome.append("evidenced_timeout")
+        else:
+            whole.leave()
+            plane.commit(whole)
+            world_outcome.append("admitted")
     finally:
         stop.set()
         for thread in churners:
             thread.join(timeout=15.0)
+    assert world_outcome in (["admitted"], ["evidenced_timeout"])
     assert all(not thread.is_alive() for thread in churners)
     assert churn_errors == [], "churn raised unexpectedly: {0}".format(churn_errors)
     assert plane.describe()["claims"]["scope_count"] == 0

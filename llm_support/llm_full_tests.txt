@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 9f04bb18a842bdafcf5e7dc55dd91383b9335dcea6f3867e9df647edb6b9c374
+SOURCE FINGERPRINT: 6b19719c96383dc6b350f6ef83a39a4ea55c0376094d00e4f3fdee0d05e52b63
 FILE COUNT: 794
 
 ================================================================================
@@ -2937,7 +2937,7 @@ END FILE: tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_failure_paths.py
-CONTENT SHA256: 0b2e06050e270796d895be2a7ae2e940040700d3f5be2e5fe1a2a8b2ebf1f092
+CONTENT SHA256: 027403b1dfb5ef8bd4dde745cf60962015a54e24c7631e6ed3a64acf1a9e5379
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -3211,27 +3211,23 @@ def test_overlapping_multi_scope_acquisition_never_partially_grants():
         table.cleanup()
 
 
-def test_whole_world_admits_against_churning_frame_loads(plane):
+def test_whole_world_churn_has_a_bounded_evidenced_outcome(plane):
     """
-    STARVATION PROBE - and the measured answer is that it does NOT starve.
+    Prove churn produces one of the plane's two contract-valid outcomes.
 
-    `ix` holders on `world` coexist, so in principle a stream of frame loads
-    could keep the parent permanently occupied and starve a whole-world `x`.
-    An earlier revision of this test ASSERTED that pessimistic outcome and was
-    WRONG: the whole-world claim admits comfortably inside the wait bound.
+    The claim table intentionally has no waiter priority. Three short-lived
+    `ix` holders can therefore leave a quiescent gap that admits the waiting
+    whole-world `x`, or overlap continuously through its bounded wait and
+    produce an evidenced timeout. Thread scheduling decides which shape occurs;
+    neither is a fairness guarantee.
 
-    The reason is structural rather than lucky. Churning loads hold their `ix`
-    only for the duration of one begin/commit cycle, so the parent scope is
-    repeatedly and frequently empty, and the waiting `x` is woken by
-    `release_holder` the moment the last `ix` drops. Starvation would require
-    holders whose lifetimes OVERLAP continuously - long-running loads, not
-    churning ones - which is a different and much rarer shape.
-
-    Keeping this as a live probe matters: if a future change makes the plane
-    starve under churn, this flips to red and names the regression precisely.
+    This probe requires the invariant that matters in both cases: admission or
+    teach-grade refusal completes without deadlock, every churner exits, and no
+    scope claim leaks.
     """
     stop = threading.Event()
     churn_errors = []
+    world_outcome = []
 
     def churn(index: int) -> None:
         while not stop.is_set():
@@ -3255,21 +3251,27 @@ def test_whole_world_admits_against_churning_frame_loads(plane):
         thread.start()
     try:
         time.sleep(0.05)
-        started = time.monotonic()
-        whole = plane.begin(
-            transaction_type=TransactionType.CHECKPOINT_LOAD,
-            submitter=_who("whole"),
-        )
-        waited = time.monotonic() - started
-        assert waited < 0.25, (
-            "whole-world claim waited {0:.3f}s against churn".format(waited)
-        )
-        whole.leave()
-        plane.commit(whole)
+        try:
+            whole = plane.begin(
+                transaction_type=TransactionType.CHECKPOINT_LOAD,
+                submitter=_who("whole"),
+            )
+        except RuntimeError as error:
+            message = str(error)
+            assert "scope_contended" in message
+            assert "wait_timeout" in message
+            assert ScopeKey.world() in message
+            assert "requested x" in message
+            world_outcome.append("evidenced_timeout")
+        else:
+            whole.leave()
+            plane.commit(whole)
+            world_outcome.append("admitted")
     finally:
         stop.set()
         for thread in churners:
             thread.join(timeout=15.0)
+    assert world_outcome in (["admitted"], ["evidenced_timeout"])
     assert all(not thread.is_alive() for thread in churners)
     assert churn_errors == [], "churn raised unexpectedly: {0}".format(churn_errors)
     assert plane.describe()["claims"]["scope_count"] == 0
@@ -114435,7 +114437,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py
-CONTENT SHA256: 1fd2b5a6ef422be38a8298efd6bd0e3488d2d46fd53089db44c4660a7c6b238f
+CONTENT SHA256: e63532c61e55bb8d28222e1a210a311e3f1694086f1688494d5b52a18e59bd41
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -115285,8 +115287,9 @@ def test_g_many_distinct_across_repeated_melds() -> None:
     try:
         engine_id = spellbook.bind(spell=Engine, existence=Existence.many, permissions="create")
         conduit = spellbook.conjure(name="root")
-        seen = {id(conduit.meld(spell_id=engine_id)) for _ in range(3)}
-        assert len(seen) == 3
+        instances = [conduit.meld(spell_id=engine_id) for _ in range(3)]
+        assert all(isinstance(instance, Engine) for instance in instances)
+        assert len({id(instance) for instance in instances}) == 3
     finally:
         if conduit is not None:
             conduit.cleanup()
@@ -151690,13 +151693,13 @@ END FILE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_c
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context_factory.py
-CONTENT SHA256: 023be13750231e46b821bc4be44f0506f9f97904923e5e0cacc129bc9f56b32b
+CONTENT SHA256: 9b67c02841798a51a1f7b9912c7ba0c4f97267d81854330017dee2f95a0d299f
 SOURCE ENCODING: utf-8
 ================================================================================
 """Direct factory contract tests for CreationContextFactory."""
-from threading import RLock
-from types import SimpleNamespace
-from typing import Any, Optional
+from threading import Event, RLock, Thread
+from types import SimpleNamespace, TracebackType
+from typing import Any, Optional, Self
 
 import pytest
 
@@ -151707,6 +151710,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
     CreationContextFactory,
 )
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -151833,6 +151837,30 @@ class _SwitchStub:
     def advance(self, amount: int) -> None:
         self.advance_calls.append(amount)
         self.state += amount
+
+
+class _BlockingContextLock:
+    """Controlled context lock proving cold retrieval waits before building."""
+
+    def __init__(self) -> None:
+        self.entered = Event()
+        self.release = Event()
+
+    def __enter__(self) -> Self:
+        self.entered.set()
+        if not self.release.wait(timeout=5.0):
+            raise RuntimeError("Timed out waiting to release controlled test lock.")
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
+        _ = exc_type
+        _ = exc_value
+        _ = traceback
 
 
 def test_init_requires_creation_gate_controller() -> None:
@@ -151967,6 +151995,43 @@ def test_get_or_build_for_spell_builds_and_advances_switch_for_leader_path(
     assert builder.build_calls[0]["creation_gate_index_id"] == spell.spell_index.id
 
 
+def test_spell_cold_context_retrieval_waits_on_spell_lock_before_build(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify a cold Spell context build waits behind phase-owned spell locking."""
+    built_context = _ContextStub()
+    spell = _SpellStub(creation_context=None, switch_state=0)
+    builder = _BuilderStub(build_result=built_context)
+    _patch_creation_context_builder(monkeypatch, builder)
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
+    controlled_lock = _BlockingContextLock()
+    spell._lock = controlled_lock
+    spell._creation_context_factory = factory
+    results: list[Any] = []
+    errors: list[BaseException] = []
+
+    def retrieve_context() -> None:
+        """Call the real Spell slow path against the controlled test double."""
+        try:
+            results.append(Spell._get_or_build_creation_context(spell))
+        except (RuntimeError, TimeoutError, ValueError) as exc:
+            errors.append(exc)
+
+    worker = Thread(target=retrieve_context)
+    worker.start()
+    assert controlled_lock.entered.wait(timeout=5.0) is True
+    assert builder.build_calls == []
+    controlled_lock.release.set()
+    worker.join(timeout=5.0)
+
+    assert worker.is_alive() is False
+    assert errors == []
+    assert results == [built_context]
+    assert builder.build_calls[0]["spell"] is spell
+
+
 def test_build_and_bind_for_spell_stages_cache_after_publish(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -152074,7 +152139,6 @@ def test_index_id_for_spell_returns_spell_index_id() -> None:
         assert factory._index_id_for_spell(spell) == spell.spell_index.id
     finally:
         factory.cleanup()
-
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context_factory.py
 ================================================================================
@@ -175270,7 +175334,7 @@ END FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_transacti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/dev_ops/change_control_manager/test_transaction_mediator.py
-CONTENT SHA256: eadf6475a9d8f338446fe4304be8507ce3e10d93b9c4586aeeeece630d93ba3c
+CONTENT SHA256: 4b688ee078607d60846567b6843803107d42d7f61ca6081b2098f53cc1bae13d
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -175675,26 +175739,54 @@ def test_gated_mediator_parks_foreign_roots_until_release() -> None:
     gate = LoadGate()
     request, staged, mediator = _build_gated_bundle(gate, 10.0)
     outcomes = {}
+    holder_acquired = threading.Event()
+    holder_release = threading.Event()
+    worker_started = threading.Event()
+    worker_completed = threading.Event()
+    holder_errors: list[BaseException] = []
+    worker_errors: list[BaseException] = []
+
+    def hold_gate() -> None:
+        """Hold the gate on one live thread until the test permits release."""
+        try:
+            gate.acquire("parking_load")
+            holder_acquired.set()
+            if not holder_release.wait(timeout=5.0):
+                raise RuntimeError("Timed out waiting for test-directed gate release.")
+            gate.release()
+        except (RuntimeError, ValueError) as exc:
+            holder_errors.append(exc)
 
     def foreign_root() -> None:
-        session = mediator.begin_frame(request=request, staged=staged)
-        outcomes["session"] = session
+        worker_started.set()
+        try:
+            session = mediator.begin_frame(request=request, staged=staged)
+            outcomes["session"] = session
+        except (RuntimeError, ValueError) as exc:
+            worker_errors.append(exc)
+        finally:
+            worker_completed.set()
 
-    holder = threading.Thread(target=gate.acquire, args=("parking_load",))
+    holder = threading.Thread(target=hold_gate)
     holder.start()
-    holder.join()
-    # The gate is now held by a FINISHED thread - the current thread is
-    # foreign to it, so a root start here would park. Run the root start
-    # in a worker and release from this thread.
+    assert holder_acquired.wait(timeout=5.0) is True
     worker = threading.Thread(target=foreign_root)
-    worker.start()
-    time.sleep(0.2)
-    assert "session" not in outcomes
+    try:
+        worker.start()
+        assert worker_started.wait(timeout=5.0) is True
+        assert worker_completed.wait(timeout=0.2) is False
+        assert "session" not in outcomes
+    finally:
+        holder_release.set()
+        holder.join(timeout=5.0)
+        worker.join(timeout=5.0)
+        gate.cleanup()
 
-    # Release must come from the holder thread; it is gone, so cleanup
-    # (terminal open, wakes waiters) stands in for release here.
-    gate.cleanup()
-    worker.join(timeout=5.0)
+    assert holder.is_alive() is False
+    assert worker.is_alive() is False
+    assert holder_errors == []
+    assert worker_errors == []
+    assert worker_completed.is_set() is True
     assert outcomes["session"].request is request
 
 

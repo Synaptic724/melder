@@ -1,7 +1,7 @@
 """Direct factory contract tests for CreationContextFactory."""
-from threading import RLock
-from types import SimpleNamespace
-from typing import Any, Optional
+from threading import Event, RLock, Thread
+from types import SimpleNamespace, TracebackType
+from typing import Any, Optional, Self
 
 import pytest
 
@@ -12,6 +12,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
     CreationContextFactory,
 )
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -138,6 +139,30 @@ class _SwitchStub:
     def advance(self, amount: int) -> None:
         self.advance_calls.append(amount)
         self.state += amount
+
+
+class _BlockingContextLock:
+    """Controlled context lock proving cold retrieval waits before building."""
+
+    def __init__(self) -> None:
+        self.entered = Event()
+        self.release = Event()
+
+    def __enter__(self) -> Self:
+        self.entered.set()
+        if not self.release.wait(timeout=5.0):
+            raise RuntimeError("Timed out waiting to release controlled test lock.")
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
+        _ = exc_type
+        _ = exc_value
+        _ = traceback
 
 
 def test_init_requires_creation_gate_controller() -> None:
@@ -272,6 +297,43 @@ def test_get_or_build_for_spell_builds_and_advances_switch_for_leader_path(
     assert builder.build_calls[0]["creation_gate_index_id"] == spell.spell_index.id
 
 
+def test_spell_cold_context_retrieval_waits_on_spell_lock_before_build(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify a cold Spell context build waits behind phase-owned spell locking."""
+    built_context = _ContextStub()
+    spell = _SpellStub(creation_context=None, switch_state=0)
+    builder = _BuilderStub(build_result=built_context)
+    _patch_creation_context_builder(monkeypatch, builder)
+    factory = CreationContextFactory(
+        creation_gate_controller=CreationGateController(),
+    )
+    controlled_lock = _BlockingContextLock()
+    spell._lock = controlled_lock
+    spell._creation_context_factory = factory
+    results: list[Any] = []
+    errors: list[BaseException] = []
+
+    def retrieve_context() -> None:
+        """Call the real Spell slow path against the controlled test double."""
+        try:
+            results.append(Spell._get_or_build_creation_context(spell))
+        except (RuntimeError, TimeoutError, ValueError) as exc:
+            errors.append(exc)
+
+    worker = Thread(target=retrieve_context)
+    worker.start()
+    assert controlled_lock.entered.wait(timeout=5.0) is True
+    assert builder.build_calls == []
+    controlled_lock.release.set()
+    worker.join(timeout=5.0)
+
+    assert worker.is_alive() is False
+    assert errors == []
+    assert results == [built_context]
+    assert builder.build_calls[0]["spell"] is spell
+
+
 def test_build_and_bind_for_spell_stages_cache_after_publish(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -379,4 +441,3 @@ def test_index_id_for_spell_returns_spell_index_id() -> None:
         assert factory._index_id_for_spell(spell) == spell.spell_index.id
     finally:
         factory.cleanup()
-
