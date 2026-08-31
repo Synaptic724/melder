@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: dd89f7160bf0babfeffd71fed5fbe6f1ddf6effd4960a43256dae42274305f6a
+SOURCE FINGERPRINT: f3217cdce3db1e23cba1e8b1e34e496a53df9a5d51cf6688cf0203cb7187ac4e
 FILE COUNT: 263
 
 ================================================================================
@@ -259,7 +259,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: d3cf2c4ff2635fa919c43cfd12f1d9b1b73bcbeeac5253050bff4d2395d1c48b
+CONTENT SHA256: d3e45904a28fdf2d28211df105d745d6bf72066b292f3f7d02fe04f46f3c5d49
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -338,7 +338,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ["3.14", "3.14t"]
+        python-version: ["3.14t"]
 
     steps:
       - uses: actions/checkout@v7

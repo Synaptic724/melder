@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: bc3e564e5d4aba41f09ac855f81a92c5e3bd783779832490e0a55ac86fd892fa
+SOURCE FINGERPRINT: b46e83f483a68245a55189236420d66b7242b46b53e9f83b5d3e9967fc66dbe7
 FILE COUNT: 584
 
 ================================================================================
@@ -67929,7 +67929,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 2361e450c1d754e631be466cd9b36dffad87ffc97b7cd65afd30c8cb3838132c
+CONTENT SHA256: 9b50eb996cefcfc567c011d3225731eca328f50fd0b273ad2401ca5ef7357dfc
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -68712,13 +68712,10 @@ class Spell(Cleanable):
         creation_context_switch = self._creation_context_switch
         if creation_context_switch.state >= 2:
             return self._creation_context
-        with self._lock:
-            if creation_context_switch.state >= 2:
-                return self._creation_context
-            creation_context_factory = self._creation_context_factory
-            if creation_context_factory is None:
-                raise RuntimeError("Spell has no configured CreationContextFactory.")
-            return creation_context_factory.get_or_build_for_spell(self)
+        creation_context_factory = self._creation_context_factory
+        if creation_context_factory is None:
+            raise RuntimeError("Spell has no configured CreationContextFactory.")
+        return creation_context_factory.get_or_build_for_spell(self)
 
     def emit_cache(self) -> bool:
         """

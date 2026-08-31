@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | dd89f7160bf0babfeffd71fed5fbe6f1ddf6effd4960a43256dae42274305f6a |
-| bundle_sha256 | 0bc34396c01c83baec7c0d6ad358fca2f443cdb421ad6cb366c097e82a6b9ae6 |
+| source_fingerprint | f3217cdce3db1e23cba1e8b1e34e496a53df9a5d51cf6688cf0203cb7187ac4e |
+| bundle_sha256 | 8119faaeffdb731708d2ea4436a4e21cb4b10fbc0c65cbf74f677e4d9910ee4e |
 | bundle_line_count | 57890 |
 | bundle_line_ending | lf |
 | files | 263 |
@@ -23,7 +23,7 @@ Line numbers are 1-based and inclusive.
 | 7-64 | 12-61 | 2466 | utf-8 | b0566c5b1c4c33c7a09a7fe32c92e0ae7407613bc38b5fdc2bbf3181e151ae07 | .gitattributes |
 | 65-130 | 70-127 | 1715 | utf-8 | 5923b9f705719e73927a6133ef2b25520efe171ba324ae20e8951380af409253 | .github/workflows/build-repo-assets.yml |
 | 131-259 | 136-256 | 5211 | utf-8 | 5931ecc573e07bd44105e2a095b1777e58196da4faede25288d964d1477c837f | .github/workflows/build-src-assets.yml |
-| 260-613 | 265-610 | 13090 | utf-8 | d3cf2c4ff2635fa919c43cfd12f1d9b1b73bcbeeac5253050bff4d2395d1c48b | .github/workflows/python-publish.yml |
+| 260-613 | 265-610 | 13082 | utf-8 | d3e45904a28fdf2d28211df105d745d6bf72066b292f3f7d02fe04f46f3c5d49 | .github/workflows/python-publish.yml |
 | 614-846 | 619-843 | 5502 | utf-8 | f0ca9f453ed4e10718232641f8ee7fc64a4b59a84ed44c8bc805fe8e38192617 | .gitignore |
 | 847-1515 | 852-1512 | 34522 | utf-8 | b54857356e43422ea6a6f5fe84f58e8b105ab27af45ba7dbf792bf6c20ac1827 | LICENSE |
 | 1516-1599 | 1521-1596 | 3039 | utf-8 | f52bb06e0d0c9ff56c8d83387b1577a6221063ea8d5da0160407c1dac45718e2 | NOTICE |
