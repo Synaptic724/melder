@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: f3217cdce3db1e23cba1e8b1e34e496a53df9a5d51cf6688cf0203cb7187ac4e
+SOURCE FINGERPRINT: 8a10c5258ecbc15878225a0207cb6c8c99be529b51cd238b4693bda269ae3113
 FILE COUNT: 263
 
 ================================================================================
@@ -259,7 +259,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: d3e45904a28fdf2d28211df105d745d6bf72066b292f3f7d02fe04f46f3c5d49
+CONTENT SHA256: c6063a08b4dbfd6673922799d09dcaac1c99cdb03dc0c4c0219e6f2594ed97a4
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -588,10 +588,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: release-build
     timeout-minutes: 10
-    permissions:
-      id-token: write
     environment:
-      # Must exactly match Melder's PyPI trusted-publisher environment.
+      # Environment-scoped secret: PYPI_API_TOKEN.
       name: pypi
       url: https://pypi.org/project/melder/
 
@@ -605,8 +603,10 @@ jobs:
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/
-          attestations: true
+          attestations: false
           print-hash: true
 ================================================================================
 END FILE: .github/workflows/python-publish.yml
@@ -1599,7 +1599,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: d602347f6566c19061df1a505832e71db75d11536310d736f915cf88a130da32
+CONTENT SHA256: 0ebb5e1762d06a7f0c498975183b4d787e65a18d4e9c06fd4029e31b8fd25843
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -1616,6 +1616,8 @@ SOURCE ENCODING: utf-8
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 
+### SUPPORT US
+If you like the work we're doing, [please give us a star on GitHub](https://github.com/meld-ai/melder).
 </div>
 
 ```bash
@@ -1641,6 +1643,8 @@ For the one-picture distinction, open
 [DI container versus Melder](architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg).
 For the system-level view, start with
 [Architecture and design](architecture_and_design/README.md).
+
+
 
 ### How it works
 

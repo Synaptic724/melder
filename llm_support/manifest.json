@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2271170,
-        "lines": 57890,
+        "bytes": 2271308,
+        "lines": 57894,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "8119faaeffdb731708d2ea4436a4e21cb4b10fbc0c65cbf74f677e4d9910ee4e"
+        "sha256": "eb2061c98a31e27b60bd783a66c7a1c93375585d910e7781486cb29672f121f4"
       },
-      "content_bytes": 2119527,
-      "content_lines": 55780,
+      "content_bytes": 2119665,
+      "content_lines": 55784,
       "file_count": 263,
       "files": {
         ".gitattributes": {
@@ -30,9 +30,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/python-publish.yml": {
-          "content_bytes": 13082,
+          "content_bytes": 13099,
           "content_lines": 346,
-          "content_sha256": "d3e45904a28fdf2d28211df105d745d6bf72066b292f3f7d02fe04f46f3c5d49",
+          "content_sha256": "c6063a08b4dbfd6673922799d09dcaac1c99cdb03dc0c4c0219e6f2594ed97a4",
           "source_encoding": "utf-8"
         },
         ".gitignore": {
@@ -54,9 +54,9 @@
           "source_encoding": "utf-8"
         },
         "README.md": {
-          "content_bytes": 45719,
-          "content_lines": 1072,
-          "content_sha256": "d602347f6566c19061df1a505832e71db75d11536310d736f915cf88a130da32",
+          "content_bytes": 45840,
+          "content_lines": 1076,
+          "content_sha256": "0ebb5e1762d06a7f0c498975183b4d787e65a18d4e9c06fd4029e31b8fd25843",
           "source_encoding": "utf-8"
         },
         "RELEASE_NOTES_0.2.0.md": {
@@ -1594,9 +1594,9 @@
         "bytes": 46779,
         "lines": 285,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "1814ec3a0dae786ebd91bb31cb0adf8b71e2a82855eec8b6fe488333d7fd70dd"
+        "sha256": "cc95e917ac1f5da06ab3c07282ec833926a394e2cecc8084c682ded09424e3aa"
       },
-      "source_fingerprint": "f3217cdce3db1e23cba1e8b1e34e496a53df9a5d51cf6688cf0203cb7187ac4e"
+      "source_fingerprint": "8a10c5258ecbc15878225a0207cb6c8c99be529b51cd238b4693bda269ae3113"
     },
     "src": {
       "bundle": {
