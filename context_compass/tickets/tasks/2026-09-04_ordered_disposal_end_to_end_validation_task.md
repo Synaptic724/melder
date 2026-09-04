@@ -1,0 +1,126 @@
+# Task: Verify the complete ordered-disposal contract
+
+## Metadata
+- Task ID: TASK-2026-09-04-ordered-disposal-end-to-end-validation
+- Story: STORY-2026-09-04-ordered-disposal-persistence
+- Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_persistence_story.md`
+- Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
+- Status: ready
+- Owner: codex
+- Agent Name: codex_1
+- Priority: p1
+- Created: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T21:17:27Z
+
+## Objective
+Assemble actual evidence that the agreed order survives configuration, binding, compilation,
+cleanup, and record/replay, then hand the complete program back for acceptance.
+
+## Ticket Contract
+- ENTRY_GATE: All implementation tasks and docs/assets task are verified; board routes here.
+- EXECUTION_BOUNDARY: Relevant tests/checks, focused regressions for discovered gaps, and
+  ticket/story/epic outcome synchronization. Fixes return to their owning task scope.
+- DEPENDENCIES:
+  `tickets/tasks/2026-09-04_disposal_configuration_roundtrip_task.md`
+  `tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+  `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md`
+  `tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md`
+- EXIT_GATE: Acceptance criteria have concrete executed evidence or clearly stated platform
+  gaps; no unresolved feature regression is presented as complete; owner accepts closure.
+- FAILURE_ESCALATION: Route defects to the owning task with a reproduction. Do not skip supported
+  platforms or rewrite synchronization to satisfy an unverified test assumption.
+
+## Scope Boundaries
+- In scope: feature verification and final review/closure preparation.
+- Out of scope: publishing, signing, committing, pushing, unrelated test repairs, coverage guesses.
+
+## State Transition Event
+- from_state: draft
+- to_state: ready
+- transition_reason: Owner requested durable tasks through the complete program's validation.
+
+## Required Reading and Evidence
+- All eight preceding task outcomes and their test commands/results.
+- `system_docs/tests_architecture.md` and relevant indexed test-component sections.
+- Current `.github/workflows/python-publish.yml` for supported interpreter/platform cells.
+- `.github/workflows/build-src-assets.yml` and `.github/workflows/build-repo-assets.yml`.
+- Current pytest configuration and relevant fixtures before selecting test commands.
+- The discovery Validation section explicitly distinguishes the old generic hash probe
+  from the failed Melder import under Python 3.13. It is not runtime proof.
+
+## Steps / Checklist
+- [ ] Resolve the available 3.14 interpreter and record version/free-threading mode.
+- [ ] Collect prior focused evidence; rerun only where new changes or cross-boundary gaps justify it.
+- [ ] Exercise real book defaults plus per-spell names, both priority modes, duplicate and missing names.
+- [ ] Verify two separately created Spells never inherit each other's explicit list.
+- [ ] Exercise actual cleanup through relevant lifetimes and compiler/override/cache families.
+- [ ] Verify hash-seed stability using real supported binding and a stable source-defined target.
+- [ ] Verify configuration, active/staged replay, and applicable graft outcomes under the recorded policy.
+- [ ] Confirm source/repository asset checks and documentation examples remain current.
+- [ ] Report supported matrix cells actually run and those unavailable locally; use real CI output
+      when available rather than claiming Linux validation from a Windows run.
+- [ ] Synchronize story/epic outcomes and patch disposition for explicit owner acceptance.
+
+## Deliverables
+One concise evidence-backed acceptance report with exact remaining gaps, if any.
+
+## Files / Paths Impacted
+- Existing focused feature tests and an integration regression only if a real gap remains.
+- Task/story/epic notes and board state.
+- Actual patch artifact disposition after successful validation and owner acceptance.
+
+## Validation
+- Not run; ticket only.
+- Required outcomes: False/default gives Spell-first order; True gives book-first order;
+  first occurrence wins; matching is setup-time; final list reaches actual method calls.
+- Preserve class-profile matching, creation-time policy, no-disposal behavior, current failure
+  handling, and existing scope disposal traversal.
+- Existing error/warning output and test totals must be reported accurately; do not imply
+  coverage or a platform matrix was measured without actual results.
+- Record commands/results in notes and reopen the relevant implementation task on failure.
+
+## Risks / Rollback Notes
+Ready tasks are specified work, not completed work. Do not close the epic because the ticket
+stack exists or because one focused test ring is green. No remote state changes are authorized.
+
+## Applicable Anti-Patterns
+- [ ] No fabricated run/coverage/platform claims or unsupported skips.
+- [ ] No closing tasks while acceptance criteria remain unresolved.
+
+## Done Checklist
+- [ ] Required behavioral and asset checks documented with actual results.
+- [ ] Genuine remaining gaps named with exact next actions.
+- [ ] Story/epic state consistent; owner accepts final closure.
+- [ ] Artifact dispositions and deterministic board closure sync applied when authorized.
+
+## Artifact Links (Optional)
+- ARTIFACTS_REQUIRED: false at ticket creation
+- ARTIFACT_PATHS: none yet; actual validation artifacts must be registered if created
+- DISPOSITION: retain_as_reference
+- CLEANUP_TRIGGER: final owner-accepted disposition
+
+## Context Management
+- CONTEXT_MANAGEMENT_REQUIRED: false
+- CONTEXT_IDS: none
+- CONTEXT_TOPICS: contract verification, platform evidence, acceptance
+- IF_UNKNOWN: none
+
+## Noting Behavior
+Use MEASURE only for checks actually executed; record results before another validation tranche.
+
+## Notes
+- DATETIME: 2026-09-04T21:17:27Z
+  TYPE: PLAN
+  CLAIM: Final validation follows all producer, runtime, persistence, and asset work.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-02_ordered_spell_disposal_contract_discovery_task.md:327-339`
+  IMPACT: The final report can distinguish proven end-to-end behavior from planning evidence.
+  NEXT: Wait for dependency outcomes, then resolve supported interpreter/platform availability.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+## Context / Handoff Summary
+No tests executed for this new feature yet. This is the last task, not a route to jump ahead
+of implementation. Use the child tasks' recorded outcomes and report all material gaps honestly.
+Final closure is a user decision; no commits, pushes, releases, or unrelated cleanup.
+

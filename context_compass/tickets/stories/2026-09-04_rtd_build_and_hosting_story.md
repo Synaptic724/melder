@@ -1,0 +1,124 @@
+# Story: Make documentation builds, previews, versions, and downloads reproducible
+
+## Metadata
+- Story ID: STORY-2026-09-04-rtd-build-and-hosting
+- Epic: EPIC-2026-09-04-readthedocs-documentation
+- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
+- Status: draft
+- Owner: codex
+- Agent Name: codex_2
+- Priority: p1
+- Created: 2026-09-04T21:36:46Z
+- Updated: 2026-09-04T21:36:46Z
+
+## User Narrative
+As a maintainer, I can review a documentation change before release and publish consistent versions
+and downloads using the same proven build inputs as local development.
+
+## Value / MRP Alignment
+Make publishing a repeatable release process with identifiable source/version inputs and useful reader features.
+
+## Ticket Contract
+- ENTRY_GATE: S1-S7 content/build contracts available; intended hosted project/repository identified; task routed.
+- EXECUTION_BOUNDARY: .readthedocs.yaml, docs CI, dependency pins, offline builders, build/host integration,
+  version/source/canonical links, redirects, and maintainer runbook.
+- DEPENDENCIES: S1 local command; S2 catalog; S3-S7 content; account/repository access at hosting setup.
+- EXIT_GATE: Local/CI/preview parity, versions/search/download behavior, and setup evidence are recorded.
+- FAILURE_ESCALATION: Record unavailable account access, dependency/network issues, or unsupported features.
+
+## Requirements (Functional)
+- CI and RTD call the same docs assembly/build command and pinned dependency set as local development.
+- Use supported Python 3.14 for docs; keep 3.14t example verification a separate job.
+- Build warning-aware HTML and validate public input selection, links, artifacts, and package version.
+- Configure the intended Git integration and PR previews; verify the preview and available visual diff.
+- Provide version switching, accurate development/old-version notices, and consistent source-revision links.
+- Use hosted search-as-you-type with a working local/offline Sphinx search route.
+- Publish complete HTML download plus a clearly scoped four-level PDF/ePub handbook.
+- Configure canonical URLs and verify sitemap/version links; maintain redirect mappings for moved pages.
+- Document project settings, rebuild/release steps, pin refresh, and failed-build recovery.
+
+## Requirements (Non-Functional)
+- No docs dependencies in Melder runtime requirements; no generated-site writes into canonical source.
+- No secret/working-record content in artifacts; account changes occur only within authorized setup scope.
+- Build output/version must be traceable to a commit. Missing access remains UNKNOWN, not assumed configured.
+
+## Scope Boundaries
+- In scope: hosted/CI build integration and publishing features over the completed content system.
+- Out of scope: runtime changes, paid-plan purchases, invented credentials, or retroactive tag modification.
+
+## State Transition Event
+- from_state: draft
+- to_state: draft
+- transition_reason: Build/hosting delivery scope defined; no setup or publication started.
+
+## Dependencies / Related Work
+S9 validates the complete release and owns final launch acceptance after this pipeline is demonstrated.
+
+## Tasks (Implementation Checklist)
+- [ ] Align local/CI/RTD inputs and requirements; add the docs workflow and RTD configuration.
+- [ ] Verify project ownership/repository/branch, Git integration, and a real PR preview.
+- [ ] Implement/test version identity, search integration, source links, canonical URL, and redirects.
+- [ ] Build/review offline formats and write the maintainer/recovery runbook.
+
+## Acceptance Criteria
+- [ ] Local and CI builds use the same command/configuration and a recorded compatible dependency set.
+- [ ] A real hosted preview is built from the intended commit and can be reviewed before release.
+- [ ] Version menu, notices, source links, canonical URL, and sitemap agree on the intended versions.
+- [ ] Search works hosted and through the local/offline route.
+- [ ] Downloads render correctly, disclose their contents/version, and preserve all four level names.
+- [ ] Old-link redirects resolve correctly; unbuildable historical tags are not advertised as supported.
+- [ ] Setup/release/recovery steps are reproducible and contain no credentials.
+
+## Validation / Test Plan
+Not run. Future checks: clean environment builds, workflow/config validation, artifact/source reconciliation,
+real RTD build logs, preview inspection, search/version/redirect flows, and rendered PDF/ePub/HTML downloads.
+
+## UX / API / Data Notes
+Recommended stable default starts with the first accepted docs-bearing release. latest tracks the selected
+public branch. Confirm exact branch/project mapping before applying dashboard settings.
+
+## Risks / Mitigations
+RTD service settings and feature availability are external state. Core navigation must work without
+optional paid analytics. Existing tags may lack docs configuration; support is an explicit release decision.
+
+## Open Questions
+Project ownership, chosen public branch, optional custom domain, compatible pins, and offline build costs.
+
+## Artifact Links (Optional)
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS: artifacts/2026-09-04_readthedocs_site_blueprint.md
+- DISPOSITION: promote_to_documentation
+- CLEANUP_TRIGGER: Parent epic closure.
+
+## Context Management
+- CONTEXT_MANAGEMENT_REQUIRED: false
+- CONTEXT_IDS: none
+- CONTEXT_TOPICS: CI/RTD parity, previews, releases, search, downloads
+- IF_UNKNOWN: none
+
+## Notes
+- DATETIME: 2026-09-04T21:36:46Z
+  TYPE: PLAN
+  CLAIM: S8 owns the reproducible publication pipeline and supported RTD features after the content
+    stories are complete. Local files cannot substitute for verification of actual hosted settings.
+  EVIDENCE:
+  - artifacts/2026-09-04_readthedocs_site_blueprint.md:226-292
+  - https://docs.readthedocs.com/platform/stable/config-file/v2.html
+  - https://docs.readthedocs.com/platform/stable/pull-requests.html
+  IMPACT: Readers get coherent versions and downloads, while maintainers can review changes before launch.
+  NEXT: Open the build/hosting implementation task after S1-S7 deliver their contracts and content.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+## Applicable Anti-Patterns
+- [ ] No assumed account configuration, unsupported version claims, or mismatched build inputs.
+- [ ] No deployment secrets committed with docs configuration.
+
+## Closure Confirmation
+- [ ] Pipeline/preview walkthrough accepted; tasks and board synchronized before final launch review.
+
+## Noting Behavior
+Record exact pins, build revisions, service settings without secrets, feature verification, and recovery steps.
+
+## Context / Handoff Summary
+Defined, not implemented. S8 makes the complete site reproducible in CI and RTD; S9 supplies launch acceptance.

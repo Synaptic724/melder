@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 316268acd0a9fc0c9fa9eb3b577efe8757f2851fab3329a3e2af68981472dc73
+SOURCE FINGERPRINT: 9be198ea546b58e46a1893f053c0cafc75e3eba44b2fc1a4d10df89fda2efc97
 FILE COUNT: 262
 
 ================================================================================
@@ -1599,7 +1599,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 25d9c15dfc08c9ad67fc5b9599e7d175a89db98d052a49dfa74e1720ca4ee64f
+CONTENT SHA256: 62f6b753052af9777ce1930da35093d3cf3f0851aaf280dedc7bb758951903ba
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -1640,9 +1640,9 @@ inspectable, permissioned structure you can query, snapshot, restore, and change
 while the process is running.
 
 For the one-picture distinction, open
-[DI container versus Melder](architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg).
+[DI container versus Melder](https://raw.githubusercontent.com/Synaptic724/melder/prod/architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg).
 For the system-level view, start with
-[Architecture and design](architecture_and_design/README.md).
+[Architecture and design](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md).
 
 
 
@@ -1838,25 +1838,28 @@ anything earlier.
 
 | | Level | What it means | Who it's for | Runnable examples |
 |:--|:---|:---|:---|:---|
-| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | [`01_beginner/`](UX_and_AIX_experiences/01_beginner/) |
-| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | [`02_intermediate/`](UX_and_AIX_experiences/02_intermediate/) |
-| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | [`03_advanced/`](UX_and_AIX_experiences/03_advanced/) |
-| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | [`04_expert/`](UX_and_AIX_experiences/04_expert/) |
+| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | [`01_beginner/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner) |
+| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | [`02_intermediate/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/02_intermediate) |
+| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | [`03_advanced/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/03_advanced) |
+| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | [`04_expert/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert) |
 
 This README is the tour. For system shape and design decisions, open
-[Architecture and design](architecture_and_design/README.md); for the visual path,
-start with the [engineering drawings](architecture_and_design/05_engineering_drawings/README.md).
+[Architecture and design](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md);
+for the visual path, start with the
+[engineering drawings](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md).
 The folders above contain runnable scripts, verified together by the
-[`pytest_examples/` harness](UX_and_AIX_experiences/pytest_examples/).
+[`pytest_examples/` harness](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/pytest_examples).
 
 **Pick a route:**
 
-- **Evaluating Melder:** read [What Melder is](architecture_and_design/01_overview/what_melder_is.md),
-  then scan the [engineering drawings](architecture_and_design/05_engineering_drawings/README.md).
+- **Evaluating Melder:** read
+  [What Melder is](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/01_overview/what_melder_is.md),
+  then scan the
+  [engineering drawings](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md).
 - **Building an application:** enter [Part I](#part-i--the-basics), then work through
-  the [`01_beginner/` examples](UX_and_AIX_experiences/01_beginner/).
+  the [`01_beginner/` examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner).
 - **Building runtime or agent infrastructure:** enter [Part II](#part-ii--the-ceiling),
-  then continue into the [`04_expert/` examples](UX_and_AIX_experiences/04_expert/).
+  then continue into the [`04_expert/` examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert).
 
 **If you just want dependency injection, the 🟢 sections are the entire
 product.** You can stop at the end of them and never open Part II. Everything
@@ -2640,17 +2643,18 @@ long-form guides and API reference belong in the hosted documentation site.
 
 | | Where | What's there |
 |:--|:---|:---|
-| 🗺️ | **[Architecture and design](architecture_and_design/README.md)** | High-level pictures, runtime structure, utilization stories, and tradeoffs |
-| 🖼️ | **[Engineering drawings](architecture_and_design/05_engineering_drawings/README.md)** | DI comparison, C4/C3/C2 views, use cases, lifecycle, coordination, recovery, and advanced flows |
-| 🧪 | **[Runnable examples](UX_and_AIX_experiences/)** | Beginner-to-expert scripts organized by the same level ladder used in this README |
-| ✅ | **[Example verification](UX_and_AIX_experiences/pytest_examples/)** | Pytest harness and contract probes for the runnable curriculum |
+| 🗺️ | **[Architecture and design](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md)** | High-level pictures, runtime structure, utilization stories, and tradeoffs |
+| 🖼️ | **[Engineering drawings](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md)** | DI comparison, C4/C3/C2 views, use cases, lifecycle, coordination, recovery, and advanced flows |
+| 🧪 | **[Runnable examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences)** | Beginner-to-expert scripts organized by the same level ladder used in this README |
+| ✅ | **[Example verification](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/pytest_examples)** | Pytest harness and contract probes for the runnable curriculum |
 | 📘 | **[Getting started](https://www.synapticaisystems.com/melder/intro/)** | The guided introduction — start here after this page |
 | 📚 | **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)** | Full API reference and technical documentation |
 | ▶️ | **[Synaptic AI on YouTube](https://www.youtube.com/@SynapticAISystems)** | Walkthroughs, deep dives, and live builds |
 
 ## License
 
-GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see [LICENSE](LICENSE).
+GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see
+[LICENSE](https://github.com/Synaptic724/melder/blob/prod/LICENSE).
 
 The AGPL's network clause applies: if you run a modified version of Melder™ as a
 service that users interact with over a network, you must offer those users the
@@ -2659,7 +2663,8 @@ corresponding source of your modified version.
 **Trademark.** Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI
 Systems. The AGPL grants rights in the software, not in the name — forks and
 redistributions must not use the Melder name or marks in a way that suggests
-endorsement by, or origin from, the trademark holder. See [NOTICE](NOTICE).
+endorsement by, or origin from, the trademark holder. See
+[NOTICE](https://github.com/Synaptic724/melder/blob/prod/NOTICE).
 
 ## Contributing
 
