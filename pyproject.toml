@@ -91,6 +91,8 @@ test = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "coverage>=7.15.0",
+    # Parse workflow structure in CI contract tests; not a runtime dependency.
+    "PyYAML>=6.0.3",
 ]
 
 lint = [

@@ -336,7 +336,7 @@ def test_generator_change_requires_complete_rebuild(tmp_path: pathlib.Path) -> N
 
 def test_repository_workflows_separate_source_and_repo_assets() -> None:
     """
-    Verify workflow names, gates, permissions, actions, and check commands.
+    Verify distinct asset checkers remain callable, read-only, and mandatory.
 
     Returns:
         None.
@@ -347,10 +347,12 @@ def test_repository_workflows_separate_source_and_repo_assets() -> None:
     source = (workflows / "build-src-assets.yml").read_text(encoding="utf-8")
     repository = (workflows / "build-repo-assets.yml").read_text(encoding="utf-8")
     assert "name: build-src-assets" in source
-    assert "BUILD_SRC_ASSETS_GATE" in source
+    assert "workflow_call:" in source
+    assert "vars.BUILD_SRC_ASSETS_GATE" not in source
     assert "python src/melder/_build_assets/_build_asset_runner.py --check" in source
     assert "name: build-repo-assets" in repository
-    assert "BUILD_REPO_ASSETS_GATE" in repository
+    assert "workflow_call:" in repository
+    assert "vars.BUILD_REPO_ASSETS_GATE" not in repository
     assert "permissions:\n  contents: read" in repository
     assert "python llm_support/_builder.py --check" in repository
     assert "actions/checkout@v7" in source and "actions/checkout@v7" in repository

@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 329d92e7648d119960317ffbf0e924f781373eb4649c5925b1cc648ad0a857e3
-FILE COUNT: 794
+SOURCE FINGERPRINT: bf982a5b699edb651e9bc3831abf6d490375f3c650449cf2f4021e8db9fe44b6
+FILE COUNT: 798
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -130962,8 +130962,648 @@ def test_cli_check_returns_failure_for_drift(tmp_path: Path) -> None:
 END FILE: tests/unit/architecture_and_design/test_architecture_docs_tool.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/conftest.py
+CONTENT SHA256: 7c05753cebb8de0f8cf31f091844cbb98898a427811c291cf621949ded46b96b
+SOURCE ENCODING: utf-8
+================================================================================
+"""Load standalone CI scripts without creating a runtime package or booting Melder."""
+
+import importlib.util
+import pathlib
+from types import ModuleType
+
+import pytest
+
+
+def load_script(name: str) -> ModuleType:
+    """Load one checked-in CI helper by path and return its public test surface."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location(name, root / ".github" / "scripts" / f"{name}.py")
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load CI helper {name}.")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture
+def policy() -> ModuleType:
+    """Provide the real policy module with no external process execution at import."""
+    return load_script("ci_policy")
+
+
+@pytest.fixture
+def distributions() -> ModuleType:
+    """Provide the real distribution verifier with no archive reads at import."""
+    return load_script("verify_distributions")
+
+
+@pytest.fixture
+def runtime() -> ModuleType:
+    """Provide the runtime test driver without invoking the test suite recursively."""
+    return load_script("run_runtime_tests")
+================================================================================
+END FILE: tests/unit/github_workflows/conftest.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
+CONTENT SHA256: 04f5932378e14699362bf50ced1a25df9a51eef3a015deaf15bfd4346fb3bfd7
+SOURCE ENCODING: utf-8
+================================================================================
+"""Behavioral regression tests for branch routes, required results, and release authorization."""
+
+import json
+import pathlib
+from types import ModuleType
+
+import pytest
+
+
+def result_map() -> dict[str, object]:
+    """Build the complete, successful dependency report emitted by the CI workflow."""
+    return {name: {"result": "success"} for name in
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "packages")}
+
+
+def pr_event(base: str = "dev", head: str = "feature/example",
+             head_repository: str = "owner/repo") -> dict[str, object]:
+    """Build a minimal GitHub PR event with explicit head/base repository identities."""
+    return {"pull_request": {
+        "base": {"ref": base, "repo": {"full_name": "owner/repo"}},
+        "head": {"ref": head, "repo": {"full_name": head_repository}},
+    }}
+
+
+def final_release() -> dict[str, object]:
+    """Build a published, non-draft, non-prerelease event for a fixed tag."""
+    return {"action": "published", "release": {
+        "tag_name": "v0.3.0", "draft": False, "prerelease": False,
+    }}
+
+
+@pytest.mark.parametrize(("base", "head", "repository", "packages"), [
+    ("dev", "feature/example", "owner/repo", False),
+    ("dev", "feature/example", "fork/repo", False),
+    ("dev", "dev", "fork/repo", False),
+    ("dev", "preprod", "owner/repo", False),
+    ("dev", "prod", "owner/repo", False),
+    ("preprod", "dev", "owner/repo", True),
+    ("prod", "preprod", "owner/repo", True),
+])
+def test_valid_routes_choose_the_package_requirement(policy: ModuleType, base: str,
+                                                     head: str, repository: str,
+                                                     packages: bool) -> None:
+    """Allow contributions and authentic staged promotion while classifying package gates."""
+    assert policy.validate_route(base, head, repository, "owner/repo") is packages
+
+
+@pytest.mark.parametrize(("base", "head", "repository"), [
+    ("main", "feature/example", "owner/repo"),
+    ("dev", "dev", "owner/repo"),
+    ("dev", "preprod", "fork/repo"),
+    ("preprod", "feature/example", "owner/repo"),
+    ("preprod", "dev", "fork/repo"),
+    ("prod", "dev", "owner/repo"),
+    ("prod", "preprod", "fork/repo"),
+    ("prod", "release/arbitrary", "owner/repo"),
+    ("dev", "", "owner/repo"),
+])
+def test_invalid_or_forged_routes_are_refused(policy: ModuleType, base: str,
+                                             head: str, repository: str) -> None:
+    """Refuse stage skipping, forged fork promotions, ambiguous bases, and self-PRs."""
+    with pytest.raises(ValueError):
+        policy.validate_route(base, head, repository, "owner/repo")
+
+
+def test_pr_payload_drives_route_and_rejects_missing_identity(policy: ModuleType) -> None:
+    """Require complete event evidence instead of guessing repository or base identity."""
+    assert policy.package_required("pull_request", pr_event("preprod", "dev"),
+                                   "refs/pull/1/merge", "owner/repo") is True
+    for event in ({}, {"pull_request": None}, {"pull_request": {"head": {}}}):
+        with pytest.raises(ValueError):
+            policy.package_required("pull_request", event, "refs/pull/1/merge", "owner/repo")
+    with pytest.raises(ValueError, match="base repository"):
+        policy.package_required("pull_request", pr_event(), "refs/pull/1/merge", "different/repo")
+
+
+@pytest.mark.parametrize(("event", "ref", "packages"), [
+    ("push", "refs/heads/dev", False),
+    ("push", "refs/heads/preprod", True),
+    ("workflow_dispatch", "refs/heads/prod", True),
+])
+def test_permanent_refs_are_classified(policy: ModuleType, event: str,
+                                      ref: str, packages: bool) -> None:
+    """Validate dev pushes and promotion/manual revisions against their proper gates."""
+    assert policy.package_required(event, {}, ref, "owner/repo") is packages
+
+
+@pytest.mark.parametrize(("event", "ref"), [
+    ("release", "refs/tags/v0.3.0"), ("push", "refs/heads/random"),
+    ("workflow_dispatch", "refs/tags/dev"), ("pull_request_target", "refs/heads/dev"),
+])
+def test_unsupported_ci_events_fail_closed(policy: ModuleType, event: str, ref: str) -> None:
+    """Prevent unsupported event contexts from accidentally obtaining a merge-ready result."""
+    with pytest.raises(ValueError):
+        policy.package_required(event, {}, ref, "owner/repo")
+
+
+@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests"])
+@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "skipped", "timed_out", "neutral", None])
+def test_any_unsuccessful_mandatory_job_blocks_merge(policy: ModuleType, job: str,
+                                                    conclusion: object) -> None:
+    """A skipped/cancelled dependency must not count as successful mandatory CI."""
+    results = result_map()
+    results[job] = {"result": conclusion}
+    with pytest.raises(ValueError, match="Required CI did not succeed"):
+        policy.require_success(results, False)
+
+
+def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
+    """Accept the planned dev-only package omission, but block the same omission on promotion."""
+    results = result_map()
+    policy.require_success(results, True)
+    results["packages"] = {"result": "skipped"}
+    policy.require_success(results, False)
+    with pytest.raises(ValueError, match="packages"):
+        policy.require_success(results, True)
+    results["packages"] = {"result": "failure"}
+    with pytest.raises(ValueError, match="packages"):
+        policy.require_success(results, False)
+
+
+@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "packages"])
+def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
+    """Deleting a failed job from the report must not conceal its absence."""
+    results = result_map()
+    del results[job]
+    with pytest.raises(ValueError, match="Incomplete"):
+        policy.require_success(results, False)
+
+
+def test_malformed_or_unknown_dependency_reports_are_refused(policy: ModuleType) -> None:
+    """Require intentional policy updates when the workflow's dependency set changes."""
+    results = result_map()
+    results["unexpected"] = {"result": "success"}
+    with pytest.raises(ValueError, match="unexpected"):
+        policy.require_success(results, False)
+    results = result_map()
+    results["tests"] = "success"
+    with pytest.raises(ValueError, match="JSON object"):
+        policy.require_success(results, False)
+
+
+def test_case_collision_reports_are_deterministic(policy: ModuleType) -> None:
+    """Expose names that can coexist on Linux but overwrite one another on Windows."""
+    assert policy.case_collisions(["src/A.py", "src/a.py", "docs/readme.md"]) == [
+        ["src/A.py", "src/a.py"],
+    ]
+    assert policy.case_collisions(["src/a.py", "src/b.py"]) == []
+
+
+def test_release_and_manual_prod_accept_equal_commit_ids(policy: ModuleType) -> None:
+    """Preserve final published releases and explicit manual-prod publication."""
+    sha = "a" * 40
+    policy.validate_release("release", "refs/tags/v0.3.0", final_release(), sha, sha, sha)
+    policy.validate_release("workflow_dispatch", "refs/heads/prod", {}, sha, sha, sha)
+
+
+@pytest.mark.parametrize("position", [0, 1, 2])
+def test_stale_event_checkout_or_prod_prevents_publication(policy: ModuleType, position: int) -> None:
+    """A prod movement during validation or an alternate checkout must refuse upload."""
+    shas = ["a" * 40] * 3
+    shas[position] = "b" * 40
+    with pytest.raises(ValueError, match="current prod HEAD"):
+        policy.validate_release("workflow_dispatch", "refs/heads/prod", {}, *shas)
+
+
+@pytest.mark.parametrize(("event", "ref"), [
+    ("push", "refs/heads/prod"), ("pull_request", "refs/pull/1/merge"),
+    ("workflow_dispatch", "refs/heads/dev"), ("release", "refs/tags/wrong"),
+])
+def test_unapproved_publication_contexts_are_refused(policy: ModuleType, event: str, ref: str) -> None:
+    """Neither ordinary CI nor a mismatched release tag can authorize publication."""
+    with pytest.raises(ValueError):
+        policy.validate_release(event, ref, final_release(), *("a" * 40,) * 3)
+
+
+@pytest.mark.parametrize("field", ["draft", "prerelease"])
+def test_draft_or_prerelease_is_not_final_publication(policy: ModuleType, field: str) -> None:
+    """Publishing an RC in GitHub must not silently upload a final release package."""
+    event = {"action": "published", "release": {
+        "tag_name": "v0.3.0", "draft": False, "prerelease": False, field: True,
+    }}
+    with pytest.raises(ValueError, match="Draft/prerelease"):
+        policy.validate_release("release", "refs/tags/v0.3.0", event, *("a" * 40,) * 3)
+
+
+def test_abbreviated_sha_is_not_release_identity(policy: ModuleType) -> None:
+    """Require resolved immutable identity even when three abbreviated values happen to match."""
+    with pytest.raises(ValueError, match="full, resolved"):
+        policy.validate_release("workflow_dispatch", "refs/heads/prod", {}, "abc", "abc", "abc")
+
+
+def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    """Return a failing process result for skipped tests or missing branch-policy outputs."""
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
+    monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
+    assert policy.main(["merge-ready"]) == 0
+    failed = result_map()
+    failed["tests"] = {"result": "skipped"}
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(failed))
+    assert policy.main(["merge-ready"]) == 1
+    monkeypatch.delenv("CI_PACKAGE_REQUIRED")
+    assert policy.main(["merge-ready"]) == 1
+
+
+def test_branch_cli_writes_the_actual_package_requirement(policy: ModuleType,
+                                                         tmp_path: pathlib.Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    """Emit a GitHub output only after the promotion payload passes route validation."""
+    event = tmp_path / "event.json"
+    output = tmp_path / "output.txt"
+    event.write_text(json.dumps(pr_event("preprod", "dev")), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
+    assert policy.main(["branch"]) == 0
+    assert output.read_text(encoding="utf-8") == "package-required=true\n"
+
+
+@pytest.mark.parametrize(("version", "supported", "gil", "valid"), [
+    ((3, 14), 1, False, True), ((3, 15), 1, False, True),
+    ((3, 13), 1, False, False), ((3, 14), 0, False, False),
+    ((3, 14), None, False, False), ((3, 14), 1, True, False),
+])
+def test_runtime_guard_checks_actual_free_threading(runtime: ModuleType, version: tuple[int, int],
+                                                   supported: object, gil: bool, valid: bool) -> None:
+    """Checking the Python version alone must not admit a GIL-enabled runtime."""
+    if valid:
+        runtime.require_free_threading(version, supported, gil)
+    else:
+        with pytest.raises(RuntimeError, match="GIL disabled"):
+            runtime.require_free_threading(version, supported, gil)
+
+
+def test_test_driver_preserves_tiers_failure_code_and_runtime_checks(runtime: ModuleType,
+                                                                  tmp_path: pathlib.Path,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """The shared driver must propagate pytest failure and verify this process on both sides."""
+    calls: list[object] = []
+
+    def fake_pytest(arguments: list[str]) -> int:
+        """Record the invocation boundary without recursively running pytest."""
+        calls.append(arguments)
+        return 1
+
+    def runtime_check(*arguments: object) -> None:
+        """Record each before/after runtime check; its predicate has separate behavioral tests."""
+        calls.append("runtime-check")
+
+    monkeypatch.setattr(pytest, "main", fake_pytest)
+    monkeypatch.setattr(runtime, "require_free_threading", runtime_check)
+    report = tmp_path / "reports/runtime.xml"
+    assert runtime.main(["--report", str(report)]) == 1
+    assert calls == ["runtime-check", [
+        "-q", "tests/unit", "tests/component", "tests/integration", f"--junitxml={report}",
+    ], "runtime-check"]
+================================================================================
+END FILE: tests/unit/github_workflows/test_ci_policy.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_distributions.py
+CONTENT SHA256: f1d62459383c7792743e685461218f0dd0f76c22ea942f890997936d71499b31
+SOURCE ENCODING: utf-8
+================================================================================
+"""Exercise archive/version rejection using small real wheel and sdist fixtures."""
+
+import io
+import pathlib
+import tarfile
+import zipfile
+from types import ModuleType
+from typing import Optional
+
+import pytest
+
+
+def package_files(subject: ModuleType) -> dict[str, bytes]:
+    """Create a minimal package carrying the documented required manifests and payloads."""
+    files = {name: b"# packaged asset\n" for name in subject.DistributionPolicy.REQUIRED}
+    files["melder/__version__.py"] = b'__version__ = "0.3.0"\n'
+    for name in subject.DistributionPolicy.VERSION_MANIFESTS:
+        files[name] = b'BUILT_FOR_VERSION = "0.3.0"\n'
+    return files
+
+
+def metadata(version: str = "0.3.0", name: str = "melder") -> bytes:
+    """Build wheel/sdist core metadata with an explicit supported Python requirement."""
+    return f"Name: {name}\nVersion: {version}\nRequires-Python: >=3.14\n".encode("utf-8")
+
+
+def write_archives(directory: pathlib.Path, subject: ModuleType,
+                   wheel_changes: Optional[dict[str, Optional[bytes]]] = None,
+                   sdist_changes: Optional[dict[str, Optional[bytes]]] = None,
+                   symlink: bool = False) -> None:
+    """Write real bounded fixture archives, optionally introducing one deliberate defect.
+
+    Changes with None remove a member. Tar streams and zip handles are closed on
+    every path. All artifacts remain beneath pytest's temporary directory.
+    """
+    files = package_files(subject)
+    wheel = {**files, "melder-0.3.0.dist-info/METADATA": metadata()}
+    sdist = {f"melder-0.3.0/src/{name}": content for name, content in files.items()}
+    sdist["melder-0.3.0/PKG-INFO"] = metadata()
+    for target, changes in ((wheel, wheel_changes), (sdist, sdist_changes)):
+        for name, content in (changes or {}).items():
+            if content is None:
+                target.pop(name)
+            else:
+                target[name] = content
+    with zipfile.ZipFile(directory / "melder-0.3.0-py3-none-any.whl", "w") as archive:
+        for name, content in wheel.items():
+            # Preserve deliberately malformed spellings instead of letting the
+            # Windows ZipInfo constructor turn the bad fixture into a valid path.
+            info = zipfile.ZipInfo()
+            info.filename = name
+            archive.writestr(info, content)
+    with tarfile.open(directory / "melder-0.3.0.tar.gz", "w:gz") as archive:
+        for name, content in sdist.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(content)
+            with io.BytesIO(content) as stream:
+                archive.addfile(info, stream)
+        if symlink:
+            info = tarfile.TarInfo("melder-0.3.0/src/melder/link.py")
+            info.type = tarfile.SYMTYPE
+            info.linkname = "../../outside.py"
+            archive.addfile(info)
+
+
+def test_valid_archives_match_checkout_and_tag(distributions: ModuleType,
+                                              tmp_path: pathlib.Path) -> None:
+    """Accept a complete wheel/sdist pair for either plain or v-prefixed version tags."""
+    write_archives(tmp_path, distributions)
+    distributions.verify_distributions(tmp_path, "0.3.0", "v0.3.0")
+    distributions.verify_distributions(tmp_path, "0.3.0", "0.3.0")
+
+
+@pytest.mark.parametrize("tag", ["v0.3.1", "vv0.3.0", "v0.3.0rc1"])
+def test_wrong_release_tag_refuses_artifacts(distributions: ModuleType,
+                                            tmp_path: pathlib.Path, tag: str) -> None:
+    """A tag cannot relabel a different package version or strip arbitrary v prefixes."""
+    write_archives(tmp_path, distributions)
+    with pytest.raises(ValueError, match="tag"):
+        distributions.verify_distributions(tmp_path, "0.3.0", tag)
+
+
+def test_missing_or_duplicate_distribution_count_is_refused(distributions: ModuleType,
+                                                           tmp_path: pathlib.Path) -> None:
+    """Refuse an empty or ambiguous upload directory before inspecting its contents."""
+    with pytest.raises(ValueError, match="one wheel and one sdist"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+    write_archives(tmp_path, distributions)
+    (tmp_path / "extra.whl").write_bytes(b"not a wheel")
+    with pytest.raises(ValueError, match="one wheel and one sdist"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+def test_unverified_extra_upload_file_is_refused(distributions: ModuleType,
+                                                tmp_path: pathlib.Path) -> None:
+    """Every file passed to the upload action must belong to the inspected distribution pair."""
+    write_archives(tmp_path, distributions)
+    (tmp_path / "extra.zip").write_bytes(b"unverified package")
+    with pytest.raises(ValueError, match="outside the verified"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+@pytest.mark.parametrize("member", [
+    "../escaped.py", "/absolute.py", "C:/drive.py", "melder\\bad.py", "melder/ok.py\x00bad",
+    "other_package/module.py", "melder/cache.melc", "melder/__pycache__/a.pyc",
+])
+def test_wheel_rejects_unsafe_or_unrelated_members(distributions: ModuleType,
+                                                 tmp_path: pathlib.Path, member: str) -> None:
+    """Package verification catches traversal, cache leakage, and unrelated top-level roots."""
+    write_archives(tmp_path, distributions, wheel_changes={member: b"bad"})
+    with pytest.raises(ValueError):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+@pytest.mark.parametrize("member", [
+    "melder-0.3.0/../escaped.py", "melder-0.3.0/tests/test_x.py",
+    "melder-0.3.0/src/melder/private.sqlite", "another-root/README.md",
+])
+def test_sdist_rejects_unsafe_or_unrelated_members(distributions: ModuleType,
+                                                 tmp_path: pathlib.Path, member: str) -> None:
+    """The source archive must obey its own release boundary as well as the wheel's."""
+    write_archives(tmp_path, distributions, sdist_changes={member: b"bad"})
+    with pytest.raises(ValueError):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+def test_sdist_links_are_not_ignored(distributions: ModuleType, tmp_path: pathlib.Path) -> None:
+    """A non-regular tar member cannot evade verification by being omitted from a file list."""
+    write_archives(tmp_path, distributions, symlink=True)
+    with pytest.raises(ValueError, match="non-regular"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+@pytest.mark.parametrize("archive", ["wheel", "sdist"])
+def test_required_runtime_asset_must_ship_in_both_archives(distributions: ModuleType,
+                                                         tmp_path: pathlib.Path,
+                                                         archive: str) -> None:
+    """Losing the PEP 561 marker must fail qualification of either distribution."""
+    if archive == "wheel":
+        write_archives(tmp_path, distributions, wheel_changes={"melder/py.typed": None})
+    else:
+        write_archives(tmp_path, distributions,
+                       sdist_changes={"melder-0.3.0/src/melder/py.typed": None})
+    with pytest.raises(ValueError, match="missing required assets"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+@pytest.mark.parametrize("archive", ["wheel", "sdist"])
+def test_archive_metadata_version_must_match_checkout(distributions: ModuleType,
+                                                     tmp_path: pathlib.Path, archive: str) -> None:
+    """Neither a wheel nor an sdist built from another version may pass the final guard."""
+    if archive == "wheel":
+        write_archives(tmp_path, distributions,
+                       wheel_changes={"melder-0.3.0.dist-info/METADATA": metadata("0.3.1")})
+    else:
+        write_archives(tmp_path, distributions,
+                       sdist_changes={"melder-0.3.0/PKG-INFO": metadata("0.3.1")})
+    with pytest.raises(ValueError, match="versions"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+def test_asset_version_mismatch_is_detected(distributions: ModuleType,
+                                           tmp_path: pathlib.Path) -> None:
+    """A current wheel version cannot hide a stale bind-guard asset version."""
+    name = "melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py"
+    write_archives(tmp_path, distributions, wheel_changes={name: b'BUILT_FOR_VERSION = "0.2.0"\n'})
+    with pytest.raises(ValueError, match="versions"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+def test_wrong_package_identity_is_refused(distributions: ModuleType, tmp_path: pathlib.Path) -> None:
+    """Do not publish another package merely because its filename resembles melder."""
+    write_archives(tmp_path, distributions,
+                   wheel_changes={"melder-0.3.0.dist-info/METADATA": metadata(name="unrelated")})
+    with pytest.raises(ValueError, match="must describe melder"):
+        distributions.verify_distributions(tmp_path, "0.3.0")
+
+
+def test_version_assignment_is_literal_and_never_executed(distributions: ModuleType) -> None:
+    """The verifier reads literals safely instead of importing package initialization code."""
+    assert distributions.assignment('__version__: str = "0.3.0"', "__version__") == "0.3.0"
+    with pytest.raises(ValueError):
+        distributions.assignment('__version__ = dangerous()', "__version__")
+    with pytest.raises(ValueError):
+        distributions.assignment('__version__ = 3', "__version__")
+================================================================================
+END FILE: tests/unit/github_workflows/test_distributions.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
+CONTENT SHA256: 0b36b73d7f5bc60fc80e4d074456abd7424298739feba14c35a0c2f86479f9c5
+SOURCE ENCODING: utf-8
+================================================================================
+"""Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
+
+import pathlib
+import json
+from types import ModuleType
+from typing import cast
+
+import pytest
+import yaml
+
+
+def workflow(name: str) -> dict[str, object]:
+    """Parse one workflow preserving Actions' on key and scalar spellings."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    # BaseLoader avoids YAML 1.1 interpreting the Actions key 'on' as boolean True.
+    result: object = yaml.load((root / ".github/workflows" / name).read_text(encoding="utf-8"),
+                               Loader=yaml.BaseLoader)
+    if not isinstance(result, dict):
+        raise ValueError(f"Workflow {name} must contain a YAML mapping.")
+    return cast(dict[str, object], result)
+
+
+def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> None:
+    """CI must run for each protected destination and aggregate every mandatory job."""
+    document = workflow("ci.yml")
+    events = document["on"]
+    assert set(events["pull_request"]["branches"]) == {"dev", "preprod", "prod"}
+    assert "edited" in events["pull_request"]["types"]
+    assert "paths" not in events["pull_request"]
+    assert "paths-ignore" not in events["pull_request"]
+    assert set(events["push"]["branches"]) == {"dev", "preprod", "prod"}
+    jobs = document["jobs"]
+    final = jobs["merge-ready"]
+    assert final["name"] == "CI / merge-ready"
+    assert final["if"] == "always()"
+    assert set(final["needs"]) == set(policy.CIPolicy.REQUIRED_JOBS) | {"packages"}
+    assert "merge-ready" in final["steps"][-1]["run"]
+    assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
+    for name in policy.CIPolicy.REQUIRED_JOBS:
+        assert "if" not in jobs[name]
+        assert "continue-on-error" not in jobs[name]
+
+
+@pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml"])
+def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
+    """Callers own triggers/concurrency; no helper silently skips a mandatory validation job."""
+    document = workflow(name)
+    assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
+    assert document["permissions"] == {"contents": "read"}
+    assert "concurrency" not in document
+    for job in document["jobs"].values():
+        assert "if" not in job
+        assert "continue-on-error" not in job
+        assert "environment" not in job
+        assert "timeout-minutes" in job
+
+
+def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
+    """Both supported OSes use 3.14t with the GIL off and retain failing-test evidence."""
+    job = workflow("test-runtime.yml")["jobs"]["test"]
+    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
+    assert job["strategy"]["fail-fast"] == "false"
+    assert job["env"]["PYTHON_GIL"] == "0"
+    setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "3.14t"
+    assert any("run_runtime_tests.py" in step.get("run", "") for step in job["steps"])
+    report = job["steps"][-1]
+    assert report["if"] == "always()"
+    assert report["uses"].startswith("actions/upload-artifact@")
+
+
+def test_publication_repeats_validation_and_checks_prod_last() -> None:
+    """A green historical PR cannot replace fresh release validation or the last head check."""
+    document = workflow("python-publish.yml")
+    assert set(document["on"]) == {"release", "workflow_dispatch"}
+    assert document["concurrency"] == {"group": "pypi-publication", "cancel-in-progress": "false"}
+    jobs = document["jobs"]
+    assert jobs["tests"]["uses"] == "./.github/workflows/test-runtime.yml"
+    assert jobs["tests"]["needs"] == "release-gate"
+    required = {"release-gate", "hygiene", "source-assets", "repo-assets", "tests"}
+    assert set(jobs["release-build"]["needs"]) == required
+    publisher = jobs["pypi-publish"]
+    assert set(publisher["needs"]) == required | {"release-build"}
+    assert publisher["environment"]["name"] == "pypi"
+    steps = publisher["steps"]
+    assert steps[-2]["run"] == "python .github/scripts/ci_policy.py release-head"
+    assert steps[-3]["run"].startswith("python .github/scripts/verify_distributions.py")
+    assert steps[-1]["uses"].startswith("pypa/gh-action-pypi-publish@")
+    assert "skip-existing" not in steps[-1]["with"]
+    uploaded = jobs["release-build"]["with"]["artifact-name"]
+    downloaded = next(step["with"]["name"] for step in steps
+                      if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert uploaded == downloaded
+    assert "github.run_attempt" in uploaded
+    assert all("environment" not in job for name, job in jobs.items() if name != "pypi-publish")
+
+
+def test_package_verification_precedes_artifact_upload() -> None:
+    """Only built, inspected, installed-wheel-verified files become distributable artifacts."""
+    document = workflow("build-distributions.yml")
+    assert document["permissions"] == {"contents": "read"}
+    steps = document["jobs"]["build"]["steps"]
+    assert "environment" not in document["jobs"]["build"]
+    commands = [step.get("run", "") for step in steps]
+    verify = next(index for index, command in enumerate(commands) if "verify_distributions.py" in command)
+    smoke = next(index for index, command in enumerate(commands) if "smoke_wheel.py" in command)
+    assert verify < smoke < len(steps) - 1
+    assert " -I " in commands[smoke]
+    assert steps[-1]["uses"].startswith("actions/upload-artifact@")
+
+
+@pytest.mark.parametrize("branch", ["dev", "preprod", "prod"])
+def test_rulesets_require_the_real_final_check_and_preserve_promotion_history(branch: str) -> None:
+    """Ruleset payloads must name the actual aggregate check and block direct destructive updates."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    document = json.loads((root / ".github/rulesets" / f"{branch}.json").read_text(encoding="utf-8"))
+    assert document["conditions"]["ref_name"]["include"] == [f"refs/heads/{branch}"]
+    assert document["bypass_actors"] == []
+    rules = {rule["type"]: rule for rule in document["rules"]}
+    assert {"deletion", "non_fast_forward", "pull_request", "required_status_checks"} <= set(rules)
+    required = rules["required_status_checks"]["parameters"]
+    assert required["required_status_checks"] == [{
+        "context": workflow("ci.yml")["jobs"]["merge-ready"]["name"], "integration_id": 15368,
+    }]
+    assert required["strict_required_status_checks_policy"] is (branch == "dev")
+    if branch != "dev":
+        assert rules["pull_request"]["parameters"]["allowed_merge_methods"] == ["merge"]
+        assert "required_linear_history" not in rules
+================================================================================
+END FILE: tests/unit/github_workflows/test_workflow_contracts.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/llm_support/test_builder.py
-CONTENT SHA256: 75c3303cc9d465d62b9408dff2184a8e6e585c6e73542e9b8960cdda41a01513
+CONTENT SHA256: 8026aa588c14394651cc6974ce10b6c533b275a1bfa735113f1fe3a5f9d9064e
 SOURCE ENCODING: utf-8
 ================================================================================
 """Contract tests for the deterministic repository LLM support builder."""
@@ -131304,7 +131944,7 @@ def test_generator_change_requires_complete_rebuild(tmp_path: pathlib.Path) -> N
 
 def test_repository_workflows_separate_source_and_repo_assets() -> None:
     """
-    Verify workflow names, gates, permissions, actions, and check commands.
+    Verify distinct asset checkers remain callable, read-only, and mandatory.
 
     Returns:
         None.
@@ -131315,10 +131955,12 @@ def test_repository_workflows_separate_source_and_repo_assets() -> None:
     source = (workflows / "build-src-assets.yml").read_text(encoding="utf-8")
     repository = (workflows / "build-repo-assets.yml").read_text(encoding="utf-8")
     assert "name: build-src-assets" in source
-    assert "BUILD_SRC_ASSETS_GATE" in source
+    assert "workflow_call:" in source
+    assert "vars.BUILD_SRC_ASSETS_GATE" not in source
     assert "python src/melder/_build_assets/_build_asset_runner.py --check" in source
     assert "name: build-repo-assets" in repository
-    assert "BUILD_REPO_ASSETS_GATE" in repository
+    assert "workflow_call:" in repository
+    assert "vars.BUILD_REPO_ASSETS_GATE" not in repository
     assert "permissions:\n  contents: read" in repository
     assert "python llm_support/_builder.py --check" in repository
     assert "actions/checkout@v7" in source and "actions/checkout@v7" in repository
