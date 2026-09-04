@@ -54,6 +54,8 @@ Close the program on demonstrated reader outcomes and maintainability, not merel
 Use S1-S8 ownership to route defects. The parent epic remains open until this story and all others are accepted.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Audit complete documentation coverage and reader workflows](../tasks/2026-09-04_rtd_quality_audit_task.md)
+- [ ] [Complete release acceptance and documentation maintenance handoff](../tasks/2026-09-04_rtd_launch_and_maintenance_task.md)
 - [ ] Open an audit task and produce the complete requirements-to-evidence matrix.
 - [ ] Run content/navigation/source/example checks and review representative reader journeys.
 - [ ] Resolve issues with the owning stories; repeat only affected checks when warranted.

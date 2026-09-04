@@ -52,6 +52,7 @@ Turn the established Intermediate curriculum into a complete composition guide w
 S5 builds on the composition vocabulary. S7 supplies detailed public-reference destinations.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement Intermediate composition chapters and all 37 lessons](../tasks/2026-09-04_rtd_intermediate_content_task.md)
 - [ ] Map chapters to all Intermediate lessons and their source/helper requirements.
 - [ ] Author configuration, scoping, linking, and late-binding explanations.
 - [ ] Verify public ordering and outcomes using current example/probe harnesses.

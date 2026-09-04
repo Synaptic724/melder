@@ -51,6 +51,7 @@ Provide the owner's third level as a clear progression from subsystem compositio
 S6 builds on world/room boundaries. S7 supplies architectural drawings, glossary, and public API links.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement Advanced isolation and inspection chapters and all 19 lessons](../tasks/2026-09-04_rtd_advanced_content_task.md)
 - [ ] Map all chapters and lessons, including explicit cross-level topic links.
 - [ ] Author isolation, configuration, targeting, and inspection explanations.
 - [ ] Verify lesson setup, authority outcomes, and lifecycle behavior against the current revision.

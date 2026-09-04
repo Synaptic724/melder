@@ -7,7 +7,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-03T01:05:17Z
-- Updated: 2026-09-04T21:37:43Z
+- Updated: 2026-09-04T22:39:54Z
 - Target Window: 2026-Q3
 - Related Program/Initiative: Melder public lifecycle contract
 
@@ -97,7 +97,7 @@ restore without adding a new abstraction or weakening reverse dependency teardow
 - List storage and book-first/book-last composition are the current owner direction.
 - Disposal metadata is established once per Spell; arbitrary internal mutation is out of scope.
 - Existing method-failure behavior stops the current object's chain at the first error.
-- No product source changes are authorized during this discovery correction.
+- Current implementation authorization is limited to the SpellbookConfiguration slice.
 
 ## Dependencies / External References
 - `context_compass/system_docs/src_components.md`
@@ -162,6 +162,45 @@ cleanup-failure policy, and private-attribute mutation defenses are not expanded
 Every child names its parent, exact source/test reading anchors, scope, acceptance,
 validation plan, risks, and a single NEXT action. Reopen complete source before edits;
 the anchors are navigation, and past contact-function reads do not imply full-file reads.
+
+## Holistic Change Map - Source-Traced 2026-09-04
+
+The configuration slice is the first deliverable, not the whole feature. The component
+sections and source handoffs for this complete chain have now been read. Detailed evidence
+is appended to the owning child tasks and the active patch-contract task.
+
+| Boundary | Required change or verification | Existing design to preserve |
+| --- | --- | --- |
+| SpellbookConfiguration | Add False default, bool schema, fluent setter, and honest reload accounting. | Setup/freeze lifecycle; supplied configurations work before validation; explicit values win. |
+| Spellbook -> Bind -> Spell | Replace first-bind shared candidates with both ordered inputs; match once; hash and retain one resolved list. | Existing class-profile matching, first-occurrence deduplication, and bind-time identity. |
+| Processor -> planner -> executors | Remove actual live-name copies; keep direct-reference arrays. | Solo/generalized/many-only algorithms, override lanes, store selection, and ordered schema/hash values. |
+| Creations and transfer | Retain the established inner list at registration, extraction, and restoration. | Two registries, detach-before-dispose, reverse key/bucket traversal, and current failure posture. |
+| Configuration transport / Nexus | Test generic bool/list transport, recorded reload, defaults, and shared configurations. | No duplicate property on Nexus/Crystallizer roots; no new carrier schema solely for the flag. |
+| SpellCrystal / restore / graft | Remove capture sorting; forward names in staged, parked, and merged binds; verify recorded-ID joins. | Passive recording, public-verb replay, and explicit per-member shortfalls. |
+| Tests / docs / assets | Add producer-to-actual-call tests and replay/cache cases; update verified descriptions and generated outputs. | Existing cleanup regressions, selective corpus regeneration, check-only CI, and unrelated agents' work. |
+
+Why the boundaries matter:
+- Configuration controls group priority; the resolved Spell list expresses that decision.
+  Runtime cleanup therefore needs neither the flag nor another configuration/method match.
+- Method order inside one object, reverse object/bucket traversal inside a store, and the
+  inter-scope cleanup cascade are separate axes. This epic changes only the first.
+- A tuple holding multiple Spell-list references is not a copy of each inner list. Likewise,
+  ordered serialized/hash values are not live registry ownership. Do not rewrite all tuples.
+- Spell cleanup deletes its disposal-name reference without clearing the collection.
+  Keep that behavior when the list is also retained by live creation entries.
+- Restore reloads configuration before binds. Same-policy replay must keep the resolved
+  order unchanged when it is passed through the composition rule again.
+- Recorded Spell SHAs are used for member/selection lookup in restore and graft. A different
+  host's policy can alter the ordered result and its SHA. Test that case in the replay task;
+  do not silently invent an ID translation or host-policy override during configuration work.
+- Existing direct-Creations tests prove the invocation loop, not upstream preservation.
+  They can stay green while Bind loses order, which is why end-to-end tests are necessary.
+
+Read integrity: configuration, Creations, ConduitCreations, both solo compiler modules,
+runtime record/processor, SpellbookCrystal, PersistenceCrystal, and GraftRunner were read
+whole. Larger files were read through the relevant complete methods or metadata blocks;
+this is not a claim to have read every large source file in the epic in full. Source
+behavior, future design, and tests actually executed remain distinct.
 
 ## Acceptance Criteria (Epic Done)
 - Current Spellbook-configured and per-bind mechanics are documented with source evidence.
@@ -719,6 +758,41 @@ the anchors are navigation, and past contact-function reads do not imply full-fi
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-04T22:06:16Z
+  TYPE: FACT
+  CLAIM: The owner-requested holistic read now connects the configuration flag to every
+    major producer, compiler/runtime, and persistence boundary in the epic. The change map
+    above records what needs modification and which existing mechanisms stay intact.
+    Source/test evidence is in the child tasks; no product implementation or runtime tests
+    were performed by this read.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_patch_contract_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_disposal_configuration_roundtrip_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md`
+  IMPACT: The selected small configuration implementation can follow a system-informed
+    contract without reopening settled list/priority decisions or changing later phases.
+  NEXT: Prepare the scoped patch contracts, then implement the configuration task only.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-04T22:39:54Z
+  TYPE: MEASURE
+  CLAIM: The first configuration-only implementation is in review: bool/default/fluent API,
+    init/clear availability, and reload accounting are implemented with 21 new cases.
+    The full focused configuration/reload/adoption boundary passes 115 tests on Windows 3.14t.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_disposal_priority_configuration_task.md`
+  - `src/melder/aether/spellbook/configuration/spellbook_configuration.py:1128-1157`
+  IMPACT: This stages policy only. Bind/Spell, compiler, Creations, crystal replay, canonical
+    promotion, and generated assets remain pending. Nothing was committed or pushed.
+  NEXT: Review the configuration slice, then prepare its Bind/Spell successor contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ### Current source contact inventory
 
 Configuration, bind, and Spell ownership:
@@ -770,12 +844,14 @@ Generated contacts, never hand-edited:
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Current resume route: `tickets/tasks/2026-09-04_ordered_disposal_patch_contract_task.md`.
+Current resume route: `tickets/tasks/2026-09-04_disposal_priority_configuration_task.md` (review).
+The configuration-only slice is implemented and passes 115 focused tests. Holistic reading
+and configuration patch contracts are complete; later component contracts remain pending.
 The Implementation Task Sequence above links all nine tasks and their prerequisites under
 three stories. The discovery task remains a review/reference document, not the execution route.
 Ticket-stack creation and structural verification are complete: three stories, nine tasks,
 126 valid file/range references, 61 in-bounds citations, and no dependency cycle.
-All implementation work is still pending. Resume at the first task after REONBOARD.
+All non-configuration implementation remains pending. Resume from the routed task after REONBOARD.
 
 Current behavior is source-proven. On the first bind, Spellbook selects either
 that call's per-bind names, otherwise the SpellbookConfiguration names, otherwise
@@ -786,15 +862,15 @@ not rematch. The resulting Spell flag/names flow through compiler registration
 into Creations, which invokes accepted names sequentially during reverse-order
 cleanup. Zero matches means no disposal tracking; for `Existence.many`, the
 instance is not retained for cleanup. The separate `disposal` boolean has no
-runtime reader. No product source was changed.
+runtime reader. The new priority configuration is staged; these consumers are still unchanged.
 
 Current direction is list storage, combining both input groups once at Spell creation.
 enforce_priority_disposal_methods defaults False; True promotes book methods in their
 configured order, including shared names. The Phase 1 task holds examples, the
 four-file producer boundary, and a completed Configuration Change Map covering fluent
 API, Crystallizer transport/reload, and Nexus defaults. Prepare the implementation contract
-through the first new task, then follow its dependency chain. Phases 2
-and 3 handle consumption and persistence; no product implementation has started.
+before each newly activated component, then follow the dependency chain. Phases 2
+and 3 handle consumption and persistence; only configuration implementation has landed locally.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

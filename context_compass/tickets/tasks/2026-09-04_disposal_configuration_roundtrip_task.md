@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T22:06:16Z
 
 ## Objective
 Prove the new flag and ordered book vocabulary survive existing configuration transport,
@@ -114,6 +114,32 @@ Record tested boundaries and gaps separately, with source pointers and one NEXT 
   - `src/melder/nexus/nexus_frame_configuration.py:334-349`
   IMPACT: No independent root-level priority setting is justified by the inspected code.
   NEXT: After configuration implementation, add recorded True/False reload cases first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-04T22:01:28Z
+  TYPE: FACT
+  CLAIM: Configuration freeze emits scalar booleans and ordered list values; SpellbookCrystal
+    carries that map, profile capture invokes describe without per-property filtering, and
+    PersistenceCrystal cached/replay forms carry the nested payloads. RestoreEngine reloads
+    and seals configuration before active binds. Nexus-managed construction creates an
+    ordinary defaults-loaded configuration. Preset books share the existing config object.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/configuration/spellbook_configuration.py:258-396`
+  - `src/melder/crystallizer/crystals/spellbook_crystal.py:92-264`
+  - `src/melder/crystallizer/persistence/persistence_profile.py:1028-1306`
+  - `src/melder/crystallizer/persistence/persistence_crystal.py:78-184`
+  - `src/melder/crystallizer/persistence/persistence_crystal.py:345-451`
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1734-1820`
+  - `src/melder/nexus/nexus_frame_configuration.py:334-349`
+  - `src/melder/nexus/nexus_frame_manager.py:994-1030`
+  - `src/melder/aether/spellbook/spellbook.py:6230-6267`
+  IMPACT: No duplicate root flag or per-key branch is needed in the inspected carriers.
+    Normal defaults reach Nexus, while shared/preset configurations carry explicit values.
+    Verify boolean/list round trips and backfill reporting after owner configuration changes.
+    No runtime round trip was run in this information-gathering pass.
+  NEXT: After configuration implementation, test emitted True/False and ordered vocabulary
+    through cached-item reload, plus default Nexus construction and shared configuration.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

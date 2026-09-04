@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T22:06:16Z
 
 ## Objective
 Preserve the final method-list order in SpellCrystal and all existing active/staged
@@ -121,8 +121,35 @@ Record exact payload/host conditions and identity evidence before choosing a rep
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-04T22:01:28Z
+  TYPE: FACT
+  CLAIM: Current source confirms sorted SpellCrystal capture and direct ordered output of
+    that stored list. Active restore and selected graft forward recorded names, but staged
+    restore, parked graft, and merged graft omit them. Restore maps new index ULIDs yet
+    resolves members/selections using recorded Spell SHA values. Fresh graft finds the
+    selected result by new SHA initially, then parks siblings using the recorded selected SHA;
+    merge adoption also looks up the recorded SHA.
+  EVIDENCE:
+  - `src/melder/crystallizer/crystals/spell_crystal.py:143-339`
+  - `src/melder/crystallizer/crystals/spell_crystal.py:644-661`
+  - `src/melder/crystallizer/crystals/spell_crystal.py:1064-1162`
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1734-1820`
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1903-2095`
+  - `src/melder/crystallizer/crystal_loader_system/graft_runner.py:226-326`
+  - `src/melder/crystallizer/crystal_loader_system/graft_runner.py:371-554`
+  IMPACT: Order is an identity/replay join concern as well as cleanup behavior. Same-policy
+    replay must prove that reapplying book names to a recorded resolved list is idempotent.
+    A different host's names/priority can change the resolved list and therefore its SHA;
+    the recorded-ID joins above must be tested before choosing any fix. No silent ID
+    translation or host-policy override is authorized by this read. Old sorted records
+    cannot reveal their original supplied order. The graph/component fresh-index-only
+    wording is stale: current GraftRunner also has an explicit public-verb merge mode.
+  NEXT: After producer changes, reproduce same-policy and differing-host replay cases,
+    preserving current public-verb admission and treating actual policy conflicts explicitly.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 No implementation yet. Configuration and final Spell values are separate records. Preserve
 their established order and source; inspect host-policy/recorded-ID interactions before graft edits.
 Next: `tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md`.
-

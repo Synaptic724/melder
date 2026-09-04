@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T22:06:16Z
 
 ## Objective
 Have Creations retain and consume the established Spell disposal list directly, including
@@ -117,8 +117,32 @@ Capture real ownership and behavioral findings before continuing; separate exist
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-04T21:58:36Z
+  TYPE: FACT
+  CLAIM: Full Creations and ConduitCreations reads confirm six method-list copy sites:
+    singleton/many registration, singleton/many extraction, and singleton/many restoration.
+    ConduitCreations delegates without another conversion. The existing-object Conduit
+    caller already forwards Spell metadata. The invocation loop uses the stored sequence
+    directly and stops only that object's chain on its first failure; the outer loop
+    continues in reversed-key/reversed-bucket order and aggregates failures.
+  EVIDENCE:
+  - `src/melder/aether/conduit/creations/creations.py:197-357`
+  - `src/melder/aether/conduit/creations/creations.py:369-500`
+  - `src/melder/aether/conduit/creations/conduit_creations.py:95-133`
+  - `src/melder/aether/conduit/conduit.py:1386-1428`
+  - `src/melder/aether/spellbook/spell.py:500-603`
+  IMPACT: Retain the established inner list through the six contacts; preserve registry
+    detachment before cleanup, which is a real lifecycle operation, not a disposable-list
+    snapshot to remove. Spell cleanup deletes its name reference without clearing the
+    collection, so other holders can still use it. Do not introduce list.clear() there.
+    Existing registration locks, scoped-store selection, cleanup failure behavior, and
+    no-disposable fast paths remain unchanged.
+  NEXT: At implementation, verify real cleanup and extract/restore behavior using the
+    producer/compiler list contract, including clear_all and pool reuse.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 The invocation loop already runs names in order; upstream frozensets caused order loss.
 Preserve existing error behavior and scope traversal. No implementation yet.
 Next: `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md`.
-

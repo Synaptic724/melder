@@ -1,0 +1,43 @@
+name: Runtime tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Runtime / ${{ matrix.os }} / Python 3.14t
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      # Fix the posture for the actual pytest process, including its plugins.
+      PYTHON_GIL: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14t"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install Melder and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --group test
+          python -m pip install --no-deps --editable .
+      - name: Run supported test tiers with runtime verification
+        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+      - name: Retain test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: runtime-results-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/runtime.xml
+          if-no-files-found: warn
+          retention-days: 14

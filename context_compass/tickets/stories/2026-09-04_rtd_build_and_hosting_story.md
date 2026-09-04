@@ -55,6 +55,8 @@ Make publishing a repeatable release process with identifiable source/version in
 S9 validates the complete release and owns final launch acceptance after this pipeline is demonstrated.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement docs CI parity, RTD configuration, and offline outputs](../tasks/2026-09-04_rtd_ci_and_offline_task.md)
+- [ ] [Verify and configure the intended Read the Docs project](../tasks/2026-09-04_rtd_hosted_project_task.md)
 - [ ] Align local/CI/RTD inputs and requirements; add the docs workflow and RTD configuration.
 - [ ] Verify project ownership/repository/branch, Git integration, and a real PR preview.
 - [ ] Implement/test version identity, search integration, source links, canonical URL, and redirects.

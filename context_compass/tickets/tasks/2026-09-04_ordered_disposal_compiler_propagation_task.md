@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T22:06:16Z
 
 ## Objective
 Carry each Spell's resolved ordered list through runtime records, plans, and emitted
@@ -130,6 +130,42 @@ Record the classification and evidence before changing each compiler family. One
   - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:965-1030`
   IMPACT: The narrow fix must preserve compiler algorithms and required cache schemas.
   NEXT: Trace processor -> plan -> one solo executor with the Phase 1 list contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-04T21:57:25Z
+  TYPE: FACT
+  CLAIM: Holistic source trace separates three compiler contact classes. Live-value copies:
+    processor tuple conversion, both generalized builder list conversions, many-only plan
+    inner tuples, and both solo normalization helpers. Existing direct-reference carriers:
+    SpellRuntimeRecord/PlanStep stores and generalized/many-only executor namespace arrays,
+    including the manifest runtime paths. Real value boundaries: phase-11 schema rows and
+    spell/many-only signature rows encode ordered tuples for serialization and hashing.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py:31-91`
+  - `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py:38-100`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1091-1302`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1460-1728`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:1057-1310`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:8-248`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:8-318`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:302-443`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1011-1198`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py:163-270`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:965-1030`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py:448-521`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:1146-1201`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py:448-545`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:935-994`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py:443-541`
+  IMPACT: Update only the live metadata copies/types. Keep outer arrays that already hold
+    the same inner collection, and keep ordered schema/hash encoding. The six executor
+    namespace contacts are verification targets, not an edit-all list. Preserve register
+    flags: many without disposal is untracked; other lifetimes use their selected store.
+    This was source inspection, not cold/cache execution proof. Large files were read by
+    relevant complete methods/blocks; do not claim whole-file review of every compiler.
+  NEXT: At implementation, consume the patch and verify cold/cache hydration uses the same
+    established list through each family; no blanket conversion rewrite.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

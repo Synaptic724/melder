@@ -4,7 +4,7 @@
 - Story ID: STORY-2026-09-04-rtd-navigation-and-site-shell
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -47,14 +47,15 @@ Establish one coherent navigation and local-build foundation that all content an
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Planning record created; implementation has not started.
+- to_state: in_progress
+- transition_reason: Owner authorized implementation; the site foundation task is active.
 
 ## Dependencies / Related Work
 - Provides the local build and page/navigation contracts to every other story.
 - S2 supplies the complete example catalog; S8 adds CI/hosting after content is complete.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement the four-level site foundation and local Sphinx build](../tasks/2026-09-04_rtd_site_foundation_task.md)
 - [ ] Define and route an implementation task with exact paths and navigation schema.
 - [ ] Build homepage/four level shells and complete contents from one registry.
 - [ ] Configure the docs environment and prove imports/source inclusion with real content.

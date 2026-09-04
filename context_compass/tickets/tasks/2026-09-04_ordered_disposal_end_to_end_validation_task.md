@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T22:06:16Z
 
 ## Objective
 Assemble actual evidence that the agreed order survives configuration, binding, compilation,
@@ -119,8 +119,30 @@ Use MEASURE only for checks actually executed; record results before another val
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-04T22:04:01Z
+  TYPE: FACT
+  CLAIM: Existing Creations regression tests inject ordered lists directly and assert method
+    order, per-object failure behavior, reversed object/bucket order, and reusable clearing.
+    They cannot detect producer order loss. The existing book/conjure test compares frozenset
+    membership only. Configuration tests pin ordered first-set names, partial key iteration,
+    explicit-value preservation, and missing-record backfill reporting.
+  EVIDENCE:
+  - `tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py:104-211`
+  - `tests/unit/melder/aether/conduit/creations/test_creations_disposal_reverse_order_regression.py:103-186`
+  - `tests/component/melder/spellbook/test_spellbook_component_spellbook.py:548-637`
+  - `tests/unit/melder/spellbook/configuration/test_configuration.py:408-457`
+  - `tests/unit/melder/spellbook/configuration/test_configuration.py:510-514`
+  - `tests/unit/melder/aether/test_configuration_reload_lanes.py:32-89`
+  IMPACT: Preserve these existing contract checks and add upstream-to-call-order cases.
+    The new eager default intentionally changes partial configuration key iteration; update
+    that exact expectation, not the entire test contract. Source inspection is not test
+    execution: no new feature tests or platform checks ran in this holistic-reading pass.
+  NEXT: After implementation, connect the two priority modes to actual bind/meld/cleanup,
+    then verify cache and replay paths without weakening existing lifecycle tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 No tests executed for this new feature yet. This is the last task, not a route to jump ahead
 of implementation. Use the child tasks' recorded outcomes and report all material gaps honestly.
 Final closure is a user decision; no commits, pushes, releases, or unrelated cleanup.
-

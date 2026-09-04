@@ -4,7 +4,7 @@
 - Story ID: STORY-2026-09-04-rtd-beginner-curriculum
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -52,6 +52,7 @@ Preserve the owner's low-entry-cost curriculum as a complete, independently usef
 Read UX_and_AIX_experiences/AGENTS.md and 01_beginner/_concept_map.txt. S4 inherits this vocabulary.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement Beginner chapters and all 41 lesson presentations](../tasks/2026-09-04_rtd_beginner_content_task.md)
 - [ ] Map every Beginner chapter to lesson IDs and public API references.
 - [ ] Author the guide sequence and all lesson explanations from actual source.
 - [ ] Verify first run, lifetimes, errors, cleanup, and capstone against the target revision.

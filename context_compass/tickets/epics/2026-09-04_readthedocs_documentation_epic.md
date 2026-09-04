@@ -7,7 +7,7 @@
 - Agent Name: codex_2
 - Priority: p2
 - Created: 2026-09-04T21:06:12Z
-- Updated: 2026-09-04T21:47:53Z
+- Updated: 2026-09-04T21:53:49Z
 - Target Window: Complete scope definition now; nine delivery stories govern implementation and launch.
 - Related Program/Initiative: Melder public documentation.
 
@@ -26,7 +26,7 @@ structure. Melder's reader journeys, API selection, existing guides, and release
 the design. ThreadFactory provides a concrete working example of the mechanisms.
 
 ## Ticket Contract
-- ENTRY_GATE: Certified codex_2 with a routed discovery task and durable findings in task/epic notes.
+- ENTRY_GATE: Certified codex_2 with this epic routed; implementation uses bounded child-story tasks.
 - EXECUTION_BOUNDARY: Define the complete four-level site, blueprint, and nine delivery stories.
   The present request changes ContextCompass planning records; live site implementation and hosting
   actions are governed by the resulting implementation tasks and their entry gates.
@@ -57,10 +57,10 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 - Excluded now: Runtime changes, deployment, credential handling, and repository/account mutations.
 
 ## State Transition Event
-- from_state: ready
+- from_state: in_progress
 - to_state: in_progress
-- transition_reason: Owner explicitly requested an epic and ongoing findings in its notes while
-  clarifying that the current objective is understanding ThreadFactory before Melder strategy.
+- transition_reason: Owner fixed the four-level hierarchy and requested the complete program definition;
+  blueprint and nine delivery stories are now defined, with implementation still outstanding.
 
 ## Success Metrics
 - Exactly four primary learning sections, with their established names/order/identifiers.
@@ -149,9 +149,11 @@ routed tasks under them as work starts; do not create nine concurrent active boa
 - Current evidence: complete reference build/config reads and representative API page reads.
 - Public ThreadFactory landing and ConcurrentDict pages were retrieved and contain rendered API data.
 - Local Sphinx builds: Not run.
-- Melder runtime tests: Not run; outside the current understanding task.
+- Melder runtime tests: Not run; the current work defined the documentation program.
 - An existing architecture-doc check was run; its result and a line-ending diagnosis are retained below.
-- Later validation is to be designed with Melder's chosen strategy.
+- Delivery validation is defined in blueprint section 15 and in every story's acceptance/test plan.
+- Definition checks: nine linked story files resolve; distinct IDs/status/parent pointers inspected;
+  active definition contains no retired layout paths; whitespace checks reported no findings.
 
 ## Rollout / Adoption Plan
 S1 proves a real local foundation. S2 establishes complete example coverage. S3-S6 deliver the four
@@ -191,10 +193,10 @@ over historical proposals retained in Notes.
 
 | Learning level | Curriculum outcome | Source collection |
 | --- | --- | --- |
-| Green Beginner | Useful first graph, addressing, core lifetimes, scopes, cleanup, errors, capstone | 41 lessons |
-| Yellow Intermediate | Configuration, registration, DI, hooks, lineage/spell spaces, links, permissions, late binding | 37 lessons |
-| Orange Advanced | World isolation, posture, precise overrides, clusters, rooms/viewers, inspection and entry-point continuity | 19 lessons |
-| Blue Expert | Agent codegen, transactions, record/restore, external storage, research, previews, governed change | 36 lessons |
+| 🟢 Beginner | Useful first graph, addressing, core lifetimes, scopes, cleanup, errors, capstone | 41 lessons |
+| 🟡 Intermediate | Configuration, registration, DI, hooks, lineage/spell spaces, links, permissions, late binding | 37 lessons |
+| 🟠 Advanced | World isolation, posture, precise overrides, clusters, rooms/viewers, inspection and entry-point continuity | 19 lessons |
+| 🔵 Expert | Agent codegen, transactions, record/restore, external storage, research, previews, governed change | 36 lessons |
 
 Homepage: purpose/three verbs, Start Beginner, Browse Examples, Full Contents, four level cards,
 featured useful applications, architecture/reference routes, and version context. All four level
@@ -435,6 +437,39 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-04T21:53:49Z
+  TYPE: FACT
+  CLAIM: Completed the program definition: a 16-section site blueprint and nine draft delivery stories
+    cover navigation/foundation, the full example catalog, each of the four curricula, reference and
+    architecture, build/hosting, and quality/launch. Each story has scope, prerequisites, tasks,
+    acceptance criteria, validation approach, findings, and a handoff. The shared design is indexed
+    for the parent and all nine stories; its lifecycle remains owned by the parent epic.
+  EVIDENCE:
+  - artifacts/2026-09-04_readthedocs_site_blueprint.md:10-356
+  - tickets/epics/2026-09-04_readthedocs_documentation_epic.md:107-121
+  IMPACT: The owner's established four levels now control every current navigation and curriculum
+    definition. Prior two-part recommendations survive only as superseded history in Notes.
+  NEXT: Open a bounded S1 implementation task when execution begins.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-04T21:53:49Z
+  TYPE: MEASURE
+  CLAIM: Definition review read the blueprint and all nine story files. The epic's nine story links
+    resolve, the story identities are distinct, and the active definition has no retired Part I/II
+    navigation or docs/part_i/ and docs/part_ii/ paths. Whitespace search returned no matches and board
+    diff checking reported no issues. S7's entry dependency was clarified to the topic/API target map,
+    rather than requiring all curriculum prose complete before reference destinations can be authored.
+  EVIDENCE:
+  - artifacts/2026-09-04_readthedocs_site_blueprint.md:293-344
+  - tickets/stories/2026-09-04_rtd_reference_and_architecture_story.md:49-54
+  - Scoped local link, metadata, retired-layout, and whitespace checks on the definition files.
+  IMPACT: Planning artifacts are connected and reviewable without implying implementation or a working
+    hosted site. The definition is ready for owner review and subsequent S1 execution.
+  NEXT: Review the epic and blueprint, then route the selected implementation task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -446,9 +481,9 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
 - Append corrections when new evidence or owner direction changes earlier conclusions.
 
 ## Context / Handoff Summary
-codex_2 owns this epic. ThreadFactory discovery is in review. The owner has now requested Melder's
-strategy and required the full README progression, a complete free-roam table of contents, and
-prominent saved examples. All 1,081 README lines were read; the 133-lesson inventory, three full
-concept maps, expert-map overview, three lesson files, and the structural harness were inspected.
-The proposed strategy above is ready for review. No live site files were created or published;
-Sphinx/example execution has not run in this design turn. Next: review navigation and lesson pages.
+codex_2 owns the documentation epic. Definition is complete: the linked blueprint and nine draft
+stories cover the full program. Exactly Beginner, Intermediate, Advanced, Expert drive the site;
+Full Contents and all 133 saved examples are primary requirements. Current definitions supersede the
+earlier two-part proposal retained in Notes. All new definition files were read and their links checked.
+Implementation, Sphinx/example execution, and hosted setup remain outstanding. Next: start a bounded
+S1 task for the navigation and local-build foundation when implementation is requested.

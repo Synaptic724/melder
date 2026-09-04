@@ -9,7 +9,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T22:39:54Z
 
 ## User Narrative
 As a Melder user, I want book and spell disposal names resolved once in a predictable
@@ -119,8 +119,19 @@ False changes priority only and does not disable book methods.
 ## Noting Behavior
 Record cross-task decisions here; detailed findings remain in the owning child task.
 
+- DATETIME: 2026-09-04T22:39:54Z
+  TYPE: MEASURE
+  CLAIM: Configuration is implemented and in review, with 115 focused tests passing.
+    The configuration-only patch gate is satisfied; other component contracts remain pending.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_disposal_priority_configuration_task.md`
+  IMPACT: The priority setting exists but does not yet affect bound Spell metadata or disposal.
+  NEXT: Review configuration, then prepare the separate Bind/Spell implementation contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Start with the contract task, then configuration. Binding and configuration transport depend
 on that configuration result. Treat ready as specified work; every entry gate still applies.
-No source edits have been made. The discovery task's current design supersedes its old notes.
-
+Configuration source/tests are implemented and in review. Bind/Spell and full configuration
+transport remain pending. The discovery task's current design supersedes its old notes.

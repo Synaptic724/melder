@@ -1,0 +1,71 @@
+schema_version = 1
+example_catalog = "catalog.toml"
+curriculum = "curriculum.toml"
+
+[[page]]
+id = "index"
+title = "Melder"
+source = "index.md"
+parent = ""
+
+[[page]]
+id = "beginner/index"
+title = "🟢 Beginner"
+source = "beginner/index.md"
+parent = "index"
+
+[[page]]
+id = "intermediate/index"
+title = "🟡 Intermediate"
+source = "intermediate/index.md"
+parent = "index"
+
+[[page]]
+id = "advanced/index"
+title = "🟠 Advanced"
+source = "advanced/index.md"
+parent = "index"
+
+[[page]]
+id = "expert/index"
+title = "🔵 Expert"
+source = "expert/index.md"
+parent = "index"
+
+[[page]]
+id = "examples/index"
+title = "Examples"
+source = "examples/index.md"
+parent = "index"
+
+[[page]]
+id = "examples/hello-melder"
+title = "Hello Melder"
+source = "examples/hello-melder.md"
+parent = "examples/index"
+
+[[page]]
+id = "reference/architecture"
+title = "Architecture & Drawings"
+source = "reference/architecture.md"
+parent = "index"
+
+[[page]]
+id = "reference/api"
+title = "API Reference"
+source = "reference/api.md"
+parent = "index"
+
+[[page]]
+id = "contents"
+title = "Full Contents"
+source = ""
+parent = "index"
+
+[[asset]]
+source = "UX_and_AIX_experiences/01_beginner/01_hello_meld.py"
+target = "downloads/01_hello_meld.py"
+
+[[asset]]
+source = "architecture_and_design/diagrams/rendered/system_context.svg"
+target = "media/system_context.svg"

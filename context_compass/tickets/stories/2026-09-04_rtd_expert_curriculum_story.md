@@ -53,6 +53,7 @@ independent value and the owner's established progression.
 S7 provides detailed references. S8 publishes tested source/version outputs; S9 audits full coverage.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement Expert operational chapters and all 36 lesson presentations](../tasks/2026-09-04_rtd_expert_content_task.md)
 - [ ] Read and map every current Expert lesson; reconcile older map counts against actual files.
 - [ ] Author per-topic guides and explanations for all 36 lessons.
 - [ ] Verify complete codegen, restore, and governed-change demonstrations in isolated test contexts.

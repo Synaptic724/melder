@@ -1,0 +1,2 @@
+# Resolved and built together on Python 3.14. Refresh the lock deliberately.
+-r requirements.lock

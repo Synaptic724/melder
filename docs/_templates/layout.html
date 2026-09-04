@@ -1,0 +1,9 @@
+{% extends "!layout.html" %}
+
+{% block mobile_nav %}
+  <button id="melder-menu-toggle" type="button" data-toggle="wy-nav-top"
+          aria-label="Toggle navigation" aria-expanded="false">☰</button>
+  <a class="melder-mobile-brand" href="{{ pathto(root_doc) }}">{{ project }}</a>
+  <a class="melder-mobile-action" href="{{ pathto('contents') }}">Contents</a>
+  <a class="melder-mobile-action" href="{{ pathto('examples/index') }}">Examples</a>
+{% endblock %}

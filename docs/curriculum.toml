@@ -1,0 +1,89 @@
+schema_version = 1
+
+[[chapter]]
+id = "beginner/install"
+title = "Install and run Melder"
+level = "beginner"
+source = "beginner/install.md"
+lessons = ["beginner:01"]
+
+[[chapter]]
+id = "beginner/hello"
+title = "Hello, Melder"
+level = "beginner"
+readme = "🟢 Hello, Melder"
+lessons = ["beginner:01"]
+
+[[chapter]]
+id = "beginner/rhythm"
+title = "Bind → conjure → meld"
+level = "beginner"
+readme = "🟢 The Rhythm"
+lessons = ["beginner:21", "beginner:36"]
+
+[[chapter]]
+id = "beginner/registration"
+title = "What you can bind"
+level = "beginner"
+source = "beginner/registration.md"
+lessons = ["beginner:03", "beginner:11", "beginner:32", "beginner:33"]
+show_steps = true
+
+[[chapter]]
+id = "beginner/addresses"
+title = "The address law"
+level = "beginner"
+readme = "🟢 The Address Law"
+lessons = ["beginner:04", "beginner:26", "beginner:22", "beginner:24"]
+
+[[chapter]]
+id = "beginner/spellframes"
+title = "Spellframes and categories"
+level = "beginner"
+readme = "🟢 Spellframes — Categories Inside a World"
+lessons = ["beginner:09", "beginner:17", "beginner:25", "beginner:38"]
+
+[[chapter]]
+id = "beginner/dependency-injection"
+title = "Constructor dependency injection"
+level = "beginner"
+readme = "🟢 Dependency Injection"
+end_before = "When an annotation isn't specific enough"
+lessons = ["intermediate:15", "beginner:16"]
+
+[[chapter]]
+id = "beginner/lifetimes"
+title = "Choose an instance lifetime"
+level = "beginner"
+readme = "🟢 Six Lifetimes, Not Three"
+lessons = ["beginner:02", "beginner:13", "beginner:14", "beginner:15", "beginner:29"]
+
+[[chapter]]
+id = "beginner/scopes"
+title = "Scopes that nest"
+level = "beginner"
+readme = "🟢 Scopes That Nest"
+lessons = ["beginner:05", "beginner:27", "beginner:34"]
+
+[[chapter]]
+id = "beginner/cleanup"
+title = "Cleanup and memory ownership"
+level = "beginner"
+readme = "🟢 Teardown Is Part of Registration"
+lessons = ["beginner:08", "beginner:10", "beginner:35", "beginner:41"]
+
+[[chapter]]
+id = "beginner/errors"
+title = "Understand errors and refusals"
+level = "beginner"
+source = "beginner/errors.md"
+lessons = ["beginner:06", "beginner:23", "beginner:30"]
+show_steps = true
+
+[[chapter]]
+id = "beginner/capstone"
+title = "Build a complete beginner application"
+level = "beginner"
+source = "beginner/capstone.md"
+lessons = ["beginner:40", "beginner:18", "beginner:39"]
+show_steps = true

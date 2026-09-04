@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 9be198ea546b58e46a1893f053c0cafc75e3eba44b2fc1a4d10df89fda2efc97
-FILE COUNT: 262
+SOURCE FINGERPRINT: 4bfa379df294e68929df8e69c6564c381b6477143037ef24052c8c1829df0b62
+FILE COUNT: 273
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -63,216 +63,1003 @@ llm_support/** text eol=lf
 END FILE: .gitattributes
 ================================================================================
 ================================================================================
+BEGIN FILE: .github/BRANCH_WORKFLOW.md
+CONTENT SHA256: 2eacd0bb62d01d863232e82cbd6489a6de2502b56c4341b92c44727edfadf275
+SOURCE ENCODING: utf-8
+================================================================================
+# Branch CI and release workflow
+
+Contributions enter `dev` through a pull request. Promotion proceeds through
+`dev -> preprod -> prod`, with the merge result checked at every boundary.
+
+## Required checks
+
+`CI / merge-ready` is the stable status to require in GitHub. It depends on:
+
+- Branch policy: contributions target dev; preprod accepts this repository's dev,
+  and prod accepts this repository's preprod. Forks cannot impersonate promotion
+  branches. Same-repository preprod/prod synchronization PRs may return to dev.
+- Source assets: the existing build-asset runner verifies committed manifests.
+- Repository assets: the LLM builder verifies committed bundles and indexes.
+- Repository hygiene: tracked filenames must not collide case-insensitively.
+- Runtime tests: unit, component, and integration tiers on Linux and Windows,
+  using Python 3.14t with the GIL disabled in the actual pytest process.
+- Distribution verification for preprod/prod: wheel and sdist boundaries,
+  source/metadata/asset versions, and an isolated installed-wheel smoke test.
+
+The final status fails for missing evidence, failure, cancellation, or an
+unexpected skipped job. Only dev intentionally skips distribution building.
+Repository variables cannot disable mandatory asset checks. Helpers remain
+manually runnable but automatic PR/push triggering belongs to `ci.yml`.
+
+## Working on a feature
+
+Create a short-lived branch from current dev and explicitly target dev when
+opening the PR; prod remains the repository's default branch. Run:
+
+```bash
+python -m pytest -q tests/unit tests/component tests/integration
+python src/melder/_build_assets/_build_asset_runner.py --check
+python llm_support/_builder.py --check
+```
+
+If generated assets are stale, regenerate locally and commit them. Stage newly
+added input files before running the repository builder so its tracked-file
+inventory includes them. Never hand-merge generated bundles. After updating a
+feature from dev, regenerate again when the combined source changed.
+
+CI runs on PR updates, including a changed PR base, and on permanent-branch
+pushes. Heavy CI does not also run on every feature push before its PR. New PR
+commits supersede old CI runs. Reusable helpers have no concurrency group that
+could accidentally cancel their caller or a final release.
+
+## Promotion and merge history
+
+Prefer squash for disposable feature branches, and start the next feature from
+current dev. Use merge commits between permanent branches. Do not repeatedly
+squash dev into preprod or preprod into prod.
+
+The supplied dev ruleset requires an up-to-date branch. Promotion rulesets use
+the current PR merge result with the one permitted source branch and merge
+commits. They deliberately do not require dev to contain every preprod-only
+merge commit, which otherwise creates a perpetual merge-back requirement.
+Resolve conflicts on the source branch and rerun CI; carry release/hotfix changes
+back into dev through a reviewed synchronization PR.
+
+## Final publication checks
+
+Publishing a final GitHub release, or manually dispatching the publication
+workflow on prod, starts a fresh qualification chain:
+
+1. Require the event and checkout commit to equal fetched current prod HEAD.
+2. Rerun hygiene, both asset checkers, and the complete runtime matrix.
+3. Build and inspect the wheel/sdist and smoke-test an isolated wheel install.
+4. Enter the pypi environment and download this run attempt's verified artifacts.
+5. Recheck distribution/tag identity and fetch/check prod again immediately
+   before the PyPI upload action.
+
+Earlier dev/preprod success does not replace these checks. A prod movement during
+testing or environment approval refuses publication. GitHub prerelease events do
+not trigger final publication. All publication runs share a serialization group.
+Only the upload job uses the pypi environment and its PYPI_API_TOKEN secret.
+
+Artifacts include the workflow run and attempt in their names. After a failed
+publication, use **Re-run all jobs** to obtain fresh qualification and fresh
+artifacts; rerunning only a failed upload must not reuse an earlier attempt's
+unqualified artifact implicitly. Confirm PyPI state before retrying an upload
+whose outcome is uncertain; existing package versions are never silently skipped.
+
+## Activating GitHub enforcement
+
+The JSON files in `.github/rulesets/` are reviewed configuration payloads;
+checking them into Git does not activate GitHub rules. They require PRs and
+`CI / merge-ready` from the verified GitHub Actions app (ID 15368), forbid force
+pushes and branch deletion, and grant no bypass actors. Human approvals default
+to zero so a sole maintainer can merge their own tested PR; review policy can be
+strengthened separately.
+
+Deploy the workflows first, run a PR through them, and confirm the exact status
+name appears before applying these rules. Otherwise a missing required check
+will block every merge. Inspect existing rulesets and update a matching one by
+ID rather than creating duplicates. For an initial installation:
+
+```bash
+gh api repos/Synaptic724/melder/rulesets
+gh api --method POST repos/Synaptic724/melder/rulesets --input .github/rulesets/dev.json
+gh api --method POST repos/Synaptic724/melder/rulesets --input .github/rulesets/preprod.json
+gh api --method POST repos/Synaptic724/melder/rulesets --input .github/rulesets/prod.json
+```
+
+Confirm a failing PR is blocked and a passing PR can merge. Removing or renaming
+the required status later requires a coordinated ruleset change.
+
+## Continuous staging and dated candidates
+
+This foundation validates promotion PRs and final publication. The next layer
+can maintain a dev-to-preprod PR automatically using an appropriately scoped
+GitHub App. A dated release must select an explicit green candidate SHA,
+version, artifact hashes, approval, and timestamp; moving preprod must not change
+the scheduled candidate. Candidate-specific routing, retained artifacts, and
+scheduled publication are configured separately before that behavior is enabled.
+================================================================================
+END FILE: .github/BRANCH_WORKFLOW.md
+================================================================================
+================================================================================
+BEGIN FILE: .github/rulesets/dev.json
+CONTENT SHA256: 9d3ffc075bc47b349e117e488befad89b8a984faef29a56fac0ae5513432fa23
+SOURCE ENCODING: utf-8
+================================================================================
+{
+  "name": "Melder dev integration",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {"ref_name": {"include": ["refs/heads/dev"], "exclude": []}},
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "pull_request", "parameters": {
+      "allowed_merge_methods": ["merge", "squash"],
+      "dismiss_stale_reviews_on_push": false,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "required_review_thread_resolution": true
+    }},
+    {"type": "required_status_checks", "parameters": {
+      "required_status_checks": [{"context": "CI / merge-ready", "integration_id": 15368}],
+      "strict_required_status_checks_policy": true,
+      "do_not_enforce_on_create": false
+    }}
+  ]
+}
+================================================================================
+END FILE: .github/rulesets/dev.json
+================================================================================
+================================================================================
+BEGIN FILE: .github/rulesets/preprod.json
+CONTENT SHA256: 9c38113a1c2d17a9079ff5617128c29eaf719ee76b7bfc3ac90296aa05eea653
+SOURCE ENCODING: utf-8
+================================================================================
+{
+  "name": "Melder preprod promotion",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {"ref_name": {"include": ["refs/heads/preprod"], "exclude": []}},
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "pull_request", "parameters": {
+      "allowed_merge_methods": ["merge"],
+      "dismiss_stale_reviews_on_push": false,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "required_review_thread_resolution": true
+    }},
+    {"type": "required_status_checks", "parameters": {
+      "required_status_checks": [{"context": "CI / merge-ready", "integration_id": 15368}],
+      "strict_required_status_checks_policy": false,
+      "do_not_enforce_on_create": false
+    }}
+  ]
+}
+================================================================================
+END FILE: .github/rulesets/preprod.json
+================================================================================
+================================================================================
+BEGIN FILE: .github/rulesets/prod.json
+CONTENT SHA256: 9046368820c661dbb6b0e059dd37a776b6910c4a60297d8a2feb6309f743501a
+SOURCE ENCODING: utf-8
+================================================================================
+{
+  "name": "Melder prod promotion",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {"ref_name": {"include": ["refs/heads/prod"], "exclude": []}},
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "pull_request", "parameters": {
+      "allowed_merge_methods": ["merge"],
+      "dismiss_stale_reviews_on_push": false,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "required_review_thread_resolution": true
+    }},
+    {"type": "required_status_checks", "parameters": {
+      "required_status_checks": [{"context": "CI / merge-ready", "integration_id": 15368}],
+      "strict_required_status_checks_policy": false,
+      "do_not_enforce_on_create": false
+    }}
+  ]
+}
+================================================================================
+END FILE: .github/rulesets/prod.json
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/ci_policy.py
+CONTENT SHA256: ed63bf927ef32216eb52a92efb6c32d1f6db257298337b748dfd5a4c6ca02e02
+SOURCE ENCODING: utf-8
+================================================================================
+"""Read-only branch, merge-result, repository, and publication gates for CI."""
+
+import argparse
+import json
+import os
+import pathlib
+import re
+import subprocess
+import sys
+from collections.abc import Mapping, Sequence
+from typing import Optional, cast
+
+
+class CIPolicy:
+    """Hold immutable CI names and branch routes shared by the command-line gates."""
+
+    BRANCHES: tuple[str, ...] = ("dev", "preprod", "prod")
+    PROMOTIONS: Mapping[str, str] = {"preprod": "dev", "prod": "preprod"}
+    REQUIRED_JOBS: tuple[str, ...] = (
+        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
+    )
+
+
+def object_value(value: object, label: str) -> Mapping[str, object]:
+    """Require a JSON object at an external input boundary; raise ValueError otherwise."""
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{label} must be a JSON object; refusing incomplete CI evidence.")
+    return cast(Mapping[str, object], value)
+
+
+def text_value(value: object, label: str) -> str:
+    """Require a nonempty string in event metadata; never invent an absent identity."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a nonempty string; check the workflow event.")
+    return value
+
+
+def validate_route(base: str, head: str, head_repository: str, repository: str) -> bool:
+    """Validate a PR route and return whether distribution verification is required.
+
+    Contributions enter dev. Permanent-branch synchronization must come from this
+    repository; preprod accepts only dev and prod accepts only preprod. Unknown
+    bases and forged fork promotion branches raise ValueError. No refs are changed.
+    """
+    for value, label in ((base, "base"), (head, "head"),
+                         (head_repository, "head repository"), (repository, "repository")):
+        text_value(value, label)
+    if base not in CIPolicy.BRANCHES:
+        raise ValueError(f"Unsupported PR base {base!r}; ordinary changes must target dev.")
+    if base == head and head_repository == repository:
+        raise ValueError("A same-repository PR must have different head and base branches.")
+    if base == "dev":
+        if head in ("preprod", "prod") and head_repository != repository:
+            raise ValueError("Permanent-branch synchronization must originate in this repository.")
+        return False
+    required_head = CIPolicy.PROMOTIONS[base]
+    if head_repository != repository or head != required_head:
+        raise ValueError(
+            f"Promotion into {base} requires {repository}:{required_head}; "
+            f"received {head_repository}:{head}."
+        )
+    return True
+
+
+def package_required(event_name: str, event: Mapping[str, object], ref: str,
+                     repository: str) -> bool:
+    """Resolve a supported event's branch policy without accepting ambiguous metadata.
+
+    PR payloads establish both repository identities. Push/manual CI events must
+    select a permanent branch. Returns a package requirement; raises ValueError
+    for unsupported events, refs, or incomplete payloads.
+    """
+    text_value(repository, "GITHUB_REPOSITORY")
+    if event_name == "pull_request":
+        pr = object_value(event.get("pull_request"), "pull_request")
+        base = object_value(pr.get("base"), "pull_request.base")
+        head = object_value(pr.get("head"), "pull_request.head")
+        base_repo = object_value(base.get("repo"), "pull_request.base.repo")
+        head_repo = object_value(head.get("repo"), "pull_request.head.repo")
+        if base_repo.get("full_name") != repository:
+            raise ValueError("PR base repository does not match GITHUB_REPOSITORY.")
+        return validate_route(
+            text_value(base.get("ref"), "base.ref"),
+            text_value(head.get("ref"), "head.ref"),
+            text_value(head_repo.get("full_name"), "head.repo.full_name"), repository,
+        )
+    if event_name not in ("push", "workflow_dispatch"):
+        raise ValueError(f"Unsupported CI event {event_name!r}; refusing an implicit route.")
+    if ref not in tuple(f"refs/heads/{branch}" for branch in CIPolicy.BRANCHES):
+        raise ValueError(f"CI push/manual ref must be dev, preprod, or prod; received {ref!r}.")
+    return ref != "refs/heads/dev"
+
+
+def require_success(results: Mapping[str, object], require_package: bool) -> None:
+    """Fail closed unless the complete expected dependency set actually succeeded.
+
+    The packages job may be skipped only for dev. Unknown/missing jobs and every
+    other non-success conclusion raise ValueError, including a skipped test matrix.
+    This function never treats the absence of a failing job as successful evidence.
+    """
+    expected = set(CIPolicy.REQUIRED_JOBS) | {"packages"}
+    if set(results) != expected:
+        raise ValueError(
+            f"Incomplete CI dependency evidence: missing={sorted(expected - set(results))}; "
+            f"unexpected={sorted(set(results) - expected)}."
+        )
+    failures: list[str] = []
+    for name in sorted(expected):
+        result = object_value(results[name], f"needs.{name}").get("result")
+        allowed = ("success", "skipped") if name == "packages" and not require_package else ("success",)
+        if result not in allowed:
+            failures.append(f"{name}={result!r}")
+    if failures:
+        raise ValueError("Required CI did not succeed: " + ", ".join(failures))
+
+
+def case_collisions(paths: Sequence[str]) -> list[list[str]]:
+    """Return tracked paths colliding case-insensitively in deterministic groups."""
+    grouped: dict[str, list[str]] = {}
+    for path in paths:
+        grouped.setdefault(path.casefold(), []).append(path)
+    return [sorted(group) for _, group in sorted(grouped.items()) if len(group) > 1]
+
+
+def git_output(arguments: Sequence[str]) -> str:
+    """Execute one explicit Git argument vector and return stdout, raising on failure."""
+    result = subprocess.run(["git", *arguments], check=True, capture_output=True, text=True,
+                            encoding="utf-8")
+    return result.stdout.strip()
+
+
+def validate_release(event_name: str, ref: str, event: Mapping[str, object],
+                     event_sha: str, checkout_sha: str, prod_sha: str) -> None:
+    """Require a final release/manual-prod event and exact current-prod commit identity.
+
+    Published prereleases are not final publication authorization. Manual dispatch
+    must select prod. All three SHAs must be full hexadecimal commit IDs and equal;
+    a prod movement since qualification raises ValueError. No branches are modified.
+    """
+    if event_name == "release":
+        release = object_value(event.get("release"), "release")
+        if event.get("action") != "published":
+            raise ValueError("Only a published final release authorizes package publication.")
+        if release.get("draft") is not False or release.get("prerelease") is not False:
+            raise ValueError("Draft/prerelease events do not authorize final PyPI publication.")
+        tag = text_value(release.get("tag_name"), "release.tag_name")
+        if ref != f"refs/tags/{tag}":
+            raise ValueError("The release tag does not match the workflow ref.")
+    elif event_name != "workflow_dispatch" or ref != "refs/heads/prod":
+        raise ValueError("Manual publication must run on prod; PR/push events cannot publish.")
+    for sha in (event_sha, checkout_sha, prod_sha):
+        if re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", sha) is None:
+            raise ValueError("Publication requires full, resolved commit SHAs.")
+    if event_sha != checkout_sha or checkout_sha != prod_sha:
+        raise ValueError(
+            f"Publication requires current prod HEAD: event={event_sha}, "
+            f"checkout={checkout_sha}, prod={prod_sha}. Requalify the intended release."
+        )
+
+
+def read_event() -> Mapping[str, object]:
+    """Read the GitHub-provided event file as data; fail if it is absent or malformed."""
+    path = pathlib.Path(text_value(os.environ.get("GITHUB_EVENT_PATH"), "GITHUB_EVENT_PATH"))
+    return object_value(json.loads(path.read_text(encoding="utf-8")), "event")
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Execute one read-only CI gate; print a diagnostic and return nonzero on refusal."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("gate", choices=("branch", "merge-ready", "hygiene", "release-head"))
+    args = parser.parse_args(argv)
+    try:
+        if args.gate == "branch":
+            required = package_required(os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
+                                        os.environ.get("GITHUB_REF", ""),
+                                        os.environ.get("GITHUB_REPOSITORY", ""))
+            with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+                output.write(f"package-required={str(required).lower()}\n")
+        elif args.gate == "merge-ready":
+            required_text = os.environ.get("CI_PACKAGE_REQUIRED", "")
+            if required_text not in ("true", "false"):
+                raise ValueError("Missing/invalid package requirement from branch-policy.")
+            results = object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs")
+            require_success(results, required_text == "true")
+        elif args.gate == "hygiene":
+            collisions = case_collisions(git_output(("ls-files", "-z")).split("\0")[:-1])
+            if collisions:
+                raise ValueError(f"Tracked paths collide case-insensitively: {collisions}")
+        else:
+            git_output(("fetch", "--no-tags", "origin",
+                        "+refs/heads/prod:refs/remotes/origin/prod"))
+            event_sha = text_value(os.environ.get("GITHUB_SHA"), "GITHUB_SHA")
+            validate_release(os.environ.get("GITHUB_EVENT_NAME", ""),
+                             os.environ.get("GITHUB_REF", ""), read_event(), event_sha,
+                             git_output(("rev-parse", "HEAD^{commit}")),
+                             git_output(("rev-parse", "refs/remotes/origin/prod^{commit}")))
+    except (ValueError, KeyError, OSError, subprocess.CalledProcessError) as error:
+        print(f"CI gate refused: {error}", file=sys.stderr)
+        return 1
+    print(f"OK: {args.gate}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/ci_policy.py
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/run_runtime_tests.py
+CONTENT SHA256: edd07f676c9bac52a321e7d0ec26d998bf378fdc74ce9ad60b29db19f4f727f6
+SOURCE ENCODING: utf-8
+================================================================================
+"""Execute the supported pytest tiers in a verified free-threaded Python process."""
+
+import argparse
+import pathlib
+import sys
+import sysconfig
+from typing import Optional, Sequence
+
+
+def require_free_threading(version: Sequence[int], supported: object, gil_enabled: bool) -> None:
+    """Raise RuntimeError unless Python 3.14+ supports free threading and the GIL is off."""
+    if tuple(version[:2]) < (3, 14) or supported != 1 or gil_enabled:
+        raise RuntimeError(
+            "Melder runtime CI requires Python 3.14+ free-threaded with the GIL disabled. "
+            "Select Python 3.14t and set PYTHON_GIL=0 for the test process."
+        )
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Run the three supported tiers and write JUnit evidence even when pytest fails.
+
+    Verify the actual process before and after pytest, rather than checking a
+    separate interpreter invocation. The workflow explicitly fixes PYTHON_GIL=0.
+    The return value is pytest's exit code; unsupported runtime state raises.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--report", type=pathlib.Path, required=True)
+    args = parser.parse_args(argv)
+    import pytest
+
+    require_free_threading(sys.version_info, sysconfig.get_config_var("Py_GIL_DISABLED"),
+                           sys._is_gil_enabled())
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    result = pytest.main([
+        "-q", "tests/unit", "tests/component", "tests/integration",
+        f"--junitxml={args.report}",
+    ])
+    require_free_threading(sys.version_info, sysconfig.get_config_var("Py_GIL_DISABLED"),
+                           sys._is_gil_enabled())
+    return int(result)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/run_runtime_tests.py
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/smoke_wheel.py
+CONTENT SHA256: e88b12e5f74a9bcb75bd3a0ec1f1efb7c9bac82ab415ade9c29857982736e69f
+SOURCE ENCODING: utf-8
+================================================================================
+"""Exercise the installed wheel's packaged documents from an isolated interpreter."""
+
+import sysconfig
+
+
+def main() -> None:
+    """Require the installed package and its document assets to work without checkout imports.
+
+    Run with the wheel virtual environment's Python and -I. Check the import path
+    before exercising runtime documents so an editable/source checkout cannot
+    accidentally satisfy this distribution-level test.
+    """
+    import pathlib
+    import melder
+    from melder._build_assets._agent_documentation.manifest.agent_documentation_manifest import MARKED_COUNT
+    from melder._build_assets._bind_guard.manifest.bind_guard_manifest import ENTRY_COUNT
+    from melder._build_assets._system_documents.manifest.system_documents_manifest import DOCUMENT_COUNT
+
+    installed = pathlib.Path(sysconfig.get_path("purelib")).resolve()
+    if not pathlib.Path(melder.__file__).resolve().is_relative_to(installed):
+        raise RuntimeError("Wheel smoke test imported Melder outside the isolated site-packages.")
+    documents = (melder.__architecture__, melder.__components__,
+                 melder.__graph_network__, melder.__graph_details__)
+    if not all(document.verify() for document in documents):
+        raise RuntimeError("Installed wheel contains an invalid packaged runtime document.")
+    if MARKED_COUNT <= 0 or ENTRY_COUNT <= 0 or DOCUMENT_COUNT != 4:
+        raise RuntimeError("Installed wheel is missing required runtime manifest content.")
+    graph = melder.__graph_network__
+    if graph.node_count <= 0 or graph.edge_count <= 0:
+        raise RuntimeError("Installed graph document is empty.")
+    node = graph.node("melder.aether.aether.Aether")
+    if graph.details_key(node.node_id) != node.source:
+        raise RuntimeError("Installed graph detail lookup disagrees with its node source.")
+    print(f"OK: installed Melder {melder.__version__}; four documents and graph lookup verified.")
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: .github/scripts/smoke_wheel.py
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/verify_distributions.py
+CONTENT SHA256: 1a823df9bc7bf5f1a421766db40399b267c50df7388a0540e035db62b51f0694
+SOURCE ENCODING: utf-8
+================================================================================
+"""Verify wheel/sdist boundaries and version identity without importing Melder."""
+
+import argparse
+import ast
+import email.parser
+import pathlib
+import re
+import tarfile
+import zipfile
+from collections.abc import Sequence
+from typing import Optional
+
+
+class DistributionPolicy:
+    """Define the package files and archive boundaries required for a Melder release."""
+
+    REQUIRED: frozenset[str] = frozenset({
+        "melder/py.typed",
+        "melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
+        "melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
+        "melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
+        "melder/_build_assets/_system_documents/manifest/system_documents_index.py",
+        "melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
+        "melder/_build_assets/_system_documents/payloads/src_architecture_payload.py",
+        "melder/_build_assets/_system_documents/payloads/src_components_payload.py",
+        "melder/_build_assets/_system_documents/payloads/src_graph_payload.py",
+    })
+    VERSION_MANIFESTS: tuple[str, ...] = (
+        "melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
+        "melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
+        "melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
+    )
+    ROOT_FILES: frozenset[str] = frozenset({
+        "LICENSE", "NOTICE", "README.md", "pyproject.toml", "PKG-INFO", "setup.cfg",
+    })
+    FORBIDDEN_SUFFIXES: tuple[str, ...] = (
+        ".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".melc", ".prof", ".pstats",
+    )
+
+
+def assignment(source: str, name: str) -> str:
+    """Read one literal string assignment through AST; never execute package source."""
+    for node in ast.parse(source).body:
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign):
+            targets = [node.target]
+        else:
+            continue
+        if any(isinstance(target, ast.Name) and target.id == name for target in targets):
+            value = ast.literal_eval(node.value)
+            if not isinstance(value, str) or not value:
+                raise ValueError(f"{name} must be a nonempty literal version string.")
+            return value
+    raise ValueError(f"Required version assignment {name} is absent.")
+
+
+def unsafe(name: str) -> bool:
+    """Identify absolute, traversing, backslash, or drive-qualified archive paths."""
+    path = pathlib.PurePosixPath(name)
+    return (path.is_absolute() or ".." in path.parts or "\\" in name or "\x00" in name
+            or bool(re.match(r"^[A-Za-z]:", name)))
+
+
+def forbidden(name: str) -> bool:
+    """Return whether an archive member is a forbidden cache, database, or profiler output."""
+    return "__pycache__" in pathlib.PurePosixPath(name).parts or name.lower().endswith(
+        DistributionPolicy.FORBIDDEN_SUFFIXES
+    )
+
+
+def metadata_version(text: str, label: str) -> str:
+    """Require matching package name and supported-Python metadata; return the version."""
+    metadata = email.parser.Parser().parsestr(text)
+    if metadata.get("Name") != "melder" or metadata.get("Requires-Python") != ">=3.14":
+        raise ValueError(f"{label} must describe melder with Requires-Python >=3.14.")
+    version = metadata.get("Version")
+    if not isinstance(version, str) or not version:
+        raise ValueError(f"{label} has no package version.")
+    return version
+
+
+def verify_wheel(path: pathlib.Path, expected_version: str) -> None:
+    """Verify the wheel's members, metadata, source version, and required generated assets.
+
+    Archive resources are closed on every path. Unexpected roots, duplicate names,
+    unsafe/cache members, absent assets, or any version mismatch raise ValueError.
+    No wheel contents are imported or extracted.
+    """
+    with zipfile.ZipFile(path) as archive:
+        names = [name for name in archive.namelist() if not name.endswith("/")]
+        if len(names) != len(set(names)):
+            raise ValueError("Wheel contains duplicate members.")
+        for member in archive.infolist():
+            # ZipInfo normalizes separators/NULs on some platforms. Validate the
+            # original archive spelling before trusting its normalized lookup key.
+            name = member.filename
+            if unsafe(member.orig_filename) or unsafe(name) or forbidden(name):
+                raise ValueError(f"Unsafe/forbidden wheel member: {name}")
+            if not (name.startswith("melder/") or re.match(r"melder-[^/]+\.dist-info/", name)):
+                raise ValueError(f"Unexpected wheel root: {name}")
+        missing = DistributionPolicy.REQUIRED.difference(names)
+        if missing:
+            raise ValueError(f"Wheel is missing required assets: {sorted(missing)}")
+        metadata_names = [name for name in names if name.endswith(".dist-info/METADATA")]
+        if len(metadata_names) != 1:
+            raise ValueError("Wheel must contain exactly one METADATA file.")
+        versions = {
+            metadata_version(archive.read(metadata_names[0]).decode("utf-8"), "wheel METADATA"),
+            assignment(archive.read("melder/__version__.py").decode("utf-8"), "__version__"),
+        }
+        versions.update(assignment(archive.read(name).decode("utf-8"), "BUILT_FOR_VERSION")
+                        for name in DistributionPolicy.VERSION_MANIFESTS)
+        if versions != {expected_version}:
+            raise ValueError(f"Wheel/source/asset versions {sorted(versions)} differ from {expected_version}.")
+
+
+def tar_text(archive: tarfile.TarFile, name: str) -> str:
+    """Read one regular tar member as UTF-8 and close its file handle; fail when missing."""
+    member = archive.getmember(name)
+    if not member.isfile():
+        raise ValueError(f"Required sdist member is not a regular file: {name}")
+    stream = archive.extractfile(member)
+    if stream is None:
+        raise ValueError(f"Cannot read required sdist member: {name}")
+    with stream:
+        return stream.read().decode("utf-8")
+
+
+def verify_sdist(path: pathlib.Path, expected_version: str) -> None:
+    """Verify sdist boundaries and independently check its metadata/source/asset versions.
+
+    Directories are allowed; links, devices, duplicate files, escaped paths, and
+    unrelated project roots are refused. Inspection never extracts the archive.
+    """
+    with tarfile.open(path, "r:gz") as archive:
+        members = archive.getmembers()
+        roots = {member.name.split("/", 1)[0] for member in members}
+        if len(roots) != 1:
+            raise ValueError(f"Sdist must contain one package root, found {sorted(roots)}.")
+        root = next(iter(roots))
+        names: set[str] = set()
+        for member in members:
+            if unsafe(member.name) or forbidden(member.name):
+                raise ValueError(f"Unsafe/forbidden sdist member: {member.name}")
+            if member.isdir():
+                continue
+            if not member.isfile():
+                raise ValueError(f"Sdist contains a non-regular member: {member.name}")
+            if member.name in names:
+                raise ValueError(f"Duplicate sdist member: {member.name}")
+            names.add(member.name)
+            relative = member.name.removeprefix(root + "/")
+            if not (relative in DistributionPolicy.ROOT_FILES or relative.startswith("src/melder/")
+                    or relative.startswith("src/melder.egg-info/")):
+                raise ValueError(f"Unexpected sdist member: {member.name}")
+        required = {f"{root}/src/{name}" for name in DistributionPolicy.REQUIRED}
+        if missing := required.difference(names):
+            raise ValueError(f"Sdist is missing required assets: {sorted(missing)}")
+        versions = {
+            metadata_version(tar_text(archive, f"{root}/PKG-INFO"), "sdist PKG-INFO"),
+            assignment(tar_text(archive, f"{root}/src/melder/__version__.py"), "__version__"),
+        }
+        versions.update(assignment(tar_text(archive, f"{root}/src/{name}"), "BUILT_FOR_VERSION")
+                        for name in DistributionPolicy.VERSION_MANIFESTS)
+        if versions != {expected_version}:
+            raise ValueError(f"Sdist/source/asset versions {sorted(versions)} differ from {expected_version}.")
+
+
+def verify_distributions(directory: pathlib.Path, expected_version: str,
+                         release_tag: str = "") -> None:
+    """Require exactly one wheel and sdist matching the selected checkout and optional tag."""
+    wheels = list(directory.glob("*.whl"))
+    sdists = list(directory.glob("*.tar.gz"))
+    if len(wheels) != 1 or len(sdists) != 1:
+        raise ValueError(f"Expected one wheel and one sdist; found {len(wheels)} and {len(sdists)}.")
+    if set(directory.iterdir()) != set(wheels + sdists):
+        raise ValueError("Distribution directory contains files outside the verified wheel/sdist pair.")
+    if release_tag and release_tag.removeprefix("v") != expected_version:
+        raise ValueError(f"Release tag {release_tag!r} does not match package version {expected_version!r}.")
+    verify_wheel(wheels[0], expected_version)
+    verify_sdist(sdists[0], expected_version)
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Inspect built/downloaded distributions against the checked-out source version."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("dist"))
+    parser.add_argument("--release-tag", default="")
+    args = parser.parse_args(argv)
+    version = assignment(pathlib.Path("src/melder/__version__.py").read_text(encoding="utf-8"),
+                         "__version__")
+    verify_distributions(args.directory, version, args.release_tag)
+    print(f"OK: wheel and sdist are bounded, complete, and version-consistent ({version}).")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/verify_distributions.py
+================================================================================
+================================================================================
+BEGIN FILE: .github/workflows/build-distributions.yml
+CONTENT SHA256: 13cb780b83e4ca0a123038951f14523c3ddccbb1deb6c2337752e6d7d30e7c2c
+SOURCE ENCODING: utf-8
+================================================================================
+name: Build distributions
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        type: string
+        required: true
+      release-tag:
+        type: string
+        default: ""
+  workflow_dispatch:
+    inputs:
+      artifact-name:
+        description: Name for the verified distribution artifact
+        type: string
+        default: manual-distributions
+      release-tag:
+        description: Optional tag to compare with the package version
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Distributions / build-and-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHON_GIL: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14t"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --group build
+      - name: Verify durable source assets
+        run: python src/melder/_build_assets/_build_asset_runner.py --check
+      - name: Build wheel and source distribution
+        run: python -m build --sdist --wheel
+      - name: Verify archive boundaries and versions
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+      - name: Install and verify the wheel in isolation
+        run: |
+          python -m venv "$RUNNER_TEMP/melder-wheel-probe"
+          "$RUNNER_TEMP/melder-wheel-probe/bin/python" -m pip install --quiet --no-deps dist/*.whl
+          "$RUNNER_TEMP/melder-wheel-probe/bin/python" -I .github/scripts/smoke_wheel.py
+      - name: Retain verified distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+================================================================================
+END FILE: .github/workflows/build-distributions.yml
+================================================================================
+================================================================================
 BEGIN FILE: .github/workflows/build-repo-assets.yml
-CONTENT SHA256: 5923b9f705719e73927a6133ef2b25520efe171ba324ae20e8951380af409253
+CONTENT SHA256: fd3639e1913886e3eb8438a5178a2fca95544551d169fbe2d5c05cfaecc508b5
 SOURCE ENCODING: utf-8
 ================================================================================
 name: build-repo-assets
 
-# Repository-wide generated assets are committed truth for external LLM tools.
-# This workflow is deliberately check-only: Actions run after a commit exists,
-# so bot write-back would create a second commit rather than repair the first.
-
+# Repository bundles are committed truth for external LLM tools. CI verifies
+# them without bot write-back. Its mandatory gate cannot be disabled with
+# BUILD_REPO_ASSETS_GATE; the former switch is retired.
 on:
-  push:
-    branches: ["**"]
-  pull_request:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: build-repo-assets-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  gate-status:
-    name: gate status
-    runs-on: ubuntu-latest
-    steps:
-      - name: Report whether the gate is armed
-        env:
-          GATE: ${{ vars.BUILD_REPO_ASSETS_GATE }}
-        run: |
-          if [ "${GATE,,}" = "off" ]; then
-            echo "::warning title=Repository-asset gate is DISABLED::BUILD_REPO_ASSETS_GATE=${GATE} - committed LLM bundles are not being verified."
-          else
-            echo "Repository-asset gate is armed."
-          fi
-
   repo-assets-current:
-    name: repository assets are current
-    if: vars.BUILD_REPO_ASSETS_GATE != 'off' || github.event_name == 'workflow_dispatch'
+    name: Repository assets / verify
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
-
       - name: List repository asset inputs
         run: python llm_support/_builder.py --list
-
-      - name: Verify repository assets
+      - name: Verify committed repository assets
         run: python llm_support/_builder.py --check
-
       - name: Explain failure
         if: failure()
         run: |
-          echo "::error::Committed repository assets are stale or hand-edited."
-          echo "Regenerate locally and commit the results:"
+          echo "::error::Committed repository assets are stale or invalid."
+          echo "Regenerate locally, then commit the result:"
           echo "    python llm_support/_builder.py"
 ================================================================================
 END FILE: .github/workflows/build-repo-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-src-assets.yml
-CONTENT SHA256: 5931ecc573e07bd44105e2a095b1777e58196da4faede25288d964d1477c837f
+CONTENT SHA256: 1d7842f5108929fa1c354339b44061b151caf08a34442ad7576bd8eb29ae47ec
 SOURCE ENCODING: utf-8
 ================================================================================
 name: build-src-assets
 
-# WHY THIS GATE EXISTS
-# --------------------
-# melder's durable build assets are generated, committed, and imported at module
-# scope by the runtime. The bind-guard manifest in particular IS the enforced
-# registration policy - `bind.py` reads it directly and there is no runtime
-# rebuild lane, so a stale committed manifest silently enforces a class list that
-# no longer matches the source. That has already happened in this repo: a
-# manifest generated before a class was added went unregenerated and drifted
-# unnoticed.
-#
-# This job is the only thing standing between that and a released wheel.
-#
-#
-# KILL SWITCH
-# -----------
-# Set the repository variable BUILD_SRC_ASSETS_GATE to `off` to stop this gate
-# running on push and pull_request:
-#
-#     Settings -> Secrets and variables -> Actions -> Variables tab
-#     New repository variable:  BUILD_SRC_ASSETS_GATE = off
-#
-# Or from the CLI, no commit and no file edit either way:
-#
-#     gh variable set BUILD_SRC_ASSETS_GATE --body off      # disable
-#     gh variable set BUILD_SRC_ASSETS_GATE --body on       # re-enable
-#     gh variable delete BUILD_SRC_ASSETS_GATE              # re-enable (unset)
-#
-# Two deliberate choices about how the switch behaves:
-#
-#   DEFAULT IS ON. The test is `!= 'off'`, not `== 'on'`, so an unset or
-#   misspelled variable leaves the gate RUNNING. A safety check whose default
-#   state is "silently absent" is worse than no check at all - a fresh clone, a
-#   fork, or a typo would disable the one thing protecting the registration
-#   policy, and nothing would say so.
-#
-#   MANUAL RUNS IGNORE IT. `workflow_dispatch` always executes, so the gate is
-#   still available on demand while it is switched off for routine pushes.
-#
-# The `gate-status` job below runs unconditionally and is loud when the switch is
-# off, so a gate disabled during a working session cannot quietly stay disabled.
-# It costs a few seconds. Delete it if you find it noisy - it is a guardrail on
-# the guardrail, not part of the check.
-#
-# To silence this workflow entirely without touching either, use the Actions tab
-# -> build-src-assets -> "..." -> Disable workflow. That is GitHub-side state, so it
-# leaves no trace in the repo, which cuts both ways.
-
+# Committed runtime manifests are authoritative and must match their builders.
+# CI owns push/PR triggering and calls this workflow for every required gate.
+# The former BUILD_SRC_ASSETS_GATE kill switch is retired: a required validation
+# must never turn into a successful skipped job. Manual checks remain available.
 on:
-  push:
-    branches: ["**"]
-    # Only source changes can move a manifest. Docs, tickets and context_compass
-    # edits cannot, so they no longer trigger a ~2 minute tree hash. This is the
-    # cheap half of "stop running all the time" - it needs no switch and cannot
-    # leave the gate off by accident.
-    paths:
-      - "src/melder/**/*.py"
-      - ".github/workflows/build-src-assets.yml"
-  pull_request:
-    paths:
-      - "src/melder/**/*.py"
-      - ".github/workflows/build-src-assets.yml"
+  workflow_call:
   workflow_dispatch:
 
-# A push to a branch that already has an open PR fires this twice. Cancelling
-# superseded runs per ref keeps the newest one and drops the rest.
-concurrency:
-  group: build-src-assets-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
+# Concurrency belongs to the caller. A helper must not cancel a publication run
+# or another caller checking the same ref.
 jobs:
-  gate-status:
-    name: gate status
-    runs-on: ubuntu-latest
-    steps:
-      - name: Report whether the gate is armed
-        # Passed through `env` rather than interpolated straight into the script:
-        # a `${{ }}` substitution inside `run:` is pasted in as raw shell text, so
-        # a variable value containing shell metacharacters would execute.
-        env:
-          GATE: ${{ vars.BUILD_SRC_ASSETS_GATE }}
-        run: |
-          # Lowercased on purpose. GitHub Actions `!=` on strings is CASE
-          # INSENSITIVE, so `OFF` and `Off` disable the job below. A
-          # case-sensitive test here would then report "armed" while the gate
-          # was actually off - the one lie this job exists to prevent.
-          if [ "${GATE,,}" = "off" ]; then
-            echo "::warning title=Build-asset gate is DISABLED::BUILD_SRC_ASSETS_GATE=${GATE} - committed manifests are NOT being verified. Re-arm with: gh variable delete BUILD_SRC_ASSETS_GATE"
-          else
-            echo "Build-asset gate is armed."
-          fi
-
   assets-current:
-    name: durable build assets are current
-    # Runs unless explicitly switched off; manual dispatch always runs.
-    if: vars.BUILD_SRC_ASSETS_GATE != 'off' || github.event_name == 'workflow_dispatch'
+    name: Source assets / verify
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          # The runner never imports melder - it loads builders by file path and
-          # parses source with `ast` - so it does not need the 3.14t free-threaded
-          # build the runtime itself requires.
+          # Builders parse source without importing the Melder runtime.
           python-version: "3.14"
-
       - name: List discovered build assets
         run: python src/melder/_build_assets/_build_asset_runner.py --list
-
-      - name: Verify every manifest matches its builder
+      - name: Verify committed source assets
         run: python src/melder/_build_assets/_build_asset_runner.py --check
-
       - name: Explain failure
         if: failure()
         run: |
-          echo "::error::A committed build asset is stale or hand-edited."
-          echo "Regenerate locally and commit the result:"
+          echo "::error::A committed source asset is stale or invalid."
+          echo "Regenerate locally, then commit the result:"
           echo "    python src/melder/_build_assets/_build_asset_runner.py"
 ================================================================================
 END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
+BEGIN FILE: .github/workflows/ci.yml
+CONTENT SHA256: 0c422258dba6e1f9b0712463dd7d029402f70c6c9cd8ec36db3056e3c33fa1e2
+SOURCE ENCODING: utf-8
+================================================================================
+name: CI
+
+# A required check must be reported for every PR, including docs-only changes.
+# Feature pushes are covered by their PR; permanent-branch pushes validate the
+# resulting revision. No path filters or repository-variable kill switches.
+on:
+  pull_request:
+    branches: [dev, preprod, prod]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [dev, preprod, prod]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  branch-policy:
+    name: CI / branch-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      package-required: ${{ steps.route.outputs.package-required }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Validate the branch route
+        id: route
+        run: python .github/scripts/ci_policy.py branch
+
+  hygiene:
+    name: CI / repository-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: python .github/scripts/ci_policy.py hygiene
+
+  source-assets:
+    uses: ./.github/workflows/build-src-assets.yml
+
+  repo-assets:
+    uses: ./.github/workflows/build-repo-assets.yml
+
+  tests:
+    uses: ./.github/workflows/test-runtime.yml
+
+  packages:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.package-required == 'true'
+    uses: ./.github/workflows/build-distributions.yml
+    with:
+      artifact-name: ci-dists-${{ github.run_id }}-${{ github.run_attempt }}
+
+  merge-ready:
+    name: CI / merge-ready
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, packages]
+    # Without always(), a failed dependency skips the very check required to
+    # block merging. The script accepts only explicitly successful evidence.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Require every mandatory check to succeed
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
+        run: python .github/scripts/ci_policy.py merge-ready
+================================================================================
+END FILE: .github/workflows/ci.yml
+================================================================================
+================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: c6063a08b4dbfd6673922799d09dcaac1c99cdb03dc0c4c0219e6f2594ed97a4
+CONTENT SHA256: f50a820b7382d8373cf8ccfe83242b56f43520029cb0858067a1cc422f4f47a1
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
 
-# This workflow must exist on GitHub's default branch so release events reach it.
-# Publishing is still allowed only when the event commit is exactly current prod HEAD.
+# Release events must reach this workflow on the default branch. Earlier PR CI
+# never substitutes for this fresh release-time test/build qualification.
 on:
   release:
     types: [published]
   workflow_dispatch:
 
+# Serialize manual and release-event publication across every tag/ref.
 concurrency:
-  group: pypi-${{ github.event.release.tag_name || github.ref }}
+  group: pypi-publication
   cancel-in-progress: false
 
 permissions:
@@ -281,326 +1068,81 @@ permissions:
 jobs:
   release-gate:
     name: Require current prod HEAD
+    # Publishing an RC on GitHub must not publish a final package automatically.
+    if: github.event_name != 'release' || !github.event.release.prerelease
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Verify the event commit is current prod
-        shell: bash
-        run: |
-          git fetch --no-tags origin \
-            +refs/heads/prod:refs/remotes/origin/prod
-
-          event_sha="$(git rev-parse "${GITHUB_SHA}^{commit}")"
-          prod_sha="$(git rev-parse "refs/remotes/origin/prod^{commit}")"
-
-          echo "event: ${GITHUB_EVENT_NAME}"
-          echo "event commit: ${event_sha}"
-          echo "prod HEAD:    ${prod_sha}"
-
-          if [ "${event_sha}" != "${prod_sha}" ]; then
-            echo "::error::PyPI publishing is allowed only from current prod HEAD."
-            exit 1
-          fi
-
-  hygiene:
-    name: Repository hygiene
-    runs-on: ubuntu-latest
-    needs: release-gate
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Reject paths differing only by case
-        shell: bash
-        run: |
-          dupes=$(git ls-files | LC_ALL=C tr '[:upper:]' '[:lower:]' | sort | uniq -d)
-          if [ -n "${dupes}" ]; then
-            echo "Paths in the index that collide case-insensitively:"
-            echo "${dupes}" | while IFS= read -r low; do
-              git ls-files | grep -ix -- "${low}" | sed 's/^/  /'
-            done
-            exit 1
-          fi
-          echo "OK: no case-colliding paths"
-
-  test:
-    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    needs: release-gate
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.14t"]
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-python@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Confirm the supported runtime
-        run: >-
-          python -c "import sys; print(sys.version);
-          assert sys.version_info >= (3, 14), sys.version"
-
-      - name: Install Melder and test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group test
-          python -m pip install --no-deps --editable .
-
-      - name: Run supported test tiers
-        run: python -m pytest -q tests/unit tests/component tests/integration
-
-  release-build:
-    name: Build and verify distributions
-    runs-on: ubuntu-latest
-    needs: [release-gate, hygiene, test]
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@v7
-
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
+      - name: Authorize the selected final release
+        run: python .github/scripts/ci_policy.py release-head
 
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group build
-
-      - name: Verify durable build assets
-        run: python src/melder/_build_assets/_build_asset_runner.py --check
-
-      - name: Build release distributions
-        run: python -m build --sdist --wheel
-
-      - name: Verify distribution boundaries and version agreement
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          python - <<'PY'
-          import ast
-          import email.parser
-          import glob
-          import os
-          import pathlib
-          import re
-          import sys
-          import tarfile
-          import zipfile
-
-          wheels = glob.glob("dist/*.whl")
-          sdists = glob.glob("dist/*.tar.gz")
-          problems = []
-
-          if len(wheels) != 1:
-              problems.append(f"expected one wheel, found {wheels}")
-          if len(sdists) != 1:
-              problems.append(f"expected one sdist, found {sdists}")
-          if problems:
-              raise SystemExit("\n".join(problems))
-
-          wheel = wheels[0]
-          sdist = sdists[0]
-
-          def unsafe(name: str) -> bool:
-              path = pathlib.PurePosixPath(name)
-              return path.is_absolute() or ".." in path.parts or "\\" in name
-
-          def assignment(source: str, name: str) -> str:
-              for node in ast.parse(source).body:
-                  if isinstance(node, ast.Assign):
-                      targets = node.targets
-                  elif isinstance(node, ast.AnnAssign):
-                      targets = [node.target]
-                  else:
-                      continue
-                  if any(isinstance(target, ast.Name) and target.id == name
-                         for target in targets):
-                      return str(ast.literal_eval(node.value))
-              raise ValueError(f"{name} not found")
-
-          with zipfile.ZipFile(wheel) as archive:
-              names = sorted(name for name in archive.namelist()
-                             if not name.endswith("/"))
-
-              for name in names:
-                  if unsafe(name):
-                      problems.append(f"unsafe wheel member: {name}")
-                  if not (name.startswith("melder/") or
-                          re.match(r"melder-[^/]+\.dist-info/", name)):
-                      problems.append(f"unexpected wheel root: {name}")
-                  if ("/__pycache__/" in f"/{name}" or
-                          name.lower().endswith((
-                              ".db", ".sqlite", ".sqlite3", ".pyc",
-                              ".pyo", ".melc", ".prof", ".pstats",
-                          ))):
-                      problems.append(f"forbidden generated member: {name}")
-
-              required = {
-                  "melder/py.typed",
-                  "melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
-                  "melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
-                  "melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
-                  "melder/_build_assets/_system_documents/manifest/system_documents_index.py",
-                  "melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
-                  "melder/_build_assets/_system_documents/payloads/src_architecture_payload.py",
-                  "melder/_build_assets/_system_documents/payloads/src_components_payload.py",
-                  "melder/_build_assets/_system_documents/payloads/src_graph_payload.py",
-              }
-              missing = sorted(required.difference(names))
-              if missing:
-                  problems.append(f"wheel is missing required assets: {missing}")
-
-              metadata_name = next(
-                  (name for name in names if name.endswith(".dist-info/METADATA")),
-                  None,
-              )
-              if metadata_name is None:
-                  problems.append("wheel has no METADATA")
-                  wheel_version = "<missing>"
-              else:
-                  metadata = email.parser.Parser().parsestr(
-                      archive.read(metadata_name).decode("utf-8")
-                  )
-                  wheel_version = metadata["Version"]
-                  if metadata["Name"] != "melder":
-                      problems.append(f"unexpected package name: {metadata['Name']}")
-                  if metadata["Requires-Python"] != ">=3.14":
-                      problems.append(
-                          f"unexpected Requires-Python: {metadata['Requires-Python']}"
-                      )
-
-              source_version = assignment(
-                  archive.read("melder/__version__.py").decode("utf-8"),
-                  "__version__",
-              )
-              manifest_names = (
-                  "melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
-                  "melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
-                  "melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
-              )
-              manifest_versions = {
-                  assignment(archive.read(name).decode("utf-8"), "BUILT_FOR_VERSION")
-                  for name in manifest_names
-              }
-
-          with tarfile.open(sdist, "r:gz") as archive:
-              members = [member for member in archive.getmembers() if member.isfile()]
-              sdist_names = sorted(member.name for member in members)
-              roots = {name.split("/", 1)[0] for name in sdist_names}
-              if len(roots) != 1:
-                  problems.append(f"sdist has unexpected roots: {sorted(roots)}")
-              root = next(iter(roots), "<missing>")
-              root_files = {
-                  "LICENSE", "NOTICE", "README.md", "pyproject.toml",
-                  "PKG-INFO", "setup.cfg",
-              }
-              for name in sdist_names:
-                  if unsafe(name):
-                      problems.append(f"unsafe sdist member: {name}")
-                      continue
-                  relative = name[len(root) + 1:] if name.startswith(root + "/") else name
-                  if not (relative in root_files or
-                          relative.startswith("src/melder/") or
-                          relative.startswith("src/melder.egg-info/")):
-                      problems.append(f"unexpected sdist member: {name}")
-
-          release_tag = os.environ.get("RELEASE_TAG", "").lstrip("v")
-          if not (wheel_version == source_version and
-                  manifest_versions == {wheel_version}):
-              problems.append(
-                  "version disagreement: "
-                  f"wheel={wheel_version}, source={source_version}, "
-                  f"assets={sorted(manifest_versions)}"
-              )
-          if os.environ.get("EVENT_NAME") == "release" and release_tag != wheel_version:
-              problems.append(
-                  f"release tag v{release_tag} does not match wheel {wheel_version}"
-              )
-
-          print(f"wheel files: {len(names)}")
-          print(f"sdist files: {len(sdist_names)}")
-          print(f"version:     {wheel_version}")
-
-          if problems:
-              print("FAILED:")
-              for problem in problems:
-                  print(f"  - {problem}")
-              sys.exit(1)
-          print("OK: distributions are bounded, complete, and version-consistent")
-          PY
-
-      - name: Install the wheel and exercise packaged runtime documents
-        run: |
-          python -m venv /tmp/melder-wheel-probe
-          /tmp/melder-wheel-probe/bin/pip install --quiet --no-deps dist/*.whl
-          /tmp/melder-wheel-probe/bin/python - <<'PY'
-          import melder
-          from melder._build_assets._agent_documentation.manifest.agent_documentation_manifest import MARKED_COUNT
-          from melder._build_assets._bind_guard.manifest.bind_guard_manifest import ENTRY_COUNT
-          from melder._build_assets._system_documents.manifest.system_documents_manifest import DOCUMENT_COUNT
-
-          documents = (
-              melder.__architecture__,
-              melder.__components__,
-              melder.__graph_network__,
-              melder.__graph_details__,
-          )
-          assert all(document.verify() for document in documents)
-          assert MARKED_COUNT > 0
-          assert ENTRY_COUNT > 0
-          assert DOCUMENT_COUNT == 4
-          assert melder.__graph_network__.node_count > 0
-          assert melder.__graph_network__.edge_count > 0
-
-          node = melder.__graph_network__.node("melder.aether.aether.Aether")
-          assert melder.__graph_network__.details_key(node.node_id) == node.source
-          print(
-              f"OK: melder {melder.__version__}; "
-              f"documents={DOCUMENT_COUNT}; nodes={melder.__graph_network__.node_count}; "
-              f"edges={melder.__graph_network__.edge_count}"
-          )
-          PY
-
-      - name: Upload distributions
-        uses: actions/upload-artifact@v7
+  hygiene:
+    name: Release / repository-hygiene
+    needs: release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          name: release-dists
-          path: dist/
-          if-no-files-found: error
-          retention-days: 7
+          python-version: "3.14"
+      - run: python .github/scripts/ci_policy.py hygiene
+
+  source-assets:
+    needs: release-gate
+    uses: ./.github/workflows/build-src-assets.yml
+
+  repo-assets:
+    needs: release-gate
+    uses: ./.github/workflows/build-repo-assets.yml
+
+  tests:
+    needs: release-gate
+    uses: ./.github/workflows/test-runtime.yml
+
+  release-build:
+    needs: [release-gate, hygiene, source-assets, repo-assets, tests]
+    uses: ./.github/workflows/build-distributions.yml
+    with:
+      artifact-name: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
+      release-tag: ${{ github.event.release.tag_name || '' }}
 
   pypi-publish:
     name: Publish to PyPI
+    needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
     runs-on: ubuntu-latest
-    needs: release-build
     timeout-minutes: 10
     environment:
-      # Environment-scoped secret: PYPI_API_TOKEN.
+      # Only this job receives the environment-scoped PYPI_API_TOKEN.
       name: pypi
       url: https://pypi.org/project/melder/
-
     steps:
-      - name: Retrieve release distributions
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Retrieve this run's verified distributions
         uses: actions/download-artifact@v8
         with:
-          name: release-dists
+          name: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
           path: dist/
-
-      - name: Publish release distributions to PyPI
+      - name: Recheck distribution and tag identity
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+        run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+      - name: Final prod check immediately before publication
+        # This runs AFTER environment approval and fails if prod moved while
+        # tests, builds, or a human approval were pending.
+        run: python .github/scripts/ci_policy.py release-head
+      - name: Publish freshly verified distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
@@ -610,6 +1152,57 @@ jobs:
           print-hash: true
 ================================================================================
 END FILE: .github/workflows/python-publish.yml
+================================================================================
+================================================================================
+BEGIN FILE: .github/workflows/test-runtime.yml
+CONTENT SHA256: 41c21335d4539bdf5346e6d7cb99051670332256856abd47d5b5a77393ec305f
+SOURCE ENCODING: utf-8
+================================================================================
+name: Runtime tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Runtime / ${{ matrix.os }} / Python 3.14t
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      # Fix the posture for the actual pytest process, including its plugins.
+      PYTHON_GIL: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14t"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install Melder and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --group test
+          python -m pip install --no-deps --editable .
+      - name: Run supported test tiers with runtime verification
+        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+      - name: Retain test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: runtime-results-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/runtime.xml
+          if-no-files-found: warn
+          retention-days: 14
+================================================================================
+END FILE: .github/workflows/test-runtime.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .gitignore
@@ -2967,7 +3560,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py
-CONTENT SHA256: f3fa030a211d71140b556730399f532e6dc369e30927e21edbd77b05519b197e
+CONTENT SHA256: 2ba89b8e4ebad65f93f74f6589b20a5fc38f424e241942f61eee998c0a197f6d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -2975,6 +3568,8 @@ TIER: beginner (07)
 GOAL: The vocabulary enums all accept their string names too - config
       files and CLI flags can drive registration without importing the
       enums. Both spellings resolve to the same lifecycles.
+SURFACE EXERCISED: md.Spellbook.bind, md.Spellbook.conjure, md.Existence.many,
+                   md.Conduit.meld
 """
 import melder as md
 
@@ -57339,7 +57934,7 @@ END FILE: benchmarks/testing_other_di/test_unroll_path_diagnostic.py
 ================================================================================
 ================================================================================
 BEGIN FILE: pyproject.toml
-CONTENT SHA256: 151e3d9674cfd0cc8ae6bf5d454e23b0fec080a621c2c5f8826c8afd33791045
+CONTENT SHA256: 04de772dd9338062edfcba0f8d06c4f5851bee11c6ec7652e9a8f967f573b8a1
 SOURCE ENCODING: utf-8
 ================================================================================
 [build-system]
@@ -57435,6 +58030,8 @@ test = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "coverage>=7.15.0",
+    # Parse workflow structure in CI contract tests; not a runtime dependency.
+    "PyYAML>=6.0.3",
 ]
 
 lint = [

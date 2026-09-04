@@ -1,0 +1,11 @@
+{% extends "!page.html" %}
+
+{% block body %}
+  {% if toc %}
+  <details class="melder-page-toc">
+    <summary>On this page</summary>
+    {{ toc }}
+  </details>
+  {% endif %}
+  {{ super() }}
+{% endblock %}

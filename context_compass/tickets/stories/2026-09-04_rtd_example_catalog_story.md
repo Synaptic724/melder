@@ -4,7 +4,7 @@
 - Story ID: STORY-2026-09-04-rtd-example-catalog
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -54,6 +54,7 @@ quietly shrink when new scripts are added.
 - Depends on S1. Supplies generated pages and editorial slots to S3-S6 and links to S7.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement the complete saved-example catalog and lesson pages](../tasks/2026-09-04_rtd_example_catalog_task.md)
 - [ ] Open a scoped task and define lesson identity/schema from the actual corpus.
 - [ ] Implement discovery, source inclusion, static catalog, and topic/level access.
 - [ ] Add helper-aware run/download handling and revision-specific source links.

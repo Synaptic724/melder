@@ -50,9 +50,12 @@ Make the four learning levels connect to durable, current reference material wit
 - transition_reason: Reference delivery scope defined; no implementation started.
 
 ## Dependencies / Related Work
-S3-S6 supply reader questions and lesson connections. S8 supplies version/hosting context; S9 audits completeness.
+S3-S6 supply an agreed topic/API target map; their completed prose is not an entry prerequisite for S7.
+Reference destinations can be delivered while curricula are authored. S8 applies hosted version settings;
+S7's revision-specific source-link logic uses the local build revision. S9 audits integrated completeness.
 
 ## Tasks (Implementation Checklist)
+- [ ] [Implement public API and architecture reference integration](../tasks/2026-09-04_rtd_reference_content_task.md)
 - [ ] Map public API/document coverage and reconcile inclusions/exclusions explicitly.
 - [ ] Integrate architecture pages/SVGs and resolve local links to source/site destinations.
 - [ ] Build public API, glossary, troubleshooting, migration, and agent reference pages.

@@ -24,10 +24,10 @@ Persistent learning navigation, in order:
 
 | Learning section | Promise | Initial example inventory |
 | --- | --- | --- |
-| Green Beginner | Build and own a useful object graph with a small public vocabulary | 41 |
-| Yellow Intermediate | Configure, compose, and connect independently owned subsystems | 37 |
-| Orange Advanced | Isolate worlds and inspect or target more complex runtime structures | 19 |
-| Blue Expert | Operate agent surfaces, persistence, research, and governed structural change | 36 |
+| 🟢 Beginner | Build and own a useful object graph with a small public vocabulary | 41 |
+| 🟡 Intermediate | Configure, compose, and connect independently owned subsystems | 37 |
+| 🟠 Advanced | Isolate worlds and inspect or target more complex runtime structures | 19 |
+| 🔵 Expert | Operate agent surfaces, persistence, research, and governed structural change | 36 |
 
 Adjacent discovery/reference entries: **All Examples**, **Full Contents**, **Architecture & Drawings**,
 **API Reference**, **Glossary**, **Troubleshooting**, and **Releases & Migration**. These are supporting
@@ -46,7 +46,7 @@ Keep the README's concrete teaching voice. Define terms before using them. Expla
 at their level and link prerequisites without making the earlier path depend on the later one.
 
 ## 3. Complete Table of Contents and Free Exploration
-- `/contents/` lists every level landing page, guide, lesson page, reference section, and release guide.
+- `contents.html` within each version lists all level pages, guides, lessons, references, and release guides.
 - Use one authoritative navigation model to generate the sidebar, complete contents, breadcrumbs,
   level contents, and previous/next ordering. Topic shortcuts link into it without creating duplicates.
 - The full contents page exposes the complete hierarchy, including hidden-toctree children. It is
@@ -158,7 +158,7 @@ Examples: all 36 files in 04_expert, including later lessons absent from older c
 Use actual source metadata and current verification records as publication inputs. The expert map is
 a curation aid; only its first 150 lines were read in discovery and its historical run notes are not
 current proof. Full per-lesson review belongs to the Expert story.
-Evidence: README.md:683-1030; 04_expert/36_an_agent_builds_a_working_system.py:1-247 (under the example root).
+Evidence: README.md:683-1030; UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py:1-247.
 
 ## 8. Example Publication Contract
 Coverage floor: 133 numbered scripts at design time (41/37/19/36); derive current coverage at build time.
@@ -273,8 +273,8 @@ verified at setup. Do not invent credentials, purchase plans, or require paid an
 
 Recommended release policy: latest tracks the selected public development/publication branch; stable
 tracks the latest accepted release that contains buildable docs. Make stable the default once that
-release exists. Older tags without documentation configuration do not become supported versions by magic;
-explicitly decide support and redirects. Pin source links to the built revision so old docs show old code.
+release exists. Older tags without documentation configuration require an explicit support decision;
+verify their buildability and redirects. Pin source links to the built revision so old docs show old code.
 
 Offline scope: complete zipped HTML; a clearly labeled handbook containing the four level guides,
 glossary, and selected complete examples for PDF/ePub. Test long code, SVG conversion, Unicode level

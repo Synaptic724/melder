@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-04T22:06:16Z
 
 ## Objective
 Make public/source documentation and generated repository assets describe the verified
@@ -120,8 +120,30 @@ Record actual documentation/generation outcomes with paths; retain source truth 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-04T22:04:01Z
+  TYPE: FACT
+  CLAIM: Both current asset workflows are check-only. The source runner discovers builders
+    and verifies their committed version/schema/input fingerprints. The LLM builder hashes
+    eligible tracked files per corpus and rebuilds only stale corpora. Its classifier excludes
+    ContextCompass and generated source manifest/payload directories; raw packaged document
+    payloads are NOT inputs to llm_full_src. Ordinary source builders/loaders remain eligible.
+  EVIDENCE:
+  - `.github/workflows/build-src-assets.yml:97-121`
+  - `.github/workflows/build-repo-assets.yml:34-58`
+  - `src/melder/_build_assets/_build_asset_runner.py:184-399`
+  - `llm_support/_builder.py:63-100`
+  - `llm_support/_builder.py:313-401`
+  - `llm_support/_builder.py:653-766`
+  IMPACT: Keep the source-build then repository-build completion sequence, but do not claim
+    the LLM bundle includes every generated payload. Changes to eligible source, tests, and
+    public docs invalidate their own corpora. ContextCompass-only findings need no corpus
+    regeneration. Do not edit workflow behavior in this epic; workflows_1 owns that separate lane.
+  NEXT: After feature verification, refresh relevant authored docs/descriptors and run both
+    builders/checks against the final source/test/public-doc state, inspecting actual diffs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 No work executed yet. Use implemented behavior and task evidence, preserve the separate RTD lane,
 and run source assets before LLM assets. Final task:
 `tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md`.
-
