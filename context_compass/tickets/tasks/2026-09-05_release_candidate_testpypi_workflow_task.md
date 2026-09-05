@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T13:41:13Z
+- Updated: 2026-09-05T18:37:46Z
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -18,7 +18,8 @@ commit, version, workflow run, and distribution hashes before final production p
 ## Ticket Contract
 - ENTRY_GATE: Existing certification, this active route, and consumed patch contracts before edits.
 - EXECUTION_BOUNDARY: .github workflows/scripts/ruleset payloads/branch guide; focused workflow and consumer tests;
-  generated llm_support assets; this ticket and its associated coordination/artifact rows.
+  the reported aetheric-mediator concurrency component test and UnitOfWork lock test; generated llm_support assets;
+  this ticket and its associated coordination/artifact rows.
 - DEPENDENCIES: tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md.
 - EXIT_GATE: Branch gates and candidate/publication workflow are implemented and locally validated;
   owner-only setup/rollout and unexecuted external publication checks are explicitly recorded.
@@ -37,9 +38,8 @@ commit, version, workflow run, and distribution hashes before final production p
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: The reported working-directory failure was reproduced and repaired with an
-  isolated test fixture. All 263 focused tests pass from both repository root and tests/; generated
-  test assets and scoped lint pass. Production gate/workflow code is unchanged by this repair.
+- transition_reason: Owner-selected larger timing windows are implemented in the existing test.
+  All 279 synchronization unit tests and generated test-corpus checks pass; ready for owner commit.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -55,6 +55,24 @@ commit, version, workflow run, and distribution hashes before final production p
 - Durable operator instructions including TestPyPI project and GitHub environment configuration.
 
 ## Validation
+- 2026-09-05T18:37:46Z UnitOfWork repair: all 279 synchronization unit tests pass with PYTHON_GIL=0.
+  The worker holds for 1 second, startup waits up to 5 seconds with an asserted result, and the
+  existing test structure remains. Scoped Ruff, whitespace, and regenerated test-corpus proofs pass.
+- 2026-09-05T18:11:50Z concurrency repair: 270 mediator unit/component cases plus two adversarial
+  controls pass on Python 3.14t with PYTHON_GIL=0. Added startup delay passes; forced serialization
+  is rejected with clean final bookkeeping. Scoped Ruff, whitespace, and regenerated test-corpus
+  proofs pass. Full repository and hosted macOS runs were not executed for this test-only repair.
+- 2026-09-05T17:31:43Z macOS setup repair: the three setup-inheritance regressions fail on the old
+  job-wide settings; all 269 focused tests pass after scoping the environment to qualification steps.
+  All eight workflows pass actionlint; scoped Ruff, whitespace, and regenerated tests/other proofs pass.
+  Actual macOS installer execution was not performed locally; a new hosted run must verify the repair.
+- 2026-09-05T17:02:19Z token repair: 266 focused workflow/package/builder tests pass on Python 3.14t.
+  All eight workflows pass actionlint; scoped Ruff, whitespace, and tests/other corpus checks pass.
+  GitHub secret-name metadata verifies MELDER_API_TOKEN inside pypitest; the value was not accessed.
+  Candidate upload remains on RC pushes; prod only verifies earlier exact-source qualification.
+- 2026-09-05T16:14:46Z Mac extension: all 14 workflow contract tests pass; eight-workflow actionlint,
+  scoped Ruff, whitespace, and regenerated tests/other corpus checks pass. No macOS runtime was
+  executed locally. Official setup-python artifacts include native macOS arm64 Python 3.14t.
 - 2026-09-05T13:41:13Z repair: 263 focused tests pass from repository root and another 263 pass
   from tests/. The original test failed from tests/ before the fixture repair. Reports: cwd-root.xml,
   cwd-tests.xml in the task validation directory. Test corpus regeneration/check and scoped Ruff pass.
@@ -68,12 +86,13 @@ commit, version, workflow run, and distribution hashes before final production p
 - Repository tests/other bundles were regenerated and their exact fingerprint/output checks pass.
 - Source assets were stale during the initial workflow pass; read-only checks on 2026-09-05T13:41:13Z
   now report all three current after the other lane's work. This repair did not rewrite source assets.
-- TestPyPI upload/OIDC and hosted Linux/Windows candidate qualification: Not run. No package uploaded.
+- The owner's RC run 33977732545 failed OIDC publishing before consumer tests. No hosted run or
+  upload was dispatched by this agent. Hosted token authentication and Mac compatibility are unverified.
 - GitHub environment pypitest and its sole release_candidate branch policy are GET-verified.
 
 ## Risks / Rollback Notes
-- Owner reports TestPyPI setup ready. GitHub environment is verified; TestPyPI-side pending/trusted
-  publisher binding still needs the first real workflow run to prove end-to-end authentication.
+- GitHub environment/secret-name setup is verified. The token's TestPyPI issuer and project scope
+  are not observable from secret metadata; the first new RC upload must prove authentication.
 - TestPyPI files cannot be silently replaced; retries must establish identical content or refuse.
 - A prod merge commit can have a different SHA: require the selected candidate tree to match the
   production checkout and keep the existing final live tag/prod guard.
@@ -91,6 +110,9 @@ commit, version, workflow run, and distribution hashes before final production p
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/release_candidate_20260905/validation.md
+  - artifacts/release_candidate_20260905/test_mediator_overlap_controls.py
+  - artifacts/release_candidate_20260905/mediator-overlap.xml
+  - artifacts/release_candidate_20260905/uow-timing.xml
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/architecture_patch.md
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_candidate.md
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_publication.md
@@ -413,30 +435,515 @@ commit, version, workflow run, and distribution hashes before final production p
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T15:58:59Z
+  TYPE: DECISION
+  CLAIM: Owner requested macOS coverage. Ubuntu is the Linux runner and does not test macOS.
+    Add macos-latest to test-runtime.yml and release-candidate.yml's install matrix, retaining
+    Python 3.14t/GIL-off and the existing fail-closed aggregation. GitHub currently maps macos-latest
+    to native Apple Silicon arm64. Build/upload jobs stay on their existing Linux runner.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml:12-44
+  - .github/workflows/release-candidate.yml:76-106
+  - .github/scripts/testpypi_candidate.py:166-187
+  - https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+  IMPACT: The shared runtime caller automatically adds Mac checks to normal CI and final releases;
+    TestPyPI installation gains a separate native Mac result without another full source-suite run.
+  NEXT: Update/read the platform patch delta, then edit both matrices, their contracts, and the guide.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T15:58:59Z
+  TYPE: FACT
+  CLAIM: GitHub's official Python distribution manifest lists stable 3.14.7 darwin-arm64-freethreaded
+    and darwin-x64-freethreaded artifacts. setup-python documents 3.14t selection and native default
+    architecture. Existing installed-wheel code already uses bin/python on non-Windows platforms.
+    The revised platform patch was read: two matrix arrays map to existing parsed matrix assertions,
+    while unchanged aggregate gates require every matrix member to succeed.
+  EVIDENCE:
+  - https://github.com/actions/python-versions/blob/main/versions-manifest.json
+  - https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md
+  - .github/scripts/testpypi_candidate.py:166-187
+  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_candidate.md:1-19
+  IMPACT: Add native macOS without interpreter fallback or a publishing-job change. Runtime
+    compatibility remains a hosted-run result; this Windows session only validates configuration.
+  NEXT: Apply the two matrix entries, update their existing assertions, and refresh the guide/assets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T15:58:59Z
+  TYPE: FACT
+  CLAIM: Both runtime and installed-candidate matrices now include macos-latest. Existing parsed
+    workflow contracts require the three labels, and the guide identifies native Apple Silicon.
+    Shared runtime callers carry the new platform into regular CI and fresh final release checks.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml:12-20
+  - .github/workflows/release-candidate.yml:76-89
+  - tests/unit/github_workflows/test_workflow_contracts.py:57-69
+  IMPACT: A macOS failure is required evidence and cannot be silently skipped by the aggregate gate.
+  NEXT: Run the existing workflow contracts/actionlint and regenerate affected document indexes/bundles.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T16:14:46Z
+  TYPE: MEASURE
+  CLAIM: macos-latest now participates in the shared runtime matrix and candidate install matrix.
+    All 14 existing workflow contract tests pass, all eight workflows pass actionlint, scoped Ruff
+    and whitespace checks pass, and regenerated tests/other bundles verify. The platform patch
+    indexes were regenerated. No hosted Mac run, commit, push, or upload occurred in this extension.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml:12-20
+  - .github/workflows/release-candidate.yml:76-89
+  - tests/unit/github_workflows/test_workflow_contracts.py:57-69
+  - https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+  IMPACT: CI/final-release runtime checks and TestPyPI consumer checks now explicitly cover Linux,
+    Windows, and native Apple Silicon macOS. Actual Mac compatibility awaits the first hosted run.
+  NEXT: Owner commits/pushes the matrix extension and inspects the macOS jobs in GitHub Actions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T16:26:07Z
+  TYPE: FACT
+  CLAIM: Owner's hosted traceback reaches require_qualified_run and rejects its combined
+    source/path/branch/status/conclusion check. Earlier source-tree and final-version checks passed.
+    The message does not identify which expected field differed; current remote run evidence is needed.
+  EVIDENCE:
+  - .github/scripts/check_candidate_run.py:54-80
+  - Owner-provided RC-to-prod CI traceback on 2026-09-05.
+  IMPACT: Investigate candidate qualification first; do not remove the safety gate or infer success.
+  NEXT: Read the prod PR head and its matching RC workflow run/jobs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T16:32:06Z
+  TYPE: FACT
+  CLAIM: Open prod PR 130 targets release_candidate commit 0c9fbe20eccc9a387cb655b753bbe0e37d2f457c.
+    Candidate run 33977732545 is for that exact SHA and correct workflow/branch, but concluded failure.
+    Authorization and real distribution build/install passed; TestPyPI publishing failed, installed-
+    candidate jobs were skipped, and package-ready failed. The prod gate is rejecting failed qualification.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/pull/130
+  - https://github.com/Synaptic724/melder/actions/runs/33977732545
+  - https://github.com/Synaptic724/melder/actions/runs/33977732545/job/101337402442
+  IMPACT: Fix the upstream upload failure before retrying prod CI. Do not bypass the candidate guard.
+  NEXT: Inspect the failed publishing step's exact error and identify the required correction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T16:32:06Z
+  TYPE: FACT
+  CLAIM: The RC publisher's actual failure is TestPyPI OIDC invalid-publisher: a valid GitHub token
+    had no matching publisher. Its claims match our intended repository/workflow/environment:
+    Synaptic724/melder, release-candidate.yml at refs/heads/release_candidate, environment pypitest.
+    The TestPyPI-side saved publisher is missing/mismatched; which field differs is not visible here.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/actions/runs/33977732545/job/101337402442
+  - .github/workflows/release-candidate.yml:35-64
+  IMPACT: The owner must correct the TestPyPI pending/trusted publisher and rerun RC qualification
+    before retrying prod CI. No token secret or weaker release gate is the solution. The generic
+    gate diagnostic should name its run and differing fields instead of hiding the upstream state.
+  NEXT: Improve and test the gate diagnostic without changing qualification requirements.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T16:43:20Z
+  TYPE: DECISION
+  CLAIM: Owner chose API-token authentication and named the GitHub secret melder_api_token.
+    Switch the TestPyPI publisher from OIDC to that environment secret in pypitest; it must be a
+    TestPyPI token stored in Secrets, not a variable. Disable OIDC-only attestations and remove
+    id-token permission. Add a missing-secret check so empty configuration cannot fall back to OIDC.
+  EVIDENCE:
+  - Owner token-authentication/name instructions on 2026-09-05, recorded here.
+  - .github/workflows/release-candidate.yml:35-65
+  - https://github.com/pypa/gh-action-pypi-publish
+  IMPACT: This supersedes the prior OIDC setup decision. Preserve candidate validation, exact-source
+    prod gates, macOS changes, and production's existing independent credential. No secret value is
+    requested in chat, written to the repository, or read from the environment by the agent.
+  NEXT: Update/read the authentication patch delta, then wire the secret and verify its workflow contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T16:56:08Z
+  TYPE: FACT
+  CLAIM: Re-entry confirms publication already triggers on pushes to release_candidate, including
+    the merge from preprod. The prod CI job only checks exact-source candidate evidence; it does
+    not upload. Owner reconfirmed pypitest and requested this same preprod-to-RC stage placement.
+    Local publisher wiring now references secrets.melder_api_token with a missing-secret preflight,
+    no id-token permission, and attestations disabled. The token change still needs local validation.
+  EVIDENCE:
+  - .github/workflows/release-candidate.yml:1-83
+  - .github/workflows/ci.yml:21-46
+  - .github/scripts/check_candidate_run.py:99-123
+  IMPACT: Keep the existing trigger boundary; clarify post-merge RC publication in the guide.
+    Certification and owner authorization remain in force. No addressed mailbox message was pending.
+  NEXT: Verify the authentication patch/tests and pypitest secret-name metadata, then validate locally.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T16:59:00Z
+  TYPE: FACT
+  CLAIM: Read-only GitHub secret-name metadata confirms MELDER_API_TOKEN exists in environment
+    pypitest. Its value was not accessed. Candidate upload credentials use the secrets context,
+    with explicit token mode and disabled OIDC-only attestations per the publishing action contract.
+    Existing parsed workflow tests already require RC push-only/manual triggers, isolated publishing,
+    all three install platforms, and prod's evidence-only check; no trigger relocation is needed.
+  EVIDENCE:
+  - https://api.github.com/repos/Synaptic724/melder/environments/pypitest/secrets
+  - .github/workflows/release-candidate.yml:35-83
+  - tests/unit/github_workflows/test_workflow_contracts.py:144-215
+  - https://github.com/pypa/gh-action-pypi-publish#advanced-release-management
+  IMPACT: GitHub-side credential placement is verified; only a real hosted upload can validate the
+    token's issuer/scope. Token/trigger patch contracts are consumed. Keep the exact-source prod gate.
+  NEXT: Clarify post-merge RC publication in the guide, regenerate derived assets, and run focused checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:00:13Z
+  TYPE: FACT
+  CLAIM: The guide now distinguishes pre-merge source CI, post-merge RC upload/install checks, and
+    the later prod evidence check. Token wiring and diagnostic tests were read completely before
+    validation. Indexed test-map bootstrap/unit sections confirm the suite remains repository-based;
+    no installed-package test rewrite or runtime source change is needed for this credential repair.
+  EVIDENCE:
+  - .github/BRANCH_WORKFLOW.md:68-103
+  - tests/unit/github_workflows/test_workflow_contracts.py:144-215
+  - tests/unit/github_workflows/test_candidate_publication.py:53-96
+  - system_docs/tests_architecture.md:157-255
+  - system_docs/tests_components.md:171-213
+  IMPACT: Local changes are ready for focused qualification; source maps exclude workflow helpers,
+    whose scoped contracts remain in the candidate patch and operator guide.
+  NEXT: Regenerate changed patch indexes and tests/other corpora, then run the focused test/lint checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T17:02:19Z
+  TYPE: MEASURE
+  CLAIM: All 266 focused workflow, package-metadata, and LLM-builder tests pass on local Python 3.14t.
+    All eight workflow files pass actionlint 1.7.12 with optional shellcheck/pyflakes disabled; scoped
+    correctness Ruff and git diff whitespace checks pass. Regenerated tests/other corpora match
+    their input/output proofs. The original exact-source prod safety gate remains intact.
+  EVIDENCE:
+  - artifacts/release_candidate_20260905/token-auth.xml
+  - artifacts/release_candidate_20260905/validation.md
+  - .github/workflows/release-candidate.yml:1-83
+  - .github/scripts/check_candidate_run.py:54-124
+  IMPACT: Token authentication, clearer upstream diagnostics, macOS matrices, and the guide are ready
+    for owner commit. A successful hosted upload/install chain is still required before prod promotion.
+  NEXT: Owner commits/promotes the updated files to release_candidate and checks RC / package-ready.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: HYPOTHESIS
+  CLAIM: The owner-provided macOS log selected the expected darwin-arm64-freethreaded archive and
+    installed it successfully, then failed at Install OpenSSL certificates with config_read_gil.
+    Job-wide PYTHON_GIL=0 may be reaching a standard Python helper during setup. Runtime tests must
+    still run free-threaded; inspect the upstream installer and both matrix workflows before editing.
+  EVIDENCE:
+  - Owner macOS setup-python v7 failure log on 2026-09-05, recorded here.
+  - https://github.com/actions/python-versions/blob/main/installers/macos-pkg-setup-template.sh
+  IMPACT: This is a setup boundary failure before Melder tests or TestPyPI consumer code executes.
+  NEXT: Read the installer certificate invocation and all workflow PYTHON_GIL scopes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: FACT
+  CLAIM: The upstream macOS installer invokes Install Certificates.command after installing the
+    free-threaded interpreter. CPython's certificate script explicitly launches Python.framework's
+    standard python3.14, so inherited PYTHON_GIL=0 causes the reported startup refusal. Both local
+    runtime and candidate-install jobs currently set that variable job-wide; the Linux package-build
+    job has the same scope. The runtime driver already checks the actual pytest process's GIL state.
+  EVIDENCE:
+  - https://github.com/actions/python-versions/blob/main/installers/macos-pkg-setup-template.sh
+  - https://github.com/python/cpython/blob/3.14/Mac/BuildScript/resources/install_certificates.command
+  - .github/workflows/test-runtime.yml:10-35
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/scripts/run_runtime_tests.py:20-39
+  IMPACT: The selected 3.14t interpreter is correct. Scope PYTHON_GIL=0 to actual qualification steps;
+    do not downgrade Python, enable the GIL for tests, or disable certificate installation.
+  NEXT: Read the package-build and smoke-probe boundary, then update the three workflow scopes and contracts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: DECISION
+  CLAIM: Keep Python 3.14t and all three supported OSes. Move PYTHON_GIL=0 from job scope to the
+    runtime test driver, RC probe-install step, and distribution installed-wheel probe step. Leave
+    setup/dependency installation unforced. Update existing consumer assertions and add one parsed
+    setup-environment regression per workflow; prove those fail on the existing three job-wide settings.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml:10-35
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/workflows/build-distributions.yml:26-60
+  - .github/scripts/smoke_wheel.py:39-80
+  IMPACT: Scope is the three workflows, test_workflow_contracts.py, branch guide, patch contracts,
+    and their derived assets. Mapping: setup/runtime boundary -> job/step env changes -> parsed
+    setup-inheritance and consumer-posture tests plus existing runtime guard tests and actionlint.
+  NEXT: Read the patch delta and add/run the three setup-environment regressions before changing YAML.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: MEASURE
+  CLAIM: The three new parsed setup-environment regression cases all fail on the original YAML:
+    setup-python inherits PYTHON_GIL=0 in runtime, RC install, and distribution build. This reproduces
+    the configuration defect without claiming that the macOS installer ran on this Windows host.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_workflow_contracts.py:58-73
+  IMPACT: The regressions distinguish setup from runtime posture and fail before the fix.
+  NEXT: Move the three env mappings to their qualification steps and update runtime-step assertions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T17:29:45Z
+  TYPE: FACT
+  CLAIM: All three workflow job-wide PYTHON_GIL settings are now scoped to their runtime-test or
+    installed-wheel probe steps. The guide and patch contract explain the standard-Python macOS
+    bootstrap boundary. Existing runtime/probe checks still validate actual GIL state and all three
+    OSes remain required. No publisher, interpreter version, branch route, or source helper changed.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml:10-35
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/workflows/build-distributions.yml:26-64
+  - .github/BRANCH_WORKFLOW.md:32-35
+  IMPACT: Runtime policy now starts after interpreter setup. The setup regressions and runtime-step
+    assertions together prove the intended boundary without dropping free-threaded qualification.
+  NEXT: Regenerate patch indexes and tests/other assets, then run focused regressions and workflow lint.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:31:43Z
+  TYPE: MEASURE
+  CLAIM: After the GIL environment scope repair, all 269 focused workflow/package/builder tests pass.
+    Three new setup-inheritance regressions previously failed on the old YAML. All eight workflows
+    pass actionlint 1.7.12 (optional shellcheck/pyflakes disabled); scoped correctness Ruff, whitespace,
+    regenerated tests/other corpus proofs, and patch-index generation also pass. No runtime helper,
+    interpreter selection, platform matrix, upload credential, or release gate changed.
+  EVIDENCE:
+  - artifacts/release_candidate_20260905/macos-setup.xml
+  - artifacts/release_candidate_20260905/validation.md
+  - tests/unit/github_workflows/test_workflow_contracts.py:58-87
+  - .github/workflows/test-runtime.yml:10-36
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/workflows/build-distributions.yml:26-62
+  IMPACT: Ready for owner commit on codex_features2. This Windows check proves configuration and
+    regression behavior; it does not claim that the macOS installer or the hosted matrix ran here.
+  NEXT: Owner commits/pushes the repair and lets a new run execute the updated workflow on macOS.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:50:59Z
+  TYPE: FACT
+  CLAIM: Owner's new failure is in macos-latest job 101347496028 of run 33981528038, verified from
+    GitHub metadata. The disjoint-frame test compares elapsed time to 8 * 3 * 0.003 * 0.5 = 0.036s.
+    Its _run clock starts before starting eight threads and includes their startup/barrier/join work.
+    Requested sleep time is therefore treated as if it were the whole transaction/scheduler cost.
+    The reported 0.054374709s exceeds that threshold but does not itself prove claim serialization.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/actions/runs/33981528038/job/101347496028
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:93-128
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:209-248
+  - https://docs.python.org/3/library/time.html#time.sleep
+  IMPACT: Treat this as a timing-sensitive test diagnosis, not evidence that macOS or the mediator
+    cannot run concurrently. Owner asks why it appears in CI; production changes are not authorized
+    by this single duration. No runtime or test implementation has changed during this diagnosis.
+  NEXT: Confirm the formation-load claim contract and explain a direct overlap assertion as the repair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:56:00Z
+  TYPE: FACT
+  CLAIM: The formation strategy supplies world INTENT plus an exclusive target-frame key, and
+    ClaimCompatibility explicitly permits INTENT with INTENT. The reported test verifies none of
+    the active-session overlap directly; its 0.5 multiplier imposes an uncalibrated 36ms deadline.
+    Python documents that sleep can exceed the requested duration because of scheduling. The owner
+    challenges this arbitrary cutoff; agree that it is unsuitable as the concurrency correctness gate.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py:104-145
+  - src/melder/aether/aetheric_mediator/claim_mode.py:119-154
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:99-130
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:209-248
+  - https://docs.python.org/3/library/time.html#time.sleep
+  IMPACT: Recommend a post-admission barrier/event test proving all disjoint sessions coexist before
+    any releases, with a generous hang timeout and explicit worker outcomes. Exact hosted scheduler
+    delay was not profiled; the duration alone cannot establish a production lock defect. This turn
+    is diagnosis only: no test or runtime implementation changed, and no tests were executed.
+  NEXT: Replace the timing assertion with direct overlap proof when continuing the test repair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:00:22Z
+  TYPE: DECISION
+  CLAIM: Owner asked whether the diagnosed test was fixed; it was not. Proceed with the previously
+    explained test-only correction: post-admission rendezvous for eight distinct frame transactions,
+    explicit successful worker outcomes, and cleanup proof across three rounds. The existing generous
+    thread timeout remains a hang guard. Do not change mediator production behavior or raise the 36ms limit.
+  EVIDENCE:
+  - Owner follow-up on 2026-09-05 and previous timing diagnosis, recorded here.
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:99-248
+  IMPACT: Scope is the reported test, inaccurate timing-only helper documentation, generated test
+    corpus, and this ticket's tracking. Test correctness changes no runtime architecture or release gate.
+  NEXT: Confirm session admission/finalization contracts, then replace the timing assertion with overlap proof.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:00:22Z
+  TYPE: FACT
+  CLAIM: Mediator.begin returns with claims held; leave then commit releases claims/bookkeeping.
+    Finalized session objects remain caller-owned and must be cleaned after commit. ClaimTable.describe
+    exposes detached scope keys and holder/mode rows. A barrier action can therefore verify all eight
+    world-intent holders and all eight frame keys before any worker leaves its session.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/mediator.py:447-589
+  - src/melder/aether/aetheric_mediator/mediator.py:591-700
+  - src/melder/aether/aetheric_mediator/mediator.py:1092-1154
+  - src/melder/aether/aetheric_mediator/transaction_session.py:619-639
+  - src/melder/aether/aetheric_mediator/claim_table.py:623-649
+  IMPACT: Use a bounded reusable barrier across three rounds and futures that propagate worker
+    exceptions. Always finalize/clean admitted sessions and caller identities; abort the barrier on
+    worker failure so peers can finish. Final public snapshots must show no claims or active bookkeeping.
+  NEXT: Implement that targeted test and validate it against delayed starts and forced exclusive claims.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:00:22Z
+  TYPE: MEASURE
+  CLAIM: The replacement disjoint-frame test passes its first focused run. Every round waits at a
+    barrier while all sessions remain open; the barrier action verifies all eight frame keys and
+    eight world holders. Futures propagate worker failures; session finalization/cleanup occurs in
+    finally blocks, and final snapshots require no claims or active bookkeeping. Helper docs no longer
+    describe elapsed time as the only concurrency evidence. Production code remains unchanged.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:209-284
+  IMPACT: The arbitrary elapsed-time assertion is removed without dropping the overlap requirement.
+  NEXT: Run delayed-start and forced-serialization controls, then the complete focused mediator suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:11:50Z
+  TYPE: MEASURE
+  CLAIM: All 272 selected checks pass: 270 mediator unit/component tests plus two disposable
+    controls using the actual repaired test. Eight delayed Thread.start calls add at least 80ms and
+    still pass; forcing formation loads to claim world exclusively correctly fails overlap proof.
+    That failure also leaves no claims, admission registrations, or reporting activity. Scoped Ruff,
+    whitespace, and regenerated tests-corpus proofs pass. JUnit includes both control cases.
+  EVIDENCE:
+  - artifacts/release_candidate_20260905/mediator-overlap.xml
+  - artifacts/release_candidate_20260905/test_mediator_overlap_controls.py:25-66
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:213-281
+  IMPACT: The fixed test tolerates scheduler delay while detecting a real serialization defect.
+    Runtime/CI workflow code is unchanged. Full-repository and hosted macOS validation remain unrun
+    for this repair. Disposable controls/reports are delete_on_close artifacts in the task workspace.
+  NEXT: Owner commits the test and regenerated test corpus, then runs the updated CI revision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:33:09Z
+  TYPE: HYPOTHESIS
+  CLAIM: Owner's UnitOfWork lock test waits up to 100ms for an entered event but ignores the return;
+    its worker releases the context after a 50ms sleep. The nonblocking assertion can therefore run
+    before acquisition or after release. Its own successful acquire explains the subsequently locked
+    repr. Verify the source before concluding whether the context manager violates mutual exclusion.
+  EVIDENCE:
+  - Owner-provided test_thread_safety_basic_lock_usage traceback on 2026-09-05.
+  IMPACT: Preserve production locking unless source and a synchronized reproduction prove a defect.
+  NEXT: Read UnitOfWork and the full target test, then coordinate holder release explicitly.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:33:09Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly chose a larger millisecond window instead of the proposed event-based
+    rewrite. Keep the test structure: hold the worker context for 1 second rather than 50ms, wait
+    up to 5 seconds for startup, and assert the entered wait succeeded. UnitOfWork.__enter__/__exit__
+    directly acquire/release its RLock; no production locking change is needed for this repair.
+  EVIDENCE:
+  - Owner's "just make the ms window decent" instruction on 2026-09-05.
+  - src/melder/utilities/synchronization/unit_of_work.py:280-332
+  - tests/unit/melder/utilities/synchronization/test_unit_of_work.py:145-169
+  IMPACT: This supersedes the handshake plan. Use the owner's timing choice and keep the patch small;
+    update the existing test, run focused synchronization checks, and regenerate the test corpus.
+  NEXT: Apply the longer hold/startup windows and verify the synchronization tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:36:58Z
+  TYPE: FACT
+  CLAIM: The existing UnitOfWork test now holds the worker lock for 1 second and asserts a
+    successful entered event within 5 seconds. Its thread structure and lock assertions are preserved.
+    The test corpus is regenerated. No handshake rewrite or production code change was made.
+  EVIDENCE:
+  - tests/unit/melder/utilities/synchronization/test_unit_of_work.py:145-172
+  IMPACT: The owner's requested timing margin is implemented and ready for focused checks.
+  NEXT: Run synchronization unit tests and check the generated test corpus.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T18:37:46Z
+  TYPE: MEASURE
+  CLAIM: All 279 synchronization unit tests pass on local Python 3.14t with PYTHON_GIL=0 after the
+    owner-directed window increase. Scoped correctness Ruff, git diff whitespace checks, and the
+    regenerated tests-corpus proof pass. The patch changes only test timing, startup-wait assertion,
+    and touched test docstrings/type hints; production code and thread structure are unchanged.
+  EVIDENCE:
+  - artifacts/release_candidate_20260905/uow-timing.xml
+  - tests/unit/melder/utilities/synchronization/test_unit_of_work.py:147-173
+  IMPACT: Ready for owner commit and hosted CI. Owner explicitly chose this wider timing window;
+    the proposed event-handshake rewrite was not implemented. No hosted rerun or package upload occurred.
+  NEXT: Owner commits the test and regenerated test corpus, then runs the updated CI revision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-The accepted slim implementation is complete locally and in review on codex_features2. Candidate
-pushes call release-candidate.yml: authorize -> package build -> OIDC TestPyPI upload -> two-platform
-isolated consumer checks -> fail-closed package-ready. Full source tests remain in normal CI/final
-publication. Exact-source candidate proof gates prod PRs and both production publication boundaries.
+Latest local repair is the owner-requested small UnitOfWork test change: worker hold 50ms -> 1 second,
+startup wait 100ms -> 5 seconds, and an assertion that startup signaled. Existing thread/test structure
+is preserved; no event-handshake rewrite or production code change. All 279 synchronization unit tests
+pass with PYTHON_GIL=0, plus scoped Ruff, whitespace, and regenerated tests-corpus proofs. Ready for
+owner commit and hosted CI. The prior mediator overlap repair was already committed at this intake.
 
-GitHub pypitest exists with only release_candidate allowed (deployment policy 59177914). TestPyPI
-publisher values: project melder, owner Synaptic724, repository melder, release-candidate.yml, pypitest.
-No environment variables/API-token secrets are needed for that OIDC publisher, including its first upload.
-The existing production publisher still references PYPI_API_TOKEN; its auth was not migrated here.
+The disjoint-frame timing failure is now fixed locally on codex_features2. The test requires eight
+concurrently held frame claims and eight world holders at a barrier in each of three rounds, with
+future results carrying worker failures and deterministic session/identity cleanup. The arbitrary
+36ms upper bound is gone; the existing generous timeout serves only as a stuck-rendezvous guard.
+270 mediator unit/component cases plus two adversarial controls pass with PYTHON_GIL=0. Added startup
+delay succeeds; forced world-exclusive serialization fails the test as required and leaves no live
+bookkeeping. Scoped Ruff, whitespace, and regenerated test-corpus checks pass. No runtime/workflow code,
+commit, push, or package upload was performed. The owner commits the changed test and derived assets.
+The first hosted macOS run of this replacement and the full repository suite remain unexecuted locally.
+The prior GIL-scope repair is committed in 335981247.
 
-Version remains explicitly committed in src/melder/__version__.py; stable and rcN versions are supported.
-Finalize an RC via reviewed release-fix/* changes and requalify its final version before prod. Source
-archive metadata is normalized so same-source timestamps do not break immutable-upload retries.
-The owner has committed the original workflow implementation. The latest working-directory repair
-changes only the candidate unit test and its generated test corpus/manifest; it remains local.
+Latest repair: job-wide PYTHON_GIL=0 reached the standard Python used by macOS's certificate helper
+during setup-python. Runtime tests, RC installation, and distribution builds now scope that variable
+to their test/probe steps only. Python 3.14t, all three OSes, and actual-process GIL checks remain.
+The three setup-environment regressions failed before the fix; 269 focused tests now pass, together
+with actionlint, scoped Ruff, whitespace, regenerated corpus proofs, and updated patch indexes.
+A fresh hosted run after owner commit/push must verify macOS installation; it was not executed here.
 
-263 focused tests, eight-workflow actionlint, scoped Ruff, real Windows installed-wheel verification,
-real archive identity checks, and tests/other generated-asset checks pass. Actual TestPyPI/OIDC and
-hosted Linux/Windows runs were not dispatched here. The 13:41 repair passes all 263 focused tests from
-both repository root and tests/. Shared source manifests now verify current after the other lane's
-work. Preserve that lane and all unrelated edits.
+Local changes are verified and ready for owner commit on codex_features2. The owner selected explicit
+TestPyPI API-token authentication using melder_api_token in the pypitest environment. GitHub metadata
+confirms MELDER_API_TOKEN exists there; its value was never accessed. Only the upload job references
+it. No id-token permission or OIDC attestations remain. Production keeps its separate PYPI_API_TOKEN.
 
-Owner handles all commits/pushes. Include the local test-isolation repair in the next commit.
-No upload happens from codex_features2. Promote via dev -> preprod -> release_candidate,
-then verify the new candidate workflow. Apply the candidate ruleset payload after its CI rollout;
-the JSON file alone does not activate protection. Dates/scheduling remain future work.
+The upload was already at the requested stage: a preprod -> release_candidate PR runs required source
+CI; merging starts the RC build -> TestPyPI upload -> Linux/Windows/macOS installed-package probes.
+RC -> prod only checks the earlier successful exact-source RC run alongside its required CI.
+Fresh final production validation and its live tag/prod check remain required before the PyPI upload.
+
+The owner's failed RC run 33977732545 (PR 130 source 0c9fbe20eccc9a387cb655b753bbe0e37d2f457c) failed
+with OIDC invalid-publisher. The diagnostic now identifies the inspected run, attempt, and differing
+fields. An old run uses old workflow YAML: adding a secret or rerunning that old OIDC run alone does
+not deploy this fix. Commit/promote the new YAML through dev -> preprod -> release_candidate, wait for
+RC / package-ready, then rerun an already-failed prod PR check. The agent does not commit, push, or upload.
+
+Token-repair evidence: 266 focused tests passed; all eight workflows passed actionlint; scoped Ruff,
+whitespace, and regenerated tests/other corpus proofs passed. The working-directory test repair and real
+Windows wheel/archive checks are recorded above. No new hosted upload/install or Mac run was dispatched.
+Token validity/scope awaits that new hosted run; secret metadata proves placement only.
+
+Version stays explicitly committed in src/melder/__version__.py. Stable and rcN versions are supported;
+rcN must be finalized and requalified before prod. Existing package bytes cannot be replaced under the
+same TestPyPI filename. Candidate fixes remain reviewed release-fix/* changes and return to dev.
+Token wiring and the original macOS matrix were committed in 1fc53c523. The local environment-scope
+repair, its tests/guide, and derived assets belong in the owner's next commit.
+Apply candidate branch rules after CI rollout; checked-in JSON alone does not activate protection.
+Dates/scheduling remain future work. Preserve all unrelated lanes and leave this task in review.

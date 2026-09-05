@@ -28,8 +28,6 @@ jobs:
     name: Distributions / build-and-verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      PYTHON_GIL: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -54,6 +52,8 @@ jobs:
           RELEASE_TAG: ${{ inputs.release-tag }}
         run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
       - name: Install and verify the wheel in isolation
+        env:
+          PYTHON_GIL: "0"
         run: |
           python -m venv "$RUNNER_TEMP/melder-wheel-probe"
           "$RUNNER_TEMP/melder-wheel-probe/bin/python" -m pip install --quiet --no-deps dist/*.whl

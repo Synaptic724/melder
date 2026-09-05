@@ -57,6 +57,8 @@ def require_qualified_run(payload: Mapping[str, object], repository: str, sha: s
 
     Do not fall back to an older green run when the newest run is pending/failed.
     A rerun's current attempt and conclusion come from GitHub's run record.
+    Rejection identifies the inspected run and differing fields so callers can
+    diagnose upstream qualification failures without weakening this gate.
     """
     raw_runs = payload.get("workflow_runs")
     if not isinstance(raw_runs, list) or not raw_runs:
@@ -68,15 +70,21 @@ def require_qualified_run(payload: Mapping[str, object], repository: str, sha: s
     for field in ("repository", "head_repository"):
         if object_value(latest.get(field), field).get("full_name") != repository:
             raise ValueError("Candidate workflow repository identity does not match.")
+    run_id = positive_integer(latest.get("id"))
+    attempt = positive_integer(latest.get("run_attempt"))
     expected = {"head_sha": sha, "head_branch": "release_candidate",
                 "path": ".github/workflows/release-candidate.yml",
                 "status": "completed", "conclusion": "success"}
-    if any(latest.get(key) != value for key, value in expected.items()):
-        raise ValueError("Latest candidate workflow is unsuccessful, incomplete, or for different source.")
+    differences = [f"{key}={latest.get(key)!r} (expected {value!r})"
+                   for key, value in expected.items() if latest.get(key) != value]
+    if differences:
+        raise ValueError(
+            f"Candidate qualification has not passed for {sha}: {'; '.join(differences)}. "
+            f"Inspect https://github.com/{repository}/actions/runs/{run_id} (attempt {attempt}). "
+            "Complete or fix that RC workflow, then rerun this prod check."
+        )
     if latest.get("event") not in ("push", "workflow_dispatch"):
         raise ValueError("Candidate qualification must originate from its branch push/manual workflow.")
-    for field in ("id", "run_attempt"):
-        positive_integer(latest.get(field))
     return latest
 
 

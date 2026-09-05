@@ -15,10 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-    env:
-      # Fix the posture for the actual pytest process, including its plugins.
-      PYTHON_GIL: "0"
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -32,6 +29,9 @@ jobs:
           python -m pip install --group test
           python -m pip install --no-deps --editable .
       - name: Run supported test tiers with runtime verification
+        env:
+          # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
+          PYTHON_GIL: "0"
         run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
       - name: Retain test results
         if: always()

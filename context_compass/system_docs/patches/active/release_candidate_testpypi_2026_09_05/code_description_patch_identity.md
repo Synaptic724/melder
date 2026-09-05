@@ -1,14 +1,17 @@
 # Code-description patch: candidate identity and upload ordering
 
 ## Candidate path
+Interpreter setup runs without a forced GIL-off environment. PYTHON_GIL=0 is applied only when
+running runtime tests or installed-package probes after setup, including the shared package builder.
+
 1. Verify the triggering event/ref and checkout commit identify release_candidate in this repository.
 2. Reuse the package builder/version checks; full source tests already guard the promotion PR.
 3. Record commit/tree/version/run/attempt and the exact built wheel/sdist digest pair.
 4. Before TestPyPI upload, recheck branch identity and compare existing remote version files.
    Refuse conflicting names/hashes/sizes; upload only absent files, or verify an identical retry.
-5. On both supported OSes, download the exact TestPyPI wheel using pip with its recorded SHA256,
+5. On all three supported OSes, download the exact TestPyPI wheel using pip with its recorded SHA256,
    install into a fresh environment, and probe imports/assets/runtime lifecycle outside the checkout.
-6. Only after both probes succeed, retain the reports and report candidate-ready.
+6. Only after all three probes succeed, retain the reports and report candidate-ready.
 
 ## Production path
 1. Run existing final-release event/checkout/tag/prod authorization.

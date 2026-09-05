@@ -55,15 +55,33 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
         assert "timeout-minutes" in job
 
 
+@pytest.mark.parametrize(("name", "job_name"), [
+    ("test-runtime.yml", "test"),
+    ("release-candidate.yml", "install"),
+    ("build-distributions.yml", "build"),
+])
+def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name: str, job_name: str) -> None:
+    """Mac certificate installation uses standard Python even when installing a free-threaded build.
+
+    Resolve the environment inherited by setup-python. Forcing PYTHON_GIL=0 at
+    this boundary crashes that helper before package installation or tests run.
+    """
+    document = workflow(name)
+    job = document["jobs"][job_name]
+    setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    inherited = {**document.get("env", {}), **job.get("env", {}), **setup.get("env", {})}
+    assert inherited.get("PYTHON_GIL") != "0"
+
+
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
-    """Both supported OSes use 3.14t with the GIL off and retain failing-test evidence."""
+    """All three supported OSes use 3.14t with the GIL off and retain failing-test evidence."""
     job = workflow("test-runtime.yml")["jobs"]["test"]
-    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
+    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
     assert job["strategy"]["fail-fast"] == "false"
-    assert job["env"]["PYTHON_GIL"] == "0"
     setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
     assert setup["with"]["python-version"] == "3.14t"
-    assert any("run_runtime_tests.py" in step.get("run", "") for step in job["steps"])
+    runner = next(step for step in job["steps"] if "run_runtime_tests.py" in step.get("run", ""))
+    assert runner["env"]["PYTHON_GIL"] == "0"
     report = job["steps"][-1]
     assert report["if"] == "always()"
     assert report["uses"].startswith("actions/upload-artifact@")
@@ -108,6 +126,7 @@ def test_package_verification_precedes_artifact_upload() -> None:
     smoke = next(index for index, command in enumerate(commands) if "smoke_wheel.py" in command)
     assert normalize < verify < smoke < len(steps) - 1
     assert " -I " in commands[smoke]
+    assert steps[smoke]["env"]["PYTHON_GIL"] == "0"
     assert steps[-1]["uses"].startswith("actions/upload-artifact@")
 
 
@@ -143,20 +162,31 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     publisher = jobs["publish"]
     assert set(publisher["needs"]) == {"authorize", "build"}
     assert publisher["environment"]["name"] == "pypitest"
-    assert publisher["permissions"] == {"contents": "read", "id-token": "write"}
+    assert publisher["permissions"] == {"contents": "read"}
     upload = next(step for step in publisher["steps"]
                   if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
     assert upload["with"]["repository-url"] == "https://test.pypi.org/legacy/"
     assert upload["with"]["packages-dir"] == "upload/"
-    assert set(upload["with"]).isdisjoint({"password", "user", "skip-existing"})
+    assert upload["with"]["user"] == "__token__"
+    assert upload["with"]["password"] == "${{ secrets.melder_api_token }}"
+    assert upload["with"]["attestations"] == "false"
+    assert "skip-existing" not in upload["with"]
     assert upload["if"] == "steps.upload.outputs.upload-required == 'true'"
+    credential_check = next(step for step in publisher["steps"]
+                            if step.get("env", {}).get("TESTPYPI_API_TOKEN"))
+    assert credential_check["env"]["TESTPYPI_API_TOKEN"] == "${{ secrets.melder_api_token }}"
+    assert credential_check["if"] == upload["if"]
+    assert 'if [ -z "$TESTPYPI_API_TOKEN" ]' in credential_check["run"]
+    assert "exit 1" in credential_check["run"]
+    assert publisher["steps"].index(credential_check) < publisher["steps"].index(upload)
     for name, job in jobs.items():
         if name != "publish":
             assert "environment" not in job
             assert job.get("permissions", {}).get("id-token") != "write"
     install = jobs["install"]
-    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
-    assert install["env"]["PYTHON_GIL"] == "0"
+    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
+    probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
+    assert probe["env"]["PYTHON_GIL"] == "0"
     artifact = jobs["build"]["with"]["artifact-name"]
     for job in (publisher, install):
         download = next(step for step in job["steps"]
