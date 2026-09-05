@@ -110,14 +110,15 @@ class SpellbookConfiguration(Cleanable):
         "on_meld_pre_resolve",
         "on_meld_post_resolve",
     )
-    def __init__(self, aether_frame: str = "default"):
+    def __init__(self, aether_frame: str = "default") -> None:
         """
         Initialize one configuration manager.
 
         Args:
             aether_frame (str): The name of the Aether frame this configuration is associated with (defaults to "default").
         Contract:
-            - Starts unfrozen and empty.
+            - Starts unfrozen with disposal-priority enforcement set to False,
+              available before defaults or validation; other properties start unset.
             - Seeds the allowed property/type map and idempotent-key set.
             - Starts with an empty per-spellbook hook registry.
 
@@ -131,11 +132,13 @@ class SpellbookConfiguration(Cleanable):
         self._aether_frame: str = aether_frame
         self._frozen = False
 
-        # Private dictionary storing all properties.
-        self._properties: Dict = {}
+        # Private property dictionary; priority is available before a supplied
+        # configuration reaches Bind.
+        self._properties: Dict = {"enforce_priority_disposal_methods": False}
         self.available_properties: Dict[str, Type] = {
             "disposal": bool,
             "disposal_method_names": list,
+            "enforce_priority_disposal_methods": bool,
             "phase_scheduler_workers_per_spellbook": int,
             "phase_scheduler_barrier_timeout_milliseconds": int,
             # Patch lane generalized_singleton_specialization_2026_07_01:
@@ -146,6 +149,8 @@ class SpellbookConfiguration(Cleanable):
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
         self._idempotent_keys = {"disposal", "disposal_method_names"}
+        # Priority stays writable during assembly so its eager default does not
+        # prevent opt-in. The normal freeze boundary seals the selected value.
 
         # System hook registry (Meld / Conduit / Link / Contract).
         # Maps hook name -> list[Callable[..., Any]].
@@ -239,9 +244,10 @@ class SpellbookConfiguration(Cleanable):
 
     def clear_properties(self) -> None:
         """
-        Clears all properties in the configuration.
+        Reset authored properties to the initial build-time state.
 
-        This method is useful for resetting the configuration to its initial state before it is frozen.
+        The disposal-priority flag returns to False; all other properties are
+        removed. The configuration remains available for reassembly before freeze.
 
         Raises:
             RuntimeError: If the configuration is cleaned or frozen.
@@ -254,6 +260,7 @@ class SpellbookConfiguration(Cleanable):
             if self._frozen:
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
             self._properties.clear()
+            self._properties["enforce_priority_disposal_methods"] = False
 
     def freeze(
             self,
@@ -431,11 +438,12 @@ class SpellbookConfiguration(Cleanable):
         return True
 
     # Opt-in properties: registered in `available_properties` so
-    # `set_property` accepts and type-checks them, but NEVER hard-required.
+    # `set_property` accepts them and validation checks their types, but NEVER hard-required.
     # Validation backfills the documented default when unset so defaults-free
     # fluent configurations (a supported public path) remain valid without
-    # knowing about optional optimization flags.
+    # knowing about optional policy or optimization flags.
     _OPTIONAL_PROPERTY_DEFAULTS: ClassVar[Dict[str, Any]] = {
+        "enforce_priority_disposal_methods": False,
         "generalized_singleton_specialization_enabled": False,
     }
 
@@ -447,7 +455,7 @@ class SpellbookConfiguration(Cleanable):
             - Opt-in properties listed in `_OPTIONAL_PROPERTY_DEFAULTS` are
               backfilled with their documented defaults instead of raising, so
               configurations assembled without `load_default_dictionary()`
-              never fail validation over optional optimization flags.
+              never fail validation over optional policy or optimization flags.
             - Every other registered property remains hard-required.
         """
         for key, default_value in self._OPTIONAL_PROPERTY_DEFAULTS.items():
@@ -576,6 +584,7 @@ class SpellbookConfiguration(Cleanable):
         defaults = {
             "disposal": False,
             "disposal_method_names": [],
+            "enforce_priority_disposal_methods": False,
             "phase_scheduler_workers_per_spellbook": 5,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
             "generalized_singleton_specialization_enabled": False,
@@ -601,17 +610,21 @@ class SpellbookConfiguration(Cleanable):
 
         Contract:
             - Recorded values win: each recorded key routes through
-              `set_property` (full registration + type checking applies).
-            - A recorded value the property system refuses (unknown key,
-              or type drift such as callables the emission scalar filter
-              stringified) is skipped and returned under "rejected" as
+              `set_property` for registration/lifecycle checks; type checking
+              occurs during the final validation/freeze.
+            - A recorded key the property system refuses (unknown key or
+              lifecycle/write-once violation) is skipped and returned under "rejected" as
               "key: reason"; nothing is silently coerced. The per-key
               exception capture is documented best-effort collection, not
               error swallowing - every refusal is surfaced to the caller.
+              Invalid registered value types fail at the final validation.
             - Required keys absent from the record backfill through
               `load_default_dictionary` (populate-missing-only semantics)
               and each backfilled key is returned under "backfilled";
               nothing backfills silently.
+            - An omitted disposal-priority flag still holding its eager False
+              default is also reported as backfilled. An existing non-default
+              True is preserved when the record has no replacement.
             - LOADS AND FREEZES in one motion: a reloaded configuration is
               sealed truth, so the verb validates and freezes internally
               before returning - callers never finalize a reload. The
@@ -645,6 +658,13 @@ class SpellbookConfiguration(Cleanable):
                 # rides back to the caller for shortfall reporting.
                 rejected.append("{0}: {1}".format(key, error))
         present_before = set(self._properties.keys())
+        if (
+                "enforce_priority_disposal_methods" not in recorded_properties
+                and self._properties["enforce_priority_disposal_methods"] is False
+        ):
+            # This default was supplied at init/clear rather than by the record;
+            # include it in the existing schema-default accounting.
+            present_before.remove("enforce_priority_disposal_methods")
         self.load_default_dictionary()
         backfilled = sorted(set(self._properties.keys()) - present_before)
         # Reload seals: load it in, freeze it - the reload lane never
@@ -1055,7 +1075,8 @@ class SpellbookConfiguration(Cleanable):
 
         Behaviour:
         - Sets local rich-config defaults:
-          disposal=False, disposal_method_names=[].
+          disposal=False, disposal_method_names=[],
+          enforce_priority_disposal_methods=False.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Contract:
@@ -1102,6 +1123,37 @@ class SpellbookConfiguration(Cleanable):
             - Returns `self` for chaining.
         """
         self.set_property("disposal", enabled)
+        return self
+
+    def with_enforce_priority_disposal_methods(
+            self,
+            enabled: bool = True,
+    ) -> SpellbookConfiguration:
+        """
+        Store the disposal-method group priority and return this configuration.
+
+        Args:
+            enabled: True places matching book methods before spell-only methods.
+                False (the configuration default) places the book block last;
+                it does not disable the book's contribution. In both modes,
+                shared names occur only in the book block, in configuration order.
+
+        Contract:
+            - Stages policy only; does not match methods or invoke disposal.
+            - Both groups keep their own order; shared names belong to the book.
+            - May be changed during assembly; the existing freeze boundary seals it.
+            - Bool type checking occurs during validate/finalize, without coercion.
+
+        Threading:
+            Uses set_property's existing configuration mutation lock.
+
+        Raises:
+            RuntimeError: If this configuration is frozen or cleaned.
+
+        Returns:
+            SpellbookConfiguration: This same instance for fluent chaining.
+        """
+        self.set_property("enforce_priority_disposal_methods", enabled)
         return self
 
     def with_disposal_method_names(self, names: list[str]) -> "SpellbookConfiguration":

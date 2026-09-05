@@ -100,7 +100,7 @@ def test_component_bind_creates_class_spell_with_metadata() -> None:
             BasicService,
             spell_name=spell.spell_name,
             existence=spell.existence,
-            disposal_method_names=sorted(spell.disposal_method_names),
+            disposal_method_names=spell.disposal_method_names,
         ) == spell.spell_id
     finally:
         binder.cleanup()

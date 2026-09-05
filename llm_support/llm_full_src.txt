@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 9891280eadc9559f7360beb88da70124060fe8d1d06f5f6c37c67e17f29f151d
+SOURCE FINGERPRINT: 9bde848bca74e3a3d85fc297c955335640f528cc32e510f4fca99b95c4e0ca90
 FILE COUNT: 584
 
 ================================================================================
@@ -42054,7 +42054,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 8409e7b80db2cb9828048b3804e8180e209fd2bed29433fcad8a2507f25851d9
+CONTENT SHA256: c450bcbef2c8c08de8dd776d1d8beed7029da0a0f9718b56114ebf7058e719e2
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -45392,7 +45392,7 @@ class Conduit(Cleanable):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduit.
+        conduit**.
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
 
@@ -57423,7 +57423,7 @@ END FILE: src/melder/aether/conduit/creations/conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/creations.py
-CONTENT SHA256: 8e933b3272436a2f4efdb4a3bbaa5ad43c3f1579dd9a862314710c13d1e2a0ce
+CONTENT SHA256: 25118daa4b021b80af9b75bce3a22a01285d73db97bfa013fa406e659f9fc0a2
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -57455,6 +57455,9 @@ class Creations(Cleanable):
           - many: `spell_id -> list[(object, disposal_methods)]`
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
+        - Disposal names are the established Spell-owned list, retained directly
+          through registration and in-memory transfer. This store does not match,
+          reorder, or clear that list; it owns the entries and their instances.
 
     Owned State:
         `_owner_conduit_id`, a stable `_id`, one `RLock`, and the two registries
@@ -57707,6 +57710,8 @@ class Creations(Cleanable):
             - Rejects duplicate keys across both registries.
             - Treats the stored object itself as the authoritative runtime
               payload; there is no `Creation.value` wrapper in the live store.
+            - Retains the supplied disposal list directly, including an empty
+              list. Omitted names use an empty list when disposal is enabled.
 
         Returns:
             None.
@@ -57718,7 +57723,7 @@ class Creations(Cleanable):
         if has_disposal_methods:
             self._disposable_creations[key] = (
                 item,
-                list(disposal_methods) if disposal_methods else [],
+                disposal_methods if disposal_methods is not None else [],
             )
 
     def add_many_creations(
@@ -57739,6 +57744,8 @@ class Creations(Cleanable):
             - Rejects collisions with non-list slots.
             - Preserves insertion order inside both the live many bucket and
               the matching disposable metadata bucket.
+            - Retains the supplied disposal list directly for each entry;
+              omitted names use an empty list when disposal is enabled.
             - First-use bucket creation and both appends are atomic with
               respect to competing resolutions (BUG-073, 2026-07-17 audit):
               the whole live+disposable mutation runs under `_lock`, so two
@@ -57779,7 +57786,7 @@ class Creations(Cleanable):
             disposable_value.append(
                 (
                     item,
-                    list(disposal_methods) if disposal_methods else [],
+                    disposal_methods if disposal_methods is not None else [],
                 )
             )
 
@@ -57808,6 +57815,8 @@ class Creations(Cleanable):
             - Does not reach into external owners or adjacent scopes.
             - Returns raw stored objects plus disposal metadata, not a richer
               wrapper object.
+            - Retains each established method-list reference in the returned
+              rows; this in-memory handoff is not a serialization boundary.
 
         Threading:
             - Performs extraction under `_lock` so the local slot shape stays
@@ -57832,7 +57841,7 @@ class Creations(Cleanable):
                         "stored": stored_value,
                     }
                     if disposable_many is not None:
-                        entry["disposal_methods"] = list(disposable_many[index][1])
+                        entry["disposal_methods"] = disposable_many[index][1]
                     extracted.append(entry)
             elif live_value is not None and not isinstance(live_value, dict):
                 stored_value = self._creations.pop(spell_id)
@@ -57847,7 +57856,7 @@ class Creations(Cleanable):
                     "stored": stored_value,
                 }
                 if disposable_entry is not None:
-                    entry["disposal_methods"] = list(disposable_entry[1])
+                    entry["disposal_methods"] = disposable_entry[1]
                 extracted.append(entry)
 
         return extracted
@@ -57867,6 +57876,8 @@ class Creations(Cleanable):
             - Raises when the payload does not match the local slot shape.
             - Restores the same raw object references that were extracted; it
               does not clone or rehydrate them.
+            - Retains the extracted disposal lists directly, without copying
+              their contents or reapplying binding policy.
 
         Returns:
             None.
@@ -57896,7 +57907,7 @@ class Creations(Cleanable):
                     if is_disposable:
                         self._disposable_creations[spell_id] = (
                             stored_value,
-                            list(disposal_methods) if disposal_methods else [],
+                            disposal_methods if disposal_methods is not None else [],
                         )
                     continue
 
@@ -57922,7 +57933,7 @@ class Creations(Cleanable):
                         disposable_many.append(
                             (
                                 stored_value,
-                                list(disposal_methods) if disposal_methods else [],
+                                disposal_methods if disposal_methods is not None else [],
                             )
                         )
                     continue
@@ -64243,7 +64254,7 @@ END FILE: src/melder/aether/conduit/spell_space/spell_space_thread_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/bind/bind.py
-CONTENT SHA256: 2203b8f76d71a512cbdbdb485265182890fa393821814ddecb11fd74ea21ceea
+CONTENT SHA256: bb8f173452ae52ce2145bc1e94fc0b243fbed7d243fa43cb0711fbd34c728be9
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -64483,8 +64494,10 @@ class Bind(Cleanable):
             spell: Any = None,
             spellframe: Any = None,
             binding_name: Optional[str] = None,
-            configured_disposal_method_names: Optional[frozenset[str]] = None,
+            configured_disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
+            disposal_method_names: Optional[Sequence[str]] = None,
+            enforce_priority_disposal_methods: bool = False,
             **kwargs: Any,
     ) -> Union[Spell, Any]:
         """
@@ -64506,7 +64519,10 @@ class Bind(Cleanable):
             binding_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
             profile (str): Spell profile family to attach to the final Spell.
             existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
-            configured_disposal_method_names (Optional[frozenset[str]]): Names of methods to be considered for disposal.
+            configured_disposal_method_names (Optional[Sequence[str]]): Ordered book-level disposal candidates.
+            disposal_method_names (Optional[Sequence[str]]): Ordered candidates specific to this binding.
+            enforce_priority_disposal_methods (bool): Place the matching book block first when
+                True, last when False (default). Book order owns shared names in both modes.
         Contract:
             - When `spell` is omitted, returns a decorator that will bind the
               later target with the supplied policy and lifecycle settings.
@@ -64514,6 +64530,10 @@ class Bind(Cleanable):
               immediately and returns the created `Spell`.
             - Decorator and direct-call modes are semantically equivalent once
               the target object is known.
+            - Matching book names form one ordered block, including names also supplied
+              explicitly. Spell-only names keep their order before or after that block.
+              Each matching name is retained once.
+              An empty spell-specific group does not disable configured book candidates.
 
         Returns:
             Union[Spell, Any]:
@@ -64537,6 +64557,8 @@ class Bind(Cleanable):
                     aetheric_frame,
                     configured_disposal_method_names,
                     profile,
+                    disposal_method_names=disposal_method_names,
+                    enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                     **kwargs,
                 )
 
@@ -64552,6 +64574,8 @@ class Bind(Cleanable):
                 aetheric_frame,
                 configured_disposal_method_names,
                 profile,
+                disposal_method_names=disposal_method_names,
+                enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                 **kwargs,
             )
 
@@ -64563,8 +64587,10 @@ class Bind(Cleanable):
             existence: Existence,
             permissions: Permissions,
             aetheric_frame: str,
-            configured_disposal_method_names: Optional[frozenset[str]] = None,
+            configured_disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
+            disposal_method_names: Optional[Sequence[str]] = None,
+            enforce_priority_disposal_methods: bool = False,
             **kwargs: Any,
     ) -> Spell:
         """
@@ -64580,6 +64606,8 @@ class Bind(Cleanable):
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
         * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
+        * Resolves disposal names once in group priority order, hashes the resolved
+          list, and passes that same list to Spell without another conversion.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
         * Replaces the initial raw binding artifact with the combined
@@ -64594,6 +64622,18 @@ class Bind(Cleanable):
             existence (Existence): The lifecycle scope for this spell.
             permissions (Permissions): The access level for this spell.
             aetheric_frame (str): The Aetheric Frame this spell belongs to.
+            configured_disposal_method_names (Optional[Sequence[str]]): Ordered book candidates.
+            disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
+            enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
+
+        Disposal contract:
+            Only names present in the existing ClassBindingProfile are retained.
+            Missing names and non-class profiles contribute nothing. Book names
+            own overlaps in both modes and keep their configured order. Spell-only
+            names keep their supplied order, before or after the book block. Each
+            matching name appears once in the single result list.
+            The result is established before identity and registration; no method
+            lookup, invocation, or policy recheck is added to the resolution path.
 
         Returns:
             Spell: The newly created and configured Spell instance.
@@ -64641,16 +64681,25 @@ class Bind(Cleanable):
                 )
             binding_profile: SpellBindingProfile = provisional_general_profile.binding_profile
             spell_name = getattr(spell, "__name__", type(spell).__name__)
-            resolved_disposal_method_names: frozenset[str] = frozenset()
-            if (
-                    configured_disposal_method_names
-                    and isinstance(binding_profile, ClassBindingProfile)
-            ):
-                resolved_disposal_method_names = frozenset(
-                    method_name
-                    for method_name in binding_profile.method_names
-                    if method_name in configured_disposal_method_names
-                )
+            resolved_disposal_method_names: list[str] = []
+            if isinstance(binding_profile, ClassBindingProfile):
+                # Establish book ownership of overlaps before placing spell-only names.
+                if configured_disposal_method_names is not None:
+                    for method_name in configured_disposal_method_names:
+                        if (
+                                method_name in binding_profile.method_names
+                                and method_name not in resolved_disposal_method_names
+                        ):
+                            resolved_disposal_method_names.append(method_name)
+                spell_position = len(resolved_disposal_method_names) if enforce_priority_disposal_methods else 0
+                if disposal_method_names is not None:
+                    for method_name in disposal_method_names:
+                        if (
+                                method_name in binding_profile.method_names
+                                and method_name not in resolved_disposal_method_names
+                        ):
+                            resolved_disposal_method_names.insert(spell_position, method_name)
+                            spell_position += 1
             fingerprint: str = Bind.sha256_profile(
                 binding_profile,
                 spellframe=spellframe,
@@ -64756,12 +64805,13 @@ class Bind(Cleanable):
             spell_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
             binding_name (Optional[str]): A specific key used to distinguish this spell.
             existence (Existence): The lifecycle scope for this spell.
-            disposal_method_names (Sequence[str]): Names of methods to be considered for disposal.
+            disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
         Contract:
             - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
               chain used by the real binding path.
             - Returns the same fingerprint that `_bind_logic(...)` would use
-              when the same optional bind inputs are supplied.
+              when supplied the same resolved name, binding metadata, and ordered
+              disposal list. This helper does not apply book priority or match names.
             - Does not register anything into a spellbook or mutate runtime
               binding state.
 
@@ -64810,7 +64860,7 @@ class Bind(Cleanable):
               not.
             - Includes the direct bind-time parameters that shape later
               compiler/runtime behavior: spell_name, spellframe, binding_name,
-              existence, and resolved disposal metadata.
+              existence, and resolved disposal metadata in execution order.
             - Equal bind signatures produce equal hashes; materially different
               signatures should produce different hashes.
         Returns:
@@ -66023,7 +66073,7 @@ END FILE: src/melder/aether/spellbook/bind/spell_index.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/configuration/spellbook_configuration.py
-CONTENT SHA256: ca62472abc77e0ebe7f879ee86a0ae28b3a18875b92f748eb4c4c03785223991
+CONTENT SHA256: cc95b9677e6eba2037ff1d47f5bcc80dd5a68b7cafe1b16c58a5d5ac89830245
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -66138,14 +66188,15 @@ class SpellbookConfiguration(Cleanable):
         "on_meld_pre_resolve",
         "on_meld_post_resolve",
     )
-    def __init__(self, aether_frame: str = "default"):
+    def __init__(self, aether_frame: str = "default") -> None:
         """
         Initialize one configuration manager.
 
         Args:
             aether_frame (str): The name of the Aether frame this configuration is associated with (defaults to "default").
         Contract:
-            - Starts unfrozen and empty.
+            - Starts unfrozen with disposal-priority enforcement set to False,
+              available before defaults or validation; other properties start unset.
             - Seeds the allowed property/type map and idempotent-key set.
             - Starts with an empty per-spellbook hook registry.
 
@@ -66159,11 +66210,13 @@ class SpellbookConfiguration(Cleanable):
         self._aether_frame: str = aether_frame
         self._frozen = False
 
-        # Private dictionary storing all properties.
-        self._properties: Dict = {}
+        # Private property dictionary; priority is available before a supplied
+        # configuration reaches Bind.
+        self._properties: Dict = {"enforce_priority_disposal_methods": False}
         self.available_properties: Dict[str, Type] = {
             "disposal": bool,
             "disposal_method_names": list,
+            "enforce_priority_disposal_methods": bool,
             "phase_scheduler_workers_per_spellbook": int,
             "phase_scheduler_barrier_timeout_milliseconds": int,
             # Patch lane generalized_singleton_specialization_2026_07_01:
@@ -66174,6 +66227,8 @@ class SpellbookConfiguration(Cleanable):
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
         self._idempotent_keys = {"disposal", "disposal_method_names"}
+        # Priority stays writable during assembly so its eager default does not
+        # prevent opt-in. The normal freeze boundary seals the selected value.
 
         # System hook registry (Meld / Conduit / Link / Contract).
         # Maps hook name -> list[Callable[..., Any]].
@@ -66267,9 +66322,10 @@ class SpellbookConfiguration(Cleanable):
 
     def clear_properties(self) -> None:
         """
-        Clears all properties in the configuration.
+        Reset authored properties to the initial build-time state.
 
-        This method is useful for resetting the configuration to its initial state before it is frozen.
+        The disposal-priority flag returns to False; all other properties are
+        removed. The configuration remains available for reassembly before freeze.
 
         Raises:
             RuntimeError: If the configuration is cleaned or frozen.
@@ -66282,6 +66338,7 @@ class SpellbookConfiguration(Cleanable):
             if self._frozen:
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
             self._properties.clear()
+            self._properties["enforce_priority_disposal_methods"] = False
 
     def freeze(
             self,
@@ -66459,11 +66516,12 @@ class SpellbookConfiguration(Cleanable):
         return True
 
     # Opt-in properties: registered in `available_properties` so
-    # `set_property` accepts and type-checks them, but NEVER hard-required.
+    # `set_property` accepts them and validation checks their types, but NEVER hard-required.
     # Validation backfills the documented default when unset so defaults-free
     # fluent configurations (a supported public path) remain valid without
-    # knowing about optional optimization flags.
+    # knowing about optional policy or optimization flags.
     _OPTIONAL_PROPERTY_DEFAULTS: ClassVar[Dict[str, Any]] = {
+        "enforce_priority_disposal_methods": False,
         "generalized_singleton_specialization_enabled": False,
     }
 
@@ -66475,7 +66533,7 @@ class SpellbookConfiguration(Cleanable):
             - Opt-in properties listed in `_OPTIONAL_PROPERTY_DEFAULTS` are
               backfilled with their documented defaults instead of raising, so
               configurations assembled without `load_default_dictionary()`
-              never fail validation over optional optimization flags.
+              never fail validation over optional policy or optimization flags.
             - Every other registered property remains hard-required.
         """
         for key, default_value in self._OPTIONAL_PROPERTY_DEFAULTS.items():
@@ -66604,6 +66662,7 @@ class SpellbookConfiguration(Cleanable):
         defaults = {
             "disposal": False,
             "disposal_method_names": [],
+            "enforce_priority_disposal_methods": False,
             "phase_scheduler_workers_per_spellbook": 5,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
             "generalized_singleton_specialization_enabled": False,
@@ -66629,17 +66688,21 @@ class SpellbookConfiguration(Cleanable):
 
         Contract:
             - Recorded values win: each recorded key routes through
-              `set_property` (full registration + type checking applies).
-            - A recorded value the property system refuses (unknown key,
-              or type drift such as callables the emission scalar filter
-              stringified) is skipped and returned under "rejected" as
+              `set_property` for registration/lifecycle checks; type checking
+              occurs during the final validation/freeze.
+            - A recorded key the property system refuses (unknown key or
+              lifecycle/write-once violation) is skipped and returned under "rejected" as
               "key: reason"; nothing is silently coerced. The per-key
               exception capture is documented best-effort collection, not
               error swallowing - every refusal is surfaced to the caller.
+              Invalid registered value types fail at the final validation.
             - Required keys absent from the record backfill through
               `load_default_dictionary` (populate-missing-only semantics)
               and each backfilled key is returned under "backfilled";
               nothing backfills silently.
+            - An omitted disposal-priority flag still holding its eager False
+              default is also reported as backfilled. An existing non-default
+              True is preserved when the record has no replacement.
             - LOADS AND FREEZES in one motion: a reloaded configuration is
               sealed truth, so the verb validates and freezes internally
               before returning - callers never finalize a reload. The
@@ -66673,6 +66736,13 @@ class SpellbookConfiguration(Cleanable):
                 # rides back to the caller for shortfall reporting.
                 rejected.append("{0}: {1}".format(key, error))
         present_before = set(self._properties.keys())
+        if (
+                "enforce_priority_disposal_methods" not in recorded_properties
+                and self._properties["enforce_priority_disposal_methods"] is False
+        ):
+            # This default was supplied at init/clear rather than by the record;
+            # include it in the existing schema-default accounting.
+            present_before.remove("enforce_priority_disposal_methods")
         self.load_default_dictionary()
         backfilled = sorted(set(self._properties.keys()) - present_before)
         # Reload seals: load it in, freeze it - the reload lane never
@@ -67083,7 +67153,8 @@ class SpellbookConfiguration(Cleanable):
 
         Behaviour:
         - Sets local rich-config defaults:
-          disposal=False, disposal_method_names=[].
+          disposal=False, disposal_method_names=[],
+          enforce_priority_disposal_methods=False.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Contract:
@@ -67130,6 +67201,37 @@ class SpellbookConfiguration(Cleanable):
             - Returns `self` for chaining.
         """
         self.set_property("disposal", enabled)
+        return self
+
+    def with_enforce_priority_disposal_methods(
+            self,
+            enabled: bool = True,
+    ) -> SpellbookConfiguration:
+        """
+        Store the disposal-method group priority and return this configuration.
+
+        Args:
+            enabled: True places matching book methods before spell-only methods.
+                False (the configuration default) places the book block last;
+                it does not disable the book's contribution. In both modes,
+                shared names occur only in the book block, in configuration order.
+
+        Contract:
+            - Stages policy only; does not match methods or invoke disposal.
+            - Both groups keep their own order; shared names belong to the book.
+            - May be changed during assembly; the existing freeze boundary seals it.
+            - Bool type checking occurs during validate/finalize, without coercion.
+
+        Threading:
+            Uses set_property's existing configuration mutation lock.
+
+        Raises:
+            RuntimeError: If this configuration is frozen or cleaned.
+
+        Returns:
+            SpellbookConfiguration: This same instance for fluent chaining.
+        """
+        self.set_property("enforce_priority_disposal_methods", enabled)
         return self
 
     def with_disposal_method_names(self, names: list[str]) -> "SpellbookConfiguration":
@@ -67929,7 +68031,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 9b50eb996cefcfc567c011d3225731eca328f50fd0b273ad2401ca5ef7357dfc
+CONTENT SHA256: 47d14a8a000b2b1786a21b4d8b80e221799f854d73541a8f15935f32bff5d6b0
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -67938,6 +68040,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Optional,
 )
 
 # Melder Imports
@@ -68016,9 +68119,9 @@ class Spell(Cleanable):
       transitions.
     - Becomes unusable after `cleanup()` completes; later live-object methods
       are expected to fail through `check_cleaned()`.
-    - Disposal methods should not be modified after creation as it will create
-      problems with the runtime. The runtime will optimize creation and disposal
-      methods added after the fact are ignored.
+    - Disposal metadata is established once at bind. The ordered list, presence
+      flag, and bind-time SHA describe that same policy. Post-creation mutation
+      is unsupported; this class adds no copying or mutation guards.
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -68105,7 +68208,7 @@ class Spell(Cleanable):
             contract used for internal coordination, graph wiring, diagnostics,
             and spell-system-state attachment.
 
-        *args / **kwargs:
+        args and kwargs:
             Arbitrary tags and metadata for internal use or future extensions.
 
     Threading / Concurrency:
@@ -68233,10 +68336,10 @@ class Spell(Cleanable):
             spellbook: "Spellbook",
             profile: Any | None = None,
             existing_object: object | None = None,
-            disposal_method_names: frozenset[str] = frozenset(),
+            disposal_method_names: Optional[list[str]] = None,
             *args: Any,
             **kwargs: Any,
-    ):
+    ) -> None:
         """
         Internal constructor for a bound Spell record.
 
@@ -68255,9 +68358,9 @@ class Spell(Cleanable):
             profile (Optional[Any]): Binding/introspection profile attached by the examiner.
             existing_object (Optional[object]): Pre-created instance for EXISTING_CREATION* spell types.
                 Stored on the spell under the DIFFERENT name `user_created_object`.
-            disposal_method_names (FrozenSet[str]): Resolved disposal methods for this spell.
-                Re-frozen on assignment, so a caller-held collection cannot mutate the
-                spell afterwards.
+            disposal_method_names (Optional[list[str]]): Bind-resolved disposal methods in
+                execution order. Retained directly; omitted metadata gets a fresh empty list.
+                Bind owns matching and deduplication, which are not repeated here.
             *args: Optional positional metadata tags, collected into `tags`.
             **kwargs: Optional keyword metadata map, collected into `metadata`.
 
@@ -68280,6 +68383,8 @@ class Spell(Cleanable):
             - The canonical `(frame_key, bind_key)` lookup key is normalized
               immediately via `SpellInputUtils.make_spell_key_from_parts(...)`
               and fixed at construction; key identity never drifts afterwards.
+            - Disposal order and its presence flag are established once. The
+              resolved list is not copied, sorted, or frozen during construction.
 
         Owned State:
             Owns `_lock`, `_compiler_artifact` (created eagerly against
@@ -68365,7 +68470,9 @@ class Spell(Cleanable):
         self.tags = list(args) if args else []
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: dict[str, Any] | None = None
-        self.disposal_method_names: frozenset[str] = frozenset(disposal_method_names)
+        self.disposal_method_names: list[str] = (
+            disposal_method_names if disposal_method_names is not None else []
+        )
         self.has_disposal_methods: bool = bool(self.disposal_method_names)
 
         # Hooks (private storage; Spellbook controls mutation)
@@ -68451,6 +68558,8 @@ class Spell(Cleanable):
               state, spellbook references, and reflective profile state.
             - Sets `_cleaned` before the guarded section exits, then drops the
               `_lock` reference itself after the teardown completes.
+            - Deletes the disposal-name reference without clearing its list;
+              creation entries may still retain that established metadata.
 
         Runtime resolution and instance lifecycle remain owned by the Resolution
         / Meld layer, not by this class.
@@ -70232,10 +70341,10 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spe
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py
-CONTENT SHA256: 620097540bc62732d511c7bcd70c0a28018a8e07e545c34ff6c747cc4f3f61ab
+CONTENT SHA256: 875ac1b33b859504e54d643d29af410ae3038b42feea0e74bb9b89e85c416196
 SOURCE ENCODING: utf-8
 ================================================================================
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
@@ -70248,6 +70357,10 @@ class SpellRuntimeRecord:
     Purpose:
         Hold the spell-static runtime facts needed by planner strategies without
         forcing those strategies to reopen the live spellbook maps.
+
+    Ownership:
+        Borrows the Spell's established disposal list. Neither this record nor
+        the enclosing analysis owns or clears that list's contents.
     """
 
     __slots__ = [
@@ -70278,7 +70391,7 @@ class SpellRuntimeRecord:
             is_method_spell: bool,
             is_lambda_spell: bool,
             has_disposal_methods: bool,
-            disposal_method_names: Tuple[str, ...],
+            disposal_method_names: List[str],
             user_created_object: Any,
     ) -> None:
         """
@@ -70307,7 +70420,7 @@ class SpellRuntimeRecord:
             has_disposal_methods:
                 True when the spell declares disposal methods.
             disposal_method_names:
-                Names of the declared disposal methods.
+                Spell-owned names in established execution order, retained directly.
             user_created_object:
                 Pre-supplied object for existing-creation spells, else None.
 
@@ -72604,7 +72717,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py
-CONTENT SHA256: 5382db38b5128687b67442d7a3884bf695612ba379d01d903551aba2b7ba4ac8
+CONTENT SHA256: d534c73870ada72c0cf960c743df2be9e4d77ab31e7a775d24ebf52dcd7a047d
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional
@@ -72658,6 +72771,8 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
             - Uses execution order when present to scope the records.
             - Falls back to graph-visible spell ids when no order section exists.
             - Writes only `model.spell_runtime_shape`.
+            - Borrows each Spell's resolved disposal list without conversion;
+              binding has already established its order and presence flag.
         """
         _ = artifact
         spellbook = spell._spellbook
@@ -72698,7 +72813,7 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
                 is_method_spell=spell_obj.is_method_spell,
                 is_lambda_spell=spell_obj.is_lambda_spell,
                 has_disposal_methods=spell_obj.has_disposal_methods,
-                disposal_method_names=tuple(spell_obj.disposal_method_names),
+                disposal_method_names=spell_obj.disposal_method_names,
                 user_created_object=spell_obj.user_created_object,
             )
 
@@ -77350,7 +77465,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
-CONTENT SHA256: 4e291fc58f75feb7f25b44e34d9cde769e023978c125709573121c535ca2f8e2
+CONTENT SHA256: a8e80f1faa90a7a68d8ee0fa6607875929527fa503d85bd7df2cdad1ffcd7053
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -78017,6 +78132,8 @@ def _append_register_source(
         - The `many` slot is always a list for this spell id because existence
           is fingerprint-stable; the legacy non-list slot guard is likewise
           structurally unreachable.
+        - Both storage shapes retain the bound Spell disposal list directly,
+          matching Creations registration without allocating a copied policy.
     """
     if existence in (
             Existence.unique,
@@ -78033,7 +78150,7 @@ def _append_register_source(
             lines.append(
                 f"{indent}creations_{step_index}._disposable_creations"
                 f"[spell_id_{step_index}] = "
-                f"(instance_{step_index}, list(disposal_methods_{step_index}))"
+                f"(instance_{step_index}, disposal_methods_{step_index})"
             )
         return
 
@@ -78064,7 +78181,7 @@ def _append_register_source(
             ),
             (
                 f"{indent}many_disposable_{step_index}.append("
-                f"(instance_{step_index}, list(disposal_methods_{step_index})))"
+                f"(instance_{step_index}, disposal_methods_{step_index}))"
             ),
         ])
         return
@@ -95978,10 +96095,10 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
-CONTENT SHA256: 359d694a052e26b7a9c9f8b476e5f58844062e14e818771de2324e426cfbbfcb
+CONTENT SHA256: 51ff06f6e4e62ec174d8c73c01a94b975be1437a67215c719bcfed2f4f6ae2ca
 SOURCE ENCODING: utf-8
 ================================================================================
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
@@ -96006,6 +96123,8 @@ def compile_solo_no_overrides_codegen_creation_executor(
         - Emits the same route/existence logic that previously lived in the
           handwritten closure branches in this file.
         - Uses the process-wide emitted-source code-object cache.
+        - Binds the established Spell disposal list directly into each fresh
+          executor namespace, including when its code object is reused.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -96221,23 +96340,26 @@ def _build_source(
 
 
 def _normalize_disposal_methods(
-        disposal_method_names: Sequence[str],
-) -> Optional[Tuple[str, ...]]:
+        disposal_method_names: list[str],
+) -> Optional[list[str]]:
     """
-    Normalize spell-owned disposal metadata for creations registration.
+    Retain the established Spell list for registration; an empty list remains None.
+
+    No names are copied, reordered, or revalidated. Binding owns that policy,
+    and this namespace must not own a separate disposal collection.
     """
     if not disposal_method_names:
         return None
-    return tuple(disposal_method_names)
+    return disposal_method_names
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
-CONTENT SHA256: 716f301d6b4bf7641db0b535398edc0171f9ca65a8896cfe23bb384fe22f5709
+CONTENT SHA256: 526a0f3967f6496de9bbafe4d4e068c24cbbb5fe674d5c2532abe39eb56c618c
 SOURCE ENCODING: utf-8
 ================================================================================
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
@@ -96261,6 +96383,8 @@ def compile_solo_overrides_codegen_creation_executor(
         - Emits the same route/existence logic that previously lived in the
           handwritten closure branches in this file.
         - Uses the process-wide emitted-source code-object cache.
+        - Binds the established Spell disposal list directly into each fresh
+          executor namespace, including when its code object is reused.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -96547,14 +96671,17 @@ def _invoke_with_overrides(
 
 
 def _normalize_disposal_methods(
-        disposal_method_names: Sequence[str],
-) -> Optional[Tuple[str, ...]]:
+        disposal_method_names: list[str],
+) -> Optional[list[str]]:
     """
-    Normalize spell-owned disposal metadata for creations registration.
+    Retain the established Spell list for registration; an empty list remains None.
+
+    No names are copied, reordered, or revalidated. Binding owns that policy,
+    and this namespace must not own a separate disposal collection.
     """
     if not disposal_method_names:
         return None
-    return tuple(disposal_method_names)
+    return disposal_method_names
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
 ================================================================================
@@ -98553,7 +98680,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_pla
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py
-CONTENT SHA256: 1eb0babde184064736401eaf8f567d39531aba0b0688006cddba4adda1b73530
+CONTENT SHA256: 709517a78140765399b556ea865a5fd9295ff6b9d11f0bfc1538dd4991f1b3ca
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
@@ -98894,7 +99021,7 @@ class ManyOnlyNoOverridesPlan(Cleanable):
             step_dep8h: List[int],
             step_spell_ids: List[str],
             step_has_disposal_methods: List[bool],
-            step_disposal_methods: List[Tuple[str, ...]],
+            step_disposal_methods: List[List[str]],
             metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
@@ -98931,7 +99058,8 @@ class ManyOnlyNoOverridesPlan(Cleanable):
             step_has_disposal_methods:
                 Per-step disposal-presence flags.
             step_disposal_methods:
-                Per-step disposal method-name tuples.
+                Outer array of borrowed Spell lists in established disposal order.
+                The plan owns the outer array, not the inner lists' contents.
             metadata:
                 Optional plan metadata (defaults to empty).
 
@@ -98996,6 +99124,8 @@ class ManyOnlyNoOverridesPlan(Cleanable):
             target/mode arrays, and every fixed-arity dependency-slot array
             (step_dep1..step_dep8h) plus the per-step metadata. Owns only value
             collections; it holds no live runtime object to dispose.
+            The disposal array is cleared only at its outer level; borrowed
+            Spell method lists remain intact for execution and Creations.
 
         Returns:
             None.
@@ -99321,8 +99451,8 @@ class ManyOnlyNoOverridesPlan(Cleanable):
         return tuple(self._step_has_disposal_methods)
 
     @property
-    def step_disposal_methods(self) -> Tuple[Tuple[str, ...], ...]:
-        """Return ordered step disposal method rows."""
+    def step_disposal_methods(self) -> Tuple[List[str], ...]:
+        """Return an outer tuple retaining each Spell's established disposal list."""
         return tuple(self._step_disposal_methods)
 
     @property
@@ -99615,6 +99745,11 @@ class ManyOnlyCodegenPlanBuilder:
     def _build_no_overrides_plan(self) -> ManyOnlyNoOverridesPlan:
         """
         Build the standalone many-only no-overrides plan.
+
+        Contract:
+            Retains each Spell's disposal list in the per-step outer array.
+            Presence flags and call/store routing are unchanged; no inner copy
+            or method matching is performed here.
         """
         (
             steps,
@@ -99667,8 +99802,8 @@ class ManyOnlyCodegenPlanBuilder:
             bool(step.spell.has_disposal_methods)
             for step in steps
         ]
-        step_disposal_methods: List[Tuple[str, ...]] = [
-            tuple(step.spell.disposal_method_names)
+        step_disposal_methods: List[List[str]] = [
+            step.spell.disposal_method_names
             for step in steps
         ]
 
@@ -99942,7 +100077,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_o
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py
-CONTENT SHA256: 2c928a545d28eec4cf82b23c8c4d4f5fe20a3b1f2d9b44b992a932fa9a792bff
+CONTENT SHA256: 107f92b662e45f923dfd28f0d8bb545bfdfeb657bd157756d67986225e230cf4
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, ClassVar
@@ -100101,6 +100236,8 @@ class SpellGeneralizedCodegenPlanStep:
             - Mirrors the legacy execution-step field semantics closely so the
               old `execution_plan.py` can be retired once consumers converge on
               this shape.
+            - Borrows the established Spell disposal list without copying it.
+              Plan teardown releases the step, never the borrowed list's contents.
         """
         if instance_key is None:
             raise ValueError("instance_key must not be None.")
@@ -100368,7 +100505,7 @@ class SpellGeneralizedCodegenPlanStep:
     @property
     def disposal_method_names(self) -> List[str]:
         """
-        Return disposal-method names carried into runtime registration.
+        Return the borrowed Spell list in its established disposal order.
         """
         return self._disposal_method_names
 
@@ -101072,6 +101209,8 @@ class SpellGeneralizedCodegenPlanBuilder:
               2026-07-02), so sharing the full extraction changes no
               dependency semantics in either lane.
             - `self._plan_variant` is ignored; both variants are produced.
+            - Both plans borrow the fitted record's Spell-owned disposal list.
+              Ordered tuple projections belong only to schema/hash export.
 
         Returns:
             Tuple[SpellGeneralizedCodegenLanePlan, SpellGeneralizedCodegenLanePlan]:
@@ -101122,9 +101261,8 @@ class SpellGeneralizedCodegenPlanBuilder:
             requires_spellspace = existence is Existence.unique_per_spell_space
             owner_conduit_required = existence is Existence.unique_per_spell_space
             must_register = self._should_register(runtime_record)
-            # One disposal list per spell, shared by that spell's steps in
-            # BOTH plans (read-only downstream; rows tuple-copy it).
-            disposal_method_names = list(runtime_record.disposal_method_names)
+            # Every step in BOTH plans borrows the established Spell list;
+            # schema rows encode its ordered values at the export boundary.
 
             for instance_key in instance_shape.instance_keys_by_spell_id.get(spell_id, []):
                 occurrence = self._occurrence_for_instance_key(instance_key)
@@ -101191,7 +101329,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     override_match_prefix_len=override_match_prefix_len,
                     expects_overrides=expects_overrides,
                     contract_keys=contract_keys,
-                    disposal_method_names=disposal_method_names,
+                    disposal_method_names=runtime_record.disposal_method_names,
                     **common_kwargs,
                 ))
                 instance_key_to_step_index[instance_key] = len(steps) - 1
@@ -101413,6 +101551,10 @@ class SpellGeneralizedCodegenPlanBuilder:
             many-only builder surfaces so category-specific builders can enforce
             their own preconditions without copying the full generalized step
             synthesis body.
+
+        Contract:
+            Borrows disposal lists from fitted runtime records; this builder
+            neither repeats matching nor creates another inner method list.
         """
         graph_shape = self._state.graph_shape
         order_shape = self._state.order_shape
@@ -101460,7 +101602,6 @@ class SpellGeneralizedCodegenPlanBuilder:
             requires_spellspace = existence is Existence.unique_per_spell_space
             owner_conduit_required = existence is Existence.unique_per_spell_space
             must_register = self._should_register(runtime_record)
-            disposal_method_names = list(runtime_record.disposal_method_names)
 
             for instance_key in instance_shape.instance_keys_by_spell_id.get(spell_id, []):
                 occurrence = self._occurrence_for_instance_key(instance_key)
@@ -101534,7 +101675,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     requires_spellspace=requires_spellspace,
                     owner_conduit_required=owner_conduit_required,
                     must_register=must_register,
-                    disposal_method_names=disposal_method_names,
+                    disposal_method_names=runtime_record.disposal_method_names,
                 )
                 steps.append(step)
                 instance_key_to_step_index[instance_key] = len(steps) - 1
@@ -130866,7 +131007,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: ba1ac70f12b83bc64ffd8371bba22b50db75d0af1c12af0dad4dcfb70c773e6f
+CONTENT SHA256: 6d53d170189387d61cf76e1a86205fa667f43a9626b2735e94667c574b4b786f
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -130986,7 +131127,7 @@ class Spellbook(Cleanable):
 
     Lifecycle / Cleanup:
         - This object owns local registries, contracted registries, validators, configuration,
-and logging.
+          and logging.
         - Cleanup is staged so component teardown happens under the lock first
           and high-level references are dropped afterward.
 
@@ -131073,7 +131214,6 @@ and logging.
         "_pending_structural_spells",
         "_phase_scheduler",
         "_phase_run_lock",
-        "_configured_disposal_method_names",
         "_spell_id_pool",
         "_spell_system_states",
         "_spell_ids",
@@ -131149,7 +131289,6 @@ and logging.
         # a phase unit (worker thread) - that would deadlock against the
         # owning control thread.
         self._phase_run_lock: threading.RLock = threading.RLock()
-        self._configured_disposal_method_names: frozenset[str] | None = None
         self._conduit: Conduit | None = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame_name: str = aetheric_frame
@@ -131575,8 +131714,9 @@ and logging.
     # -------------------------
 
     def _cleanup_core(self) -> None:
+        """Drop high-level references after owned children are cleaned, with logging last."""
 
-        # Nullify high-level refs (no try/catch for simple None assignments)
+        # Drop high-level refs (no try/catch for simple reference deletion).
         del self._bind
         del self._aetheric_frame_name
         del self._aetheric_frame
@@ -131587,7 +131727,6 @@ and logging.
         del self._transaction_identity
         del self._pending_binding_frame_keys
         del self._pending_structural_spells
-        del self._configured_disposal_method_names
         del self._spell_system_states
         del self._configuration_locked
         del self._binds_before_configuration_count
@@ -135658,6 +135797,8 @@ and logging.
               `_apply_add_to_index`.
             - Performs no active-map registration and claims no binding
               signature; the spell stays inactive until notched.
+            - Resolves disposal metadata once using the same ordered group
+              composition as active bind; staging does not change the index's selection.
 
         Args:
             spell (Any):
@@ -135673,7 +135814,11 @@ and logging.
             binding_name (Optional[str]):
                 Secondary disambiguation key within the frame.
             disposal_method_names (Optional[Sequence[str]]):
-                Optional disposal method names to associate with the spell.
+                Ordered per-spell candidates, combined with configured book candidates.
+                The complete matching book block comes last by default, first with
+                enforce_priority_disposal_methods=True. Shared names belong to that block
+                in both modes; spell-only names keep their supplied order. Missing names
+                are skipped and duplicates run once. Empty input still permits book methods.
             profile (str):
                 Spell profile family to attach after bind completion.
             **kwargs:
@@ -135707,21 +135852,6 @@ and logging.
             try:
                 permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
                 existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
-                if self._configured_disposal_method_names is None:
-                    if disposal_method_names is not None:
-                        self._configured_disposal_method_names = frozenset(
-                            disposal_method_names
-                        )
-                    elif (
-                            self._configuration is not None
-                            and self._configuration.has_property("disposal_method_names")
-                    ):
-                        self._configured_disposal_method_names = frozenset(
-                            self._configuration.get_property("disposal_method_names")
-                        )
-                    else:
-                        self._configured_disposal_method_names = frozenset()
-
                 new_spell = self._bind.bind(
                     permissions=permissions_enum,
                     spell=spell,
@@ -135730,7 +135860,14 @@ and logging.
                     profile=profile,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
-                    configured_disposal_method_names=self._configured_disposal_method_names,
+                    configured_disposal_method_names=(
+                        self._configuration.get_property("disposal_method_names")
+                        if self._configuration.has_property("disposal_method_names") else None
+                    ),
+                    disposal_method_names=disposal_method_names,
+                    enforce_priority_disposal_methods=self._configuration.get_property(
+                        "enforce_priority_disposal_methods"
+                    ),
                     # Owner ruling 2026-07-19: non-hook bind kwargs thread into
                     # Spell's construction (its native **kwargs metadata channel).
                     **{
@@ -135928,6 +136065,9 @@ and logging.
             - The underlying registration semantics are identical whether the
               bind-family transaction window was opened explicitly or
               implicitly.
+            - Disposal names are resolved once for this binding. Both input
+              groups contribute, and the resolved order is included in spell_id.
+              A bind never establishes disposal candidates for a later binding.
 
         Args:
             spell (Any):
@@ -135945,7 +136085,11 @@ and logging.
             profile (str):
                 Spell profile family to attach after bind completion.
             disposal_method_names (Optional[Sequence[str]]):
-                Optional disposal method names to associate with the spell.
+                Ordered per-spell candidates, combined with configured book candidates.
+                The complete matching book block comes last by default, first with
+                enforce_priority_disposal_methods=True. Shared names belong to that block
+                in both modes; spell-only names keep their supplied order. Missing names
+                are skipped and duplicates run once. Empty input still permits book methods.
             **kwargs:
                 Optional lifecycle hooks:
                 - pre_hooks
@@ -136004,21 +136148,6 @@ and logging.
             try:
                 permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
                 existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
-                if self._configured_disposal_method_names is None:
-                    if disposal_method_names is not None:
-                        self._configured_disposal_method_names = frozenset(
-                            disposal_method_names
-                        )
-                    elif (
-                            self._configuration is not None
-                            and self._configuration.has_property("disposal_method_names")
-                    ):
-                        self._configured_disposal_method_names = frozenset(
-                            self._configuration.get_property("disposal_method_names")
-                        )
-                    else:
-                        self._configured_disposal_method_names = frozenset()
-
                 new_spell = self._bind.bind(
                     permissions=permissions_enum,
                     spell=spell,
@@ -136027,7 +136156,14 @@ and logging.
                     profile=profile,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
-                    configured_disposal_method_names=self._configured_disposal_method_names,
+                    configured_disposal_method_names=(
+                        self._configuration.get_property("disposal_method_names")
+                        if self._configuration.has_property("disposal_method_names") else None
+                    ),
+                    disposal_method_names=disposal_method_names,
+                    enforce_priority_disposal_methods=self._configuration.get_property(
+                        "enforce_priority_disposal_methods"
+                    ),
                     # Owner ruling 2026-07-19: non-hook bind kwargs thread into
                     # Spell's construction (its native **kwargs metadata channel).
                     **{
@@ -137361,6 +137497,8 @@ and logging.
               transaction has claimed the owning spellbook EXCLUSIVE.
             - Preserves the single-conjure invariant and the original creation
               flow unchanged.
+            - Uses the disposal metadata established at bind without another
+              matching pass or private-mutation check.
         Threading:
             - The CONJURE embargo is acquired by `conjure()` BEFORE this method
               takes the Spellbook lock, preserving embargo-then-lock ordering so
@@ -137415,19 +137553,6 @@ and logging.
                     f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
                     f"conduit_name={conduit_name})"
                 )
-            if self._configured_disposal_method_names is not None:
-                for spell in self._spells.values():
-                    if not isinstance(spell.disposal_method_names, frozenset):
-                        raise RuntimeError(
-                            "Spell disposal metadata must be frozen before conjure."
-                        )
-                    if spell.has_disposal_methods != bool(
-                            spell.disposal_method_names
-                    ):
-                        raise RuntimeError(
-                            "Spell disposal flags are inconsistent before conjure."
-                        )
-
             # Frame-wide spell_id integrity, checked BEFORE any conduit work.
             # Registration into the frame happens inside Conduit.__init__
             # (`_configure_conduit_state` -> `_add_spells_to_aether`), so a
@@ -154541,7 +154666,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/graft_runner.py
-CONTENT SHA256: c81f8220cdf8bdbb4eb80097fcbd9a023666db59f68e4c8a6d3c7ba58fb24e60
+CONTENT SHA256: 354ec24b4078c73e3f2793418c6f6fe36bb71820d910da25ddfd084ddc71550c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -154565,7 +154690,10 @@ skip_resident, identically in both modes. Grafts are user-verb activity
 """
 
 import importlib
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.persistence.record_version import RecordVersion
@@ -154853,16 +154981,16 @@ class GraftRunner(Cleanable):
                 "a fresh index needs its anchor bind."
             )
 
-        live_index_id, bound = self._bind_selected(
+        live_index, bound = self._bind_selected(
             str(selected_id), members, shortfalls
         )
         parked = self._park_members(
-            str(selected_id), members, host_conduit, shortfalls
+            str(selected_id), members, host_conduit, shortfalls, live_index
         )
         return {
             "status": "complete",
             "recorded_index_id": str(self._record.get("index_id")),
-            "live_index_id": live_index_id,
+            "live_index_id": live_index.id if live_index is not None else None,
             "merged_into_existing": False,
             "selection_adopted": True,
             "members_bound": bound,
@@ -154919,7 +155047,7 @@ class GraftRunner(Cleanable):
             selected_id: str,
             members: Dict[str, Dict[str, object]],
             shortfalls: List[Dict[str, object]],
-    ) -> tuple:
+    ) -> Tuple[Optional[SpellIndex], int]:
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
@@ -154932,7 +155060,9 @@ class GraftRunner(Cleanable):
                 Collector for honest rows.
 
         Returns:
-            tuple: (live_index_id or None, members_bound count).
+            Tuple[Optional[SpellIndex], int]: Newly bound index (borrowed) and
+                member count. Parking uses this actual result because receiving
+                book policy can change the bound member's SHA.
 
         Raises:
             ValueError: If the selected member's target cannot hydrate
@@ -154959,10 +155089,10 @@ class GraftRunner(Cleanable):
             profile=str(crystal.get("profile_family", "general")),
         )
         live_spell = self._host_book.find_spell_by_id(new_spell_id)
-        live_index_id = (
-            live_spell.spell_index.id if live_spell is not None else None
+        live_index = (
+            live_spell.spell_index if live_spell is not None else None
         )
-        return live_index_id, 1
+        return live_index, 1
 
     def _park_members(
             self,
@@ -154970,27 +155100,27 @@ class GraftRunner(Cleanable):
             members: Dict[str, Dict[str, object]],
             host_conduit: Any,
             shortfalls: List[Dict[str, object]],
+            anchor_index: Optional[SpellIndex],
     ) -> int:
         """
         Park every non-selected member onto the fresh live index.
 
         Args:
             selected_id:
-                The already-bound anchor member.
+                Recorded anchor member ID, used to exclude its custody row.
             members:
                 Graftable member map.
             host_conduit:
                 The host book's live conduit (bind_inactive host).
             shortfalls:
                 Collector for honest rows.
+            anchor_index:
+                Actual index returned by the selected bind, borrowed for this call.
+                No recorded-SHA lookup is needed after receiving-book composition.
 
         Returns:
             int: Members parked.
         """
-        anchor_spell = self._host_book.find_spell_by_id(selected_id)
-        anchor_index = (
-            anchor_spell.spell_index if anchor_spell is not None else None
-        )
         parked = 0
         for spell_id, entry in members.items():
             if spell_id == selected_id:
@@ -155012,6 +155142,7 @@ class GraftRunner(Cleanable):
                 permissions=str(crystal.get("permissions_name", "create")),
                 spellframe=crystal.get("spellframe_name"),
                 binding_name=crystal.get("binding_name"),
+                disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
             )
             parked += 1
@@ -155035,9 +155166,9 @@ class GraftRunner(Cleanable):
             selection. Index internals stay untouched.
 
         Contract:
-            - Spell SHAs are content-derived and stable, so the
-              recorded selected id addresses the freshly parked live
-              spell directly for the adoption notch.
+            - Receiving-book policy applies at each bind. Selection adoption
+              follows the live ID returned by the selected member's bind,
+              which may differ from its recorded SHA.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
 
@@ -155055,20 +155186,24 @@ class GraftRunner(Cleanable):
             Tuple[int, bool]: (members parked, selection adopted).
         """
         parked = 0
+        live_selected_id: Optional[str] = None
         for spell_id, entry in members.items():
             crystal = dict(entry.get("payload", {}))
             target = self._hydrate(spell_id, crystal, shortfalls)
             if target is None:
                 continue
-            host_conduit.bind_inactive(
+            new_spell_id = host_conduit.bind_inactive(
                 spell=target,
                 spell_index=self._merge_into_index,
                 existence=str(crystal.get("existence_name", "unique")),
                 permissions=str(crystal.get("permissions_name", "create")),
                 spellframe=crystal.get("spellframe_name"),
                 binding_name=crystal.get("binding_name"),
+                disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
             )
+            if spell_id == str(selected_id):
+                live_selected_id = new_spell_id
             parked += 1
         selection_adopted = False
         if self._adopt_recorded_selection:
@@ -155082,8 +155217,8 @@ class GraftRunner(Cleanable):
             # member is parked by construction). Read-only seam; the
             # mediated write remains the public notch verb below.
             adopted_spell = (
-                self._host_book._get_owned_spell(str(selected_id))
-                if selected_id is not None
+                self._host_book._get_owned_spell(live_selected_id)
+                if live_selected_id is not None
                 else None
             )
             if adopted_spell is None:
@@ -156132,7 +156267,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/load_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/restore_engine.py
-CONTENT SHA256: 22ec5cb284d416da2eb96765f22fadd26ae62bab27d22c20cd2bb74eb2687310
+CONTENT SHA256: 5f3ae5812dc3ac03d33340b7adf8c8f7b6bfa59d9f9d710ab3999c9e7ce7647f
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -156401,7 +156536,11 @@ class RestoreReport(Cleanable):
 
     def map_identity(self, recorded_id: str, live_id: str) -> None:
         """
-        Record one recorded-ULID -> fresh-live-identity translation.
+        Record one recorded identity -> actual live identity translation.
+
+        Structural ULIDs are always translated. Spell SHA entries are added
+        when a new bind's resolved signature differs from its recorded one;
+        unchanged content IDs remain directly addressable without an entry.
 
         Args:
             recorded_id:
@@ -157859,8 +157998,9 @@ class RestoreEngine(Cleanable):
               self-admits its window), the recorded root conduit conjures,
               staged members bind_inactive onto their live anchors POST-
               conjure, then divergent selections notch.
-            - Spell SHAs are content-derived and stay STABLE across restore;
-              only index/conduit/contract/cluster ULIDs need translation.
+            - Spell SHAs stay stable when recorded signature and receiving policy
+              agree. A changed signature maps to the actual bind result in the
+              existing report, before member/selection/contract references replay.
 
         Returns:
             None.
@@ -158046,11 +158186,15 @@ class RestoreEngine(Cleanable):
         """
         Replay one ACTIVE bind from its custody payload.
 
+        Contract:
+            Forward ordered disposal names through normal book composition.
+            Record a changed SHA before resolving dependent staged members.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
             spell_id:
-                Recorded (content-stable) spell SHA.
+                Recorded spell SHA; receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
@@ -158072,6 +158216,8 @@ class RestoreEngine(Cleanable):
             profile=str(crystal.get("profile_family", "general")),
         )
         self._report.record_built("spell_active")
+        if new_spell_id != spell_id:
+            self._report.map_identity(spell_id, new_spell_id)
         live_spell = spellbook.find_spell_by_id(new_spell_id)
         recorded_index_id = self._index_id_for_member(spell_id)
         if recorded_index_id is not None and live_spell is not None:
@@ -158089,13 +158235,17 @@ class RestoreEngine(Cleanable):
         """
         Replay one STAGED member onto its live index anchor.
 
+        Contract:
+            Retain the ordered recorded names and map any changed bind identity
+            before the selection stage resolves this exact parked member.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
             conduit:
                 The live conduit hosting `bind_inactive`.
             spell_id:
-                Recorded (content-stable) spell SHA.
+                Recorded spell SHA; receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
@@ -158121,15 +158271,18 @@ class RestoreEngine(Cleanable):
         target = self._hydrate_target(spell_id, crystal)
         if target is None:
             return
-        conduit.bind_inactive(
+        new_spell_id = conduit.bind_inactive(
             spell=target,
             spell_index=anchor,
             existence=str(crystal.get("existence_name", "unique")),
             permissions=str(crystal.get("permissions_name", "create")),
             spellframe=crystal.get("spellframe_name"),
             binding_name=crystal.get("binding_name"),
+            disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
         )
+        if new_spell_id != spell_id:
+            self._report.map_identity(spell_id, new_spell_id)
         self._report.record_built("spell_staged")
 
     def _enforce_selections(
@@ -158140,6 +158293,10 @@ class RestoreEngine(Cleanable):
     ) -> None:
         """
         Notch rebuilt indexes whose live selection diverges from record.
+
+        Contract:
+            Translate changed bind identities and resolve the exact owned member,
+            including parked members, rather than the index's active projection.
 
         Args:
             spellbook_id:
@@ -158158,8 +158315,10 @@ class RestoreEngine(Cleanable):
             selected = payload.get("selected_spell_id")
             if selected is None:
                 continue
+            # Unchanged content IDs need no translation entry.
+            live_selected_id = self._report.translate(str(selected)) or str(selected)
             anchor = self._live_index_for(spellbook, index_id)
-            if anchor is None or anchor.selected_spell_id == selected:
+            if anchor is None or anchor.selected_spell_id == live_selected_id:
                 continue
             if conduit is None:
                 self._report.add_shortfall(
@@ -158167,7 +158326,7 @@ class RestoreEngine(Cleanable):
                     "selection_requires_conduit_none_recorded",
                 )
                 continue
-            live_spell = spellbook.find_spell_by_id(str(selected))
+            live_spell = spellbook._get_owned_spell(live_selected_id)
             if live_spell is None:
                 self._report.add_shortfall(
                     "spell_index", index_id,
@@ -158204,6 +158363,10 @@ class RestoreEngine(Cleanable):
         """
         Resolve one recorded index to its live rebuilt SpellIndex.
 
+        Contract:
+            Member lookup follows changed Spell IDs in the existing report map.
+            Unchanged content IDs resolve directly; index identity is always translated.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
@@ -158225,7 +158388,8 @@ class RestoreEngine(Cleanable):
         if selected is not None:
             candidates.insert(0, selected)
         for member_id in candidates:
-            live_spell = spellbook.find_spell_by_id(str(member_id))
+            live_member_id = self._report.translate(str(member_id)) or str(member_id)
+            live_spell = spellbook.find_spell_by_id(live_member_id)
             if live_spell is not None:
                 if live_spell.spell_index.id == live_index_id:
                     return live_spell.spell_index
@@ -158464,8 +158628,9 @@ class RestoreEngine(Cleanable):
         Stage 9 (LAST): re-grant recorded contract details.
 
         Contract:
-            - Spell SHAs are content-stable, so detail spell ids replay
-              as-recorded; conduit endpoints translate via the identity map.
+            - Detail Spell IDs follow recorded-to-live translation when a bind
+              changed its signature; unchanged SHAs remain direct. Conduit
+              endpoints translate through the same existing identity map.
             - Ward record truth: a plain detail lives in the map of the
               side that OWNS the lineage ("initiated" via the link-time
               bulk grant, "received" via the borrow verb, which files
@@ -158500,6 +158665,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Identical semantics to the historical stage loop body: detail
             re-grants run borrower-called inside link-transaction windows;
+            changed Spell IDs translate to the actual rebuilt bind identities;
             endpoint absence files the honest shortfall; index
             subscriptions are reported (first cut). Contracts are
             independent of one another; the parallel driver runs one unit
@@ -158536,11 +158702,13 @@ class RestoreEngine(Cleanable):
                 # called naming the owner (the ward eligibility check
                 # demands the `conduit` argument own the spell).
                 borrower = side_b if granter is side_a else side_a
+                recorded_spell_id = str(detail.get("spell_id"))
+                live_spell_id = self._report.translate(recorded_spell_id) or recorded_spell_id
                 with borrower.transaction(
                         "link", conduits=[borrower, granter]
                 ):
                     borrower.add_spell_to_contract(
-                        spell_id=str(detail.get("spell_id")),
+                        spell_id=live_spell_id,
                         conduit=granter,
                         permissions=str(
                             detail.get("permissions", "create")
@@ -158945,7 +159113,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystallizer.py
-CONTENT SHA256: eb77a5a3087bb2bf7c2aa8b892ac9c4055c0400e90fbaab26af253ba50bcfc0e
+CONTENT SHA256: 2b4cd802c6f4ea047fa779bd03d65af18dfc758ace3273d47fded364c179563e
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -159042,7 +159210,7 @@ class Crystallizer(Cleanable):
     Registration:
         MELDER KERNEL - guarded, access=public. A process-wide singleton privately
         hosted by `Aether`; the user configures, activates, and drives it through
-        its facade verbs but never `bind()`s it - the guard refuses that.
+        its facade verbs but never registers it with `bind()` - the guard refuses that.
 
     Subsystem Context:
         The public facade and ownership ROOT of the crystallizer. It presents one
@@ -163875,7 +164043,7 @@ END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystals/spell_crystal.py
-CONTENT SHA256: f3f68efe9deb836cc4d081bde5d33bc6a38f636e109e1489592803213d2adf4d
+CONTENT SHA256: edf473e14511f07bef6db17a5177fb125f3aef7dd372cb9dc0ff6a7c72d44632
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -164046,6 +164214,8 @@ class SpellCrystal(Cleanable):
               and stores the returned result (V3 carrier law).
             - Does not retain the live `Spell`, the live root target
               reference, or the analyzer after construction.
+            - Captures resolved disposal names in execution order. This detached
+              persistence value does not sort or reapply book policy.
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -164158,7 +164328,7 @@ class SpellCrystal(Cleanable):
         # is derived from the attached profile object's TYPE NAME so this
         # module never imports examiner types (typing-only pressure stays
         # zero and the crystal remains pure data).
-        self._disposal_method_names: List[str] = sorted(
+        self._disposal_method_names: List[str] = list(
             spell.disposal_method_names
         )
         self._profile_family: str = (
@@ -164533,8 +164703,9 @@ class SpellCrystal(Cleanable):
 
         Returns:
             List[str]:
-                Detached, sorted disposal method-name list (empty when the
-                spell declared none).
+                Detached disposal method-name list in recorded execution order
+                (empty when the spell declared none). Replay applies the receiving
+                book's normal bind policy; the crystal never recomposes the list.
         """
         self.check_cleaned()
         with self._lock:

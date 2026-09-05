@@ -1,0 +1,121 @@
+name: Release candidate
+
+# Candidate promotion/fixes trigger an index round-trip; no GitHub Release is needed.
+on:
+  push:
+    branches: [release_candidate]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Finish an active upload rather than cancelling it midway. Stale heads fail authorization.
+concurrency:
+  group: testpypi-publication
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    name: RC / authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: python .github/scripts/ci_policy.py candidate-head
+
+  build:
+    needs: authorize
+    uses: ./.github/workflows/build-distributions.yml
+    with:
+      artifact-name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+
+  publish:
+    name: RC / publish-to-TestPyPI
+    needs: [authorize, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypitest
+      url: https://test.pypi.org/project/melder/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - uses: actions/download-artifact@v8
+        with:
+          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/
+      - name: Verify existing files and prepare an exact upload
+        id: upload
+        run: python .github/scripts/testpypi_candidate.py prepare-upload --report reports/upload.json
+      - name: Recheck the candidate after environment admission
+        run: python .github/scripts/ci_policy.py candidate-head
+      - name: Publish missing verified files with Trusted Publishing
+        if: steps.upload.outputs.upload-required == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: upload/
+          print-hash: true
+      - name: Retain upload identity
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-upload-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/upload.json
+          if-no-files-found: error
+          retention-days: 90
+
+  install:
+    name: RC / installed-package / ${{ matrix.os }}
+    needs: [build, publish]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      PYTHON_GIL: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14t"
+      - uses: actions/download-artifact@v8
+        with:
+          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/
+      - name: Download the hash-pinned wheel and test its isolated installation
+        run: python .github/scripts/testpypi_candidate.py probe-install --report reports/installed.json
+      - name: Retain installed-package evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-install-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/installed.json
+          if-no-files-found: error
+          retention-days: 90
+
+  package-ready:
+    name: RC / package-ready
+    needs: [authorize, build, publish, install]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Require every candidate stage to have succeeded
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+        run: python .github/scripts/ci_policy.py candidate-ready
+      - name: Refuse a superseded candidate
+        run: python .github/scripts/ci_policy.py candidate-head

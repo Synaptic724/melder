@@ -1,0 +1,6 @@
+STALE  src   source fingerprint moved
+STALE  other source fingerprint moved
+
+Regenerate locally with:
+    python llm_support/_builder.py
+OK     tests fingerprint and output proofs match
