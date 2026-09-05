@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `component_patch_publication.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T11:24:35Z |
-| line_count | 22 |
+| generated_at | 2026-09-05T23:16:27Z |
+| line_count | 29 |
 | line_ending | lf |
-| content_sha256 | `f342b059809724ada36aa672208fca0227fb28e5c6bc4100ee9f89f1573cc695` |
+| content_sha256 | `7127a6653e40e1e419c238048062853220696027b1aa02b07e60dd01dee9da56` |
 | sections | 4 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -28,6 +28,6 @@ which you did.
 | lines | lvl | name |
 | --- | --- | --- |
 | 3-7 | 2 | Slimmed scope accepted by owner |
-| 8-14 | 2 | Promotion and release checks |
-| 15-19 | 2 | Failure semantics |
-| 20-22 | 2 | Validation |
+| 8-19 | 2 | Promotion and release checks |
+| 20-24 | 2 | Failure semantics |
+| 25-29 | 2 | Validation |

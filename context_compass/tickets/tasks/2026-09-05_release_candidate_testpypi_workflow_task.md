@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-05-release-candidate-testpypi-workflow
 - Story: none (successor to accepted branch CI foundation)
-- Status: blocked
+- Status: review
 - Owner: codex
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T22:07:09Z
+- Updated: 2026-09-05T23:21:34Z
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -21,8 +21,9 @@ commit, version, workflow run, and distribution hashes before final production p
   the reported aetheric-mediator concurrency component test and UnitOfWork lock test; generated llm_support assets;
   this ticket and its associated coordination/artifact rows.
 - DEPENDENCIES: tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md.
-  Runtime qualification depends on codex_1's
-  tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md.
+  Qualification now consumes the owner-selected single-test skip disposition in
+  tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md. Runtime repair is deferred; the
+  previous requirement to complete its epic before release is superseded by that owner decision.
 - EXIT_GATE: Branch gates and candidate/publication workflow are implemented and locally validated;
   owner-only setup/rollout and unexecuted external publication checks are explicitly recorded.
 - FAILURE_ESCALATION: Never publish packages, commit, push, rename owner branches, or silently bypass
@@ -38,10 +39,10 @@ commit, version, workflow run, and distribution hashes before final production p
 - Preserve other agents' source, documentation, tests, and generated outputs.
 
 ## State Transition Event
-- from_state: review
-- to_state: blocked
-- transition_reason: Prior workflow/test changes are committed. Hosted qualification now fails on
-  a separate shared context publication race; codex_1 owns its repair under the successor runtime epic.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Late candidate check, focused regressions, workflow lint and regenerated
+  tests/other assets are verified locally; owner retains commit/push and hosted execution.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -945,14 +946,210 @@ commit, version, workflow run, and distribution hashes before final production p
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T22:45:18Z
+  TYPE: FACT
+  CLAIM: Consumed codex_1's 22:42:08Z notice and verified its ticket plus the actual three-line skip
+    decorator. Owner rejected/deferred runtime repair and selected pytest.skip for the single original
+    cluster test, whose body remains. codex_1 reports 18 passed/1 skipped locally; no hosted or asset
+    qualification is claimed. Abandoned untracked repair files are not part of the approved skip.
+  EVIDENCE:
+  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md:452-485
+  - tests/integration/melder/conduit/test_conduit_integration_concurrency.py:940-943
+  IMPACT: Replace the workflow dependency on a repaired runtime with the owner's deferral disposition.
+    Preserve the investigation and do not restore or broaden the rejected repair. Candidate publication
+    still requires exact-revision CI/assets and the existing package-ready proof.
+  NEXT: Verify the owner's selected committed candidate and hosted checks when supplied.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T22:45:18Z
+  TYPE: FACT
+  CLAIM: Owner says the reported error only indicates cleanup. The original exception is specifically
+    a missing-codegen RuntimeError, raised when CreationContextBuilder.build sees its required input
+    is None. The guard correctly refuses that build; this does not by itself establish whether the
+    concurrent caller sequence is supported or whether the test's success expectation is appropriate.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:103-146
+  - artifacts/shared_context_race_20260905/controlled-window.json:29-51
+  IMPACT: Distinguish a valid fail-fast guard from a successful meld. The printed cleaned repr is
+    separate from the exception text. Do not promote the deferred scenario to either repaired runtime
+    or proven-valid expected failure based solely on that guard.
+  NEXT: Explain the refusal and the remaining contract question without reopening implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T22:58:44Z
+  TYPE: FACT
+  CLAIM: Owner's new prod traceback identifies candidate SHA 361a974973316c0ab6e9ed24b0c33b22b29ab4b6
+    and RC run 33997179636 attempt 1 with status in_progress/conclusion None. Local gate reads
+    GitHub once and fails immediately unless the latest exact-SHA RC run is already successful.
+    The CI and RC workflows are separately triggered, with no dependency between their runs.
+  EVIDENCE:
+  - .github/scripts/check_candidate_run.py:54-99
+  - .github/workflows/ci.yml:6-46
+  - .github/workflows/release-candidate.yml:4-16
+  IMPACT: A timing race is plausible but current remote results and job timestamps are needed.
+    Local codex_features2 is at bf8f05986; only ContextCompass tracking is currently modified.
+    No workflow dispatch, commit, push, merge or publication is part of this review.
+  NEXT: Compare exact candidate and prod run/job metadata with their branch/PR commit identities.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:00:47Z
+  TYPE: FACT
+  CLAIM: GitHub GET confirms RC run 33997179636 attempt 1 now completed successfully for the exact
+    reported SHA 361a974973316c0ab6e9ed24b0c33b22b29ab4b6. It started at 22:53:39Z and updated
+    to success at 22:56:31Z. It is the only RC workflow run for that SHA. Open prod PR 139 selects
+    that same head; its recorded update is 22:53:59Z, before RC completion.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/actions/runs/33997179636
+  - https://github.com/Synaptic724/melder/pull/139
+  IMPACT: The owner's green RC is real and matches candidate identity. Original prod job timing
+    remains to verify; a stale earlier failure does not imply that this successful RC was rejected.
+  NEXT: Read PR 139's CI run/jobs and compare its gate timestamp with RC package-ready completion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:04:28Z
+  TYPE: FACT
+  CLAIM: Exact step metadata establishes the race: prod PR 139's CI run 33997196896 evaluated
+    candidate readiness at 22:54:16Z; RC package-ready completed at 22:56:30Z and its run became
+    successful at 22:56:31Z, 135 seconds after the failed check. RC's seven jobs all succeeded,
+    including TestPyPI upload and Linux/Windows/macOS installed probes. PR 138 merged preprod
+    into release_candidate at 22:53:36Z; PR 139 opened at 22:53:59Z on that exact merge commit.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/actions/runs/33997196896/job/101389684939
+  - https://github.com/Synaptic724/melder/actions/runs/33997179636/job/101389932936
+  - https://github.com/Synaptic724/melder/pull/138
+  - https://github.com/Synaptic724/melder/pull/139
+  IMPACT: No candidate-source or merge-content mismatch: RC and prod merge preview
+    768fadcbd699280cd4da5b707e5463fb11ed7f62 share tree 674b114e38fe2a396b3644ce1b8f4e31a664288f.
+    The earlier gate is not refreshed by separate RC completion. Prod docs/assets/hygiene/Linux/Mac
+    are green; Windows was still running at the latest read, and packages were skipped behind the
+    failed branch-policy job. No hosted retry is dispatched by this review.
+  NEXT: Verify retry semantics and selected-commit scope, then hand off the exact failed CI run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:09:24Z
+  TYPE: DECISION
+  CLAIM: Owner reran the prod check and requests moving candidate qualification toward the end.
+    Put the unchanged check_candidate_run.py invocation last in the existing CI / merge-ready job,
+    after require_success verifies all current dependencies. Keep branch-route validation early.
+    Move actions:read and sufficient checkout history to the final job; no new status name or
+    dependency-set change is needed. A still-pending RC at the final check continues to refuse.
+  EVIDENCE:
+  - .github/workflows/ci.yml:21-97
+  - .github/scripts/ci_policy.py:89-110
+  - tests/unit/github_workflows/test_workflow_contracts.py:22-40
+  - tests/unit/github_workflows/test_workflow_contracts.py:202-212
+  IMPACT: Exact edit scope is ci.yml, the two affected parsed workflow contracts, branch guide,
+    existing candidate patch docs/indexes and tests/other corpora. Final PyPI publication guards
+    remain separately enforced. No polling protocol, hosted rerun, or runtime repair is added.
+  NEXT: Update/read the patch ordering contract, then prove the changed workflow regression fails early.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:09:24Z
+  TYPE: FACT
+  CLAIM: Git show of the owner's committed bf8f05986 includes the previously abandoned
+    creation_context_rebuild.py helper and test_shared_context_rebuild_publication.py regression,
+    in addition to the original cluster-test skip. They are no longer untracked as the earlier
+    handoff said. No behavior claim or removal is made by this workflow pass.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
+  - tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py
+  IMPACT: The owner should know the selected source contains more than the single-test skip.
+    Keep the present workflow edit scoped; do not delete committed source or overlap codex_1's lane.
+  NEXT: Include the committed-file finding in the workflow handoff.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T23:11:38Z
+  TYPE: PLAN
+  CLAIM: Read the revised architecture, publication component and identity-flow patch in order.
+    Mapping: late promotion gate -> ci.yml merge-ready steps/history/permissions -> parsed ordering
+    regression; fail-closed aggregate and source identity -> existing policy/candidate negative tests;
+    operator behavior -> branch guide -> other-corpus regeneration. Indexed pytest bootstrap sections
+    were verified/read. Owner also requests Read the Docs diagnosis; its URL/error was asked while
+    this already-authorized CI correction proceeds to completion.
+  EVIDENCE:
+  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/architecture_patch.md:24-30
+  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_publication.md:15-29
+  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/code_description_patch_identity.md:17-22
+  IMPACT: No aggregate helper or publisher change is necessary. The final status can carry the
+    mandatory proof directly; no additional check name or dependency branch is introduced.
+  NEXT: Prove the updated parsed workflow contract fails against the original early gate placement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:12:44Z
+  TYPE: MEASURE
+  CLAIM: The revised prod-proof workflow contract fails on the original YAML because branch-policy
+    still invokes the candidate lookup. One targeted case ran and failed at the intended placement
+    assertion; no workflow code was changed before this negative control.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_workflow_contracts.py:206-236
+  IMPACT: The regression detects the actual early-gate configuration behind the reported race.
+  NEXT: Relocate the unchanged proof step, API permission and required checkout history to merge-ready.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T23:16:25Z
+  TYPE: MEASURE
+  CLAIM: Candidate proof is now the final merge-ready step after required-job aggregation, with
+    actions:read and fetch-depth:2 on that job. All 237 workflow-unit cases pass on local Python
+    3.14t/GIL off. The updated ordering contract failed on the old early placement. Scoped Ruff
+    and actionlint pass; final publication and source-provenance helper code are unchanged.
+  EVIDENCE:
+  - .github/workflows/ci.yml:76-110
+  - tests/unit/github_workflows/test_workflow_contracts.py:206-236
+  - artifacts/release_candidate_20260905/late-candidate-proof.xml
+  IMPACT: The reported early race is avoided while source tests/builds run. A genuinely pending
+    or failed candidate at the final check still blocks merge. No hosted run was dispatched.
+  NEXT: Regenerate patch indexes and tests/other corpora, then verify the final diff.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:21:34Z
+  TYPE: MEASURE
+  CLAIM: Final local verification completed: 237 workflow tests, scoped Ruff, all-workflow actionlint,
+    regenerated patch indexes, tests/other corpus proofs and whitespace checks pass. The final diff
+    is the approved late check plus its guide/tests/derived assets and ContextCompass tracking.
+  EVIDENCE:
+  - .github/workflows/ci.yml:76-103
+  - artifacts/release_candidate_20260905/late-candidate-proof.xml
+  - artifacts/release_candidate_20260905/validation.md
+  IMPACT: Ready for owner commit. RC finishing later than the final check still causes a refusal;
+    no timeout-based acceptance was introduced. Continue the separate Read the Docs diagnosis.
+  NEXT: Owner commits/promotes the late-check correction and verifies the resulting hosted CI.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-codex_1 accepted the runtime assignment at 2026-09-05T21:01:42Z and is carrying the repair.
-Current release blocker is the shared context publication failure. Runtime ownership is assigned
-to codex_1 in tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md, which links the
-completed investigation evidence and specifies the required design, regression and performance work.
-workflows_1 retains workflows and release qualification. Consume the runtime handoff, then verify
-the owner's committed revision through required CI and RC package-ready before prod promotion.
-No CI relaxation or new runtime edit belongs to this workflow handoff.
+Late-check correction is complete locally and in review: 237 workflow tests, actionlint, Ruff,
+generated tests/other proofs and whitespace checks pass. Candidate proof runs last in merge-ready,
+after all required checks. Owner commits/pushes; no hosted retry or publication was dispatched here.
+The pending owner request is now routed separately to the hosted Read the Docs diagnosis task.
+
+Owner now requests the candidate proof at the end of CI. Move its unchanged invocation to the
+last step of CI / merge-ready, after dependency aggregation, with actions:read and fetch-depth:2.
+Keep branch policy early and final publication guards intact. Validate parsed workflow order and
+the existing negative provenance tests, then regenerate tests/other corpora and patch indexes.
+
+Current work is reviewing owner-reported prod failure against RC run 33997179636 and candidate
+361a974973316c0ab6e9ed24b0c33b22b29ab4b6. The logged state was in_progress; verify current status,
+timestamps and PR/merge identity before diagnosing the disagreement with the owner's green RC.
+
+Latest disposition: owner deferred/rejected runtime repair and selected pytest.skip for only the
+original two-cluster integration test. codex_1's 22:42:08Z mailbox notice is consumed; that agent
+reports 18 passed/1 skipped for the module, with the original test body retained. No new runtime
+repair, asset qualification or hosted release qualification is established by that result.
+
+workflows_1 retains workflows and release qualification under this explicit deferral. Verify the
+owner's selected committed revision, its generated assets and required CI/RC package-ready checks.
+Do not treat abandoned untracked repair files as approved candidate contents or restore the rejected
+implementation. The shared-context investigation remains open as deferred evidence.
 
 The following paragraphs preserve earlier local validation and rollout history. Their historical
 "ready for owner commit" statements are superseded by the committed status recorded above.

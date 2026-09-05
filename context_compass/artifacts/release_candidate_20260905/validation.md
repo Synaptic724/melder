@@ -68,3 +68,11 @@ UnitOfWork timing margin, 2026-09-05T18:37:46Z:
 - All 279 synchronization unit tests pass with PYTHON_GIL=0 (uow-timing.xml).
 - Scoped Ruff, whitespace, and regenerated tests-corpus proofs pass.
 - No production code, commits, pushes, hosted reruns, or package uploads changed here.
+
+Late candidate proof, 2026-09-05T23:16:25Z:
+- Candidate qualification moved from early branch-policy to the final merge-ready step.
+- Updated parsed workflow regression failed on the original placement.
+- All 237 workflow-unit cases pass on Python 3.14t/GIL off; report: late-candidate-proof.xml.
+- Scoped Ruff and all-workflow actionlint pass; shellcheck/pyflakes remain disabled.
+- Final publication checks and the exact-source qualification helper are unchanged.
+- Patch indexes and tests/other corpora were regenerated; fingerprint/output and whitespace checks pass.

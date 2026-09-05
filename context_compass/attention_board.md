@@ -74,15 +74,15 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-05T22:42:08Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| diagnose_readthedocs_hosted_build | review | handoff | codex | workflows_1 | none | Next owner-selected stable release must include docs configuration. | Latest is healthy; stable failure is traced to old tag 0.2.3. | Owner accepts diagnosis or a new docs-bearing stable release builds successfully. | tickets/tasks/2026-09-05_diagnose_readthedocs_hosted_build_task.md | 2026-09-05T23:28:57Z | REQUIRED |
 | shared_context_rebuild_publication | review | handoff | codex | codex_1 | Runtime repair deferred by owner. | Owner reviews/commits the single-test skip. | Original body retained; module 18 passed, 1 skipped. | Owner accepts the skip disposition. | tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md | 2026-09-05T22:42:08Z | REQUIRED |
-| release_candidate_testpypi | blocked | handoff | codex | workflows_1 | codex_1 shared-context epic | Consume the runtime handoff and verify its revision through existing CI/RC gates. | Qualification stays closed until the runtime failure is resolved. | Corrected runtime revision passes required hosted checks and RC package-ready. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T20:23:55Z | REQUIRED |
+| release_candidate_testpypi | review | handoff | codex | workflows_1 | none | Owner commits/promotes the verified late-check correction. | Candidate proof runs last in merge-ready after required CI. | Hosted CI verifies the committed correction and owner accepts. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T23:21:34Z | REQUIRED |
 | readthedocs_documentation | review | handoff | codex | codex_2 | none | Owner commits and pushes the three regenerated other-corpus files. | Both branch and exact CI merge inputs match the rebuilt manifest. | New hosted CI run passes the repository-asset check. | tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md | 2026-09-05T15:54:53Z | REQUIRED |
 | first_public_release_notes | review | handoff | cowork | codex_1 | none | Review and commit the PyPI-portable README links plus selective LLM other-corpus regeneration. | All README repository routes use absolute GitHub prod links and generated proofs pass. | Owner confirms the public routes and accepts the release-documentation change. | tickets/tasks/2026-08-30_craft_first_public_release_notes_task.md | 2026-09-01T00:56:59Z | REQUIRED |
 | regenerate_0_2_0_release_assets | review | handoff | cowork | codex_1 | none | Review the eight-file generated diff, then commit and push through the normal branch lane. | Version 0.2.0 generated assets pass both exact CI checks. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-30_regenerate_0_2_0_release_assets_task.md | 2026-08-30T22:47:20Z | REQUIRED |

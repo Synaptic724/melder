@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2612588,
-        "lines": 64892,
+        "bytes": 2613340,
+        "lines": 64905,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "d659eabe98b8f181feec3ab6aaa60072158beae54796e9eaaffa6354db9fd9e1"
+        "sha256": "b110ac01dbd4d2ed35e668e4e3a3a2bdc9a98fc7137ca74396cfb599daea5193"
       },
-      "content_bytes": 2415735,
-      "content_lines": 62070,
+      "content_bytes": 2416487,
+      "content_lines": 62083,
       "file_count": 352,
       "files": {
         ".gitattributes": {
@@ -18,9 +18,9 @@
           "source_encoding": "utf-8"
         },
         ".github/BRANCH_WORKFLOW.md": {
-          "content_bytes": 12265,
-          "content_lines": 213,
-          "content_sha256": "a9a098eebcaa216cdd592c433bd7d9392397ca5e03d01432e402dc48f9a6a3bc",
+          "content_bytes": 12773,
+          "content_lines": 220,
+          "content_sha256": "eb06e9b70f05a32a3abb418151d62c3dec879259267b1bbae8d91bc835087918",
           "source_encoding": "utf-8"
         },
         ".github/rulesets/dev.json": {
@@ -108,9 +108,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/ci.yml": {
-          "content_bytes": 2892,
-          "content_lines": 94,
-          "content_sha256": "4642402e7926dd4aa984b81693b2ee9df638dec4ffbce86eec9e6f2cbbdc2ab9",
+          "content_bytes": 3136,
+          "content_lines": 100,
+          "content_sha256": "54668c879f6d6c5db4234708785aaec6605abb1961ca0d316d0d5fc00fdf7088",
           "source_encoding": "utf-8"
         },
         ".github/workflows/docs.yml": {
@@ -2125,12 +2125,12 @@
         }
       },
       "index": {
-        "bytes": 59438,
+        "bytes": 59439,
         "lines": 374,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "149c7f311563dc6dac744d877e2d84b4364dd22d4089344c0976341f9619de58"
+        "sha256": "fbab670226a49756987dd7384f7924c982d724d6063fb3db01fa19bf1b0b54ab"
       },
-      "source_fingerprint": "e703141c265a29e7281422915430a3e1213b69a75eaccf387b10155e04ffdda6"
+      "source_fingerprint": "78521923c25bdd58190fb44e078c4c5f26b3d953e8787186e3c8682d115d0683"
     },
     "src": {
       "bundle": {
@@ -5658,14 +5658,14 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 10713673,
-        "lines": 308179,
+        "bytes": 10722642,
+        "lines": 308371,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "9b6a73b3f356bf031bd3fbe2df7ce3f348c3ae06f19a7a2e68192c920d038cc1"
+        "sha256": "f5e82d28da77b30d8305cf0e76c6b957f302c9e215d3afe13470bf47acd89663"
       },
-      "content_bytes": 10229560,
-      "content_lines": 301725,
-      "file_count": 806,
+      "content_bytes": 10237917,
+      "content_lines": 301909,
+      "file_count": 807,
       "files": {
         "tests/_codegen_system_support.py": {
           "content_bytes": 7894,
@@ -5821,6 +5821,12 @@
           "content_bytes": 5408,
           "content_lines": 165,
           "content_sha256": "e54157eaa3316378ddeda3ace78522c4ec2a0bc83914d93b82585ad56587e2a5",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py": {
+          "content_bytes": 6927,
+          "content_lines": 159,
+          "content_sha256": "338081df8831001189f8773aaaaf963c7f2dd8f1144b34959b9116f5a65ab004",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/dev_ops/change_control_manager/test_change_control_manager_component.py": {
@@ -6976,9 +6982,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_concurrency.py": {
-          "content_bytes": 59121,
-          "content_lines": 1738,
-          "content_sha256": "d21d8abcefcff32e234eb568aaffa620ef9772f747cf9931d24b3fe7ed1f0440",
+          "content_bytes": 59250,
+          "content_lines": 1741,
+          "content_sha256": "2a4f22c6a8a5ed435370429f010034f444d798e38083ec0bf3cb1848cae61bca",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_contract_dependency_edges.py": {
@@ -7804,9 +7810,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_workflow_contracts.py": {
-          "content_bytes": 11851,
-          "content_lines": 212,
-          "content_sha256": "1100bdadac99c3816d5f36ab91b4a11aac725079efefdbbe37c4332a3a723c6c",
+          "content_bytes": 13152,
+          "content_lines": 234,
+          "content_sha256": "17c462cb59f983d0648b4640248e62cb9603667cd5ee2544c6e9a42dcd935116",
           "source_encoding": "utf-8"
         },
         "tests/unit/llm_support/test_builder.py": {
@@ -10505,12 +10511,12 @@
         }
       },
       "index": {
-        "bytes": 155570,
-        "lines": 828,
+        "bytes": 155769,
+        "lines": 829,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "3f47c14f8829ca5d9c5f8ad5cf0d7fb754c7c76dd5aa3a4e9552d14737ed3854"
+        "sha256": "ffa2228e7252fdc0a647cbd043cf9c9c8851daf9e2d409fd25172828f1ced91f"
       },
-      "source_fingerprint": "8443d86b431a8138c6ab62397550873553816a8cc9f0ed49b3cd73476c74a618"
+      "source_fingerprint": "76cb7502f59ee42d7aa23d58d169fa85f239596fd960c5c525f606446904598a"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

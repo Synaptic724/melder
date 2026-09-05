@@ -64,6 +64,7 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | artifacts/release_candidate_20260905/late-candidate-proof.xml | validation_report | active | delete_on_close | 237 workflow tests pass with final-stage candidate qualification. | 2026-09-05T23:16:25Z | HELPFUL |
 | tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md | artifacts/shared_context_race_20260905/owner_lifecycle_probe.py | diagnostic_probe | active | retain_as_reference | Original-test owner lifecycle observation only; no runtime patch. | 2026-09-05T22:17:16Z | REQUIRED |
 | tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md | artifacts/shared_context_race_20260905/owner-lifecycle-observation.json | diagnostic_report | active | retain_as_reference | Original exception with live owning book; terminal cleanup follows. | 2026-09-05T22:23:33Z | REQUIRED |
 | tickets/tasks/2026-09-05_shared_context_protocol_repair_task.md | system_docs/patches/active/shared_context_rebuild_2026_09_05/architecture_patch.md | patch_doc | active | promote_to_documentation | Shared-context ownership and invariant contract. | 2026-09-05T21:40:09Z | REQUIRED |

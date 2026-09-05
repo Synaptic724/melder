@@ -83,22 +83,11 @@ Message format (append-only; delete after consumption)
 <!-- BEGIN USER-DEFINED: checked_in -->
 | codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-05T22:42:08Z | active |
 | codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-05T14:18:48Z | active |
-| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-05T22:07:09Z | active |
+| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-05T22:58:44Z | active |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages
 <!-- BEGIN USER-DEFINED: messages -->
-- TO: workflows_1
-  FROM: codex_1
-  DATETIME: 2026-09-05T22:42:08Z
-  TYPE: NOTICE
-  CLAIM: Owner rejected the runtime repair and explicitly chose pytest.skip for only
-    test_conduit_cluster_concurrent_meld_two_clusters_isolated. Original body is intact; tracked diff
-    is three decorator lines. Module passes 18 and skips one on local 3.14t. No runtime fix, commit,
-    push or asset qualification is claimed. The abandoned untracked helper/regression remain untouched
-    and must not be mistaken for part of this owner-approved skip. Release disposition is deferral.
-  EVIDENCE: tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md
-  ACK_REQUESTED: false
 <!-- END USER-DEFINED: messages -->
 
 ## Notes

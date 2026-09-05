@@ -23,6 +23,7 @@ Contributions enter `dev` through a pull request. Promotion proceeds through
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
   qualification, a final package version, and the same tree as the merge result.
+  This runs last inside `CI / merge-ready`, after the other required checks succeed.
 
 The final status fails for missing evidence, failure, cancellation, or an
 unexpected skipped job. Only dev intentionally skips distribution building.
@@ -82,10 +83,16 @@ or tag is required. Manual dispatch must select the same branch.
 | --- | --- |
 | `preprod -> release_candidate` PR | Full source CI and local package verification. |
 | Merge lands on `release_candidate` | Build, TestPyPI upload, and installed-package probes. |
-| `release_candidate -> prod` PR | Verify the earlier RC run succeeded for this exact source; run required CI. |
+| `release_candidate -> prod` PR | Run required CI, then verify exact-source RC success in the final merge-ready check. |
 
 TestPyPI publication belongs to the RC stage. The prod promotion check does not
 upload to TestPyPI; it blocks promotion until the earlier RC qualification succeeds.
+
+Branch-route validation stays at the start. Candidate proof runs after runtime tests,
+documentation, assets, hygiene and the required distribution build. This lets RC
+qualification finish alongside those checks. If RC is still pending at that final
+step, the check fails with its run link; rerun the failed CI jobs after RC succeeds.
+Elapsed time never substitutes for a successful exact-source candidate result.
 
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
 fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
