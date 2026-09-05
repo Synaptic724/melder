@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: c43fab0f3b4e48e63a2a9ee8db2573301dbd4082d5879a01722e24bc156f7fe7
+SOURCE FINGERPRINT: 8443d86b431a8138c6ab62397550873553816a8cc9f0ed49b3cd73476c74a618
 FILE COUNT: 806
 
 ================================================================================
@@ -307085,7 +307085,7 @@ END FILE: tests/unit/melder/utilities/synchronization/test_ticket_flag.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/synchronization/test_unit_of_work.py
-CONTENT SHA256: a40f5a735acd4d35ad4cff5015693b332ccc33dfc2057706dc7f99dae8857d91
+CONTENT SHA256: 7303ba0f3ee5874bde2739f476dd9c6a518b4590132859b4b961c428be2212cf
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -307234,23 +307234,25 @@ def test_exception_recorded_on_future_when_function_raises():
     assert isinstance(uow.exception(), ZeroDivisionError)
 
 
-def test_thread_safety_basic_lock_usage():
+def test_thread_safety_basic_lock_usage() -> None:
+    """Allow a one-second worker hold and five-second startup wait for CI scheduling delays."""
     # Verify that concurrent acquisitions respect the lock
     uow = UnitOfWork(lambda: time.sleep(0.05))
 
     acquired_in_thread = []
     entered = threading.Event()
 
-    def worker():
+    def worker() -> None:
+        """Hold the context lock long enough for the main thread's exclusion check."""
         with uow:
             acquired_in_thread.append(True)
             entered.set()
-            time.sleep(0.05)
+            time.sleep(1.0)
 
     t = threading.Thread(target=worker)
     t.start()
     # Wait for thread to acquire lock
-    entered.wait(timeout=0.1)
+    assert entered.wait(timeout=5), "worker did not acquire the lock within 5 seconds"
     assert uow._lock.acquire(blocking=False) is False
     t.join(timeout=5)
     assert acquired_in_thread == [True]
