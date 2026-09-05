@@ -5,7 +5,7 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-build-and-hosting
 - Story Path: ../stories/2026-09-04_rtd_build_and_hosting_story.md
-- Status: review
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -585,6 +585,23 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   NEXT: Owner commits/pushes the visible .gitignore change and reruns CI.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T15:30:59Z
+  TYPE: FACT
+  CLAIM: Owner reports another CI stale-other failure after the missing-input commit. Current
+    checkout is clean on codex_features2 at 573cdbaf8. The .gitignore omission is no longer an
+    uncommitted-worktree issue. Read the generator's discovery/hash pipeline and CI workflow;
+    CI's checkout is event-selected, so verify both committed blobs and the actual failing run SHA.
+  EVIDENCE:
+  - git status --short; git log -5 (HEAD 573cdbaf8, no changes).
+  - llm_support/_builder.py:290-401
+  - .github/workflows/ci.yml:6-14
+  - .github/workflows/build-repo-assets.yml:18-27
+  IMPACT: A passing working-copy check is insufficient. Reproduce against Git commit contents
+    and inspect the GitHub run instead of assuming another regeneration fixes the failure.
+  NEXT: Compare all committed corpus inputs with the manifest and retrieve the failing GitHub run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
