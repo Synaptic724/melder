@@ -1,0 +1,31 @@
+{
+  "pages": 103,
+  "outline": [
+    {
+      "title": "\ud83d\udfe2 Beginner",
+      "page": 5
+    },
+    {
+      "title": "\ud83d\udfe1 Intermediate",
+      "page": 15
+    },
+    {
+      "title": "\ud83d\udfe0 Advanced",
+      "page": 30
+    },
+    {
+      "title": "\ud83d\udd35 Expert",
+      "page": 50
+    },
+    {
+      "title": "Selected complete examples",
+      "page": 85
+    },
+    {
+      "title": "Glossary",
+      "page": 102
+    }
+  ],
+  "blank_pages": [],
+  "small_pages": []
+}

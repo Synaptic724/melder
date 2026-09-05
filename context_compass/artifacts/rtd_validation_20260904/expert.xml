@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="36" time="1.240" timestamp="2026-09-04T17:56:19.554297-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[01_pod_boot_the_order_is_the_product]" time="0.011" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[02_persistence_mesh_your_code_their_lanes]" time="0.140" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[03_research_sets_lanes_and_residency]" time="0.009" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[04_diffs_are_derived_never_stored]" time="0.014" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[05_protocol_crafter_the_tool_that_writes]" time="0.010"><failure message="PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\tmpv3mae5nh'">def main() -&gt; None:
+        crafter = md.ProtocolCrafter()
+        assert isinstance(crafter, md.ProtocolCrafter)
+        print("crafter:", crafter.id)
+    
+        # CRAFT A PROTOCOL FROM A LIVE CLASS. Nothing is written; this is a
+        # string. Look at it before you let anything near your tree.
+        code = crafter.craft_protocol_code(PaymentGateway)
+        assert isinstance(code, str) and code.strip()
+        print()
+        print("crafted from a live class -", len(code), "chars:")
+        for line in code.splitlines()[:12]:
+            print("   ", line)
+    
+        # PURITY, CHECKED RATHER THAN CLAIMED. Craft is a pure read, so the
+        # same input must produce byte-identical output and leave no trace.
+        again = crafter.craft_protocol_code(PaymentGateway)
+        assert again == code, "craft must be deterministic - it is a pure read"
+        print()
+        print("crafted twice -&gt; byte-identical:", again == code)
+        print("  a verb that wrote something, cached something, or consumed")
+        print("  state would not survive being called twice")
+    
+        # The generated shape should describe what the class actually offers.
+        assert "Protocol" in code
+        for method in ("charge", "refund"):
+            assert method in code, f"{method} missing from the crafted protocol"
+        print()
+        print("both public methods appear in the crafted protocol")
+    
+        # THE WRITE LANES, ON A THROWAWAY FILE. Nothing here goes near your
+        # tree - the temporary directory removes itself.
+        with tempfile.TemporaryDirectory() as scratch:
+            interface_file = Path(scratch) / "interfaces.py"
+    
+            # YOU CANNOT WRITE WHAT YOU HAVE NOT CRAFTED, because the crafted
+            # code IS the argument. That is a stronger guarantee than a
+            # parallel preview verb: there is no path to the file that skips
+            # the string you already looked at.
+&gt;           updated = crafter.add_protocol_to_interface_file(interface_file, code)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\..\UX_and_AIX_experiences\04_expert\05_protocol_crafter_the_tool_that_writes.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\src\melder\utilities\ai_native_support_tools\protocol_crafter.py:525: in add_protocol_to_interface_file
+    path.write_text(updated_text, encoding="utf-8")
+C:\Program Files\Python314\Lib\pathlib\__init__.py:814: in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/Mark/AppData/Local/Temp/tmpv3mae5nh/interfaces.py')
+mode = 'w', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\tmpv3mae5nh\\interfaces.py'
+
+C:\Program Files\Python314\Lib\pathlib\__init__.py:776: PermissionError
+
+During handling of the above exception, another exception occurred:
+
+top = 'C:\\Users\\Mark\\AppData\\Local\\Temp\\tmpv3mae5nh', topdown = False
+onerror = &lt;function _rmtree_unsafe.&lt;locals&gt;.onerror at 0x0000057E6BB9A8C0&gt;
+followlinks = &lt;object object at 0x0000057E685700C0&gt;
+
+&gt;   ???
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\tmpv3mae5nh'
+
+&lt;frozen os&gt;:377: PermissionError
+
+During handling of the above exception, another exception occurred:
+
+path = WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/UX_and_AIX_experiences/04_expert/05_protocol_crafter_the_tool_that_writes.py')
+capsys = &lt;_pytest.capture.CaptureFixture object at 0x0000057E6BEA4B10&gt;
+
+    @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
+    def test_expert_example_runs_green(path, capsys):
+        module = _load(path)
+&gt;       module.main()
+
+..\..\UX_and_AIX_experiences\pytest_examples\test_expert_examples.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\UX_and_AIX_experiences\04_expert\05_protocol_crafter_the_tool_that_writes.py:122: in main
+    with tempfile.TemporaryDirectory() as scratch:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python314\Lib\tempfile.py:971: in __exit__
+    self.cleanup()
+C:\Program Files\Python314\Lib\tempfile.py:975: in cleanup
+    self._rmtree(self.name, ignore_errors=self._ignore_cleanup_errors)
+C:\Program Files\Python314\Lib\tempfile.py:955: in _rmtree
+    _shutil.rmtree(name, onexc=onexc)
+C:\Program Files\Python314\Lib\shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+C:\Program Files\Python314\Lib\shutil.py:689: in _rmtree_unsafe
+    for dirpath, dirnames, filenames in results:
+                                        ^^^^^^^
+&lt;frozen os&gt;:413: in walk
+    ???
+C:\Program Files\Python314\Lib\shutil.py:687: in onerror
+    onexc(os.scandir, err.filename, err)
+C:\Program Files\Python314\Lib\tempfile.py:927: in onexc
+    _resetperms(path)
+C:\Program Files\Python314\Lib\tempfile.py:287: in _resetperms
+    _dont_follow_symlinks(_os.chmod, path, 0o700)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+func = &lt;built-in function chmod&gt;
+path = 'C:\\Users\\Mark\\AppData\\Local\\Temp\\tmpv3mae5nh', args = (448,)
+
+    def _dont_follow_symlinks(func, path, *args):
+        # Pass follow_symlinks=False, unless not supported on this platform.
+        if func in _os.supports_follow_symlinks:
+&gt;           func(path, *args, follow_symlinks=False)
+E           PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\tmpv3mae5nh'
+
+C:\Program Files\Python314\Lib\tempfile.py:276: PermissionError</failure></testcase><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[06_two_knobs_and_a_terminator_per_rung]" time="0.009" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[07_the_codegen_room_agents_writing_code]" time="0.014" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[08_research_is_graduated_by_room]" time="0.009" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[09_getting_data_into_your_database]" time="0.039" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[10_deep_overrides_paths_through_a_graph]" time="0.029" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[11_pointing_a_rift_at_your_own_frame]" time="0.027" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[12_the_codegen_loop_end_to_end]" time="0.016" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[13_one_workshop_many_worlds]" time="0.024" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[14_compositions_a_subsystem_as_one_unit]" time="0.019" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[15_campaigns_the_why_that_rides_along]" time="0.009" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[16_rewiring_a_running_world]" time="0.059" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[17_notch_swapping_a_live_object]" time="0.016" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[18_the_package_reads_itself_to_you]" time="0.031" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[19_the_codebase_as_a_walkable_graph]" time="0.031" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[20_the_workstation_an_agents_workbench]" time="0.016" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[21_many_agents_writing_code_at_once]" time="0.022" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[22_asking_what_code_would_do_before_running_it]" time="0.017" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[23_branching_the_record_and_joining_back]" time="0.018" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[24_loading_a_whole_world_back]" time="0.123" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[25_many_research_sets_one_world]" time="0.015" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[26_codegen_create_modify_iterate]" time="0.026" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[27_a_world_that_outlives_its_own_runtime]" time="0.070" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[28_the_record_crosses_as_a_json_string]" time="0.048" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[29_reading_your_own_recorded_code]" time="0.020" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[30_composing_a_version_in_the_workshop]" time="0.026" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[31_organising_lanes_after_the_fact]" time="0.021" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[32_a_subsystems_blast_radius]" time="0.019" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[33_what_a_synthetic_module_actually_is]" time="0.016" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[34_several_worlds_of_record_in_one_process]" time="0.016" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[35_the_gate_that_waits_for_readers]" time="0.015" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[36_an_agent_builds_a_working_system]" time="0.032" /></testsuite></testsuites>

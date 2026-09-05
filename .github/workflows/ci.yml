@@ -1,0 +1,94 @@
+name: CI
+
+# A required check must be reported for every PR, including docs-only changes.
+# Feature pushes are covered by their PR; permanent-branch pushes validate the
+# resulting revision. No path filters or repository-variable kill switches.
+on:
+  pull_request:
+    branches: [dev, preprod, release_candidate, prod]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [dev, preprod, prod]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  branch-policy:
+    name: CI / branch-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      package-required: ${{ steps.route.outputs.package-required }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Validate the branch route
+        id: route
+        run: python .github/scripts/ci_policy.py branch
+      - name: Require the exact candidate before prod promotion
+        if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
+
+  hygiene:
+    name: CI / repository-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: python .github/scripts/ci_policy.py hygiene
+
+  source-assets:
+    uses: ./.github/workflows/build-src-assets.yml
+
+  repo-assets:
+    uses: ./.github/workflows/build-repo-assets.yml
+
+  tests:
+    uses: ./.github/workflows/test-runtime.yml
+
+  documentation:
+    uses: ./.github/workflows/docs.yml
+
+  packages:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.package-required == 'true'
+    uses: ./.github/workflows/build-distributions.yml
+    with:
+      artifact-name: ci-dists-${{ github.run_id }}-${{ github.run_attempt }}
+
+  merge-ready:
+    name: CI / merge-ready
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages]
+    # Without always(), a failed dependency skips the very check required to
+    # block merging. The script accepts only explicitly successful evidence.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Require every mandatory check to succeed
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
+        run: python .github/scripts/ci_policy.py merge-ready

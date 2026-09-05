@@ -1,0 +1,67 @@
+name: Build distributions
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        type: string
+        required: true
+      release-tag:
+        type: string
+        default: ""
+  workflow_dispatch:
+    inputs:
+      artifact-name:
+        description: Name for the verified distribution artifact
+        type: string
+        default: manual-distributions
+      release-tag:
+        description: Optional tag to compare with the package version
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Distributions / build-and-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHON_GIL: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14t"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --group build
+      - name: Verify durable source assets
+        run: python src/melder/_build_assets/_build_asset_runner.py --check
+      - name: Set deterministic source timestamps for same-commit retries
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+      - name: Build wheel and source distribution
+        run: python -m build --sdist --wheel
+      - name: Normalize source archive metadata for identical retries
+        run: python .github/scripts/normalize_sdist.py
+      - name: Verify archive boundaries and versions
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+      - name: Install and verify the wheel in isolation
+        run: |
+          python -m venv "$RUNNER_TEMP/melder-wheel-probe"
+          "$RUNNER_TEMP/melder-wheel-probe/bin/python" -m pip install --quiet --no-deps dist/*.whl
+          "$RUNNER_TEMP/melder-wheel-probe/bin/python" -I .github/scripts/smoke_wheel.py
+      - name: Retain verified distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14

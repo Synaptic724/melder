@@ -12,6 +12,13 @@
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 
+### 📚 [Read the Documentation](https://melder.readthedocs.io/en/latest/)
+
+**[Browse Examples](https://melder.readthedocs.io/en/latest/examples/index.html)**
+· **[Full Table of Contents](https://melder.readthedocs.io/en/latest/contents.html)**
+
+Beginner → Intermediate → Advanced → Expert
+
 ### SUPPORT US
 If you like the work we're doing, [please give us a star on GitHub](https://github.com/Synaptic724/melder).
 </div>
@@ -36,9 +43,9 @@ inspectable, permissioned structure you can query, snapshot, restore, and change
 while the process is running.
 
 For the one-picture distinction, open
-[DI container versus Melder](architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg).
+[DI container versus Melder](https://raw.githubusercontent.com/Synaptic724/melder/prod/architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg).
 For the system-level view, start with
-[Architecture and design](architecture_and_design/README.md).
+[Architecture and design](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md).
 
 
 
@@ -234,25 +241,28 @@ anything earlier.
 
 | | Level | What it means | Who it's for | Runnable examples |
 |:--|:---|:---|:---|:---|
-| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | [`01_beginner/`](UX_and_AIX_experiences/01_beginner/) |
-| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | [`02_intermediate/`](UX_and_AIX_experiences/02_intermediate/) |
-| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | [`03_advanced/`](UX_and_AIX_experiences/03_advanced/) |
-| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | [`04_expert/`](UX_and_AIX_experiences/04_expert/) |
+| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | [`01_beginner/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner) |
+| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | [`02_intermediate/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/02_intermediate) |
+| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | [`03_advanced/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/03_advanced) |
+| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | [`04_expert/`](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert) |
 
 This README is the tour. For system shape and design decisions, open
-[Architecture and design](architecture_and_design/README.md); for the visual path,
-start with the [engineering drawings](architecture_and_design/05_engineering_drawings/README.md).
+[Architecture and design](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md);
+for the visual path, start with the
+[engineering drawings](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md).
 The folders above contain runnable scripts, verified together by the
-[`pytest_examples/` harness](UX_and_AIX_experiences/pytest_examples/).
+[`pytest_examples/` harness](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/pytest_examples).
 
 **Pick a route:**
 
-- **Evaluating Melder:** read [What Melder is](architecture_and_design/01_overview/what_melder_is.md),
-  then scan the [engineering drawings](architecture_and_design/05_engineering_drawings/README.md).
+- **Evaluating Melder:** read
+  [What Melder is](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/01_overview/what_melder_is.md),
+  then scan the
+  [engineering drawings](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md).
 - **Building an application:** enter [Part I](#part-i--the-basics), then work through
-  the [`01_beginner/` examples](UX_and_AIX_experiences/01_beginner/).
+  the [`01_beginner/` examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner).
 - **Building runtime or agent infrastructure:** enter [Part II](#part-ii--the-ceiling),
-  then continue into the [`04_expert/` examples](UX_and_AIX_experiences/04_expert/).
+  then continue into the [`04_expert/` examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert).
 
 **If you just want dependency injection, the 🟢 sections are the entire
 product.** You can stop at the end of them and never open Part II. Everything
@@ -440,27 +450,36 @@ book = md.Spellbook()
 book.bind(
     spell=PooledConnection,
     existence="unique",
-    disposal_method_names=["close", "shutdown"],   # ← the book's vocabulary
+    disposal_method_names=["close", "shutdown"],   # this binding's ordered methods
 )
-book.bind(spell=BackgroundWorker, existence="unique")
+book.bind(
+    spell=BackgroundWorker,
+    existence="unique",
+    disposal_method_names=["shutdown"],
+)
 
 conduit = book.conjure()
 ...
-conduit.cleanup()     # → close() on the connection, shutdown() on the worker
+conduit.cleanup()     # calls each creation's matched methods in their declared order
 ```
 
-The vocabulary is **book-wide and set once** — the first bind that supplies it
-fixes it (you can also set it on `SpellbookConfiguration`). Each spell then
-resolves to the intersection of that vocabulary and the methods it actually
-has:
+Each bind's list belongs to **that spell**, not every later bind. Melder resolves
+matching class methods once at bind time and preserves their order:
 
-- `PooledConnection.close()` exists → it gets called
-- `BackgroundWorker.shutdown()` exists → it gets called
-- A class with neither → carries no disposal metadata and costs nothing
+- If the connection implements both names, `close()` runs before `shutdown()`.
+- The worker uses its own `shutdown()` declaration.
+- Missing names are omitted; duplicate names execute once.
 
-Teardown is **best-effort and complete**: every object is attempted, and any
-failures are aggregated into a single `ExceptionGroup` rather than the first
-error aborting the rest of your cleanup.
+For book-wide methods, use `SpellbookConfiguration`. Its matching methods form
+one ordered block: last by default, or first with
+`with_enforce_priority_disposal_methods(True)`. Shared names belong to the book's
+block in either mode; spell-only names retain their own order. See the
+[configuration guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md)
+for both arrangements.
+
+Cleanup retains its existing reverse key/bucket traversal within each store. A failing
+method stops that object's remaining method calls; cleanup continues with other
+objects and aggregates failures into an `ExceptionGroup`.
 
 ## 🟢 Scopes That Nest
 <sub>**Beginner.** Child scopes, no configuration.</sub>
@@ -605,9 +624,11 @@ tenant_a = md.Spellbook(aetheric_frame="tenant-a")
 tenant_b = md.Spellbook(aetheric_frame="tenant-b")
 ```
 
-Both can bind the same class under the same name with zero collision, and a
-`unique` spell is a singleton **per frame** — not per process. Two frames, two
-instances, one interpreter.
+Use distinct `binding_name` or `spellframe` values when binding the same class
+in both worlds. Spell IDs are unique across the process: an identical binding
+fingerprint produces the same ID even in another frame and is refused.
+A `unique` spell is a singleton **per frame** — not per process. Two distinct
+bindings, two frames, two instances, one interpreter.
 
 That makes frames the natural seam for multi-tenancy, plugin isolation, and test
 isolation (a fresh frame per test is a fresh world). Conduits link *within* a
@@ -1036,17 +1057,18 @@ long-form guides and API reference belong in the hosted documentation site.
 
 | | Where | What's there |
 |:--|:---|:---|
-| 🗺️ | **[Architecture and design](architecture_and_design/README.md)** | High-level pictures, runtime structure, utilization stories, and tradeoffs |
-| 🖼️ | **[Engineering drawings](architecture_and_design/05_engineering_drawings/README.md)** | DI comparison, C4/C3/C2 views, use cases, lifecycle, coordination, recovery, and advanced flows |
-| 🧪 | **[Runnable examples](UX_and_AIX_experiences/)** | Beginner-to-expert scripts organized by the same level ladder used in this README |
-| ✅ | **[Example verification](UX_and_AIX_experiences/pytest_examples/)** | Pytest harness and contract probes for the runnable curriculum |
+| 🗺️ | **[Architecture and design](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md)** | High-level pictures, runtime structure, utilization stories, and tradeoffs |
+| 🖼️ | **[Engineering drawings](https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md)** | DI comparison, C4/C3/C2 views, use cases, lifecycle, coordination, recovery, and advanced flows |
+| 🧪 | **[Runnable examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences)** | Beginner-to-expert scripts organized by the same level ladder used in this README |
+| ✅ | **[Example verification](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/pytest_examples)** | Pytest harness and contract probes for the runnable curriculum |
 | 📘 | **[Getting started](https://www.synapticaisystems.com/melder/intro/)** | The guided introduction — start here after this page |
-| 📚 | **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)** | Full API reference and technical documentation |
+| 📚 | **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)** | Four learning levels, runnable examples, API reference, and full contents |
 | ▶️ | **[Synaptic AI on YouTube](https://www.youtube.com/@SynapticAISystems)** | Walkthroughs, deep dives, and live builds |
 
 ## License
 
-GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see [LICENSE](LICENSE).
+GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see
+[LICENSE](https://github.com/Synaptic724/melder/blob/prod/LICENSE).
 
 The AGPL's network clause applies: if you run a modified version of Melder™ as a
 service that users interact with over a network, you must offer those users the
@@ -1055,7 +1077,8 @@ corresponding source of your modified version.
 **Trademark.** Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI
 Systems. The AGPL grants rights in the software, not in the name — forks and
 redistributions must not use the Melder name or marks in a way that suggests
-endorsement by, or origin from, the trademark holder. See [NOTICE](NOTICE).
+endorsement by, or origin from, the trademark holder. See
+[NOTICE](https://github.com/Synaptic724/melder/blob/prod/NOTICE).
 
 ## Contributing
 

@@ -1,0 +1,52 @@
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\01_beginner\40_beginner_capstone.py", line 44, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\01_beginner\40_beginner_capstone.py", line 21, in main
+    book, conduit = build_application()
+                    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\01_beginner\capstone_bootstrap.py", line 20, in build_application
+    conduit = book.conjure()
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 6457, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_logger=conduit_logger,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 6561, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 237, in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+        spellbook=spellbook,
+        phase_scheduler_cls=phase_scheduler_cls,
+        force_skip_plan_phases=True if cache_full_hit else None,
+    )
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 340, in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        force_skip_plan_phases=force_skip_plan_phases,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1512, in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+        spellbook=spellbook,
+    ...<9 lines>...
+        ),
+    )
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1887, in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\utilities\synchronization\phase_scheduler.py", line 964, in run_all_phases
+    units = self._run_single_phase(name, factory)
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\utilities\synchronization\phase_scheduler.py", line 867, in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <capstone_models.AppConfig object at 0x000005BF7A59E890> is not a callable object

@@ -154,6 +154,8 @@ class SpellGeneralizedCodegenPlanStep:
             - Mirrors the legacy execution-step field semantics closely so the
               old `execution_plan.py` can be retired once consumers converge on
               this shape.
+            - Borrows the established Spell disposal list without copying it.
+              Plan teardown releases the step, never the borrowed list's contents.
         """
         if instance_key is None:
             raise ValueError("instance_key must not be None.")
@@ -421,7 +423,7 @@ class SpellGeneralizedCodegenPlanStep:
     @property
     def disposal_method_names(self) -> List[str]:
         """
-        Return disposal-method names carried into runtime registration.
+        Return the borrowed Spell list in its established disposal order.
         """
         return self._disposal_method_names
 
@@ -1125,6 +1127,8 @@ class SpellGeneralizedCodegenPlanBuilder:
               2026-07-02), so sharing the full extraction changes no
               dependency semantics in either lane.
             - `self._plan_variant` is ignored; both variants are produced.
+            - Both plans borrow the fitted record's Spell-owned disposal list.
+              Ordered tuple projections belong only to schema/hash export.
 
         Returns:
             Tuple[SpellGeneralizedCodegenLanePlan, SpellGeneralizedCodegenLanePlan]:
@@ -1175,9 +1179,8 @@ class SpellGeneralizedCodegenPlanBuilder:
             requires_spellspace = existence is Existence.unique_per_spell_space
             owner_conduit_required = existence is Existence.unique_per_spell_space
             must_register = self._should_register(runtime_record)
-            # One disposal list per spell, shared by that spell's steps in
-            # BOTH plans (read-only downstream; rows tuple-copy it).
-            disposal_method_names = list(runtime_record.disposal_method_names)
+            # Every step in BOTH plans borrows the established Spell list;
+            # schema rows encode its ordered values at the export boundary.
 
             for instance_key in instance_shape.instance_keys_by_spell_id.get(spell_id, []):
                 occurrence = self._occurrence_for_instance_key(instance_key)
@@ -1244,7 +1247,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     override_match_prefix_len=override_match_prefix_len,
                     expects_overrides=expects_overrides,
                     contract_keys=contract_keys,
-                    disposal_method_names=disposal_method_names,
+                    disposal_method_names=runtime_record.disposal_method_names,
                     **common_kwargs,
                 ))
                 instance_key_to_step_index[instance_key] = len(steps) - 1
@@ -1466,6 +1469,10 @@ class SpellGeneralizedCodegenPlanBuilder:
             many-only builder surfaces so category-specific builders can enforce
             their own preconditions without copying the full generalized step
             synthesis body.
+
+        Contract:
+            Borrows disposal lists from fitted runtime records; this builder
+            neither repeats matching nor creates another inner method list.
         """
         graph_shape = self._state.graph_shape
         order_shape = self._state.order_shape
@@ -1513,7 +1520,6 @@ class SpellGeneralizedCodegenPlanBuilder:
             requires_spellspace = existence is Existence.unique_per_spell_space
             owner_conduit_required = existence is Existence.unique_per_spell_space
             must_register = self._should_register(runtime_record)
-            disposal_method_names = list(runtime_record.disposal_method_names)
 
             for instance_key in instance_shape.instance_keys_by_spell_id.get(spell_id, []):
                 occurrence = self._occurrence_for_instance_key(instance_key)
@@ -1587,7 +1593,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     requires_spellspace=requires_spellspace,
                     owner_conduit_required=owner_conduit_required,
                     must_register=must_register,
-                    disposal_method_names=disposal_method_names,
+                    disposal_method_names=runtime_record.disposal_method_names,
                 )
                 steps.append(step)
                 instance_key_to_step_index[instance_key] = len(steps) - 1

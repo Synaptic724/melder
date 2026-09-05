@@ -1,0 +1,370 @@
+schema_version = 1
+
+[[chapter]]
+id = "beginner/install"
+title = "Install and run Melder"
+level = "beginner"
+source = "beginner/install.md"
+lessons = ["beginner:01"]
+
+[[chapter]]
+id = "beginner/hello"
+title = "Hello, Melder"
+level = "beginner"
+readme = "🟢 Hello, Melder"
+lessons = ["beginner:01"]
+
+[[chapter]]
+id = "beginner/rhythm"
+title = "Bind → conjure → meld"
+level = "beginner"
+readme = "🟢 The Rhythm"
+lessons = ["beginner:21", "beginner:36"]
+
+[[chapter]]
+id = "beginner/registration"
+title = "What you can bind"
+level = "beginner"
+source = "beginner/registration.md"
+lessons = ["beginner:03", "beginner:11", "beginner:32", "beginner:33"]
+show_steps = true
+
+[[chapter]]
+id = "beginner/addresses"
+title = "The address law"
+level = "beginner"
+readme = "🟢 The Address Law"
+lessons = ["beginner:04", "beginner:26", "beginner:22", "beginner:24"]
+
+[[chapter]]
+id = "beginner/spellframes"
+title = "Spellframes and categories"
+level = "beginner"
+readme = "🟢 Spellframes — Categories Inside a World"
+lessons = ["beginner:09", "beginner:17", "beginner:25", "beginner:38"]
+
+[[chapter]]
+id = "beginner/dependency-injection"
+title = "Constructor dependency injection"
+level = "beginner"
+readme = "🟢 Dependency Injection"
+end_before = "When an annotation isn't specific enough"
+lessons = ["intermediate:15", "beginner:16"]
+
+[[chapter]]
+id = "beginner/lifetimes"
+title = "Choose an instance lifetime"
+level = "beginner"
+readme = "🟢 Six Lifetimes, Not Three"
+lessons = ["beginner:02", "beginner:13", "beginner:14", "beginner:15", "beginner:29"]
+
+[[chapter]]
+id = "beginner/scopes"
+title = "Scopes that nest"
+level = "beginner"
+readme = "🟢 Scopes That Nest"
+lessons = ["beginner:05", "beginner:27", "beginner:34"]
+
+[[chapter]]
+id = "beginner/cleanup"
+title = "Cleanup and memory ownership"
+level = "beginner"
+readme = "🟢 Teardown Is Part of Registration"
+lessons = ["beginner:08", "beginner:10", "beginner:35", "beginner:41"]
+
+[[chapter]]
+id = "beginner/errors"
+title = "Understand errors and refusals"
+level = "beginner"
+source = "beginner/errors.md"
+lessons = ["beginner:06", "beginner:23", "beginner:30"]
+show_steps = true
+
+[[chapter]]
+id = "beginner/capstone"
+title = "Build a complete beginner application"
+level = "beginner"
+source = "beginner/capstone.md"
+lessons = ["beginner:40", "beginner:18", "beginner:39"]
+show_steps = false
+
+[[chapter]]
+id = "intermediate/registration"
+title = "Fluent registration"
+level = "intermediate"
+source = "intermediate/registration.md"
+lessons = ["intermediate:02", "intermediate:10", "intermediate:06", "intermediate:12", "intermediate:13", "intermediate:14"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/module-registration"
+title = "Declarative binding by module"
+level = "intermediate"
+readme = "🟡 Declarative Binding by Module"
+lessons = ["intermediate:01"]
+
+[[chapter]]
+id = "intermediate/dependency-injection"
+title = "Constructor, explicit, and collection DI"
+level = "intermediate"
+readme = "🟢 Dependency Injection"
+lessons = ["intermediate:15", "intermediate:16", "intermediate:17"]
+
+[[chapter]]
+id = "intermediate/configuration"
+title = "Configuration before conjure"
+level = "intermediate"
+source = "intermediate/configuration.md"
+lessons = ["intermediate:30", "intermediate:19", "intermediate:20", "intermediate:31", "intermediate:35"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/hooks"
+title = "Lifecycle hooks"
+level = "intermediate"
+source = "intermediate/hooks.md"
+lessons = ["intermediate:32", "intermediate:03", "intermediate:33", "intermediate:34"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/scopes"
+title = "Spell spaces, lineage, and child scopes"
+level = "intermediate"
+source = "intermediate/scopes.md"
+lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/overrides"
+title = "Flat overrides and live probes"
+level = "intermediate"
+source = "intermediate/overrides.md"
+lessons = ["intermediate:08", "intermediate:18"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/dynamic-linking"
+title = "Dynamic mode and linking conduits"
+level = "intermediate"
+readme = "🟡 Dynamic Mode & Linking Conduits"
+lessons = ["intermediate:21", "intermediate:11"]
+
+[[chapter]]
+id = "intermediate/permissions"
+title = "Links, pulls, and permissions"
+level = "intermediate"
+source = "intermediate/permissions.md"
+lessons = ["intermediate:21", "intermediate:09", "intermediate:22"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/late-binding"
+title = "Late binding with SpellContract"
+level = "intermediate"
+readme = "🟡 Late Binding with `SpellContract`"
+lessons = ["intermediate:36", "intermediate:26"]
+
+[[chapter]]
+id = "intermediate/ownership"
+title = "Named conduits, transfer, and sever"
+level = "intermediate"
+source = "intermediate/ownership.md"
+lessons = ["intermediate:23", "intermediate:24", "intermediate:27", "intermediate:37"]
+show_steps = true
+
+[[chapter]]
+id = "intermediate/connected-subsystems"
+title = "Connected subsystem walkthrough"
+level = "intermediate"
+source = "intermediate/connected-subsystems.md"
+lessons = ["intermediate:26", "intermediate:36", "intermediate:25"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/worlds"
+title = "Frame boundaries: isolated worlds"
+level = "advanced"
+readme = "🟠 Frame Boundaries — More Than One World Per Process"
+lessons = ["advanced:02"]
+
+[[chapter]]
+id = "advanced/posture"
+title = "World posture and configuration"
+level = "advanced"
+source = "advanced/posture.md"
+lessons = ["advanced:03", "advanced:05", "advanced:06", "advanced:07"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/logging"
+title = "Explicit logging setup"
+level = "advanced"
+source = "advanced/logging.md"
+lessons = ["advanced:04", "advanced:07"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/overrides"
+title = "Deep, wildcard, and broadcast overrides"
+level = "advanced"
+source = "advanced/overrides.md"
+lessons = ["advanced:19", "advanced:01", "expert:10"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/clusters"
+title = "Conduit clusters"
+level = "advanced"
+source = "advanced/clusters.md"
+lessons = ["intermediate:25"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/nexus"
+title = "Enable Nexus and open a Rift"
+level = "advanced"
+source = "advanced/nexus.md"
+lessons = ["advanced:09", "advanced:08", "advanced:10", "advanced:11"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/read-only-rooms"
+title = "Read-only rooms for endpoints"
+level = "advanced"
+readme = "🟠 Read-Only Rooms for Endpoints"
+end_before = "## What else this README skips"
+lessons = ["advanced:11", "advanced:15", "expert:11"]
+
+[[chapter]]
+id = "advanced/viewers"
+title = "Viewer navigation and the describe ladder"
+level = "advanced"
+source = "advanced/viewers.md"
+lessons = ["advanced:13", "advanced:14", "advanced:15"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/workstation"
+title = "Workstation ownership"
+level = "advanced"
+source = "advanced/workstation.md"
+lessons = ["advanced:12", "advanced:11"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/policies"
+title = "Ward policies and refusals"
+level = "advanced"
+source = "advanced/policies.md"
+lessons = ["advanced:16"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/checkpoints"
+title = "Checkpoint and cache entry points"
+level = "advanced"
+source = "advanced/checkpoints.md"
+lessons = ["advanced:17", "advanced:18"]
+show_steps = true
+
+[[chapter]]
+id = "advanced/inspection-walkthrough"
+title = "World inspection walkthrough"
+level = "advanced"
+source = "advanced/inspection-walkthrough.md"
+lessons = ["advanced:02", "advanced:09", "expert:11", "advanced:13", "advanced:15"]
+
+[[chapter]]
+id = "expert/self-documents"
+title = "The runtime documents itself"
+level = "expert"
+source = "expert/self-documents.md"
+lessons = ["expert:18", "expert:19", "expert:05"]
+show_steps = true
+
+[[chapter]]
+id = "expert/agent-rooms"
+title = "Agent rooms and explicit authority"
+level = "expert"
+source = "expert/agent-rooms.md"
+lessons = ["expert:11", "expert:08", "expert:13", "expert:20"]
+show_steps = true
+
+[[chapter]]
+id = "expert/codegen"
+title = "Build a working system from generated code"
+level = "expert"
+source = "expert/codegen.md"
+lessons = ["expert:36", "expert:07", "expert:12", "expert:26", "expert:33", "expert:10"]
+show_steps = true
+
+[[chapter]]
+id = "expert/transactions"
+title = "Structural transactions and admission"
+level = "expert"
+source = "expert/transactions.md"
+lessons = ["expert:16", "expert:35"]
+show_steps = true
+
+[[chapter]]
+id = "expert/persistence"
+title = "Persistence, profiles, and source custody"
+level = "expert"
+source = "expert/persistence.md"
+lessons = ["expert:34", "expert:06", "expert:33"]
+show_steps = true
+
+[[chapter]]
+id = "expert/restore"
+title = "Restore and cold boot"
+level = "expert"
+source = "expert/restore.md"
+lessons = ["expert:27", "expert:24", "expert:01"]
+show_steps = true
+
+[[chapter]]
+id = "expert/external-storage"
+title = "External storage integration"
+level = "expert"
+source = "expert/external-storage.md"
+lessons = ["expert:09", "expert:02", "expert:28"]
+show_steps = true
+
+[[chapter]]
+id = "expert/research"
+title = "Research sets, lanes, residency, and recorded source"
+level = "expert"
+source = "expert/research.md"
+lessons = ["expert:03", "expert:04", "expert:15", "expert:23", "expert:25", "expert:29", "expert:31"]
+show_steps = true
+
+[[chapter]]
+id = "expert/compositions"
+title = "Compositions, synthesis, and impact"
+level = "expert"
+source = "expert/compositions.md"
+lessons = ["expert:30", "expert:14", "expert:32"]
+show_steps = true
+
+[[chapter]]
+id = "expert/governed-change"
+title = "Preview, stage, and governed change"
+level = "expert"
+source = "expert/governed-change.md"
+lessons = ["expert:22", "expert:17", "expert:23", "expert:26"]
+show_steps = true
+
+[[chapter]]
+id = "expert/concurrency"
+title = "Several rooms and shared worlds"
+level = "expert"
+source = "expert/concurrency.md"
+lessons = ["expert:21", "expert:13", "expert:35"]
+show_steps = true
+
+[[chapter]]
+id = "expert/walkthroughs"
+title = "Complete operational walkthroughs"
+level = "expert"
+source = "expert/walkthroughs.md"
+lessons = ["expert:36", "expert:07", "expert:22", "expert:30", "expert:27", "expert:28", "expert:21"]

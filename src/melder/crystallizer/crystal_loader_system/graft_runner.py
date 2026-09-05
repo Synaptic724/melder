@@ -19,7 +19,10 @@ skip_resident, identically in both modes. Grafts are user-verb activity
 """
 
 import importlib
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.persistence.record_version import RecordVersion
@@ -307,16 +310,16 @@ class GraftRunner(Cleanable):
                 "a fresh index needs its anchor bind."
             )
 
-        live_index_id, bound = self._bind_selected(
+        live_index, bound = self._bind_selected(
             str(selected_id), members, shortfalls
         )
         parked = self._park_members(
-            str(selected_id), members, host_conduit, shortfalls
+            str(selected_id), members, host_conduit, shortfalls, live_index
         )
         return {
             "status": "complete",
             "recorded_index_id": str(self._record.get("index_id")),
-            "live_index_id": live_index_id,
+            "live_index_id": live_index.id if live_index is not None else None,
             "merged_into_existing": False,
             "selection_adopted": True,
             "members_bound": bound,
@@ -373,7 +376,7 @@ class GraftRunner(Cleanable):
             selected_id: str,
             members: Dict[str, Dict[str, object]],
             shortfalls: List[Dict[str, object]],
-    ) -> tuple:
+    ) -> Tuple[Optional[SpellIndex], int]:
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
@@ -386,7 +389,9 @@ class GraftRunner(Cleanable):
                 Collector for honest rows.
 
         Returns:
-            tuple: (live_index_id or None, members_bound count).
+            Tuple[Optional[SpellIndex], int]: Newly bound index (borrowed) and
+                member count. Parking uses this actual result because receiving
+                book policy can change the bound member's SHA.
 
         Raises:
             ValueError: If the selected member's target cannot hydrate
@@ -413,10 +418,10 @@ class GraftRunner(Cleanable):
             profile=str(crystal.get("profile_family", "general")),
         )
         live_spell = self._host_book.find_spell_by_id(new_spell_id)
-        live_index_id = (
-            live_spell.spell_index.id if live_spell is not None else None
+        live_index = (
+            live_spell.spell_index if live_spell is not None else None
         )
-        return live_index_id, 1
+        return live_index, 1
 
     def _park_members(
             self,
@@ -424,27 +429,27 @@ class GraftRunner(Cleanable):
             members: Dict[str, Dict[str, object]],
             host_conduit: Any,
             shortfalls: List[Dict[str, object]],
+            anchor_index: Optional[SpellIndex],
     ) -> int:
         """
         Park every non-selected member onto the fresh live index.
 
         Args:
             selected_id:
-                The already-bound anchor member.
+                Recorded anchor member ID, used to exclude its custody row.
             members:
                 Graftable member map.
             host_conduit:
                 The host book's live conduit (bind_inactive host).
             shortfalls:
                 Collector for honest rows.
+            anchor_index:
+                Actual index returned by the selected bind, borrowed for this call.
+                No recorded-SHA lookup is needed after receiving-book composition.
 
         Returns:
             int: Members parked.
         """
-        anchor_spell = self._host_book.find_spell_by_id(selected_id)
-        anchor_index = (
-            anchor_spell.spell_index if anchor_spell is not None else None
-        )
         parked = 0
         for spell_id, entry in members.items():
             if spell_id == selected_id:
@@ -466,6 +471,7 @@ class GraftRunner(Cleanable):
                 permissions=str(crystal.get("permissions_name", "create")),
                 spellframe=crystal.get("spellframe_name"),
                 binding_name=crystal.get("binding_name"),
+                disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
             )
             parked += 1
@@ -489,9 +495,9 @@ class GraftRunner(Cleanable):
             selection. Index internals stay untouched.
 
         Contract:
-            - Spell SHAs are content-derived and stable, so the
-              recorded selected id addresses the freshly parked live
-              spell directly for the adoption notch.
+            - Receiving-book policy applies at each bind. Selection adoption
+              follows the live ID returned by the selected member's bind,
+              which may differ from its recorded SHA.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
 
@@ -509,20 +515,24 @@ class GraftRunner(Cleanable):
             Tuple[int, bool]: (members parked, selection adopted).
         """
         parked = 0
+        live_selected_id: Optional[str] = None
         for spell_id, entry in members.items():
             crystal = dict(entry.get("payload", {}))
             target = self._hydrate(spell_id, crystal, shortfalls)
             if target is None:
                 continue
-            host_conduit.bind_inactive(
+            new_spell_id = host_conduit.bind_inactive(
                 spell=target,
                 spell_index=self._merge_into_index,
                 existence=str(crystal.get("existence_name", "unique")),
                 permissions=str(crystal.get("permissions_name", "create")),
                 spellframe=crystal.get("spellframe_name"),
                 binding_name=crystal.get("binding_name"),
+                disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
             )
+            if spell_id == str(selected_id):
+                live_selected_id = new_spell_id
             parked += 1
         selection_adopted = False
         if self._adopt_recorded_selection:
@@ -536,8 +546,8 @@ class GraftRunner(Cleanable):
             # member is parked by construction). Read-only seam; the
             # mediated write remains the public notch verb below.
             adopted_spell = (
-                self._host_book._get_owned_spell(str(selected_id))
-                if selected_id is not None
+                self._host_book._get_owned_spell(live_selected_id)
+                if live_selected_id is not None
                 else None
             )
             if adopted_spell is None:
