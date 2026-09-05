@@ -59,10 +59,29 @@ def test_latest_candidate_run_must_pass(candidate_proof: ModuleType) -> None:
     green = qualified_run()
     assert candidate_proof.require_qualified_run({"workflow_runs": [green]}, "owner/repo", "a" * 40) == green
     for state in ({"status": "in_progress", "conclusion": None}, {"conclusion": "failure"}):
-        with pytest.raises(ValueError, match="unsuccessful"):
+        with pytest.raises(ValueError, match="Candidate qualification has not passed") as error:
             candidate_proof.require_qualified_run(
-                {"workflow_runs": [green, qualified_run(run_number=5, **state)]}, "owner/repo", "a" * 40,
+                {"workflow_runs": [green, qualified_run(id=102, run_number=5, run_attempt=2, **state)]},
+                "owner/repo", "a" * 40,
             )
+        message = str(error.value)
+        assert "https://github.com/owner/repo/actions/runs/102 (attempt 2)" in message
+        assert "rerun this prod check" in message
+        for field, value in state.items():
+            assert f"{field}={value!r}" in message
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("head_sha", "b" * 40), ("head_branch", "preprod"), ("path", ".github/workflows/ci.yml"),
+])
+def test_candidate_identity_diagnostic_names_the_mismatched_field(candidate_proof: ModuleType,
+                                                                 field: str, value: str) -> None:
+    """Different-source evidence must be distinguished from a failed or unfinished candidate run."""
+    with pytest.raises(ValueError, match="Candidate qualification has not passed") as error:
+        candidate_proof.require_qualified_run({"workflow_runs": [qualified_run(**{field: value})]},
+                                               "owner/repo", "a" * 40)
+    assert f"{field}={value!r} (expected " in str(error.value)
+    assert "https://github.com/owner/repo/actions/runs/101" in str(error.value)
 
 
 @pytest.mark.parametrize("change", [
