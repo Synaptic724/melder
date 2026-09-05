@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-binding
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_binding_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T22:06:16Z
+- Updated: 2026-09-05T10:50:50Z
 
 ## Objective
 Prove the new flag and ordered book vocabulary survive existing configuration transport,
@@ -31,9 +31,10 @@ and that Nexus-created books obtain the normal False default.
 - Out of scope: resolved SpellCrystal list sorting, full world replay, custom Nexus rich-config API.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Configuration mapping identified a distinct cross-component verification slice.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Six new emission/checkpoint/reload cases and Nexus-default assertions pass
+  with surrounding tests. No production propagation change was necessary.
 
 ## Required Reading and Evidence
 Read discovery Configuration Change Map and relevant test architecture/components first.
@@ -51,13 +52,13 @@ Read discovery Configuration Change Map and relevant test architecture/component
 - `tests/unit/melder/aether/test_nexus_frame_configuration.py:178-195`
 
 ## Steps / Checklist
-- [ ] Verify True and False are preserved by configuration emission into SpellbookCrystal.
-- [ ] Carry a non-alphabetical method list through book twin, checkpoint cached item, and reload.
-- [ ] Verify absent flag in an older configuration payload yields False with honest accounting.
-- [ ] Verify reload seals the config before restored binds and preserves explicit recorded True.
-- [ ] Verify NexusFrameConfiguration.to_spellbook_configuration inherits False.
-- [ ] Reuse generic transport as found; change only an evidenced failing handoff if necessary.
-- [ ] Record results and pass configuration evidence to the persistence story.
+- [x] Verify True and False are preserved by configuration emission into SpellbookCrystal.
+- [x] Carry a non-alphabetical method list through book twin, checkpoint cached item, and reload.
+- [x] Verify absent flag in an older configuration payload yields False with honest accounting.
+- [x] Verify reload seals the config before restored binds and preserves explicit recorded True.
+- [x] Verify NexusFrameConfiguration.to_spellbook_configuration inherits False.
+- [x] Reuse generic transport as found; change only an evidenced failing handoff if necessary.
+- [x] Record results and pass configuration evidence to the persistence story.
 
 ## Deliverables
 Focused transport/default tests and recorded results, with no duplicated policy fields.
@@ -70,7 +71,10 @@ Focused transport/default tests and recorded results, with no duplicated policy 
 - Generic carrier and Nexus source files are read-only unless a specific defect is established.
 
 ## Validation
-- Not run; ticket only. Use a verified supported interpreter.
+- Passed: 59 focused transport/reload/Nexus/shared-configuration tests on Windows Python 3.14t.
+- Six new cases use the real emitter, book twin, profile, checkpoint JSON codec, and reload.
+- The global recorder lookup alone is substituted to isolate the transport boundary.
+- Full world restoration is not claimed here; it remains the next task.
 - Check both non-default True and explicit False, not just an empty/default payload.
 - Assert method list order and flag values after the round trip, then assert sealed behavior.
 - A default Nexus factory test does not establish custom priority selection through its builder;
@@ -82,12 +86,12 @@ Validate diagnostic accounting alongside values. Do not confuse configuration tr
 with successful resolved-method replay; the latter is a later task.
 
 ## Applicable Anti-Patterns
-- [ ] No unnecessary per-flag code in generic crystal/checkpoint containers.
-- [ ] No custom Nexus API expansion or defensive snapshot redesign.
+- [x] No unnecessary per-flag code in generic crystal/checkpoint containers.
+- [x] No custom Nexus API expansion or defensive snapshot redesign.
 
 ## Done Checklist
-- [ ] Transport/default assertions and exact results recorded.
-- [ ] Shared configuration test edits coordinated with the configuration task.
+- [x] Transport/default assertions and exact results recorded.
+- [x] Shared configuration verification reused the existing configuration task tests.
 - [ ] Dependent replay task linked; owner acceptance precedes closure.
 
 ## Artifact Links (Optional)
@@ -143,7 +147,72 @@ Record tested boundaries and gaps separately, with source pointers and one NEXT 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:41:33Z
+  TYPE: PLAN
+  CLAIM: Resume on codex_features2 in melder_private. Runtime phase passes 2,797 selected
+    tests. This verification task precedes replay and adds no duplicated root flags or
+    generic transport branches unless source-backed tests expose a concrete defect.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+  - git status --short and git branch --show-current, 2026-09-05T10:41:33Z.
+  IMPACT: Preserve other agents' docs/CI/corpus work; no commit or push commands.
+  NEXT: Read relevant configuration/crystal/Nexus slices and their existing test setup.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:48:04Z
+  TYPE: FACT
+  CLAIM: Current emission/reload functions, complete SpellbookCrystal/PersistenceCrystal,
+    profile record/capture, Nexus conversion/root caller, and restore book entry were read.
+    Emission keeps bools and ordered lists; generic carriers preserve their values. Reload
+    seals before RestoreEngine starts binding. Nexus conversion uses ordinary book defaults.
+    Existing direct reload tests already cover True/False and missing-flag accounting.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/configuration/spellbook_configuration.py:265-396`
+  - `src/melder/aether/spellbook/configuration/spellbook_configuration.py:596-674`
+  - `src/melder/crystallizer/crystals/spellbook_crystal.py:92-264`
+  - `src/melder/crystallizer/persistence/persistence_crystal.py:78-451`
+  - `src/melder/crystallizer/persistence/persistence_profile.py:230-333`
+  - `src/melder/crystallizer/persistence/persistence_profile.py:1028-1174`
+  - `src/melder/nexus/nexus_frame_configuration.py:334-349`
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1734-1820`
+  IMPACT: Test-only verification is appropriate. Use real twins/profile/checkpoint/JSON/reload;
+    replace only the global recorder boundary. The consumed configuration patch maps to
+    first-freeze/re-freeze, explicit True/False, absent legacy key, and Nexus-before-bind defaults.
+  NEXT: Add transport matrix and Nexus-default assertions, then run focused checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:50:50Z
+  TYPE: MEASURE
+  CLAIM: All 59 selected cases pass in 0.34s. The six new transport cases cover first/re-freeze,
+    True/False and missing legacy priority, ordered names through actual profile/checkpoint
+    JSON roundtrip, and sealed reload with exact backfill diagnostics. Nexus's existing
+    conversion test now verifies False/empty-name defaults before another defaults load.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/component/melder/crystallizer/test_disposal_configuration_transport.py tests/unit/melder/aether/test_configuration_reload_lanes.py tests/unit/melder/aether/test_nexus_frame_configuration.py tests/component/melder/spellbook/test_spellbook_component_configuration.py -q -p no:cacheprovider --tb=short
+  - `tests/component/melder/crystallizer/test_disposal_configuration_transport.py`
+  - `tests/unit/melder/aether/test_nexus_frame_configuration.py:178-198`
+  IMPACT: Generic transport needs no production edit or duplicate root flag. Test fixture
+    cleanup was made explicitly idempotent with reference deletion before final verification.
+  NEXT: Rerun the two changed test modules, then prepare ordered crystal capture/replay.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:54:45Z
+  TYPE: MEASURE
+  CLAIM: Final changed-module verification passes 33 tests in 0.27s after fixture cleanup
+    alignment. All transport assertions remain green; no production source edits were required.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/component/melder/crystallizer/test_disposal_configuration_transport.py tests/unit/melder/aether/test_nexus_frame_configuration.py -q -p no:cacheprovider --tb=short
+  IMPACT: Configuration transport prerequisite for crystal replay is satisfied.
+  NEXT: Execute the ordered crystal/replay task with its own patch and source reads.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-This verifies configuration, not full Spell disposal replay. The original mapper ran no
-runtime tests. Keep False defaults and accurate backfill reporting, and defer final-list
-sorting/staged/graft behavior to the crystal replay task.
+Verified/in review: configuration transport needs no production changes. New six-case matrix
+preserves ordered book names and explicit True/False through emission, profile capture, checkpoint
+JSON, and sealed reload; missing legacy priority backfills False with correct diagnostics.
+Nexus normal conversion exposes False and empty names immediately. 59 selected tests passed.
+This is not resolved SpellCrystal or world replay evidence; that separate task follows now.

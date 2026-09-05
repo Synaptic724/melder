@@ -2,23 +2,24 @@
 
 ## Before and after
 Before: preprod/prod perform local distribution checks; no index round-trip qualifies a candidate.
-After: release-candidate.yml calls shared CI for the frozen branch, records package identity,
+After: release-candidate.yml calls the existing package builder for the frozen branch, records identity,
 uploads to TestPyPI, and checks an exact downloaded wheel on Linux/Windows Python 3.14t.
 
 ## Interfaces
-- ci.yml becomes callable and recognizes release_candidate PRs. Candidate pushes are handled by
-  their dedicated caller, avoiding duplicate automatic runtime matrices for the same event.
-- candidate artifacts contain candidate.json and dist/ with exactly one wheel and one sdist.
-- A candidate helper records/verifies artifacts without importing Melder in publication jobs.
-- TestPyPI upload remains a top-level job with testpypi environment and id-token: write.
-- A reusable installed-candidate workflow downloads one named artifact/run, resolves the TestPyPI
-  wheel with pinned version/hash, and invokes an isolated installed-package probe.
+- ci.yml recognizes release_candidate PRs. Candidate pushes are handled by the dedicated workflow.
+- Every job downloads the same run/attempt's verified wheel/sdist pair; reports record their hashes.
+- A candidate helper verifies package/index identity without importing Melder in publication jobs.
+- Shared builds normalize sdist tar/gzip metadata to the commit timestamp, preserving all file bytes.
+  This closes measured same-source retry drift without weakening immutable-upload hash checks.
+- TestPyPI upload remains a top-level job with pypitest environment and id-token: write.
+- Linux/Windows install jobs resolve the TestPyPI wheel with pinned version/hash and invoke an
+  isolated installed-package probe. Neither runs the whole source suite or obtains upload authority.
 
 ## State and failure
 The Git tree is the source identity and distributions are the publication identity. Never infer
 either from a branch name alone. Missing/extra files, invalid JSON, changed bytes, stale branch
 identity, failed installs, and version mismatch refuse qualification. A failed run cannot produce
-qualified-candidate evidence. A partially completed upload can continue with missing files only
+successful candidate evidence. A partially completed upload can continue with missing files only
 after existing remote filenames, sizes, and hashes match the local candidate exactly.
 
 ## Ownership and validation

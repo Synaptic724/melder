@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-04-ordered-disposal-runtime
 - Epic: EPIC-2026-09-02-ordered-live-spell-disposal
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-05T10:33:58Z
 
 ## User Narrative
 As a Melder user, I want each instance disposed in its Spell's established method order
@@ -45,9 +45,9 @@ The binding contract must reach real cleanup, including cached execution paths.
 - Out of scope: source selection, scope redesign, unrelated locking bugs, crystal replay.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested a complete phased task stack with dependency gates.
+- from_state: ready
+- to_state: review
+- transition_reason: Both runtime tasks are implemented and the combined boundary passes 2,797 tests.
 
 ## Dependencies / Related Work
 - Contract: `tickets/tasks/2026-09-04_ordered_disposal_patch_contract_task.md`
@@ -55,8 +55,8 @@ The binding contract must reach real cleanup, including cached execution paths.
 - Next: `tickets/stories/2026-09-04_ordered_disposal_persistence_story.md`
 
 ## Tasks (Implementation Checklist)
-- [ ] `tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`
-- [ ] `tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+- [x] `tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md` (implemented/in review)
+- [x] `tickets/tasks/2026-09-04_ordered_disposal_creations_task.md` (implemented/in review)
 
 ## Acceptance Criteria
 - Real creation/cleanup uses the exact agreed sequence for both priority modes.
@@ -66,7 +66,8 @@ The binding contract must reach real cleanup, including cached execution paths.
 
 ## Validation / Test Plan
 Focused compiler-family, cache rehydration, Creations, and real bind/meld/cleanup tests.
-Not run; these are newly specified tasks.
+Passed: 2,797 selected tests on Windows Python 3.14.0 free-threaded; 51 new regression cases.
+Full repository/cross-platform/persistent replay validation and final assets remain pending.
 
 ## UX / API / Data Notes
 Disposal methods are invoked on the user's instance. Spell holds names, not bound methods.
@@ -117,8 +118,22 @@ Missing names are handled during binding under the existing profile boundary.
 ## Noting Behavior
 Record cross-family outcomes and dependencies here; keep tactical evidence in child tasks.
 
-## Context / Handoff Summary
-Wait for Phase 1 binding and the patch contract. Execute compiler propagation, then Creations
-and the real runtime checks. Do not mistake the earlier contact inventory for a full read of
-every compiler file; reopen complete implementations before changing them.
+- DATETIME: 2026-09-05T10:33:58Z
+  TYPE: MEASURE
+  CLAIM: Compiler and Creations propagation are implemented. Seven compiler files and the
+    Creations storage owner retain established lists; serialized/hash values stay ordered.
+    Real runtime tests found and eliminated two copies embedded in generalized emitted code.
+    All 2,797 selected tests pass, including repeated real melds and both priority/override modes.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+  IMPACT: Runtime phase is in review. No new locks, cleanup-loop rewrite, or mutation support.
+  NEXT: Complete configuration transport verification before crystal replay implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
+## Context / Handoff Summary
+Both child tasks are implemented/in review. The combined selected boundary passes 2,797 tests.
+The runtime retains one established inner list through compilation, registration, and transfer.
+Methods execute in order; existing failure, reverse traversal, and scope cleanup stay unchanged.
+Next: configuration transport verification, then persistent capture/restore/graft order and assets.

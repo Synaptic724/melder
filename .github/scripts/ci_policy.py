@@ -14,8 +14,11 @@ from typing import Optional, cast
 class CIPolicy:
     """Hold immutable CI names and branch routes shared by the command-line gates."""
 
-    BRANCHES: tuple[str, ...] = ("dev", "preprod", "prod")
-    PROMOTIONS: Mapping[str, str] = {"preprod": "dev", "prod": "preprod"}
+    BRANCHES: tuple[str, ...] = ("dev", "preprod", "release_candidate", "prod")
+    PROMOTIONS: Mapping[str, str] = {
+        "preprod": "dev", "release_candidate": "preprod", "prod": "release_candidate",
+    }
+    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "build", "publish", "install")
     REQUIRED_JOBS: tuple[str, ...] = (
         "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
     )
@@ -39,8 +42,9 @@ def validate_route(base: str, head: str, head_repository: str, repository: str) 
     """Validate a PR route and return whether distribution verification is required.
 
     Contributions enter dev. Permanent-branch synchronization must come from this
-    repository; preprod accepts only dev and prod accepts only preprod. Unknown
-    bases and forged fork promotion branches raise ValueError. No refs are changed.
+    repository. Promotion follows dev -> preprod -> release_candidate -> prod.
+    Same-repository release-fix/* PRs can prepare/fix the frozen candidate without
+    pulling later preprod features. Unknown bases and forged forks raise ValueError.
     """
     for value, label in ((base, "base"), (head, "head"),
                          (head_repository, "head repository"), (repository, "repository")):
@@ -50,11 +54,13 @@ def validate_route(base: str, head: str, head_repository: str, repository: str) 
     if base == head and head_repository == repository:
         raise ValueError("A same-repository PR must have different head and base branches.")
     if base == "dev":
-        if head in ("preprod", "prod") and head_repository != repository:
+        if head in CIPolicy.BRANCHES[1:] and head_repository != repository:
             raise ValueError("Permanent-branch synchronization must originate in this repository.")
         return False
     required_head = CIPolicy.PROMOTIONS[base]
-    if head_repository != repository or head != required_head:
+    preparation = (base == "release_candidate" and head.startswith("release-fix/")
+                   and len(head) > len("release-fix/"))
+    if head_repository != repository or (head != required_head and not preparation):
         raise ValueError(
             f"Promotion into {base} requires {repository}:{required_head}; "
             f"received {head_repository}:{head}."
@@ -87,7 +93,7 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
     if event_name not in ("push", "workflow_dispatch"):
         raise ValueError(f"Unsupported CI event {event_name!r}; refusing an implicit route.")
     if ref not in tuple(f"refs/heads/{branch}" for branch in CIPolicy.BRANCHES):
-        raise ValueError(f"CI push/manual ref must be dev, preprod, or prod; received {ref!r}.")
+        raise ValueError(f"CI ref must name a supported permanent branch; received {ref!r}.")
     return ref != "refs/heads/dev"
 
 
@@ -120,6 +126,32 @@ def case_collisions(paths: Sequence[str]) -> list[list[str]]:
     for path in paths:
         grouped.setdefault(path.casefold(), []).append(path)
     return [sorted(group) for _, group in sorted(grouped.items()) if len(group) > 1]
+
+
+def require_candidate_success(results: Mapping[str, object]) -> None:
+    """Require every candidate stage to succeed, including the complete install matrix."""
+    if set(results) != set(CIPolicy.CANDIDATE_JOBS):
+        raise ValueError("Incomplete candidate dependency evidence; all four stages are required.")
+    failures = [name for name in CIPolicy.CANDIDATE_JOBS
+                if object_value(results[name], f"needs.{name}").get("result") != "success"]
+    if failures:
+        raise ValueError(f"Candidate qualification failed or was skipped: {failures}.")
+
+
+def validate_candidate_head(event_name: str, ref: str, event_sha: str,
+                            checkout_sha: str, advertisement: str) -> None:
+    """Authorize only the current candidate branch, refusing stale runs and manual wrong-ref use.
+
+    Git's exact branch advertisement must agree with both event and checkout.
+    No cached tracking ref, abbreviated SHA, PR event, or deleted branch suffices.
+    """
+    branch = "refs/heads/release_candidate"
+    if event_name not in ("push", "workflow_dispatch") or ref != branch:
+        raise ValueError("TestPyPI publication must run on release_candidate, from push or manual dispatch.")
+    if re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", event_sha) is None:
+        raise ValueError("Candidate publication requires a full commit SHA.")
+    if checkout_sha != event_sha or advertisement.strip() != f"{event_sha}\t{branch}":
+        raise ValueError("Candidate branch moved or checkout differs; qualify the current candidate again.")
 
 
 def git_output(arguments: Sequence[str]) -> str:
@@ -214,7 +246,8 @@ def read_event() -> Mapping[str, object]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """Execute one read-only CI gate; print a diagnostic and return nonzero on refusal."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("gate", choices=("branch", "merge-ready", "hygiene", "release-head"))
+    parser.add_argument("gate", choices=("branch", "merge-ready", "hygiene", "release-head",
+                                        "candidate-head", "candidate-ready"))
     args = parser.parse_args(argv)
     try:
         if args.gate == "branch":
@@ -233,6 +266,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             collisions = case_collisions(git_output(("ls-files", "-z")).split("\0")[:-1])
             if collisions:
                 raise ValueError(f"Tracked paths collide case-insensitively: {collisions}")
+        elif args.gate == "candidate-ready":
+            require_candidate_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"))
+        elif args.gate == "candidate-head":
+            validate_candidate_head(
+                os.environ.get("GITHUB_EVENT_NAME", ""), os.environ.get("GITHUB_REF", ""),
+                os.environ.get("GITHUB_SHA", ""), git_output(("rev-parse", "HEAD^{commit}")),
+                git_output(("ls-remote", "--exit-code", "--heads", "origin",
+                            "refs/heads/release_candidate")),
+            )
         else:
             event_name = os.environ.get("GITHUB_EVENT_NAME", "")
             event = read_event()

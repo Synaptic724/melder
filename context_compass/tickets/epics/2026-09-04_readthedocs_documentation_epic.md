@@ -510,6 +510,37 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:47:49Z
+  TYPE: FACT
+  CLAIM: The owner requested a capstone correction after reviewing the live page. It now demonstrates
+    four application modules, self-mediated binding, TYPE_CHECKING consumers, injected objects, and
+    cleanup. Direct/download execution, 308 Beginner/metadata checks, and 36 docs tests pass.
+  EVIDENCE:
+  - artifacts/2026-09-05_beginner_capstone_revision.md:1-40
+  IMPACT: The four-level structure is preserved; all formats carry the corrected capstone.
+    A separate prebuilt-instance DI compiler failure is recorded for runtime assessment.
+  NEXT: Continue integrated quality/hosted qualification after owner review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:50:08Z
+  TYPE: FACT
+  CLAIM: Owner also asked about RTD limitations. Official documentation describes static HTML/CSS/JS
+    publication, with normal JavaScript supplied through Sphinx; the polished local frontend follows
+    that same model. Custom live Python/Node backends require separate hosting. Current Community
+    build defaults are 15 minutes, 7 GB memory, two concurrent builds, and 5 GB soft disk storage;
+    private repository/documentation access is a Business capability.
+  EVIDENCE:
+  - https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-html_js_files
+  - https://docs.readthedocs.com/platform/stable/security-implications.html
+  - https://docs.readthedocs.com/platform/stable/builds.html#build-resources
+  - https://docs.readthedocs.com/platform/latest/commercial/index.html
+  IMPACT: Rich browser interactions fit the site architecture. Service limits and hosted features
+    still require validation for the actual project; this finding authorizes no additional features.
+  NEXT: Complete hosted qualification when the owner selects the project and candidate revision.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.

@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `component_patch_binding_pipeline.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T09:14:05Z |
-| line_count | 35 |
+| generated_at | 2026-09-05T11:35:21Z |
+| line_count | 37 |
 | line_ending | lf |
-| content_sha256 | `d91278b79797f4131e62d37c1067ab13f2227fc0c33455f40811c738b0cede86` |
+| content_sha256 | `e94b9da7f868e77e61bcb9f49477d605f9e8f2e950a4bd61dacae28e73e1c747` |
 | sections | 8 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -32,6 +32,6 @@ which you did.
 | 12-16 | 2 | Interface deltas |
 | 17-20 | 2 | State and lifecycle |
 | 21-24 | 2 | Failure modes |
-| 25-29 | 2 | Dependencies and ordering |
-| 30-33 | 2 | Validation |
-| 34-35 | 2 | Open decisions |
+| 25-31 | 2 | Dependencies and ordering |
+| 32-35 | 2 | Validation |
+| 36-37 | 2 | Open decisions |

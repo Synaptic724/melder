@@ -43,8 +43,12 @@ jobs:
           python -m pip install --group build
       - name: Verify durable source assets
         run: python src/melder/_build_assets/_build_asset_runner.py --check
+      - name: Set deterministic source timestamps for same-commit retries
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
       - name: Build wheel and source distribution
         run: python -m build --sdist --wheel
+      - name: Normalize source archive metadata for identical retries
+        run: python .github/scripts/normalize_sdist.py
       - name: Verify archive boundaries and versions
         env:
           RELEASE_TAG: ${{ inputs.release-tag }}

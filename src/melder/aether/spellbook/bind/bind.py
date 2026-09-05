@@ -262,8 +262,8 @@ class Bind(Cleanable):
             existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
             configured_disposal_method_names (Optional[Sequence[str]]): Ordered book-level disposal candidates.
             disposal_method_names (Optional[Sequence[str]]): Ordered candidates specific to this binding.
-            enforce_priority_disposal_methods (bool): When True, match book candidates first;
-                otherwise match spell-specific candidates first. Defaults to False.
+            enforce_priority_disposal_methods (bool): Place the matching book block first when
+                True, last when False (default). Book order owns shared names in both modes.
         Contract:
             - When `spell` is omitted, returns a decorator that will bind the
               later target with the supplied policy and lifecycle settings.
@@ -271,8 +271,9 @@ class Bind(Cleanable):
               immediately and returns the created `Spell`.
             - Decorator and direct-call modes are semantically equivalent once
               the target object is known.
-            - Both disposal groups contribute in the selected priority order.
-              Matching class-profile names are retained once, at their first occurrence.
+            - Matching book names form one ordered block, including names also supplied
+              explicitly. Spell-only names keep their order before or after that block.
+              Each matching name is retained once.
               An empty spell-specific group does not disable configured book candidates.
 
         Returns:
@@ -364,12 +365,14 @@ class Bind(Cleanable):
             aetheric_frame (str): The Aetheric Frame this spell belongs to.
             configured_disposal_method_names (Optional[Sequence[str]]): Ordered book candidates.
             disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
-            enforce_priority_disposal_methods (bool): Book-first when True, spell-first otherwise.
+            enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
 
         Disposal contract:
             Only names present in the existing ClassBindingProfile are retained.
-            Missing names and non-class profiles contribute nothing. Each matching
-            name appears once, at its first position across the two input groups.
+            Missing names and non-class profiles contribute nothing. Book names
+            own overlaps in both modes and keep their configured order. Spell-only
+            names keep their supplied order, before or after the book block. Each
+            matching name appears once in the single result list.
             The result is established before identity and registration; no method
             lookup, invocation, or policy recheck is added to the resolution path.
 
@@ -421,20 +424,23 @@ class Bind(Cleanable):
             spell_name = getattr(spell, "__name__", type(spell).__name__)
             resolved_disposal_method_names: list[str] = []
             if isinstance(binding_profile, ClassBindingProfile):
-                disposal_groups = (
-                    (configured_disposal_method_names, disposal_method_names)
-                    if enforce_priority_disposal_methods
-                    else (disposal_method_names, configured_disposal_method_names)
-                )
-                for method_names in disposal_groups:
-                    if method_names is None:
-                        continue
-                    for method_name in method_names:
+                # Establish book ownership of overlaps before placing spell-only names.
+                if configured_disposal_method_names is not None:
+                    for method_name in configured_disposal_method_names:
                         if (
                                 method_name in binding_profile.method_names
                                 and method_name not in resolved_disposal_method_names
                         ):
                             resolved_disposal_method_names.append(method_name)
+                spell_position = len(resolved_disposal_method_names) if enforce_priority_disposal_methods else 0
+                if disposal_method_names is not None:
+                    for method_name in disposal_method_names:
+                        if (
+                                method_name in binding_profile.method_names
+                                and method_name not in resolved_disposal_method_names
+                        ):
+                            resolved_disposal_method_names.insert(spell_position, method_name)
+                            spell_position += 1
             fingerprint: str = Bind.sha256_profile(
                 binding_profile,
                 spellframe=spellframe,

@@ -80,7 +80,7 @@ def test_real_compiled_disposal_uses_established_order(
         family: str, priority: bool, overrides: bool,
 ) -> None:
     """Cold and repeated melds carry bind policy into stored instances and actual ordered cleanup."""
-    expected = ["flush", "close", "stop"] if priority else ["close", "stop", "flush"]
+    expected = ["flush", "close", "stop"] if priority else ["stop", "flush", "close"]
     with configured_book(["flush", "close"], priority) as book:
         leaf_id = book.bind(
             spell=DisposalLeaf,

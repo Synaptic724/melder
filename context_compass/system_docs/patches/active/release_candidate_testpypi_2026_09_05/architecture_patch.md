@@ -10,22 +10,24 @@ advancement is an owner-selected promotion, never automatic mirroring of preprod
 
 ## Boundaries and invariants
 - Shared CI remains read-only and checks every PR to the four supported destination branches.
-- release_candidate accepts only this repository's preprod; prod accepts only release_candidate.
-- Candidate qualification runs only on the real release_candidate branch after shared CI succeeds.
-- Only the TestPyPI upload job uses the testpypi environment and its OIDC publication permission.
+- release_candidate accepts this repository's preprod and reviewed release-fix/* preparation PRs;
+  prod accepts only release_candidate. Carry candidate fixes/version preparation back to dev.
+- Candidate PRs receive shared CI. Candidate pushes run package qualification without another full suite.
+- Only the TestPyPI upload job uses the pypitest environment and its OIDC publication permission.
 - Candidate identity includes repository, commit, complete Git tree, package version, workflow run
   and attempt, and the exact wheel/sdist filenames, lengths, and SHA256 hashes.
 - TestPyPI installation resolves the exact version and verifies downloaded bytes against that record.
-- Only successful Linux/Windows installed-package checks produce a retained qualified artifact.
-- Production chooses a successful candidate run once, then pins that run/attempt for all later jobs.
-- The candidate tree must equal the final prod tree. A merge-commit SHA may differ without changing
-  any source, configuration, or workflow input; different trees require new qualification.
-- Final publication reruns full validation/build, verifies the retained candidate files, and publishes
-  those files after checking live candidate/tag/prod identity. Earlier CI never replaces final tests.
+- Only successful Linux/Windows installed-package checks produce the candidate-ready result.
+- Prod PR checks require successful candidate qualification of the exact source head and matching tree.
+- Final publication verifies that its prod merge came from that qualified candidate tree, then retains
+  the existing fresh tests/build and live tag/prod guards. It publishes its own freshly verified files;
+  no claim is made that changing rcN to final or rebuilding a package preserves candidate bytes.
 
 ## Version contract
-Recommended/default mode stages the intended final package version on TestPyPI. The production
-upload uses identical bytes. Actual rc1/rc2 package versions cannot be silently renamed to final.
+Use the version explicitly committed in __version__.py; never rewrite it implicitly in CI. Stable
+versions and rcN candidates are supported. Version changes require matching regenerated assets.
+Finalization from rcN to final is a reviewed release-fix/* PR on the frozen branch; run this same
+TestPyPI workflow for the final-version candidate before promotion. No candidate-version bypass.
 A reused TestPyPI filename with different bytes refuses qualification; changes require a new
 version. An existing identical upload may be reused only after every remote file digest is checked.
 
@@ -43,5 +45,5 @@ external setup/validation. Candidate artifacts are retained in GitHub rather tha
 as permanent storage.
 
 ## Coverage
-This task owns branch routing, candidate qualification, final provenance gates, focused regression
+This task owns branch routing, candidate qualification, a small source-provenance gate, focused regression
 tests, and the operator guide. No runtime subsystem architecture or public Melder API changes.

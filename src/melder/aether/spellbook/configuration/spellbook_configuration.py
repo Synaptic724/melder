@@ -1133,13 +1133,14 @@ class SpellbookConfiguration(Cleanable):
         Store the disposal-method group priority and return this configuration.
 
         Args:
-            enabled: True requests matching book methods before spell-specific
-                methods, preserving the book's order. False (the configuration
-                default) requests spell-specific methods first; it does not
-                disable the book's contribution.
+            enabled: True places matching book methods before spell-only methods.
+                False (the configuration default) places the book block last;
+                it does not disable the book's contribution. In both modes,
+                shared names occur only in the book block, in configuration order.
 
         Contract:
             - Stages policy only; does not match methods or invoke disposal.
+            - Both groups keep their own order; shared names belong to the book.
             - May be changed during assembly; the existing freeze boundary seals it.
             - Bool type checking occurs during validate/finalize, without coercion.
 

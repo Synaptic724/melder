@@ -23,8 +23,10 @@ Preserve class-profile-only matching, missing-name omission, and existing bindin
 No set/tuple compatibility wrapper or broader factory/instance matching is added.
 
 ## Dependencies and ordering
-False walks spell names then book names. True walks book names then spell names. Within either
-group, supplied order wins. Keep only names in the existing profile and not already in the result.
+The matching book block owns shared names in both modes and keeps configuration order.
+False places spell-only names before it; True places spell-only names after it. Each matching
+name occurs once, and the spell-only block keeps its supplied order. Build one result list:
+book names first, then insert distinct spell-only names at the chosen block boundary.
 Hash that exact result before Spell construction; do not remove disposal from the SHA input.
 
 ## Validation

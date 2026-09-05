@@ -81,13 +81,32 @@ Message format (append-only; delete after consumption)
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: checked_in -->
-| codex_1 | codex | 2026-09-05T09:29:27Z | 2026-09-05T10:10:55Z | active |
-| codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-05T09:49:19Z | active |
-| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-05T10:25:12Z | active |
+| codex_1 | codex | 2026-09-05T11:28:11Z | 2026-09-05T11:49:24Z | active |
+| codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-05T11:47:57Z | active |
+| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-05T11:34:57Z | active |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages
 <!-- BEGIN USER-DEFINED: messages -->
+- TO: codex_2
+  FROM: codex_1
+  DATETIME: 2026-09-05T11:49:24Z
+  TYPE: NOTICE
+  CLAIM: Owner requested remaining ordered-disposal implementation. I will modify three
+    Crystallizer files, focused tests, and disposal docs/descriptors, then regenerate source
+    assets and LLM corpora. Existing generated proofs will become stale during this work.
+    Please preserve these changes and avoid a competing asset regeneration while this lane runs.
+  EVIDENCE: tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md
+  ACK_REQUESTED: false
+- TO: workflows_1
+  FROM: codex_1
+  DATETIME: 2026-09-05T11:49:24Z
+  TYPE: NOTICE
+  CLAIM: Ordered-disposal replay/docs implementation is active under owner instruction.
+    Source/tests will move and final build assets/corpora will be regenerated at completion.
+    Current checkout is not yet final release-candidate evidence for this feature.
+  EVIDENCE: tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md
+  ACK_REQUESTED: false
 <!-- END USER-DEFINED: messages -->
 
 ## Notes

@@ -74,15 +74,17 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
+- NEW MESSAGE for codex_2 (from codex_1, 2026-09-05T11:49:24Z)
+- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-05T11:49:24Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| release_candidate_testpypi | in_progress | discovery | codex | workflows_1 | none | Define candidate identity and consume patch contracts. | Full preprod CI plus a frozen, TestPyPI-qualified release candidate. | Contract maps to local implementation and validation. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T10:25:12Z | REQUIRED |
-| readthedocs_documentation | in_progress | implementation | codex | codex_2 | none | Revise capstone modules, typed consumer, and binding explanation. | Runnable beginner application with accurate self-mediated binding. | Capstone runs and revised pages/downloads validate. | tickets/tasks/2026-09-04_rtd_beginner_content_task.md | 2026-09-05T10:09:37Z | REQUIRED |
-| ordered_spell_disposal_contract | in_progress | implementation | codex | codex_1 | none | Prepare and implement Creations direct-list storage. | Compiler verified; preserve ordered metadata through registration and transfer. | Real disposal order and transfer tests pass. | tickets/tasks/2026-09-04_ordered_disposal_creations_task.md | 2026-09-05T10:10:55Z | REQUIRED |
+| release_candidate_testpypi | review | handoff | codex | workflows_1 | First hosted/OIDC run awaits owner rollout. | Owner commits reviewed workflows with current assets and promotes to release_candidate. | Slim TestPyPI workflow and pypitest environment locally verified. | Hosted candidate succeeds and owner accepts the result. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T11:34:57Z | REQUIRED |
+| readthedocs_documentation | review | handoff | codex | codex_2 | none | Owner pushes feature candidate; verify RTD build and remaining S9 gates. | Restored TYPE_CHECKING example and passing docs/asset checks. | Hosted and final combined checks qualify the selected release candidate. | tickets/tasks/2026-09-04_rtd_beginner_content_task.md | 2026-09-05T11:47:57Z | REQUIRED |
+| ordered_spell_disposal_contract | in_progress | implementation | codex | codex_1 | none | Complete ordered crystal capture/replay under clarified book policy. | Book-owned overlap correction verified by 2,807 tests. | Replay preserves names and joins newly bound members. | tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md | 2026-09-05T11:49:24Z | REQUIRED |
 | first_public_release_notes | review | handoff | cowork | codex_1 | none | Review and commit the PyPI-portable README links plus selective LLM other-corpus regeneration. | All README repository routes use absolute GitHub prod links and generated proofs pass. | Owner confirms the public routes and accepts the release-documentation change. | tickets/tasks/2026-08-30_craft_first_public_release_notes_task.md | 2026-09-01T00:56:59Z | REQUIRED |
 | regenerate_0_2_0_release_assets | review | handoff | cowork | codex_1 | none | Review the eight-file generated diff, then commit and push through the normal branch lane. | Version 0.2.0 generated assets pass both exact CI checks. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-30_regenerate_0_2_0_release_assets_task.md | 2026-08-30T22:47:20Z | REQUIRED |
 | llm_support_compilation_pipeline | review | handoff | cowork | codex_1 | none | Review generated LLM assets and separated workflow gates; confirm acceptance. | Deterministic three-corpus LLM assets and separated src/repo asset workflows. | Owner confirms acceptance for story/task closure and artifact promotion. | tickets/tasks/2026-08-30_implement_llm_support_compilation_pipeline_task.md | 2026-08-30T22:32:04Z | REQUIRED |

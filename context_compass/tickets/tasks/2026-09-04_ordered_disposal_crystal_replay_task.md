@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-persistence
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_persistence_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T22:06:16Z
+- Updated: 2026-09-05T11:49:24Z
 
 ## Objective
 Preserve the final method-list order in SpellCrystal and all existing active/staged
@@ -34,9 +34,10 @@ restore and graft paths, using the already established configuration and binding
 - Out of scope: new loader architecture, ownership-transfer policy, broader binding families.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested a separate persistence task after the producer/runtime phases.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Owner requested implementation of all remaining replay, docs/assets, and
+  final verification pieces. Preserve existing policy, public verbs, and unrelated actor changes.
 
 ## Required Reading and Evidence
 Navigate the Crystallizer component and graph rows, then read implementations in full before edits.
@@ -73,7 +74,9 @@ Order-preserving crystal capture/replay and source-backed identity/selection beh
 - Focused test additions within the existing Crystallizer hierarchy when necessary.
 
 ## Validation
-- Not run; ticket only. Use a verified supported interpreter.
+- Diagnostic run: two current-behavior cases pass, proving the same/different-host discrepancy.
+  This is a reproduced defect, not successful desired replay validation.
+- Persistence source edits and full replay tests: Not run/pending the owner policy decision.
 - Same recorded configuration -> same final ordered methods and appropriate new-world identities.
 - Exercise both active and inactive members and all selected/parked/merge forwarding paths.
 - Verify resulting cleanup calls, not only persisted list equality.
@@ -94,10 +97,11 @@ an evidenced data question, not a reason for an invented fallback or blanket ID 
 - [ ] Documentation task unblocked; owner accepts closure.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false at ticket creation
-- ARTIFACT_PATHS: none yet; consume actual persistence/code-description patches first
-- DISPOSITION: promote_to_documentation
-- CLEANUP_TRIGGER: accepted final doc promotion/closure
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - `artifacts/2026-09-05_disposal_graft_policy_probe.py`
+- DISPOSITION: delete_on_close
+- CLEANUP_TRIGGER: accepted closure; replace diagnostic expectations with approved regression behavior first
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -149,7 +153,129 @@ Record exact payload/host conditions and identity evidence before choosing a rep
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:54:45Z
+  TYPE: PLAN
+  CLAIM: Begin ordered capture/replay after 2,797 runtime checks and 59 configuration
+    transport/default checks. Current source sizes are SpellCrystal 1,162 lines, RestoreEngine
+    2,669, and GraftRunner 645. Same-policy and differing-host identity behavior require direct proof.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_disposal_configuration_roundtrip_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+  IMPACT: No persistent identity-policy change is implied by the completed runtime work.
+  NEXT: Read the capture/replay implementations and existing real restore/graft setup.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:54:45Z
+  TYPE: FACT
+  CLAIM: Full GraftRunner read confirms an identity seam: selected bind resolves its returned
+    new SHA, but subsequent parking searches by recorded selected SHA. Merge adoption likewise
+    searches the recorded SHA. Host configuration may change resolved disposal order at bind,
+    making those identities different. Same-policy versus changed-host behavior must be reproduced
+    before choosing a mapping or policy override. No persistence source has been edited.
+  EVIDENCE:
+  - `src/melder/crystallizer/crystal_loader_system/graft_runner.py:226-326`
+  - `src/melder/crystallizer/crystal_loader_system/graft_runner.py:371-554`
+  IMPACT: This is the task's explicit policy/identity escalation boundary, not a missing None guard.
+  NEXT: Run a minimal real Bind/GraftRunner diagnostic isolating host-policy changes from capture sorting.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:08:48Z
+  TYPE: MEASURE
+  CLAIM: Real Bind/GraftRunner diagnostic isolates target policy from capture sorting.
+    Same policy [close, flush] preserves SHA and grafts one selected plus one parked member.
+    Target book [flush, close] with priority=True changes the selected SHA, binds that member,
+    then skips its sibling with anchor_index_unresolvable_member_skipped. No persistence source
+    was changed. Both diagnostic assertions passed because they describe current behavior only.
+  EVIDENCE:
+  - `context_compass/artifacts/2026-09-05_disposal_graft_policy_probe.py:18-88`
+  - Command: .venv_new/Scripts/python.exe -m pytest -o pythonpath=src context_compass/artifacts/2026-09-05_disposal_graft_policy_probe.py -q -s -p no:cacheprovider --tb=short
+  - Result: 2 passed in 0.30s; matching host bound=1/parked=1/no shortfalls;
+    changed host bound=1/parked=0/anchor_index_unresolvable_member_skipped.
+  - GraftRunner complete-read SHA256: e675056c3297eb0e3b203a83d430075b223348571831d8a24a54bfdd14741cf6.
+  IMPACT: The task's explicit host-policy/identity escalation gate is reached.
+  NEXT: Owner decides whether target book policy wins and graft follows returned live spell IDs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:08:48Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Recommend honoring receiving-book policy (normal bind semantics) and carrying the
+    resulting live identity through fresh-graft parking and merge-selection adoption. Do not
+    force recorded SHAs onto differently configured Spells or silently override host policy.
+  EVIDENCE:
+  - `src/melder/crystallizer/crystal_loader_system/graft_runner.py:371-554`
+  - `context_compass/artifacts/2026-09-05_disposal_graft_policy_probe.py:18-88`
+  IMPACT: Requires the owner decision mandated by this task before ID mapping is implemented.
+  NEXT: Await owner approval of target-policy/new-ID behavior.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:08:48Z
+  TYPE: UNKNOWN
+  CLAIM: codex_2 reports a separate prebuilt AppConfig instance DI failure at plan_group
+    (not callable), using class bindings as the verified capstone path. Not investigated here.
+  EVIDENCE:
+  - Incoming notice from codex_2, citing artifacts/2026-09-05_beginner_capstone_revision.md:28-40.
+  IMPACT: Preserve this reported issue for later assessment; do not fold it into disposal/graft work.
+  NEXT: Keep the current lane on the reproduced graft policy decision.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-05T11:37:10Z
+  TYPE: DECISION
+  CLAIM: Owner clarified book authority and requested implementation: shared names belong
+    to the book block regardless of placement; False places it last, True first. The producer
+    prerequisite is corrected and 2,807 selected tests pass, including same-policy order/SHA
+    idempotence. Receiving-book policy must not be bypassed to preserve a recorded ordering.
+  EVIDENCE:
+  - Owner clarification and implementation approval, active conversation, 2026-09-05.
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md`
+  IMPACT: Policy is settled; this task can resume scoped public-verb replay and follow the live
+    binding identities it creates. No global ID mutation or per-Meld compatibility path is added.
+  NEXT: Read complete SpellCrystal/RestoreEngine/GraftRunner source and author replay contracts
+    before implementing ordered capture, all forwarding paths, and local anchor/adoption joins.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:49:24Z
+  TYPE: PLAN
+  CLAIM: Owner explicitly requested remaining pieces. Begin three-file crystal/replay work,
+    then docs/assets and final verification. Current sizes are SpellCrystal 1,162 lines,
+    RestoreEngine 2,669, and GraftRunner 645. Other agents have active workflow/docs/assets changes.
+  EVIDENCE:
+  - Owner instruction, active conversation, 2026-09-05.
+  - `context_compass/attention_board.md`
+  IMPACT: All edits stay within the epic; no commit/push or unrelated cleanup. Coordination
+    notices sent to codex_2 and workflows_1 before making generated proofs stale.
+  NEXT: Read the three implementations completely, record the exact replay correction, and stage tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:49:24Z
+  TYPE: FACT
+  CLAIM: Complete GraftRunner and SpellCrystal reads confirm the focused correction. Crystal
+    capture sorts the live names; its existing serialization boundary already copies values.
+    Fresh graft obtains the new selected SHA but parks by the old one. Merge ignores bind_inactive's
+    result then looks up the recorded SHA for adoption. Park/merge also omit disposal arguments.
+  EVIDENCE:
+  - `src/melder/crystallizer/crystals/spell_crystal.py:143-339`
+  - `src/melder/crystallizer/crystals/spell_crystal.py:644-661`
+  - `src/melder/crystallizer/crystal_loader_system/graft_runner.py:226-554`
+  IMPACT: Use existing ordered value capture and local returned identities, not a global alias
+    registry, private index mutation, or new resolution check. Preserve public per-verb admission.
+  NEXT: Complete RestoreEngine reading to settle active/staged identity and selection joins.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-No implementation yet. Configuration and final Spell values are separate records. Preserve
-their established order and source; inspect host-policy/recorded-ID interactions before graft edits.
-Next: `tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md`.
+READY after receiving-book ordering approval and the verified overlap correction. No persistence source edits.
+Configuration transport is verified separately (59 tests). Full GraftRunner was read and its SHA
+is recorded above. SpellCrystal/RestoreEngine still require complete reads before their edits.
+The temporary 88-line diagnostic uses real source binds and GraftRunner with recorded-value inputs,
+deliberately excluding capture sorting. Same host policy succeeds; changed host policy creates a new
+SHA and causes sibling parking to skip on the old-ID lookup. Its passing assertions describe the bug.
+Recommendation: target policy wins; follow live IDs returned by bind/park for anchors and adoption.
+Next: author persistence contracts, implement capture/order forwarding and local live-binding joins,
+replace the diagnostic with desired-behavior regressions, then validate replay and regenerate docs/assets.

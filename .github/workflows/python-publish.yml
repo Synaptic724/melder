@@ -22,6 +22,9 @@ jobs:
     if: github.event_name != 'release' || !github.event.release.prerelease
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -31,6 +34,10 @@ jobs:
           python-version: "3.14"
       - name: Authorize the selected final release
         run: python .github/scripts/ci_policy.py release-head
+      - name: Require successful TestPyPI qualification of the candidate source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
 
   hygiene:
     name: Release / repository-hygiene
@@ -68,6 +75,9 @@ jobs:
     needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
     environment:
       # Only this job receives the environment-scoped PYPI_API_TOKEN.
       name: pypi
@@ -88,6 +98,10 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
         run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+      - name: Recheck exact-source candidate qualification
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
       - name: Final tag and prod check immediately before publication
         # This runs AFTER environment approval and fails if the release tag or
         # prod moved while tests, builds, or a human approval were pending.

@@ -24,7 +24,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     """CI must run for each protected destination and aggregate every mandatory job."""
     document = workflow("ci.yml")
     events = document["on"]
-    assert set(events["pull_request"]["branches"]) == {"dev", "preprod", "prod"}
+    assert set(events["pull_request"]["branches"]) == {"dev", "preprod", "release_candidate", "prod"}
     assert "edited" in events["pull_request"]["types"]
     assert "paths" not in events["pull_request"]
     assert "paths-ignore" not in events["pull_request"]
@@ -84,7 +84,8 @@ def test_publication_repeats_validation_and_checks_prod_last() -> None:
     assert publisher["environment"]["name"] == "pypi"
     steps = publisher["steps"]
     assert steps[-2]["run"] == "python .github/scripts/ci_policy.py release-head"
-    assert steps[-3]["run"].startswith("python .github/scripts/verify_distributions.py")
+    assert steps[-3]["run"] == "python .github/scripts/check_candidate_run.py"
+    assert steps[-4]["run"].startswith("python .github/scripts/verify_distributions.py")
     assert steps[-1]["uses"].startswith("pypa/gh-action-pypi-publish@")
     assert "skip-existing" not in steps[-1]["with"]
     uploaded = jobs["release-build"]["with"]["artifact-name"]
@@ -102,14 +103,15 @@ def test_package_verification_precedes_artifact_upload() -> None:
     steps = document["jobs"]["build"]["steps"]
     assert "environment" not in document["jobs"]["build"]
     commands = [step.get("run", "") for step in steps]
+    normalize = next(index for index, command in enumerate(commands) if "normalize_sdist.py" in command)
     verify = next(index for index, command in enumerate(commands) if "verify_distributions.py" in command)
     smoke = next(index for index, command in enumerate(commands) if "smoke_wheel.py" in command)
-    assert verify < smoke < len(steps) - 1
+    assert normalize < verify < smoke < len(steps) - 1
     assert " -I " in commands[smoke]
     assert steps[-1]["uses"].startswith("actions/upload-artifact@")
 
 
-@pytest.mark.parametrize("branch", ["dev", "preprod", "prod"])
+@pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])
 def test_rulesets_require_the_real_final_check_and_preserve_promotion_history(branch: str) -> None:
     """Ruleset payloads must name the actual aggregate check and block direct destructive updates."""
     root = pathlib.Path(__file__).resolve().parents[3]
@@ -126,3 +128,55 @@ def test_rulesets_require_the_real_final_check_and_preserve_promotion_history(br
     if branch != "dev":
         assert rules["pull_request"]["parameters"]["allowed_merge_methods"] == ["merge"]
         assert "required_linear_history" not in rules
+
+
+def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy: ModuleType) -> None:
+    """Candidate pushes stage one exact build, then run consumer probes without a duplicate source suite."""
+    document = workflow("release-candidate.yml")
+    assert set(document["on"]) == {"push", "workflow_dispatch"}
+    assert document["on"]["push"] == {"branches": ["release_candidate"]}
+    assert document["permissions"] == {"contents": "read"}
+    assert document["concurrency"]["cancel-in-progress"] == "false"
+    jobs = document["jobs"]
+    assert jobs["build"]["uses"] == "./.github/workflows/build-distributions.yml"
+    assert all(job.get("uses") != "./.github/workflows/test-runtime.yml" for job in jobs.values())
+    publisher = jobs["publish"]
+    assert set(publisher["needs"]) == {"authorize", "build"}
+    assert publisher["environment"]["name"] == "pypitest"
+    assert publisher["permissions"] == {"contents": "read", "id-token": "write"}
+    upload = next(step for step in publisher["steps"]
+                  if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
+    assert upload["with"]["repository-url"] == "https://test.pypi.org/legacy/"
+    assert upload["with"]["packages-dir"] == "upload/"
+    assert set(upload["with"]).isdisjoint({"password", "user", "skip-existing"})
+    assert upload["if"] == "steps.upload.outputs.upload-required == 'true'"
+    for name, job in jobs.items():
+        if name != "publish":
+            assert "environment" not in job
+            assert job.get("permissions", {}).get("id-token") != "write"
+    install = jobs["install"]
+    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
+    assert install["env"]["PYTHON_GIL"] == "0"
+    artifact = jobs["build"]["with"]["artifact-name"]
+    for job in (publisher, install):
+        download = next(step for step in job["steps"]
+                        if step.get("uses", "").startswith("actions/download-artifact@"))
+        assert download["with"]["name"] == artifact
+    assert "github.run_attempt" in artifact
+    ready = jobs["package-ready"]
+    assert ready["if"] == "always()"
+    assert set(ready["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
+    assert ready["steps"][-2]["run"] == "python .github/scripts/ci_policy.py candidate-ready"
+    assert ready["steps"][-1]["run"] == "python .github/scripts/ci_policy.py candidate-head"
+
+
+def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
+    """The existing required merge check and both publication boundaries must enforce candidate provenance."""
+    branch = workflow("ci.yml")["jobs"]["branch-policy"]
+    assert branch["permissions"]["actions"] == "read"
+    proof = branch["steps"][-1]
+    assert proof["run"] == "python .github/scripts/check_candidate_run.py"
+    assert proof["if"] == "github.base_ref == 'prod' || github.ref == 'refs/heads/prod'"
+    release = workflow("python-publish.yml")["jobs"]["release-gate"]
+    assert release["steps"][-1]["run"] == "python .github/scripts/check_candidate_run.py"
+    assert release["permissions"]["actions"] == "read"

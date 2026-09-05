@@ -20,12 +20,14 @@
 ## Interface and boundary deltas
 - Register `enforce_priority_disposal_methods` as bool, default False before any validation.
 - Add `with_enforce_priority_disposal_methods(enabled=True) -> SpellbookConfiguration`.
-- True requests matching book names first; False requests spell-specific names first.
+- True places the complete matching book block first; False places it last.
+- Book order owns overlaps in both modes; only spell-only names form the other block.
 - The setter stores policy only. It neither matches methods nor invokes disposal.
 - Raw and cleared configurations expose False through the ordinary property API.
 - The flag remains configurable during assembly; freeze prevents subsequent writes.
 - Spellbook forwards explicit names, configured names, and priority separately to Bind.
-- Bind walks the preferred group first and retains each matching name once in an owned list.
+- Bind establishes the matching book block, then inserts distinct spell-only names before
+  or after it according to priority. One owned result list is hashed and retained by Spell.
 - Spell retains that resolved list; its optional constructor default creates a fresh empty list.
 - Inspector parity uses resolved ordered names; the hash helpers do not apply book policy.
 - Compiler runtime records, generalized steps, many-only metadata, and solo namespaces borrow

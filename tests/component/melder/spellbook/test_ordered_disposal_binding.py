@@ -93,7 +93,7 @@ def configured_book(
 
 
 @pytest.mark.parametrize("priority,expected", [
-    (False, ["close", "stop", "flush"]),
+    (False, ["stop", "flush", "close"]),
     (True, ["flush", "close", "stop"]),
 ])
 def test_binding_combines_groups_in_priority_order(priority: bool, expected: list[str]) -> None:
@@ -177,7 +177,7 @@ def test_staged_binding_preserves_its_own_order_and_index_selection(
             book.conjure(dynamic=True)
         staged_id = book.bind_inactive(
             spell=OrderedDisposalService, spell_index=active.spell_index, existence="many",
-            disposal_method_names=["stop"],
+            disposal_method_names=["flush", "stop", "flush"],
         )
         staged = book._get_owned_spell(staged_id)
         assert staged is not None
@@ -197,7 +197,7 @@ def test_fluent_binder_forwards_explicit_disposal_names(priority: bool) -> None:
         binder = SpellBinder(book)
         try:
             spell_id = binder.bind(OrderedDisposalService).with_kwargs(
-                disposal_method_names=["stop", "close"],
+                disposal_method_names=["flush", "stop", "close", "flush"],
             ).finalize()
         finally:
             binder.cleanup()
@@ -241,7 +241,7 @@ def test_resolved_order_changes_sha_but_unmatched_names_do_not() -> None:
 
 
 @pytest.mark.parametrize("priority,expected", [
-    (False, ["close", "stop", "flush"]),
+    (False, ["stop", "flush", "close"]),
     (True, ["flush", "close", "stop"]),
 ])
 def test_bound_order_reaches_real_cleanup(priority: bool, expected: list[str]) -> None:
@@ -254,6 +254,77 @@ def test_bound_order_reaches_real_cleanup(priority: bool, expected: list[str]) -
         instance = conduit.meld(spell_id=spell_id)
         conduit.permanent_cleanup()
         assert instance.calls == expected
+
+
+@pytest.mark.parametrize("priority", [False, True])
+@pytest.mark.parametrize("spell_names", [
+    ["close", "flush"],
+    ["flush", "close"],
+    ["close", "missing", "flush", "close"],
+])
+def test_book_owns_shared_name_order_and_fingerprint(
+        priority: bool,
+        spell_names: list[str],
+) -> None:
+    """Shared names follow the book block, so their explicit order cannot change the bind SHA."""
+    with configured_book(["flush", "close", "flush"], priority) as book:
+        spell_id = book.bind(
+            spell=OrderedDisposalService, existence="many", disposal_method_names=spell_names,
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == ["flush", "close"]
+        assert spell_id == Bind.spell_id_inspector(
+            OrderedDisposalService, spell_name=spell.spell_name, existence=spell.existence,
+            disposal_method_names=["flush", "close"],
+        )
+
+
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "close", "flush"]),
+    (True, ["flush", "stop", "close"]),
+])
+def test_spell_only_block_preserves_order_and_deduplicates(
+        priority: bool,
+        expected: list[str],
+) -> None:
+    """Multiple spell-only names retain relative order when inserted before or after the book."""
+    with configured_book(["missing", "flush", "flush"], priority) as book:
+        spell_id = book.bind(
+            spell=OrderedDisposalService, existence="many",
+            disposal_method_names=["flush", "stop", "close", "stop", "missing"],
+        )
+        conduit = book.conjure()
+        instance = conduit.meld(spell_id=spell_id)
+        conduit.permanent_cleanup()
+        assert instance.calls == expected
+
+
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "flush", "close"]),
+    (True, ["flush", "close", "stop"]),
+])
+def test_rebinding_resolved_names_under_same_policy_is_idempotent(
+        priority: bool,
+        expected: list[str],
+) -> None:
+    """Passing the final list back into a new bind preserves both order and structural identity."""
+    with configured_book(["flush", "close"], priority, frame="original-order") as book:
+        original_id = book.bind(
+            spell=OrderedDisposalService, existence="many", disposal_method_names=["close", "stop"],
+        )
+        original = book.find_spell_by_id(original_id)
+        assert original is not None
+        with configured_book(["flush", "close"], priority, frame="replayed-order") as replayed:
+            replayed_id = replayed.bind(
+                spell=OrderedDisposalService, existence="many",
+                disposal_method_names=original.disposal_method_names,
+            )
+            restored = replayed.find_spell_by_id(replayed_id)
+            assert restored is not None
+            assert restored.disposal_method_names == expected
+            assert original.disposal_method_names == expected
+            assert replayed_id == original_id
 
 
 def test_real_bind_fingerprint_is_stable_across_hash_seeds() -> None:

@@ -7,7 +7,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-03T01:05:17Z
-- Updated: 2026-09-05T09:40:08Z
+- Updated: 2026-09-05T11:37:10Z
 - Target Window: 2026-Q3
 - Related Program/Initiative: Melder public lifecycle contract
 
@@ -20,8 +20,8 @@ The declared order therefore does not survive to execution or restore.
 
 Current configuration-to-Spell mechanics are recorded in the Phase 1 task. The owner
 has now selected list storage and composition of book and explicit per-spell names.
-enforce_priority_disposal_methods defaults to False; True puts matching book methods
-first in configuration order, including names also supplied by the Spell.
+enforce_priority_disposal_methods defaults to False (book block last); True puts that
+block first. Shared names belong to the book block in BOTH modes, in configuration order.
 Each group's supplied order is preserved and the resolved list is built once per new
 Spell. Downstream execution and persistence follow in separate phases.
 
@@ -97,7 +97,7 @@ restore without adding a new abstraction or weakening reverse dependency teardow
 - List storage and book-first/book-last composition are the current owner direction.
 - Disposal metadata is established once per Spell; arbitrary internal mutation is out of scope.
 - Existing method-failure behavior stops the current object's chain at the first error.
-- Current executed scope includes configuration and the owner-requested Bind/Spell successor.
+- Current executed scope includes configuration, Bind/Spell, and compiler/Creations propagation.
   Later implementation still follows its task-level entry gates.
 
 ## Dependencies / External References
@@ -111,8 +111,8 @@ The owner selected the following sequence on 2026-09-04. It supersedes earlier
 whole-pipeline execution proposals while retaining their findings as reference.
 
 1. Configuration, Bind, and Spell (active).
-   - Combine both lists; enforce_priority_disposal_methods defaults False and opts
-     into book-first order when True.
+   - Combine both lists; enforce_priority_disposal_methods defaults False (book last)
+     and puts the book block first when True. Book order owns shared names in both modes.
    - Match into one list, skipping absent names and retaining each name's first occurrence.
    - Spell owns the list; SHA consumes its order at the existing bind boundary.
    - Read consumer interfaces only to establish the values the next phases require.
@@ -132,7 +132,7 @@ cleanup-failure policy, and private-attribute mutation defenses are not expanded
 
 ## Milestones (Track Progress)
 - [ ] Phase 1: Configuration/Bind/Spell contract established and implemented.
-- [ ] Phase 2: Compiler/Creations propagation and method invocation verified.
+- [x] Phase 2: Compiler/Creations propagation and method invocation verified (in review).
 - [ ] Phase 3: Persistence/replay order, documentation, and generated assets verified.
 
 ## Stories (Required to Complete)
@@ -807,6 +807,63 @@ behavior, future design, and tests actually executed remain distinct.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:33:58Z
+  TYPE: MEASURE
+  CLAIM: Runtime phase is implemented and in review: seven compiler files plus Creations,
+    with 51 new regression cases. Final selected Spellbook/compiler/Creations/conduit suite
+    passes 2,797 tests on Windows 3.14t. Real runtime checks caught two inline emitted copies
+    beyond the original metadata inventory; both were removed under the caller contract.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+  IMPACT: Established disposal order/reference now reaches real cleanup, including repeated
+    calls, override variants, and transfer. No new locks or disposal-loop rewrite. Persistence
+    order, full configuration transport, canonical docs, and final assets remain pending.
+  NEXT: Verify configuration round trips, then implement the crystal/replay task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:08:48Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Configuration transport is verified (59 focused tests, no production correction).
+    The real graft diagnostic reaches the planned policy gate: changed target-book disposal
+    order changes the bind SHA, while sibling parking still looks up the recorded SHA.
+    Same-policy graft succeeds; changed policy binds the selected member and skips its sibling.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_disposal_configuration_roundtrip_task.md`
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md`
+  IMPACT: Replay task is blocked on explicit target-policy/new-ID approval. No persistence
+    source changes or invented ID translation have been made.
+  NEXT: Owner decides whether grafting should retain target policy and follow returned live IDs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:28:11Z
+  TYPE: DECISION
+  CLAIM: Owner clarified and approved that configured book names own overlaps in both modes.
+    False means spell-only names then the complete book block; True means book block then
+    spell-only names. Each block preserves its own supplied order; duplicates execute once.
+    This supersedes earlier False-mode spell-first overlap retention, not the binding boundary.
+  EVIDENCE:
+  - Owner clarification and implementation approval, active conversation, 2026-09-05.
+  IMPACT: Briefly reopen the producer task to correct grouping and prove the runtime result
+    before completing replay. Receiving-book composition remains authoritative at new binds.
+  NEXT: Complete the focused producer correction under its existing task and patch contracts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:37:10Z
+  TYPE: MEASURE
+  CLAIM: Clarified overlap composition is implemented and passes 2,807 selected tests.
+    Book names retain one ordered block in both modes; spell-only names go before/after it.
+    Runtime propagation needs no source correction. Persistence source and final assets remain pending.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md`
+  IMPACT: Producer is in review; receiving-book policy is settled and replay is ready to resume.
+  NEXT: Complete ordered crystal capture/replay, then the existing documentation/assets task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ### Current source contact inventory
 
 Configuration, bind, and Spell ownership:
@@ -858,15 +915,17 @@ Generated contacts, never hand-edited:
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Current resume route: `tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md` (review).
-Configuration and Bind/Spell producers are implemented. The latest two verification runs
-pass 753 selected tests. Their patch contracts are complete; later consumer/replay contracts
-and implementation remain pending. No commits or pushes were made by this producer slice.
+Current resume route: `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md` (ready).
+Latest ruling: book owns overlap order in both modes; False positions its block last, True first.
+Configuration, producers, compiler/Creations, and configuration transport are verified. Runtime
+verification passes 2,797 selected tests; transport adds a 59-test focused boundary.
+The latest overlap correction passes 2,807 tests. Replay policy is settled; its source is unchanged.
+This agent did not commit/push, but separate commits landed during the work on codex_features2.
 The Implementation Task Sequence above links all nine tasks and their prerequisites under
 three stories. The discovery task remains a review/reference document, not the execution route.
 Ticket-stack creation and structural verification are complete: three stories, nine tasks,
 126 valid file/range references, 61 in-bounds citations, and no dependency cycle.
-Configuration transport, compiler/Creations, persistence, and assets remain pending.
+Persistence, canonical documentation promotion, and final assets remain pending.
 Resume from the routed task after REONBOARD.
 
 Historical producer baseline, replaced by the 2026-09-05 slice: on the first bind, Spellbook selected either
@@ -886,7 +945,7 @@ configured order, including shared names. The Phase 1 task holds examples, the
 four-file producer boundary, and a completed Configuration Change Map covering fluent
 API, Crystallizer transport/reload, and Nexus defaults. Prepare the implementation contract
 before each newly activated component, then follow the dependency chain. Phases 2
-and 3 handle consumption and persistence; configuration and producer implementation have landed locally.
+and 3 handle consumption and persistence; configuration, producers, and runtime propagation are implemented.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

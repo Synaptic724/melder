@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: e3eb770e976f192ab9a7a64e390c445d92dc7bb53af4f81b8881b333cf0b4647
-FILE COUNT: 345
+SOURCE FINGERPRINT: 8a9e936cbdf334eb52913658c2834b5c8386b30c5fd41c704b2adf934d785861
+FILE COUNT: 352
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,34 +64,38 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: e952ae75f49de515979039aada6db83403d036d8d7808a01b823ce51c9660bf0
+CONTENT SHA256: 98c0e5b861c75200b714d60d221d3296ab4b929e7da97eb18b8470da34b38377
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
 
 Contributions enter `dev` through a pull request. Promotion proceeds through
-`dev -> preprod -> prod`, with the merge result checked at every boundary.
+`dev -> preprod -> release_candidate -> prod`, with the merge result checked at every boundary.
 
 ## Required checks
 
 `CI / merge-ready` is the stable status to require in GitHub. It depends on:
 
 - Branch policy: contributions target dev; preprod accepts this repository's dev,
-  and prod accepts this repository's preprod. Forks cannot impersonate promotion
-  branches. Same-repository preprod/prod synchronization PRs may return to dev.
+  release_candidate accepts preprod, and prod accepts release_candidate. Forks
+  cannot impersonate promotion branches. Permanent-branch synchronization PRs
+  may return to dev. Same-repository `release-fix/*` PRs can prepare or fix the
+  frozen candidate; keep their scope narrow and carry fixes back to dev.
 - Source assets: the existing build-asset runner verifies committed manifests.
 - Repository assets: the LLM builder verifies committed bundles and indexes.
 - Repository hygiene: tracked filenames must not collide case-insensitively.
 - Documentation: the shared documentation validation workflow must succeed.
 - Runtime tests: unit, component, and integration tiers on Linux and Windows,
   using Python 3.14t with the GIL disabled in the actual pytest process.
-- Distribution verification for preprod/prod: wheel and sdist boundaries,
+- Distribution verification for preprod/release_candidate/prod: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
+- Prod candidate proof: the exact source head must have successful TestPyPI
+  qualification, a final package version, and the same tree as the merge result.
 
 The final status fails for missing evidence, failure, cancellation, or an
 unexpected skipped job. Only dev intentionally skips distribution building.
 Repository variables cannot disable mandatory asset checks. Helpers remain
-manually runnable but automatic PR/push triggering belongs to `ci.yml`.
+manually runnable. `ci.yml` owns source CI; `release-candidate.yml` owns candidate pushes.
 
 ## Working on a feature
 
@@ -109,8 +113,9 @@ added input files before running the repository builder so its tracked-file
 inventory includes them. Never hand-merge generated bundles. After updating a
 feature from dev, regenerate again when the combined source changed.
 
-CI runs on PR updates, including a changed PR base, and on permanent-branch
-pushes. Heavy CI does not also run on every feature push before its PR. New PR
+CI runs on PR updates, including a changed PR base, and on dev/preprod/prod
+pushes. Candidate pushes run the slim package workflow below. Heavy CI does not
+also run on every feature push before its PR. New PR
 commits supersede old CI runs. Reusable helpers have no concurrency group that
 could accidentally cancel their caller or a final release.
 
@@ -118,7 +123,8 @@ could accidentally cancel their caller or a final release.
 
 Prefer squash for disposable feature branches, and start the next feature from
 current dev. Use merge commits between permanent branches. Do not repeatedly
-squash dev into preprod or preprod into prod.
+squash between the permanent branches. Prod must preserve a normal two-parent
+promotion merge so the final publisher can verify the candidate source.
 
 The supplied dev ruleset requires an up-to-date branch. Promotion rulesets use
 the current PR merge result with the one permitted source branch and merge
@@ -127,6 +133,61 @@ merge commit, which otherwise creates a perpetual merge-back requirement.
 Resolve conflicts on the source branch and rerun CI; carry release/hotfix changes
 back into dev through a reviewed synchronization PR.
 
+## Release candidate and TestPyPI
+
+Select a green preprod revision through a PR into `release_candidate`. Keep
+this branch on one candidate while preprod continues receiving new work.
+Every push to release_candidate runs `release-candidate.yml`; no GitHub Release
+or tag is required. Manual dispatch must select the same branch.
+
+The workflow reuses the package builder, uploads to TestPyPI, then checks a
+fresh installation on Linux and Windows Python 3.14t. It does not run the whole
+source suite again after upload. The probe requires the expected package version,
+metadata, import origin in site-packages, packaged assets, and a small public
+bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
+match this run's built wheel. No editable installation or repository conftest is used.
+
+Use these exact values for the TestPyPI Trusted Publisher:
+
+| Field | Value |
+| --- | --- |
+| Project | `melder` |
+| GitHub owner | `Synaptic724` |
+| Repository | `melder` |
+| Workflow filename | `release-candidate.yml` |
+| GitHub environment | `pypitest` |
+
+Create `pypitest` under repository Settings -> Environments and allow deployments
+only from the branch `release_candidate`. The upload job alone receives
+`id-token: write`. No TestPyPI API token secret is needed with Trusted Publishing.
+The production `pypi` environment and its existing authentication stay separate.
+
+The package version comes from `src/melder/__version__.py`; CI does not rewrite
+it or create version commits. For example, use `0.2.4rc1`, then `0.2.4rc2` for
+changed candidates. Regenerate source and repository assets after version changes.
+The version metadata test accepts the canonical `rcN` suffix.
+The build uses the commit timestamp and normalizes sdist timestamp/ownership
+headers so unchanged package contents do not acquire different hashes on retry.
+
+When finalizing, use a reviewed `release-fix/*` PR from the frozen candidate to
+set the final version, for example `0.2.4`, and regenerate assets. That push runs
+TestPyPI qualification again. Only the final-version candidate may enter prod.
+The final Git tag, for example `v0.2.4`, must match the package version; a tag
+cannot turn an rc1 wheel into a final wheel.
+
+TestPyPI filenames are immutable. A changed package requires a new version.
+An identical retry is verified by filename, size, and hash; a partial upload
+stages only missing files after checking the existing ones. Different remote
+bytes fail rather than being hidden by `skip-existing`. Use **Re-run all jobs**
+for fresh same-run/attempt artifacts. Download retries are bounded for index
+propagation; failed consumer tests are not retried or ignored.
+
+`RC / package-ready` reports explicit success only when authorization, build,
+upload, and both platform probes succeeded. Prod's existing required CI gate
+queries that exact candidate workflow revision; it never substitutes an older
+green run for a newer failed or pending one. The upload/install reports include
+source commit/tree, version, run/attempt, and both distribution hashes.
+
 ## Final publication checks
 
 Publishing a final GitHub release, or manually dispatching the publication
@@ -134,10 +195,12 @@ workflow on prod, starts a fresh qualification chain:
 
 1. Require the event and checkout commit to equal fetched current prod HEAD.
    For release events, also require the live remote tag to resolve to that commit.
+   Verify the prod merge's candidate parent has the same tree and successful
+   TestPyPI qualification for its exact SHA. Direct/squashed prod commits refuse.
 2. Rerun hygiene, both asset checkers, and the complete runtime matrix.
 3. Build and inspect the wheel/sdist and smoke-test an isolated wheel install.
 4. Enter the pypi environment and download this run attempt's verified artifacts.
-5. Recheck distribution identity and the live remote release-tag target, then
+5. Recheck distribution identity and candidate qualification, then the live release tag,
    fetch/check prod again immediately before the PyPI upload action. Annotated
    tags use their peeled target; missing or moved tags refuse publication.
 
@@ -145,6 +208,8 @@ Earlier dev/preprod success does not replace these checks. A prod movement durin
 testing or environment approval refuses publication. GitHub prerelease events do
 not trigger final publication. All publication runs share a serialization group.
 Only the upload job uses the pypi environment and its PYPI_API_TOKEN secret.
+Production builds and validates fresh final distributions; it does not relabel
+or claim byte identity with an earlier rcN package.
 
 Artifacts include the workflow run and attempt in their names. After a failed
 publication, use **Re-run all jobs** to obtain fresh qualification and fresh
@@ -170,6 +235,7 @@ ID rather than creating duplicates. For an initial installation:
 gh api repos/Synaptic724/melder/rulesets
 gh api --method POST repos/Synaptic724/melder/rulesets --input .github/rulesets/dev.json
 gh api --method POST repos/Synaptic724/melder/rulesets --input .github/rulesets/preprod.json
+gh api --method POST repos/Synaptic724/melder/rulesets --input .github/rulesets/release_candidate.json
 gh api --method POST repos/Synaptic724/melder/rulesets --input .github/rulesets/prod.json
 ```
 
@@ -178,12 +244,11 @@ the required status later requires a coordinated ruleset change.
 
 ## Continuous staging and dated candidates
 
-This foundation validates promotion PRs and final publication. The next layer
-can maintain a dev-to-preprod PR automatically using an appropriately scoped
-GitHub App. A dated release must select an explicit green candidate SHA,
-version, artifact hashes, approval, and timestamp; moving preprod must not change
-the scheduled candidate. Candidate-specific routing, retained artifacts, and
-scheduled publication are configured separately before that behavior is enabled.
+Candidate qualification is automated; selection and prod promotion remain
+deliberate PR operations. Automatic dev-to-preprod PR maintenance and dated
+publication are future work. A dated release must select an explicit green
+candidate SHA, version, approval, and timestamp; advancing preprod must not
+change that selected release. No scheduler is enabled by these workflows.
 ================================================================================
 END FILE: .github/BRANCH_WORKFLOW.md
 ================================================================================
@@ -284,8 +349,163 @@ SOURCE ENCODING: utf-8
 END FILE: .github/rulesets/prod.json
 ================================================================================
 ================================================================================
+BEGIN FILE: .github/rulesets/release_candidate.json
+CONTENT SHA256: d8f32e241e82a6c1d04d54f77f01e52f7af7736aa5564db6582dc49ef6fac97b
+SOURCE ENCODING: utf-8
+================================================================================
+{
+  "name": "Melder release candidate promotion",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {"ref_name": {"include": ["refs/heads/release_candidate"], "exclude": []}},
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "pull_request", "parameters": {
+      "allowed_merge_methods": ["merge"],
+      "dismiss_stale_reviews_on_push": false,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "required_review_thread_resolution": true
+    }},
+    {"type": "required_status_checks", "parameters": {
+      "required_status_checks": [{"context": "CI / merge-ready", "integration_id": 15368}],
+      "strict_required_status_checks_policy": false,
+      "do_not_enforce_on_create": false
+    }}
+  ]
+}
+================================================================================
+END FILE: .github/rulesets/release_candidate.json
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/check_candidate_run.py
+CONTENT SHA256: 03172b729fc52ae70f0ed6cb94c9691b7ba325f855a58a35a4c8a3203e2fa691
+SOURCE ENCODING: utf-8
+================================================================================
+"""Require exact-source TestPyPI qualification before prod promotion or publication."""
+
+import json
+import os
+import pathlib
+import re
+import urllib.parse
+import urllib.request
+from collections.abc import Mapping, Sequence
+
+from ci_policy import git_output, object_value, read_event, text_value, validate_route
+from verify_distributions import assignment
+
+
+def commit_id(value: object) -> str:
+    """Require a full Git commit identity before using it as a Git argument or API filter."""
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", value) is None:
+        raise ValueError("Candidate evidence requires a full commit SHA.")
+    return value
+
+
+def positive_integer(value: object) -> int:
+    """Require positive API identifiers/counters, rejecting booleans and string coercion."""
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        raise ValueError("Invalid candidate run identifier or counter.")
+    return value
+
+
+def candidate_source(event_name: str, event: Mapping[str, object], repository: str,
+                     parents: Sequence[str]) -> str:
+    """Find the PR's candidate head or the second parent of a production promotion merge.
+
+    PR identity must describe this repository's release_candidate -> prod route.
+    Production requires the merge-commit route; direct/squashed commits cannot
+    provide candidate provenance and are refused rather than guessed from a branch.
+    """
+    if event_name == "pull_request":
+        pr = object_value(event.get("pull_request"), "pull_request")
+        head = object_value(pr.get("head"), "head")
+        base = object_value(pr.get("base"), "base")
+        head_repo = object_value(head.get("repo"), "head.repo")
+        base_repo = object_value(base.get("repo"), "base.repo")
+        if base.get("ref") != "prod" or base_repo.get("full_name") != repository:
+            raise ValueError("Candidate proof is only valid for this repository's prod PR.")
+        validate_route("prod", text_value(head.get("ref"), "head.ref"),
+                       text_value(head_repo.get("full_name"), "head.repo.full_name"), repository)
+        return commit_id(head.get("sha"))
+    if event_name not in ("release", "workflow_dispatch", "push") or len(parents) != 3:
+        raise ValueError("Production must be a normal candidate PR merge; direct/squashed commits cannot publish.")
+    for parent in parents:
+        commit_id(parent)
+    return parents[2]
+
+
+def require_qualified_run(payload: Mapping[str, object], repository: str, sha: str) -> Mapping[str, object]:
+    """Require the latest exact-SHA candidate run to be complete, successful, and from this workflow.
+
+    Do not fall back to an older green run when the newest run is pending/failed.
+    A rerun's current attempt and conclusion come from GitHub's run record.
+    """
+    raw_runs = payload.get("workflow_runs")
+    if not isinstance(raw_runs, list) or not raw_runs:
+        raise ValueError("No TestPyPI candidate qualification exists for this source commit.")
+    runs = [object_value(value, "workflow run") for value in raw_runs]
+    latest = max(runs, key=lambda run: positive_integer(run.get("run_number")))
+    if sum(run["run_number"] == latest["run_number"] for run in runs) != 1:
+        raise ValueError("Ambiguous candidate run evidence.")
+    for field in ("repository", "head_repository"):
+        if object_value(latest.get(field), field).get("full_name") != repository:
+            raise ValueError("Candidate workflow repository identity does not match.")
+    expected = {"head_sha": sha, "head_branch": "release_candidate",
+                "path": ".github/workflows/release-candidate.yml",
+                "status": "completed", "conclusion": "success"}
+    if any(latest.get(key) != value for key, value in expected.items()):
+        raise ValueError("Latest candidate workflow is unsuccessful, incomplete, or for different source.")
+    if latest.get("event") not in ("push", "workflow_dispatch"):
+        raise ValueError("Candidate qualification must originate from its branch push/manual workflow.")
+    for field in ("id", "run_attempt"):
+        positive_integer(latest.get(field))
+    return latest
+
+
+def github_runs(repository: str, sha: str) -> Mapping[str, object]:
+    """Read only candidate workflow runs through the fixed GitHub API; never expose its token."""
+    if re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) is None:
+        raise ValueError("Invalid GitHub repository identity.")
+    query = urllib.parse.urlencode({"branch": "release_candidate", "head_sha": commit_id(sha),
+                                   "per_page": 100})
+    url = f"https://api.github.com/repos/{repository}/actions/workflows/release-candidate.yml/runs?{query}"
+    token = text_value(os.environ.get("GITHUB_TOKEN"), "GITHUB_TOKEN")
+    request = urllib.request.Request(url, headers={
+        "Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}",
+        "User-Agent": "melder-candidate-ci",
+    })
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return object_value(json.load(response), "GitHub workflow runs")
+
+
+def main() -> int:
+    """Check candidate source/tree, final package version, and hosted qualification; write nothing."""
+    repository = text_value(os.environ.get("GITHUB_REPOSITORY"), "GITHUB_REPOSITORY")
+    sha = candidate_source(os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), repository,
+                           git_output(("rev-list", "--parents", "-n", "1", "HEAD")).split())
+    if git_output(("rev-parse", f"{sha}^{{tree}}")) != git_output(("rev-parse", "HEAD^{tree}")):
+        raise ValueError("Prod merge tree differs from the candidate; synchronize and qualify that exact tree.")
+    version = assignment(pathlib.Path("src/melder/__version__.py").read_text(encoding="utf-8"), "__version__")
+    if re.fullmatch(r"(?:\d+!)?\d+(?:\.\d+)*(?:\.post\d+)?", version) is None:
+        raise ValueError("Prod requires a final package version; finalize and requalify the RC first.")
+    run = require_qualified_run(github_runs(repository, sha), repository, sha)
+    print(f"OK: candidate {sha}, version {version}, run {run['id']}, attempt {run['run_attempt']}.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/check_candidate_run.py
+================================================================================
+================================================================================
 BEGIN FILE: .github/scripts/ci_policy.py
-CONTENT SHA256: 898a1a9143ccd492dcf2104df3b4dc69c3fc7d338a162d1b5bf1ee68a85e70a5
+CONTENT SHA256: 27a4a6709f2bfaf3551c4481f61e448d54e5f8258408728caec50858a9b83ff2
 SOURCE ENCODING: utf-8
 ================================================================================
 """Read-only branch, merge-result, repository, and publication gates for CI."""
@@ -304,8 +524,11 @@ from typing import Optional, cast
 class CIPolicy:
     """Hold immutable CI names and branch routes shared by the command-line gates."""
 
-    BRANCHES: tuple[str, ...] = ("dev", "preprod", "prod")
-    PROMOTIONS: Mapping[str, str] = {"preprod": "dev", "prod": "preprod"}
+    BRANCHES: tuple[str, ...] = ("dev", "preprod", "release_candidate", "prod")
+    PROMOTIONS: Mapping[str, str] = {
+        "preprod": "dev", "release_candidate": "preprod", "prod": "release_candidate",
+    }
+    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "build", "publish", "install")
     REQUIRED_JOBS: tuple[str, ...] = (
         "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
     )
@@ -329,8 +552,9 @@ def validate_route(base: str, head: str, head_repository: str, repository: str) 
     """Validate a PR route and return whether distribution verification is required.
 
     Contributions enter dev. Permanent-branch synchronization must come from this
-    repository; preprod accepts only dev and prod accepts only preprod. Unknown
-    bases and forged fork promotion branches raise ValueError. No refs are changed.
+    repository. Promotion follows dev -> preprod -> release_candidate -> prod.
+    Same-repository release-fix/* PRs can prepare/fix the frozen candidate without
+    pulling later preprod features. Unknown bases and forged forks raise ValueError.
     """
     for value, label in ((base, "base"), (head, "head"),
                          (head_repository, "head repository"), (repository, "repository")):
@@ -340,11 +564,13 @@ def validate_route(base: str, head: str, head_repository: str, repository: str) 
     if base == head and head_repository == repository:
         raise ValueError("A same-repository PR must have different head and base branches.")
     if base == "dev":
-        if head in ("preprod", "prod") and head_repository != repository:
+        if head in CIPolicy.BRANCHES[1:] and head_repository != repository:
             raise ValueError("Permanent-branch synchronization must originate in this repository.")
         return False
     required_head = CIPolicy.PROMOTIONS[base]
-    if head_repository != repository or head != required_head:
+    preparation = (base == "release_candidate" and head.startswith("release-fix/")
+                   and len(head) > len("release-fix/"))
+    if head_repository != repository or (head != required_head and not preparation):
         raise ValueError(
             f"Promotion into {base} requires {repository}:{required_head}; "
             f"received {head_repository}:{head}."
@@ -377,7 +603,7 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
     if event_name not in ("push", "workflow_dispatch"):
         raise ValueError(f"Unsupported CI event {event_name!r}; refusing an implicit route.")
     if ref not in tuple(f"refs/heads/{branch}" for branch in CIPolicy.BRANCHES):
-        raise ValueError(f"CI push/manual ref must be dev, preprod, or prod; received {ref!r}.")
+        raise ValueError(f"CI ref must name a supported permanent branch; received {ref!r}.")
     return ref != "refs/heads/dev"
 
 
@@ -410,6 +636,32 @@ def case_collisions(paths: Sequence[str]) -> list[list[str]]:
     for path in paths:
         grouped.setdefault(path.casefold(), []).append(path)
     return [sorted(group) for _, group in sorted(grouped.items()) if len(group) > 1]
+
+
+def require_candidate_success(results: Mapping[str, object]) -> None:
+    """Require every candidate stage to succeed, including the complete install matrix."""
+    if set(results) != set(CIPolicy.CANDIDATE_JOBS):
+        raise ValueError("Incomplete candidate dependency evidence; all four stages are required.")
+    failures = [name for name in CIPolicy.CANDIDATE_JOBS
+                if object_value(results[name], f"needs.{name}").get("result") != "success"]
+    if failures:
+        raise ValueError(f"Candidate qualification failed or was skipped: {failures}.")
+
+
+def validate_candidate_head(event_name: str, ref: str, event_sha: str,
+                            checkout_sha: str, advertisement: str) -> None:
+    """Authorize only the current candidate branch, refusing stale runs and manual wrong-ref use.
+
+    Git's exact branch advertisement must agree with both event and checkout.
+    No cached tracking ref, abbreviated SHA, PR event, or deleted branch suffices.
+    """
+    branch = "refs/heads/release_candidate"
+    if event_name not in ("push", "workflow_dispatch") or ref != branch:
+        raise ValueError("TestPyPI publication must run on release_candidate, from push or manual dispatch.")
+    if re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", event_sha) is None:
+        raise ValueError("Candidate publication requires a full commit SHA.")
+    if checkout_sha != event_sha or advertisement.strip() != f"{event_sha}\t{branch}":
+        raise ValueError("Candidate branch moved or checkout differs; qualify the current candidate again.")
 
 
 def git_output(arguments: Sequence[str]) -> str:
@@ -504,7 +756,8 @@ def read_event() -> Mapping[str, object]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """Execute one read-only CI gate; print a diagnostic and return nonzero on refusal."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("gate", choices=("branch", "merge-ready", "hygiene", "release-head"))
+    parser.add_argument("gate", choices=("branch", "merge-ready", "hygiene", "release-head",
+                                        "candidate-head", "candidate-ready"))
     args = parser.parse_args(argv)
     try:
         if args.gate == "branch":
@@ -523,6 +776,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             collisions = case_collisions(git_output(("ls-files", "-z")).split("\0")[:-1])
             if collisions:
                 raise ValueError(f"Tracked paths collide case-insensitively: {collisions}")
+        elif args.gate == "candidate-ready":
+            require_candidate_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"))
+        elif args.gate == "candidate-head":
+            validate_candidate_head(
+                os.environ.get("GITHUB_EVENT_NAME", ""), os.environ.get("GITHUB_REF", ""),
+                os.environ.get("GITHUB_SHA", ""), git_output(("rev-parse", "HEAD^{commit}")),
+                git_output(("ls-remote", "--exit-code", "--heads", "origin",
+                            "refs/heads/release_candidate")),
+            )
         else:
             event_name = os.environ.get("GITHUB_EVENT_NAME", "")
             event = read_event()
@@ -547,6 +809,94 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ================================================================================
 END FILE: .github/scripts/ci_policy.py
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/normalize_sdist.py
+CONTENT SHA256: 75d118e1629fc9e8e2d482ee7942b9032172e2facdc0b5cdf638c1408738064f
+SOURCE ENCODING: utf-8
+================================================================================
+"""Normalize source-archive metadata for repeatable same-commit package uploads."""
+
+import argparse
+import copy
+import gzip
+import os
+import pathlib
+import tarfile
+import tempfile
+from collections.abc import Sequence
+from typing import Optional
+
+from verify_distributions import assignment, unsafe, verify_sdist
+
+
+def normalized_member(member: tarfile.TarInfo, epoch: int) -> tarfile.TarInfo:
+    """Copy a regular file/directory header, preserving its name, permissions, size, and payload contract."""
+    if unsafe(member.name) or not (member.isfile() or member.isdir()):
+        raise ValueError(f"Cannot normalize unsafe or non-regular archive member: {member.name}")
+    result = copy.copy(member)
+    result.mtime = epoch
+    result.uid = result.gid = 0
+    result.uname = result.gname = ""
+    result.pax_headers = {key: value for key, value in member.pax_headers.items()
+                          if key not in {"mtime", "atime", "ctime", "uid", "gid", "uname", "gname"}}
+    return result
+
+
+def normalize_archive(path: pathlib.Path, epoch: int) -> None:
+    """Atomically rewrite tar/gzip metadata while preserving all file contents.
+
+    Setuptools' sdist includes generated-file and directory timestamps even with
+    SOURCE_DATE_EPOCH. Sort members and normalize timestamps/ownership plus the
+    gzip header. Reject links/devices/escaped names. Streams and the temporary
+    directory are closed on every path; failed normalization leaves the original
+    archive intact. This does not rewrite package versions or file contents.
+    """
+    if not 0 <= epoch <= 0xFFFFFFFF:
+        raise ValueError("SOURCE_DATE_EPOCH must fit the gzip timestamp field (0..4294967295).")
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Source distribution must be a regular local file.")
+    with tempfile.TemporaryDirectory(prefix=".sdist-", dir=path.parent) as scratch:
+        target = pathlib.Path(scratch) / path.name
+        with tarfile.open(path, "r:gz") as source, target.open("wb") as raw:
+            members = sorted(source.getmembers(), key=lambda member: member.name)
+            if len({member.name for member in members}) != len(members):
+                raise ValueError("Source distribution contains duplicate members.")
+            with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=epoch) as compressed:
+                with tarfile.open(fileobj=compressed, mode="w", format=tarfile.PAX_FORMAT) as output:
+                    for member in members:
+                        header = normalized_member(member, epoch)
+                        if member.isdir():
+                            output.addfile(header)
+                            continue
+                        stream = source.extractfile(member)
+                        if stream is None:
+                            raise ValueError(f"Cannot read source member: {member.name}")
+                        with stream:
+                            output.addfile(header, stream)
+        target.replace(path)
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Verify package contents, normalize the one sdist, and verify it again using the committed version."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("dist"))
+    args = parser.parse_args(argv)
+    archives = list(args.directory.glob("*.tar.gz"))
+    if len(archives) != 1:
+        raise ValueError("Expected exactly one sdist to normalize.")
+    version = assignment(pathlib.Path("src/melder/__version__.py").read_text(encoding="utf-8"), "__version__")
+    verify_sdist(archives[0], version)
+    normalize_archive(archives[0], int(os.environ["SOURCE_DATE_EPOCH"]))
+    verify_sdist(archives[0], version)
+    print(f"OK: normalized source archive metadata for {version}; package contents verified.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/run_runtime_tests.py
@@ -602,21 +952,57 @@ END FILE: .github/scripts/run_runtime_tests.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/smoke_wheel.py
-CONTENT SHA256: e88b12e5f74a9bcb75bd3a0ec1f1efb7c9bac82ab415ade9c29857982736e69f
+CONTENT SHA256: 34a27accf1d6cfd77f5f9fe6ac00f689ec451bcd11b92195d147052798e1adde
 SOURCE ENCODING: utf-8
 ================================================================================
-"""Exercise the installed wheel's packaged documents from an isolated interpreter."""
+"""Exercise installed package identity, data, and a small public runtime contract in isolation."""
 
+import argparse
+import importlib.metadata
+import sys
 import sysconfig
+from collections.abc import Sequence
+from typing import Optional
 
 
-def main() -> None:
+class PackageProbeService:
+    """A stateless user service proving that an installed Melder can bind and resolve user code."""
+
+    def greeting(self) -> str:
+        """Return a fixed observable result for the package consumer contract."""
+        return "installed-melder-ok"
+
+
+def check_runtime() -> None:
+    """Exercise real public binding, unique reuse, and deterministic conduit/book cleanup."""
+    import melder
+
+    book = melder.Spellbook()
+    try:
+        book.bind(spell=PackageProbeService, existence="unique")
+        conduit = book.conjure()
+        try:
+            service = conduit.meld(spell=PackageProbeService)
+            if service.greeting() != "installed-melder-ok":
+                raise RuntimeError("Installed package failed the public service-resolution contract.")
+            if conduit.meld(spell=PackageProbeService) is not service:
+                raise RuntimeError("Installed package did not preserve unique existence.")
+        finally:
+            conduit.cleanup()
+    finally:
+        book.cleanup()
+
+
+def main(argv: Optional[Sequence[str]] = None) -> None:
     """Require the installed package and its document assets to work without checkout imports.
 
     Run with the wheel virtual environment's Python and -I. Check the import path
     before exercising runtime documents so an editable/source checkout cannot
     accidentally satisfy this distribution-level test.
     """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--expected-version")
+    args = parser.parse_args(argv)
     import pathlib
     import melder
     from melder._build_assets._agent_documentation.manifest.agent_documentation_manifest import MARKED_COUNT
@@ -626,6 +1012,12 @@ def main() -> None:
     installed = pathlib.Path(sysconfig.get_path("purelib")).resolve()
     if not pathlib.Path(melder.__file__).resolve().is_relative_to(installed):
         raise RuntimeError("Wheel smoke test imported Melder outside the isolated site-packages.")
+    if importlib.metadata.version("melder") != melder.__version__:
+        raise RuntimeError("Installed distribution metadata disagrees with Melder's runtime version.")
+    if args.expected_version is not None and melder.__version__ != args.expected_version:
+        raise RuntimeError("Installed Melder version differs from the selected candidate.")
+    if sysconfig.get_config_var("Py_GIL_DISABLED") != 1 or sys._is_gil_enabled():
+        raise RuntimeError("Package probe requires Python 3.14t with the GIL disabled.")
     documents = (melder.__architecture__, melder.__components__,
                  melder.__graph_network__, melder.__graph_details__)
     if not all(document.verify() for document in documents):
@@ -638,13 +1030,234 @@ def main() -> None:
     node = graph.node("melder.aether.aether.Aether")
     if graph.details_key(node.node_id) != node.source:
         raise RuntimeError("Installed graph detail lookup disagrees with its node source.")
-    print(f"OK: installed Melder {melder.__version__}; four documents and graph lookup verified.")
+    check_runtime()
+    if sys._is_gil_enabled():
+        raise RuntimeError("The package consumer scenario unexpectedly enabled the GIL.")
+    print(f"OK: installed Melder {melder.__version__}; metadata, documents, graph, and runtime verified.")
 
 
 if __name__ == "__main__":
     main()
 ================================================================================
 END FILE: .github/scripts/smoke_wheel.py
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/testpypi_candidate.py
+CONTENT SHA256: f5e5617dc90572280c5fe3ec9fceba9504f8d5142eb0dae61f8fbb9b70c52cbd
+SOURCE ENCODING: utf-8
+================================================================================
+"""Verify TestPyPI uploads and exercise the exact downloaded wheel without checkout imports."""
+
+import argparse
+import hashlib
+import json
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import venv
+from collections.abc import Mapping, Sequence
+from typing import Optional, TypedDict
+
+from ci_policy import git_output, object_value, text_value
+from verify_distributions import assignment, verify_distributions
+
+
+class FileIdentity(TypedDict):
+    """Value-only identity of one distribution, shared with the TestPyPI JSON API."""
+
+    sha256: str
+    size: int
+
+
+class TestIndexPolicy:
+    """Keep fixed service endpoints and bounded index-propagation retry policy together."""
+
+    INDEX = "https://test.pypi.org/simple/"
+    JSON_ROOT = "https://test.pypi.org/pypi/melder/"
+    DOWNLOAD_ATTEMPTS = 6
+    RETRY_SECONDS = 10
+
+
+def package_version() -> str:
+    """Read the committed stable/RC version without importing or rewriting Melder."""
+    version = assignment(pathlib.Path("src/melder/__version__.py").read_text(encoding="utf-8"), "__version__")
+    if re.fullmatch(r"\d+\.\d+\.\d+(?:rc\d+)?", version) is None:
+        raise ValueError("Use an explicit X.Y.Z or X.Y.ZrcN candidate version and regenerate its assets.")
+    return version
+
+
+def file_identity(path: pathlib.Path) -> FileIdentity:
+    """Hash a regular local file and close the stream; never follow distribution symlinks."""
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"Distribution must be a regular file: {path.name}")
+    with path.open("rb") as stream:
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+    return {"sha256": digest, "size": path.stat().st_size}
+
+
+def verified_files(directory: pathlib.Path, version: str) -> dict[str, FileIdentity]:
+    """Inspect the wheel/sdist contents before treating their names and hashes as expected inputs."""
+    verify_distributions(directory, version)
+    return {path.name: file_identity(path) for path in sorted(directory.iterdir())}
+
+
+def remote_files(version: str) -> dict[str, FileIdentity]:
+    """Read one exact TestPyPI release; only a 404 means no previous upload.
+
+    Missing/duplicate/malformed file evidence fails closed. Every HTTP stream is
+    closed, and no credentials are needed or sent to this public index endpoint.
+    """
+    request = urllib.request.Request(
+        TestIndexPolicy.JSON_ROOT + urllib.parse.quote(version, safe="") + "/json",
+        headers={"User-Agent": "melder-candidate-ci", "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = object_value(json.load(response), "TestPyPI release")
+    except urllib.error.HTTPError as error:
+        error.close()
+        if error.code == 404:
+            return {}
+        raise
+    if object_value(payload.get("info"), "release.info").get("version") != version:
+        raise ValueError("TestPyPI returned a different package version.")
+    urls = payload.get("urls")
+    if not isinstance(urls, list):
+        raise ValueError("TestPyPI release has no file list.")
+    files: dict[str, FileIdentity] = {}
+    for value in urls:
+        item = object_value(value, "release file")
+        name = text_value(item.get("filename"), "filename")
+        digest = object_value(item.get("digests"), "digests").get("sha256")
+        size = item.get("size")
+        if (name in files or not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+                or not isinstance(size, int) or isinstance(size, bool) or size <= 0):
+            raise ValueError("TestPyPI returned ambiguous or invalid file identity.")
+        files[name] = {"sha256": digest, "size": size}
+    return files
+
+
+def missing_files(expected: Mapping[str, FileIdentity], remote: Mapping[str, FileIdentity]) -> list[str]:
+    """Allow identical retries/partial uploads and refuse any conflicting or additional remote file."""
+    for name, identity in remote.items():
+        if name not in expected or identity != expected[name]:
+            raise ValueError(
+                f"TestPyPI already has different files for this version ({name}). "
+                "Choose a new candidate version, regenerate assets, and rebuild."
+            )
+    return sorted(set(expected) - set(remote))
+
+
+def write_report(path: pathlib.Path, version: str, files: Mapping[str, FileIdentity], status: str) -> None:
+    """Retain this run's exact package and source identity as a small, credential-free JSON report."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    report = {
+        "status": status, "version": version, "files": dict(files),
+        "repository": os.environ.get("GITHUB_REPOSITORY", "local"),
+        "commit": git_output(("rev-parse", "HEAD^{commit}")),
+        "tree": git_output(("rev-parse", "HEAD^{tree}")),
+        "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "local"),
+    }
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+
+def prepare_upload(directory: pathlib.Path, upload_directory: pathlib.Path, report: pathlib.Path) -> bool:
+    """Stage only absent, verified distributions; never conceal conflicting files with skip-existing."""
+    version = package_version()
+    files = verified_files(directory, version)
+    missing = missing_files(files, remote_files(version))
+    upload_directory.mkdir(parents=True, exist_ok=True)
+    if any(upload_directory.iterdir()):
+        raise ValueError("Upload staging directory must be empty; refusing stale distribution files.")
+    for name in missing:
+        shutil.copyfile(directory / name, upload_directory / name)
+    write_report(report, version, files, "upload-needed" if missing else "identical-upload-present")
+    return bool(missing)
+
+
+def download_wheel(directory: pathlib.Path, version: str, name: str, identity: FileIdentity) -> pathlib.Path:
+    """Resolve the exact wheel through TestPyPI's index with a required SHA256 and bounded retries.
+
+    Pip runs without user/environment configuration, extra indexes, dependencies,
+    or its cache. Retry download failures for index propagation; package execution
+    happens later and is never retried or softened. A final failure propagates.
+    """
+    requirement = directory / "requirement.txt"
+    requirement.write_text(f"melder=={version} --hash=sha256:{identity['sha256']}\n", encoding="utf-8")
+    downloads = directory / "downloads"
+    downloads.mkdir()
+    command = [sys.executable, "-m", "pip", "--isolated", "download", "--no-deps", "--no-cache-dir",
+               "--only-binary=:all:", "--index-url", TestIndexPolicy.INDEX, "--require-hashes",
+               "--dest", str(downloads), "-r", str(requirement)]
+    for attempt in range(TestIndexPolicy.DOWNLOAD_ATTEMPTS):
+        try:
+            subprocess.run(command, check=True, cwd=directory)
+            break
+        except subprocess.CalledProcessError:
+            if attempt + 1 == TestIndexPolicy.DOWNLOAD_ATTEMPTS:
+                raise
+            time.sleep(TestIndexPolicy.RETRY_SECONDS)
+    wheel = downloads / name
+    if set(downloads.iterdir()) != {wheel} or file_identity(wheel) != identity:
+        raise ValueError("Downloaded TestPyPI wheel differs from this run's verified candidate.")
+    return wheel
+
+
+def probe_install(directory: pathlib.Path, report: pathlib.Path) -> None:
+    """Install the hash-pinned index wheel into a fresh environment and run the isolated smoke probe.
+
+    The repository's conftest and editable installation are never used. Downloads
+    and the virtual environment are owned by one temporary-directory context and
+    removed on success or failure. The report is written only after the probe passes.
+    """
+    version = package_version()
+    files = verified_files(directory, version)
+    name = next(name for name in files if name.endswith(".whl"))
+    smoke = pathlib.Path(__file__).with_name("smoke_wheel.py").resolve()
+    with tempfile.TemporaryDirectory(prefix="melder-testpypi-", dir=os.environ.get("RUNNER_TEMP")) as scratch:
+        root = pathlib.Path(scratch)
+        wheel = download_wheel(root, version, name, files[name])
+        environment = root / "environment"
+        venv.EnvBuilder(with_pip=True).create(environment)
+        python = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        subprocess.run([str(python), "-m", "pip", "--isolated", "install", "--no-deps",
+                        "--no-index", str(wheel)], check=True, cwd=root)
+        subprocess.run([str(python), "-I", str(smoke), "--expected-version", version], check=True, cwd=root)
+    write_report(report, version, files, "installed-package-passed")
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Prepare a verified upload or test the exact installed index package; never perform an upload."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("operation", choices=("prepare-upload", "probe-install"))
+    parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("dist"))
+    parser.add_argument("--upload-directory", type=pathlib.Path, default=pathlib.Path("upload"))
+    parser.add_argument("--report", type=pathlib.Path, required=True)
+    args = parser.parse_args(argv)
+    if args.operation == "prepare-upload":
+        required = prepare_upload(args.directory, args.upload_directory, args.report)
+        with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+            output.write(f"upload-required={str(required).lower()}\n")
+    else:
+        probe_install(args.directory, args.report)
+    print(f"OK: {args.operation}; report={args.report}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/testpypi_candidate.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/verify_distributions.py
@@ -855,7 +1468,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: 13cb780b83e4ca0a123038951f14523c3ddccbb1deb6c2337752e6d7d30e7c2c
+CONTENT SHA256: 053a1f6cd05d1821b1e2381979c1e53592099a4876f9b54de9ba7ee3ff8c1e63
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -903,8 +1516,12 @@ jobs:
           python -m pip install --group build
       - name: Verify durable source assets
         run: python src/melder/_build_assets/_build_asset_runner.py --check
+      - name: Set deterministic source timestamps for same-commit retries
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
       - name: Build wheel and source distribution
         run: python -m build --sdist --wheel
+      - name: Normalize source archive metadata for identical retries
+        run: python .github/scripts/normalize_sdist.py
       - name: Verify archive boundaries and versions
         env:
           RELEASE_TAG: ${{ inputs.release-tag }}
@@ -1011,7 +1628,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: ce0c7ad2f6f24bccc6fc5ed17b0d223fc24783b739c086f84e7d37976a096654
+CONTENT SHA256: 4642402e7926dd4aa984b81693b2ee9df638dec4ffbce86eec9e6f2cbbdc2ab9
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -1021,7 +1638,7 @@ name: CI
 # resulting revision. No path filters or repository-variable kill switches.
 on:
   pull_request:
-    branches: [dev, preprod, prod]
+    branches: [dev, preprod, release_candidate, prod]
     types: [opened, synchronize, reopened, ready_for_review, edited]
   push:
     branches: [dev, preprod, prod]
@@ -1039,16 +1656,26 @@ jobs:
     name: CI / branch-policy
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     outputs:
       package-required: ${{ steps.route.outputs.package-required }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - name: Validate the branch route
         id: route
         run: python .github/scripts/ci_policy.py branch
+      - name: Require the exact candidate before prod promotion
+        if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
 
   hygiene:
     name: CI / repository-hygiene
@@ -1161,7 +1788,7 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: 4cf8a56d94d1d492ac231dde82eab85bf46ad46472e67678a947d1966d17004d
+CONTENT SHA256: 0bfe02532be2228fd8b503e04d4e6e3b0596d5c8b73c69ab34a7dc0995ada541
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -1188,6 +1815,9 @@ jobs:
     if: github.event_name != 'release' || !github.event.release.prerelease
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1197,6 +1827,10 @@ jobs:
           python-version: "3.14"
       - name: Authorize the selected final release
         run: python .github/scripts/ci_policy.py release-head
+      - name: Require successful TestPyPI qualification of the candidate source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
 
   hygiene:
     name: Release / repository-hygiene
@@ -1234,6 +1868,9 @@ jobs:
     needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
     environment:
       # Only this job receives the environment-scoped PYPI_API_TOKEN.
       name: pypi
@@ -1254,6 +1891,10 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
         run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+      - name: Recheck exact-source candidate qualification
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
       - name: Final tag and prod check immediately before publication
         # This runs AFTER environment approval and fails if the release tag or
         # prod moved while tests, builds, or a human approval were pending.
@@ -1268,6 +1909,135 @@ jobs:
           print-hash: true
 ================================================================================
 END FILE: .github/workflows/python-publish.yml
+================================================================================
+================================================================================
+BEGIN FILE: .github/workflows/release-candidate.yml
+CONTENT SHA256: 308db1c502b09e34327509bae907e9aaae8d9e8f115603b0981fea2aa7c853e5
+SOURCE ENCODING: utf-8
+================================================================================
+name: Release candidate
+
+# Candidate promotion/fixes trigger an index round-trip; no GitHub Release is needed.
+on:
+  push:
+    branches: [release_candidate]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Finish an active upload rather than cancelling it midway. Stale heads fail authorization.
+concurrency:
+  group: testpypi-publication
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    name: RC / authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: python .github/scripts/ci_policy.py candidate-head
+
+  build:
+    needs: authorize
+    uses: ./.github/workflows/build-distributions.yml
+    with:
+      artifact-name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+
+  publish:
+    name: RC / publish-to-TestPyPI
+    needs: [authorize, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypitest
+      url: https://test.pypi.org/project/melder/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - uses: actions/download-artifact@v8
+        with:
+          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/
+      - name: Verify existing files and prepare an exact upload
+        id: upload
+        run: python .github/scripts/testpypi_candidate.py prepare-upload --report reports/upload.json
+      - name: Recheck the candidate after environment admission
+        run: python .github/scripts/ci_policy.py candidate-head
+      - name: Publish missing verified files with Trusted Publishing
+        if: steps.upload.outputs.upload-required == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: upload/
+          print-hash: true
+      - name: Retain upload identity
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-upload-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/upload.json
+          if-no-files-found: error
+          retention-days: 90
+
+  install:
+    name: RC / installed-package / ${{ matrix.os }}
+    needs: [build, publish]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      PYTHON_GIL: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14t"
+      - uses: actions/download-artifact@v8
+        with:
+          name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/
+      - name: Download the hash-pinned wheel and test its isolated installation
+        run: python .github/scripts/testpypi_candidate.py probe-install --report reports/installed.json
+      - name: Retain installed-package evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-install-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/installed.json
+          if-no-files-found: error
+          retention-days: 90
+
+  package-ready:
+    name: RC / package-ready
+    needs: [authorize, build, publish, install]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Require every candidate stage to have succeeded
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+        run: python .github/scripts/ci_policy.py candidate-ready
+      - name: Refuse a superseded candidate
+        run: python .github/scripts/ci_policy.py candidate-head
+================================================================================
+END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
@@ -5237,70 +6007,49 @@ END FILE: UX_and_AIX_experiences/01_beginner/39_agent_inventory_pattern.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py
-CONTENT SHA256: 265c4b3f7e2a9920fc02b87f69e36ed8e6bb303d8deaa47a2c866d36271b67dd
+CONTENT SHA256: 632263a38dfdcbd06ce3d3d2de30fa41a79ae9d840ae6e0239d4db614ea51f4d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 TIER: beginner (40) - capstone
-GOAL: Everything the tier taught, as one tiny application: classified
-      registrations under a lock batch, mixed lifecycles, a factory and
-      a prebuilt instance, disposal, explicit cleanup, error handling.
-      No scanning, no decorators, no dynamic worlds.
-SURFACE EXERCISED: the full beginner vocabulary in one story
+GOAL: Build and use a small application across separate Python modules:
+      ordinary objects, one bootstrap, a TYPE_CHECKING consumer, constructor
+      injection, shared resources, fresh handlers, and explicit cleanup.
+      Each bind manages its own transaction; no outer book lock is needed.
+SURFACE EXERCISED: md.Spellbook.bind/conjure, md.Conduit.meld/cleanup,
+                  unique/many, constructor injection, disposal_method_names
 """
-import melder as md
+from typing import TYPE_CHECKING
 
-TEARDOWN: list[str] = []
+from capstone_application import run_application
+from capstone_bootstrap import build_application
 
-
-class AppConfig:
-    def __init__(self, app_name: str) -> None:
-        self.app_name = app_name
-
-
-class DbPool:
-    def close(self) -> None:
-        TEARDOWN.append("pool closed")
-
-
-class RequestHandler:
-    served = 0
-
-    def handle(self) -> str:
-        RequestHandler.served += 1
-        return f"request #{RequestHandler.served}"
+if TYPE_CHECKING:
+    from capstone_models import DbPool
 
 
 def main() -> None:
-    book = md.Spellbook()
-    with book:  # atomic registration batch under the book lock
-        book.bind(spell=AppConfig("orders-service"), existence="unique",
-                  spellframe="app", binding_name="config")
-        book.bind(spell=DbPool, existence="unique",
-                  spellframe="app", binding_name="db",
-                  disposal_method_names=["close"])
-        book.bind(spell=RequestHandler, existence="many",
-                  spellframe="web", binding_name="handler")
-
-    conduit = book.conjure()
-    config = conduit.meld(spellframe="app", binding_name="config")
-    pool = conduit.meld(spellframe="app", binding_name="db")
-    assert config.app_name == "orders-service" and isinstance(pool, DbPool)
-
-    for _ in range(3):
-        handler = conduit.meld(spellframe="web", binding_name="handler")
-        print(handler.handle())
-
+    """Start the graph, use it, and guarantee shutdown around the application call."""
+    book, conduit = build_application()
     try:
-        conduit.meld(binding_name="nowhere")
-        print("unknown address answered None-style")
-    except Exception as err:
-        print("unknown address raised:", type(err).__name__)
+        pool: DbPool = conduit.meld(spell="DbPool")
+        messages = run_application(conduit)
+        assert messages == [
+            "orders-service: order 101 = coffee",
+            "orders-service: order 102 = tea",
+            "orders-service: order 103 = cocoa",
+        ]
+        for message in messages:
+            print(message)
+    finally:
+        try:
+            conduit.cleanup()
+        finally:
+            book.cleanup()
 
-    conduit.cleanup()
-    book.cleanup()
-    print("teardown:", TEARDOWN or "(documented by this run)")
-    print("capstone complete: classified, melded, disposed, guarded")
+    assert pool.closed and pool.query_count == 3
+    print("pool closed:", pool.closed)
+    print("capstone complete: bootstrapped, typed, injected, used, cleaned")
 
 
 if __name__ == "__main__":
@@ -5427,6 +6176,157 @@ LAWS PROVEN IN THIS TIER (harness-validated)
   - binding_name alone is not an address (needs frame or spell)
 ================================================================================
 END FILE: UX_and_AIX_experiences/01_beginner/_concept_map.txt
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/01_beginner/capstone_application.py
+CONTENT SHA256: 4d5f389d7fe17d86da9e54ef2498c16025693a9d629f15d3ff5b838c53c2c9a9
+SOURCE ENCODING: utf-8
+================================================================================
+"""Consume the running graph using concrete types without runtime model imports."""
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import melder as md
+    from capstone_models import AppConfig, DbPool, RequestHandler
+
+
+def run_application(conduit: md.Conduit) -> list[str]:
+    """Resolve and use application objects; borrow the conduit without owning its cleanup.
+
+    TYPE_CHECKING supplies editor/checker types. The strings passed to meld are
+    the runtime addresses registered by the bootstrap. Return the three request
+    messages, with assertions that demonstrate shared and fresh lifetimes.
+    """
+    config: AppConfig = conduit.meld(spell="AppConfig")
+    pool: DbPool = conduit.meld(spell="DbPool")
+    assert config is conduit.meld(spell="AppConfig")
+    assert pool is conduit.meld(spell="DbPool")
+
+    handlers: list[RequestHandler] = []
+    messages: list[str] = []
+    for order_id in (101, 102, 103):
+        handler: RequestHandler = conduit.meld(spell="RequestHandler")
+        assert handler.requests_handled == 0
+        messages.append(handler.handle(order_id))
+        assert handler.requests_handled == 1
+        handlers.append(handler)
+
+    assert handlers[0] is not handlers[1] and handlers[1] is not handlers[2]
+    assert handlers[0] is not handlers[2]
+    assert pool.query_count == 3
+    return messages
+================================================================================
+END FILE: UX_and_AIX_experiences/01_beginner/capstone_application.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/01_beginner/capstone_bootstrap.py
+CONTENT SHA256: f6ee053426f874e53599d7b7245d54e59eb6f8189e49f094ded17306cea20f1c
+SOURCE ENCODING: utf-8
+================================================================================
+"""Own registration and startup for the beginner application."""
+
+import melder as md
+
+from capstone_models import AppConfig, DbPool, RequestHandler
+
+
+def build_application() -> tuple[md.Spellbook, md.Conduit]:
+    """Register the graph and return the book/conduit to the entry point that owns shutdown.
+
+    Config and pool are shared; handlers are created per meld. Registration or
+    conjure failure cleans the partially configured book and propagates the error.
+    """
+    book = md.Spellbook()
+    try:
+        # Each bind manages its own transaction and synchronization.
+        book.bind(spell=AppConfig, existence="unique")
+        book.bind(spell=DbPool, existence="unique", disposal_method_names=["close"])
+        book.bind(spell=RequestHandler, existence="many")
+        conduit = book.conjure()
+    except Exception:
+        book.cleanup()
+        raise
+    return book, conduit
+================================================================================
+END FILE: UX_and_AIX_experiences/01_beginner/capstone_bootstrap.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/01_beginner/capstone_models.py
+CONTENT SHA256: 54e79e620ffa0075d72eb7edd2534a3111439bd580285c81ac2a0f599cd5744c
+SOURCE ENCODING: utf-8
+================================================================================
+"""Ordinary application objects for the beginner capstone; this module does not import Melder."""
+
+
+class AppConfig:
+    """Carry the application's name as ordinary configuration data."""
+
+    def __init__(self, app_name: str = "orders-service") -> None:
+        """Store the application's default or supplied name; own no external resources."""
+        self.app_name = app_name
+
+
+class DbPool:
+    """Demonstrate a shared resource with a small in-memory order store.
+
+    No database connection is opened. The conduit owns this pool's lifetime.
+    Closing deletes the store; closed/query_count remain readable for the
+    example's shutdown checks. This single-threaded example does not promise
+    concurrent access to the application-owned store.
+    """
+
+    def __init__(self) -> None:
+        """Create the owned order store and initialize observable lifecycle/query state."""
+        self._orders = {101: "coffee", 102: "tea", 103: "cocoa"}
+        self.closed = False
+        self.query_count = 0
+
+    def close(self) -> None:
+        """Release the store once; repeated closes preserve the recorded shutdown state."""
+        if self.closed:
+            return
+        del self._orders
+        self.closed = True
+
+    def fetch_order(self, order_id: int) -> str:
+        """Return one order and count the query; reject closed pools or unknown order IDs.
+
+        Raises:
+            RuntimeError: The pool has already closed.
+            KeyError: The order ID does not exist in this demonstration store.
+        """
+        if self.closed:
+            raise RuntimeError("The order pool is closed; run requests before application shutdown.")
+        order = self._orders[order_id]
+        self.query_count += 1
+        return order
+
+
+class RequestHandler:
+    """Handle one request using borrowed configuration and a borrowed shared pool.
+
+    Constructor annotations name real runtime classes so Melder can inspect
+    them for dependency injection. The handler does not own or close the pool.
+    """
+
+    def __init__(self, config: AppConfig, pool: DbPool) -> None:
+        """Borrow the injected dependencies and start this handler's independent request count."""
+        self._config = config
+        self._pool = pool
+        self.requests_handled = 0
+
+    def handle(self, order_id: int) -> str:
+        """Fetch an order and return its application-facing message.
+
+        A successful request increments this handler's count. Pool lookup or
+        closed-state errors propagate to the caller without counting a request.
+        """
+        order = self._pool.fetch_order(order_id)
+        self.requests_handled += 1
+        return f"{self._config.app_name}: order {order_id} = {order}"
+================================================================================
+END FILE: UX_and_AIX_experiences/01_beginner/capstone_models.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py
@@ -21869,7 +22769,7 @@ END FILE: UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py
-CONTENT SHA256: 604e255ed2a5233d4c6c170c6b57d4455cdd708b03fdef05bd61f5368bf9de81
+CONTENT SHA256: 3529e89c57e160c869f024555ad43b488b66138815f41d04f213038f1b65fd0b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -21903,7 +22803,11 @@ def _load(path: Path):
 
 
 @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
-def test_beginner_example_runs_green(path, capsys):
+def test_beginner_example_runs_green(
+    path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Execute each script with its sibling imports, matching direct Python script execution."""
+    monkeypatch.syspath_prepend(str(path.parent))
     module = _load(path)
     module.main()
     out = capsys.readouterr().out
@@ -58122,17 +59026,6 @@ def test_lane_routing_diagnostic(shape: str) -> None:
 END FILE: benchmarks/testing_other_di/test_unroll_path_diagnostic.py
 ================================================================================
 ================================================================================
-BEGIN FILE: docs/.gitignore
-CONTENT SHA256: 16ceb377c7cb3ceeb66d6dd737434608eca135a991d308528d13ce57061482b5
-SOURCE ENCODING: utf-8
-================================================================================
-_build/
-.venv/
-__pycache__/
-================================================================================
-END FILE: docs/.gitignore
-================================================================================
-================================================================================
 BEGIN FILE: docs/advanced/checkpoints.md
 CONTENT SHA256: 8583142ae796edc8b024ee04d054914ecd9771bb1b80749e9d486767291f183c
 SOURCE ENCODING: utf-8
@@ -58587,31 +59480,149 @@ END FILE: docs/api.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/beginner/capstone.md
-CONTENT SHA256: a38f83e533d8a27c4706e350df13d523199d2e3ca9c1bee8589213f6cc21f953
+CONTENT SHA256: 315d0d673225fd242bbfe3d6964eee1b226c88ff391dca40f7dd5bddb0688934
 SOURCE ENCODING: utf-8
 ================================================================================
 # Build a complete beginner application
 
-Bring the level's ideas together in the saved beginner capstone: configuration,
-a pooled resource, a request handler, classified addresses, mixed lifetimes,
-and explicit cleanup.
+Build a small orders application with ordinary Python objects, one bootstrap,
+and a separate module that uses the running graph. The configuration and pool
+are shared; each request receives a fresh handler.
 
-## Read the application in three passes
+## Give each module one job
 
-First identify the ordinary application classes. Then read the registrations:
-what address each binding receives and which lifetime is selected. Finally,
-follow the resolutions and cleanup, checking the assertions and recorded
-teardown output against the purpose of each object.
+Keep these four files together in the saved Beginner collection:
 
-## Keep the bootstrap understandable
+```text
+01_beginner/
+├── capstone_models.py        # Your application objects
+├── capstone_bootstrap.py     # Register objects and conjure once
+├── capstone_application.py   # Resolve typed objects and use them
+└── 40_beginner_capstone.py   # Start, run, and clean up
+```
 
-The bootstrap-pattern lesson places registration and conjure in one function.
-The inventory-pattern lesson shows how a caller can inspect the vocabulary it
-has been handed. Together they give you a small application boundary that is
-easy to run, explain, and extend.
+The entry point calls the bootstrap, passes the returned conduit to the
+application, and owns shutdown. The application module receives a usable
+conduit and works with the objects returned by `meld()`.
 
-Once this feels comfortable, continue to Intermediate for configuration and
-cooperation between independently owned subsystems.
+All four modules run in one Python process. Importing `capstone_bootstrap`
+loads the `build_application` function definition. The graph is created when
+`main()` calls that function:
+
+1. `build_application()` creates the book, binds the classes, conjures, and returns both objects.
+2. `main()` receives them in `book, conduit`.
+3. `run_application(conduit)` passes that same conduit object into the application function.
+4. The function uses its `conduit` parameter to resolve application objects.
+5. When it returns, `main()` owns shutdown.
+
+## Define ordinary application objects
+
+`capstone_models.py` contains configuration, a small resource, and a request
+handler. `DbPool` uses an in-memory order store to demonstrate a pool's lifetime;
+it opens no database connection. The handler uses its injected configuration
+and pool to answer a request.
+
+The constructor's `AppConfig` and `DbPool` annotations refer to real classes
+available in this module. Melder can inspect those dependencies when building
+the handler. The handler borrows the pool; the conduit owns its disposal.
+
+```{literalinclude} ../downloads/01_beginner/capstone_models.py
+:language: python
+:caption: capstone_models.py
+```
+
+## Bootstrap with direct binding calls
+
+The bootstrap imports the actual classes, registers them, and conjures once.
+Each `bind()` manages its own transaction and synchronization. Ordinary binding
+needs no outer `with book:` block; these are individual registration calls.
+
+| Registration | Lifetime | Result |
+| --- | --- | --- |
+| The `AppConfig` class | `unique` | Every handler receives one shared configuration object |
+| The `DbPool` class | `unique` | All requests share one pool; cleanup calls `close()` |
+| The `RequestHandler` class | `many` | Every meld creates a fresh handler with injected dependencies |
+
+The configuration uses its ordinary Python constructor default. The bootstrap
+registers its class, and Melder creates the shared object when it is first resolved.
+
+```{literalinclude} ../downloads/01_beginner/capstone_bootstrap.py
+:language: python
+:caption: capstone_bootstrap.py
+```
+
+## Resolve typed objects in the consuming module
+
+This consumer uses `md`, `AppConfig`, `DbPool`, and `RequestHandler` only in
+type annotations, so those imports live under `if TYPE_CHECKING:`.
+Runtime work uses `conduit.meld()` on the object passed by `main()`.
+The bootstrap imports Melder normally because it calls `md.Spellbook()`,
+and imports the real application classes to register them.
+
+In `def run_application(conduit: md.Conduit)`, `conduit` is the parameter
+receiving the object from `main()`. `md.Conduit` is its type annotation.
+Writing only `conduit` would still allow Python to execute the function; the
+annotation supplies type information for editors and checkers.
+
+Python 3.14 defers function annotations. This application uses the hints for
+editors and type checkers and does not evaluate them during execution.
+
+The runtime lookup is explicit: `spell="RequestHandler"` names the registered
+spell. The annotation `handler: RequestHandler` describes the returned object
+to your tools. It does not construct, convert, or wrap that object.
+
+The bootstrap still imports and binds the real classes. This separates startup
+from consumption while keeping the consumer's object types precise.
+
+```{literalinclude} ../downloads/01_beginner/capstone_application.py
+:language: python
+:caption: capstone_application.py
+```
+
+The assertions show that configuration and pool are shared, handlers are
+distinct, and their work reaches the same pool. The handler calls real methods
+on its dependencies and returns an application result.
+
+## Run the application and own shutdown
+
+The entry point starts the graph, calls the application, and prints its results.
+Its `finally` blocks guarantee that both cleanup calls are attempted if the
+application raises. The pool retains a `closed` flag so this demonstration can
+check that the configured disposal method ran.
+
+```{literalinclude} ../downloads/01_beginner/40_beginner_capstone.py
+:language: python
+:caption: 40_beginner_capstone.py
+```
+
+From the repository root with Melder installed and Python 3.14 free-threading selected:
+
+```bash
+python UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py
+```
+
+On Windows, select the free-threaded interpreter explicitly:
+
+```powershell
+py -3.14t UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py
+```
+
+Expected application output after the assertions pass:
+
+```text
+orders-service: order 101 = coffee
+orders-service: order 102 = tea
+orders-service: order 103 = cocoa
+pool closed: True
+capstone complete: bootstrapped, typed, injected, used, cleaned
+```
+
+{download}`Download the Beginner collection with all four files <../downloads/beginner-examples.zip>`.
+Keep the sibling modules beside the entry script when extracting or copying it.
+
+Continue to Intermediate for more configuration and cooperation between
+independently owned subsystems. The bootstrap-pattern and inventory-pattern
+lessons below provide other useful ways to organize and inspect an application.
 ================================================================================
 END FILE: docs/beginner/capstone.md
 ================================================================================
@@ -59064,7 +60075,7 @@ END FILE: docs/conf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/curriculum.toml
-CONTENT SHA256: 0ac07a43cdd3efbfdb7988b67f9649a8a57b6bb79587b63b32991adc1df94bc5
+CONTENT SHA256: 57d89e8450f7ce0d2e722368351f5ccda242d1fbdfc6b0e025287439e1c682c7
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -59155,7 +60166,7 @@ title = "Build a complete beginner application"
 level = "beginner"
 source = "beginner/capstone.md"
 lessons = ["beginner:40", "beginner:18", "beginner:39"]
-show_steps = true
+show_steps = false
 
 [[chapter]]
 id = "intermediate/registration"

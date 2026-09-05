@@ -5,7 +5,7 @@ name: CI
 # resulting revision. No path filters or repository-variable kill switches.
 on:
   pull_request:
-    branches: [dev, preprod, prod]
+    branches: [dev, preprod, release_candidate, prod]
     types: [opened, synchronize, reopened, ready_for_review, edited]
   push:
     branches: [dev, preprod, prod]
@@ -23,16 +23,26 @@ jobs:
     name: CI / branch-policy
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     outputs:
       package-required: ${{ steps.route.outputs.package-required }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - name: Validate the branch route
         id: route
         run: python .github/scripts/ci_policy.py branch
+      - name: Require the exact candidate before prod promotion
+        if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
 
   hygiene:
     name: CI / repository-hygiene

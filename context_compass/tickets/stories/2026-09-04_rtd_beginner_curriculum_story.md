@@ -67,8 +67,8 @@ Read UX_and_AIX_experiences/AGENTS.md and 01_beginner/_concept_map.txt. S4 inher
 - [ ] Execution results and any exceptions are recorded without inferred verification claims.
 
 ## Validation / Test Plan
-Not run. Use the existing Beginner example harness and applicable contract probes on 3.14t; inspect
-asserted outcomes as well as execution success. Check HTML, links, copying, and mobile readability.
+Current Beginner/metadata checks: 308 passed. The revised four-file capstone also runs from its
+extracted download. Strict HTML/source/link checks and affected handbook review pass; see task evidence.
 
 ## UX / API / Data Notes
 Entry is plain Python. Completion means a useful owned application graph, not familiarity with internals.
@@ -106,6 +106,17 @@ Per-lesson drift is resolved during scoped authoring tasks; do not silently chan
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T10:47:49Z
+  TYPE: FACT
+  CLAIM: Owner-requested capstone revision is implemented: separate models/bootstrap/consumer/entry,
+    direct binding, TYPE_CHECKING result types, actual application calls, and explicit cleanup.
+  EVIDENCE:
+  - artifacts/2026-09-05_beginner_capstone_revision.md:1-40
+  IMPACT: The capstone now teaches the requested application structure with runnable, source-backed code.
+  NEXT: Owner review and integrated final documentation qualification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Applicable Anti-Patterns
 - [ ] No advanced prerequisites or hand-copied example code.
 - [ ] No stale disposal claims or invented execution evidence.
@@ -117,4 +128,5 @@ Per-lesson drift is resolved during scoped authoring tasks; do not silently chan
 Record chapter coverage, verified contracts, example drift, and vocabulary handed to Intermediate.
 
 ## Context / Handoff Summary
-Defined, not implemented. Deliver the entire Beginner level, with source-backed examples and a real capstone.
+The Beginner level and 41 lessons are implemented. The revised four-file capstone and 308 combined
+execution/metadata checks pass. Its task is in review; complete integrated quality/hosted acceptance later.

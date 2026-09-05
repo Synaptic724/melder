@@ -143,6 +143,22 @@ Record actual documentation/generation outcomes with paths; retain source truth 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T11:37:10Z
+  TYPE: PLAN
+  CLAIM: Owner clarified overlaps: book order owns shared names in BOTH modes; False places
+    the full book block last and True first. Bind and configuration setter docs now describe it.
+    During canonical/public promotion, replace any earlier first-group-wins wording, including
+    the active/inactive Spellbook argument docs, and refresh all derived representations.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/bind/bind.py:258-278`
+  - `src/melder/aether/spellbook/configuration/spellbook_configuration.py:1128-1158`
+  - Navigation: Spellbook.bind/bind_inactive disposal argument descriptions near lines 4806/5077.
+  IMPACT: The runtime prerequisite is verified (2,807 tests); final documentation/assets remain
+    deferred until replay is complete, avoiding conflicting writes to other agents' corpora.
+  NEXT: After replay, explain book-block placement and overlap ownership at every documented input route.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 No work executed yet. Use implemented behavior and task evidence, preserve the separate RTD lane,
 and run source assets before LLM assets. Final task:

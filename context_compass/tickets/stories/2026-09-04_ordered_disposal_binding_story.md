@@ -9,7 +9,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T09:40:08Z
+- Updated: 2026-09-05T11:37:10Z
 
 ## User Narrative
 As a Melder user, I want book and spell disposal names resolved once in a predictable
@@ -30,9 +30,10 @@ Binding establishes one coherent input for identity, execution, and persistence.
 
 ## Requirements (Functional)
 - Use LISTS. Both book and per-spell names contribute at creation.
-- `enforce_priority_disposal_methods` defaults False: spell methods first, book methods last.
+- `enforce_priority_disposal_methods` defaults False: spell-only methods first, book block last.
 - True promotes matching book methods to the front in configuration order.
-- Preserve first occurrence across both groups; missing profile names are skipped.
+- Shared names belong to the book block in both modes; each block preserves supplied order.
+- Deduplicate each accepted name; missing profile names are skipped.
 - The existing class-profile boundary remains; no factory/instance expansion.
 - Bind hashes the resolved ordered list and Spell stores that list directly.
 - No first-bind shared override may absorb later new Spells' explicit inputs.
@@ -145,8 +146,32 @@ Record cross-task decisions here; detailed findings remain in the owning child t
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T11:08:48Z
+  TYPE: MEASURE
+  CLAIM: Configuration transport is verified by 59 focused tests, including six new real
+    emission/profile/checkpoint/JSON/reload cases and Nexus defaults. No transport source changes.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_disposal_configuration_roundtrip_task.md`
+  IMPACT: Producer and configuration-transport prerequisites are satisfied. Runtime is also
+    verified; persistence work now holds a reproduced differing-host graft policy decision.
+  NEXT: Resolve the graft policy decision in the crystal/replay task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T11:37:10Z
+  TYPE: MEASURE
+  CLAIM: Owner's clarified overlap contract is implemented: book order owns shared names in
+    both modes, while the flag chooses front/back placement. Updated producer/runtime tests
+    pass 2,807 selected cases; 10 new cases cover overlap identity and repeated composition.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md`
+  IMPACT: Producer prerequisite is back in review; the runtime still needs no extra policy calls.
+  NEXT: Continue the crystal/replay slice using the clarified book block.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Configuration and Bind/Spell source/tests are implemented and in review. The active producer
-task records 753 selected passing tests. Full configuration transport remains pending; the
-next runtime task owns compiler propagation. Ready tasks still require their entry gates.
-The current list/False-default/composition rule supersedes historical tuple/override proposals.
+Configuration, Bind/Spell, and configuration transport are implemented/verified and in review.
+Transport has 59 passing checks with no source correction. Runtime is also verified separately.
+The crystal/replay task is blocked on an explicit receiving-host policy/live-ID decision.
+The list/False-default/composition rule remains settled; no post-creation mutation support is added.

@@ -1,24 +1,22 @@
 # Component patch: production candidate provenance
 
-## Before and after
-Before: release-build produces the files sent directly to real PyPI after fresh checks.
-After: fresh release validation/build remains mandatory, and real PyPI receives the retained,
-TestPyPI-qualified candidate files after a fresh installed-candidate check and identity verification.
+## Slimmed scope accepted by owner
+Keep the existing fresh production runtime/assets/build pipeline and its own verified distributions.
+Add a read-only qualification check for the exact candidate source, rather than a new retained-artifact
+promotion engine or another complete source-suite run after the TestPyPI installation.
 
-## Selection and immutable inputs
-At release start, read release_candidate's exact commit/tree and require its tree to match the
-selected prod checkout. Read the latest run for that exact commit from release-candidate.yml;
-require the expected repository, branch, event, successful completion, and a positive run attempt.
-Pin the run ID, attempt, and artifact name as job outputs. Every subsequent download uses them.
+## Promotion and release checks
+For a prod PR, inspect the exact release_candidate head from the event. For publication, inspect
+the second parent of the required prod promotion merge. In both cases require that candidate's tree
+to equal the checkout tree and the latest candidate workflow run for that SHA to have succeeded.
+Verify repository, workflow path, branch, event, and full commit identity in the API response.
+Prod PRs/release also require a final package version, never an rcN package mislabeled with a final tag.
 
-## Final gate
-Verify candidate.json against the selected run/repository/commit/tree/version and inspect the
-distribution contents. Recheck the selected run's successful attempt and live candidate branch.
-Then retain the existing release-tag/prod check as the last remote Git identity read before upload.
-If candidate, prod, or tag moved, any evidence expired/disappeared, or a rerun changed the selected
-attempt, refuse publication. No fallback to another candidate or earlier run happens mid-release.
+## Failure semantics
+No matching candidate run, failed/pending qualification, mismatched tree, a direct prod commit, or
+invalid API evidence blocks promotion/publication. The final publisher repeats this candidate check
+before its existing live tag/prod check, which remains last. No package upload is used as local validation.
 
 ## Validation
-Boundary-mocked tests cover missing/failed/pending/forged runs, changed attempts, head/tree/version
-mismatch, missing artifacts, and final guard ordering. Parsed workflow checks preserve fresh runtime,
-asset/build dependencies and environment isolation. Actual release publication is not a test.
+Boundary tests cover valid merge/source identity, failed/pending/forged runs, and changed candidate
+trees. Parsed workflow tests preserve fresh final runtime/build dependencies and environment isolation.

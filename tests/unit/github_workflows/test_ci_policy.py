@@ -37,8 +37,11 @@ def final_release() -> dict[str, object]:
     ("dev", "dev", "fork/repo", False),
     ("dev", "preprod", "owner/repo", False),
     ("dev", "prod", "owner/repo", False),
+    ("dev", "release_candidate", "owner/repo", False),
     ("preprod", "dev", "owner/repo", True),
-    ("prod", "preprod", "owner/repo", True),
+    ("release_candidate", "preprod", "owner/repo", True),
+    ("release_candidate", "release-fix/final-version", "owner/repo", True),
+    ("prod", "release_candidate", "owner/repo", True),
 ])
 def test_valid_routes_choose_the_package_requirement(policy: ModuleType, base: str,
                                                      head: str, repository: str,
@@ -51,10 +54,17 @@ def test_valid_routes_choose_the_package_requirement(policy: ModuleType, base: s
     ("main", "feature/example", "owner/repo"),
     ("dev", "dev", "owner/repo"),
     ("dev", "preprod", "fork/repo"),
+    ("dev", "release_candidate", "fork/repo"),
     ("preprod", "feature/example", "owner/repo"),
     ("preprod", "dev", "fork/repo"),
     ("prod", "dev", "owner/repo"),
+    ("prod", "preprod", "owner/repo"),
     ("prod", "preprod", "fork/repo"),
+    ("prod", "release_candidate", "fork/repo"),
+    ("release_candidate", "preprod", "fork/repo"),
+    ("release_candidate", "dev", "owner/repo"),
+    ("release_candidate", "release-fix/", "owner/repo"),
+    ("release_candidate", "release-fix/patch", "fork/repo"),
     ("prod", "release/arbitrary", "owner/repo"),
     ("dev", "", "owner/repo"),
 ])
@@ -79,6 +89,7 @@ def test_pr_payload_drives_route_and_rejects_missing_identity(policy: ModuleType
 @pytest.mark.parametrize(("event", "ref", "packages"), [
     ("push", "refs/heads/dev", False),
     ("push", "refs/heads/preprod", True),
+    ("push", "refs/heads/release_candidate", True),
     ("workflow_dispatch", "refs/heads/prod", True),
 ])
 def test_permanent_refs_are_classified(policy: ModuleType, event: str,
@@ -119,6 +130,50 @@ def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
     results["packages"] = {"result": "failure"}
     with pytest.raises(ValueError, match="packages"):
         policy.require_success(results, False)
+
+
+@pytest.mark.parametrize("job", ["authorize", "build", "publish", "install"])
+@pytest.mark.parametrize("result", ["failure", "cancelled", "skipped", "neutral", None])
+def test_candidate_requires_all_upload_and_install_stages(policy: ModuleType, job: str, result: object) -> None:
+    """Neither a skipped publisher nor one failing platform can yield package-ready success."""
+    results = {name: {"result": "success"} for name in policy.CIPolicy.CANDIDATE_JOBS}
+    policy.require_candidate_success(results)
+    results[job] = {"result": result}
+    with pytest.raises(ValueError, match="failed or was skipped"):
+        policy.require_candidate_success(results)
+
+
+def test_candidate_rejects_missing_or_extra_stage_evidence(policy: ModuleType) -> None:
+    """A partial result map cannot omit a failing stage or introduce an unreviewed stage."""
+    results = {name: {"result": "success"} for name in policy.CIPolicy.CANDIDATE_JOBS}
+    for name in results:
+        with pytest.raises(ValueError, match="Incomplete"):
+            policy.require_candidate_success({key: value for key, value in results.items() if key != name})
+    with pytest.raises(ValueError, match="Incomplete"):
+        policy.require_candidate_success({**results, "extra": {"result": "success"}})
+
+
+@pytest.mark.parametrize("event", ["push", "workflow_dispatch"])
+def test_current_candidate_branch_can_publish(policy: ModuleType, event: str) -> None:
+    """Both automatic pushes and explicit retries authorize the exact live candidate commit."""
+    sha = "a" * 40
+    ref = "refs/heads/release_candidate"
+    policy.validate_candidate_head(event, ref, sha, sha, f"{sha}\t{ref}\n")
+
+
+@pytest.mark.parametrize(("event", "ref", "checkout", "advertisement"), [
+    ("pull_request", "refs/heads/release_candidate", "a" * 40, "a" * 40 + "\trefs/heads/release_candidate"),
+    ("workflow_dispatch", "refs/heads/prod", "a" * 40, "a" * 40 + "\trefs/heads/release_candidate"),
+    ("push", "refs/heads/release_candidate", "b" * 40, "a" * 40 + "\trefs/heads/release_candidate"),
+    ("push", "refs/heads/release_candidate", "a" * 40, "b" * 40 + "\trefs/heads/release_candidate"),
+    ("push", "refs/heads/release_candidate", "a" * 40, ""),
+    ("push", "refs/heads/release_candidate", "a" * 40, "a" * 40 + "\trefs/heads/other"),
+])
+def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, event: str, ref: str,
+                                                        checkout: str, advertisement: str) -> None:
+    """Refuse PR events, manual wrong refs, stale checkouts, moved/deleted branches, and wrong names."""
+    with pytest.raises(ValueError):
+        policy.validate_candidate_head(event, ref, "a" * 40, checkout, advertisement)
 
 
 @pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages"])

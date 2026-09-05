@@ -20,6 +20,16 @@ The entry point calls the bootstrap, passes the returned conduit to the
 application, and owns shutdown. The application module receives a usable
 conduit and works with the objects returned by `meld()`.
 
+All four modules run in one Python process. Importing `capstone_bootstrap`
+loads the `build_application` function definition. The graph is created when
+`main()` calls that function:
+
+1. `build_application()` creates the book, binds the classes, conjures, and returns both objects.
+2. `main()` receives them in `book, conduit`.
+3. `run_application(conduit)` passes that same conduit object into the application function.
+4. The function uses its `conduit` parameter to resolve application objects.
+5. When it returns, `main()` owns shutdown.
+
 ## Define ordinary application objects
 
 `capstone_models.py` contains configuration, a small resource, and a request
@@ -58,10 +68,19 @@ registers its class, and Melder creates the shared object when it is first resol
 
 ## Resolve typed objects in the consuming module
 
-This is the module that uses the application. Put imports needed only for
-annotations under `if TYPE_CHECKING:`. Editors and type checkers can then
-understand `AppConfig`, `DbPool`, `RequestHandler`, and `md.Conduit` without
-requiring those imports when this module executes.
+This consumer uses `md`, `AppConfig`, `DbPool`, and `RequestHandler` only in
+type annotations, so those imports live under `if TYPE_CHECKING:`.
+Runtime work uses `conduit.meld()` on the object passed by `main()`.
+The bootstrap imports Melder normally because it calls `md.Spellbook()`,
+and imports the real application classes to register them.
+
+In `def run_application(conduit: md.Conduit)`, `conduit` is the parameter
+receiving the object from `main()`. `md.Conduit` is its type annotation.
+Writing only `conduit` would still allow Python to execute the function; the
+annotation supplies type information for editors and checkers.
+
+Python 3.14 defers function annotations. This application uses the hints for
+editors and type checkers and does not evaluate them during execution.
 
 The runtime lookup is explicit: `spell="RequestHandler"` names the registered
 spell. The annotation `handler: RequestHandler` describes the returned object

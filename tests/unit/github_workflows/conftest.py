@@ -7,6 +7,13 @@ from types import ModuleType
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def standalone_script_imports(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Expose CI helper siblings as normal script execution does, only within each test."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    monkeypatch.syspath_prepend(str(root / ".github/scripts"))
+
+
 def load_script(name: str) -> ModuleType:
     """Load one checked-in CI helper by path and return its public test surface."""
     root = pathlib.Path(__file__).resolve().parents[3]
@@ -34,3 +41,21 @@ def distributions() -> ModuleType:
 def runtime() -> ModuleType:
     """Provide the runtime test driver without invoking the test suite recursively."""
     return load_script("run_runtime_tests")
+
+
+@pytest.fixture
+def candidate() -> ModuleType:
+    """Provide real TestPyPI verification logic with external boundaries available to mock."""
+    return load_script("testpypi_candidate")
+
+
+@pytest.fixture
+def candidate_proof() -> ModuleType:
+    """Provide the exact-source GitHub qualification gate without making an API call."""
+    return load_script("check_candidate_run")
+
+
+@pytest.fixture
+def normalizer() -> ModuleType:
+    """Provide archive normalization without rewriting any artifact at import."""
+    return load_script("normalize_sdist")

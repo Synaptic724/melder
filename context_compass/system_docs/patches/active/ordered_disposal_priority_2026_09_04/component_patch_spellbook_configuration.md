@@ -14,7 +14,8 @@ This patch changes only that owner; it adds no policy state to consumers or fram
 - `get_property("enforce_priority_disposal_methods")` returns the stored bool by default.
 - The fluent setter delegates to `set_property` and returns the same configuration instance.
 - Preserve current type-validation timing: generic validation/freeze rejects non-bool values.
-- False means spell-first group priority, not suppression of the book's method names.
+- False places spell-only names first and the complete book block last; book order owns overlaps
+  in either mode. The flag changes placement, never suppression of the book's contribution.
 
 ## State and lifecycle deltas
 - Seed only the new flag early, not every ordinary default.

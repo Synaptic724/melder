@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 6ff06b53358a6284122d9a6e2b08a2e7fdb09db3f10d8e8b10b409f24d363f1d
-FILE COUNT: 798
+SOURCE FINGERPRINT: d950f65e45e29d6d273cb04a2d6df946449cc9fff486e04cdcfe18f0f28be3a2
+FILE COUNT: 804
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -36529,6 +36529,366 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
 END FILE: tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/component/melder/spellbook/test_ordered_disposal_binding.py
+CONTENT SHA256: 5b2578919389c7482b6f11c7c9b57c41d66cef3ca03e3af580b567d6dfaf9992
+SOURCE ENCODING: utf-8
+================================================================================
+"""Producer contracts for ordered book/per-spell disposal metadata and bind identity."""
+
+import json
+import os
+import subprocess
+import sys
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator, Optional
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.bind.bind import Bind
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.spellbinder import SpellBinder
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+
+
+class OrderedDisposalService:
+    """Record actual disposal calls; definition order deliberately differs from requested order."""
+
+    def __init__(self) -> None:
+        """Initialize the per-instance invocation log."""
+        self.calls: list[str] = []
+
+    def close(self) -> None:
+        """Record close without changing the other disposal methods."""
+        self.calls.append("close")
+
+    def flush(self) -> None:
+        """Record flush in the order the runtime invokes it."""
+        self.calls.append("flush")
+
+    def stop(self) -> None:
+        """Record stop in the order the runtime invokes it."""
+        self.calls.append("stop")
+
+
+class InheritedOnlyDisposal(OrderedDisposalService):
+    """An empty own namespace keeps inherited-only methods outside current profile matching."""
+
+
+def service_factory() -> OrderedDisposalService:
+    """Return a service through the existing non-class binding family."""
+    return OrderedDisposalService()
+
+
+@pytest.fixture(autouse=True)
+def fresh_runtime() -> Iterator[None]:
+    """Isolate the real runtime using the suite's existing singleton reset pattern."""
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
+    Conduit._aether = Spellbook._aether
+    try:
+        yield
+    finally:
+        Nexus._reset_singleton_for_tests()
+        Aether._reset_singleton_for_tests()
+        Spellbook._aether = Aether()
+        Conduit._aether = Spellbook._aether
+
+
+@contextmanager
+def configured_book(
+        names: Optional[list[str]],
+        priority: bool = False,
+        *,
+        frame: str = "ordered-disposal",
+        dynamic: bool = False,
+) -> Iterator[Spellbook]:
+    """Own a configured book for one test, with caching disabled and no recorder activation."""
+    configuration = SpellbookConfiguration(frame)
+    if names is not None:
+        configuration.with_disposal_method_names(names)
+    if priority:
+        configuration.with_enforce_priority_disposal_methods()
+    configuration.with_defaults().with_phase_scheduler_workers(1).finalize()
+    book = Spellbook(aetheric_frame=frame, configuration=configuration)
+    try:
+        book.configure_aether_frame(
+            system_state="dynamic" if dynamic else None,
+            disposal=None,
+            disposal_method_names=None,
+            system_caching_enabled=False,
+        )
+        yield book
+    finally:
+        book.cleanup()
+
+
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "flush", "close"]),
+    (True, ["flush", "close", "stop"]),
+])
+def test_binding_combines_groups_in_priority_order(priority: bool, expected: list[str]) -> None:
+    """Resolve both groups once, preserving order while dropping duplicates and missing names."""
+    with configured_book(["flush", "missing", "close", "flush"], priority) as book:
+        spell_id = book.bind(
+            spell=OrderedDisposalService,
+            existence="many",
+            disposal_method_names=["close", "stop", "absent", "close"],
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == expected
+        assert spell.has_disposal_methods is True
+        assert Bind.spell_id_inspector(
+            OrderedDisposalService,
+            spell_name=spell.spell_name,
+            existence=spell.existence,
+            disposal_method_names=spell.disposal_method_names,
+        ) == spell_id
+
+
+@pytest.mark.parametrize("book_names,spell_names,expected", [
+    (None, None, []),
+    ([], [], []),
+    (["flush", "close"], None, ["flush", "close"]),
+    (["flush", "close"], [], ["flush", "close"]),
+    ([], ["stop", "close"], ["stop", "close"]),
+    (["missing"], ["absent"], []),
+])
+def test_empty_and_missing_groups_preserve_matching_contract(
+        book_names: Optional[list[str]],
+        spell_names: Optional[list[str]],
+        expected: list[str],
+) -> None:
+    """An empty per-spell group leaves book names applicable; no matches means no disposal."""
+    with configured_book(book_names) as book:
+        spell_id = book.bind(
+            spell=OrderedDisposalService, existence="many", disposal_method_names=spell_names,
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == expected
+        assert spell.has_disposal_methods is bool(expected)
+
+
+@pytest.mark.parametrize("priority", [False, True])
+def test_each_binding_uses_its_own_explicit_names(priority: bool) -> None:
+    """The first binding must not supply another binding's explicit policy or shared list."""
+    with configured_book(["flush"], priority) as book:
+        first_id = book.bind(
+            spell=OrderedDisposalService, existence="many", binding_name="first",
+            disposal_method_names=["close"],
+        )
+        second_id = book.bind(
+            spell=OrderedDisposalService, existence="many", binding_name="second",
+            disposal_method_names=["stop"],
+        )
+        first = book.find_spell_by_id(first_id)
+        second = book.find_spell_by_id(second_id)
+        assert first is not None and second is not None
+        assert first.disposal_method_names == (["flush", "close"] if priority else ["close", "flush"])
+        assert second.disposal_method_names == (["flush", "stop"] if priority else ["stop", "flush"])
+        assert first.disposal_method_names is not second.disposal_method_names
+
+
+@pytest.mark.parametrize("priority", [False, True])
+@pytest.mark.parametrize("after_conjure", [False, True])
+def test_staged_binding_preserves_its_own_order_and_index_selection(
+        priority: bool,
+        after_conjure: bool,
+) -> None:
+    """Staging applies the same policy before/after conjure without replacing the active member."""
+    with configured_book(["flush"], priority, dynamic=True) as book:
+        active_id = book.bind(
+            spell=OrderedDisposalService, existence="many", disposal_method_names=["close"],
+        )
+        active = book.find_spell_by_id(active_id)
+        assert active is not None
+        if after_conjure:
+            book.conjure(dynamic=True)
+        staged_id = book.bind_inactive(
+            spell=OrderedDisposalService, spell_index=active.spell_index, existence="many",
+            disposal_method_names=["flush", "stop", "flush"],
+        )
+        staged = book._get_owned_spell(staged_id)
+        assert staged is not None
+        try:
+            assert staged.spell_index is active.spell_index
+            assert active.spell_index.selected_spell_id == active_id
+            assert staged_id != active_id
+            assert staged.disposal_method_names == (["flush", "stop"] if priority else ["stop", "flush"])
+        finally:
+            book.cleanup_spell(spell=staged)
+
+
+@pytest.mark.parametrize("priority", [False, True])
+def test_fluent_binder_forwards_explicit_disposal_names(priority: bool) -> None:
+    """The existing fluent kwargs path reaches the same ordered producer contract."""
+    with configured_book(["flush"], priority) as book:
+        binder = SpellBinder(book)
+        try:
+            spell_id = binder.bind(OrderedDisposalService).with_kwargs(
+                disposal_method_names=["flush", "stop", "close", "flush"],
+            ).finalize()
+        finally:
+            binder.cleanup()
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == (["flush", "stop", "close"] if priority else ["stop", "close", "flush"])
+
+
+@pytest.mark.parametrize("target", [InheritedOnlyDisposal, service_factory, OrderedDisposalService()])
+def test_disposal_matching_stays_with_existing_class_profile(target: object) -> None:
+    """Inherited-only, factory, and prebuilt-instance methods remain outside class-profile matching."""
+    with configured_book(["flush", "close"], True) as book:
+        spell_id = book.bind(spell=target, existence="unique", disposal_method_names=["stop"])
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == []
+        assert spell.has_disposal_methods is False
+
+
+def test_raw_configuration_can_bind_without_disposal_name_property() -> None:
+    """The raw configuration's early priority default permits ordinary pre-validation binding."""
+    configuration = SpellbookConfiguration("raw-disposal-config")
+    book = Spellbook(aetheric_frame="raw-disposal-config", configuration=configuration)
+    try:
+        spell_id = book.bind(spell=OrderedDisposalService, existence="many", disposal_method_names=["close"])
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == ["close"]
+    finally:
+        book.cleanup()
+
+
+def test_resolved_order_changes_sha_but_unmatched_names_do_not() -> None:
+    """Only retained order contributes to the disposal portion of the bind fingerprint."""
+    identities: list[str] = []
+    for number, names in enumerate((["flush", "close"], ["close", "flush"], ["flush", "missing", "close"])):
+        with configured_book(names, frame=f"disposal-hash-{number}") as book:
+            identities.append(book.bind(spell=OrderedDisposalService, existence="many"))
+    assert identities[0] != identities[1]
+    assert identities[0] == identities[2]
+
+
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "flush", "close"]),
+    (True, ["flush", "close", "stop"]),
+])
+def test_bound_order_reaches_real_cleanup(priority: bool, expected: list[str]) -> None:
+    """A real conjure/meld/cleanup smoke check preserves the producer sequence."""
+    with configured_book(["flush", "close"], priority) as book:
+        spell_id = book.bind(
+            spell=OrderedDisposalService, existence="many", disposal_method_names=["close", "stop"],
+        )
+        conduit = book.conjure()
+        instance = conduit.meld(spell_id=spell_id)
+        conduit.permanent_cleanup()
+        assert instance.calls == expected
+
+
+@pytest.mark.parametrize("priority", [False, True])
+@pytest.mark.parametrize("spell_names", [
+    ["close", "flush"],
+    ["flush", "close"],
+    ["close", "missing", "flush", "close"],
+])
+def test_book_owns_shared_name_order_and_fingerprint(
+        priority: bool,
+        spell_names: list[str],
+) -> None:
+    """Shared names follow the book block, so their explicit order cannot change the bind SHA."""
+    with configured_book(["flush", "close", "flush"], priority) as book:
+        spell_id = book.bind(
+            spell=OrderedDisposalService, existence="many", disposal_method_names=spell_names,
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == ["flush", "close"]
+        assert spell_id == Bind.spell_id_inspector(
+            OrderedDisposalService, spell_name=spell.spell_name, existence=spell.existence,
+            disposal_method_names=["flush", "close"],
+        )
+
+
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "close", "flush"]),
+    (True, ["flush", "stop", "close"]),
+])
+def test_spell_only_block_preserves_order_and_deduplicates(
+        priority: bool,
+        expected: list[str],
+) -> None:
+    """Multiple spell-only names retain relative order when inserted before or after the book."""
+    with configured_book(["missing", "flush", "flush"], priority) as book:
+        spell_id = book.bind(
+            spell=OrderedDisposalService, existence="many",
+            disposal_method_names=["flush", "stop", "close", "stop", "missing"],
+        )
+        conduit = book.conjure()
+        instance = conduit.meld(spell_id=spell_id)
+        conduit.permanent_cleanup()
+        assert instance.calls == expected
+
+
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "flush", "close"]),
+    (True, ["flush", "close", "stop"]),
+])
+def test_rebinding_resolved_names_under_same_policy_is_idempotent(
+        priority: bool,
+        expected: list[str],
+) -> None:
+    """Passing the final list back into a new bind preserves both order and structural identity."""
+    with configured_book(["flush", "close"], priority, frame="original-order") as book:
+        original_id = book.bind(
+            spell=OrderedDisposalService, existence="many", disposal_method_names=["close", "stop"],
+        )
+        original = book.find_spell_by_id(original_id)
+        assert original is not None
+        with configured_book(["flush", "close"], priority, frame="replayed-order") as replayed:
+            replayed_id = replayed.bind(
+                spell=OrderedDisposalService, existence="many",
+                disposal_method_names=original.disposal_method_names,
+            )
+            restored = replayed.find_spell_by_id(replayed_id)
+            assert restored is not None
+            assert restored.disposal_method_names == expected
+            assert original.disposal_method_names == expected
+            assert replayed_id == original_id
+
+
+def test_real_bind_fingerprint_is_stable_across_hash_seeds() -> None:
+    """Fresh supported processes bind the same source-defined class to the same ordered identity."""
+    repository = Path(__file__).resolve().parents[4]
+    probe = """
+import json
+from tests.component.melder.spellbook.test_ordered_disposal_binding import OrderedDisposalService, configured_book
+with configured_book(["flush", "close"]) as book:
+    spell_id = book.bind(spell=OrderedDisposalService, existence="many", disposal_method_names=["stop"])
+    spell = book.find_spell_by_id(spell_id)
+    print(json.dumps([spell_id, list(spell.disposal_method_names)]))
+"""
+    records = []
+    for seed in ("1", "2", "3"):
+        environment = os.environ.copy()
+        environment["PYTHONHASHSEED"] = seed
+        environment["PYTHONPATH"] = os.pathsep.join((str(repository / "src"), str(repository)))
+        result = subprocess.run(
+            [sys.executable, "-c", probe], cwd=repository, env=environment,
+            text=True, capture_output=True, check=True, timeout=30,
+        )
+        records.append(json.loads(result.stdout))
+    assert records[0] == records[1] == records[2]
+    assert records[0][1] == ["stop", "flush", "close"]
+================================================================================
+END FILE: tests/component/melder/spellbook/test_ordered_disposal_binding.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_phase_component_cprofile_harness.py
 CONTENT SHA256: e041a81ba30a7bac771311861a6b31f332e814260693832137255aed4055ce67
 SOURCE ENCODING: utf-8
@@ -37909,7 +38269,7 @@ END FILE: tests/component/melder/spellbook/test_spell_compiler_component_system.
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_bind.py
-CONTENT SHA256: 17d95e01a94a3129feb33e67b1730e5fc8b5fc156223e43cfba5c999495f9707
+CONTENT SHA256: 1a63afce6b2a604c8ddb509e399f9701c14eee60986ae9f6275e0883c7e0834e
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -38014,7 +38374,7 @@ def test_component_bind_creates_class_spell_with_metadata() -> None:
             BasicService,
             spell_name=spell.spell_name,
             existence=spell.existence,
-            disposal_method_names=sorted(spell.disposal_method_names),
+            disposal_method_names=spell.disposal_method_names,
         ) == spell.spell_id
     finally:
         binder.cleanup()
@@ -43706,7 +44066,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spell_index.
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_spellbook.py
-CONTENT SHA256: 9fee7d8ef5a221d213d093f149aa420857318c5254f1ab29928548caa436a5a0
+CONTENT SHA256: ecb91db8e95313d1e4009bff5c785ccbd12b446946800ebec539f88e4148613f
 SOURCE ENCODING: utf-8
 ================================================================================
 import contextlib
@@ -44261,10 +44621,10 @@ def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
     Purpose:
         Validate bind-owned disposal metadata survives conjure unchanged.
     Contract:
-        - Class spells keep the resolved frozen disposal-method set computed at bind.
-        - Non-class spells keep an empty frozen disposal-method set.
+        - Class spells keep the resolved ordered disposal-method list computed at bind.
+        - Non-class spells keep an empty disposal-method list.
         - Conjure does not run a second disposal rewrite pass.
-        - has_disposal_methods is True only when the frozen set is non-empty.
+        - has_disposal_methods is True only when the resolved list is non-empty.
     Returns:
         None.
     Raises:
@@ -44334,12 +44694,12 @@ def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
         try:
             disposable_spell = _get_spell_by_version_id(spellbook, disposable_id)
             assert disposable_spell is not None
-            assert disposable_spell.disposal_method_names == frozenset({"cleanup", "close"})
+            assert disposable_spell.disposal_method_names == ["cleanup", "close"]
             assert disposable_spell.has_disposal_methods is True
 
             callable_spell = _get_spell_by_version_id(spellbook, callable_id)
             assert callable_spell is not None
-            assert callable_spell.disposal_method_names == frozenset()
+            assert callable_spell.disposal_method_names == []
             assert callable_spell.has_disposal_methods is False
         finally:
             conduit.permanent_cleanup()
@@ -94314,6 +94674,143 @@ def test_transfer_moves_only_the_targeted_spell() -> None:
 END FILE: tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/conduit/test_ordered_disposal_runtime.py
+CONTENT SHA256: fb1a01ab7cba51bb7284bf6afd76daf1fa37394a0a406f1a89db22082c39a69f
+SOURCE ENCODING: utf-8
+================================================================================
+"""Real binding-to-cleanup method order and reference ownership across compiler families."""
+
+from typing import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+from tests.component.melder.spellbook.test_ordered_disposal_binding import configured_book
+
+
+class DisposalLeaf:
+    """Record disposal in invocation order; accept a label to exercise real overrides."""
+
+    def __init__(self, label: str = "base") -> None:
+        """Start with an empty disposal log and retain the constructor label."""
+        self.label = label
+        self.calls: list[str] = []
+
+    def close(self) -> None:
+        """Record close without altering the other methods."""
+        self.calls.append("close")
+
+    def flush(self) -> None:
+        """Record flush at its actual position in the chain."""
+        self.calls.append("flush")
+
+    def stop(self) -> None:
+        """Record stop at its actual position in the chain."""
+        self.calls.append("stop")
+
+
+class DisposalRoot:
+    """Hold a real injected dependency and verify it remains live during root disposal."""
+
+    def __init__(self, leaf: DisposalLeaf, label: str = "base") -> None:
+        """Borrow the injected leaf and initialize this instance's disposal observations."""
+        self.leaf = leaf
+        self.label = label
+        self.calls: list[str] = []
+        self.closed_before_leaf = False
+
+    def close(self) -> None:
+        """Record whether dependency teardown has started when root close runs."""
+        self.closed_before_leaf = not self.leaf.calls
+        self.calls.append("close")
+
+    def flush(self) -> None:
+        """Record flush at its actual position in the chain."""
+        self.calls.append("flush")
+
+    def stop(self) -> None:
+        """Record stop at its actual position in the chain."""
+        self.calls.append("stop")
+
+
+@pytest.fixture(autouse=True)
+def isolated_world() -> Iterator[None]:
+    """Reset the real singleton world before and after each independent runtime graph."""
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
+    Conduit._aether = Spellbook._aether
+    try:
+        yield
+    finally:
+        Nexus._reset_singleton_for_tests()
+        Aether._reset_singleton_for_tests()
+        Spellbook._aether = Aether()
+        Conduit._aether = Spellbook._aether
+
+
+@pytest.mark.parametrize("family", ["solo", "generalized", "many_only"])
+@pytest.mark.parametrize("priority", [False, True])
+@pytest.mark.parametrize("overrides", [False, True])
+def test_real_compiled_disposal_uses_established_order(
+        family: str, priority: bool, overrides: bool,
+) -> None:
+    """Cold and repeated melds carry bind policy into stored instances and actual ordered cleanup."""
+    expected = ["flush", "close", "stop"] if priority else ["stop", "flush", "close"]
+    with configured_book(["flush", "close"], priority) as book:
+        leaf_id = book.bind(
+            spell=DisposalLeaf,
+            existence="unique" if family == "generalized" else "many",
+            disposal_method_names=["close", "stop"],
+        )
+        target_id = leaf_id
+        if family != "solo":
+            target_id = book.bind(
+                spell=DisposalRoot, existence="many", disposal_method_names=["close", "stop"],
+            )
+        conduit = book.conjure()
+        target_spell = book.find_spell_by_id(target_id)
+        assert target_spell is not None
+        assert target_spell._compiler_artifact._spell_codegen_plan.no_overrides_plan.metadata["plan_family"] == family
+        instance = conduit.meld(
+            spell_id=target_id, override={"label": "custom"} if overrides else None,
+        )
+        repeated = conduit.meld(
+            spell_id=target_id, override={"label": "custom"} if overrides else None,
+        )
+        assert repeated is not instance
+        assert instance.label == ("custom" if overrides else "base")
+        assert repeated.label == instance.label
+        live = [(target_id, instance), (target_id, repeated)]
+        if family != "solo":
+            live.append((leaf_id, instance.leaf))
+            if repeated.leaf is not instance.leaf:
+                live.append((leaf_id, repeated.leaf))
+        for spell_id, value in live:
+            spell = book.find_spell_by_id(spell_id)
+            assert spell is not None
+            raw_entry = conduit._creations._disposable_creations[spell_id]
+            entry = (
+                next(row for row in raw_entry if row[0] is value)
+                if spell.existence is Existence.many else raw_entry
+            )
+            assert entry[0] is value
+            assert entry[1] == expected
+            assert entry[1] is spell.disposal_method_names
+        conduit.permanent_cleanup()
+        for _spell_id, value in live:
+            assert value.calls == expected
+        if family != "solo":
+            assert instance.closed_before_leaf is True
+            assert repeated.closed_before_leaf is True
+================================================================================
+END FILE: tests/integration/melder/conduit/test_ordered_disposal_runtime.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py
 CONTENT SHA256: 309ba99ef4933de45aeccc2a51d96366661ab995befee1bd53f738e71f511885
 SOURCE ENCODING: utf-8
@@ -130989,7 +131486,7 @@ END FILE: tests/unit/architecture_and_design/test_architecture_docs_tool.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/conftest.py
-CONTENT SHA256: 7c05753cebb8de0f8cf31f091844cbb98898a427811c291cf621949ded46b96b
+CONTENT SHA256: 0829457d7b311cd784bf2119204f61e5a1fb97e2e711f90ce16f6eb2453b5748
 SOURCE ENCODING: utf-8
 ================================================================================
 """Load standalone CI scripts without creating a runtime package or booting Melder."""
@@ -130999,6 +131496,13 @@ import pathlib
 from types import ModuleType
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def standalone_script_imports(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Expose CI helper siblings as normal script execution does, only within each test."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    monkeypatch.syspath_prepend(str(root / ".github/scripts"))
 
 
 def load_script(name: str) -> ModuleType:
@@ -131028,12 +131532,297 @@ def distributions() -> ModuleType:
 def runtime() -> ModuleType:
     """Provide the runtime test driver without invoking the test suite recursively."""
     return load_script("run_runtime_tests")
+
+
+@pytest.fixture
+def candidate() -> ModuleType:
+    """Provide real TestPyPI verification logic with external boundaries available to mock."""
+    return load_script("testpypi_candidate")
+
+
+@pytest.fixture
+def candidate_proof() -> ModuleType:
+    """Provide the exact-source GitHub qualification gate without making an API call."""
+    return load_script("check_candidate_run")
+
+
+@pytest.fixture
+def normalizer() -> ModuleType:
+    """Provide archive normalization without rewriting any artifact at import."""
+    return load_script("normalize_sdist")
 ================================================================================
 END FILE: tests/unit/github_workflows/conftest.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_candidate_publication.py
+CONTENT SHA256: 64053389881c83a4adfb751fefc9b3e2131ecd7b9c3e76d19cb89be104437adf
+SOURCE ENCODING: utf-8
+================================================================================
+"""Prove exact-source qualification, immutable uploads, and isolated TestPyPI installation."""
+
+import hashlib
+import io
+import json
+import pathlib
+import subprocess
+import urllib.error
+from collections.abc import Sequence
+from types import ModuleType
+
+import pytest
+
+
+def qualified_run(**changes: object) -> dict[str, object]:
+    """Describe one successful exact-SHA branch workflow with explicit repository identity."""
+    return {"id": 101, "run_number": 4, "run_attempt": 1,
+            "repository": {"full_name": "owner/repo"}, "head_repository": {"full_name": "owner/repo"},
+            "head_sha": "a" * 40, "head_branch": "release_candidate", "event": "push",
+            "path": ".github/workflows/release-candidate.yml", "status": "completed",
+            "conclusion": "success", **changes}
+
+
+def candidate_pr(**head_changes: object) -> dict[str, object]:
+    """Describe the legitimate same-repository candidate-to-prod promotion route."""
+    return {"pull_request": {
+        "head": {"ref": "release_candidate", "sha": "a" * 40,
+                 "repo": {"full_name": "owner/repo"}, **head_changes},
+        "base": {"ref": "prod", "repo": {"full_name": "owner/repo"}},
+    }}
+
+
+def test_pr_and_prod_merge_identify_the_same_candidate(candidate_proof: ModuleType) -> None:
+    """PR merge testing and the eventual production merge must refer to the same source head."""
+    assert candidate_proof.candidate_source("pull_request", candidate_pr(), "owner/repo", []) == "a" * 40
+    assert candidate_proof.candidate_source("release", {}, "owner/repo",
+                                            ["c" * 40, "b" * 40, "a" * 40]) == "a" * 40
+
+
+@pytest.mark.parametrize("head", [
+    {"ref": "preprod"}, {"repo": {"full_name": "fork/repo"}}, {"sha": "short"},
+])
+def test_candidate_provenance_refuses_forged_heads(candidate_proof: ModuleType, head: dict[str, object]) -> None:
+    """A familiar branch name in a fork or an unapproved source cannot stand in for the candidate."""
+    with pytest.raises(ValueError):
+        candidate_proof.candidate_source("pull_request", candidate_pr(**head), "owner/repo", [])
+
+
+@pytest.mark.parametrize("parents", [[], ["a" * 40], ["a" * 40, "b" * 40], ["short"] * 3, ["a" * 40] * 4])
+def test_direct_squashed_or_ambiguous_prod_history_is_refused(candidate_proof: ModuleType,
+                                                            parents: list[str]) -> None:
+    """Production history must preserve one explicit candidate merge parent."""
+    with pytest.raises(ValueError):
+        candidate_proof.candidate_source("release", {}, "owner/repo", parents)
+
+
+def test_latest_candidate_run_must_pass(candidate_proof: ModuleType) -> None:
+    """A newer failed/pending run must not silently fall back to an older green result."""
+    green = qualified_run()
+    assert candidate_proof.require_qualified_run({"workflow_runs": [green]}, "owner/repo", "a" * 40) == green
+    for state in ({"status": "in_progress", "conclusion": None}, {"conclusion": "failure"}):
+        with pytest.raises(ValueError, match="unsuccessful"):
+            candidate_proof.require_qualified_run(
+                {"workflow_runs": [green, qualified_run(run_number=5, **state)]}, "owner/repo", "a" * 40,
+            )
+
+
+@pytest.mark.parametrize("change", [
+    {"head_sha": "b" * 40}, {"head_branch": "preprod"}, {"event": "pull_request"},
+    {"path": ".github/workflows/ci.yml"}, {"repository": {"full_name": "other/repo"}},
+    {"head_repository": {"full_name": "fork/repo"}}, {"status": "queued"},
+    {"conclusion": "skipped"}, {"run_attempt": 0}, {"run_attempt": True},
+    {"id": "101"}, {"run_number": -1},
+])
+def test_wrong_or_incomplete_hosted_evidence_blocks_prod(candidate_proof: ModuleType,
+                                                        change: dict[str, object]) -> None:
+    """Require trusted workflow, source, event, conclusion, and attempt without coercive defaults."""
+    with pytest.raises(ValueError):
+        candidate_proof.require_qualified_run({"workflow_runs": [qualified_run(**change)]}, "owner/repo", "a" * 40)
+
+
+@pytest.mark.parametrize("payload", [{}, {"workflow_runs": []}, {"workflow_runs": None},
+                                      {"workflow_runs": [qualified_run(), qualified_run()]}])
+def test_missing_or_ambiguous_workflow_runs_fail_closed(candidate_proof: ModuleType,
+                                                       payload: dict[str, object]) -> None:
+    """Absent qualification and duplicate run identity are refusals, never implicit success."""
+    with pytest.raises(ValueError):
+        candidate_proof.require_qualified_run(payload, "owner/repo", "a" * 40)
+
+
+@pytest.mark.parametrize(("tree_matches", "version"), [(False, "0.2.4"), (True, "0.2.4rc1")])
+def test_prod_rejects_different_tree_or_prerelease_before_querying_runs(candidate_proof: ModuleType,
+                                                                     monkeypatch: pytest.MonkeyPatch,
+                                                                     tree_matches: bool, version: str) -> None:
+    """Qualification of one tree or an RC version cannot authorize different final contents."""
+    def git_read(arguments: Sequence[str]) -> str:
+        """Supply only the relevant Git boundary responses, with an optional tree mismatch."""
+        if arguments[0] == "rev-list":
+            return f"{'c' * 40} {'b' * 40} {'a' * 40}"
+        return "tree-a" if tree_matches or arguments[-1] == "HEAD^{tree}" else "tree-b"
+
+    def unexpected_query(*arguments: object) -> None:
+        """A wrong tree/version should fail before consuming any remote qualification."""
+        raise AssertionError("API must not be queried for an invalid production candidate")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "release")
+    monkeypatch.setattr(candidate_proof, "read_event", lambda: {})
+    monkeypatch.setattr(candidate_proof, "git_output", git_read)
+    monkeypatch.setattr(candidate_proof, "assignment", lambda *arguments: version)
+    monkeypatch.setattr(candidate_proof, "github_runs", unexpected_query)
+    with pytest.raises(ValueError, match="tree differs|final package version"):
+        candidate_proof.main()
+
+
+def test_identical_and_partial_index_uploads_are_safe(candidate: ModuleType) -> None:
+    """Retries can reuse identical bytes and upload only missing files, without skip-existing."""
+    wheel = {"sha256": "a" * 64, "size": 100}
+    source = {"sha256": "b" * 64, "size": 200}
+    expected = {"melder-0.2.4-py3-none-any.whl": wheel, "melder-0.2.4.tar.gz": source}
+    assert candidate.missing_files(expected, {}) == sorted(expected)
+    assert candidate.missing_files(expected, expected) == []
+    assert candidate.missing_files(expected, {"melder-0.2.4.tar.gz": source}) == ["melder-0.2.4-py3-none-any.whl"]
+
+
+@pytest.mark.parametrize("remote", [
+    {"package.whl": {"sha256": "b" * 64, "size": 100}},
+    {"package.whl": {"sha256": "a" * 64, "size": 101}},
+    {"other.whl": {"sha256": "a" * 64, "size": 100}},
+])
+def test_changed_or_extra_index_files_require_a_new_version(candidate: ModuleType,
+                                                          remote: dict[str, object]) -> None:
+    """A name collision must never turn into a green retry of different package bytes."""
+    with pytest.raises(ValueError, match="new candidate version"):
+        candidate.missing_files({"package.whl": {"sha256": "a" * 64, "size": 100}}, remote)
+
+
+def test_remote_file_reads_close_stream_and_preserve_exact_identity(candidate: ModuleType,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """A successful API response provides validated digest/size evidence and leaves no open stream."""
+    response = io.BytesIO(json.dumps({"info": {"version": "0.2.4rc1"}, "urls": [{
+        "filename": "melder.whl", "digests": {"sha256": "a" * 64}, "size": 100,
+    }]}).encode())
+
+    def get_release(request: object, timeout: int) -> io.BytesIO:
+        """Assert the fixed public index boundary without any live network request."""
+        assert request.full_url == "https://test.pypi.org/pypi/melder/0.2.4rc1/json"
+        assert request.get_header("Authorization") is None
+        assert timeout == 30
+        return response
+
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", get_release)
+    assert candidate.remote_files("0.2.4rc1") == {"melder.whl": {"sha256": "a" * 64, "size": 100}}
+    assert response.closed
+
+
+@pytest.mark.parametrize("status", [404, 403, 500])
+def test_only_index_404_means_no_previous_upload(candidate: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                                status: int) -> None:
+    """Authorization/network/service failures must not be mistaken for an empty package version."""
+    def failure(*arguments: object, **keywords: object) -> None:
+        """Raise a representative HTTP boundary error without opening a network connection."""
+        raise urllib.error.HTTPError("https://test.pypi.org/", status, "test failure", {}, None)
+
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", failure)
+    if status == 404:
+        assert candidate.remote_files("0.2.4") == {}
+    else:
+        with pytest.raises(urllib.error.HTTPError):
+            candidate.remote_files("0.2.4")
+
+
+@pytest.mark.parametrize("file", [
+    {"filename": "package.whl", "digests": {"sha256": "bad"}, "size": 100},
+    {"filename": "package.whl", "digests": {"sha256": "a" * 64}, "size": True},
+    {"filename": "package.whl", "digests": {}, "size": 100},
+])
+def test_malformed_index_identity_is_refused(candidate: ModuleType, monkeypatch: pytest.MonkeyPatch,
+                                           file: dict[str, object]) -> None:
+    """Malformed metadata cannot authorize upload reuse or partial publication."""
+    response = io.BytesIO(json.dumps({"info": {"version": "0.2.4"}, "urls": [file]}).encode())
+    monkeypatch.setattr(candidate.urllib.request, "urlopen", lambda *args, **kwargs: response)
+    with pytest.raises(ValueError):
+        candidate.remote_files("0.2.4")
+
+
+def test_prepare_upload_copies_only_absent_verified_files(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    """An identical existing wheel is retained; a missing sdist is staged for the upload action."""
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "melder.whl").write_bytes(b"wheel")
+    (dist / "melder.tar.gz").write_bytes(b"source")
+    files = {path.name: candidate.file_identity(path) for path in dist.iterdir()}
+    monkeypatch.setattr(candidate, "package_version", lambda: "0.2.4")
+    monkeypatch.setattr(candidate, "verified_files", lambda *args: files)
+    monkeypatch.setattr(candidate, "remote_files", lambda version: {"melder.whl": files["melder.whl"]})
+    monkeypatch.setattr(candidate, "git_output", lambda arguments: "a" * 40)
+    upload = tmp_path / "upload"
+    report = tmp_path / "report.json"
+    assert candidate.prepare_upload(dist, upload, report) is True
+    assert [path.name for path in upload.iterdir()] == ["melder.tar.gz"]
+    assert (upload / "melder.tar.gz").read_bytes() == b"source"
+    assert json.loads(report.read_text())["files"] == files
+
+
+def test_index_download_pins_version_hash_and_uses_no_fallback(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    """Index propagation gets a bounded retry, then the returned bytes must match the selected wheel."""
+    payload = b"verified-wheel"
+    identity = {"sha256": hashlib.sha256(payload).hexdigest(), "size": len(payload)}
+    calls: list[list[str]] = []
+
+    def download(command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Model pip's process boundary and a transient first-attempt index miss."""
+        calls.append(command)
+        assert check
+        assert "--isolated" in command and "--no-deps" in command and "--require-hashes" in command
+        assert "--extra-index-url" not in command
+        assert command[command.index("--index-url") + 1] == "https://test.pypi.org/simple/"
+        assert (cwd / "requirement.txt").read_text() == f"melder==0.2.4rc1 --hash=sha256:{identity['sha256']}\n"
+        if len(calls) == 1:
+            raise subprocess.CalledProcessError(1, command)
+        (cwd / "downloads/melder.whl").write_bytes(payload)
+
+    monkeypatch.setattr(candidate.subprocess, "run", download)
+    monkeypatch.setattr(candidate.time, "sleep", lambda seconds: None)
+    wheel = candidate.download_wheel(tmp_path, "0.2.4rc1", "melder.whl", identity)
+    assert wheel.read_bytes() == payload
+    assert len(calls) == 2
+
+
+def test_download_retries_are_bounded(candidate: ModuleType, tmp_path: pathlib.Path,
+                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """A permanently missing index release never becomes an infinite or successful retry."""
+    calls: list[int] = []
+
+    def failure(command: list[str], **keywords: object) -> None:
+        """Fail the pip boundary deterministically on every attempt."""
+        calls.append(1)
+        raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(candidate.subprocess, "run", failure)
+    monkeypatch.setattr(candidate.time, "sleep", lambda seconds: None)
+    with pytest.raises(subprocess.CalledProcessError):
+        candidate.download_wheel(tmp_path, "0.2.4", "melder.whl", {"sha256": "a" * 64, "size": 100})
+    assert len(calls) == candidate.TestIndexPolicy.DOWNLOAD_ATTEMPTS
+
+
+def test_altered_download_is_refused_even_if_pip_reports_success(candidate: ModuleType, tmp_path: pathlib.Path,
+                                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    """The final file check independently binds the downloaded bytes to the tested candidate."""
+    def wrong_bytes(command: list[str], check: bool, cwd: pathlib.Path) -> None:
+        """Model a wrong external download without executing pip."""
+        (cwd / "downloads/melder.whl").write_bytes(b"wrong")
+
+    monkeypatch.setattr(candidate.subprocess, "run", wrong_bytes)
+    with pytest.raises(ValueError, match="differs"):
+        candidate.download_wheel(tmp_path, "0.2.4", "melder.whl", {"sha256": "a" * 64, "size": 100})
+================================================================================
+END FILE: tests/unit/github_workflows/test_candidate_publication.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
-CONTENT SHA256: 7e124c41540859f22a6463306eb1c0818bae58dd0dc21421c72d4986b1feefac
+CONTENT SHA256: bbe331366ce6393a09b3861c6197190237d2b337c931a79f81b065f3592bbcf1
 SOURCE ENCODING: utf-8
 ================================================================================
 """Behavioral regression tests for branch routes, required results, and release authorization."""
@@ -131075,8 +131864,11 @@ def final_release() -> dict[str, object]:
     ("dev", "dev", "fork/repo", False),
     ("dev", "preprod", "owner/repo", False),
     ("dev", "prod", "owner/repo", False),
+    ("dev", "release_candidate", "owner/repo", False),
     ("preprod", "dev", "owner/repo", True),
-    ("prod", "preprod", "owner/repo", True),
+    ("release_candidate", "preprod", "owner/repo", True),
+    ("release_candidate", "release-fix/final-version", "owner/repo", True),
+    ("prod", "release_candidate", "owner/repo", True),
 ])
 def test_valid_routes_choose_the_package_requirement(policy: ModuleType, base: str,
                                                      head: str, repository: str,
@@ -131089,10 +131881,17 @@ def test_valid_routes_choose_the_package_requirement(policy: ModuleType, base: s
     ("main", "feature/example", "owner/repo"),
     ("dev", "dev", "owner/repo"),
     ("dev", "preprod", "fork/repo"),
+    ("dev", "release_candidate", "fork/repo"),
     ("preprod", "feature/example", "owner/repo"),
     ("preprod", "dev", "fork/repo"),
     ("prod", "dev", "owner/repo"),
+    ("prod", "preprod", "owner/repo"),
     ("prod", "preprod", "fork/repo"),
+    ("prod", "release_candidate", "fork/repo"),
+    ("release_candidate", "preprod", "fork/repo"),
+    ("release_candidate", "dev", "owner/repo"),
+    ("release_candidate", "release-fix/", "owner/repo"),
+    ("release_candidate", "release-fix/patch", "fork/repo"),
     ("prod", "release/arbitrary", "owner/repo"),
     ("dev", "", "owner/repo"),
 ])
@@ -131117,6 +131916,7 @@ def test_pr_payload_drives_route_and_rejects_missing_identity(policy: ModuleType
 @pytest.mark.parametrize(("event", "ref", "packages"), [
     ("push", "refs/heads/dev", False),
     ("push", "refs/heads/preprod", True),
+    ("push", "refs/heads/release_candidate", True),
     ("workflow_dispatch", "refs/heads/prod", True),
 ])
 def test_permanent_refs_are_classified(policy: ModuleType, event: str,
@@ -131157,6 +131957,50 @@ def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
     results["packages"] = {"result": "failure"}
     with pytest.raises(ValueError, match="packages"):
         policy.require_success(results, False)
+
+
+@pytest.mark.parametrize("job", ["authorize", "build", "publish", "install"])
+@pytest.mark.parametrize("result", ["failure", "cancelled", "skipped", "neutral", None])
+def test_candidate_requires_all_upload_and_install_stages(policy: ModuleType, job: str, result: object) -> None:
+    """Neither a skipped publisher nor one failing platform can yield package-ready success."""
+    results = {name: {"result": "success"} for name in policy.CIPolicy.CANDIDATE_JOBS}
+    policy.require_candidate_success(results)
+    results[job] = {"result": result}
+    with pytest.raises(ValueError, match="failed or was skipped"):
+        policy.require_candidate_success(results)
+
+
+def test_candidate_rejects_missing_or_extra_stage_evidence(policy: ModuleType) -> None:
+    """A partial result map cannot omit a failing stage or introduce an unreviewed stage."""
+    results = {name: {"result": "success"} for name in policy.CIPolicy.CANDIDATE_JOBS}
+    for name in results:
+        with pytest.raises(ValueError, match="Incomplete"):
+            policy.require_candidate_success({key: value for key, value in results.items() if key != name})
+    with pytest.raises(ValueError, match="Incomplete"):
+        policy.require_candidate_success({**results, "extra": {"result": "success"}})
+
+
+@pytest.mark.parametrize("event", ["push", "workflow_dispatch"])
+def test_current_candidate_branch_can_publish(policy: ModuleType, event: str) -> None:
+    """Both automatic pushes and explicit retries authorize the exact live candidate commit."""
+    sha = "a" * 40
+    ref = "refs/heads/release_candidate"
+    policy.validate_candidate_head(event, ref, sha, sha, f"{sha}\t{ref}\n")
+
+
+@pytest.mark.parametrize(("event", "ref", "checkout", "advertisement"), [
+    ("pull_request", "refs/heads/release_candidate", "a" * 40, "a" * 40 + "\trefs/heads/release_candidate"),
+    ("workflow_dispatch", "refs/heads/prod", "a" * 40, "a" * 40 + "\trefs/heads/release_candidate"),
+    ("push", "refs/heads/release_candidate", "b" * 40, "a" * 40 + "\trefs/heads/release_candidate"),
+    ("push", "refs/heads/release_candidate", "a" * 40, "b" * 40 + "\trefs/heads/release_candidate"),
+    ("push", "refs/heads/release_candidate", "a" * 40, ""),
+    ("push", "refs/heads/release_candidate", "a" * 40, "a" * 40 + "\trefs/heads/other"),
+])
+def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, event: str, ref: str,
+                                                        checkout: str, advertisement: str) -> None:
+    """Refuse PR events, manual wrong refs, stale checkouts, moved/deleted branches, and wrong names."""
+    with pytest.raises(ValueError):
+        policy.validate_candidate_head(event, ref, "a" * 40, checkout, advertisement)
 
 
 @pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages"])
@@ -131588,8 +132432,102 @@ def test_version_assignment_is_literal_and_never_executed(distributions: ModuleT
 END FILE: tests/unit/github_workflows/test_distributions.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_sdist_normalization.py
+CONTENT SHA256: 5f27e2cf64b79df9f7d84aa40719791474ada64814fa253d2c29b99b8e2aafe7
+SOURCE ENCODING: utf-8
+================================================================================
+"""Guard reproducible source uploads without hiding changes to packaged file contents."""
+
+import hashlib
+import io
+import pathlib
+import tarfile
+from types import ModuleType
+
+import pytest
+
+
+def source_archive(path: pathlib.Path, timestamp: int, content: bytes = b"source", reverse: bool = False) -> None:
+    """Write identical payloads with deliberately different member order, ownership, and time metadata."""
+    folder = tarfile.TarInfo("melder-0.2.4")
+    folder.type = tarfile.DIRTYPE
+    source = tarfile.TarInfo("melder-0.2.4/module.py")
+    source.size = len(content)
+    source.mode = 0o644
+    members = [folder, source]
+    with tarfile.open(path, "w:gz", format=tarfile.PAX_FORMAT) as output:
+        for member in reversed(members) if reverse else members:
+            member.mtime = timestamp
+            member.uid = member.gid = timestamp
+            member.uname = member.gname = str(timestamp)
+            member.pax_headers = {"mtime": str(timestamp), "atime": str(timestamp)}
+            output.addfile(member, io.BytesIO(content) if member.isfile() else None)
+
+
+def test_same_contents_become_identical_and_normalization_is_idempotent(normalizer: ModuleType,
+                                                                      tmp_path: pathlib.Path) -> None:
+    """Metadata-only build differences must not force another candidate version on TestPyPI."""
+    left = tmp_path / "left.tar.gz"
+    right = tmp_path / "right.tar.gz"
+    source_archive(left, 100)
+    source_archive(right, 200, reverse=True)
+    normalizer.normalize_archive(left, 123456789)
+    normalizer.normalize_archive(right, 123456789)
+    assert left.read_bytes() == right.read_bytes()
+    digest = hashlib.sha256(left.read_bytes()).digest()
+    normalizer.normalize_archive(left, 123456789)
+    assert hashlib.sha256(left.read_bytes()).digest() == digest
+    with tarfile.open(left, "r:gz") as archive:
+        member = archive.getmember("melder-0.2.4/module.py")
+        assert member.mode == 0o644
+        with archive.extractfile(member) as stream:
+            assert stream.read() == b"source"
+
+
+def test_changed_source_still_has_different_distribution_identity(normalizer: ModuleType,
+                                                                 tmp_path: pathlib.Path) -> None:
+    """Normalization must never make two versions of package code share a distribution hash."""
+    left = tmp_path / "left.tar.gz"
+    right = tmp_path / "right.tar.gz"
+    source_archive(left, 100, b"before")
+    source_archive(right, 200, b"after")
+    normalizer.normalize_archive(left, 123456789)
+    normalizer.normalize_archive(right, 123456789)
+    assert left.read_bytes() != right.read_bytes()
+
+
+@pytest.mark.parametrize(("name", "kind"), [("../escape", tarfile.REGTYPE), ("link", tarfile.SYMTYPE)])
+def test_invalid_archive_refusal_preserves_original_file(normalizer: ModuleType, tmp_path: pathlib.Path,
+                                                        name: str, kind: bytes) -> None:
+    """Escaped names and links cannot be rewritten into a seemingly approved distribution."""
+    path = tmp_path / "unsafe.tar.gz"
+    with tarfile.open(path, "w:gz") as archive:
+        member = tarfile.TarInfo(name)
+        member.type = kind
+        member.linkname = "target" if kind == tarfile.SYMTYPE else ""
+        archive.addfile(member)
+    original = path.read_bytes()
+    with pytest.raises(ValueError, match="unsafe or non-regular"):
+        normalizer.normalize_archive(path, 123456789)
+    assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize("epoch", [-1, 2**32])
+def test_invalid_timestamp_refuses_before_rewriting(normalizer: ModuleType, tmp_path: pathlib.Path,
+                                                  epoch: int) -> None:
+    """Bad timestamp configuration must preserve the original artifact for inspection."""
+    path = tmp_path / "source.tar.gz"
+    source_archive(path, 100)
+    original = path.read_bytes()
+    with pytest.raises(ValueError, match="SOURCE_DATE_EPOCH"):
+        normalizer.normalize_archive(path, epoch)
+    assert path.read_bytes() == original
+================================================================================
+END FILE: tests/unit/github_workflows/test_sdist_normalization.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 3350d682316686b7438dd867c2148f7bfabeb4dc734edd96f91a1695be482e49
+CONTENT SHA256: 599e2fb1e3b356fada4017ee2f39c286da2df13c5deef4debd3531c0e6882393
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -131618,7 +132556,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     """CI must run for each protected destination and aggregate every mandatory job."""
     document = workflow("ci.yml")
     events = document["on"]
-    assert set(events["pull_request"]["branches"]) == {"dev", "preprod", "prod"}
+    assert set(events["pull_request"]["branches"]) == {"dev", "preprod", "release_candidate", "prod"}
     assert "edited" in events["pull_request"]["types"]
     assert "paths" not in events["pull_request"]
     assert "paths-ignore" not in events["pull_request"]
@@ -131678,7 +132616,8 @@ def test_publication_repeats_validation_and_checks_prod_last() -> None:
     assert publisher["environment"]["name"] == "pypi"
     steps = publisher["steps"]
     assert steps[-2]["run"] == "python .github/scripts/ci_policy.py release-head"
-    assert steps[-3]["run"].startswith("python .github/scripts/verify_distributions.py")
+    assert steps[-3]["run"] == "python .github/scripts/check_candidate_run.py"
+    assert steps[-4]["run"].startswith("python .github/scripts/verify_distributions.py")
     assert steps[-1]["uses"].startswith("pypa/gh-action-pypi-publish@")
     assert "skip-existing" not in steps[-1]["with"]
     uploaded = jobs["release-build"]["with"]["artifact-name"]
@@ -131696,14 +132635,15 @@ def test_package_verification_precedes_artifact_upload() -> None:
     steps = document["jobs"]["build"]["steps"]
     assert "environment" not in document["jobs"]["build"]
     commands = [step.get("run", "") for step in steps]
+    normalize = next(index for index, command in enumerate(commands) if "normalize_sdist.py" in command)
     verify = next(index for index, command in enumerate(commands) if "verify_distributions.py" in command)
     smoke = next(index for index, command in enumerate(commands) if "smoke_wheel.py" in command)
-    assert verify < smoke < len(steps) - 1
+    assert normalize < verify < smoke < len(steps) - 1
     assert " -I " in commands[smoke]
     assert steps[-1]["uses"].startswith("actions/upload-artifact@")
 
 
-@pytest.mark.parametrize("branch", ["dev", "preprod", "prod"])
+@pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])
 def test_rulesets_require_the_real_final_check_and_preserve_promotion_history(branch: str) -> None:
     """Ruleset payloads must name the actual aggregate check and block direct destructive updates."""
     root = pathlib.Path(__file__).resolve().parents[3]
@@ -131720,6 +132660,58 @@ def test_rulesets_require_the_real_final_check_and_preserve_promotion_history(br
     if branch != "dev":
         assert rules["pull_request"]["parameters"]["allowed_merge_methods"] == ["merge"]
         assert "required_linear_history" not in rules
+
+
+def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy: ModuleType) -> None:
+    """Candidate pushes stage one exact build, then run consumer probes without a duplicate source suite."""
+    document = workflow("release-candidate.yml")
+    assert set(document["on"]) == {"push", "workflow_dispatch"}
+    assert document["on"]["push"] == {"branches": ["release_candidate"]}
+    assert document["permissions"] == {"contents": "read"}
+    assert document["concurrency"]["cancel-in-progress"] == "false"
+    jobs = document["jobs"]
+    assert jobs["build"]["uses"] == "./.github/workflows/build-distributions.yml"
+    assert all(job.get("uses") != "./.github/workflows/test-runtime.yml" for job in jobs.values())
+    publisher = jobs["publish"]
+    assert set(publisher["needs"]) == {"authorize", "build"}
+    assert publisher["environment"]["name"] == "pypitest"
+    assert publisher["permissions"] == {"contents": "read", "id-token": "write"}
+    upload = next(step for step in publisher["steps"]
+                  if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
+    assert upload["with"]["repository-url"] == "https://test.pypi.org/legacy/"
+    assert upload["with"]["packages-dir"] == "upload/"
+    assert set(upload["with"]).isdisjoint({"password", "user", "skip-existing"})
+    assert upload["if"] == "steps.upload.outputs.upload-required == 'true'"
+    for name, job in jobs.items():
+        if name != "publish":
+            assert "environment" not in job
+            assert job.get("permissions", {}).get("id-token") != "write"
+    install = jobs["install"]
+    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
+    assert install["env"]["PYTHON_GIL"] == "0"
+    artifact = jobs["build"]["with"]["artifact-name"]
+    for job in (publisher, install):
+        download = next(step for step in job["steps"]
+                        if step.get("uses", "").startswith("actions/download-artifact@"))
+        assert download["with"]["name"] == artifact
+    assert "github.run_attempt" in artifact
+    ready = jobs["package-ready"]
+    assert ready["if"] == "always()"
+    assert set(ready["needs"]) == set(policy.CIPolicy.CANDIDATE_JOBS)
+    assert ready["steps"][-2]["run"] == "python .github/scripts/ci_policy.py candidate-ready"
+    assert ready["steps"][-1]["run"] == "python .github/scripts/ci_policy.py candidate-head"
+
+
+def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
+    """The existing required merge check and both publication boundaries must enforce candidate provenance."""
+    branch = workflow("ci.yml")["jobs"]["branch-policy"]
+    assert branch["permissions"]["actions"] == "read"
+    proof = branch["steps"][-1]
+    assert proof["run"] == "python .github/scripts/check_candidate_run.py"
+    assert proof["if"] == "github.base_ref == 'prod' || github.ref == 'refs/heads/prod'"
+    release = workflow("python-publish.yml")["jobs"]["release-gate"]
+    assert release["steps"][-1]["run"] == "python .github/scripts/check_candidate_run.py"
+    assert release["permissions"]["actions"] == "read"
 ================================================================================
 END FILE: tests/unit/github_workflows/test_workflow_contracts.py
 ================================================================================
@@ -151044,6 +152036,121 @@ def test_first_failing_method_ends_disposal_for_that_entry() -> None:
     )
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_disposal_references.py
+CONTENT SHA256: a0f28794264a3ec5a14e18c76ed0df40d36d813c1044937e8d44d5e93f061241
+SOURCE ENCODING: utf-8
+================================================================================
+"""Established method-list ownership across scoped registration, transfer, and reuse."""
+
+import pytest
+
+from melder.aether.conduit.creations.creations import Creations
+from tests.unit.melder.aether.conduit.creations.test_creations_disposal_all_methods_regression import (
+    MultiMethodDisposalProbe,
+)
+
+
+@pytest.mark.parametrize("many", [False, True])
+@pytest.mark.parametrize("with_methods", [False, True])
+def test_registration_and_transfer_preserve_disposal_reference(many: bool, with_methods: bool) -> None:
+    """Both transfer shapes carry the same list and invoke it correctly after the source is gone."""
+    names = ["release", "close", "flush"] if with_methods else []
+    source = Creations(owner_conduit_id="owner", id="source")
+    target = Creations(owner_conduit_id="owner", id="target")
+    probes = [MultiMethodDisposalProbe() for _ in range(2 if many else 1)]
+    try:
+        register = source.add_many_creations if many else source.add_creation
+        for probe in probes:
+            register("spell", probe, has_disposal_methods=True, disposal_methods=names)
+        extracted = source.extract_spell_creations("spell")
+        assert source.get_creation("spell") is None
+        assert len(extracted) == len(probes)
+        for row, probe in zip(extracted, probes):
+            assert row["stored"] is probe
+            assert row["disposal_methods"] is names
+        source.cleanup()
+        assert all(probe.calls == [] for probe in probes)
+        target.restore_spell_creations("spell", extracted)
+        restored = target.extract_spell_creations("spell")
+        for row in restored:
+            assert row["disposal_methods"] is names
+        target.restore_spell_creations("spell", restored)
+        target.cleanup()
+        expected = ["release", "close", "flush"] if with_methods else []
+        assert names == expected
+        assert all(probe.calls == expected for probe in probes)
+    finally:
+        source.cleanup()
+        target.cleanup()
+
+
+@pytest.mark.parametrize("many", [False, True])
+@pytest.mark.parametrize("clear_mode", ["clear", "pool", "confined_pool"])
+def test_reusable_clearing_keeps_borrowed_names(many: bool, clear_mode: str) -> None:
+    """Clearing a scope executes names once without emptying the policy needed by its next use."""
+    names = ["release", "close", "flush"]
+    store = Creations(owner_conduit_id="owner", id="scope")
+    first = MultiMethodDisposalProbe()
+    second = MultiMethodDisposalProbe()
+    try:
+        register = store.add_many_creations if many else store.add_creation
+        register("spell", first, has_disposal_methods=True, disposal_methods=names)
+        rows = store.extract_spell_creations("spell")
+        assert rows[0]["disposal_methods"] is names
+        store.restore_spell_creations("spell", rows)
+        if clear_mode == "clear":
+            store.clear_all()
+        elif clear_mode == "pool":
+            store.reset_for_pool()
+        else:
+            # This test owns the store on one thread, satisfying the confined caller contract.
+            store.reset_for_pool_unlocked()
+        assert store.get_creation("spell") is None
+        assert first.calls == ["release", "close", "flush"]
+        assert names == ["release", "close", "flush"]
+        register("spell", second, has_disposal_methods=True, disposal_methods=names)
+        store.cleanup()
+        assert second.calls == ["release", "close", "flush"]
+    finally:
+        store.cleanup()
+
+
+@pytest.mark.parametrize("many", [False, True])
+def test_omitted_names_keep_existing_empty_metadata_behavior(many: bool) -> None:
+    """Optional missing names retain their existing empty-list behavior through a transfer."""
+    store = Creations(owner_conduit_id="owner", id="scope")
+    probe = MultiMethodDisposalProbe()
+    try:
+        register = store.add_many_creations if many else store.add_creation
+        register("spell", probe, has_disposal_methods=True)
+        rows = store.extract_spell_creations("spell")
+        assert rows[0]["disposal_methods"] == []
+        store.restore_spell_creations("spell", rows)
+        store.cleanup()
+        assert probe.calls == []
+    finally:
+        store.cleanup()
+
+
+@pytest.mark.parametrize("many", [False, True])
+def test_disabled_disposal_does_not_attach_names(many: bool) -> None:
+    """A false registration flag still prevents disposal even when names are supplied."""
+    store = Creations(owner_conduit_id="owner", id="scope")
+    probe = MultiMethodDisposalProbe()
+    try:
+        register = store.add_many_creations if many else store.add_creation
+        register("spell", probe, disposal_methods=["release", "close"])
+        rows = store.extract_spell_creations("spell")
+        assert rows[0]["disposable"] is False
+        store.restore_spell_creations("spell", rows)
+        store.cleanup()
+        assert probe.calls == []
+    finally:
+        store.cleanup()
+================================================================================
+END FILE: tests/unit/melder/aether/conduit/creations/test_creations_disposal_references.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_disposal_reverse_order_regression.py
@@ -213414,7 +214521,7 @@ END FILE: tests/unit/melder/aether/test_nexus_frame_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus_frame_configuration.py
-CONTENT SHA256: 9fde7a0d1e5903eef465bae6a06a75b7392a76199d82ed85846b9555550cc923
+CONTENT SHA256: c915e180a255bc52544d0a015458f4ec513d70f8cc003e231817964aaefb385c
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -213597,6 +214704,7 @@ def test_nexus_frame_configuration_to_aetheric_frame_configuration_matches_contr
 
 
 def test_nexus_frame_configuration_to_spellbook_configuration_matches_contract() -> None:
+    """Nexus conversion supplies ordinary book defaults before validation or a caller's defaults load."""
     configuration = NexusFrameConfiguration.create_dynamic_defaults(
         "ops",
         immutable=True,
@@ -213605,6 +214713,8 @@ def test_nexus_frame_configuration_to_spellbook_configuration_matches_contract()
     )
 
     spellbook_configuration = configuration.to_spellbook_configuration()
+    assert spellbook_configuration.get_property("enforce_priority_disposal_methods") is False
+    assert spellbook_configuration.get_property("disposal_method_names") == []
 
     frame_configuration = configuration.to_aetheric_frame_configuration()
     spellbook_configuration.load_default_dictionary()
@@ -240765,7 +241875,7 @@ END FILE: tests/unit/melder/mutation_research/test_mutation_research_root_matrix
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/bind/test_bind.py
-CONTENT SHA256: 5a24a1f8f4ef63efb89fb9cd17ebef908c3ef1ec1ebf2194c9a1cc8f32c4ceea
+CONTENT SHA256: efdd65c6a62dcef7976ce527950f1273172b91cf7d37ee3cffec3c411a73e035
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -242476,7 +243586,8 @@ def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
     assert base != with_disposal
 
 
-def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
+def test_bind_resolves_disposal_metadata_during_bind(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Match configured candidates during bind and pass the resolved ordered list to Spell."""
     profile = class_profile(method_names=["cleanup", "close"])
     monkeypatch.setattr(
         "melder.aether.spellbook.bind.bind.SpellExaminer",
@@ -242488,9 +243599,9 @@ def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
         Existence.unique,
         aetheric_frame="f",
         spell=RealClassImplementingProto,
-        configured_disposal_method_names=frozenset({"cleanup", "dispose"}),
+        configured_disposal_method_names=["cleanup", "dispose"],
     )
-    assert spell.kwargs["disposal_method_names"] == frozenset({"cleanup"})
+    assert spell.kwargs["disposal_method_names"] == ["cleanup"]
 
 
 # Additional SpellType coverage ---------------------------------------
@@ -252300,6 +253411,254 @@ class TestBuilderDeclineContract:
 END FILE: tests/unit/melder/spellbook/spell_compiler/test_generalized_specializer_wrapper.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py
+CONTENT SHA256: ca4e3bb8f4adf3fa9cc361e19abaf8e78e62c32e1354214dd77d78b4ebd023dc
+SOURCE ENCODING: utf-8
+================================================================================
+"""Ordered disposal references through real processors, planners, and emitted executors."""
+
+import marshal
+from threading import RLock
+from types import SimpleNamespace
+
+import pytest
+
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy import (
+    SpellRuntimeProcessorStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan import (
+    ManyOnlyCodegenPlanBuilder,
+    ManyOnlyCodegenPlanVariant,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
+    SpellGeneralizedCodegenPlanBuilder,
+    SpellGeneralizedCodegenPlanVariant,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
+    _build_inner_no_overrides_executor,
+    _build_no_overrides_subpackage,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers import (
+    ManyOnlyCodegenCreationHelpers,
+)
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler as generalized_no
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler as generalized_overrides
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler as many_no
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler as many_overrides
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler as solo_no
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler as solo_overrides
+from tests.unit.melder.spellbook.spell_compiler.codegen_planner.test_generalized_dual_build_differential import (
+    make_model,
+    spec,
+)
+from tests.unit.melder.spellbook.spell_compiler.test_codegen_creation_compilers_core import (
+    _make_recording_creations,
+    _make_spell,
+    _meld_for,
+)
+
+
+def _spell(spell_id: str, names: list[str]) -> SimpleNamespace:
+    """Supply the existing compiler test double with an established, directly retained list."""
+    spell = _make_spell(spell_id)
+
+    def target(value: str = "base") -> str:
+        """Expose the invoked target and optional override through the returned value."""
+        return f"{spell_id}:{value}"
+
+    spell.spell = target
+    spell.requirements = None
+    spell.disposal_method_names = names
+    spell.has_disposal_methods = bool(names)
+    return spell
+
+
+def _model(names: list[str]) -> tuple[SimpleNamespace, dict[str, SimpleNamespace]]:
+    """Build minimal model inputs around independent test Spells, then run the real processor."""
+    pool = {
+        "leaf": _spell("leaf", list(names)),
+        "root": _spell("root", list(names)),
+    }
+    model = make_model(
+        records={},
+        keys_by_spell={"leaf": [("leaf", None)], "root": [("root", None)]},
+        specs_by_key={("leaf", None): spec(), ("root", None): spec()},
+        order=["leaf", "root"],
+        root_key=("root", None),
+        canonical={"leaf": ("leaf", 0), "root": ("root", 0)},
+    )
+    model.spell_runtime_shape = None
+    model.existence_occurrence_shape = SimpleNamespace(
+        total_spell_count=2, existence_counts=[(Existence.many, 2)],
+    )
+    pool["root"]._spellbook = SimpleNamespace(_spell_id_pool=pool)
+    SpellRuntimeProcessorStrategy().process(pool["root"], SimpleNamespace(), model)
+    return model, pool
+
+
+@pytest.mark.parametrize("names", [[], ["stop", "flush", "close"]])
+@pytest.mark.parametrize("family", ["single_no", "single_overrides", "dual", "many_only"])
+def test_processor_and_plans_retain_ordered_spell_lists(names: list[str], family: str) -> None:
+    """Every plan variant retains the established list, and outer cleanup leaves its contents intact."""
+    model, pool = _model(names)
+    plans = []
+    try:
+        for spell_id, spell in pool.items():
+            record = model.spell_runtime_shape.records_by_spell_id[spell_id]
+            assert record.disposal_method_names == names
+            assert record.disposal_method_names is spell.disposal_method_names
+        if family == "many_only":
+            plans.append(ManyOnlyCodegenPlanBuilder(
+                state=model, plan_variant=ManyOnlyCodegenPlanVariant.NO_OVERRIDES,
+            ).build())
+            for step, methods in zip(plans[0].steps, plans[0].step_disposal_methods):
+                assert methods == names
+                assert methods is step.spell.disposal_method_names
+            assert plans[0].step_has_disposal_methods == (bool(names), bool(names))
+        else:
+            builder = SpellGeneralizedCodegenPlanBuilder(
+                state=model,
+                plan_variant=(SpellGeneralizedCodegenPlanVariant.OVERRIDES
+                              if family == "single_overrides"
+                              else SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES),
+            )
+            plans.extend(builder.build_dual() if family == "dual" else [builder.build()])
+            for plan in plans:
+                for step in plan.steps:
+                    assert step.disposal_method_names == names
+                    assert step.disposal_method_names is step.spell.disposal_method_names
+                    assert step.must_register is bool(names)
+    finally:
+        for plan in plans:
+            plan.cleanup()
+        model.spell_runtime_shape.cleanup()
+    assert pool["leaf"].disposal_method_names == names
+    assert pool["root"].disposal_method_names == names
+
+
+@pytest.mark.parametrize("overrides", [False, True])
+@pytest.mark.parametrize("route", [
+    "many", "unique", "unique_per_conduit", "unique_per_spell_space",
+    "unique_per_conduit_lineage", "unique_per_conduit_cluster",
+])
+def test_solo_registration_retains_names_across_code_cache_reuse(route: str, overrides: bool) -> None:
+    """Emitted registration receives each live list even when the same compiled code is reused."""
+    code_objects = []
+    for spell_id, names in (
+        ("first", ["stop", "flush", "close"]),
+        ("second", ["close", "stop", "flush"]),
+    ):
+        spell = _spell(spell_id, names)
+        store = _make_recording_creations()
+        spell._owner_creations = store
+        if overrides:
+            executor, code = solo_overrides.compile_solo_overrides_codegen_creation_executor(
+                spell=spell, solo_emit_key=route, return_compiled_code_object=True,
+            )
+            result = executor(_meld_for(store), {"value": "override"})
+        else:
+            executor, code = solo_no.compile_solo_no_overrides_codegen_creation_executor(
+                spell=spell, solo_emit_key=route, fast_transient_no_overrides_enabled=False,
+                return_compiled_code_object=True,
+            )
+            result = executor(_meld_for(store))
+        code_objects.append(code)
+        assert result == f"{spell_id}:{'override' if overrides else 'base'}"
+        calls = store.add_many_calls if route == "many" else store.add_creation_calls
+        assert len(calls) == 1
+        assert calls[0][0] == (spell_id, result)
+        assert calls[0][1]["has_disposal_methods"] is True
+        assert calls[0][1]["disposal_methods"] == names
+        assert calls[0][1]["disposal_methods"] is names
+    assert code_objects[0] is code_objects[1]
+
+
+@pytest.mark.parametrize("family", ["generalized", "many_only"])
+@pytest.mark.parametrize("overrides", [False, True])
+def test_family_executors_register_current_lists(family: str, overrides: bool) -> None:
+    """Both non-solo families and override lanes register exact live lists across repeated compilation."""
+    for _ in range(2):
+        names = ["stop", "flush", "close"]
+        model, pool = _model(names)
+        plan = None
+        try:
+            if family == "many_only":
+                plan = ManyOnlyCodegenPlanBuilder(
+                    state=model,
+                    plan_variant=(ManyOnlyCodegenPlanVariant.OVERRIDES if overrides
+                                  else ManyOnlyCodegenPlanVariant.NO_OVERRIDES),
+                ).build()
+                compiler = many_overrides if overrides else many_no
+            else:
+                plan = SpellGeneralizedCodegenPlanBuilder(
+                    state=model,
+                    plan_variant=(SpellGeneralizedCodegenPlanVariant.OVERRIDES if overrides
+                                  else SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES),
+                ).build()
+                compiler = generalized_overrides if overrides else generalized_no
+            if overrides:
+                executor = compiler.compile_overrides_codegen_creation_executor(
+                    execution_plan=plan, override_targets_by_spell_id={},
+                    any_overrides_present=False, path_registry=model.graph_shape.path_registry,
+                    plan_rows=(
+                        [ManyOnlyCodegenCreationHelpers.build_override_step_row(step) for step in plan.steps]
+                        if family == "many_only" else None
+                    ),
+                    root_spell_id="root", spell_lookup=pool,
+                )
+            else:
+                executor = compiler.compile_no_overrides_codegen_creation_executor_from_plan(plan=plan)
+            store = _make_recording_creations()
+            # The generic override executor uses the real store's lock contract.
+            store._lock = RLock()
+            result = executor(_meld_for(store), {}, None) if overrides else executor(_meld_for(store))
+            assert result == "root:base"
+            assert [args[0] for args, _kwargs in store.add_many_calls] == ["leaf", "root"]
+            for args, kwargs in store.add_many_calls:
+                assert kwargs["disposal_methods"] == names
+                assert kwargs["disposal_methods"] is pool[args[0]].disposal_method_names
+        finally:
+            if plan is not None:
+                plan.cleanup()
+            model.spell_runtime_shape.cleanup()
+
+
+def test_serialized_cache_preserves_order_and_rebinds_live_lists() -> None:
+    """A marshal-safe cache keeps ordered values, while stored-code hydration binds fresh live lists."""
+    names = ["stop", "flush", "close"]
+    model, pool = _model(names)
+    plan = SpellGeneralizedCodegenPlanBuilder(
+        state=model, plan_variant=SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES,
+    ).build()
+    try:
+        rows = CodegenCreationSchemaHelpers.get_phase11_step_ir_rows(
+            plan, include_override_metadata=False,
+        )
+        assert [row["disposal_method_names"] for row in rows] == [tuple(names), tuple(names)]
+        package = marshal.loads(marshal.dumps({
+            "no_overrides": _build_no_overrides_subpackage(no_overrides_plan=plan),
+        }))
+        fresh_pool = {spell_id: _spell(spell_id, list(names)) for spell_id in pool}
+        fresh_pool["root"]._spellbook = SimpleNamespace(_spell_id_pool=fresh_pool)
+        executor = _build_inner_no_overrides_executor(fresh_pool["root"], package)
+        store = _make_recording_creations()
+        assert executor(_meld_for(store)) == "root:base"
+        assert len(store.add_many_calls) == 2
+        for args, kwargs in store.add_many_calls:
+            assert kwargs["disposal_methods"] == names
+            assert kwargs["disposal_methods"] is fresh_pool[args[0]].disposal_method_names
+            assert kwargs["disposal_methods"] is not pool[args[0]].disposal_method_names
+    finally:
+        plan.cleanup()
+        model.spell_runtime_shape.cleanup()
+================================================================================
+END FILE: tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_root_visible_family_selection_regressions.py
 CONTENT SHA256: 06a20dbd62624ceccf3087977eac132ea873bcd904185dc1eba41e08fdc22228
 SOURCE ENCODING: utf-8
@@ -252949,7 +254308,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_process
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_data_migrations.py
-CONTENT SHA256: 6c095cefc5920c43743a3df1134ede26735cbdcff6e987d65089b22ac6b12262
+CONTENT SHA256: af1b1ecb75f8f9c63a3a907141b275bae3b83780d0b3f9fb9b15089466e6ffff
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for processor-owned data objects replacing blueprint-era payloads."""
@@ -253156,7 +254515,7 @@ def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
         is_method_spell=False,
         is_lambda_spell=False,
         has_disposal_methods=True,
-        disposal_method_names=("cleanup",),
+        disposal_method_names=["cleanup"],
         user_created_object=None,
     )
     dep_record = SpellRuntimeRecord(
@@ -253170,7 +254529,7 @@ def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
         is_method_spell=True,
         is_lambda_spell=False,
         has_disposal_methods=False,
-        disposal_method_names=(),
+        disposal_method_names=[],
         user_created_object=object(),
     )
     analysis = SpellRuntimeAnalysis(
@@ -253181,7 +254540,7 @@ def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
     )
 
     assert analysis.spell_count == 2
-    assert analysis.records_by_spell_id["root"].disposal_method_names == ("cleanup",)
+    assert analysis.records_by_spell_id["root"].disposal_method_names == ["cleanup"]
     assert analysis.records_by_spell_id["dep"].is_existing_creation is True
 
     analysis.cleanup()
@@ -283178,7 +284537,7 @@ END FILE: tests/unit/melder/spellbook/test_scan_bind.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spell.py
-CONTENT SHA256: a0e1c75d6eed12faf26a46bfb960f4cad3e07b3cce450fa5dc0702b5bd405036
+CONTENT SHA256: a34399da3c0dbf9880a6d072c97aa80338a62a435aac7924b50c19d5b3e9914a
 SOURCE ENCODING: utf-8
 ================================================================================
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -284610,6 +285969,65 @@ def test_system_state_returns_none_when_states_registry_missing() -> None:
     spell._spell_system_states = None
 
     assert spell.system_state is None
+
+
+@pytest.mark.parametrize("names,expected", [
+    ([], []),
+    (["flush", "close"], ["flush", "close"]),
+])
+def test_spell_retains_disposal_list_without_clearing_it_on_cleanup(
+        names: list[str], expected: list[str],
+) -> None:
+    """Retain Bind's resolved list, including an empty one, and leave borrowers intact on cleanup."""
+    spell = Spell(
+        spell=object,
+        spell_index=SpellIndex("ordered-disposal"),
+        spellframe=None,
+        binding_name=None,
+        spell_name="OrderedDisposal",
+        existence=Existence.unique,
+        spell_type=SpellType.SPELL,
+        spell_id="ordered-disposal",
+        permissions=Permissions.create,
+        aetheric_frame="default",
+        spellbook=_SpellbookStub(_RecordingStates()),
+        disposal_method_names=names,
+    )
+    try:
+        assert spell.disposal_method_names is names
+        assert spell.disposal_method_names == expected
+        assert spell.has_disposal_methods is bool(expected)
+    finally:
+        spell.cleanup()
+    assert names == expected
+    spell.cleanup()
+
+
+def test_spell_omitted_disposal_lists_are_independent() -> None:
+    """Constructors with omitted disposal metadata receive distinct empty lists and false flags."""
+    spells: list[Spell] = []
+    try:
+        for identity in ("first-default", "second-default"):
+            spells.append(Spell(
+                spell=object,
+                spell_index=SpellIndex(identity),
+                spellframe=None,
+                binding_name=None,
+                spell_name=identity,
+                existence=Existence.unique,
+                spell_type=SpellType.SPELL,
+                spell_id=identity,
+                permissions=Permissions.create,
+                aetheric_frame="default",
+                spellbook=_SpellbookStub(_RecordingStates()),
+            ))
+        assert spells[0].disposal_method_names == spells[1].disposal_method_names == []
+        assert spells[0].disposal_method_names is not spells[1].disposal_method_names
+        assert spells[0].has_disposal_methods is False
+        assert spells[1].has_disposal_methods is False
+    finally:
+        for spell in spells:
+            spell.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/spellbook/test_spell.py
 ================================================================================
@@ -292867,7 +294285,7 @@ END FILE: tests/unit/melder/test_package_public_surface.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/test_package_version_metadata.py
-CONTENT SHA256: fad529eb8af2bcb9d39d5fe8dac5586616bd060a9b597928050a45cc7d2f4a57
+CONTENT SHA256: 73c225054d7c42a08f3d6389ec056b9b707b57b84f463ead117ebfd4ccf4585b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for the package version metadata contract (single-truth law)."""
@@ -292883,13 +294301,13 @@ def test_version_is_well_formed() -> None:
         release forever, which trains people to edit the test rather than read
         it.
     Contract:
-        The version is a non-empty dotted release string.
+        The version is a non-empty dotted release string, optionally including rcN.
     """
     import re
 
     from melder.__version__ import __version__
 
-    assert re.fullmatch(r"\d+\.\d+\.\d+(?:[.\-+].+)?", __version__), __version__
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:rc\d+|[.\-+].+)?", __version__), __version__
 
 
 def test_generated_build_assets_are_stamped_for_the_live_version() -> None:

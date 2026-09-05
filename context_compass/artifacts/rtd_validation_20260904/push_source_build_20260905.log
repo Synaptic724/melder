@@ -1,0 +1,6 @@
+WROTE  _agent_documentation agent_documentation_manifest.py (452 entries, v0.2.3)
+WROTE  _bind_guard          bind_guard_manifest.py (628 entries, v0.2.3)
+WROTE  _system_documents    system_documents_manifest.py (4 entries, v0.2.3)
+OK     _agent_documentation current (v0.2.3, schema 2.0.0, key match)
+OK     _bind_guard          current (v0.2.3, schema 2.0.0, key match)
+OK     _system_documents    current (v0.2.3, schema 2.0.0, key match)

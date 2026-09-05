@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T10:10:55Z
+- Updated: 2026-09-05T10:33:58Z
 
 ## Objective
 Carry each Spell's resolved ordered list through runtime records, plans, and emitted
@@ -326,11 +326,26 @@ Record the classification and evidence before changing each compiler family. One
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:33:58Z
+  TYPE: MEASURE
+  CLAIM: Real Creations integration found two additional copies inside generalized manifest
+    emitted registration, beyond the correctly shared namespace. The Creations caller clause
+    owns the correction, and the updated compiler contract includes this seventh source file.
+    Final combined runtime verification passes 2,797 tests; no source synchronization changed.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`
+  IMPACT: The initial six-file/792-test result was not complete end-to-end evidence; the real
+    stored-list assertion closed that gap without weakening the contract.
+  NEXT: Verify configuration transport, then proceed with crystal/replay order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Six compiler source files and focused tests are implemented/in review. All six edited files
-were read fully; namespace/cache contacts were read through their complete relevant functions.
+Seven compiler source files and focused tests are implemented/in review. All seven edited files
+were read fully; other namespace/cache contacts were read through their relevant functions.
 Twenty-five new tests cover list identity/order, plan cleanup, six solo routes with overrides
 and code-cache reuse, generalized/many-only registration, and marshal/stored-code hydration.
 81 focused tests and the wider 792-test compiler/Spellbook boundary pass on Windows 3.14t.
-Creations storage still copies names until its separate task. No commits/pushes or assets rebuilt.
+Creations and generalized inline storage now retain names, verified by the combined 2,797-test run.
+This agent did not commit/push or regenerate final assets; separate commits occurred during work.
 Next: `tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`.

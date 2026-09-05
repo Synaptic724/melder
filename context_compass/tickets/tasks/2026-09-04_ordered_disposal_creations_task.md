@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-runtime
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_runtime_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T10:10:55Z
+- Updated: 2026-09-05T10:33:58Z
 
 ## Objective
 Have Creations retain and consume the established Spell disposal list directly, including
@@ -31,10 +31,10 @@ extraction/restoration, while preserving existing lifetime and cleanup behavior.
 - Out of scope: new configuration reads, new reflection probes, new disposal scopes or methods.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner requested continuation; compiler prerequisite passes 792 tests.
-  Read Creations and prepare its contract before editing the six metadata-copy contacts.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Six Creations substitutions and two inline caller substitutions are verified.
+  The combined Spellbook/compiler/Creations/conduit boundary passes 2,797 tests.
 
 ## Required Reading and Evidence
 Navigate Component: Creations and SpellSpace / Subcomponent: Creations Disposal Pipeline;
@@ -48,21 +48,22 @@ read the full Creations file and the affected caller methods before editing.
 - Reopen reverse-order regressions and relevant test architecture/components.
 
 ## Steps / Checklist
-- [ ] Remove redundant method-list copies in add_creation/add_many_creations.
-- [ ] Preserve the same established list through extraction and restoration of stored objects.
-- [ ] Keep has_disposal_methods gating, no-disposal paths, and existing many/singleton routing.
-- [ ] Preserve the invocation loop and current stop-on-first-method-failure behavior.
-- [ ] Preserve reversed registry and many-bucket traversal; do not promise a stronger total
+- [x] Remove redundant method-list copies in add_creation/add_many_creations.
+- [x] Preserve the same established list through extraction and restoration of stored objects.
+- [x] Keep has_disposal_methods gating, no-disposal paths, and existing many/singleton routing.
+- [x] Preserve the invocation loop and current stop-on-first-method-failure behavior.
+- [x] Preserve reversed registry and many-bucket traversal; do not promise a stronger total
       chronology across interleaved keys than the existing implementation provides.
-- [ ] Verify list lifetime against Spell/Creations teardown: do not clear a shared list while
+- [x] Verify list lifetime against Spell/Creations teardown: do not clear a shared list while
       another owner may still need its names for real instance cleanup.
-- [ ] Test real bind/meld/cleanup in both priority modes; record results and remaining gaps.
+- [x] Test real bind/meld/cleanup in both priority modes; record results and remaining gaps.
 
 ## Deliverables
 Direct list ownership in Creations, accurate contracts, and meaningful cleanup regressions.
 
 ## Files / Paths Impacted
 - `src/melder/aether/conduit/creations/creations.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py`
 - Direct caller changes only if the explicit list contract cannot already be forwarded.
 - `tests/unit/melder/aether/conduit/creations/test_creations.py`
 - `tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py`
@@ -71,7 +72,9 @@ Direct list ownership in Creations, accurate contracts, and meaningful cleanup r
 - `tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py`
 
 ## Validation
-- Not run; ticket only. Use supported Python 3.14.
+- Passed: 73 disposal checks and 2,797 combined Spellbook/compiler/Creations/conduit checks.
+- Runtime: Windows, .venv_new/Scripts/python.exe, Python 3.14.0 free-threaded, GIL disabled.
+- Full repository suite, other platforms, configuration transport, crystal replay, and final assets: Not run.
 - Methods record actual call order, with class definition order intentionally different.
 - Cover singleton and many entries, reusable clear/pool cleanup, and extract/restore.
 - Preserve failure handling: later methods on one failing object stop, other entries continue.
@@ -83,12 +86,12 @@ The current Creations loop already invokes all names in stored sequence. Avoid r
 to solve a producer-order problem. No new getattr/hasattr existence check is requested.
 
 ## Applicable Anti-Patterns
-- [ ] No duplicate configuration enforcement during disposal.
-- [ ] No new snapshots or defensive owned-field guards.
+- [x] No duplicate configuration enforcement during disposal.
+- [x] No new snapshots or defensive owned-field guards.
 
 ## Done Checklist
-- [ ] Real cleanup order and transfer metadata tests verified.
-- [ ] Source/contracts and notes updated; downstream replay unblocked.
+- [x] Real cleanup order and transfer metadata tests verified.
+- [x] Source/contracts and notes updated; runtime prerequisite for replay is satisfied.
 - [ ] Owner accepts closure; no unrequested ticket cleanup.
 
 ## Artifact Links (Optional)
@@ -267,7 +270,45 @@ Capture real ownership and behavioral findings before continuing; separate exist
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T10:29:44Z
+  TYPE: MEASURE
+  CLAIM: All 73 storage/runtime checks pass in 0.46s after the inline caller correction.
+    This includes 26 new reference/runtime cases and 47 prior disposal checks. Real graphs
+    select all three compiler families and execute repeated melds with both priorities and
+    actual override values; every stored list retains Spell identity and disposal runs in order.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/aether/conduit/creations tests/component/melder/aether/conduit/test_conduit_component_creations.py tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py tests/integration/melder/conduit/test_ordered_disposal_runtime.py -q -p no:cacheprovider --tb=short
+  - Result: 73 passed in 0.46s, exit 0.
+  IMPACT: Runtime ownership correction is green; failure and reverse-order regressions remain intact.
+  NEXT: Run the combined Spellbook/compiler/Creations and conduit integration boundary.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:33:58Z
+  TYPE: MEASURE
+  CLAIM: Final combined verification passes 2,797 tests in 8.80s. Interpreter is Python 3.14.0
+    free-threaded with GIL disabled. All five current compiler/Creations patch indexes pass.
+    Creations and inline-emitter changes preserve registry detachment, invocation, exceptions,
+    locks, pooling, and reverse traversal. Source/test diffs and affected contracts were reviewed.
+    Separate commits landed during the work; this agent issued no commit or push commands.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook tests/component/melder/spellbook tests/unit/melder/aether/conduit/creations tests/component/melder/aether/conduit/test_conduit_component_creations.py tests/integration/melder/conduit -q -p no:cacheprovider --tb=short
+  - Result: 2797 passed in 8.80s, exit 0.
+  - `src/melder/aether/conduit/creations/creations.py:269-511`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:641-724`
+  IMPACT: Compiler/Creations phase is implemented/in review with 51 new cases across three
+    new test modules. Full persistence/replay, canonical promotion, and assets remain pending.
+  NEXT: Verify disposal configuration round trips, then implement crystal capture/restore/graft order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-The invocation loop already runs names in order; upstream frozensets caused order loss.
-Preserve existing error behavior and scope traversal. No implementation yet.
-Next: `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md`.
+Implemented/in review: Creations retains the established list at six registration/transfer contacts.
+Real runtime tests found and fixed two additional copies in generalized manifest inline source.
+That complete emitter was read before editing; surrounding emitted algorithms/locks are unchanged.
+Twenty-six new storage/runtime cases verify reference lifetime, transfer, empty/disabled paths,
+pool reuse, three real compiler families, both priorities, actual overrides, and repeated melds.
+The complete phase adds 51 cases including the compiler tests. Combined verification: 2,797 pass.
+Separate commits landed on codex_features2 during work; this agent did not commit or push.
+Next prerequisite: disposal_configuration_roundtrip; then ordered_disposal_crystal_replay.
+Final documentation/graph promotion and source/repo asset regeneration remain pending.

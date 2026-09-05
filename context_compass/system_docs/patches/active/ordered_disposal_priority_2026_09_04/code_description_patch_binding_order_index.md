@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `code_description_patch_binding_order.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T09:14:05Z |
-| line_count | 33 |
+| generated_at | 2026-09-05T11:35:21Z |
+| line_count | 35 |
 | line_ending | lf |
-| content_sha256 | `4b481b540c2ba55f5d49c079a7b981733e0887b45559c75fb318ff0dc071b992` |
+| content_sha256 | `fa7a173267886f453a1b3f19d3a81a6202f978fa588232389d50043e7f26e3b3` |
 | sections | 6 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -28,8 +28,8 @@ which you did.
 | lines | lvl | name |
 | --- | --- | --- |
 | 3-5 | 2 | Trigger |
-| 6-16 | 2 | Control flow |
-| 17-21 | 2 | Edge / error and rollback semantics |
-| 22-26 | 2 | Invariants and idempotency |
-| 27-30 | 2 | Non-goals |
-| 31-33 | 2 | Validation focus |
+| 6-17 | 2 | Control flow |
+| 18-22 | 2 | Edge / error and rollback semantics |
+| 23-28 | 2 | Invariants and idempotency |
+| 29-32 | 2 | Non-goals |
+| 33-35 | 2 | Validation focus |

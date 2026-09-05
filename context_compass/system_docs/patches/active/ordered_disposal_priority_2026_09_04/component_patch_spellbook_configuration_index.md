@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `component_patch_spellbook_configuration.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-04T22:24:19Z |
-| line_count | 45 |
+| generated_at | 2026-09-05T11:35:21Z |
+| line_count | 46 |
 | line_ending | lf |
-| content_sha256 | `e080a5eafae04e5b08340ef0dd3fd46fc19fafdea810b2099674db458c461aac` |
+| content_sha256 | `bad81ff9c8588319f3833a5619fc88c73bb78606e85af968d7769c80b908f198` |
 | sections | 8 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -29,9 +29,9 @@ which you did.
 | --- | --- | --- |
 | 3-6 | 2 | Component purpose and boundary |
 | 7-12 | 2 | Before / after behavior |
-| 13-18 | 2 | Interface deltas |
-| 19-25 | 2 | State and lifecycle deltas |
-| 26-29 | 2 | Failure mode deltas |
-| 30-36 | 2 | Dependency and ordering constraints |
-| 37-43 | 2 | Validation expectations |
-| 44-45 | 2 | Unknowns and open decisions |
+| 13-19 | 2 | Interface deltas |
+| 20-26 | 2 | State and lifecycle deltas |
+| 27-30 | 2 | Failure mode deltas |
+| 31-37 | 2 | Dependency and ordering constraints |
+| 38-44 | 2 | Validation expectations |
+| 45-46 | 2 | Unknowns and open decisions |

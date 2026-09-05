@@ -10,7 +10,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T09:44:06Z
+- Updated: 2026-09-05T11:37:10Z
 
 ## Objective
 Each new Spell receives one ordered list composed from its own names and the book's names,
@@ -35,8 +35,8 @@ using the configured priority. Hash that same sequence and retain it directly on
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Three producer files and focused tests are implemented. All 753 selected
-  producer/configuration/surrounding binding tests pass; later consumer and replay tasks remain separate.
+- transition_reason: Shared-name correction is implemented; 2,807 selected producer/runtime tests
+  pass on Windows 3.14t. Replay and final docs/assets continue under their existing tasks.
 
 ## Required Reading and Evidence
 Use the component index's Spellbook Core and Binding Pipeline slices, then the graph index
@@ -52,8 +52,9 @@ for selected files. Read source completely before editing; ranges below are entr
 - `src/melder/aether/spellbook/spellbinder.py:826-870` (finalize forwarding)
 
 ## Composition Contract
-- False/default: walk explicit Spell names, then configured book names.
-- True: walk book names first in configuration order, then Spell names.
+- False/default: spell-only names first, then the complete matching book block in book order.
+- True: the matching book block first, then spell-only names in their supplied order.
+- Names shared with the book belong only to the book block in BOTH modes.
 - Retain only names in the existing class profile; keep their first occurrence.
 - Use list membership for the small result. No additional set or per-instance reflection.
 - Empty or omitted Spell names leave book names applicable. Both empty yields an empty list.
@@ -83,11 +84,13 @@ for selected files. Read source completely before editing; ranges below are entr
 - Focused new order/hash regression test if existing modules cannot host it clearly.
 
 ## Validation
+- Latest clarified-overlap run: 2,807 selected producer/compiler/Creations/conduit tests passed
+  in 9.00s on Windows Python 3.14.0 free-threaded, GIL disabled. This includes 10 new cases.
 - Passed: 397 producer tests plus 356 configuration/surrounding binding tests on Windows 3.14t.
 - Runner: .venv_new/Scripts/python.exe. All four producer patch indexes and scoped diff checks pass.
 - Full suite, other platforms, full cache/restore/graft validation, and generated assets: Not run.
 - Canonical document promotion and generated-asset refresh remain in the existing docs/assets task.
-- Book [flush, close], Spell [close, stop, flush]: False -> [close, stop, flush];
+- Book [flush, close], Spell [close, stop, flush]: False -> [stop, flush, close];
   True -> [flush, close, stop]. Test missing names and duplicates in either group.
 - Bind two different Spells with distinct explicit names; the first must not configure the second.
 - Verify class-profile behavior remains unchanged for non-class and inherited-only cases.
@@ -332,12 +335,104 @@ Record tactical findings with evidence and one NEXT action; keep settled policy 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T11:28:11Z
+  TYPE: DECISION
+  CLAIM: Owner approved the clarified overlap rule after REONBOARD and recertified codex_1.
+    The book owns every shared name; its complete matching block keeps configuration order
+    whether placed first (True) or last (False/default). Spell-only names keep their own order.
+    Earlier False-mode first-occurrence-across-groups decisions are superseded.
+  EVIDENCE:
+  - Owner clarification and implementation approval, active conversation, 2026-09-05.
+  - `context_compass/tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md:691-702`
+  IMPACT: Reopen this producer task before replay. Keep matching at bind, the same Spell-owned
+    result list, bind-time hashing, current class-profile scope, and existing runtime consumers.
+  NEXT: Read current Bind and order regressions, revise the patch contracts, then prove the new rule.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:28:11Z
+  TYPE: PLAN
+  CLAIM: Current Bind (909 lines), configuration (1,242), and producer tests (281) are read
+    completely. Bind's current first-group loop permits False-mode overlap retention.
+    Patch mapping: complete book block -> bind overlap/hash assertions; insertion boundary
+    -> active/staged/fluent and actual cleanup assertions; same-policy replay -> idempotence
+    tests through fresh binds. Configuration setter documentation will describe placement only.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/bind/bind.py:422-454`
+  - `src/melder/aether/spellbook/configuration/spellbook_configuration.py:1128-1157`
+  - `tests/component/melder/spellbook/test_ordered_disposal_binding.py:95-258`
+  IMPACT: One result list suffices. Match book names first, then insert distinct spell names
+    at position zero or the list end. No additional metadata collection, helper, or runtime call.
+  NEXT: Stage the corrected behavioral expectations and show the failing baseline before source edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:28:11Z
+  TYPE: MEASURE
+  CLAIM: Corrected producer expectations reproduce the overlap defect: 9 failed and 25 passed
+    against unchanged source. Failures cover default-mode binding, staged binding before/after
+    conjure, fluent binding, actual cleanup, shared-name fingerprints, and repeat composition.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/component/melder/spellbook/test_ordered_disposal_binding.py -q -p no:cacheprovider --tb=short
+  - Result: 9 failed, 25 passed in 1.53s; all failures expose old False-mode ordering.
+  IMPACT: The regression suite distinguishes the new contract from the prior first-group behavior.
+  NEXT: Patch Bind's existing loop and the configuration setter documentation, then rerun this suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:34:03Z
+  TYPE: MEASURE
+  CLAIM: Bind now establishes the book block first and inserts only distinct spell-only names
+    at its front/back boundary. The same list is hashed and stored; no runtime path changes.
+    The corrected producer suite passes 34 tests, including 10 new overlap/idempotence cases.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/bind/bind.py:425-462`
+  - `tests/component/melder/spellbook/test_ordered_disposal_binding.py:95-352`
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/component/melder/spellbook/test_ordered_disposal_binding.py -q -p no:cacheprovider --tb=short
+  - Result: 34 passed in 1.44s, exit 0.
+  IMPACT: Shared explicit names no longer displace the book block in False mode. Same-policy
+    recomposition preserves order/SHA. This is not yet a complete crystal or graft validation.
+  NEXT: Run surrounding producer/runtime tests and refresh the changed patch indexes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:35:27Z
+  TYPE: FACT
+  CLAIM: The 2,807-case surrounding suite has six failures, all from one outdated runtime
+    expected-order literal shared by solo/generalized/many-only and override variants.
+    Actual metadata already follows the new rule. The complete 129-line regression file
+    retains list identity, actual invocation, repeated meld, and reverse dependency assertions.
+  EVIDENCE:
+  - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py:80-129`
+  - Result: 6 failed, 2801 passed in 8.27s; each failure is the old False-mode expected list.
+  IMPACT: Correct the test expectation, not the compiler or cleanup implementation. An earlier
+    attempted run named a nonexistent test_conduit.py and collected no tests; the directory-based
+    command above is the real verification run.
+  NEXT: Update that single order literal and rerun the same surrounding suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:37:10Z
+  TYPE: MEASURE
+  CLAIM: Final selected verification passes 2,807 tests in 9.00s on Windows Python 3.14.0
+    free-threaded with GIL disabled. The corrected integration expectation preserves all
+    existing compiler-family, override, repeated-meld, reference, and dependency-order checks.
+    Scoped diff --check passes; all four changed patch indexes regenerated successfully.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook tests/component/melder/spellbook tests/unit/melder/aether/conduit/creations tests/component/melder/aether/conduit/test_conduit_component_creations.py tests/integration/melder/conduit -q -p no:cacheprovider --tb=short
+  - Result: 2807 passed in 9.00s, exit 0.
+  - `src/melder/aether/spellbook/bind/bind.py:425-462`
+  - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py:80-129`
+  IMPACT: The overlap correction is in review. No consumer/lock/identity-map changes, commit,
+    push, full-suite/cross-platform claim, or generated source/corpus refresh belongs to this result.
+  NEXT: Resume crystal/replay with the book-owned block semantics, then final docs/assets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Implemented/in review: Spellbook, Bind, Spell; one new 24-case component regression module;
-three Spell constructor/ownership cases; and corrected old frozenset/parity expectations.
-Both groups compose once at binding: False is spell-first, True book-first, first match wins.
-Absent profile names are skipped. The same list is hashed and retained directly on Spell.
-Removed the first-bind latch and obsolete conjure recheck; synchronization remains untouched.
-753 selected tests passed together in the final run on Windows 3.14t. No commits or pushes.
-Full suite/cross-platform, consumer reference propagation, persistence, and assets remain pending.
-Next: `tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`.
+Implemented/in review: book owns overlap order in BOTH modes; False places its block last,
+True first. Bind builds one list, and existing consumers keep that established order/reference.
+Production change is Bind's existing composition loop plus configuration setter documentation;
+tests add 10 cases and strengthen staged/fluent overlap coverage. No per-Meld checks, copies, or locks.
+2,807 selected tests pass, including actual cleanup and same-policy order/SHA idempotence.
+Resume crystal/replay, then canonical docs/assets and final verification. No commits or pushes.
