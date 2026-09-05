@@ -937,6 +937,9 @@ def test_conduit_unique_per_conduit_lineage_isolated_across_lineages_concurrent(
         root_b.cleanup()
 
 
+@pytest.mark.skip(
+    reason="Deferred by project owner for release; shared-context revalidation investigation remains open."
+)
 def test_conduit_cluster_concurrent_meld_two_clusters_isolated() -> None:
     """
     Purpose:

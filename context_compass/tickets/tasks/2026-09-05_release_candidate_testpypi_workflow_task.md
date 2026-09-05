@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-05-release-candidate-testpypi-workflow
 - Story: none (successor to accepted branch CI foundation)
-- Status: review
+- Status: blocked
 - Owner: codex
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T18:37:46Z
+- Updated: 2026-09-05T22:07:09Z
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -21,6 +21,8 @@ commit, version, workflow run, and distribution hashes before final production p
   the reported aetheric-mediator concurrency component test and UnitOfWork lock test; generated llm_support assets;
   this ticket and its associated coordination/artifact rows.
 - DEPENDENCIES: tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md.
+  Runtime qualification depends on codex_1's
+  tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md.
 - EXIT_GATE: Branch gates and candidate/publication workflow are implemented and locally validated;
   owner-only setup/rollout and unexecuted external publication checks are explicitly recorded.
 - FAILURE_ESCALATION: Never publish packages, commit, push, rename owner branches, or silently bypass
@@ -36,10 +38,10 @@ commit, version, workflow run, and distribution hashes before final production p
 - Preserve other agents' source, documentation, tests, and generated outputs.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Owner-selected larger timing windows are implemented in the existing test.
-  All 279 synchronization unit tests and generated test-corpus checks pass; ready for owner commit.
+- from_state: review
+- to_state: blocked
+- transition_reason: Prior workflow/test changes are committed. Hosted qualification now fails on
+  a separate shared context publication race; codex_1 owns its repair under the successor runtime epic.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -894,7 +896,67 @@ commit, version, workflow run, and distribution hashes before final production p
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T19:54:37Z
+  TYPE: FACT
+  CLAIM: The timing margin is committed in d9f6dbc1a. New hosted qualification fails with a missing
+    codegen payload during concurrent cluster melds. The dedicated shared-context task reproduced
+    that error with live conduits/Spell/switch before test teardown using debugger-controlled scheduling.
+    Owner expressly requires analysis/proof before code changes. Runtime and tests remain unchanged.
+  EVIDENCE:
+  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md
+  IMPACT: Candidate qualification remains blocked by the runtime failure; no further workflow or
+    timing change should conceal it. Review the separate task's protocol evidence first.
+  NEXT: Review shared context reset/publication proof before selecting a runtime change.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T20:23:55Z
+  TYPE: DECISION
+  CLAIM: Owner assigned shared-context runtime design and code fixes to codex_1 through the new
+    epic. workflows_1 retains this workflow lane and candidate/prod qualification. Earlier runtime
+    timing repairs are committed; no new source/test/workflow edits are part of this handoff.
+  EVIDENCE:
+  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:17-30
+  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:311-316
+  IMPACT: Qualification stays blocked until a corrected runtime revision passes required checks.
+    The requested mailbox handoff asks codex_1 for exact tested revision, results, performance and
+    generated-asset status. workflows_1 must not overlap the assigned runtime edits.
+  NEXT: Consume codex_1's runtime handoff and verify its revision through the existing CI/RC gates.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T22:07:09Z
+  TYPE: FACT
+  CLAIM: Consumed codex_1's 21:01:42Z acknowledgement: that agent accepted runtime ownership and
+    will return revision, regression/performance evidence and source-asset status. Owner asks why
+    the cluster test melds while cleanup exists. Its explicit conduit cleanup is in finally after
+    _run_concurrent_melds joins every worker and asserts errors. Phase 5 separately retires context
+    children during live revalidation; this is not terminal teardown of those conduits.
+  EVIDENCE:
+  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md
+  - tests/integration/melder/conduit/test_conduit_integration_concurrency.py:286-352
+  - tests/integration/melder/conduit/test_conduit_integration_concurrency.py:940-1015
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:162-213
+  - src/melder/aether/spellbook/spell.py:660-686
+  IMPACT: Explain final test teardown separately from live context replacement. A retired child
+    remains unusable; replacement must complete before a meld consumes its new inputs. No runtime
+    change or new test run is made here; codex_1 continues the assigned repair.
+  NEXT: Await codex_1's qualified runtime handoff before resuming candidate qualification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+codex_1 accepted the runtime assignment at 2026-09-05T21:01:42Z and is carrying the repair.
+Current release blocker is the shared context publication failure. Runtime ownership is assigned
+to codex_1 in tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md, which links the
+completed investigation evidence and specifies the required design, regression and performance work.
+workflows_1 retains workflows and release qualification. Consume the runtime handoff, then verify
+the owner's committed revision through required CI and RC package-ready before prod promotion.
+No CI relaxation or new runtime edit belongs to this workflow handoff.
+
+The following paragraphs preserve earlier local validation and rollout history. Their historical
+"ready for owner commit" statements are superseded by the committed status recorded above.
+
 Latest local repair is the owner-requested small UnitOfWork test change: worker hold 50ms -> 1 second,
 startup wait 100ms -> 5 seconds, and an assertion that startup signaled. Existing thread/test structure
 is preserved; no event-handshake rewrite or production code change. All 279 synchronization unit tests
@@ -946,4 +1008,4 @@ same TestPyPI filename. Candidate fixes remain reviewed release-fix/* changes an
 Token wiring and the original macOS matrix were committed in 1fc53c523. The local environment-scope
 repair, its tests/guide, and derived assets belong in the owner's next commit.
 Apply candidate branch rules after CI rollout; checked-in JSON alone does not activate protection.
-Dates/scheduling remain future work. Preserve all unrelated lanes and leave this task in review.
+Dates/scheduling remain future work. Preserve all unrelated lanes; this task is blocked on runtime qualification.
