@@ -71,3 +71,34 @@ copybutton_prompt_text = r">>> |\.\.\. |\$ |PS> "
 copybutton_prompt_is_regexp = True
 smartquotes = False
 todo_include_todos = True
+
+# The same selected handbook source feeds both native Sphinx offline writers.
+epub_title = "Melder Handbook"
+epub_basename = "melder-handbook"
+epub_author = author
+epub_publisher = author
+epub_copyright = copyright
+epub_identifier = "melder-handbook-" + release
+epub_language = "en"
+epub_show_urls = "no"
+latex_engine = "xelatex"
+latex_documents = [("index", "melder-handbook.tex", "Melder Handbook", author, "manual")]
+latex_show_urls = "no"
+latex_elements = {
+    "papersize": "letterpaper",
+    "pointsize": "10pt",
+    "extraclassoptions": "oneside,openany",
+    "sphinxsetup": "verbatimwrapslines=true,verbatimwithframe=false",
+    "preamble": r"""
+\usepackage{newunicodechar}
+\definecolor{meldergreen}{HTML}{23834E}
+\definecolor{melderyellow}{HTML}{9B7300}
+\definecolor{melderorange}{HTML}{C15E16}
+\definecolor{melderblue}{HTML}{3267C8}
+\newunicodechar{🟢}{\textcolor{meldergreen}{\textbullet}}
+\newunicodechar{🟡}{\textcolor{melderyellow}{\textbullet}}
+\newunicodechar{🟠}{\textcolor{melderorange}{\textbullet}}
+\newunicodechar{🔵}{\textcolor{melderblue}{\textbullet}}
+\pdfstringdefDisableCommands{\def\textcolor#1#2{#2}}
+""",
+}

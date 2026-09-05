@@ -17,7 +17,7 @@ class CIPolicy:
     BRANCHES: tuple[str, ...] = ("dev", "preprod", "prod")
     PROMOTIONS: Mapping[str, str] = {"preprod": "dev", "prod": "preprod"}
     REQUIRED_JOBS: tuple[str, ...] = (
-        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
+        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
     )
 
 

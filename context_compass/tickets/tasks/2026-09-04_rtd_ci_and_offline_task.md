@@ -84,7 +84,6 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
-## Applicable Anti-Patterns
 - DATETIME: 2026-09-05T00:50:29Z
   TYPE: DECISION
   CLAIM: Add a reusable docs workflow to the existing required CI graph, including the exact job
@@ -104,9 +103,34 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+## Context / Handoff Summary
+- DATETIME: 2026-09-05T01:14:35Z
+  TYPE: MEASURE
+  CLAIM: Native Sphinx ePub builds 59 selected source documents. The compiled PDF is 106 letter-sized
+    pages with bookmarks, no missing-glyph/font warnings, and two small vertical layout warnings pending
+    visual review. Tectonic 0.17.0 was downloaded from the official release and verified by archive SHA256;
+    its pinned Linux/Windows installer is now checked in for reproducible CI/RTD use.
+    Added per-format RTD commands and a mandatory documentation job to CI and its exact evidence policy.
+  EVIDENCE:
+  - docs/handbook.toml
+  - docs/tools/handbook.py
+  - docs/tools/install_tectonic.py
+  - .readthedocs.yaml
+  - .github/workflows/docs.yml
+  - artifacts/rtd_validation_20260904/handbook_epub.log
+  - artifacts/rtd_validation_20260904/handbook_pdf.log
+  IMPACT: Offline artifacts are real, with visual/link checks still required. Source-asset check identified
+    two stale generated manifests after the documentation-only source edits; regenerate them before handoff.
+  NEXT: Add deterministic site checks, review rendered PDF pages, and run the CI policy tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-Defined task awaiting its dependency milestone.
-Wire the proven local command into CI and RTD configuration, implement version/canonical/source behavior, and build offline formats.
+CI/RTD per-format configuration and the native Sphinx handbook builders are implemented.
+ePub succeeded; PDF is 106 pages and visual QA is in progress. Source manifests are stale from
+docstring formatting changes; normal generated-asset refresh and all final checks remain.
+Owner handles commits/pushes and hosted publication depends on that signed revision reaching Git.

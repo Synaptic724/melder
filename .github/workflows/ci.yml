@@ -54,6 +54,9 @@ jobs:
   tests:
     uses: ./.github/workflows/test-runtime.yml
 
+  documentation:
+    uses: ./.github/workflows/docs.yml
+
   packages:
     needs: branch-policy
     if: needs.branch-policy.outputs.package-required == 'true'
@@ -63,7 +66,7 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, packages]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()

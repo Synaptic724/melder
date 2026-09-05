@@ -10,7 +10,7 @@ import pytest
 def result_map() -> dict[str, object]:
     """Build the complete, successful dependency report emitted by the CI workflow."""
     return {name: {"result": "success"} for name in
-            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "packages")}
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages")}
 
 
 def pr_event(base: str = "dev", head: str = "feature/example",
@@ -95,7 +95,7 @@ def test_unsupported_ci_events_fail_closed(policy: ModuleType, event: str, ref: 
         policy.package_required(event, {}, ref, "owner/repo")
 
 
-@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests"])
+@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation"])
 @pytest.mark.parametrize("conclusion", ["failure", "cancelled", "skipped", "timed_out", "neutral", None])
 def test_any_unsuccessful_mandatory_job_blocks_merge(policy: ModuleType, job: str,
                                                     conclusion: object) -> None:
@@ -119,7 +119,7 @@ def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
         policy.require_success(results, False)
 
 
-@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "packages"])
+@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages"])
 def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
     """Deleting a failed job from the report must not conceal its absence."""
     results = result_map()

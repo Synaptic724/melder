@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tomllib
+import zipfile
 from pathlib import Path, PurePosixPath
 from typing import Mapping, Optional
 
@@ -18,6 +19,7 @@ from example_catalog import ExampleCatalog
 from curriculum import Curriculum
 from api_reference import ApiReference
 from architecture_reference import ArchitectureReference
+from handbook import Handbook
 
 
 class DocumentationBuilder:
@@ -167,7 +169,7 @@ class DocumentationBuilder:
         if self.generated.resolve() != expected:
             raise ValueError("docs/_build must not redirect outside the documentation root.")
         target = (self.generated / self._relative(name)).resolve()
-        if target == expected or not target.is_relative_to(expected):
+        if target == expected or not target.is_relative_to(expected) or target != expected / name:
             raise ValueError(f"Refusing unsafe generated output: {target}")
         return target
 
@@ -236,22 +238,78 @@ class DocumentationBuilder:
         """Prepare selected inputs and run Sphinx; return its real status and retain diagnostics."""
         source = self.prepare()
         output = self._output(builder)
+        if output.exists():
+            shutil.rmtree(output)
         output.mkdir(parents=True, exist_ok=True)
         command = [sys.executable, "-m", "sphinx", "-q", "-b", builder, "-W", "--keep-going",
                    "-c", str(self.docs), "-d", str(self._output("doctrees")),
                    str(source), str(output)]
         status = subprocess.run(command, cwd=self.root, check=False).returncode
         if status == 0:
+            if builder == "html" and self.catalog is not None:
+                shutil.copytree(source / "downloads", output / "downloads", dirs_exist_ok=True)
             sys.stdout.write(f"Built {len(self.pages)} pages: {output}\n")
         return status
+
+    def archive(self) -> Path:
+        """Archive the complete built HTML, including its local assets and stable downloads."""
+        html = self._output("html")
+        if not (html / "index.html").is_file():
+            raise ValueError("Build HTML before requesting its offline archive.")
+        output = self._output("htmlzip")
+        output.mkdir(parents=True, exist_ok=True)
+        archive = output / "melder-html.zip"
+        with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
+            for path in sorted(html.rglob("*")):
+                if path.is_file():
+                    info = zipfile.ZipInfo(path.relative_to(html).as_posix(), (1980, 1, 1, 0, 0, 0))
+                    info.compress_type = zipfile.ZIP_DEFLATED
+                    bundle.writestr(info, path.read_bytes())
+        return archive
+
+    def stage(self, format_name: str) -> None:
+        """Copy a verified format into Read the Docs' explicit output directory without publishing it."""
+        configured = os.environ.get("READTHEDOCS_OUTPUT")
+        if not configured:
+            raise ValueError("RTD staging requires READTHEDOCS_OUTPUT; local builds do not guess it.")
+        root = (self.root / configured).resolve()
+        if root != self.root / "_readthedocs":
+            raise ValueError("RTD output must be the checkout's contained _readthedocs directory.")
+        origins = {"html": "html", "htmlzip": "htmlzip", "epub": "handbook-epub", "pdf": "handbook-pdf"}
+        if format_name not in origins:
+            raise ValueError(f"Unsupported RTD format: {format_name}")
+        source = self._output(origins[format_name])
+        target = root / format_name
+        if target.resolve() != target:
+            raise ValueError("RTD format output must not redirect through a symlink.")
+        target.mkdir(parents=True, exist_ok=True)
+        if format_name == "html":
+            if not (source / "index.html").is_file():
+                raise ValueError("RTD HTML output is missing its index.")
+            shutil.copytree(source, target, dirs_exist_ok=True)
+            return
+        suffix = {"htmlzip": ".zip", "epub": ".epub", "pdf": ".pdf"}[format_name]
+        files = list(source.glob("*" + suffix))
+        if len(files) != 1:
+            raise ValueError(f"Expected exactly one {suffix} output, found {len(files)}.")
+        shutil.copyfile(files[0], target / files[0].name)
 
     def run(self) -> int:
         """Run prepare/check/build commands; configuration and IO errors produce actionable failures."""
         parser = argparse.ArgumentParser(description=__doc__)
-        parser.add_argument("command", choices=("prepare", "check", "build"), nargs="?", default="build")
-        parser.add_argument("--builder", choices=("html", "dirhtml", "epub", "latex"), default="html")
+        parser.add_argument("command", choices=("prepare", "check", "build", "handbook", "archive", "stage"), nargs="?", default="build")
+        parser.add_argument("--builder", choices=("html", "dirhtml", "epub", "latex", "pdf", "htmlzip"), default="html")
+        parser.add_argument("--tectonic", help="Optional path to the Tectonic 0.17.0 compiler for a PDF handbook.")
         args = parser.parse_args()
         try:
+            if args.command == "handbook":
+                return Handbook(self).build(args.builder, args.tectonic)
+            if args.command == "archive":
+                sys.stdout.write(str(self.archive()) + "\n")
+                return 0
+            if args.command == "stage":
+                self.stage(args.builder)
+                return 0
             if args.command == "check":
                 self.load()
                 sys.stdout.write(f"Navigation valid: {len(self.pages)} pages, {len(self.assets)} assets.\n")
@@ -259,6 +317,8 @@ class DocumentationBuilder:
             if args.command == "prepare":
                 sys.stdout.write(str(self.prepare()) + "\n")
                 return 0
+            if args.builder in ("pdf", "htmlzip"):
+                raise ValueError("Use handbook --builder pdf or archive for these formats.")
             return self.build(args.builder)
         except (OSError, ValueError, KeyError, TypeError) as error:
             sys.stderr.write(f"Documentation build refused: {error}\n")
