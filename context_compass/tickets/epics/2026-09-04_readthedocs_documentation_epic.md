@@ -7,7 +7,7 @@
 - Agent Name: codex_2
 - Priority: p2
 - Created: 2026-09-04T21:06:12Z
-- Updated: 2026-09-05T08:58:00Z
+- Updated: 2026-09-05T09:41:40Z
 - Target Window: Complete scope definition now; nine delivery stories govern implementation and launch.
 - Related Program/Initiative: Melder public documentation.
 
@@ -19,7 +19,7 @@ have been investigated; Melder's information architecture is defined independent
 
 The local Sphinx site now builds 294 pages, including all four learning levels, 48 guide chapters,
 all 133 saved lesson pages, and expanded references. CI/RTD configuration and offline builders exist;
-source-link validation, final packaging/quality checks, and hosted verification remain.
+local links and offline packaging pass. Integrated interaction/accessibility and hosted verification remain.
 
 ## MRP Alignment
 Establish an understood, reproducible authoring/build/publishing model before committing to a site
@@ -101,7 +101,7 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 - [x] Owner direction fixed: four levels, full contents, prominent examples, comprehensive scope definition.
 - [x] Product blueprint and nine delivery stories defined with boundaries, dependencies, and acceptance.
 - [x] Foundation and complete catalog delivered (S1-S2).
-- [ ] All four curricula and reference layer delivered (S3-S7).
+- [x] All four curricula and reference layer delivered locally (S3-S7); final acceptance remains separate.
 - [ ] CI/RTD features and offline formats demonstrated (S8).
 - [ ] Integrated quality, launch, and maintenance accepted (S9).
 
@@ -150,8 +150,10 @@ remain. Keep one documentation task actively routed.
 ## Validation / Test Approach
 - Current evidence: complete reference build/config reads and representative API page reads.
 - Public ThreadFactory landing and ConcurrentDict pages were retrieved and contain rendered API data.
-- Local Sphinx rendering builds 294 pages; independent navigation validation currently fails on 19 backlinks.
-- Focused CI workflow checks: 127 passed. Offline artifacts built; final review and packaging remain.
+- Local Sphinx rendering and independent validation pass: 294 pages and 35,119 local links.
+- Documentation tests: 36 passed, including a real cached-reference regression and its negative control.
+- Focused CI workflow checks: 127 passed before this continuation. Final local PDF/ePub and archive/staging
+  checks pass; the PDF is 103 pages. Package/repository generated assets were refreshed and checked.
 - Saved lesson execution: all 133 scripts have passed; Expert ProtocolCrafter needed one unchanged
   retry outside the sandbox for Windows temporary-directory ACLs. This verifies executed assertions
   and handled outcomes, not every prose claim or universal runtime correctness.
@@ -492,6 +494,22 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T09:41:40Z
+  TYPE: FACT
+  CLAIM: Local CI/offline implementation is in review with source-link, format, staging, and generated
+    asset evidence. Owner reviewed the live preview positively and requested a prominent README link;
+    the header now links to public documentation, examples, and complete contents. The owner is adding
+    the RTD project; hosted identity/features and comprehensive S9 quality acceptance remain open.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_local_build_validation.md:1-62
+  - README.md:9-23
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:1-71
+  IMPACT: Local implementation is reviewable and the entry link is discoverable. No commit, push,
+    hosted publication, or epic/story closure is claimed. Maintain the complete nine-story scope.
+  NEXT: Verify the owner's RTD project and chosen revision, then finish integrated S9 acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -508,6 +526,8 @@ Intermediate, Advanced, Expert; 48 guide chapters; all 133 canonical lesson page
 filterable examples. All saved scripts have passed their harness checks, with one environment-only
 ProtocolCrafter retry. All 36 Expert sources were read and limits recorded in its task.
 Reference/API/architecture integration, CI/RTD configuration, and offline builders exist.
-Next: resolve 19 source-page backlinks, finish offline review/staging and bundle checks, then perform
-integrated quality/hosted verification. The owner resumed after pausing and is adding the RTD project.
+Recorded local source links, offline review/staging, and generated bundle checks pass. README has prominent
+public docs, examples, and contents links. The preview remains at http://127.0.0.1:8765/.
+Next: rebuild the final revision after concurrent runtime work settles, verify the owner's RTD
+project/branch, and finish the comprehensive S9 quality/hosted audit.
 Owner handles all commits/pushes and account setup. Preserve other agents' CI/disposal work.

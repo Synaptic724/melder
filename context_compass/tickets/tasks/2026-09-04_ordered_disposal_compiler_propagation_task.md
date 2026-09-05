@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-runtime
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_runtime_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T22:06:16Z
+- Updated: 2026-09-05T09:46:41Z
 
 ## Objective
 Carry each Spell's resolved ordered list through runtime records, plans, and emitted
@@ -32,9 +32,10 @@ executor bindings without redundant live-list copies or changes to execution alg
 - Out of scope: method matching, override API redesign, arbitrary post-creation list mutation.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested a separate task for the runtime/compiler phase.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Owner requested continuation after the verified producer slice.
+  Read/classify compiler metadata and prepare its patch contract before source edits.
 
 ## Required Reading and Evidence
 Read Component: SpellCompiler and Validation Pipeline and Component: Meld Resolution Runtime
@@ -106,8 +107,14 @@ Do not remove useful cache value normalization or make a key unhashable accident
 - [ ] Creations task unblocked; closure requires owner acceptance.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false at ticket creation
-- ARTIFACT_PATHS: none yet; consume the actual runtime/code-description patch before edits
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch_index.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_compiler_disposal.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_compiler_disposal_index.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_compiler_disposal.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_compiler_disposal_index.md`
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: final accepted program closure
 
@@ -166,6 +173,78 @@ Record the classification and evidence before changing each compiler family. One
     relevant complete methods/blocks; do not claim whole-file review of every compiler.
   NEXT: At implementation, consume the patch and verify cold/cache hydration uses the same
     established list through each family; no blanket conversion rewrite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:46:41Z
+  TYPE: PLAN
+  CLAIM: Owner requested continuation to compiler/Creations propagation. Producer changes
+    are verified by 753 selected tests. Begin with compiler contacts; preserve algorithms,
+    lifetime routing, ordered hash/IR projections, and existing synchronization.
+    codex_2 reports regenerated tracked LLM corpora but excluded our untracked test module;
+    final corpus refresh remains required when the epic reaches its assets task.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md`
+  - Incoming codex_2 notice, 2026-09-05T09:41:40Z, citing artifacts/2026-09-05_rtd_local_build_validation.md:49-59.
+  IMPACT: Do not change other agents' documentation, CI, or corpus work. No commits/pushes.
+  NEXT: Read the compiler component/graph slices and classify the known live-copy contacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:49:29Z
+  TYPE: FACT
+  CLAIM: Complete reads of runtime record/processor and both solo compiler modules confirm
+    the first live copies. The record stores its supplied names directly; the processor creates
+    a tuple first. Both solo namespace binders pass names through a tuple-normalizing helper.
+    Their emitted source contains only the presence flag and lifetime route, not method names.
+    Runtime-analysis cleanup clears the outer record map and does not clear inner names.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py:31-140`
+  - `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py:38-116`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:8-248`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:8-318`
+  IMPACT: Retain the list at these compile-time boundaries; do not rewrite emitted lifetime
+    routing, override application, or code-object cache semantics.
+  NEXT: Read both complete plan implementations and classify their disposal-bearing fields/builders.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:51:21Z
+  TYPE: FACT
+  CLAIM: Both plan files are now fully read (generalized 2,752 lines; many-only 1,381).
+    Generalized single/dual builders each copy runtime_record names into a list; the step
+    retains it directly. Many-only builds inner tuples for the no-overrides metadata array.
+    Plan cleanup clears outer arrays/maps only, leaving borrowed inner lists intact.
+    Register/store decisions are independent of collection type and remain unchanged.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:127-251`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:683-910`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1091-1302`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1460-1728`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:300-542`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:1057-1310`
+  IMPACT: Six compiler source files need small propagation/type/doc changes; do not rewrite
+    fast-call arrays, overrides, cache schema rows, or cleanup algorithms.
+  NEXT: Verify emitted namespace and serialized row boundaries, then prepare tests/contracts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:55:21Z
+  TYPE: FACT
+  CLAIM: Namespace reads confirm the six generalized/many-only binders already retain inner
+    Spell-list references. Canonical/legacy phase-11 rows and many-only signatures intentionally
+    project ordered values. Complete cache-helper read confirms hydration resolves the live
+    Spell lookup before namespace creation. The selected existing compiler baseline passes
+    56 tests in 0.33s. Compiler contracts are now authored for the six-file correction.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:302-443`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:316-484`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:1146-1205`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:935-1008`
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_compilers_core.py tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_data_migrations.py tests/unit/melder/spellbook/spell_compiler/test_spell_codegen_cache_rehydration_exec.py tests/unit/melder/spellbook/spell_compiler/codegen_planner/test_generalized_dual_build_differential.py -q -p no:cacheprovider --tb=short
+  IMPACT: Only live copies/types change; hash/IR, six existing namespace functions, and cache
+    helper source stay untouched. Tests must exercise behavior as well as explicit sharing.
+  NEXT: Index/consume the compiler contracts, add red regressions, then apply the six-file edit.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

@@ -7,7 +7,7 @@
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-03T01:05:17Z
-- Updated: 2026-09-04T22:39:54Z
+- Updated: 2026-09-05T09:40:08Z
 - Target Window: 2026-Q3
 - Related Program/Initiative: Melder public lifecycle contract
 
@@ -97,7 +97,8 @@ restore without adding a new abstraction or weakening reverse dependency teardow
 - List storage and book-first/book-last composition are the current owner direction.
 - Disposal metadata is established once per Spell; arbitrary internal mutation is out of scope.
 - Existing method-failure behavior stops the current object's chain at the first error.
-- Current implementation authorization is limited to the SpellbookConfiguration slice.
+- Current executed scope includes configuration and the owner-requested Bind/Spell successor.
+  Later implementation still follows its task-level entry gates.
 
 ## Dependencies / External References
 - `context_compass/system_docs/src_components.md`
@@ -793,6 +794,19 @@ behavior, future design, and tests actually executed remain distinct.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T09:40:08Z
+  TYPE: MEASURE
+  CLAIM: The Bind/Spell producer slice is implemented and in review. Independent ordered
+    groups, both priorities, absent/duplicate names, bind SHA, and Spell list ownership pass
+    focused tests. Latest producer and surrounding verification totals 753 selected cases.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md`
+  IMPACT: The source of ordered metadata is established. Compiler/Creations ownership,
+    full configuration transport, crystal replay, canonical promotion, and assets remain pending.
+  NEXT: Review this slice, then prepare the compiler propagation task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ### Current source contact inventory
 
 Configuration, bind, and Spell ownership:
@@ -844,16 +858,18 @@ Generated contacts, never hand-edited:
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Current resume route: `tickets/tasks/2026-09-04_disposal_priority_configuration_task.md` (review).
-The configuration-only slice is implemented and passes 115 focused tests. Holistic reading
-and configuration patch contracts are complete; later component contracts remain pending.
+Current resume route: `tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md` (review).
+Configuration and Bind/Spell producers are implemented. The latest two verification runs
+pass 753 selected tests. Their patch contracts are complete; later consumer/replay contracts
+and implementation remain pending. No commits or pushes were made by this producer slice.
 The Implementation Task Sequence above links all nine tasks and their prerequisites under
 three stories. The discovery task remains a review/reference document, not the execution route.
 Ticket-stack creation and structural verification are complete: three stories, nine tasks,
 126 valid file/range references, 61 in-bounds citations, and no dependency cycle.
-All non-configuration implementation remains pending. Resume from the routed task after REONBOARD.
+Configuration transport, compiler/Creations, persistence, and assets remain pending.
+Resume from the routed task after REONBOARD.
 
-Current behavior is source-proven. On the first bind, Spellbook selects either
+Historical producer baseline, replaced by the 2026-09-05 slice: on the first bind, Spellbook selected either
 that call's per-bind names, otherwise the SpellbookConfiguration names, otherwise
 empty, and latches one shared frozenset for later binds. Bind checks only class
 profiles and matches against callable names from the class's own `__dict__`;
@@ -862,7 +878,7 @@ not rematch. The resulting Spell flag/names flow through compiler registration
 into Creations, which invokes accepted names sequentially during reverse-order
 cleanup. Zero matches means no disposal tracking; for `Existence.many`, the
 instance is not retained for cleanup. The separate `disposal` boolean has no
-runtime reader. The new priority configuration is staged; these consumers are still unchanged.
+runtime reader. These downstream mechanisms remain unchanged by the producer slice.
 
 Current direction is list storage, combining both input groups once at Spell creation.
 enforce_priority_disposal_methods defaults False; True promotes book methods in their
@@ -870,7 +886,7 @@ configured order, including shared names. The Phase 1 task holds examples, the
 four-file producer boundary, and a completed Configuration Change Map covering fluent
 API, Crystallizer transport/reload, and Nexus defaults. Prepare the implementation contract
 before each newly activated component, then follow the dependency chain. Phases 2
-and 3 handle consumption and persistence; only configuration implementation has landed locally.
+and 3 handle consumption and persistence; configuration and producer implementation have landed locally.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

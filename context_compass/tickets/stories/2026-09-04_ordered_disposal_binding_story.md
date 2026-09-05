@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-04-ordered-disposal-binding
 - Epic: EPIC-2026-09-02-ordered-live-spell-disposal
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T22:39:54Z
+- Updated: 2026-09-05T09:40:08Z
 
 ## User Narrative
 As a Melder user, I want book and spell disposal names resolved once in a predictable
@@ -47,9 +47,10 @@ Binding establishes one coherent input for identity, execution, and persistence.
 - Out of scope: compiler/Creations implementation, resolved crystal replay, publication.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested executable tasks for the established Phase 1 design.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Configuration and Bind/Spell implementation are verified and in review;
+  configuration transport and later program phases remain pending.
 
 ## Dependencies / Related Work
 - Discovery: `tickets/tasks/2026-09-02_ordered_spell_disposal_contract_discovery_task.md`
@@ -69,7 +70,8 @@ Binding establishes one coherent input for identity, execution, and persistence.
 
 ## Validation / Test Plan
 Child tasks own focused tests. Use a verified Python 3.14 interpreter; default python is 3.13.
-No implementation or runtime verification has occurred for this story yet.
+Configuration and Bind/Spell are implemented; the latest producer and surrounding verification
+passes 753 selected tests. Full configuration transport and later runtime/replay work remain pending.
 
 ## UX / API / Data Notes
 Proposed fluent setter: `with_enforce_priority_disposal_methods(enabled=True)`.
@@ -130,8 +132,21 @@ Record cross-task decisions here; detailed findings remain in the owning child t
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T09:40:08Z
+  TYPE: MEASURE
+  CLAIM: The producer successor is implemented and in review: separate book/spell forwarding,
+    ordered matching and SHA, direct Spell list storage, and no redundant conjure check.
+    The producer and surrounding verification runs pass 753 selected cases on Windows 3.14t.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md`
+  IMPACT: Configuration and producers are available for consumer work. Full transport,
+    compiler/Creations propagation, and replay acceptance are not established by these results.
+  NEXT: Review the producer slice, then consume the compiler propagation task's contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Start with the contract task, then configuration. Binding and configuration transport depend
-on that configuration result. Treat ready as specified work; every entry gate still applies.
-Configuration source/tests are implemented and in review. Bind/Spell and full configuration
-transport remain pending. The discovery task's current design supersedes its old notes.
+Configuration and Bind/Spell source/tests are implemented and in review. The active producer
+task records 753 selected passing tests. Full configuration transport remains pending; the
+next runtime task owns compiler propagation. Ready tasks still require their entry gates.
+The current list/False-default/composition rule supersedes historical tuple/override proposals.

@@ -5,12 +5,12 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-build-and-hosting
 - Story Path: ../stories/2026-09-04_rtd_build_and_hosting_story.md
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T08:58:00Z
+- Updated: 2026-09-05T09:49:19Z
 
 ## Objective
 Wire the proven local command into CI and RTD configuration, implement version/canonical/source behavior, and build offline formats.
@@ -31,23 +31,23 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 
 ## State Transition Event
 - from_state: in_progress
-- to_state: in_progress
-- transition_reason: Owner requested a pause for committing, then instructed continue on 2026-09-05.
-  Reconcile the unfinished handoff and resume source-link validation; commits and pushes remain owner-only.
+- to_state: review
+- transition_reason: Local builds, source links, offline formats, staging, and generated assets have
+  evidence. Owner-requested README entry links are implemented; hosted verification remains separate.
 
 ## Steps / Checklist
 - [x] Read the exact inputs and record one bounded implementation decision.
 - [x] Complete required patch contracts when the change is system-impacting.
 - [x] Implement the scoped deliverable with notes before the next tranche.
-- [ ] Validate meaningful behavior/content and record actual outcomes.
-- [ ] Synchronize parent story and hand off or close after acceptance.
+- [x] Validate meaningful behavior/content and record actual outcomes.
+- [x] Synchronize parent story and hand off; closure still requires acceptance.
 
 ## Acceptance Criteria
-- [ ] Local/CI/RTD configuration share deterministic source assembly and dependencies.
-- [ ] Docs dependencies remain separate from runtime dependencies.
-- [ ] HTML and defined PDF/ePub handbook outputs are valid and revision-labeled.
-- [ ] Public-content selection, redirects/canonical inputs, and recovery steps are explicit.
-- [ ] Workflow/static checks and local output review are recorded.
+- [x] Local/CI/RTD configuration share deterministic source assembly and dependencies.
+- [x] Docs dependencies remain separate from runtime dependencies.
+- [x] HTML and defined PDF/ePub handbook outputs are valid and revision-labeled.
+- [x] Public-content selection, redirects/canonical inputs, and recovery steps are explicit.
+- [x] Workflow/static checks and local output review are recorded.
 
 ## Validation
 - Normal HTML build and independent validation pass: 294 pages and 35,119 local links, with canonical
@@ -57,7 +57,10 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 - Final PDF: 103 pages, all level bookmarks, no blank/clipped pages; visual review recorded.
 - Final ePub: 62 XHTML documents and 1,077 internal links pass format/navigation checks.
 - HTML archive and all four RTD staging formats match their source bytes; 945 complete-site files.
-- All three source build-asset exact checks pass. Repository LLM bundles are stale and need regeneration.
+- All three source build-asset exact checks pass. Repository LLM bundles were regenerated and checked;
+  other-corpus bootstrap includes docs/.gitignore without staging unrelated work. See the evidence report.
+- These results qualify the recorded inputs. HEAD subsequently advanced to f35b1517863a846b35b7411c27c60b3547fa9cba,
+  including concurrent runtime changes; the final hosted candidate needs a fresh build/asset check.
 - Hosted project setup, live previews, versions, search, and downloads were not performed.
 
 ## Risks / Mitigations
@@ -68,6 +71,22 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
+  - artifacts/2026-09-05_rtd_local_build_validation.md
+  - artifacts/rtd_validation_20260904/rebuild_regression_20260905.log
+  - artifacts/rtd_validation_20260904/rebuild_negative_20260905.log
+  - artifacts/rtd_validation_20260904/docs_tests_20260905.log
+  - artifacts/rtd_validation_20260904/html_20260905.log
+  - artifacts/rtd_validation_20260904/links_20260905.log
+  - artifacts/rtd_validation_20260904/epub_20260905.log
+  - artifacts/rtd_validation_20260904/pdf_20260905.log
+  - artifacts/rtd_validation_20260904/pdf_metadata_20260905.json
+  - artifacts/rtd_validation_20260904/epub_check_20260905.json
+  - artifacts/rtd_validation_20260904/staging_20260905.json
+  - artifacts/rtd_validation_20260904/source_check_20260905.log
+  - artifacts/rtd_validation_20260904/repo_check_before_20260905.log
+  - artifacts/rtd_validation_20260904/repo_build_20260905.log
+  - artifacts/rtd_validation_20260904/repo_check_20260905.log
+  - artifacts/rtd_validation_20260904/readme_bundle_20260905.log
   - artifacts/rtd_validation_20260904/final_html.log
   - artifacts/rtd_validation_20260904/site_check.log
   - artifacts/rtd_validation_20260904/ci.xml
@@ -369,6 +388,45 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T09:39:40Z
+  TYPE: MEASURE
+  CLAIM: README now has a centered Read the Documentation heading directly below the badges,
+    followed by Browse Examples, Full Table of Contents, and the exact four-level progression.
+    The lower documentation table now describes the complete site. Navigation validates 294 pages
+    and 54 assets after the edit; the affected LLM other corpus was refreshed and its check passes.
+    Browser checks confirmed catalog filtering/reset and completed Spellbook search. Local builds,
+    downloads, source-asset checks, and repository bundle evidence are consolidated in the report.
+  EVIDENCE:
+  - README.md:9-23
+  - README.md:1043-1056
+  - artifacts/rtd_validation_20260904/readme_bundle_20260905.log:1-3
+  - artifacts/2026-09-05_rtd_local_build_validation.md:1-62
+  IMPACT: Local implementation is ready for owner review and signing. Account setup is owner-run;
+    comprehensive S9 interaction/accessibility and live hosted verification remain open. No commit,
+    push, account mutation, publication, or ticket closure was performed.
+  NEXT: Owner reviews/commits the local result; resume hosted verification when the project URL/branch
+    is confirmed, and finish the S9 quality audit against that candidate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:49:19Z
+  TYPE: FACT
+  CLAIM: Consumed codex_1's notice that ordered-disposal producer changes landed in Spellbook, Bind,
+    Spell, and focused tests after this task's earlier qualification. Read-only Git inspection now
+    shows HEAD f35b1517863a846b35b7411c27c60b3547fa9cba. README/docs/LLM edits are included in that
+    commit. Remaining worktree changes include other agents' tests and final coordination/ignore files.
+    No commit or push was attempted by codex_2.
+  EVIDENCE:
+  - tickets/tasks/2026-09-04_ordered_disposal_bind_and_spell_task.md
+  - artifacts/2026-09-05_rtd_local_build_validation.md:1-70
+  - Read-only git log -1, git status --short, and git diff --stat -- README.md docs llm_support.
+  IMPACT: Keep the existing preview available as the validated snapshot. Do not present its earlier
+    source/asset proofs as qualification of newer runtime changes. Rebuild the final candidate once
+    concurrent source work settles; each owning lane retains its source/test/asset responsibility.
+  NEXT: Finish S9 and hosted verification against the owner's chosen final revision/project.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
@@ -379,7 +437,10 @@ are implemented. The local site has 294 declared pages, including the four exact
 48 guide chapters, all 133 saved lesson pages, and expanded references.
 The source-link blocker is fixed: normal builds now pass all 35,119 local links and 36 docs tests.
 Final PDF/ePub visual/structural checks and complete HTML archive/RTD staging comparisons pass.
-Next: regenerate/check repository LLM bundles while excluding the other agent's unfinished test.
+Repository LLM bundles are refreshed and checked. README has prominent public docs/example/contents links.
+This task is in review, not closed. Next: owner review/signing, hosted-project verification, and S9 audit.
+HEAD is now f35b1517863a846b35b7411c27c60b3547fa9cba and includes newer concurrent runtime work.
+Rebuild/recheck the final candidate after it settles; recorded green results describe the earlier inputs.
 Hosted project/account setup and live feature verification remain separate unfinished work.
-The owner's pause has ended with the current continue instruction. Owner handles every commit/push;
+The local preview remains available on http://127.0.0.1:8765/. Owner handles every commit/push;
 preserve the concurrent disposal and workflow lanes. No completion or launch acceptance is claimed.

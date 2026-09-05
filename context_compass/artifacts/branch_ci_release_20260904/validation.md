@@ -19,8 +19,9 @@ Final results:
 - GitHub PR 121, signed commit cb24d33b6f30a6b76b137a3a34a8ccf6e15cf80e, CI run 33928393747.
 - Rulesets 22307416, 22307417, and 22307418 are active.
 
-The review-worktree subdirectory is a registered Git worktree; remove it through git worktree remove
-before deleting the enclosing disposable workspace after owner-accepted closure.
+The review-worktree was removed through git worktree remove on 2026-09-05 at owner request.
+Its local/remote temporary branch was retired and PR 121 closed; codex_features2 preserves the work.
+The remaining files in this directory are validation records/tooling, not another checkout.
 
 Final local review, 2026-09-05:
 - Reproduced the moved-release-tag acceptance with a failing CLI regression.

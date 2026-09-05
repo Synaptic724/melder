@@ -14,7 +14,6 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
-from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.nexus.nexus import Nexus

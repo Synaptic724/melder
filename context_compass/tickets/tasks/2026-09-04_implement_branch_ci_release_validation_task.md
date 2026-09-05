@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-04T22:25:15Z
-- Updated: 2026-09-05T09:35:41Z
+- Updated: 2026-09-05T09:57:39Z
 
 ## Objective
 Implement the accepted shared CI design for feature-to-dev and branch promotion, retaining fresh
@@ -75,7 +75,7 @@ tests/build verification on every final release and a last prod-head check befor
   against its concurrent working-tree changes. Main source manifests belong to the separate disposal lane.
 - Commit cb24d33b6f30a6b76b137a3a34a8ccf6e15cf80e: SSH-signed; GitHub verification valid.
 - GitHub rulesets 22307416/dev, 22307417/preprod, 22307418/prod: active; all three branches protected.
-- PR: https://github.com/Synaptic724/melder/pull/121 (draft, mergeable; not merged).
+- PR: https://github.com/Synaptic724/melder/pull/121 (closed as superseded on 2026-09-05).
 - Hosted run: https://github.com/Synaptic724/melder/actions/runs/33928393747.
 - Actual release publication was not dispatched.
 
@@ -84,11 +84,11 @@ tests/build verification on every final release and a last prod-head check befor
 - Latest owner instruction: the owner handles commits and pushes. Do not create further commits,
   push branches, or attempt signing/passphrase workarounds; continue with edits and validation.
 - Rulesets must be activated only after their named checks are available remotely.
-- This prerequisite was met and rulesets are now active. Merge PR 121 into dev, then use the normal
-  promotion PRs to carry the CI foundation forward before expecting later branches to supply its checks.
+- This prerequisite was met and rulesets are now active. The owner carries the current CI work on
+  codex_features2; use a PR from that branch to dev, then normal promotion PRs.
 - Roll back workflow callers and reusable workflows together; preserve final publication guards.
-- The validation directory contains a registered Git worktree. At accepted cleanup, remove that
-  worktree with git worktree remove before deleting disposable validation data; preserve the remote branch/PR.
+- The temporary review worktree and branch refs were removed at owner request on 2026-09-05.
+  Remaining validation logs/tooling follow the recorded artifact disposition at ticket closure.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -324,25 +324,81 @@ tests/build verification on every final release and a last prod-head check befor
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T09:39:23Z
+  TYPE: FACT
+  CLAIM: Owner's local and remote codex_features2 now match f35b1517863a846b35b7411c27c60b3547fa9cba,
+    whose committed CI helper contains the final remote-tag guard. The codex/branch-ci-release-validation
+    branch remains the older isolated cb24d33b6 snapshot used for draft PR 121. Its slash may appear
+    as a folder-like codex group in Git branch lists; it is not a permanent pipeline stage.
+    The actual second checkout remains under the task's review-worktree directory. No top-level
+    codex directory was found in repository files. dev/preprod/prod still await CI-code promotion.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/commit/f35b1517863a846b35b7411c27c60b3547fa9cba
+  - https://github.com/Synaptic724/melder/pull/121
+  - .github/scripts/ci_policy.py:132-167
+  IMPACT: Explain the temporary review branch separately from the intended feature/dev/preprod/prod
+    flow. Owner's newest work includes changes newer than PR 121; do not treat that draft as current.
+  NEXT: Owner selects the PR rollout route; retire the temporary branch/worktree only when superseded
+    or accepted for cleanup. Continue to leave commits and pushes to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T09:54:18Z
+  TYPE: DECISION
+  CLAIM: Owner requested retiring the temporary codex/branch-ci-release-validation branch while
+    keeping codex_features2. All 25 files changed by the temporary commit are present in current
+    HEAD; product diffs preserve the CI foundation and add documentation/tag checks. The registered
+    temporary worktree is clean, non-reparse, inside this workspace, and checked out on the expected
+    temporary branch. Both local/remote temporary tips are cb24d33b6; retained branch is f35b15178.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/pull/121
+  - .github/scripts/ci_policy.py:132-250
+  - .github/workflows/ci.yml:54-83
+  IMPACT: It is safe to close the superseded draft, delete its exact remote/local refs, and remove
+    only the registered review-worktree. Preserve codex_features2, permanent branches, and validation
+    records. This specific cleanup is authorized; commits and code pushes remain owner-only.
+  NEXT: Close PR 121 and remove the verified temporary branch/worktree, then verify retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:54:18Z
+  TYPE: FACT
+  CLAIM: Consumed codex_2's notice that docs/README and LLM bundles are ready for owner review;
+    commits remain owner-only. Further workflow/script edits require the usual corpus refresh.
+    This cleanup changes no tracked product inputs and therefore requires no bundle regeneration.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_local_build_validation.md:49-59
+  IMPACT: Preserve the documentation lane and its existing generated outputs.
+  NEXT: Complete only the requested temporary Git-resource cleanup.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-05T09:57:39Z
+  TYPE: FACT
+  CLAIM: Owner-requested cleanup completed. PR 121 is closed; the exact temporary branch was
+    deleted on GitHub, locally, and from origin's local tracking refs. The clean review-worktree
+    was removed through git worktree remove after path/branch/content checks. Only the main worktree
+    remains, on codex_features2 at f35b1517863a846b35b7411c27c60b3547fa9cba; the remote matches.
+    dev/preprod/prod tips and all working-branch code were preserved. No commits or code pushes occurred.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/pull/121
+  - https://api.github.com/repos/Synaptic724/melder/branches
+  IMPACT: The obsolete codex branch group and second checkout are retired without losing CI work.
+  NEXT: Owner uses codex_features2 for the next PR into dev and the established promotion route.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-FINAL REVIEW 2026-09-05: the CI foundation is ready. A local final hardening additionally checks the
-live remote release tag before the last prod check. 167 focused tests, seven workflow lint checks,
-correctness Ruff, and tests/other bundle checks pass. These latest changes are uncommitted in the
-main checkout; PR 121 and its historical review-worktree still contain the earlier baseline.
-Owner handles commits and pushes. No more feature additions are recommended for this foundation.
+The CI foundation and final tag guard are preserved on local/remote codex_features2 at
+f35b1517863a846b35b7411c27c60b3547fa9cba. Final guard validation: 167 focused tests, seven workflow
+lint checks, correctness Ruff, and tests/other bundle checks passed. Earlier hosted baseline CI
+passed Linux and Windows; that evidence remains in the Notes and closed PR 121.
 
-Earlier implementation is available in draft PR 121 from codex/branch-ci-release-validation to dev.
-Signed commit cb24d33b6f30a6b76b137a3a34a8ccf6e15cf80e is GitHub-verified. Hosted CI is green on both
-platforms, and all three branch rulesets are active. Main-checkout source manifests reflect a
-separate in-progress configuration lane; the isolated CI branch is self-consistent and all its
-asset checks pass. Main code/test/config changes and regenerated LLM bundles remain available locally.
+At owner request, PR 121 was closed and codex/branch-ci-release-validation was deleted locally and
+remotely. Its registered review-worktree was removed after confirming it was clean and its work
+preserved. Do not route new work to that branch or directory. Validation records remain available.
 
-Review checkout: context_compass/artifacts/branch_ci_release_20260904/review-worktree.
-Canonical work tracking is THIS ticket in the main checkout; ignore that checkout's historical boards.
-Final release behavior: fresh tests/assets/build, then distribution identity and prod-head checks
-after environment admission and immediately before upload. LATEST OWNER CONSTRAINT: owner handles
-commits and pushes. Do not attempt further commits, pushes, or signing workarounds. The earlier
-Windows SSH signing notes are historical, not permission to continue committing.
-Owner's codex_features2 push is confirmed at 1d300462a0334944a3a542225c016e9e9153d3fc.
-Next: review/merge PR 121 and carry the foundation through promotion PRs. Automated dev-to-preprod
-management and dated-candidate release scheduling remain the next layer and need their configuration.
+Owner handles commits and pushes; do not attempt them or signing workarounds. The next rollout is
+codex_features2 -> dev -> preprod -> prod through PRs. All three permanent-branch rulesets are active.
+Final publication reruns tests/assets/build and rechecks live tag/prod identity immediately before
+upload. Automated staging and dated-candidate scheduling remain a separate next layer.

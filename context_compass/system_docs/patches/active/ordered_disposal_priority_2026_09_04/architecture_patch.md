@@ -2,9 +2,9 @@
 
 ## Patch scope and non-goals
 - Patch ID: ordered_disposal_priority_2026_09_04
-- Configuration is implemented; current executable scope adds Spellbook, Bind, and Spell producers.
-- The epic's later compiler, Creations, and replay ownership changes remain separate.
-- This slice establishes ordered bind metadata; full cache/record/replay guarantees remain pending.
+- Configuration and producers are implemented; the current slice adds compiler-list propagation.
+- Creations storage and replay ownership changes remain separate tasks.
+- This slice retains the established list through compilation; full record/replay remains pending.
 - No new locks, snapshots of disposal lists, dependencies, root flags, or publication changes.
 
 ## Changed-components matrix
@@ -13,7 +13,8 @@
 | Spellbook Configuration and System State | Bool schema/default, fluent setter, reload accounting | Bind consumes the selected priority |
 | Spellbook Core | Forward both groups and priority at each active/inactive bind; retire shared candidate latch | Existing admission, indexes, and lifecycle remain unchanged |
 | Binding Pipeline | Resolve both ordered groups and hash/store the resolved list | Consumers retain the resulting policy |
-| Compiler / Creations | Unchanged | Preserve the established list to actual disposal |
+| Compiler | Retain Spell list in processor, plans, and solo namespace bindings | Preserve serialized/hash tuples and all existing executor algorithms |
+| Creations | Unchanged in compiler task | Preserve the established list to actual disposal |
 | Crystallizer / Nexus | Generic paths unchanged | Verify transport and ordered replay |
 
 ## Interface and boundary deltas
@@ -27,6 +28,9 @@
 - Bind walks the preferred group first and retains each matching name once in an owned list.
 - Spell retains that resolved list; its optional constructor default creates a fresh empty list.
 - Inspector parity uses resolved ordered names; the hash helpers do not apply book policy.
+- Compiler runtime records, generalized steps, many-only metadata, and solo namespaces borrow
+  the established Spell list. They do not create a second inner collection.
+- Serialized IR and hash tuples remain value boundaries; order is preserved in those values.
 
 ## Cross-component invariants
 - Supplied configurations are adopted before validation, so default availability is an init concern.
@@ -37,18 +41,24 @@
 - Live instance ownership, transaction admission, and cleanup algorithms remain unchanged.
 - Missing names and non-class profiles retain the existing matching scope; no new reflection.
 - Retire conjure's obsolete frozenset/flag recheck; do not replace it with private-mutation guards.
+- Compiler cleanup clears only its own outer containers, never borrowed disposal lists.
+- Cached executor hydration resolves current bound Spells; serialized names do not become
+  a competing live policy source. No new cache format or invalidation mechanism is introduced.
 
 ## Migration / rollout order
 1. Establish the configuration contract and focused tests.
 2. Implement schema/default/fluent/reload changes in the configuration owner.
 3. Run configuration unit/component and owner-side reload tests.
 4. Consume the producer contracts, then wire/test both bind paths and Spell list storage.
-5. Complete runtime/replay and public documentation/assets under their existing tasks.
+5. Carry and verify the same list through compiler families and cold/cached execution.
+6. Complete Creations/replay and public documentation/assets under their existing tasks.
 
 ## Rollback strategy
 Revert a producer change coherently across forwarding, matching, storage, and its tests.
 The verified configuration slice can remain independently installed.
 No stored record is rewritten and no user/other-agent change is reverted.
+Compiler rollback restores the six metadata/type changes together; retained schema tuples
+remain unchanged in either direction. Do not roll back the verified producer slice.
 
 ## Validation expectations and evidence plan
 - Default False before `.with_defaults()`/validation and after `clear_properties()`.
@@ -57,6 +67,8 @@ No stored record is rewritten and no user/other-agent change is reverted.
 - Preserve existing configuration name order and set-once name behavior.
 - Test default/True priority, empty/overlapping/missing names, independent binds, active/staged
   members, inspector parity, retained list ownership, and real cross-process hash stability.
+- Compiler tests cover record/plan sharing, both generalized builders, standalone many-only,
+  solo override variants, registration inputs, cleanup of outer carriers, and cached hydration.
 - Source evidence: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`.
 - Adoption evidence: `src/melder/aether/spellbook/spellbook.py:5423-5475`.
 
@@ -66,6 +78,7 @@ No stored record is rewritten and no user/other-agent change is reverted.
 - Contract task: TASK-2026-09-04-ordered-disposal-patch-contract (configuration and producer gates).
 - Configuration: TASK-2026-09-04-disposal-priority-configuration (implemented/in review).
 - Producer implementation: TASK-2026-09-04-ordered-disposal-bind-and-spell.
+- Compiler implementation: TASK-2026-09-04-ordered-disposal-compiler-propagation.
 - Generic transport verification: TASK-2026-09-04-disposal-configuration-roundtrip (later).
 - Runtime, replay, docs/assets, and end-to-end tasks retain their prerequisite gates.
 

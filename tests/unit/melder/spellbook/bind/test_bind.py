@@ -1706,7 +1706,7 @@ def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
     assert base != with_disposal
 
 
-def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
+def test_bind_resolves_disposal_metadata_during_bind(monkeypatch: pytest.MonkeyPatch) -> None:
     """Match configured candidates during bind and pass the resolved ordered list to Spell."""
     profile = class_profile(method_names=["cleanup", "close"])
     monkeypatch.setattr(

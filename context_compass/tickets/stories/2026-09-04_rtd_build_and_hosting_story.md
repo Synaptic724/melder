@@ -9,7 +9,7 @@
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-05T08:58:00Z
+- Updated: 2026-09-05T09:41:40Z
 
 ## User Narrative
 As a maintainer, I can review a documentation change before release and publish consistent versions
@@ -73,9 +73,9 @@ S9 validates the complete release and owns final launch acceptance after this pi
 - [ ] Setup/release/recovery steps are reproducible and contain no credentials.
 
 ## Validation / Test Plan
-Local rendering produced 294 declared pages; site validation fails on 19 source-page backlinks.
-The focused CI workflow report has 127 passing tests. PDF/ePub artifacts exist but final visual/packaging
-checks remain. Hosted build logs, preview inspection, and search/version/redirect flows remain unverified.
+Local rendering and independent validation pass: 294 pages, 35,119 links, and exact lesson/helper bytes.
+All 36 docs tests pass; the retained CI workflow report has 127 passing tests. Final PDF/ePub and HTML
+archive/staging checks pass. Hosted build logs and hosted search/version/redirect flows remain unverified.
 
 ## UX / API / Data Notes
 Recommended stable default starts with the first accepted docs-bearing release. latest tracks the selected
@@ -126,6 +126,19 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T09:41:40Z
+  TYPE: FACT
+  CLAIM: The CI/offline task reached review: fresh-reference regression fixed, normal HTML and all
+    local formats/staging validated, source/repository assets current, and prominent README routes added.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_local_build_validation.md:1-62
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:1-71
+  IMPACT: Local pipeline evidence is available for the owner-created RTD project. S8 cannot close until
+    the actual hosted project, previews, versions, search, canonical links, and downloads are verified.
+  NEXT: Confirm the owner's project URL and chosen docs-bearing branch/revision for hosted verification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No assumed account configuration, unsupported version claims, or mismatched build inputs.
 - [ ] No deployment secrets committed with docs configuration.
@@ -137,6 +150,8 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
 Record exact pins, build revisions, service settings without secrets, feature verification, and recovery steps.
 
 ## Context / Handoff Summary
-CI/RTD configuration and handbook builders are implemented. Local validation remains active in the
-CI/offline task, and the owner is adding the RTD project. The project URL/branch and hosted behavior
+CI/RTD configuration and handbook builders are implemented and locally validated; the CI/offline task
+is in review. The owner is adding the RTD project. The project URL/branch and hosted behavior
 remain to be verified. S9 still owns integrated launch acceptance; all commits/pushes remain owner-only.
+The shared checkout advanced after qualification; rebuild the final candidate after concurrent
+runtime changes settle instead of treating earlier source/asset proofs as current qualification.

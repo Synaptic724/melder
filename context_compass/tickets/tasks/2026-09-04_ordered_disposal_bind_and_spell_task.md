@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-binding
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_binding_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T08:55:51Z
+- Updated: 2026-09-05T09:44:06Z
 
 ## Objective
 Each new Spell receives one ordered list composed from its own names and the book's names,
@@ -33,10 +33,10 @@ using the configured priority. Hash that same sequence and retain it directly on
 - Out of scope: compiler rewrite, disposal mutation after creation, new matching families.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner requested continuation after the verified configuration slice.
-  This begins producer preparation; the producer patch gate still precedes source edits.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Three producer files and focused tests are implemented. All 753 selected
+  producer/configuration/surrounding binding tests pass; later consumer and replay tasks remain separate.
 
 ## Required Reading and Evidence
 Use the component index's Spellbook Core and Binding Pipeline slices, then the graph index
@@ -61,13 +61,13 @@ for selected files. Read source completely before editing; ranges below are entr
 - Spell stores the resolved list directly; no defensive copy or extra setter is required.
 
 ## Steps / Checklist
-- [ ] Forward both inputs and priority through active and inactive bind paths.
-- [ ] Remove/retire the first-bind candidate latch and its relevant init/cleanup/slot wiring.
-- [ ] Compose/filter once in Bind; use that same result for SHA and Spell construction.
-- [ ] Replace Spell's frozenset disposal storage with direct list storage.
-- [ ] Retire the obsolete frozenset-specific conjure expectation without adding private-mutation guards.
-- [ ] Preserve inspector parity using the same resolved ordered inputs.
-- [ ] Update focused tests and docstrings; record evidence before consumer work starts.
+- [x] Forward both inputs and priority through active and inactive bind paths.
+- [x] Remove/retire the first-bind candidate latch and its relevant init/cleanup/slot wiring.
+- [x] Compose/filter once in Bind; use that same result for SHA and Spell construction.
+- [x] Replace Spell's frozenset disposal storage with direct list storage.
+- [x] Retire the obsolete frozenset-specific conjure expectation without adding private-mutation guards.
+- [x] Preserve inspector parity using the same resolved ordered inputs.
+- [x] Update focused tests and docstrings; record evidence before consumer work starts.
 
 ## Deliverables
 - Independent ordered disposal metadata for every bound Spell and consistent bind identity.
@@ -83,7 +83,10 @@ for selected files. Read source completely before editing; ranges below are entr
 - Focused new order/hash regression test if existing modules cannot host it clearly.
 
 ## Validation
-- Not run; ticket only. Discover a supported Python 3.14 executable before importing Melder.
+- Passed: 397 producer tests plus 356 configuration/surrounding binding tests on Windows 3.14t.
+- Runner: .venv_new/Scripts/python.exe. All four producer patch indexes and scoped diff checks pass.
+- Full suite, other platforms, full cache/restore/graft validation, and generated assets: Not run.
+- Canonical document promotion and generated-asset refresh remain in the existing docs/assets task.
 - Book [flush, close], Spell [close, stop, flush]: False -> [close, stop, flush];
   True -> [flush, close, stop]. Test missing names and duplicates in either group.
 - Bind two different Spells with distinct explicit names; the first must not configure the second.
@@ -97,11 +100,11 @@ Fingerprints intentionally reflect execution order. Do not promise historical ha
 for unordered inputs or add compatibility shims without a concrete requirement.
 
 ## Applicable Anti-Patterns
-- [ ] No configuration override-only model or default-True assumption.
-- [ ] No new getter/probe/locking scheme; no runtime policy mutation support.
+- [x] No configuration override-only model or default-True assumption.
+- [x] No new getter/probe/locking scheme; no runtime policy mutation support.
 
 ## Done Checklist
-- [ ] Binding changes and focused tests complete; source evidence and results recorded.
+- [x] Binding changes and focused tests complete; source evidence and results recorded.
 - [ ] Phase 2 dependencies updated; owner acceptance precedes final closure.
 
 ## Artifact Links (Optional)
@@ -281,7 +284,60 @@ Record tactical findings with evidence and one NEXT action; keep settled policy 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T09:38:04Z
+  TYPE: MEASURE
+  CLAIM: The five-file producer suite passes: 397 tests in 2.57s (370 existing and
+    27 new cases). This includes real cleanup order, active/staged binds before and after
+    conjure, both priorities, raw configuration, constructor ownership, and subprocess SHA
+    agreement across three hash seeds. Product diff review shows only the planned metadata path.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/component/melder/spellbook/test_ordered_disposal_binding.py tests/unit/melder/spellbook/bind/test_bind.py tests/unit/melder/spellbook/test_spell.py tests/component/melder/spellbook/test_spellbook_component_bind.py tests/component/melder/spellbook/test_spellbook_component_spellbook.py -q -p no:cacheprovider --tb=short
+  - Result: 397 passed in 2.57s, exit 0.
+  IMPACT: The producer contract passes. This does not establish complete compiler-cache,
+    persistence, graft/replay, or cross-platform guarantees for later tasks.
+  NEXT: Verify the configuration and surrounding binding tests, check whitespace, then hand off.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:40:08Z
+  TYPE: MEASURE
+  CLAIM: Surrounding verification adds 356 passing tests in 1.09s to the 397 producer cases.
+    Configuration/default/reload, Spellbook, SpellBinder, Scan, and creation-system resolution
+    fastpath tests pass. Product diff --check and all four producer patch-index checks pass.
+    No compiler, Creations, replay, synchronization, or generated asset implementation changed.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook/configuration/test_configuration.py tests/component/melder/spellbook/test_spellbook_component_configuration_core.py tests/component/melder/spellbook/test_spellbook_component_configuration.py tests/unit/melder/aether/test_configuration_reload_lanes.py tests/unit/melder/spellbook/test_spellbook.py tests/unit/melder/spellbook/test_spellbinder.py tests/unit/melder/spellbook/test_scan_bind.py tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py -q -p no:cacheprovider --tb=short
+  - Result: 356 passed in 1.09s, exit 0.
+  - `src/melder/aether/spellbook/bind/bind.py:422-447`
+  - `src/melder/aether/spellbook/spell.py:434-441`
+  - `src/melder/aether/spellbook/spellbook.py:4840-4865`
+  - `src/melder/aether/spellbook/spellbook.py:5136-5161`
+  IMPACT: Producer task is in review, not closed. Generated proofs from other lanes may
+    precede this source/test change; full-feature and release validation are not claimed.
+  NEXT: Owner reviews this slice; prepare compiler/Creations propagation under its own task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:44:06Z
+  TYPE: MEASURE
+  CLAIM: Final combined verification passes all 753 selected tests in one run (3.12s, exit 0)
+    after test annotation/import cleanup. Scoped source/test/ticket/board whitespace checking
+    passes. The source and test diffs were reread. The task, story, epic, and route now agree.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/component/melder/spellbook/test_ordered_disposal_binding.py tests/unit/melder/spellbook/bind/test_bind.py tests/unit/melder/spellbook/test_spell.py tests/component/melder/spellbook/test_spellbook_component_bind.py tests/component/melder/spellbook/test_spellbook_component_spellbook.py tests/unit/melder/spellbook/configuration/test_configuration.py tests/component/melder/spellbook/test_spellbook_component_configuration_core.py tests/component/melder/spellbook/test_spellbook_component_configuration.py tests/unit/melder/aether/test_configuration_reload_lanes.py tests/unit/melder/spellbook/test_spellbook.py tests/unit/melder/spellbook/test_spellbinder.py tests/unit/melder/spellbook/test_scan_bind.py tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py -q -p no:cacheprovider --tb=short
+  - Result: 753 passed in 3.12s, exit 0.
+  IMPACT: No source changes remain in this producer slice. Acceptance/closure and later
+    consumer/replay/documentation/asset work are still pending, not implicitly completed.
+  NEXT: Review this slice and resume the compiler propagation task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-No implementation yet. The policy is combined lists, False default, first occurrence wins.
-Both active/inactive paths matter. Final-list mutations after creation are not supported work.
+Implemented/in review: Spellbook, Bind, Spell; one new 24-case component regression module;
+three Spell constructor/ownership cases; and corrected old frozenset/parity expectations.
+Both groups compose once at binding: False is spell-first, True book-first, first match wins.
+Absent profile names are skipped. The same list is hashed and retained directly on Spell.
+Removed the first-bind latch and obsolete conjure recheck; synchronization remains untouched.
+753 selected tests passed together in the final run on Windows 3.14t. No commits or pushes.
+Full suite/cross-platform, consumer reference propagation, persistence, and assets remain pending.
 Next: `tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`.
