@@ -5,7 +5,7 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-build-and-hosting
 - Story Path: ../stories/2026-09-04_rtd_build_and_hosting_story.md
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -70,6 +70,8 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
+  - artifacts/rtd_validation_20260904/committed_corpus_audit_20260905.json
+  - artifacts/rtd_validation_20260904/rebuilt_commit_corpus_proof_20260905.json
   - artifacts/rtd_validation_20260904/final_pdf_wrap_20260905.log
   - artifacts/rtd_validation_20260904/hosted_environment_simulation_20260905.log
   - artifacts/rtd_validation_20260904/post_config_repo_check_20260905.log
@@ -600,6 +602,58 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   IMPACT: A passing working-copy check is insufficient. Reproduce against Git commit contents
     and inspect the GitHub run instead of assuming another regeneration fixes the failure.
   NEXT: Compare all committed corpus inputs with the manifest and retrieve the failing GitHub run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T15:44:17Z
+  TYPE: MEASURE
+  CLAIM: The committed-blob audit reproduces the failure on 573cdbaf8: src/tests match, while only
+    .gitignore differs in other. Manifest expects 5,517 normalized bytes; HEAD contains 5,518, both
+    226 lines. This is not a final-newline difference. The current normal check now also fails.
+    GitHub job 101330052595 checked out PR merge 69c1048 and reports other bytes 2,412,649,
+    exactly one more than the manifest. PR merge object fetched without changing the working branch.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/committed_corpus_audit_20260905.json
+  - https://github.com/Synaptic724/melder/actions/runs/33975008228/job/101330052595
+  - git rev-parse FETCH_HEAD: 69c1048fa147251dde1dc2deb153de271c85947b.
+  IMPACT: This is a real current committed-input mismatch, not a stale UI or platform-only issue.
+  NEXT: Diff the indexed bundle's expected .gitignore against the committed file and the PR tree.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T15:50:02Z
+  TYPE: FACT
+  CLAIM: Exact current mismatch is .gitignore line 57: the committed file contains a lone # where
+    the generated bundle expects a blank line. This accounts for the one extra byte. The failing
+    PR merge and HEAD differ only in excluded ContextCompass files; all generator/corpus inputs
+    are identical. The builder itself is not different between the local and CI revisions.
+  EVIDENCE:
+  - .gitignore:54-60
+  - Hash-verified expected-file extraction through llm_full_other_index.md.
+  - git diff --name-only HEAD FETCH_HEAD: ContextCompass-only differences.
+  - llm_support/_builder.py:89-100
+  - llm_support/_builder.py:359-400
+  IMPACT: Regenerate other against this committed input, then verify all corpora and the exact
+    committed-input snapshot. Leave generated changes unstaged for the owner's normal commit view.
+  NEXT: Run the requested generator and validate the rebuilt outputs against HEAD and the PR merge.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T15:54:51Z
+  TYPE: MEASURE
+  CLAIM: The generator now actually rewrote other and its shared manifest; src/tests stayed
+    unchanged. Full --check passes. Independently reconstructed all corpus inputs from Git blobs
+    for both branch 573cdbaf8 and actual failed CI merge 69c1048: all per-file metadata and aggregate
+    fingerprints match the regenerated manifest. Only three generated LLM files changed, left
+    unstaged for the owner's normal changes view. Whitespace check passes.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/rebuilt_commit_corpus_proof_20260905.json
+  - python llm_support/_builder.py: WROTE other (352 files), WROTE manifest.json.
+  - python llm_support/_builder.py --check: all three corpora OK.
+  - git diff --stat -- llm_support: three files, 13 insertions and 13 deletions.
+  IMPACT: The identified CI input mismatch is repaired locally and verified against the actual
+    CI input revision, not only the working directory. A new owner commit/push is needed for CI.
+  NEXT: Owner commits llm_full_other.txt, llm_full_other_index.md, and manifest.json together.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

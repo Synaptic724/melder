@@ -2,12 +2,12 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2609501,
+        "bytes": 2609502,
         "lines": 64842,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "7dce0fe2c6773d8488888f00e123ad7e6fe72bdd722c5a9a8948cbc90d81ef18"
+        "sha256": "dd7c62e5f6c885b22d388b99c888db3b27c83581c5fbe279cc9c802ac5f646a7"
       },
-      "content_bytes": 2412648,
+      "content_bytes": 2412649,
       "content_lines": 62020,
       "file_count": 352,
       "files": {
@@ -138,9 +138,9 @@
           "source_encoding": "utf-8"
         },
         ".gitignore": {
-          "content_bytes": 5517,
+          "content_bytes": 5518,
           "content_lines": 226,
-          "content_sha256": "916ef0cf5e8840ebe57d97f1ac458012a8efdbc0e352d3a711847f9517892d19",
+          "content_sha256": "c98ad9780d335b3e3be57eb987d40b18a4878eed275852f97153922892e00df4",
           "source_encoding": "utf-8"
         },
         ".readthedocs.yaml": {
@@ -2128,9 +2128,9 @@
         "bytes": 59434,
         "lines": 374,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "b6096a4a879988f1bb47df28806e5ddf97f47706242d4b54024e3ee342fde008"
+        "sha256": "9a6e5419dfce03a5f515a94e97fe79e2263f4887f197f51d4dfcbd0f03e407c8"
       },
-      "source_fingerprint": "405dc34c1aa4a40c4dae6d0c9b59b87ffa09372f8670bd22839cc9e4921c4b21"
+      "source_fingerprint": "f062320afde8cba1e51a2d03c9a0987b5b859c164e953517f69e872635e72a56"
     },
     "src": {
       "bundle": {
