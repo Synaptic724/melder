@@ -74,17 +74,15 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for codex_1 (from codex_2, 2026-09-05T13:18:03Z)
-- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-05T11:49:24Z)
+- NEW MESSAGE for codex_1 (from codex_2, 2026-09-05T14:18:48Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| release_candidate_testpypi | review | handoff | codex | workflows_1 | First hosted/OIDC run awaits owner rollout. | Owner commits reviewed workflows with current assets and promotes to release_candidate. | Slim TestPyPI workflow and pypitest environment locally verified. | Hosted candidate succeeds and owner accepts the result. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T11:34:57Z | REQUIRED |
-| readthedocs_documentation | in_progress | validation | codex | codex_2 | Hosted project access pending. | Finish catalog/search/offline audit and source qualification. | Complete local evidence with explicit hosted limitations. | S9 local checks and maintenance handoff are recorded. | tickets/tasks/2026-09-04_rtd_quality_audit_task.md | 2026-09-05T13:02:41Z | REQUIRED |
-| ordered_spell_disposal_contract | review | handoff | codex | codex_1 | none | Owner reviews and accepts feature closure. | All phases implemented; 11,359 runtime tests pass and assets are current. | Owner acceptance allows ticket/patch closure. | tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md | 2026-09-05T13:21:33Z | REQUIRED |
+| release_candidate_testpypi | review | handoff | codex | workflows_1 | Hosted/OIDC run awaits owner rollout. | Owner commits the test-isolation repair and promotes when ready. | 263 focused tests pass from both repo root and tests/. | Owner verifies the IDE repair and hosted candidate run. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T13:41:13Z | REQUIRED |
+| readthedocs_documentation | blocked | handoff | codex | codex_2 | Public RTD 404; project/read access pending. | Owner supplies RTD project URL/branch and dashboard read authorization. | Verified hosted build of the completed local site. | Project identity/access permits hosted verification. | tickets/tasks/2026-09-04_rtd_hosted_project_task.md | 2026-09-05T14:18:48Z | REQUIRED |
 | first_public_release_notes | review | handoff | cowork | codex_1 | none | Review and commit the PyPI-portable README links plus selective LLM other-corpus regeneration. | All README repository routes use absolute GitHub prod links and generated proofs pass. | Owner confirms the public routes and accepts the release-documentation change. | tickets/tasks/2026-08-30_craft_first_public_release_notes_task.md | 2026-09-01T00:56:59Z | REQUIRED |
 | regenerate_0_2_0_release_assets | review | handoff | cowork | codex_1 | none | Review the eight-file generated diff, then commit and push through the normal branch lane. | Version 0.2.0 generated assets pass both exact CI checks. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-30_regenerate_0_2_0_release_assets_task.md | 2026-08-30T22:47:20Z | REQUIRED |
 | llm_support_compilation_pipeline | review | handoff | cowork | codex_1 | none | Review generated LLM assets and separated workflow gates; confirm acceptance. | Deterministic three-corpus LLM assets and separated src/repo asset workflows. | Owner confirms acceptance for story/task closure and artifact promotion. | tickets/tasks/2026-08-30_implement_llm_support_compilation_pipeline_task.md | 2026-08-30T22:32:04Z | REQUIRED |
@@ -97,18 +95,18 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| branch_ci_release_validation | done | workflows_1 | tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md | CI foundation accepted; cleanup complete; owner rollout and later automation recorded. | 2026-09-05T10:12:21Z |
-| github_branch_promotion_analysis | done | workflows_1 | tickets/tasks/completed/2026-09-04_github_branch_promotion_analysis_task.md | Workflow analysis and branch/candidate design accepted; foundation delivered by successor. | 2026-09-05T10:12:21Z |
-| root_readme_documentation_routes | done | codex_1 | tickets/tasks/completed/2026-08-29_root_readme_documentation_routes_task.md | Compact architecture, examples, purpose-route, and hosted-docs pointers accepted. | 2026-08-29T18:41:47Z |
-| architecture_and_design_documentation | done | codex_1 | tickets/epics/completed/2026-08-28_architecture_and_design_documentation_epic.md | Full public documentation program accepted and closed. | 2026-08-29T16:31:01Z |
-| system_document_engineering_drawings | done | codex_1 | tickets/tasks/completed/2026-08-29_system_document_engineering_drawings_task.md | Seventeen validated SVG/Mermaid engineering pairs accepted. | 2026-08-29T16:31:01Z |
-| architecture_docs_foundation | done | codex_1 | tickets/stories/completed/2026-08-28_architecture_docs_foundation_story.md | Foundation story accepted and closed. | 2026-08-29T16:31:01Z |
-| architecture_docs_human_mrp | done | codex_1 | tickets/stories/completed/2026-08-28_architecture_docs_human_mrp_story.md | Human-facing MRP story accepted and closed. | 2026-08-29T16:31:01Z |
-| architecture_docs_advanced_ceiling | done | codex_1 | tickets/stories/completed/2026-08-28_architecture_docs_advanced_ceiling_story.md | Advanced-ceiling story accepted and closed. | 2026-08-29T16:31:01Z |
-| architecture_docs_foundation_task | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_docs_foundation_task.md | Tooling/render foundation validated and closed. | 2026-08-29T16:31:01Z |
-| architecture_docs_human_mrp_task | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_docs_human_mrp_task.md | Human MRP implementation validated and closed. | 2026-08-29T16:31:01Z |
-| architecture_docs_advanced_ceiling_task | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_docs_advanced_ceiling_task.md | Advanced implementation validated and closed. | 2026-08-29T16:31:01Z |
-| llm_support_compilation_pipeline_discovery | done | codex_1 | tickets/tasks/completed/2026-08-30_llm_support_compilation_pipeline_discovery_task.md | Three-corpus indexed build design accepted and promoted to implementation. | 2026-08-30T22:07:25Z |
+| 2026-09-02_ordered_live_spell_disposal_epic | done | codex_1 | tickets/epics/completed/2026-09-02_ordered_live_spell_disposal_epic.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_persistence_story | done | codex_1 | tickets/stories/completed/2026-09-04_ordered_disposal_persistence_story.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_runtime_story | done | codex_1 | tickets/stories/completed/2026-09-04_ordered_disposal_runtime_story.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_binding_story | done | codex_1 | tickets/stories/completed/2026-09-04_ordered_disposal_binding_story.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_end_to_end_validation_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_end_to_end_validation_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_docs_assets_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_docs_assets_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_crystal_replay_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_crystal_replay_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_creations_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_creations_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_compiler_propagation_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_compiler_propagation_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_disposal_configuration_roundtrip_task | done | codex_1 | tickets/tasks/completed/2026-09-04_disposal_configuration_roundtrip_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_ordered_disposal_bind_and_spell_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_bind_and_spell_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
+| 2026-09-04_disposal_priority_configuration_task | done | codex_1 | tickets/tasks/completed/2026-09-04_disposal_priority_configuration_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

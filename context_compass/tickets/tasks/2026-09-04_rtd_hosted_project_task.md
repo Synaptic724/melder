@@ -10,7 +10,7 @@
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T12:06:59Z
+- Updated: 2026-09-05T14:13:38Z
 
 ## Objective
 Connect the reviewable site to its intended hosted project and verify Git builds, PR previews, versions, hosted search, canonical links, and downloads.
@@ -48,8 +48,10 @@ Connect the reviewable site to its intended hosted project and verify Git builds
 - [ ] No unavailable setting or account action is reported as completed.
 
 ## Validation
-- Not run. Implementation task just created.
-- Use the parent story's validation plan and report local/hosted/execution results separately.
+- Fresh public browser reload still displays RTD's 404 page at the advertised latest URL.
+- Automatic approval review rejected the dashboard read. No account settings or hosted build logs
+  were read; no indirect access or account modification was attempted.
+- Local builds, staging, and environment simulation pass in the S8/S9 evidence.
 
 ## Risks / Mitigations
 - Canonical source and existing lessons can change concurrently; verify relevant inputs before edits.

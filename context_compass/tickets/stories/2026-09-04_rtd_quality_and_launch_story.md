@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-04-rtd-quality-and-launch
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: in_progress
+- Status: blocked
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-05T11:55:00Z
+- Updated: 2026-09-05T14:13:38Z
 
 ## User Narrative
 As a reader and maintainer, I can trust that the released site is complete, navigable, accessible, and
@@ -46,10 +46,10 @@ Close the program on demonstrated reader outcomes and maintainability, not merel
 - Out of scope: unrequested runtime rewrites, new learning-level taxonomy, and broad unrelated cleanup.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: Owner explicitly requested the remaining audit and hosted verification; the
-  quality task is active, with final source qualification coordinated with the runtime lane.
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: Local audit/corrections and maintenance are complete; actual hosted verification
+  and the documented manual browser checks remain before launch acceptance.
 
 ## Dependencies / Related Work
 Use S1-S8 ownership to route defects. The parent epic remains open until this story and all others are accepted.
@@ -72,8 +72,9 @@ Use S1-S8 ownership to route defects. The parent epic remains open until this st
 - [ ] Owner walkthrough/acceptance and all child/epic closure synchronization are recorded.
 
 ## Validation / Test Plan
-Not run. Plan combines Sphinx build checks, catalog/API reconciliation, actual example suite/probes,
-rendered-browser review, download inspection, and real hosted checks. Record command/revision/outcome.
+Local build, catalog/API reconciliation, all 133 lessons, 36 docs tests, reader workflow checks,
+and final output/staging validation are recorded in the S9 audit artifact. Hosted checks and the
+specific native-zoom/clipboard limitations remain explicit; no launch acceptance is claimed.
 
 ## UX / API / Data Notes
 Reader journeys: first useful result, arbitrary topic jump, browse/run an example, resolve an error,
@@ -111,6 +112,19 @@ Any remaining defects/hosting limitations must have an owner and disposition bef
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T14:13:38Z
+  TYPE: FACT
+  CLAIM: The local integrated audit is in review and maintenance work is delivered. S1 fixed actual
+    keyboard/focus/contrast defects; S8 fixed PDF clipping and completed the recovery procedure.
+    Complete coverage, execution, output, and remaining-check evidence is retained in the audit.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_final_quality_audit.md
+  - tickets/tasks/2026-09-04_rtd_launch_and_maintenance_task.md
+  IMPACT: The program is locally reviewable. Hosted access and final owner acceptance still block launch.
+  NEXT: Obtain project identity/read access and finish real hosted qualification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No launch with silent omissions, fabricated results, or unresolved ownership.
 - [ ] No premature epic closure while a required story remains unaccepted.
@@ -122,4 +136,5 @@ Any remaining defects/hosting limitations must have an owner and disposition bef
 Record integrated evidence, unresolved defects and owners, acceptance decisions, and maintenance obligations.
 
 ## Context / Handoff Summary
-Defined, not implemented. S9 is the final integrated verification and launch/maintenance story for the epic.
+Local implementation, audit fixes, and maintenance are complete. The final audit artifact is the
+evidence entry point. Hosted launch and specific manual browser checks remain; owner retains acceptance.

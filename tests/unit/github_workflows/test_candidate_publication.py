@@ -91,8 +91,14 @@ def test_missing_or_ambiguous_workflow_runs_fail_closed(candidate_proof: ModuleT
 @pytest.mark.parametrize(("tree_matches", "version"), [(False, "0.2.4"), (True, "0.2.4rc1")])
 def test_prod_rejects_different_tree_or_prerelease_before_querying_runs(candidate_proof: ModuleType,
                                                                      monkeypatch: pytest.MonkeyPatch,
+                                                                     tmp_path: pathlib.Path,
                                                                      tree_matches: bool, version: str) -> None:
-    """Qualification of one tree or an RC version cannot authorize different final contents."""
+    """Qualification of one tree or an RC version cannot authorize different final contents.
+
+    Run inside a minimal temporary checkout and use the real version parser. A
+    parser-only mock still evaluates its file-read argument first, which makes
+    the test accidentally depend on being launched from the repository root.
+    """
     def git_read(arguments: Sequence[str]) -> str:
         """Supply only the relevant Git boundary responses, with an optional tree mismatch."""
         if arguments[0] == "rev-list":
@@ -103,11 +109,14 @@ def test_prod_rejects_different_tree_or_prerelease_before_querying_runs(candidat
         """A wrong tree/version should fail before consuming any remote qualification."""
         raise AssertionError("API must not be queried for an invalid production candidate")
 
+    version_file = tmp_path / "src" / "melder" / "__version__.py"
+    version_file.parent.mkdir(parents=True)
+    version_file.write_text(f'__version__ = "{version}"\n', encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "release")
     monkeypatch.setattr(candidate_proof, "read_event", lambda: {})
     monkeypatch.setattr(candidate_proof, "git_output", git_read)
-    monkeypatch.setattr(candidate_proof, "assignment", lambda *arguments: version)
     monkeypatch.setattr(candidate_proof, "github_runs", unexpected_query)
     with pytest.raises(ValueError, match="tree differs|final package version"):
         candidate_proof.main()

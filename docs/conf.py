@@ -49,6 +49,8 @@ myst_heading_anchors = 4
 autodoc_member_order = "bysource"
 add_module_names = False
 autodoc_typehints = "signature"
+# Keep syntax colors consistent across the web theme and native handbook writers.
+pygments_style = "default"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 html_theme = "sphinx_rtd_theme"
@@ -95,8 +97,15 @@ latex_elements = {
     "papersize": "letterpaper",
     "pointsize": "10pt",
     "extraclassoptions": "oneside,openany",
-    "sphinxsetup": "verbatimwrapslines=true,verbatimwithframe=false",
+    "sphinxsetup": "verbatimwrapslines=true,verbatimwithframe=false,VerbatimColor={RGB}{248,248,248}",
     "preamble": r"""
+% Sphinx does not break inline identifiers at underscores; narrow tables need that boundary.
+\let\melderoriginalcode\sphinxcode
+\let\melderoriginalunderscore\_
+\protected\def\sphinxcode#1{{%
+  \def\_{\melderoriginalunderscore\allowbreak}%
+  \melderoriginalcode{#1}%
+}}
 \usepackage{newunicodechar}
 \definecolor{meldergreen}{HTML}{23834E}
 \definecolor{melderyellow}{HTML}{9B7300}

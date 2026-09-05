@@ -16,4 +16,12 @@ Final local validation:
 - Repository tests/other bundle checks pass after regeneration.
 - No TestPyPI upload or hosted candidate run was dispatched; GitHub pypitest environment was created
   and verified with only release_candidate allowed. TestPyPI-side trust awaits the owner's first run.
-- The shared checkout's separate runtime-lane source manifests remain stale; those were not overwritten.
+- Source manifests were stale during the original pass; this task did not overwrite that lane's assets.
+
+Working-directory repair, 2026-09-05T13:41:13Z:
+- Reproduced the original failure from tests/: 1 failed, 1 passed.
+- Replaced the parser-only mock with an isolated temporary version-file fixture and the real parser.
+- All 263 focused tests pass from repository root (cwd-root.xml) and tests/ (cwd-tests.xml).
+- Scoped correctness Ruff and regenerated tests-corpus checks pass.
+- Read-only checks now report all source assets current after the other runtime lane's completion.
+- Production gate/workflow code was not changed by this repair. No commits, pushes, or uploads.

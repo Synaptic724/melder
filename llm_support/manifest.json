@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2607971,
-        "lines": 64813,
+        "bytes": 2609501,
+        "lines": 64842,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "0d84adc62299caaba2a15415961dbc8b2f9139e65bd9b17d338272a527c699ed"
+        "sha256": "7dce0fe2c6773d8488888f00e123ad7e6fe72bdd722c5a9a8948cbc90d81ef18"
       },
-      "content_bytes": 2411118,
-      "content_lines": 61991,
+      "content_bytes": 2412648,
+      "content_lines": 62020,
       "file_count": 352,
       "files": {
         ".gitattributes": {
@@ -1800,9 +1800,9 @@
           "source_encoding": "utf-8"
         },
         "docs/conf.py": {
-          "content_bytes": 3791,
-          "content_lines": 111,
-          "content_sha256": "ff66ddab0ce71bd76a067ac7c9187d1c814c5681ee5c4a5a28adb2d47ccd1197",
+          "content_bytes": 4202,
+          "content_lines": 120,
+          "content_sha256": "488339c25cc6f0f5876c7cffa36a528e9ff8cf0d56869b8d029d3e92d9998655",
           "source_encoding": "utf-8"
         },
         "docs/curriculum.toml": {
@@ -1962,9 +1962,9 @@
           "source_encoding": "utf-8"
         },
         "docs/maintaining.md": {
-          "content_bytes": 7540,
-          "content_lines": 153,
-          "content_sha256": "5f2a0e0c62cc4d8724dac163b2d535b7b959c6b46ae65981d566fd67f7a06194",
+          "content_bytes": 8659,
+          "content_lines": 173,
+          "content_sha256": "06244272805e09e1cf0da650854e65bf3322ff2609a504afc7e8e2773aaa2962",
           "source_encoding": "utf-8"
         },
         "docs/navigation.toml": {
@@ -2128,9 +2128,9 @@
         "bytes": 59434,
         "lines": 374,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "9359fb8a73d43d8c3baa924e4fc2f2ff03117ad3e825d76a1ba84d5515a9c62f"
+        "sha256": "b6096a4a879988f1bb47df28806e5ddf97f47706242d4b54024e3ee342fde008"
       },
-      "source_fingerprint": "4432a01fa17154a2c26382a442a4afa187771243807316657b629cecbe31a272"
+      "source_fingerprint": "405dc34c1aa4a40c4dae6d0c9b59b87ffa09372f8670bd22839cc9e4921c4b21"
     },
     "src": {
       "bundle": {
@@ -5658,13 +5658,13 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 10708489,
-        "lines": 308087,
+        "bytes": 10708960,
+        "lines": 308096,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "2ad197bdfa5fdd010cd5b1f1213598d9f7853075cffee4e74917d0552e56c24f"
+        "sha256": "0b29139a0f80256e52e569b00f58e4bbcb0d4bdfa84f316ea2dadf249dcd36de"
       },
-      "content_bytes": 10224376,
-      "content_lines": 301633,
+      "content_bytes": 10224847,
+      "content_lines": 301642,
       "file_count": 806,
       "files": {
         "tests/_codegen_system_support.py": {
@@ -7780,9 +7780,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_candidate_publication.py": {
-          "content_bytes": 14413,
-          "content_lines": 259,
-          "content_sha256": "64053389881c83a4adfb751fefc9b3e2131ecd7b9c3e76d19cb89be104437adf",
+          "content_bytes": 14884,
+          "content_lines": 268,
+          "content_sha256": "d5f0d12a9476f4118fdce40a52cc1fba911a7ef0b6bedaae3290265fe823d865",
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_ci_policy.py": {
@@ -10508,9 +10508,9 @@
         "bytes": 155570,
         "lines": 828,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "2f6264bae6a92fd870646d99dd0de89ff3eea629f66081f1ab5375cb9492d043"
+        "sha256": "8c92bcba56e7daa6437a0f897ec0ff2a3c9e14a0c9386a515eed04c8fc23aa05"
       },
-      "source_fingerprint": "d829b63a563716dfac5154044040ca279b3970ac81f81a2d0259628dd59f861c"
+      "source_fingerprint": "21617973562513dd8ecd509c1f29c4475547c8d3de29309e6c186992479bba93"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

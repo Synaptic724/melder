@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-04-rtd-build-and-hosting
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: in_progress
+- Status: blocked
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-05T09:41:40Z
+- Updated: 2026-09-05T14:13:38Z
 
 ## User Narrative
 As a maintainer, I can review a documentation change before release and publish consistent versions
@@ -47,10 +47,10 @@ Make publishing a repeatable release process with identifiable source/version in
 - Out of scope: runtime changes, paid-plan purchases, invented credentials, or retroactive tag modification.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: CI/RTD/offline implementation exists and validation is active; owner is adding
-  the hosted project. Hosted settings and live builds remain unverified.
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: Local pipeline, formats, and recovery procedure are verified; actual hosted
+  setup/build verification is blocked on project identity/access.
 
 ## Dependencies / Related Work
 S9 validates the complete release and owns final launch acceptance after this pipeline is demonstrated.
@@ -73,9 +73,9 @@ S9 validates the complete release and owns final launch acceptance after this pi
 - [ ] Setup/release/recovery steps are reproducible and contain no credentials.
 
 ## Validation / Test Plan
-Local rendering and independent validation pass: 294 pages, 35,119 links, and exact lesson/helper bytes.
-All 36 docs tests pass; the retained CI workflow report has 127 passing tests. Final PDF/ePub and HTML
-archive/staging checks pass. Hosted build logs and hosted search/version/redirect flows remain unverified.
+Final local rendering passes at 294 pages and 35,499 links with exact lesson/helper bytes. All 36 docs
+tests pass. The final 107-page PDF, 62-document ePub, 948-file HTML archive, and all-format staging
+are verified. Local canonical/version simulation passes; actual hosted behavior remains unverified.
 
 ## UX / API / Data Notes
 Recommended stable default starts with the first accepted docs-bearing release. latest tracks the selected
@@ -139,6 +139,19 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T14:13:38Z
+  TYPE: FACT
+  CLAIM: Final local pipeline work is in review, including PDF identifier wrapping, consistent
+    highlighting, and published-regression recovery instructions. All output/asset proofs pass.
+    Hosted verification remains blocked; simulation and staging are explicitly labeled local.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_final_quality_audit.md
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  IMPACT: The remaining S8 boundary is actual project/build access and live feature verification.
+  NEXT: Continue the hosted-project task after the owner supplies its URL/branch and read authorization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No assumed account configuration, unsupported version claims, or mismatched build inputs.
 - [ ] No deployment secrets committed with docs configuration.
@@ -153,5 +166,5 @@ Record exact pins, build revisions, service settings without secrets, feature ve
 CI/RTD configuration and handbook builders are implemented and locally validated; the CI/offline task
 is in review. The owner is adding the RTD project. The project URL/branch and hosted behavior
 remain to be verified. S9 still owns integrated launch acceptance; all commits/pushes remain owner-only.
-The shared checkout advanced after qualification; rebuild the final candidate after concurrent
-runtime changes settle instead of treating earlier source/asset proofs as current qualification.
+Final local qualification is recorded in the S9 audit; source/lesson bytes are unchanged between
+the tested 20123b8a and built 0e8e66e4 commits. Final docs presentation/runbook edits await owner commit.

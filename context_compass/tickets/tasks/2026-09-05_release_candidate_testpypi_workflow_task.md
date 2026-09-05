@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T11:34:57Z
+- Updated: 2026-09-05T13:41:13Z
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -37,9 +37,9 @@ commit, version, workflow run, and distribution hashes before final production p
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Slim candidate workflow, exact-source gates, deterministic archive retries,
-  isolated package probe, environment setup, and local validation are complete. Owner commit/rollout
-  and the first real TestPyPI/OIDC run remain external execution steps.
+- transition_reason: The reported working-directory failure was reproduced and repaired with an
+  isolated test fixture. All 263 focused tests pass from both repository root and tests/; generated
+  test assets and scoped lint pass. Production gate/workflow code is unchanged by this repair.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -55,6 +55,9 @@ commit, version, workflow run, and distribution hashes before final production p
 - Durable operator instructions including TestPyPI project and GitHub environment configuration.
 
 ## Validation
+- 2026-09-05T13:41:13Z repair: 263 focused tests pass from repository root and another 263 pass
+  from tests/. The original test failed from tests/ before the fixture repair. Reports: cwd-root.xml,
+  cwd-tests.xml in the task validation directory. Test corpus regeneration/check and scoped Ruff pass.
 - 263 focused workflow/package/asset-builder tests pass on local Python 3.14t.
 - All eight workflows pass actionlint 1.7.12; optional shellcheck/pyflakes were disabled.
 - Scoped correctness Ruff E4/E7/E9/F and whitespace checks pass.
@@ -63,8 +66,8 @@ commit, version, workflow run, and distribution hashes before final production p
 - Repeated snapshot builds had identical file payloads but differing tar metadata. The new normalizer
   produces identical sdist SHA256 A9ED1747F199CE9A3AF3B3DF4073EABDEFC1D9C942DDE9149F24A9C8031A0E9A.
 - Repository tests/other bundles were regenerated and their exact fingerprint/output checks pass.
-- Shared working-tree source asset checks remain stale in the separate runtime lane. Those source
-  manifests were not overwritten here; regenerate them after that lane's final source changes.
+- Source assets were stale during the initial workflow pass; read-only checks on 2026-09-05T13:41:13Z
+  now report all three current after the other lane's work. This repair did not rewrite source assets.
 - TestPyPI upload/OIDC and hosted Linux/Windows candidate qualification: Not run. No package uploaded.
 - GitHub environment pypitest and its sole release_candidate branch policy are GET-verified.
 
@@ -353,6 +356,63 @@ commit, version, workflow run, and distribution hashes before final production p
   NEXT: Owner includes these local changes in the next commit and promotes when runtime work/assets are ready.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+- DATETIME: 2026-09-05T13:35:25Z
+  TYPE: FACT
+  CLAIM: The reported prerelease-rejection test replaces assignment(), but Python first evaluates
+    Path('src/melder/__version__.py').read_text(...) before calling that replacement. The test therefore
+    still reads a real relative source file. Earlier checks from repository root concealed that
+    dependency. Reproduce from tests/, then isolate the test's version input without weakening the gate.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_candidate_publication.py:91-114
+  - .github/scripts/check_candidate_run.py:98-111
+  IMPACT: This is a test-isolation defect in the added regression, not TestPyPI/OIDC authentication.
+  NEXT: Reproduce the two parameter cases from tests/ before changing their setup.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:35:25Z
+  TYPE: FACT
+  CLAIM: Consumed codex_1's 11:49 notice that replay work would move source/tests and refresh assets.
+    That notice is historical: the current board now routes that feature to end-to-end review and
+    records its owner-facing validation outcome. Preserve all unrelated work while fixing this test.
+  EVIDENCE:
+  - tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md
+  - tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md
+  IMPACT: Scope this repair to workflow tests and their generated test corpus.
+  NEXT: Reproduce the owner-reported working-directory failure.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-05T13:35:25Z
+  TYPE: MEASURE
+  CLAIM: Running the original parameterized test from tests/ reproduces the exact reported result:
+    the tree-mismatch case passes and the prerelease case raises FileNotFoundError before its parser
+    mock can run (1 failed, 1 passed). No production script or release behavior needs changing.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_candidate_publication.py:91-114
+  - .github/scripts/check_candidate_run.py:98-111
+  IMPACT: Replace the parser-only mock with a real minimal version-file fixture in a temporary
+    checkout and explicitly enter that directory. Retain the Git/network boundary mocks and assertions.
+  NEXT: Apply that isolated test setup and verify the focused suite from both launch directories.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T13:41:13Z
+  TYPE: MEASURE
+  CLAIM: The repaired test creates its own temporary src/melder/__version__.py and changes into
+    that fixture directory, exercising the real parser while mocking only Git/network boundaries.
+    All 263 focused tests pass from repository root and from tests/. Scoped Ruff and generated test
+    corpus checks pass. Read-only source-asset checks now report all three assets current.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_candidate_publication.py:91-124
+  - artifacts/release_candidate_20260905/cwd-root.xml
+  - artifacts/release_candidate_20260905/cwd-tests.xml
+  IMPACT: The test no longer depends on the IDE's launch directory. The production scripts/workflows
+    are unchanged; the small test repair and its derived test corpus are ready for owner commit.
+  NEXT: Owner reruns the original IDE test and includes this repair in the next commit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 The accepted slim implementation is complete locally and in review on codex_features2. Candidate
 pushes call release-candidate.yml: authorize -> package build -> OIDC TestPyPI upload -> two-platform
@@ -367,14 +427,16 @@ The existing production publisher still references PYPI_API_TOKEN; its auth was 
 Version remains explicitly committed in src/melder/__version__.py; stable and rcN versions are supported.
 Finalize an RC via reviewed release-fix/* changes and requalify its final version before prod. Source
 archive metadata is normalized so same-source timestamps do not break immutable-upload retries.
-New workflow files have intent-to-add entries for asset generation; their contents remain unstaged.
+The owner has committed the original workflow implementation. The latest working-directory repair
+changes only the candidate unit test and its generated test corpus/manifest; it remains local.
 
 263 focused tests, eight-workflow actionlint, scoped Ruff, real Windows installed-wheel verification,
 real archive identity checks, and tests/other generated-asset checks pass. Actual TestPyPI/OIDC and
-hosted Linux/Windows runs have not occurred. Current shared source manifests need regeneration after
-the other runtime lane's pending changes. Preserve that lane and all unrelated edits.
+hosted Linux/Windows runs were not dispatched here. The 13:41 repair passes all 263 focused tests from
+both repository root and tests/. Shared source manifests now verify current after the other lane's
+work. Preserve that lane and all unrelated edits.
 
-Owner handles all commits/pushes. Include these still-local workflow/helper/test changes in the next
-commit. No upload happens from codex_features2. Promote via dev -> preprod -> release_candidate,
+Owner handles all commits/pushes. Include the local test-isolation repair in the next commit.
+No upload happens from codex_features2. Promote via dev -> preprod -> release_candidate,
 then verify the new candidate workflow. Apply the candidate ruleset payload after its CI rollout;
 the JSON file alone does not activate protection. Dates/scheduling remain future work.

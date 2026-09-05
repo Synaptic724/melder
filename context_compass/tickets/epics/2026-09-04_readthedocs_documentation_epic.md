@@ -2,13 +2,13 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-09-04-readthedocs-documentation
-- Status: in_progress
+- Status: blocked
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p2
 - Created: 2026-09-04T21:06:12Z
-- Updated: 2026-09-05T09:41:40Z
-- Target Window: Complete scope definition now; nine delivery stories govern implementation and launch.
+- Updated: 2026-09-05T14:18:48Z
+- Target Window: Local implementation verified; hosted launch awaits project access and owner acceptance.
 - Related Program/Initiative: Melder public documentation.
 
 ## Problem / Opportunity
@@ -19,7 +19,8 @@ have been investigated; Melder's information architecture is defined independent
 
 The local Sphinx site now builds 294 pages, including all four learning levels, 48 guide chapters,
 all 133 saved lesson pages, and expanded references. CI/RTD configuration and offline builders exist;
-local links and offline packaging pass. Integrated interaction/accessibility and hosted verification remain.
+local links and offline packaging pass. Local reader workflows and final fixes are verified. Hosted
+verification and the audit's specific native-browser checks remain before launch acceptance.
 
 ## MRP Alignment
 Establish an understood, reproducible authoring/build/publishing model before committing to a site
@@ -59,9 +60,9 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 
 ## State Transition Event
 - from_state: in_progress
-- to_state: in_progress
-- transition_reason: Owner resumed after a commit pause and is adding the RTD project. Local content
-  and pipeline implementation exist; finish their validation while owner handles hosting setup.
+- to_state: blocked
+- transition_reason: All local implementation and maintenance work is verified; public RTD still
+  displays 404 and private-dashboard read authorization/project identity are pending.
 
 ## Success Metrics
 - Exactly four primary learning sections, with their established names/order/identifiers.
@@ -541,6 +542,25 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
   REREAD: HELPFUL
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T14:18:48Z
+  TYPE: FACT
+  CLAIM: The owner-requested remaining implementation is complete locally. Final fixes cover mobile
+    and keyboard focus, skip navigation, copy-button visibility, text/control contrast, PDF table
+    wrapping, consistent syntax colors, and recovery instructions. Qualification accounts for
+    294 pages, 48 guides, 133 lessons, 76 API dispositions, 35,499 links, a reviewed 107-page PDF,
+    a valid ePub, and an exact 948-file HTML archive/staging. All 133 lessons and 36 docs tests pass;
+    one unchanged filesystem-writing lesson required the documented sandbox-free retry.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_final_quality_audit.md
+  - tickets/tasks/2026-09-04_rtd_quality_audit_task.md
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  IMPACT: Local work is ready for owner review/commit. Actual hosted setup/versions/search/redirects/
+    downloads remain blocked by project access; native 200% zoom and clipboard readback are unverified.
+    No commit, push, publication, or formal ticket closure was performed by codex_2.
+  NEXT: Obtain the RTD project URL/branch and explicit read-only settings/build-log authorization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -559,6 +579,9 @@ ProtocolCrafter retry. All 36 Expert sources were read and limits recorded in it
 Reference/API/architecture integration, CI/RTD configuration, and offline builders exist.
 Recorded local source links, offline review/staging, and generated bundle checks pass. README has prominent
 public docs, examples, and contents links. The preview remains at http://127.0.0.1:8765/.
-Next: rebuild the final revision after concurrent runtime work settles, verify the owner's RTD
-project/branch, and finish the comprehensive S9 quality/hosted audit.
+Final local quality and format qualification are complete in the S9 final audit artifact. Current
+package is 0.2.3; source/lesson bytes are unchanged between tested 20123b8a and built 0e8e66e4.
+Final docs configuration/runbook and regenerated other-corpus edits await the owner's commit.
+Next: verify the actual RTD project/branch and hosted build; the public latest URL still displays 404.
+The audit also records native 200% zoom and exact clipboard readback as remaining manual checks.
 Owner handles all commits/pushes and account setup. Preserve other agents' CI/disposal work.

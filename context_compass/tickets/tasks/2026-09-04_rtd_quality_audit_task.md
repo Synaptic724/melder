@@ -5,12 +5,12 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-quality-and-launch
 - Story Path: ../stories/2026-09-04_rtd_quality_and_launch_story.md
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T11:55:00Z
+- Updated: 2026-09-05T14:09:36Z
 
 ## Objective
 Verify all four levels, complete contents, source/example/API coverage, accessible reading, search, and downloads with a requirements-to-evidence matrix.
@@ -28,28 +28,31 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: Owner explicitly requested completing the remaining documentation implementation
-  and verification before considering the program finished.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Local audit and corrections are complete; hosted launch and documented manual
+  browser checks remain explicit, with current evidence in the final audit artifact.
 
 ## Steps / Checklist
-- [ ] Read the exact inputs and record one bounded implementation decision.
-- [ ] Complete required patch contracts when the change is system-impacting.
-- [ ] Implement the scoped deliverable with notes before the next tranche.
-- [ ] Validate meaningful behavior/content and record actual outcomes.
-- [ ] Synchronize parent story and hand off or close after acceptance.
+- [x] Read the exact inputs and record one bounded implementation decision.
+- [x] Route needed corrections through the existing S1/S8 patch/task contracts.
+- [x] Implement the scoped audit with notes before the next tranche.
+- [x] Validate meaningful behavior/content and record actual outcomes and tool limits.
+- [x] Synchronize parent story and hand off; formal acceptance remains open.
 
 ## Acceptance Criteria
-- [ ] Every numbered lesson and selected public API item has a disposition.
-- [ ] No unexplained missing pages, duplicate IDs, or broken local links remain.
-- [ ] Current code/outcome claims match source and actual example runs.
+- [x] Every numbered lesson and selected public API item has a disposition.
+- [x] No unexplained missing pages, duplicate IDs, or broken local links remain.
+- [x] Current code/outcome claims match source and actual example runs.
 - [ ] Mobile/keyboard/zoom/diagram/code workflows are reviewed.
-- [ ] Hosted-dependent checks remain explicitly pending until verified.
+- [x] Hosted-dependent checks remain explicitly pending until verified.
 
 ## Validation
-- Not run. Implementation task just created.
-- Use the parent story's validation plan and report local/hosted/execution results separately.
+- Current evidence is in artifacts/2026-09-05_rtd_final_quality_audit.md.
+- 36 docs tests and all 133 lessons pass across the normal run and one unchanged sandbox-free retry.
+- 294 pages, 35,499 links, complete source/API inventory, and final offline/staged outputs pass.
+- Native 200% zoom and exact clipboard payload readback could not be verified with this browser tool.
+- Hosted RTD checks remain blocked; no service success is inferred from local simulation.
 
 ## Risks / Mitigations
 - Canonical source and existing lessons can change concurrently; verify relevant inputs before edits.
@@ -58,7 +61,22 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
-- ARTIFACT_PATHS: artifacts/2026-09-05_rtd_final_quality_audit.md
+- ARTIFACT_PATHS:
+  - artifacts/2026-09-05_rtd_final_quality_audit.md
+  - artifacts/rtd_validation_20260904/final_inventory_20260905.json
+  - artifacts/rtd_validation_20260904/final_docs_tests_20260905.log
+  - artifacts/rtd_validation_20260904/final_examples_20260905.log
+  - artifacts/rtd_validation_20260904/final_examples_20260905.xml
+  - artifacts/rtd_validation_20260904/final_protocol_retry_20260905.log
+  - artifacts/rtd_validation_20260904/final_protocol_retry_20260905.xml
+  - artifacts/rtd_validation_20260904/final_html_20260905.log
+  - artifacts/rtd_validation_20260904/final_links_20260905.log
+  - artifacts/rtd_validation_20260904/final_source_assets_20260905.log
+  - artifacts/rtd_validation_20260904/final_repo_assets_20260905.log
+  - artifacts/rtd_validation_20260904/final_epub_20260905.log
+  - artifacts/rtd_validation_20260904/final_pdf_20260905.log
+  - artifacts/rtd_validation_20260904/final_archive_20260905.log
+  - artifacts/rtd_validation_20260904/final_offline_20260905.json
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Record task-owned artifact disposition before accepted closure.
 
@@ -209,10 +227,45 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T13:38:36Z
+  TYPE: FACT
+  CLAIM: Final HTML/link/source/asset checks pass; ePub has 62 XHTML pages with no local-link errors
+    or scripts, and the 948-file HTML archive matches every built byte. Native PDF has 107 pages,
+    but rendered physical page 23 clips two long configuration names at the next table column.
+    Sphinx inline literal wrapping omits underscore breakpoints. Route this actual PDF defect to S8.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/final_offline_20260905.json
+  - docs/_build/audit-pdf-pages/configuration-023.png
+  - docs/_build/handbook-latex/sphinxlatexstyletext.sty:11-18
+  - docs/_build/handbook-latex/sphinxlatexliterals.sty:1183-1223
+  - https://www.sphinx-doc.org/en/master/latex.html
+  IMPACT: Compilation success is not visual acceptance. The fix belongs in docs/conf.py's PDF
+    presentation, preserving the canonical configuration names and runtime prose.
+  NEXT: Add scoped inline-code underscore breaks and consistent highlighting, then re-render the PDF.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T14:09:36Z
+  TYPE: FACT
+  CLAIM: S8 final PDF/runbook correction is verified and the complete requirements-to-evidence
+    matrix is current. Local implementation is ready for owner review. The public latest URL
+    still displays 404 on fresh browser reload; actual hosted features require project/access.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_final_quality_audit.md
+  - artifacts/rtd_validation_20260904/release_qualification_20260905.json
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  - Browser fresh reload of https://melder.readthedocs.io/en/latest/.
+  IMPACT: No implementation is knowingly left unfinished locally. Keep exact zoom/clipboard
+    limits and hosted dependencies visible; owner acceptance and publication are not claimed.
+  NEXT: Obtain the actual RTD project/branch and authorized read-only dashboard/build-log access.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-Defined task awaiting its dependency milestone.
-Verify all four levels, complete contents, source/example/API coverage, accessible reading, search, and downloads with a requirements-to-evidence matrix.
+Local quality audit is complete and in review. The final audit artifact is the entry point for all
+evidence, fixes, and precise limits. Hosted-project verification remains blocked; native 200% zoom
+and clipboard payload readback need manual/capable-browser checks. Owner retains final acceptance.

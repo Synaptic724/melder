@@ -10,7 +10,7 @@
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T09:49:19Z
+- Updated: 2026-09-05T14:09:36Z
 
 ## Objective
 Wire the proven local command into CI and RTD configuration, implement version/canonical/source behavior, and build offline formats.
@@ -50,17 +50,16 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 - [x] Workflow/static checks and local output review are recorded.
 
 ## Validation
-- Normal HTML build and independent validation pass: 294 pages and 35,119 local links, with canonical
-  source equality. The earlier 19 cached source-page backlink failures are fixed and regression-tested.
-- Documentation tests: 36 passed; removing the fix reproduces the backlink defect in the new test.
-- Recorded focused CI workflow suite: 127 tests, zero failures/errors/skips (`ci.xml`).
-- Final PDF: 103 pages, all level bookmarks, no blank/clipped pages; visual review recorded.
-- Final ePub: 62 XHTML documents and 1,077 internal links pass format/navigation checks.
-- HTML archive and all four RTD staging formats match their source bytes; 945 complete-site files.
-- All three source build-asset exact checks pass. Repository LLM bundles were regenerated and checked;
-  other-corpus bootstrap includes docs/.gitignore without staging unrelated work. See the evidence report.
-- These results qualify the recorded inputs. HEAD subsequently advanced to f35b1517863a846b35b7411c27c60b3547fa9cba,
-  including concurrent runtime changes; the final hosted candidate needs a fresh build/asset check.
+- Final HTML: 294 pages and 35,499 local links pass with canonical source equality.
+- Documentation tests: 36 passed; the cached-backlink regression and its earlier negative control remain recorded.
+- Final PDF: 107 pages and all six root bookmark groups; all-page contact sheets plus detailed table/code
+  review pass after fixing clipped identifiers. No horizontal overflow/missing-character warnings remain.
+- Final ePub: 62 XHTML documents, valid local references and mimetype packaging, zero scripts.
+- Complete HTML archive and all four RTD staging formats match their origin bytes: 948 site files.
+- Local RTD-environment simulation verifies version labels, page canonical URLs, and 294 sitemap URLs.
+- Source build assets and all three LLM corpora pass; only the other corpus changed for final docs edits.
+- Current output hashes are in release_qualification_20260905.json. Earlier format counts/hashes in
+  Notes are historical and superseded. Owner retains the final commit/push and hosted release decision.
 - Hosted project setup, live previews, versions, search, and downloads were not performed.
 
 ## Risks / Mitigations
@@ -71,6 +70,18 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
+  - artifacts/rtd_validation_20260904/final_pdf_wrap_20260905.log
+  - artifacts/rtd_validation_20260904/hosted_environment_simulation_20260905.log
+  - artifacts/rtd_validation_20260904/post_config_repo_check_20260905.log
+  - artifacts/rtd_validation_20260904/release_archive_20260905.log
+  - artifacts/rtd_validation_20260904/release_epub_20260905.log
+  - artifacts/rtd_validation_20260904/release_html_20260905.log
+  - artifacts/rtd_validation_20260904/release_links_20260905.log
+  - artifacts/rtd_validation_20260904/release_other_build_20260905.log
+  - artifacts/rtd_validation_20260904/release_qualification_20260905.json
+  - artifacts/rtd_validation_20260904/release_repo_assets_20260905.log
+  - artifacts/rtd_validation_20260904/pdf_table_before_20260905.png
+  - artifacts/rtd_validation_20260904/pdf_table_after_20260905.png
   - artifacts/2026-09-05_rtd_local_build_validation.md
   - artifacts/rtd_validation_20260904/rebuild_regression_20260905.log
   - artifacts/rtd_validation_20260904/rebuild_negative_20260905.log
@@ -427,20 +438,83 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T13:38:36Z
+  TYPE: DECISION
+  CLAIM: S9 found clipped configuration identifiers on PDF page 23. In docs/conf.py, locally extend
+    the existing sphinxcode wrapper to permit line breaks after escaped underscores. Preserve all
+    identifier characters. Select Pygments default explicitly for consistent web/PDF/ePub colors and
+    use the HTML code background in the PDF. No lesson or runtime prose change is needed.
+  EVIDENCE:
+  - tickets/tasks/2026-09-04_rtd_quality_audit_task.md
+  - docs/conf.py:54-119
+  - docs/_build/handbook-latex/sphinxlatexstyletext.sty:11-18
+  - https://www.sphinx-doc.org/en/master/latex.html
+  IMPACT: Bounded presentation correction under the publication patch. Validate by strict rebuild,
+    PDF table/code renders, and absence of horizontal overflow warnings; do not add a mirrored test.
+  NEXT: Apply the configuration-only fix and rebuild the affected formats.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:43:00Z
+  TYPE: MEASURE
+  CLAIM: Configuration-only PDF correction passes compilation. Physical page 23 now wraps complete
+    property names without column overlap, and page 16 preserves the TYPE_CHECKING capstone with
+    consistent syntax colors. The compiler reports no horizontal overflow/missing-character errors.
+    Finish the maintainer contract with explicit published-regression recovery and a local dirty-
+    preview caveat; the existing guide already covers adding pages/lessons/APIs and ordinary rebuilds.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/final_pdf_wrap_20260905.log
+  - docs/_build/audit-pdf-pages/fixed-configuration-023.png
+  - docs/_build/audit-pdf-pages/fixed-capstone-016.png
+  - docs/maintaining.md:130-155
+  IMPACT: No source/example semantics changed. Only docs/maintaining.md needs the final prose
+    addition; the other-corpus regeneration will be scoped to that actual input change.
+  NEXT: Add the recovery procedure, refresh affected builds/corpus, and return to S9 handoff.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:48:54Z
+  TYPE: MEASURE
+  CLAIM: Reviewed all 107 final PDF pages through contact sheets plus full-size table/capstone
+    renders. No further clipping/overlap was observed. Final HTML passes 35,499 links at 294 pages;
+    ePub rebuilt after shared style selection. Only the LLM other corpus was stale after the
+    configuration/runbook changes; rebuilt its 352 inputs, preserving source/test corpora.
+  EVIDENCE:
+  - docs/_build/audit-pdf-pages/contact-1.png
+  - docs/_build/audit-pdf-pages/contact-2.png
+  - docs/_build/audit-pdf-pages/contact-3.png
+  - docs/_build/audit-pdf-pages/contact-4.png
+  - artifacts/rtd_validation_20260904/release_links_20260905.log:1-1
+  - artifacts/rtd_validation_20260904/release_epub_20260905.log:1-1
+  - artifacts/rtd_validation_20260904/release_other_build_20260905.log:1-2
+  IMPACT: Local reading/format fixes are complete. Remaining local proof is final archive/staging,
+    environment-driven canonical/version simulation, and explicit generated-asset recheck.
+  NEXT: Complete those final output checks, then synchronize S8/S9 and the maintenance handoff.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T14:09:36Z
+  TYPE: MEASURE
+  CLAIM: Final output qualification passes: 948 HTML archive/staged files match; PDF/ePub/ZIP staged
+    hashes match their origins; 107-page PDF and 62-document script-free ePub are valid. A separate
+    local RTD-environment build emits the expected page canonical URLs, version label, and all 294
+    sitemap routes. Maintainer recovery/rebuild/version procedures are implemented and read back.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/release_qualification_20260905.json
+  - artifacts/rtd_validation_20260904/release_repo_assets_20260905.log:1-3
+  - docs/maintaining.md:130-182
+  IMPACT: S8 local implementation is complete and back in review. Simulation/staging prove code
+    behavior only; the live RTD project still requires its separate blocked verification.
+  NEXT: Resume S9 handoff and the hosted-project access request without committing or publishing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-CI/RTD per-format configuration, required CI documentation integration, and native handbook builders
-are implemented. The local site has 294 declared pages, including the four exact README levels,
-48 guide chapters, all 133 saved lesson pages, and expanded references.
-The source-link blocker is fixed: normal builds now pass all 35,119 local links and 36 docs tests.
-Final PDF/ePub visual/structural checks and complete HTML archive/RTD staging comparisons pass.
-Repository LLM bundles are refreshed and checked. README has prominent public docs/example/contents links.
-This task is in review, not closed. Next: owner review/signing, hosted-project verification, and S9 audit.
-HEAD is now f35b1517863a846b35b7411c27c60b3547fa9cba and includes newer concurrent runtime work.
-Rebuild/recheck the final candidate after it settles; recorded green results describe the earlier inputs.
-Hosted project/account setup and live feature verification remain separate unfinished work.
-The local preview remains available on http://127.0.0.1:8765/. Owner handles every commit/push;
-preserve the concurrent disposal and workflow lanes. No completion or launch acceptance is claimed.
+Local implementation is verified, including the final PDF table-wrap correction and recovery runbook.
+Use the S9 final quality audit and release_qualification_20260905.json for current evidence and hashes.
+The 294-page site, 107-page PDF, ePub, HTML ZIP, and local staging pass. Current package is 0.2.3.
+Hosted launch remains in the separate blocked project task. Owner handles commits, pushes, and acceptance.

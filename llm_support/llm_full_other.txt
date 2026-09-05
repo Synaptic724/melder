@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 4432a01fa17154a2c26382a442a4afa187771243807316657b629cecbe31a272
+SOURCE FINGERPRINT: 405dc34c1aa4a40c4dae6d0c9b59b87ffa09372f8670bd22839cc9e4921c4b21
 FILE COUNT: 352
 
 ================================================================================
@@ -60014,7 +60014,7 @@ END FILE: docs/catalog.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/conf.py
-CONTENT SHA256: ff66ddab0ce71bd76a067ac7c9187d1c814c5681ee5c4a5a28adb2d47ccd1197
+CONTENT SHA256: 488339c25cc6f0f5876c7cffa36a528e9ff8cf0d56869b8d029d3e92d9998655
 SOURCE ENCODING: utf-8
 ================================================================================
 """Configure Melder's documentation build without importing Melder for its version.
@@ -60068,6 +60068,8 @@ myst_heading_anchors = 4
 autodoc_member_order = "bysource"
 add_module_names = False
 autodoc_typehints = "signature"
+# Keep syntax colors consistent across the web theme and native handbook writers.
+pygments_style = "default"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 html_theme = "sphinx_rtd_theme"
@@ -60114,8 +60116,15 @@ latex_elements = {
     "papersize": "letterpaper",
     "pointsize": "10pt",
     "extraclassoptions": "oneside,openany",
-    "sphinxsetup": "verbatimwrapslines=true,verbatimwithframe=false",
+    "sphinxsetup": "verbatimwrapslines=true,verbatimwithframe=false,VerbatimColor={RGB}{248,248,248}",
     "preamble": r"""
+% Sphinx does not break inline identifiers at underscores; narrow tables need that boundary.
+\let\melderoriginalcode\sphinxcode
+\let\melderoriginalunderscore\_
+\protected\def\sphinxcode#1{{%
+  \def\_{\melderoriginalunderscore\allowbreak}%
+  \melderoriginalcode{#1}%
+}}
 \usepackage{newunicodechar}
 \definecolor{meldergreen}{HTML}{23834E}
 \definecolor{melderyellow}{HTML}{9B7300}
@@ -61579,7 +61588,7 @@ END FILE: docs/intermediate/scopes.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/maintaining.md
-CONTENT SHA256: 5f2a0e0c62cc4d8724dac163b2d535b7b959c6b46ae65981d566fd67f7a06194
+CONTENT SHA256: 06244272805e09e1cf0da650854e65bf3322ff2609a504afc7e8e2773aaa2962
 SOURCE ENCODING: utf-8
 ================================================================================
 # Maintain and publish the documentation
@@ -61618,6 +61627,10 @@ The source and HTML directories under `docs/_build` are generated. The builder
 validates inputs before replacing its source output and refuses redirected cleanup
 paths. Each build also refreshes Sphinx's reference environment so changed API
 import paths cannot reuse stale source-page backlinks. Edit canonical inputs, not generated pages.
+
+Local previews include your uncommitted edits, while GitHub source links identify
+the checkout's current commit. Qualify the intended committed revision in CI and
+Read the Docs before treating that preview as a published release.
 
 ## Add a chapter or page
 
@@ -61730,6 +61743,22 @@ python llm_support/_builder.py --check
 
 Regenerate stale assets through their existing builders, then rerun the checks.
 Do not hand-edit generated manifests or copy broad internal work records into the site.
+
+## Recover a published regression
+
+Record the affected project/version, build ID, and Git commit before changing its
+publication settings. Rebuild the last known-good revision in a separate checkout
+with the commands above, and run its link and download checks.
+
+For a moving branch, restore the required content through a reviewed recovery
+commit and the repository's normal branch promotion flow. For a tagged version,
+prepare a corrected release with an accurate version label. Review the resulting
+Read the Docs build before changing the default version or redirect destinations.
+
+Check the homepage, Full Contents, a runnable example, an API source link, canonical
+URL, and each available download against the recovered build's actual revision.
+Keep the failure and recovery build IDs together in the release review so the next
+maintainer can establish which site readers received.
 
 Platform references: [configuration](https://docs.readthedocs.com/platform/stable/config-file/v2.html),
 [custom builds](https://docs.readthedocs.com/platform/stable/build-customization.html),

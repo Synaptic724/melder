@@ -35,6 +35,10 @@ validates inputs before replacing its source output and refuses redirected clean
 paths. Each build also refreshes Sphinx's reference environment so changed API
 import paths cannot reuse stale source-page backlinks. Edit canonical inputs, not generated pages.
 
+Local previews include your uncommitted edits, while GitHub source links identify
+the checkout's current commit. Qualify the intended committed revision in CI and
+Read the Docs before treating that preview as a published release.
+
 ## Add a chapter or page
 
 - Add a guide to `docs/curriculum.toml`: its stable page ID, exact learning level,
@@ -146,6 +150,22 @@ python llm_support/_builder.py --check
 
 Regenerate stale assets through their existing builders, then rerun the checks.
 Do not hand-edit generated manifests or copy broad internal work records into the site.
+
+## Recover a published regression
+
+Record the affected project/version, build ID, and Git commit before changing its
+publication settings. Rebuild the last known-good revision in a separate checkout
+with the commands above, and run its link and download checks.
+
+For a moving branch, restore the required content through a reviewed recovery
+commit and the repository's normal branch promotion flow. For a tagged version,
+prepare a corrected release with an accurate version label. Review the resulting
+Read the Docs build before changing the default version or redirect destinations.
+
+Check the homepage, Full Contents, a runnable example, an API source link, canonical
+URL, and each available download against the recovered build's actual revision.
+Keep the failure and recovery build IDs together in the release review so the next
+maintainer can establish which site readers received.
 
 Platform references: [configuration](https://docs.readthedocs.com/platform/stable/config-file/v2.html),
 [custom builds](https://docs.readthedocs.com/platform/stable/build-customization.html),

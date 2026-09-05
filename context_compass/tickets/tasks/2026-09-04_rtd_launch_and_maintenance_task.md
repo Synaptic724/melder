@@ -5,12 +5,12 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-quality-and-launch
 - Story Path: ../stories/2026-09-04_rtd_quality_and_launch_story.md
-- Status: draft
+- Status: blocked
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-04T22:07:46Z
+- Updated: 2026-09-05T14:13:38Z
 
 ## Objective
 Deliver the final accepted documentation release, verify the public outcome, and leave a reproducible content/release maintenance procedure.
@@ -29,8 +29,9 @@ Deliver the final accepted documentation release, verify the public outcome, and
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Implementation task defined; prerequisite work remains ahead of activation.
+- to_state: blocked
+- transition_reason: Maintenance implementation and local qualification are delivered through S8/S9;
+  actual hosted release identity/access and owner acceptance remain prerequisites for launch.
 
 ## Steps / Checklist
 - [ ] Read the exact inputs and record one bounded implementation decision.
@@ -41,14 +42,14 @@ Deliver the final accepted documentation release, verify the public outcome, and
 
 ## Acceptance Criteria
 - [ ] Release identity and public URL match the accepted candidate.
-- [ ] Known defects have explicit dispositions and no silent coverage reductions.
-- [ ] A maintainer can add a page/lesson/API and rebuild/release.
-- [ ] Rollback/rebuild/version/redirect procedures are documented.
+- [x] Known defects have explicit dispositions and no silent coverage reductions.
+- [x] A maintainer can add a page/lesson/API and rebuild/release.
+- [x] Rollback/rebuild/version/redirect procedures are documented.
 - [ ] Story/epic closure occurs only after actual completion and acceptance.
 
 ## Validation
-- Not run. Implementation task just created.
-- Use the parent story's validation plan and report local/hosted/execution results separately.
+- Local implementation/quality evidence is in the S9 final audit; maintenance was completed in S8.
+- Hosted release validation has not run: the advertised URL displays 404 and dashboard access is blocked.
 
 ## Risks / Mitigations
 - Canonical source and existing lessons can change concurrently; verify relevant inputs before edits.
@@ -83,11 +84,25 @@ Deliver the final accepted documentation release, verify the public outcome, and
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T14:13:38Z
+  TYPE: BLOCKER
+  CLAIM: Local documentation implementation, reader checks, format packaging, and the maintenance
+    procedure are complete. A final accepted hosted release cannot be established while the actual
+    RTD project/branch and authorized dashboard access are unknown.
+  EVIDENCE:
+  - artifacts/2026-09-05_rtd_final_quality_audit.md
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  - tickets/tasks/2026-09-04_rtd_hosted_project_task.md
+  IMPACT: Keep launch and epic acceptance open. Owner commits/pushes; finish real service verification
+    and the explicitly documented manual browser checks before recording launch acceptance.
+  NEXT: Resume through the hosted-project task when the owner supplies project identity/access.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-Defined task awaiting its dependency milestone.
-Deliver the final accepted documentation release, verify the public outcome, and leave a reproducible content/release maintenance procedure.
-
+The runbook and local implementation are complete; actual release acceptance remains blocked by
+hosted-project verification. The S9 final audit holds current evidence and precise remaining checks.
