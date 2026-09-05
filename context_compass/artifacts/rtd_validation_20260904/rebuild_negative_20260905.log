@@ -1,0 +1,18 @@
+Built 6 pages: C:\Users\Mark\PycharmProjects\melder_private\docs\_build\test-workspaces\d42eaa83993f4897b53abcb12471b0cb\docs\_build\html
+F
+Built 6 pages: C:\Users\Mark\PycharmProjects\melder_private\docs\_build\test-workspaces\d42eaa83993f4897b53abcb12471b0cb\docs\_build\html
+Confirmed: the regression fails on the stale facade backlink when -E is removed.
+======================================================================
+FAIL: test_rebuilt_api_backlinks_follow_changed_canonical_imports (test_build_docs.BuildContractTests.test_rebuilt_api_backlinks_follow_changed_canonical_imports)
+A second build must discard old facade prefixes retained by Sphinx's viewcode cache.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\docs/tests\test_build_docs.py", line 140, in test_rebuilt_api_backlinks_follow_changed_canonical_imports
+    self.assertIn(fragment, page.identifiers, url)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'fixture_api.Primary' not found in {'searchbox', 'primary', 'fixture_api.impl.Primary'} : ../../index.html#fixture_api.Primary
+
+----------------------------------------------------------------------
+Ran 1 test in 1.775s
+
+FAILED (failures=1)

@@ -88,6 +88,51 @@ def test_load_recorded_dictionary_never_overwrites_recorded_with_default():
     configuration.cleanup()
 
 
+@pytest.mark.parametrize("priority", [False, True])
+def test_recorded_disposal_priority_is_preserved_and_sealed(priority: bool) -> None:
+    """Recorded priority overrides setup state, is not backfilled, and is sealed on return."""
+    configuration = SpellbookConfiguration()
+    try:
+        configuration.with_enforce_priority_disposal_methods(not priority)
+        outcome = configuration.load_recorded_dictionary({
+            "enforce_priority_disposal_methods": priority,
+            "disposal_method_names": ["release", "close"],
+        })
+        assert outcome["rejected"] == []
+        assert "enforce_priority_disposal_methods" not in outcome["backfilled"]
+        assert configuration.get_property("enforce_priority_disposal_methods") is priority
+        assert configuration.get_property("disposal_method_names") == ["release", "close"]
+        with pytest.raises(RuntimeError, match="frozen"):
+            configuration.with_enforce_priority_disposal_methods(not priority)
+    finally:
+        configuration.cleanup()
+
+
+def test_missing_recorded_disposal_priority_reports_early_default() -> None:
+    """An older payload uses False and reports that default even though init already seeded it."""
+    configuration = SpellbookConfiguration()
+    try:
+        outcome = configuration.load_recorded_dictionary({"disposal": True})
+        assert outcome["rejected"] == []
+        assert "enforce_priority_disposal_methods" in outcome["backfilled"]
+        assert configuration.get_property("enforce_priority_disposal_methods") is False
+    finally:
+        configuration.cleanup()
+
+
+def test_reload_preserves_preconfigured_disposal_priority_when_not_recorded() -> None:
+    """Populate-missing reload preserves an existing non-default priority instead of resetting it."""
+    configuration = SpellbookConfiguration()
+    try:
+        configuration.with_enforce_priority_disposal_methods()
+        outcome = configuration.load_recorded_dictionary({})
+        assert outcome["rejected"] == []
+        assert "enforce_priority_disposal_methods" not in outcome["backfilled"]
+        assert configuration.get_property("enforce_priority_disposal_methods") is True
+    finally:
+        configuration.cleanup()
+
+
 def test_from_recorded_posture_round_trips_a_full_twin_payload():
     """
     Contract: a complete recorded twin payload rebuilds every posture

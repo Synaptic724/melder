@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
- "source_sha256": "e17854a03ca49c1c32412c930d6a564f57a27c686d60ba75434adb010d3a809e",
+ "source_sha256": "d5399d8aa84df3e9ad997e1d5f2ba8a561cd4456a06afc581b63d945dac02d5b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.configuration.spellbook_configuration": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "The mutable build-time configuration surface for one spellbook/runtime context.",
-   "semantics_authored_against": "e17854a03ca49c1c32412c930d6a564f57a27c686d60ba75434adb010d3a809e"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration": {
    "id": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
@@ -46,20 +46,22 @@
     "with_defaults",
     "with_disposal",
     "with_disposal_method_names",
+    "with_enforce_priority_disposal_methods",
     "with_hook",
     "with_hooks",
     "with_phase_scheduler_barrier_timeout",
     "with_phase_scheduler_workers"
    ],
    "shape": {
-    "method_count": 29,
+    "method_count": 30,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4159fa8672a8661decbe9e871dceed11f9c7a25424d8b4f96d3fcbbf2488957f",
+   "span_sha256": "6c962f51c53d73c898b15d9f56e9a59935ac1531969bf95829b9f04b85e8012d",
    "role": "Mutable build-time configuration surface for one spellbook/runtime context.",
    "responsibilities": [
     "stores typed runtime posture properties and idempotent keys",
+    "stores ordered book disposal candidates and False-default front/back priority for creation-time binding",
     "owns hook registration for meld, conduit, link, and contract events"
    ],
    "owns_state": [
@@ -67,14 +69,15 @@
     "_properties",
     "available_properties",
     "_idempotent_keys",
-    "_hooks"
+    "_conduit_hooks",
+    "_meld_hooks"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4159fa8672a8661decbe9e871dceed11f9c7a25424d8b4f96d3fcbbf2488957f"
+   "semantics_authored_against": "6c962f51c53d73c898b15d9f56e9a59935ac1531969bf95829b9f04b85e8012d"
   }
  },
  "edges_out": [

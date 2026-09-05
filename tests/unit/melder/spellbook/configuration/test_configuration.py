@@ -1,3 +1,5 @@
+from typing import Iterator
+
 import pytest
 
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
@@ -441,13 +443,14 @@ def test_with_system_state_rejects_overwrite_explicit():
     assert build_aetheric_frame_configuration_for_spellbook_configuration(cfg, ).system_state == SystemState.automatic
 
 
-def test_iter_only_has_current_keys_after_clear_and_reset():
+def test_iter_only_has_current_keys_after_clear_and_reset() -> None:
+    """Clearing retains the early priority default alongside newly authored keys."""
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
     cfg.clear_properties()
     cfg.set_property("disposal", True)
     keys = set(iter(cfg))
-    assert keys == {"disposal"}
+    assert keys == {"disposal", "enforce_priority_disposal_methods"}
 
 
 def test_cleanup_sets_frozen_and_blocks_mutation():
@@ -507,8 +510,101 @@ def test_validate_enums_with_extra_properties_present():
     assert cfg.validate_enums() is True
 
 
-def test_iter_on_partially_populated_config():
+def test_iter_on_partially_populated_config() -> None:
+    """Partial configurations expose the early priority default without loading all defaults."""
     cfg = SpellbookConfiguration()
     cfg.set_property("disposal", True)
     keys = set(iter(cfg))
-    assert keys == {"disposal"}
+    assert keys == {"disposal", "enforce_priority_disposal_methods"}
+
+
+@pytest.fixture
+def priority_configuration() -> Iterator[SpellbookConfiguration]:
+    """Yield a fresh configuration and release its owned state after each priority test."""
+    configuration = SpellbookConfiguration()
+    try:
+        yield configuration
+    finally:
+        configuration.cleanup()
+
+
+def test_disposal_priority_defaults_false_before_validation(
+        priority_configuration: SpellbookConfiguration,
+) -> None:
+    """The bind-time priority default exists without populating unrelated required values."""
+    assert priority_configuration.get_property("enforce_priority_disposal_methods") is False
+    assert priority_configuration.has_property("disposal") is False
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+@pytest.mark.parametrize("defaults_first", [True, False])
+def test_disposal_priority_fluent_value_survives_default_loading(
+        priority_configuration: SpellbookConfiguration,
+        enabled: bool,
+        defaults_first: bool,
+) -> None:
+    """Explicit priority survives defaults in either assembly order and returns the same object."""
+    if defaults_first:
+        priority_configuration.with_defaults()
+    result = priority_configuration.with_enforce_priority_disposal_methods(enabled)
+    priority_configuration.with_defaults()
+
+    assert result is priority_configuration
+    assert priority_configuration.get_property("enforce_priority_disposal_methods") is enabled
+    assert priority_configuration.validate() is True
+
+
+def test_disposal_priority_can_be_selected_during_assembly(
+        priority_configuration: SpellbookConfiguration,
+) -> None:
+    """The eager False value does not make the priority setting write-once before freeze."""
+    priority_configuration.with_enforce_priority_disposal_methods()
+    assert priority_configuration.get_property("enforce_priority_disposal_methods") is True
+    priority_configuration.with_enforce_priority_disposal_methods(False)
+    assert priority_configuration.get_property("enforce_priority_disposal_methods") is False
+
+
+def test_disposal_priority_clear_restores_default_and_allows_reassembly(
+        priority_configuration: SpellbookConfiguration,
+) -> None:
+    """Clearing restores False and leaves the flag configurable in the rebuilt configuration."""
+    priority_configuration.with_enforce_priority_disposal_methods()
+    priority_configuration.with_disposal_method_names(["release", "close"])
+    priority_configuration.clear_properties()
+
+    assert priority_configuration.get_property("enforce_priority_disposal_methods") is False
+    assert priority_configuration.has_property("disposal_method_names") is False
+    priority_configuration.with_enforce_priority_disposal_methods().with_defaults().finalize()
+    assert priority_configuration.get_property("enforce_priority_disposal_methods") is True
+
+
+@pytest.mark.parametrize("invalid_value", [0, 1, "true", None, []])
+def test_disposal_priority_rejects_non_bool_at_validation(
+        priority_configuration: SpellbookConfiguration,
+        invalid_value: object,
+) -> None:
+    """Priority uses the existing bool validation boundary without coercing truthy values."""
+    priority_configuration.with_defaults()
+    priority_configuration.set_property("enforce_priority_disposal_methods", invalid_value)
+    with pytest.raises(ValueError, match="enforce_priority_disposal_methods"):
+        priority_configuration.validate()
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_disposal_priority_setter_refuses_frozen_configuration(
+        priority_configuration: SpellbookConfiguration,
+        enabled: bool,
+) -> None:
+    """Finalization refuses every priority write, including an unchanged False value."""
+    priority_configuration.with_defaults().finalize()
+    with pytest.raises(RuntimeError, match="frozen"):
+        priority_configuration.with_enforce_priority_disposal_methods(enabled)
+
+
+def test_disposal_priority_setter_refuses_cleaned_configuration(
+        priority_configuration: SpellbookConfiguration,
+) -> None:
+    """The fluent setter retains the configuration's terminal cleanup boundary."""
+    priority_configuration.cleanup()
+    with pytest.raises(RuntimeError):
+        priority_configuration.with_enforce_priority_disposal_methods()

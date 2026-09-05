@@ -223,3 +223,29 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     assert config.get_property("phase_scheduler_barrier_timeout_milliseconds") == 1000
     assert frame_configuration.ai_native_enabled is True
     assert frame_configuration.rift_enabled is False
+
+
+@pytest.mark.parametrize("priority", [False, True])
+def test_component_disposal_priority_defaults_free_configuration(priority: bool) -> None:
+    """Assemble and freeze ordered disposal configuration without the defaults loader.
+
+    Omitting priority uses False. Explicit opt-in is preserved, while the name list stays
+    in user order and retains its existing write-once contract.
+    """
+    config = SpellbookConfiguration()
+    try:
+        if priority:
+            config.with_enforce_priority_disposal_methods()
+        assert config.get_property("enforce_priority_disposal_methods") is priority
+        config.with_disposal(True)
+        config.with_disposal_method_names(["release", "close"])
+        config.with_phase_scheduler_workers(1)
+        config.with_phase_scheduler_barrier_timeout(1000)
+        config.finalize()
+
+        assert config.get_property("enforce_priority_disposal_methods") is priority
+        assert config.get_property("disposal_method_names") == ["release", "close"]
+        with pytest.raises(RuntimeError, match="frozen"):
+            config.with_enforce_priority_disposal_methods(not priority)
+    finally:
+        config.cleanup()

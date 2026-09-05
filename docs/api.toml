@@ -1,0 +1,111 @@
+schema_version = 1
+functions = ["scan_bind", "new_ulid"]
+
+[[group]]
+id = "binding"
+title = "Binding and registration"
+guide = "beginner/registration"
+exports = ["Spellbook", "SpellBinder", "scan_bind", "Spell", "SpellIndex"]
+
+[[group]]
+id = "resolution"
+title = "Resolution, scopes, and lifetimes"
+guide = "beginner/lifetimes"
+exports = ["Conduit", "SpellSpace", "SpellMap", "SpellContract", "Existence"]
+
+[[group]]
+id = "configuration"
+title = "Book, frame, and root configuration"
+guide = "advanced/posture"
+exports = ["Aether", "AetherConfiguration", "AetherConfigurationBuilder", "AethericFrameConfiguration", "SpellbookConfiguration", "SystemState"]
+
+[[group]]
+id = "connections"
+title = "Connections and permissions"
+guide = "intermediate/permissions"
+exports = ["Policies", "Permissions"]
+
+[[group]]
+id = "inspection"
+title = "Nexus, Rifts, workstations, and views"
+guide = "advanced/nexus"
+exports = ["Nexus", "NexusConfiguration", "NexusConfigurationBuilder", "NexusFrameMode", "Rift", "RiftConfiguration", "RiftSpace", "RiftSpaceType", "Workstation", "FrameViewer", "ViewMultiFrame", "ViewFrame", "ViewConduit", "ViewSpell"]
+
+[[group]]
+id = "persistence"
+title = "Persistence, restore, and storage integration"
+guide = "expert/persistence"
+exports = ["Crystallizer", "CrystallizerConfiguration", "CrystallizerConfigurationBuilder", "CrystallizerBootstrap", "ExternalPersistenceManager", "ExternalPersistenceManagerConfiguration"]
+
+[[group]]
+id = "research"
+title = "Research, versions, and comparisons"
+guide = "expert/research"
+exports = ["MutationResearch", "MutationResearchConfiguration", "MutationResearchConfigurationBuilder", "ResearchSet", "DiffEngine", "LaneState", "LaneType"]
+
+[[group]]
+id = "helpers"
+title = "Public helpers"
+guide = "expert/self-documents"
+exports = ["ProtocolCrafter", "Cleanable", "Pack", "Package", "ULID_Factory", "new_ulid"]
+
+[[group]]
+id = "errors"
+title = "Public errors"
+guide = "reference/troubleshooting"
+exports = ["SpellbookValidationError", "MeldExecutionError", "SpellSpaceScopeError", "HookExecutionError", "InternalRegistrationError", "PhaseSchedulerError", "PhaseExecutionError", "PhaseTimeoutError", "DeadReferenceError"]
+
+[[group]]
+id = "metadata"
+title = "Package metadata and self-documents"
+guide = "expert/self-documents"
+kind = "values"
+exports = ["__architecture__", "__author__", "__components__", "__description__", "__graph_details__", "__graph_network__", "__license__", "__version__"]
+
+[[returned]]
+name = "CommandSystem"
+target = "melder.nexus.rift.command_system.command_system.CommandSystem"
+group = "inspection"
+via = "rift.space.command_system"
+
+[[returned]]
+name = "StaticCommandSystem"
+target = "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem"
+group = "inspection"
+via = "a static Rift's space.command_system"
+
+[[returned]]
+name = "CapabilityCommandSystem"
+target = "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem"
+group = "inspection"
+via = "a capability Rift's space.command_system"
+
+[[returned]]
+name = "CodegenCommandSystem"
+target = "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem"
+group = "inspection"
+via = "a codegen Rift's space.command_system"
+
+[[returned]]
+name = "ResearchLane"
+target = "melder.mutation_research.research_set.research_lane.ResearchLane"
+group = "research"
+via = "ResearchSet lane operations"
+
+[[returned]]
+name = "RiftMemorySystem"
+target = "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem"
+group = "inspection"
+via = "rift.space.memory_system"
+
+[[returned]]
+name = "SystemDocumentView"
+target = "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView"
+group = "metadata"
+via = "md.__architecture__ and md.__components__"
+
+[[returned]]
+name = "SystemGraphView"
+target = "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView"
+group = "metadata"
+via = "md.__graph_network__ and md.__graph_details__"

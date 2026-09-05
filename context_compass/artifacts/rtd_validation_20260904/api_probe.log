@@ -1,0 +1,5 @@
+C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:189: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+Built 194 pages: C:\Users\Mark\PycharmProjects\melder_private\docs\_build\html

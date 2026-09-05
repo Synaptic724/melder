@@ -27,6 +27,9 @@ class Creations(Cleanable):
           - many: `spell_id -> list[(object, disposal_methods)]`
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
+        - Disposal names are the established Spell-owned list, retained directly
+          through registration and in-memory transfer. This store does not match,
+          reorder, or clear that list; it owns the entries and their instances.
 
     Owned State:
         `_owner_conduit_id`, a stable `_id`, one `RLock`, and the two registries
@@ -279,6 +282,8 @@ class Creations(Cleanable):
             - Rejects duplicate keys across both registries.
             - Treats the stored object itself as the authoritative runtime
               payload; there is no `Creation.value` wrapper in the live store.
+            - Retains the supplied disposal list directly, including an empty
+              list. Omitted names use an empty list when disposal is enabled.
 
         Returns:
             None.
@@ -290,7 +295,7 @@ class Creations(Cleanable):
         if has_disposal_methods:
             self._disposable_creations[key] = (
                 item,
-                list(disposal_methods) if disposal_methods else [],
+                disposal_methods if disposal_methods is not None else [],
             )
 
     def add_many_creations(
@@ -311,6 +316,8 @@ class Creations(Cleanable):
             - Rejects collisions with non-list slots.
             - Preserves insertion order inside both the live many bucket and
               the matching disposable metadata bucket.
+            - Retains the supplied disposal list directly for each entry;
+              omitted names use an empty list when disposal is enabled.
             - First-use bucket creation and both appends are atomic with
               respect to competing resolutions (BUG-073, 2026-07-17 audit):
               the whole live+disposable mutation runs under `_lock`, so two
@@ -351,7 +358,7 @@ class Creations(Cleanable):
             disposable_value.append(
                 (
                     item,
-                    list(disposal_methods) if disposal_methods else [],
+                    disposal_methods if disposal_methods is not None else [],
                 )
             )
 
@@ -380,6 +387,8 @@ class Creations(Cleanable):
             - Does not reach into external owners or adjacent scopes.
             - Returns raw stored objects plus disposal metadata, not a richer
               wrapper object.
+            - Retains each established method-list reference in the returned
+              rows; this in-memory handoff is not a serialization boundary.
 
         Threading:
             - Performs extraction under `_lock` so the local slot shape stays
@@ -404,7 +413,7 @@ class Creations(Cleanable):
                         "stored": stored_value,
                     }
                     if disposable_many is not None:
-                        entry["disposal_methods"] = list(disposable_many[index][1])
+                        entry["disposal_methods"] = disposable_many[index][1]
                     extracted.append(entry)
             elif live_value is not None and not isinstance(live_value, dict):
                 stored_value = self._creations.pop(spell_id)
@@ -419,7 +428,7 @@ class Creations(Cleanable):
                     "stored": stored_value,
                 }
                 if disposable_entry is not None:
-                    entry["disposal_methods"] = list(disposable_entry[1])
+                    entry["disposal_methods"] = disposable_entry[1]
                 extracted.append(entry)
 
         return extracted
@@ -439,6 +448,8 @@ class Creations(Cleanable):
             - Raises when the payload does not match the local slot shape.
             - Restores the same raw object references that were extracted; it
               does not clone or rehydrate them.
+            - Retains the extracted disposal lists directly, without copying
+              their contents or reapplying binding policy.
 
         Returns:
             None.
@@ -468,7 +479,7 @@ class Creations(Cleanable):
                     if is_disposable:
                         self._disposable_creations[spell_id] = (
                             stored_value,
-                            list(disposal_methods) if disposal_methods else [],
+                            disposal_methods if disposal_methods is not None else [],
                         )
                     continue
 
@@ -494,7 +505,7 @@ class Creations(Cleanable):
                         disposable_many.append(
                             (
                                 stored_value,
-                                list(disposal_methods) if disposal_methods else [],
+                                disposal_methods if disposal_methods is not None else [],
                             )
                         )
                     continue

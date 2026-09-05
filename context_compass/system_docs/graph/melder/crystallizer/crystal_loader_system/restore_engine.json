@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
- "source_sha256": "bd3aade6c2f0f8ad9e487b6fdc0ac31ecddf0c0c452451a460ff07d97c3320e8",
+ "source_sha256": "e29296c891d1b20c806c978f50cfc579e97874f3ec74da0d199ecb7ec0a8e993",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.restore_engine": {
@@ -21,7 +21,7 @@
     "init",
     "runtime"
    ],
-   "semantics_authored_against": "bd3aade6c2f0f8ad9e487b6fdc0ac31ecddf0c0c452451a460ff07d97c3320e8"
+   "semantics_authored_against": ""
   },
   "melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport": {
    "id": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport",
@@ -50,13 +50,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "15e7e75b01e299d9489c7bc3e9602b5bf18fbc4a4bbae7c38a86ae6f11f0cf9b",
+   "span_sha256": "a3286bc5c9d699cc12e32fb63647247e5dd942ab712cc246547c23ef947b2583",
    "include": true,
    "role": "Detached outcome record for one restore run, built to be judged honestly rather than trusted.",
    "responsibilities": [
     "carry built counts by kind",
     "carry named shortfalls for everything unreplayable",
-    "carry the old-to-new identity map"
+    "carry structural identity translations and changed bind-SHA translations in one locked report map"
    ],
    "owns_state": [
     "_lock",
@@ -67,19 +67,20 @@
     "_identity_map",
     "_status",
     "_failed_stage",
-    "_preflight"
+    "_preflight",
+    "_plan_summary"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "15e7e75b01e299d9489c7bc3e9602b5bf18fbc4a4bbae7c38a86ae6f11f0cf9b"
+   "semantics_authored_against": "a3286bc5c9d699cc12e32fb63647247e5dd942ab712cc246547c23ef947b2583"
   },
   "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine": {
    "id": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
    "label": "RestoreEngine",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
-   "lineno": 374,
+   "lineno": 378,
    "bases": [
     "Cleanable"
    ],
@@ -93,14 +94,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "36863a4b63a188ac227c8105a7bb96bc0bcc902b2dc73315ea347a84347e0197",
+   "span_sha256": "4ec7ba5c771d29dd306c73f4505b3d12411be5202f704dcf62d8529f8268031b",
    "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
    "responsibilities": [
     "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",
-    "canonical stage order: aether -> crystallizer policy (report) -> MR (report) -> nexus -> frames -> books/binds/conjure/staged/selections -> links -> clusters -> contracts",
+    "canonical stage order: aether -> crystallizer policy (report) -> MR reload -> nexus -> frames -> books/binds/conjure/staged/selections -> links -> clusters -> contracts",
     "configuration rebuilds ride the reload verbs (recorded truth, never defaults)",
     "M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration",
-    "fresh identities always (old->new in the report); failure tears down in reverse order"
+    "forwards ordered disposal for active/staged binds; translated actual IDs drive anchors, exact selections, and contract grants",
+    "fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order"
    ],
    "owns_state": [
     "folded stores",
@@ -110,7 +112,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "36863a4b63a188ac227c8105a7bb96bc0bcc902b2dc73315ea347a84347e0197"
+   "semantics_authored_against": "4ec7ba5c771d29dd306c73f4505b3d12411be5202f704dcf62d8529f8268031b"
   }
  },
  "edges_out": [

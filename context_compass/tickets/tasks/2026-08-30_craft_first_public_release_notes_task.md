@@ -8,7 +8,7 @@
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T22:50:02Z
-- Updated: 2026-08-30T23:21:07Z
+- Updated: 2026-09-01T00:56:59Z
 
 ## Objective
 Create a truthful, compelling, user-facing Markdown release draft for Melder
@@ -31,8 +31,8 @@ v0.2.0, suitable for the first GitHub release and adaptable to PyPI.
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: The first-real-release draft is complete, reread, and
-  validation-clean; owner wording acceptance remains.
+- transition_reason: Every root README repository link now targets GitHub,
+  the selectively regenerated repository corpus is current, and diff checks pass.
 
 ## Steps / Checklist
 - [x] Read README and current package/release metadata.
@@ -46,11 +46,15 @@ v0.2.0, suitable for the first GitHub release and adaptable to PyPI.
 - `RELEASE_NOTES_0.2.0.md`
 
 ## Files / Paths Impacted
+- `README.md`
 - `RELEASE_NOTES_0.2.0.md`
 - `context_compass/attention_board.md`
 - This task.
 
 ## Validation
+- PyPI README link portability: pass (zero repository-relative Markdown links).
+- GitHub release-branch target inventory: pass (all referenced paths exist in `origin/prod`).
+- LLM repository assets: pass; `other` regenerated selectively, `src` and `tests` unchanged.
 - Quick-start execution against repository source: pass (`QUICK_START_OK`).
 - Markdown structure: pass (208 physical lines, 14 headings, eight balanced
   fence markers, one reference definition, no line over 120 characters).
@@ -233,6 +237,67 @@ v0.2.0, suitable for the first GitHub release and adaptable to PyPI.
     LLM `other` corpus will become stale once this new file is tracked.
   NEXT: Move the task and attention route to review, open the release draft,
     and tell the owner to regenerate repository assets before committing it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-01T00:53:51Z
+  TYPE: FACT
+  CLAIM: Every `architecture_and_design` link in the root README is repository-relative.
+    PyPI therefore resolves those targets under `/project/melder/`, where the files do not exist.
+  EVIDENCE: `README.md:39-41`
+  IMPACT: The published project description cannot open its primary comparison image or
+    architecture documentation routes.
+  NEXT: Replace all eight architecture-document targets with absolute GitHub `prod` links,
+    using the raw GitHub host for the SVG image, then validate target inventory and diff hygiene.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-01T00:55:28Z
+  TYPE: FACT
+  CLAIM: The PyPI-relative-link defect is not limited to architecture pages.
+    Ten additional root README links target example directories, the example
+    harness, LICENSE, or NOTICE through repository-relative paths.
+  EVIDENCE:
+  - `README.md:237-258`
+  - `README.md:1044-1061`
+  IMPACT: A partial architecture-only repair would leave other prominent PyPI
+    navigation routes broken by the same URL-resolution mechanism.
+  NEXT: Convert every remaining repository-relative README link to an absolute
+    GitHub `prod` target before regenerating the affected repository corpus.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-01T00:56:24Z
+  TYPE: MEASURE
+  CLAIM: Root README link validation now finds zero repository-relative Markdown
+    targets and diff hygiene passes. Repository-asset checking reports exactly
+    the expected `other` corpus fingerprint movement; `src` and `tests` remain current.
+  EVIDENCE:
+  - `README.md:1-1076`
+  - `llm_support/_builder.py --check --include-untracked`
+  - `git diff --check -- README.md`
+  IMPACT: The human README repair is complete, and only its deterministic derived
+    repository corpus requires regeneration before commit.
+  NEXT: Run the canonical LLM-support builder once, require selective `other`-only
+    regeneration, then repeat link, asset, and diff checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-01T00:56:59Z
+  TYPE: MEASURE
+  CLAIM: Final PyPI-link validation passes. The root README contains zero
+    repository-relative Markdown targets; every architecture/example/license
+    target is an absolute GitHub `prod` URL; all referenced paths exist in the
+    remote-tracking release tree; all three LLM corpora pass output proofs; and
+    scoped diff hygiene exits zero.
+  EVIDENCE:
+  - `README.md:1-1076`
+  - `llm_support/manifest.json`
+  - `llm_support/_builder.py --check --include-untracked`
+  - `refs/remotes/origin/prod`
+  IMPACT: PyPI project-description navigation no longer depends on PyPI resolving
+    repository-local paths, and generated repository assets are commit-ready.
+  NEXT: Review and commit the README plus selective `llm_support` output changes.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
