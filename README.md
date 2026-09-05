@@ -12,6 +12,13 @@
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
 [![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
 
+### 📚 [Read the Documentation](https://melder.readthedocs.io/en/latest/)
+
+**[Browse Examples](https://melder.readthedocs.io/en/latest/examples/index.html)**
+· **[Full Table of Contents](https://melder.readthedocs.io/en/latest/contents.html)**
+
+Beginner → Intermediate → Advanced → Expert
+
 ### SUPPORT US
 If you like the work we're doing, [please give us a star on GitHub](https://github.com/Synaptic724/melder).
 </div>
@@ -1046,7 +1053,7 @@ long-form guides and API reference belong in the hosted documentation site.
 | 🧪 | **[Runnable examples](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences)** | Beginner-to-expert scripts organized by the same level ladder used in this README |
 | ✅ | **[Example verification](https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/pytest_examples)** | Pytest harness and contract probes for the runnable curriculum |
 | 📘 | **[Getting started](https://www.synapticaisystems.com/melder/intro/)** | The guided introduction — start here after this page |
-| 📚 | **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)** | Full API reference and technical documentation |
+| 📚 | **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)** | Four learning levels, runnable examples, API reference, and full contents |
 | ▶️ | **[Synaptic AI on YouTube](https://www.youtube.com/@SynapticAISystems)** | Walkthroughs, deep dives, and live builds |
 
 ## License

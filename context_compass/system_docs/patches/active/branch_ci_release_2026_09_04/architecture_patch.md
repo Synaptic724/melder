@@ -27,6 +27,8 @@ architecture is unchanged. Do not publish a package or invent dated candidate me
 - Release validation is fresh for that publication run; artifacts come from that same successful run.
 - Only the publication job receives the pypi environment; the final prod check follows environment approval.
 - A prod change during validation refuses publication at the last head check.
+- Final release events must also resolve the live remote tag to the same selected commit; moved,
+  deleted, or ambiguous tags refuse publication. Annotated tags use their peeled object identity.
 
 ## Rollout order
 1. Implement helpers, reusable workflows, and caller together.

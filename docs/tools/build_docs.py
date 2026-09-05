@@ -237,13 +237,18 @@ class DocumentationBuilder:
         return source
 
     def build(self, builder: str = "html") -> int:
-        """Prepare selected inputs and run Sphinx; return its real status and retain diagnostics."""
+        """Build current inputs with fresh cross-references and retain genuine failure diagnostics.
+
+        Source and output are regenerated on every invocation. Rebuild the Sphinx
+        environment too: viewcode caches an import prefix per physical module,
+        which can survive changed API directives and produce incorrect backlinks.
+        """
         source = self.prepare()
         output = self._output(builder)
         if output.exists():
             shutil.rmtree(output)
         output.mkdir(parents=True, exist_ok=True)
-        command = [sys.executable, "-m", "sphinx", "-q", "-b", builder, "-W", "--keep-going",
+        command = [sys.executable, "-m", "sphinx", "-E", "-q", "-b", builder, "-W", "--keep-going",
                    "-c", str(self.docs), "-d", str(self._output("doctrees")),
                    str(source), str(output)]
         environment = dict(os.environ)

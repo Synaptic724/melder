@@ -2,6 +2,8 @@
 
 import json
 import pathlib
+import subprocess
+from collections.abc import Sequence
 from types import ModuleType
 
 import pytest
@@ -151,7 +153,8 @@ def test_case_collision_reports_are_deterministic(policy: ModuleType) -> None:
 def test_release_and_manual_prod_accept_equal_commit_ids(policy: ModuleType) -> None:
     """Preserve final published releases and explicit manual-prod publication."""
     sha = "a" * 40
-    policy.validate_release("release", "refs/tags/v0.3.0", final_release(), sha, sha, sha)
+    policy.validate_release("release", "refs/tags/v0.3.0", final_release(), sha, sha, sha,
+                            tag_sha=sha)
     policy.validate_release("workflow_dispatch", "refs/heads/prod", {}, sha, sha, sha)
 
 
@@ -188,6 +191,99 @@ def test_abbreviated_sha_is_not_release_identity(policy: ModuleType) -> None:
     """Require resolved immutable identity even when three abbreviated values happen to match."""
     with pytest.raises(ValueError, match="full, resolved"):
         policy.validate_release("workflow_dispatch", "refs/heads/prod", {}, "abc", "abc", "abc")
+
+
+def test_release_cli_refuses_a_retargeted_tag(policy: ModuleType,
+                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    """A moved remote release tag must block upload even when event, checkout, and prod agree."""
+    sha = "a" * 40
+
+    def remote_state(arguments: Sequence[str]) -> str:
+        """Model Git's external process boundary with a retargeted lightweight tag."""
+        if arguments[0] == "ls-remote":
+            return f"{'b' * 40}\trefs/tags/v0.3.0\n"
+        if arguments[0] == "fetch":
+            return ""
+        if arguments[0] == "rev-parse":
+            return sha
+        raise AssertionError(f"Unexpected Git command: {arguments}")
+
+    monkeypatch.setattr(policy, "git_output", remote_state)
+    monkeypatch.setattr(policy, "read_event", final_release)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "release")
+    monkeypatch.setenv("GITHUB_REF", "refs/tags/v0.3.0")
+    monkeypatch.setenv("GITHUB_SHA", sha)
+    assert policy.main(["release-head"]) == 1
+
+
+def test_remote_tag_resolution_supports_lightweight_and_annotated_tags(policy: ModuleType) -> None:
+    """An annotated tag's object ID is not its release commit; use the peeled identity."""
+    commit = "a" * 40
+    tag_object = "b" * 40
+    assert policy.remote_tag_commit(f"{commit}\trefs/tags/v0.3.0\n", "v0.3.0") == commit
+    annotated = f"{tag_object}\trefs/tags/v0.3.0\n{commit}\trefs/tags/v0.3.0^{{}}\n"
+    assert policy.remote_tag_commit(annotated, "v0.3.0") == commit
+    # ls-remote matches tails too; a similarly suffixed ref cannot replace the exact tag.
+    extra = f"{'c' * 40}\trefs/tags/archive/refs/tags/v0.3.0\n"
+    assert policy.remote_tag_commit(extra + annotated, "v0.3.0") == commit
+
+
+@pytest.mark.parametrize("advertisement", [
+    "", "malformed", "abc\trefs/tags/v0.3.0\n",
+    f"{'a' * 40}\trefs/tags/other\n",
+    f"{'a' * 40}\trefs/tags/v0.3.0^{{}}\n",
+    f"{'a' * 40}\trefs/tags/archive/refs/tags/v0.3.0\n",
+    f"{'a' * 40}\trefs/tags/v0.3.0\n{'b' * 40}\trefs/tags/v0.3.0\n",
+])
+def test_missing_or_ambiguous_remote_tag_evidence_is_refused(policy: ModuleType,
+                                                           advertisement: str) -> None:
+    """Missing/deleted/ambiguous remote tags must never fall back to a cached local tag."""
+    with pytest.raises(ValueError):
+        policy.remote_tag_commit(advertisement, "v0.3.0")
+
+
+def test_release_requires_live_tag_identity(policy: ModuleType) -> None:
+    """Matching event/checkout/prod alone cannot authorize a named release anymore."""
+    sha = "a" * 40
+    with pytest.raises(ValueError, match="Live remote"):
+        policy.validate_release("release", "refs/tags/v0.3.0", final_release(), sha, sha, sha)
+    with pytest.raises(ValueError, match="no longer points"):
+        policy.validate_release("release", "refs/tags/v0.3.0", final_release(), sha, sha, sha,
+                                tag_sha="b" * 40)
+
+
+@pytest.mark.parametrize("deleted", [False, True])
+def test_release_cli_reads_tag_then_prod_and_handles_deletion(policy: ModuleType,
+                                                             monkeypatch: pytest.MonkeyPatch,
+                                                             deleted: bool) -> None:
+    """Accept a correctly peeled tag and refuse a deleted tag while preserving final prod order."""
+    sha = "a" * 40
+    commands: list[tuple[str, ...]] = []
+
+    def remote_state(arguments: Sequence[str]) -> str:
+        """Model remote Git identity reads without changing any actual repository."""
+        commands.append(tuple(arguments))
+        if arguments[0] == "ls-remote":
+            if deleted:
+                raise subprocess.CalledProcessError(2, ["git", *arguments])
+            return f"{'b' * 40}\trefs/tags/v0.3.0\n{sha}\trefs/tags/v0.3.0^{{}}\n"
+        if arguments[0] == "fetch":
+            return ""
+        if arguments[0] == "rev-parse":
+            return sha
+        raise AssertionError(f"Unexpected Git command: {arguments}")
+
+    monkeypatch.setattr(policy, "git_output", remote_state)
+    monkeypatch.setattr(policy, "read_event", final_release)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "release")
+    monkeypatch.setenv("GITHUB_REF", "refs/tags/v0.3.0")
+    monkeypatch.setenv("GITHUB_SHA", sha)
+    assert policy.main(["release-head"]) == (1 if deleted else 0)
+    assert commands[0] == ("ls-remote", "--exit-code", "--tags", "origin",
+                            "refs/tags/v0.3.0", "refs/tags/v0.3.0^{}")
+    if not deleted:
+        assert commands[1][0] == "fetch"
+        assert [command[0] for command in commands[2:]] == ["rev-parse", "rev-parse"]
 
 
 def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,

@@ -21,3 +21,10 @@ Final results:
 
 The review-worktree subdirectory is a registered Git worktree; remove it through git worktree remove
 before deleting the enclosing disposable workspace after owner-accepted closure.
+
+Final local review, 2026-09-05:
+- Reproduced the moved-release-tag acceptance with a failing CLI regression.
+- Added a live remote tag target check, including annotated-tag peeling and deleted-tag refusal.
+- 167 focused tests pass; all seven workflows pass actionlint; correctness Ruff passes.
+- Regenerated tests/other bundles verify against the current tracked working tree.
+- This final patch is local only. Owner handles commits/pushes; PR 121 remains the earlier baseline.

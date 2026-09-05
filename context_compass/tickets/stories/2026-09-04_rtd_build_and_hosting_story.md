@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-04-rtd-build-and-hosting
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-04T21:36:46Z
+- Updated: 2026-09-05T08:58:00Z
 
 ## User Narrative
 As a maintainer, I can review a documentation change before release and publish consistent versions
@@ -48,8 +48,9 @@ Make publishing a repeatable release process with identifiable source/version in
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Build/hosting delivery scope defined; no setup or publication started.
+- to_state: in_progress
+- transition_reason: CI/RTD/offline implementation exists and validation is active; owner is adding
+  the hosted project. Hosted settings and live builds remain unverified.
 
 ## Dependencies / Related Work
 S9 validates the complete release and owns final launch acceptance after this pipeline is demonstrated.
@@ -72,8 +73,9 @@ S9 validates the complete release and owns final launch acceptance after this pi
 - [ ] Setup/release/recovery steps are reproducible and contain no credentials.
 
 ## Validation / Test Plan
-Not run. Future checks: clean environment builds, workflow/config validation, artifact/source reconciliation,
-real RTD build logs, preview inspection, search/version/redirect flows, and rendered PDF/ePub/HTML downloads.
+Local rendering produced 294 declared pages; site validation fails on 19 source-page backlinks.
+The focused CI workflow report has 127 passing tests. PDF/ePub artifacts exist but final visual/packaging
+checks remain. Hosted build logs, preview inspection, and search/version/redirect flows remain unverified.
 
 ## UX / API / Data Notes
 Recommended stable default starts with the first accepted docs-bearing release. latest tracks the selected
@@ -112,6 +114,18 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T08:58:00Z
+  TYPE: FACT
+  CLAIM: CI/RTD parity and native handbook builders are implemented; source-link validation and final
+    offline packaging remain in the active task. The owner is creating the Read the Docs project.
+  EVIDENCE:
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:46-66
+  - Owner RTD website setup instruction on 2026-09-05.
+  IMPACT: Local validation and owner account setup can progress independently; no hosted success is claimed.
+  NEXT: Complete local format/link validation and obtain the project URL/branch from the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Applicable Anti-Patterns
 - [ ] No assumed account configuration, unsupported version claims, or mismatched build inputs.
 - [ ] No deployment secrets committed with docs configuration.
@@ -123,4 +137,6 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
 Record exact pins, build revisions, service settings without secrets, feature verification, and recovery steps.
 
 ## Context / Handoff Summary
-Defined, not implemented. S8 makes the complete site reproducible in CI and RTD; S9 supplies launch acceptance.
+CI/RTD configuration and handbook builders are implemented. Local validation remains active in the
+CI/offline task, and the owner is adding the RTD project. The project URL/branch and hosted behavior
+remain to be verified. S9 still owns integrated launch acceptance; all commits/pushes remain owner-only.

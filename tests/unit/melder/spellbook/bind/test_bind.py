@@ -1707,6 +1707,7 @@ def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
 
 
 def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
+    """Match configured candidates during bind and pass the resolved ordered list to Spell."""
     profile = class_profile(method_names=["cleanup", "close"])
     monkeypatch.setattr(
         "melder.aether.spellbook.bind.bind.SpellExaminer",
@@ -1718,9 +1719,9 @@ def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
         Existence.unique,
         aetheric_frame="f",
         spell=RealClassImplementingProto,
-        configured_disposal_method_names=frozenset({"cleanup", "dispose"}),
+        configured_disposal_method_names=["cleanup", "dispose"],
     )
-    assert spell.kwargs["disposal_method_names"] == frozenset({"cleanup"})
+    assert spell.kwargs["disposal_method_names"] == ["cleanup"]
 
 
 # Additional SpellType coverage ---------------------------------------

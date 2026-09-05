@@ -13,6 +13,7 @@ Contributions enter `dev` through a pull request. Promotion proceeds through
 - Source assets: the existing build-asset runner verifies committed manifests.
 - Repository assets: the LLM builder verifies committed bundles and indexes.
 - Repository hygiene: tracked filenames must not collide case-insensitively.
+- Documentation: the shared documentation validation workflow must succeed.
 - Runtime tests: unit, component, and integration tiers on Linux and Windows,
   using Python 3.14t with the GIL disabled in the actual pytest process.
 - Distribution verification for preprod/prod: wheel and sdist boundaries,
@@ -63,11 +64,13 @@ Publishing a final GitHub release, or manually dispatching the publication
 workflow on prod, starts a fresh qualification chain:
 
 1. Require the event and checkout commit to equal fetched current prod HEAD.
+   For release events, also require the live remote tag to resolve to that commit.
 2. Rerun hygiene, both asset checkers, and the complete runtime matrix.
 3. Build and inspect the wheel/sdist and smoke-test an isolated wheel install.
 4. Enter the pypi environment and download this run attempt's verified artifacts.
-5. Recheck distribution/tag identity and fetch/check prod again immediately
-   before the PyPI upload action.
+5. Recheck distribution identity and the live remote release-tag target, then
+   fetch/check prod again immediately before the PyPI upload action. Annotated
+   tags use their peeled target; missing or moved tags refuse publication.
 
 Earlier dev/preprod success does not replace these checks. A prod movement during
 testing or environment approval refuses publication. GitHub prerelease events do

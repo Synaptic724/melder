@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
 from build_docs import DocumentationBuilder
+from check_site import HtmlDocument, SiteCheck
 from docstring_format import DocstringFormatter
 
 
@@ -97,6 +98,46 @@ class BuildContractTests(unittest.TestCase):
         contents = (source / "contents.md").read_text(encoding="utf-8")
         self.assertLess(contents.index("Beginner"), contents.index("Intermediate"))
         self.assertLess(contents.index("Advanced"), contents.index("Expert"))
+
+    def test_rebuilt_api_backlinks_follow_changed_canonical_imports(self) -> None:
+        """A second build must discard old facade prefixes retained by Sphinx's viewcode cache.
+
+        Two documents describe classes in one module so its cache entry remains
+        live while Sphinx purges each document. Only real rendering proves that
+        source-page backlinks match the new canonical API anchors.
+        """
+        package = self.root / "fixture_api"
+        package.mkdir()
+        (package / "__init__.py").write_text(
+            "from fixture_api.impl import Primary, Secondary\n", encoding="utf-8"
+        )
+        (package / "impl.py").write_text(
+            'class Primary:\n    """First public class."""\n\n'
+            'class Secondary:\n    """Second public class."""\n', encoding="utf-8"
+        )
+        (self.docs / "conf.py").write_text(
+            f"import sys\nsys.path.insert(0, {str(self.root)!r})\n"
+            'extensions = ["myst_parser", "sphinx.ext.autodoc", "sphinx.ext.viewcode"]\n'
+            'source_suffix = {".md": "markdown"}\nroot_doc = "index"\n', encoding="utf-8"
+        )
+        builder = DocumentationBuilder(self.root)
+        for module in ("fixture_api", "fixture_api.impl"):
+            for page, name in (("index", "Primary"), ("beginner/index", "Secondary")):
+                (self.docs / (page + ".md")).write_text(
+                    f"# {name}\n\n```{{eval-rst}}\n.. autoclass:: {module}.{name}\n```\n",
+                    encoding="utf-8",
+                )
+            self.assertEqual(builder.build(), 0)
+        output = builder._output("html")
+        origin = output / "_modules/fixture_api/impl.html"
+        source = HtmlDocument(origin.read_text(encoding="utf-8"))
+        backlinks = [url for url in source.links if "#fixture_api." in url]
+        self.assertEqual(len(backlinks), 2)
+        for url in backlinks:
+            destination, fragment = SiteCheck.destination(output, origin, url)
+            self.assertIsNotNone(destination)
+            page = HtmlDocument(destination.read_text(encoding="utf-8"))
+            self.assertIn(fragment, page.identifiers, url)
 
 
 class DocstringPresentationTests(unittest.TestCase):

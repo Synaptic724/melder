@@ -131,7 +131,11 @@ class Handbook:
         return destination
 
     def build(self, format_name: str, tectonic: Optional[str] = None) -> int:
-        """Build ePub, LaTeX, or compiled PDF and propagate the actual formatter/compiler status."""
+        """Build the selected format with fresh references and propagate formatter/compiler status.
+
+        The regenerated handbook selection and its cross-references must agree
+        across consecutive format builds, even after pages or API links change.
+        """
         if format_name not in ("epub", "latex", "pdf"):
             raise ValueError("Handbook format must be epub, latex, or pdf.")
         source = self.prepare()
@@ -139,7 +143,7 @@ class Handbook:
         output = self.builder._output("handbook-" + writer)
         if output.exists():
             shutil.rmtree(output)
-        command = [sys.executable, "-m", "sphinx", "-q", "-W", "--keep-going", "-b", writer,
+        command = [sys.executable, "-m", "sphinx", "-E", "-q", "-W", "--keep-going", "-b", writer,
                    "-c", str(self.builder.docs), "-d", str(self.builder._output("handbook-doctrees")),
                    "-D", "html_show_sourcelink=0", "-D", "viewcode_enable_epub=0",
                    str(source), str(output)]

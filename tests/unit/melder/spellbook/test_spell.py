@@ -1427,3 +1427,62 @@ def test_system_state_returns_none_when_states_registry_missing() -> None:
     spell._spell_system_states = None
 
     assert spell.system_state is None
+
+
+@pytest.mark.parametrize("names,expected", [
+    ([], []),
+    (["flush", "close"], ["flush", "close"]),
+])
+def test_spell_retains_disposal_list_without_clearing_it_on_cleanup(
+        names: list[str], expected: list[str],
+) -> None:
+    """Retain Bind's resolved list, including an empty one, and leave borrowers intact on cleanup."""
+    spell = Spell(
+        spell=object,
+        spell_index=SpellIndex("ordered-disposal"),
+        spellframe=None,
+        binding_name=None,
+        spell_name="OrderedDisposal",
+        existence=Existence.unique,
+        spell_type=SpellType.SPELL,
+        spell_id="ordered-disposal",
+        permissions=Permissions.create,
+        aetheric_frame="default",
+        spellbook=_SpellbookStub(_RecordingStates()),
+        disposal_method_names=names,
+    )
+    try:
+        assert spell.disposal_method_names is names
+        assert spell.disposal_method_names == expected
+        assert spell.has_disposal_methods is bool(expected)
+    finally:
+        spell.cleanup()
+    assert names == expected
+    spell.cleanup()
+
+
+def test_spell_omitted_disposal_lists_are_independent() -> None:
+    """Constructors with omitted disposal metadata receive distinct empty lists and false flags."""
+    spells: list[Spell] = []
+    try:
+        for identity in ("first-default", "second-default"):
+            spells.append(Spell(
+                spell=object,
+                spell_index=SpellIndex(identity),
+                spellframe=None,
+                binding_name=None,
+                spell_name=identity,
+                existence=Existence.unique,
+                spell_type=SpellType.SPELL,
+                spell_id=identity,
+                permissions=Permissions.create,
+                aetheric_frame="default",
+                spellbook=_SpellbookStub(_RecordingStates()),
+            ))
+        assert spells[0].disposal_method_names == spells[1].disposal_method_names == []
+        assert spells[0].disposal_method_names is not spells[1].disposal_method_names
+        assert spells[0].has_disposal_methods is False
+        assert spells[1].has_disposal_methods is False
+    finally:
+        for spell in spells:
+            spell.cleanup()

@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_src.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | ac7f5624502f622910481dc28fa7298890d6c743e043b8877656b4684695af7a |
-| bundle_sha256 | ae1b0badef8480e741bb4ca35b2c8b5a00509f245eeb7cb3a39a5812e5b64a51 |
+| source_fingerprint | 4b4380f264daae551b09e310660c85e8d48801071df8ec523c81d1c45097563d |
+| bundle_sha256 | 1b0f9d25359e41c1674a5b97a4b990258f033d02e6b6df9262a9f9cafcf31c9c |
 | bundle_line_count | 275448 |
 | bundle_line_ending | lf |
 | files | 584 |
@@ -118,7 +118,7 @@ Line numbers are 1-based and inclusive.
 | 41564-41783 | 41569-41780 | 8367 | utf-8 | 17e9b7a15d504093a33a4fc0c7dabda275b345bff19cd5ddce0fa85fe7045240 | src/melder/aether/aetheric_mediator/transaction_strategy.py |
 | 41784-41885 | 41789-41882 | 4686 | utf-8 | 8cd6595d4de6a0fca6ce2563bed642ed7690e60b7e38f0237351c84934215033 | src/melder/aether/aetheric_mediator/transaction_type.py |
 | 41886-42054 | 41891-42051 | 6506 | utf-8 | a090f5a6ac1d752c28c21f88f86b7432deaddeb4520c35d26d8c86611613ff8c | src/melder/aether/aetheric_mediator/unwind_conflict_error.py |
-| 42055-48349 | 42060-48346 | 258594 | utf-8 | 8409e7b80db2cb9828048b3804e8180e209fd2bed29433fcad8a2507f25851d9 | src/melder/aether/conduit/conduit.py |
+| 42055-48349 | 42060-48346 | 258596 | utf-8 | c450bcbef2c8c08de8dd776d1d8beed7029da0a0f9718b56114ebf7058e719e2 | src/melder/aether/conduit/conduit.py |
 | 48350-49701 | 48355-49698 | 55195 | utf-8 | ffd236f7d36e155ff50130fab84cbd39803b13065789726ef3491698e10b0c26 | src/melder/aether/conduit/conduit_cluster.py |
 | 49702-49870 | 49707-49867 | 5454 | utf-8 | 2500ab6eab3ef00a37133cc758581e5f638690a11829443ff442e651ccd2b6de | src/melder/aether/conduit/conduit_pool.py |
 | 49871-49972 | 49876-49969 | 3767 | utf-8 | 4678920d2f41d88c02cbc0f19d500d0c979a70f474625fc116959cb15b33fa6f | src/melder/aether/conduit/conduit_state/conduit_state.py |
@@ -152,7 +152,7 @@ Line numbers are 1-based and inclusive.
 | 67274-67335 | 67279-67332 | 2257 | utf-8 | 0ab2bf040da52680bfc09d38c65ac5ca0a472952ad0919a8c7c6604114dde9b6 | src/melder/aether/spellbook/configuration/system_state.py |
 | 67336-67481 | 67341-67478 | 5567 | utf-8 | 464234b93a4e04d546badc77549dda7f52963246800bfd6149ca22c8b380433f | src/melder/aether/spellbook/existence/existence.py |
 | 67482-67980 | 67487-67977 | 18250 | utf-8 | 91dd97b17cc7823d08f9df00d4531376dd641f7c201dfccea269284bfd37a8be | src/melder/aether/spellbook/resolution_style_matrix.py |
-| 67981-69644 | 67986-69641 | 68275 | utf-8 | 9b50eb996cefcfc567c011d3225731eca328f50fd0b273ad2401ca5ef7357dfc | src/melder/aether/spellbook/spell.py |
+| 67981-69644 | 67986-69641 | 68274 | utf-8 | 5ddaa6fe38c41b929c3a98b3ddd13319b267b07d338b9962f70f19187e0e6a44 | src/melder/aether/spellbook/spell.py |
 | 69645-69874 | 69650-69871 | 8438 | utf-8 | 0f35231b1dfd48b2763e7e29f53a93d7a2fe72c03658926948cfacfe9e2ebba7 | src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py |
 | 69875-69960 | 69880-69957 | 2966 | utf-8 | 704b0204468e4371d12e5f7513aa70740f68cb89a33a0f790eda0b04cdcb515f | src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py |
 | 69961-70053 | 69966-70050 | 2942 | utf-8 | 448c603aec651a593657fe72e2b63ccbda452ce9eddc44b1216badc6789e8d3e | src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py |
@@ -354,7 +354,7 @@ Line numbers are 1-based and inclusive.
 | 129573-129930 | 129578-129927 | 14054 | utf-8 | 5ac3ba08c2368411fe8d49eaeda9c638d32b7ab220de8384f0c4d63f729c9876 | src/melder/aether/spellbook/spell_compiler/validation/validation_system.py |
 | 129931-130039 | 129936-130036 | 4515 | utf-8 | 633b8d91a102139b7d59d6ff5039640796b15a673a76da74972b40b1b0927539 | src/melder/aether/spellbook/spell_types/spell_types.py |
 | 130040-130917 | 130045-130914 | 31979 | utf-8 | b2568ca9d2a2e16d3557891596d5dec349e4a412985e23b702aa83153d095f96 | src/melder/aether/spellbook/spellbinder.py |
-| 130918-137741 | 130923-137738 | 294603 | utf-8 | ba1ac70f12b83bc64ffd8371bba22b50db75d0af1c12af0dad4dcfb70c773e6f | src/melder/aether/spellbook/spellbook.py |
+| 130918-137741 | 130923-137738 | 294613 | utf-8 | 951dc80bac21d76e584e43f5e199e9602b2d13c5e29987cb241a7b9a9439ab38 | src/melder/aether/spellbook/spellbook.py |
 | 137742-141012 | 137747-141009 | 131157 | utf-8 | 3511939d16855fc8358d2a30ffacfc80393bcc2ee21393d62f999cec4d6ee35c | src/melder/aether/spellbook/spellbook_creation_system.py |
 | 141013-141483 | 141018-141480 | 18020 | utf-8 | 267383b9d55645bcf766c1198d3db0855add0d4b6d5c793f0b81d907d146a7b0 | src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py |
 | 141484-142534 | 141489-142531 | 39566 | utf-8 | a0f4656170c9b9848d16ac455149b4962c319d1ececb3e29bdd1d57001424119 | src/melder/crystallizer/asset_management/asset_management_system.py |
@@ -397,7 +397,7 @@ Line numbers are 1-based and inclusive.
 | 155869-156183 | 155874-156180 | 10940 | utf-8 | 9a9f54576cfefb2ddf144e415102cb1a6cd85ae027cc91a29ec1a942dc6acb8e | src/melder/crystallizer/crystal_loader_system/load_plan.py |
 | 156184-158860 | 156189-158857 | 106730 | utf-8 | 22ec5cb284d416da2eb96765f22fadd26ae62bab27d22c20cd2bb74eb2687310 | src/melder/crystallizer/crystal_loader_system/restore_engine.py |
 | 158861-158996 | 158866-158993 | 5148 | utf-8 | e97de4390170ff5ec0a2c111dcc79537086f1e10d2f8b7981e73c95b21227cfe | src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py |
-| 158997-161987 | 159002-161984 | 117419 | utf-8 | eb77a5a3087bb2bf7c2aa8b892ac9c4055c0400e90fbaab26af253ba50bcfc0e | src/melder/crystallizer/crystallizer.py |
+| 158997-161987 | 159002-161984 | 117433 | utf-8 | 2b4cd802c6f4ea047fa779bd03d65af18dfc758ace3273d47fded364c179563e | src/melder/crystallizer/crystallizer.py |
 | 161988-162137 | 161993-162134 | 5405 | utf-8 | 929144a005138474567b9cedbac6efb6cd047f3fbca9e4d5b224de22faa2095f | src/melder/crystallizer/crystals/aether_crystal.py |
 | 162138-162391 | 162143-162388 | 8597 | utf-8 | b7786622d046505bc14084b658e38a0520217a03b3f985320143316f42fba302 | src/melder/crystallizer/crystals/aetheric_frame_crystal.py |
 | 162392-162590 | 162397-162587 | 7189 | utf-8 | a9706ede8062fbe4e3ad2b4402dd9cc5d9265e1ff4461c7e29e7c181fd77b2be | src/melder/crystallizer/crystals/cluster_crystal.py |

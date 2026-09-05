@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-04T22:25:15Z
-- Updated: 2026-09-04T23:21:21Z
+- Updated: 2026-09-05T09:35:41Z
 
 ## Objective
 Implement the accepted shared CI design for feature-to-dev and branch promotion, retaining fresh
@@ -35,8 +35,8 @@ tests/build verification on every final release and a last prod-head check befor
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Local/hosted checks pass, signed draft PR 121 is mergeable, and the three
-  reviewed GitHub branch rulesets are active and verified. Owner review/merge is the next step.
+- transition_reason: The final release-tag regression is fixed and scoped validation passes.
+  Latest hardening is local for the owner's commit/push; prior hosted results apply to PR 121's baseline.
 
 ## Steps / Checklist
 - [x] Author/read architecture, component, and gate-flow contracts.
@@ -57,6 +57,12 @@ tests/build verification on every final release and a last prod-head check befor
 - Workflow and branch policy behavior has meaningful regression tests.
 
 ## Validation
+- Final review 2026-09-05: 167 focused tests pass, all seven workflows pass actionlint,
+  correctness-scoped Ruff passes, and regenerated tests/other repository bundles verify.
+- The new tag guard was first reproduced with a failing test, then verified for moved/deleted,
+  malformed, duplicate, lightweight, and annotated-tag cases. Prod is queried after the tag.
+- This final hardening is uncommitted locally and has not been run on GitHub; the hosted results
+  below describe the earlier PR 121 baseline. No commits or pushes were attempted in this pass.
 - Focused CI/asset-builder tests: 147 passed in the main and isolated checkouts.
 - Hosted PR CI: success; Linux and Windows each report 11,109 passed, 28 skipped, 15 xfailed,
   one non-strict xpass, and a coroutine shutdown warning. CI / merge-ready succeeds.
@@ -269,8 +275,63 @@ tests/build verification on every final release and a last prod-head check befor
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T09:23:16Z
+  TYPE: FACT
+  CLAIM: Final review found a release-identity gap: release-head validates the tag name from the
+    event but never queries the current remote tag target. A tag moved/deleted while prod stays
+    unchanged can escape that check. The latest owner branch also includes the documentation job
+    added by codex_2; preserve that dependency. Owner continues to handle all commits and pushes.
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:132-159
+  - .github/scripts/ci_policy.py:190-200
+  - .github/workflows/ci.yml:60-73
+  - https://git-scm.com/docs/git-ls-remote
+  IMPACT: Add one bounded release safeguard: verify the live tag's resolved object against the
+    event/checkout/prod commit, including annotated-tag peeling. Do not add new automation layers.
+  NEXT: Reproduce moved-tag acceptance with a boundary-mocked CLI test, then implement the guard.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T09:29:22Z
+  TYPE: MEASURE
+  CLAIM: A boundary-mocked regression reproduces the gap: with a moved remote tag and unchanged
+    event/checkout/prod SHAs, release-head exits zero. The test expected refusal and fails on the
+    existing implementation. No actual tag, branch, commit, or remote state was changed.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_ci_policy.py:191-214
+  - .github/scripts/ci_policy.py:190-200
+  IMPACT: The final pass has one evidenced release correctness fix rather than speculative polish.
+  NEXT: Require live tag identity, add annotated/deleted-tag coverage, and rerun focused validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T09:35:41Z
+  TYPE: MEASURE
+  CLAIM: Final hardening passes 167 focused tests, correctness Ruff E4/E7/E9/F, and actionlint on
+    all seven current workflows. Regenerated tests and other LLM corpora verify. The live tag is
+    queried read-only with ls-remote; annotated tags use the peeled target. Missing/moved/ambiguous
+    tag evidence refuses publication, and prod remains the last remote identity read.
+    The documentation gate added by codex_2 is preserved. Generated other-corpus updates also reflect
+    the current tracked documentation tree; they are not a runtime source-code change.
+  EVIDENCE:
+  - .github/scripts/ci_policy.py:132-210
+  - .github/scripts/ci_policy.py:237-250
+  - tests/unit/github_workflows/test_ci_policy.py:196-286
+  - .github/workflows/python-publish.yml:85-95
+  IMPACT: The CI foundation is ready for owner commit/push. Further promotion/scheduling features
+    belong to the next layer; no additional feature work is needed to finish this foundation.
+  NEXT: Owner commits/pushes the local final guard and follows the PR/promotion rollout.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Implementation is ready for review in draft PR 121 from codex/branch-ci-release-validation to dev.
+FINAL REVIEW 2026-09-05: the CI foundation is ready. A local final hardening additionally checks the
+live remote release tag before the last prod check. 167 focused tests, seven workflow lint checks,
+correctness Ruff, and tests/other bundle checks pass. These latest changes are uncommitted in the
+main checkout; PR 121 and its historical review-worktree still contain the earlier baseline.
+Owner handles commits and pushes. No more feature additions are recommended for this foundation.
+
+Earlier implementation is available in draft PR 121 from codex/branch-ci-release-validation to dev.
 Signed commit cb24d33b6f30a6b76b137a3a34a8ccf6e15cf80e is GitHub-verified. Hosted CI is green on both
 platforms, and all three branch rulesets are active. Main-checkout source manifests reflect a
 separate in-progress configuration lane; the isolated CI branch is self-consistent and all its

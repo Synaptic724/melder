@@ -4,6 +4,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Optional,
 )
 
 # Melder Imports
@@ -82,9 +83,9 @@ class Spell(Cleanable):
       transitions.
     - Becomes unusable after `cleanup()` completes; later live-object methods
       are expected to fail through `check_cleaned()`.
-    - Disposal methods should not be modified after creation as it will create
-      problems with the runtime. The runtime will optimize creation and disposal
-      methods added after the fact are ignored.
+    - Disposal metadata is established once at bind. The ordered list, presence
+      flag, and bind-time SHA describe that same policy. Post-creation mutation
+      is unsupported; this class adds no copying or mutation guards.
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -299,10 +300,10 @@ class Spell(Cleanable):
             spellbook: "Spellbook",
             profile: Any | None = None,
             existing_object: object | None = None,
-            disposal_method_names: frozenset[str] = frozenset(),
+            disposal_method_names: Optional[list[str]] = None,
             *args: Any,
             **kwargs: Any,
-    ):
+    ) -> None:
         """
         Internal constructor for a bound Spell record.
 
@@ -321,9 +322,9 @@ class Spell(Cleanable):
             profile (Optional[Any]): Binding/introspection profile attached by the examiner.
             existing_object (Optional[object]): Pre-created instance for EXISTING_CREATION* spell types.
                 Stored on the spell under the DIFFERENT name `user_created_object`.
-            disposal_method_names (FrozenSet[str]): Resolved disposal methods for this spell.
-                Re-frozen on assignment, so a caller-held collection cannot mutate the
-                spell afterwards.
+            disposal_method_names (Optional[list[str]]): Bind-resolved disposal methods in
+                execution order. Retained directly; omitted metadata gets a fresh empty list.
+                Bind owns matching and deduplication, which are not repeated here.
             *args: Optional positional metadata tags, collected into `tags`.
             **kwargs: Optional keyword metadata map, collected into `metadata`.
 
@@ -346,6 +347,8 @@ class Spell(Cleanable):
             - The canonical `(frame_key, bind_key)` lookup key is normalized
               immediately via `SpellInputUtils.make_spell_key_from_parts(...)`
               and fixed at construction; key identity never drifts afterwards.
+            - Disposal order and its presence flag are established once. The
+              resolved list is not copied, sorted, or frozen during construction.
 
         Owned State:
             Owns `_lock`, `_compiler_artifact` (created eagerly against
@@ -431,7 +434,9 @@ class Spell(Cleanable):
         self.tags = list(args) if args else []
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: dict[str, Any] | None = None
-        self.disposal_method_names: frozenset[str] = frozenset(disposal_method_names)
+        self.disposal_method_names: list[str] = (
+            disposal_method_names if disposal_method_names is not None else []
+        )
         self.has_disposal_methods: bool = bool(self.disposal_method_names)
 
         # Hooks (private storage; Spellbook controls mutation)
@@ -517,6 +522,8 @@ class Spell(Cleanable):
               state, spellbook references, and reflective profile state.
             - Sets `_cleaned` before the guarded section exits, then drops the
               `_lock` reference itself after the teardown completes.
+            - Deletes the disposal-name reference without clearing its list;
+              creation entries may still retain that established metadata.
 
         Runtime resolution and instance lifecycle remain owned by the Resolution
         / Meld layer, not by this class.

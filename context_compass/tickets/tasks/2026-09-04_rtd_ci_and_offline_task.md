@@ -10,7 +10,7 @@
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-04T22:07:46Z
+- Updated: 2026-09-05T08:58:00Z
 
 ## Objective
 Wire the proven local command into CI and RTD configuration, implement version/canonical/source behavior, and build offline formats.
@@ -18,7 +18,8 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 ## Ticket Contract
 - ENTRY_GATE: Parent story/blueprint read, dependency milestone available, and this task actively routed.
 - EXECUTION_BOUNDARY: .readthedocs.yaml, docs workflow and its required-CI integration, docs dependency
-  locks/configuration, offline builders, version/source-link code, and docs/maintaining.md.
+  locks/configuration, offline builders, version/source-link code, docs/maintaining.md, and the
+  owner-requested prominent README documentation entry (2026-09-05).
 - DEPENDENCIES: Local foundation/catalog; content and reference contracts; live hosting activation is the separate hosted-project task.
 - EXIT_GATE: Acceptance checks have evidence; delivery state and parent story are synchronized.
 - FAILURE_ESCALATION: Record concrete failures and preserve unaffected progress; do not infer success.
@@ -29,14 +30,15 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: draft
-- to_state: draft
-- transition_reason: Implementation task defined; prerequisite work remains ahead of activation.
+- from_state: in_progress
+- to_state: in_progress
+- transition_reason: Owner requested a pause for committing, then instructed continue on 2026-09-05.
+  Reconcile the unfinished handoff and resume source-link validation; commits and pushes remain owner-only.
 
 ## Steps / Checklist
-- [ ] Read the exact inputs and record one bounded implementation decision.
-- [ ] Complete required patch contracts when the change is system-impacting.
-- [ ] Implement the scoped deliverable with notes before the next tranche.
+- [x] Read the exact inputs and record one bounded implementation decision.
+- [x] Complete required patch contracts when the change is system-impacting.
+- [x] Implement the scoped deliverable with notes before the next tranche.
 - [ ] Validate meaningful behavior/content and record actual outcomes.
 - [ ] Synchronize parent story and hand off or close after acceptance.
 
@@ -48,8 +50,15 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 - [ ] Workflow/static checks and local output review are recorded.
 
 ## Validation
-- Not run. Implementation task just created.
-- Use the parent story's validation plan and report local/hosted/execution results separately.
+- Normal HTML build and independent validation pass: 294 pages and 35,119 local links, with canonical
+  source equality. The earlier 19 cached source-page backlink failures are fixed and regression-tested.
+- Documentation tests: 36 passed; removing the fix reproduces the backlink defect in the new test.
+- Recorded focused CI workflow suite: 127 tests, zero failures/errors/skips (`ci.xml`).
+- Final PDF: 103 pages, all level bookmarks, no blank/clipped pages; visual review recorded.
+- Final ePub: 62 XHTML documents and 1,077 internal links pass format/navigation checks.
+- HTML archive and all four RTD staging formats match their source bytes; 945 complete-site files.
+- All three source build-asset exact checks pass. Repository LLM bundles are stale and need regeneration.
+- Hosted project setup, live previews, versions, search, and downloads were not performed.
 
 ## Risks / Mitigations
 - Canonical source and existing lessons can change concurrently; verify relevant inputs before edits.
@@ -57,8 +66,17 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 - Keep the four owner-defined learning levels and prominent examples invariant.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false until this task produces or owns a supporting artifact.
-- ARTIFACT_PATHS: none; the parent story links the shared blueprint.
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - artifacts/rtd_validation_20260904/final_html.log
+  - artifacts/rtd_validation_20260904/site_check.log
+  - artifacts/rtd_validation_20260904/ci.xml
+  - artifacts/rtd_validation_20260904/source_assets.log
+  - artifacts/rtd_validation_20260904/handbook_pdf.log
+  - artifacts/rtd_validation_20260904/handbook_epub.log
+  - artifacts/rtd_validation_20260904/fresh_html_20260905.log
+  - artifacts/rtd_validation_20260904/fresh_links_20260905.log
+  - artifacts/rtd_validation_20260904/fresh_links_20260905.json
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Record task-owned artifact disposition before accepted closure.
 
@@ -103,7 +121,6 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
-## Context / Handoff Summary
 - DATETIME: 2026-09-05T01:14:35Z
   TYPE: MEASURE
   CLAIM: Native Sphinx ePub builds 59 selected source documents. The compiled PDF is 106 letter-sized
@@ -125,7 +142,6 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
-## Applicable Anti-Patterns
 - DATETIME: 2026-09-05T01:52:29Z
   TYPE: FACT
   CLAIM: The full HTML build passes at 294 pages, but the new independent link validator found
@@ -142,11 +158,228 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T08:58:00Z
+  TYPE: MEASURE
+  CLAIM: Re-entry checked HEAD 15e06e7de1de68b1af150eabc7e978ead6155c76 and the saved validation artifacts.
+    The site contains 294 declared pages and 360 HTML files. Its 35,119 checked local links expose 19
+    broken viewcode backlinks across ResearchLane/LaneState/LaneType and ULID_Factory/new_ulid.
+    The focused CI workflow report records 127 passing tests. Source assets were regenerated.
+    Owner paused implementation for committing and has now instructed continue. Earlier Notes remain
+    intact; misplaced notes were consolidated here and the duplicate handoff heading removed.
+  EVIDENCE:
+  - docs/_build/site-check.json:1-26
+  - artifacts/rtd_validation_20260904/site_check.log:1-20
+  - artifacts/rtd_validation_20260904/ci.xml:1-1
+  - artifacts/rtd_validation_20260904/source_assets.log:1-3
+  - Owner pause instruction and subsequent continue instruction on 2026-09-05.
+  IMPACT: Implementation exists but is not accepted or release-ready. A fresh Sphinx environment is
+    the next diagnostic for stale viewcode module prefixes, not an established fix.
+  NEXT: Inspect the current docs builder and API alias extension, then run a fresh-environment HTML build.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:03:00Z
+  TYPE: DECISION
+  CLAIM: The builder deletes its HTML output but reuses docs/_build/doctrees. Sphinx viewcode retains
+    each physical module's original refname while source code is unchanged; current generated API
+    directives already use canonical origins. Test that exact cache boundary with a separate fresh
+    environment/output before changing the API adapter or runtime. Source-link correctness remains
+    mandatory; suppressing these links or changing Melder exports is outside the chosen fix.
+  EVIDENCE:
+  - docs/tools/build_docs.py:231-249
+  - docs/tools/api_reference.py:96-125
+  - docs/tools/api_aliases.py:29-49
+  - Sphinx 9.1.0 sphinx/ext/viewcode.py:111-181
+  - Sphinx 9.1.0 sphinx/ext/viewcode.py:300-337
+  - https://www.sphinx-doc.org/en/master/man/sphinx-build.html#cmdoption-sphinx-build-E
+  IMPACT: Patch rtd_site_2026_09_04 maps validated preparation to DocumentationBuilder.prepare,
+    source/revision rendering to ApiReference and PublicApiAliases, and link fidelity to SiteCheck.
+    The patch's same-command reproducibility contract requires cache-independent output.
+  NEXT: Prepare current sources, build isolated fresh HTML, and run the same SiteCheck against it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:07:00Z
+  TYPE: MEASURE
+  CLAIM: Isolated fresh-environment rendering succeeds and SiteCheck reports zero errors across
+    294 declared pages and 35,119 local links, with exact canonical lesson/helper source equality.
+    The 19 prior source-page backlink failures disappear without changing API aliases or runtime
+    exports. The PDF compiler's retained log confirms the revised handbook has 101 pages.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/fresh_links_20260905.log:1-1
+  - artifacts/rtd_validation_20260904/fresh_links_20260905.json:1-6
+  - docs/tools/build_docs.py:231-249
+  - docs/tools/handbook.py:134-151
+  IMPACT: Make both normal site and handbook Sphinx invocations use fresh environments so output
+    depends on current source, not stale extension cache state. Add one real rebuild regression.
+  NEXT: Update DocumentationBuilder.build and Handbook.build with -E and prove changed canonical
+    API imports retain correct source-to-documentation backlinks across consecutive builds.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:10:00Z
+  TYPE: MEASURE
+  CLAIM: Both site and handbook builders now request a fresh Sphinx environment. The maintainer
+    guide explains why. All 13 build/presentation tests pass, including a real two-build regression:
+    two classes move from facade to canonical module directives and both generated backlinks resolve.
+  EVIDENCE:
+  - docs/tools/build_docs.py:231-254
+  - docs/tools/handbook.py:134-154
+  - docs/tests/test_build_docs.py:106-150
+  - artifacts/rtd_validation_20260904/rebuild_regression_20260905.log:1-7
+  IMPACT: The normal command now enforces the cache-independent behavior proven by the diagnostic.
+    Full-site and final packaging checks must run through that command before acceptance.
+  NEXT: Confirm the regression fails without fresh environments, then run the full docs checks and
+    final HTML/handbook builds; keep live hosting setup with the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:09:00Z
+  TYPE: MEASURE
+  CLAIM: The new real-rendering regression fails exactly as intended when -E is removed from the
+    Sphinx subprocess arguments: the source page links to fixture_api.Primary while the target only
+    contains fixture_api.impl.Primary. Restoring the unchanged builder passes the same test.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/rebuild_negative_20260905.log:1-18
+  - artifacts/rtd_validation_20260904/rebuild_regression_20260905.log:1-7
+  IMPACT: This is a reproduced reader-navigation regression with a verified fix, not an assertion
+    about a particular command flag. Broader local qualification can proceed.
+  NEXT: Run the full docs test suite, then the normal HTML build and site validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:11:37Z
+  TYPE: MEASURE
+  CLAIM: The normal documented build command now passes the full site check: 294 pages, 35,119 local
+    links, exact lesson/helper bytes, zero errors. All 36 documentation tests passed. PDF metadata and
+    its retained compiler log both confirm the corrected 101-page handbook, whose final rebuild and
+    visual inspection remain. Current branch is codex_features2; the owner is configuring hosted RTD.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/docs_tests_20260905.log:1-7
+  - artifacts/rtd_validation_20260904/links_20260905.log:1-1
+  - docs/_build/site-check.json:1-6
+  - docs/tools/handbook.py:134-176
+  IMPACT: The source-link blocker is resolved through the normal pipeline. Continue with final offline
+    build/review, staging, and generated-asset checks before handing over the signed-commit boundary.
+  NEXT: Rebuild ePub/PDF through the updated handbook command and validate their navigation and layout.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:15:07Z
+  TYPE: MEASURE
+  CLAIM: Final ePub and PDF compilation completed successfully through the updated fresh-environment
+    handbook builder. The selection now has 60 source pages including the separate selected-examples
+    contents page. TeX still reports small vertical overflows that need visual inspection; successful
+    compilation is not layout acceptance. RTD documentation confirms _readthedocs/<format> staging.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/epub_20260905.log:1-1
+  - artifacts/rtd_validation_20260904/pdf_20260905.log:1-296
+  - docs/tools/handbook.py:81-158
+  - https://docs.readthedocs.com/platform/stable/build-customization.html#where-to-put-files
+  IMPACT: Review actual final files, check ePub navigation/manifest and PDF page bounds, and compare
+    each staged output with its locally validated origin before making a download-readiness claim.
+  NEXT: Inspect the final offline files and render PDF pages for layout review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:17:28Z
+  TYPE: FACT
+  CLAIM: The latest rebuilt PDF is 103 pages, superseding the earlier 101-page artifact. It has no
+    blank or near-empty pages; bookmarks preserve Beginner, Intermediate, Advanced, Expert, selected
+    examples, and glossary. All pages were rendered to PNG for review. Owner requested a visual
+    preview; the local HTTP server was restarted on loopback port 8765 and GET /index.html returned 200.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/pdf_metadata_20260905.json:1-32
+  - docs/_build/pdf-review/page-001.png
+  - Local preview command: python -m http.server 8765 --bind 127.0.0.1 --directory docs/_build/html
+  - Owner preview request on 2026-09-05.
+  IMPACT: Owner can inspect http://127.0.0.1:8765/ while final download checks continue. Leave this
+    preview available and preserve the generated HTML during handbook review.
+  NEXT: Review rendered PDF pages and verify ePub/archive/staged download contents.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:22:19Z
+  TYPE: MEASURE
+  CLAIM: Reviewed all 103 PDF pages through contact sheets and full-page renders for the three
+    small TeX overflow locations. No overlap, clipping, missing-glyph boxes, or blank pages were
+    observed. Text geometry checks found zero clipped or narrow-margin pages. The ePub contains
+    62 XHTML documents and 61 spine entries; all 1,077 local links, manifest/spine references, and
+    mimetype placement/compression checks passed.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/pdf_metadata_20260905.json:1-32
+  - artifacts/rtd_validation_20260904/epub_check_20260905.json:1-6
+  - docs/_build/pdf-review/page-035.png
+  - docs/_build/pdf-review/page-048.png
+  - docs/_build/pdf-review/page-073.png
+  IMPACT: Final local handbook artifacts have rendering/navigation evidence. The small TeX warnings
+    remain visible in logs; they were investigated, not suppressed. Hosted companion URLs still
+    depend on the owner's actual RTD project and published revision.
+  NEXT: Build the full HTML archive, stage all four formats locally, and compare every staged byte.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:23:35Z
+  TYPE: MEASURE
+  CLAIM: The complete HTML archive matches all 945 files in the built tree byte-for-byte. Local RTD
+    staging also matches the HTML tree and each archive/ePub/PDF origin exactly. Formats are 12,266,441
+    bytes (HTML zip), 211,427 bytes (ePub), and 481,533 bytes (PDF), with hashes retained in the report.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/staging_20260905.json:1-20
+  - docs/tools/build_docs.py:266-319
+  IMPACT: All four local format outputs and RTD copy locations are validated. This proves staging,
+    not account configuration or hosted publication. Final generated-asset checks remain.
+  NEXT: Check source/repository build assets, refresh stale documentation corpus inputs, and record
+    any concurrent-lane changes before handoff.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:25:06Z
+  TYPE: DECISION
+  CLAIM: All three package source-asset checks pass. Repository LLM src/tests/other fingerprints are
+    stale after the earlier committed implementation. There are no tracked src/tests edits in the
+    current worktree, but codex_1 has an untracked ordered-disposal component test. The only untracked
+    eligible docs input outside ContextCompass is docs/.gitignore.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/source_check_20260905.log:1-3
+  - artifacts/rtd_validation_20260904/repo_check_before_20260905.log:1-7
+  - llm_support/README.md:55-94
+  - Read-only git diff --name-only -- src tests and untracked-path inventory on 2026-09-05.
+  IMPACT: Regenerate existing tracked src/tests inputs; finish this docs bootstrap's other corpus with
+    --include-untracked so docs/.gitignore is included without staging. Do not capture or change the
+    other agent's unfinished untracked test; its owner will refresh that corpus at their own handoff.
+  NEXT: Regenerate the three LLM corpora and run their matching checks without changing the Git index.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:30:16Z
+  TYPE: DECISION
+  CLAIM: Owner reviewed the local preview positively and explicitly requested a prominent direct
+    documentation link in README. The header currently has only a small RTD status badge; its
+    documentation table is near the end. Add a centered Read the Documentation heading plus Examples
+    and Full Contents links below the badges, using the existing public melder.readthedocs.io base.
+  EVIDENCE:
+  - README.md:1-17
+  - README.md:1036-1052
+  - Owner README direct-link request on 2026-09-05.
+  IMPACT: This is an authorized publication-entry scope addition. Keep the four-level curriculum intact,
+    preserve the existing badge, and do not put a localhost address in the public README. The RTD
+    project is being added by the owner; current hosted reachability remains unverified.
+  NEXT: Add the README entry links and refresh the affected repository documentation bundle.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-CI/RTD per-format configuration and the native Sphinx handbook builders are implemented.
-ePub succeeded; PDF is 106 pages and visual QA is in progress. Source manifests are stale from
-docstring formatting changes; normal generated-asset refresh and all final checks remain.
-Owner handles commits/pushes and hosted publication depends on that signed revision reaching Git.
+CI/RTD per-format configuration, required CI documentation integration, and native handbook builders
+are implemented. The local site has 294 declared pages, including the four exact README levels,
+48 guide chapters, all 133 saved lesson pages, and expanded references.
+The source-link blocker is fixed: normal builds now pass all 35,119 local links and 36 docs tests.
+Final PDF/ePub visual/structural checks and complete HTML archive/RTD staging comparisons pass.
+Next: regenerate/check repository LLM bundles while excluding the other agent's unfinished test.
+Hosted project/account setup and live feature verification remain separate unfinished work.
+The owner's pause has ended with the current continue instruction. Owner handles every commit/push;
+preserve the concurrent disposal and workflow lanes. No completion or launch acceptance is claimed.

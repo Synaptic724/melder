@@ -21,10 +21,12 @@ archive readers and smoke-test environments must close/exit explicitly through c
 Reject changed prod, mismatched checkout/tag/package versions, missing/tampered/unsafe package
 members, unexpected distribution counts, failed runtime tests, and unsuccessful validation jobs.
 No upload happens after a failed guard. Do not use skip-existing to conceal a mismatched package.
+- Final review extension (2026-09-05): compare the live remote release tag target, not only its
+  event name. Missing/moved/malformed tag evidence fails closed; annotated tags are peeled.
 
 ## Dependencies and ordering
 Initial prod authorization -> fresh shared validation -> build and install verification ->
-publication environment -> retrieve artifacts -> repeat distribution/prod checks -> PyPI upload.
+publication environment -> retrieve artifacts -> repeat distribution/tag/prod checks -> PyPI upload.
 
 ## Validation expectations
 Tests prove stale-prod refusal, tag/version agreement, archive boundaries, and fresh dependency

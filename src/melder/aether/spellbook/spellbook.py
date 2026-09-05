@@ -202,7 +202,6 @@ class Spellbook(Cleanable):
         "_pending_structural_spells",
         "_phase_scheduler",
         "_phase_run_lock",
-        "_configured_disposal_method_names",
         "_spell_id_pool",
         "_spell_system_states",
         "_spell_ids",
@@ -278,7 +277,6 @@ class Spellbook(Cleanable):
         # a phase unit (worker thread) - that would deadlock against the
         # owning control thread.
         self._phase_run_lock: threading.RLock = threading.RLock()
-        self._configured_disposal_method_names: frozenset[str] | None = None
         self._conduit: Conduit | None = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame_name: str = aetheric_frame
@@ -704,8 +702,9 @@ class Spellbook(Cleanable):
     # -------------------------
 
     def _cleanup_core(self) -> None:
+        """Drop high-level references after owned children are cleaned, with logging last."""
 
-        # Nullify high-level refs (no try/catch for simple None assignments)
+        # Drop high-level refs (no try/catch for simple reference deletion).
         del self._bind
         del self._aetheric_frame_name
         del self._aetheric_frame
@@ -716,7 +715,6 @@ class Spellbook(Cleanable):
         del self._transaction_identity
         del self._pending_binding_frame_keys
         del self._pending_structural_spells
-        del self._configured_disposal_method_names
         del self._spell_system_states
         del self._configuration_locked
         del self._binds_before_configuration_count
@@ -4787,6 +4785,8 @@ class Spellbook(Cleanable):
               `_apply_add_to_index`.
             - Performs no active-map registration and claims no binding
               signature; the spell stays inactive until notched.
+            - Resolves disposal metadata once using the same ordered group
+              composition as active bind; staging does not change the index's selection.
 
         Args:
             spell (Any):
@@ -4802,7 +4802,11 @@ class Spellbook(Cleanable):
             binding_name (Optional[str]):
                 Secondary disambiguation key within the frame.
             disposal_method_names (Optional[Sequence[str]]):
-                Optional disposal method names to associate with the spell.
+                Ordered per-spell candidates, combined with configured book candidates.
+                Spell names come first by default; enforce_priority_disposal_methods=True
+                puts book names first in configuration order. Missing class-profile names
+                are skipped and duplicates retain their first occurrence. None or an empty
+                sequence still permits book methods to contribute.
             profile (str):
                 Spell profile family to attach after bind completion.
             **kwargs:
@@ -4836,21 +4840,6 @@ class Spellbook(Cleanable):
             try:
                 permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
                 existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
-                if self._configured_disposal_method_names is None:
-                    if disposal_method_names is not None:
-                        self._configured_disposal_method_names = frozenset(
-                            disposal_method_names
-                        )
-                    elif (
-                            self._configuration is not None
-                            and self._configuration.has_property("disposal_method_names")
-                    ):
-                        self._configured_disposal_method_names = frozenset(
-                            self._configuration.get_property("disposal_method_names")
-                        )
-                    else:
-                        self._configured_disposal_method_names = frozenset()
-
                 new_spell = self._bind.bind(
                     permissions=permissions_enum,
                     spell=spell,
@@ -4859,7 +4848,14 @@ class Spellbook(Cleanable):
                     profile=profile,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
-                    configured_disposal_method_names=self._configured_disposal_method_names,
+                    configured_disposal_method_names=(
+                        self._configuration.get_property("disposal_method_names")
+                        if self._configuration.has_property("disposal_method_names") else None
+                    ),
+                    disposal_method_names=disposal_method_names,
+                    enforce_priority_disposal_methods=self._configuration.get_property(
+                        "enforce_priority_disposal_methods"
+                    ),
                     # Owner ruling 2026-07-19: non-hook bind kwargs thread into
                     # Spell's construction (its native **kwargs metadata channel).
                     **{
@@ -5057,6 +5053,9 @@ class Spellbook(Cleanable):
             - The underlying registration semantics are identical whether the
               bind-family transaction window was opened explicitly or
               implicitly.
+            - Disposal names are resolved once for this binding. Both input
+              groups contribute, and the resolved order is included in spell_id.
+              A bind never establishes disposal candidates for a later binding.
 
         Args:
             spell (Any):
@@ -5074,7 +5073,11 @@ class Spellbook(Cleanable):
             profile (str):
                 Spell profile family to attach after bind completion.
             disposal_method_names (Optional[Sequence[str]]):
-                Optional disposal method names to associate with the spell.
+                Ordered per-spell candidates, combined with configured book candidates.
+                Spell names come first by default; enforce_priority_disposal_methods=True
+                puts book names first in configuration order. Missing class-profile names
+                are skipped and duplicates retain their first occurrence. None or an empty
+                sequence still permits book methods to contribute.
             **kwargs:
                 Optional lifecycle hooks:
                 - pre_hooks
@@ -5133,21 +5136,6 @@ class Spellbook(Cleanable):
             try:
                 permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
                 existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
-                if self._configured_disposal_method_names is None:
-                    if disposal_method_names is not None:
-                        self._configured_disposal_method_names = frozenset(
-                            disposal_method_names
-                        )
-                    elif (
-                            self._configuration is not None
-                            and self._configuration.has_property("disposal_method_names")
-                    ):
-                        self._configured_disposal_method_names = frozenset(
-                            self._configuration.get_property("disposal_method_names")
-                        )
-                    else:
-                        self._configured_disposal_method_names = frozenset()
-
                 new_spell = self._bind.bind(
                     permissions=permissions_enum,
                     spell=spell,
@@ -5156,7 +5144,14 @@ class Spellbook(Cleanable):
                     profile=profile,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
-                    configured_disposal_method_names=self._configured_disposal_method_names,
+                    configured_disposal_method_names=(
+                        self._configuration.get_property("disposal_method_names")
+                        if self._configuration.has_property("disposal_method_names") else None
+                    ),
+                    disposal_method_names=disposal_method_names,
+                    enforce_priority_disposal_methods=self._configuration.get_property(
+                        "enforce_priority_disposal_methods"
+                    ),
                     # Owner ruling 2026-07-19: non-hook bind kwargs thread into
                     # Spell's construction (its native **kwargs metadata channel).
                     **{
@@ -6490,6 +6485,8 @@ class Spellbook(Cleanable):
               transaction has claimed the owning spellbook EXCLUSIVE.
             - Preserves the single-conjure invariant and the original creation
               flow unchanged.
+            - Uses the disposal metadata established at bind without another
+              matching pass or private-mutation check.
         Threading:
             - The CONJURE embargo is acquired by `conjure()` BEFORE this method
               takes the Spellbook lock, preserving embargo-then-lock ordering so
@@ -6544,19 +6541,6 @@ class Spellbook(Cleanable):
                     f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
                     f"conduit_name={conduit_name})"
                 )
-            if self._configured_disposal_method_names is not None:
-                for spell in self._spells.values():
-                    if not isinstance(spell.disposal_method_names, frozenset):
-                        raise RuntimeError(
-                            "Spell disposal metadata must be frozen before conjure."
-                        )
-                    if spell.has_disposal_methods != bool(
-                            spell.disposal_method_names
-                    ):
-                        raise RuntimeError(
-                            "Spell disposal flags are inconsistent before conjure."
-                        )
-
             # Frame-wide spell_id integrity, checked BEFORE any conduit work.
             # Registration into the frame happens inside Conduit.__init__
             # (`_configure_conduit_state` -> `_add_spells_to_aether`), so a

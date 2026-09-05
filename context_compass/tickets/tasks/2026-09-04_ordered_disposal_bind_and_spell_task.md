@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-binding
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_binding_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-05T08:55:51Z
 
 ## Objective
 Each new Spell receives one ordered list composed from its own names and the book's names,
@@ -33,9 +33,10 @@ using the configured priority. Hash that same sequence and retain it directly on
 - Out of scope: compiler rewrite, disposal mutation after creation, new matching families.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner selected list composition and requested a bounded binding task.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Owner requested continuation after the verified configuration slice.
+  This begins producer preparation; the producer patch gate still precedes source edits.
 
 ## Required Reading and Evidence
 Use the component index's Spellbook Core and Binding Pipeline slices, then the graph index
@@ -104,8 +105,16 @@ for unordered inputs or add compatibility shims without a concrete requirement.
 - [ ] Phase 2 dependencies updated; owner acceptance precedes final closure.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false at ticket creation
-- ARTIFACT_PATHS: none yet; consume actual producer/code-description patch outputs first
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch_index.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_spellbook_binding.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_spellbook_binding_index.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_binding_pipeline.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_binding_pipeline_index.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_binding_order.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_binding_order_index.md`
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: accepted program closure
 
@@ -130,6 +139,147 @@ Record tactical findings with evidence and one NEXT action; keep settled policy 
   NEXT: After configuration verification, read the full binding implementations and patch contract.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T08:55:51Z
+  TYPE: PLAN
+  CLAIM: Continue on codex_features2 in melder_private. The prior configuration change is
+    present in commit 1d300462a and has no local source diff. Product scope is Spellbook,
+    Bind, and Spell plus their targeted tests. Holistic method/metadata reads already exist;
+    complete source-file reads are still required before editing these larger modules.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/configuration/spellbook_configuration.py:1128-1157`
+  - `context_compass/tickets/tasks/2026-09-04_disposal_priority_configuration_task.md`
+  - git branch/log/status and measured producer counts, 2026-09-05T08:55:51Z.
+  IMPACT: Preserve unrelated .gitignore and other-agent documentation/CI work. Do not commit,
+    push, change branch rules, or implement later runtime/replay phases.
+  NEXT: Read Bind (876 lines), Spell (1,656), and Spellbook (6,816) in explicit chunks;
+    then write the producer contracts and tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+### Producer read baseline
+- Bind SHA256: 40952842850327c688ce519dc7c445c49614a0c4c388747e0a417282b0fb5e9d.
+- Spell SHA256: a1658208382de2616cf7b6fcab3cfe7201e6210c1567e04f6f05fe13ef0169e9.
+- Spellbook SHA256: f262441e20aba07291982d5474ce79ef66da862d909e4c6b05150fe974cba052.
+- Whole-file reads complete: Bind 1-876, Spell 1-1656, Spellbook 1-6816.
+- All three SHA256 values still match the read baseline. No producer source edit yet.
+
+- DATETIME: 2026-09-05T08:57:39Z
+  TYPE: FACT
+  CLAIM: Complete Bind/Spell reads confirm the minimal producer seam: matching occurs before
+    sha256_profile and Spell construction; Spell stores names once and deletes its reference
+    at cleanup. Hook, context-factory, gate, cache, and mutation machinery does not need changes.
+    Spellbook initialization separately owns the first-bind latch targeted for removal.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/bind/bind.py:229-631`
+  - `src/melder/aether/spellbook/spell.py:287-603`
+  - `src/melder/aether/spellbook/spellbook.py:171-364`
+  IMPACT: Preserve all unrelated runtime synchronization. The inspector remains a hash helper
+    over resolved ordered inputs; do not introduce a separate disposal mutation protocol.
+  NEXT: Finish the complete Spellbook read before editing its lifecycle/forwarding sites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:09:22Z
+  TYPE: FACT
+  CLAIM: All three producer files are read completely and their hashes match. The latch
+    has exactly the known slot/init/core-cleanup, active/inactive selection, and conjure
+    expectation contacts. The rest of Spellbook borrows or moves existing Spells without
+    recomposing disposal policy. Exact parked-member lookup is _get_owned_spell; public
+    find_spell_by_id resolves the index's active member for any member id.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spellbook.py:171-364`
+  - `src/melder/aether/spellbook/spellbook.py:705-737`
+  - `src/melder/aether/spellbook/spellbook.py:1972-2031`
+  - `src/melder/aether/spellbook/spellbook.py:3154-3175`
+  - `src/melder/aether/spellbook/spellbook.py:4754-5295`
+  - `src/melder/aether/spellbook/spellbook.py:6473-6598`
+  IMPACT: Change only the producer data path; preserve admission, lookup/index selection,
+    ownership transfer, and existing-Spell lifecycle. Tests for staged metadata must inspect
+    the exact owned member and explicitly dispose staged test objects during teardown.
+  NEXT: Extend the patch contract and add focused producer tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:09:22Z
+  TYPE: MEASURE
+  CLAIM: Producer baseline passed: 370 tests across Bind unit, Spell unit, and the two
+    selected Spellbook component files before any producer source edits.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook/bind/test_bind.py tests/unit/melder/spellbook/test_spell.py tests/component/melder/spellbook/test_spellbook_component_bind.py tests/component/melder/spellbook/test_spellbook_component_spellbook.py -q -p no:cacheprovider
+  - Result: 370 passed in 0.81s, exit 0.
+  IMPACT: Existing producer behavior has a green baseline; old frozenset expectations must
+    be updated to the approved list contract, not protected by production compatibility branches.
+  NEXT: Read the affected test helpers/assertions, then stage the new order/hash regressions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T09:14:26Z
+  TYPE: PLAN
+  CLAIM: Producer architecture, both component contracts, and control-flow contract are
+    written, indexed, and read in order. Mapping: Spellbook forwarding/latch retirement ->
+    independent active/staged tests; Bind composition/SHA -> order/filter/duplicate/hash-seed
+    tests; Spell storage -> constructor reference/default-list tests and conjure list acceptance.
+  EVIDENCE:
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch.md:19-56`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_spellbook_binding.md:1-37`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_binding_pipeline.md:1-35`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_binding_order.md:1-33`
+  IMPACT: The producer entry gate is satisfied. Existing transaction/index code stays intact.
+    No runtime metadata copies, caches, or replay paths are changed in this task.
+  NEXT: Add the focused regression module, prove the red baseline, then patch the three producers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:29:27Z
+  TYPE: PLAN
+  CLAIM: REONBOARD is complete and the owner recertified codex_1. The active branch remains
+    codex_features2. Producer contracts and the new test module are present; no producer
+    source diff exists yet. Other agents have active CI, documentation, and corpus changes.
+  EVIDENCE:
+  - `context_compass/attention_board.md`
+  - `context_compass/mailbox_board.md`
+  - git status --short and git branch --show-current, 2026-09-05T09:29:27Z.
+  IMPACT: Resume this producer slice only. Preserve unrelated work, and do not commit or push.
+  NEXT: Reopen the producer patch contracts and source seams, then verify the staged red tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T09:32:47Z
+  TYPE: MEASURE
+  CLAIM: The staged producer regressions fail against the unchanged producers: 24 failed
+    in 1.80s. Failures expose discarded book names, shared first-bind names, frozenset storage,
+    unchanged SHA on reordered inputs, and wrong actual method order. The three source hashes
+    still match the recorded complete-read baseline. Relevant component/graph/test slices and
+    all four producer contracts were reread; graph source prose remains stale as already recorded.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/component/melder/spellbook/test_ordered_disposal_binding.py -q -p no:cacheprovider --tb=line
+  - `src/melder/aether/spellbook/bind/bind.py:229-631`
+  - `src/melder/aether/spellbook/spell.py:287-603`
+  - `src/melder/aether/spellbook/spellbook.py:4754-5295`
+  IMPACT: Patch mapping is unchanged: forwarding/latch -> independent binds; composition/SHA
+    -> order/filter/identity cases; direct Spell list storage -> ownership/default tests.
+    Staged red cases also hit old same-id collisions; do not patch unrelated runtime gates.
+  NEXT: Apply the three-producer correction and update obsolete frozenset test expectations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T09:36:45Z
+  TYPE: FACT
+  CLAIM: Implemented the three-producer correction. Spellbook forwards both groups and priority
+    without a shared latch; Bind resolves a list in selected group order before hashing and
+    construction; Spell retains the list and initializes a fresh empty default. Removed the
+    obsolete conjure frozenset/flag recheck. Updated old test expectations and added three
+    constructor/cleanup ownership cases. No synchronization or consumer implementation changed.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/bind/bind.py:229-447`
+  - `src/melder/aether/spellbook/spell.py:288-442`
+  - `src/melder/aether/spellbook/spellbook.py`
+  - `tests/unit/melder/spellbook/test_spell.py`
+  IMPACT: The patch is ready for focused verification; no passing result is claimed yet.
+  NEXT: Run the new producer regressions plus the existing four-file producer baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 No implementation yet. The policy is combined lists, False default, first occurrence wins.

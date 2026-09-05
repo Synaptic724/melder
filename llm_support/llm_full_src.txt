@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: ac7f5624502f622910481dc28fa7298890d6c743e043b8877656b4684695af7a
+SOURCE FINGERPRINT: 4b4380f264daae551b09e310660c85e8d48801071df8ec523c81d1c45097563d
 FILE COUNT: 584
 
 ================================================================================
@@ -42054,7 +42054,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 8409e7b80db2cb9828048b3804e8180e209fd2bed29433fcad8a2507f25851d9
+CONTENT SHA256: c450bcbef2c8c08de8dd776d1d8beed7029da0a0f9718b56114ebf7058e719e2
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -45392,7 +45392,7 @@ class Conduit(Cleanable):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduit.
+        conduit**.
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
 
@@ -67980,7 +67980,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 9b50eb996cefcfc567c011d3225731eca328f50fd0b273ad2401ca5ef7357dfc
+CONTENT SHA256: 5ddaa6fe38c41b929c3a98b3ddd13319b267b07d338b9962f70f19187e0e6a44
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -68156,7 +68156,7 @@ class Spell(Cleanable):
             contract used for internal coordination, graph wiring, diagnostics,
             and spell-system-state attachment.
 
-        *args / **kwargs:
+        args and kwargs:
             Arbitrary tags and metadata for internal use or future extensions.
 
     Threading / Concurrency:
@@ -130917,7 +130917,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: ba1ac70f12b83bc64ffd8371bba22b50db75d0af1c12af0dad4dcfb70c773e6f
+CONTENT SHA256: 951dc80bac21d76e584e43f5e199e9602b2d13c5e29987cb241a7b9a9439ab38
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -131037,7 +131037,7 @@ class Spellbook(Cleanable):
 
     Lifecycle / Cleanup:
         - This object owns local registries, contracted registries, validators, configuration,
-and logging.
+          and logging.
         - Cleanup is staged so component teardown happens under the lock first
           and high-level references are dropped afterward.
 
@@ -158996,7 +158996,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystallizer.py
-CONTENT SHA256: eb77a5a3087bb2bf7c2aa8b892ac9c4055c0400e90fbaab26af253ba50bcfc0e
+CONTENT SHA256: 2b4cd802c6f4ea047fa779bd03d65af18dfc758ace3273d47fded364c179563e
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -159093,7 +159093,7 @@ class Crystallizer(Cleanable):
     Registration:
         MELDER KERNEL - guarded, access=public. A process-wide singleton privately
         hosted by `Aether`; the user configures, activates, and drives it through
-        its facade verbs but never `bind()`s it - the guard refuses that.
+        its facade verbs but never registers it with `bind()` - the guard refuses that.
 
     Subsystem Context:
         The public facade and ownership ROOT of the crystallizer. It presents one

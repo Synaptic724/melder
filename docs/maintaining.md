@@ -32,7 +32,8 @@ python -m http.server 8765 --bind 127.0.0.1 --directory docs/_build/html
 
 The source and HTML directories under `docs/_build` are generated. The builder
 validates inputs before replacing its source output and refuses redirected cleanup
-paths. Edit canonical inputs, not generated pages.
+paths. Each build also refreshes Sphinx's reference environment so changed API
+import paths cannot reuse stale source-page backlinks. Edit canonical inputs, not generated pages.
 
 ## Add a chapter or page
 

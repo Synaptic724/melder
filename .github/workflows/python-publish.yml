@@ -88,9 +88,9 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
         run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
-      - name: Final prod check immediately before publication
-        # This runs AFTER environment approval and fails if prod moved while
-        # tests, builds, or a human approval were pending.
+      - name: Final tag and prod check immediately before publication
+        # This runs AFTER environment approval and fails if the release tag or
+        # prod moved while tests, builds, or a human approval were pending.
         run: python .github/scripts/ci_policy.py release-head
       - name: Publish freshly verified distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

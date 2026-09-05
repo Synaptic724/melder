@@ -7,7 +7,7 @@
 - Agent Name: codex_2
 - Priority: p2
 - Created: 2026-09-04T21:06:12Z
-- Updated: 2026-09-04T21:53:49Z
+- Updated: 2026-09-05T08:58:00Z
 - Target Window: Complete scope definition now; nine delivery stories govern implementation and launch.
 - Related Program/Initiative: Melder public documentation.
 
@@ -17,9 +17,9 @@ Beginner, Intermediate, Advanced, Expert. The site must make its 133 saved examp
 readers a complete table of contents for freely exploring any topic. ThreadFactory's build mechanics
 have been investigated; Melder's information architecture is defined independently here.
 
-The local Sphinx site now builds 194 pages, including all four learning levels, 48 guide chapters,
-and all 133 saved lesson pages. Reference expansion, CI/RTD configuration, offline outputs, and final
-quality/hosting verification remain.
+The local Sphinx site now builds 294 pages, including all four learning levels, 48 guide chapters,
+all 133 saved lesson pages, and expanded references. CI/RTD configuration and offline builders exist;
+source-link validation, final packaging/quality checks, and hosted verification remain.
 
 ## MRP Alignment
 Establish an understood, reproducible authoring/build/publishing model before committing to a site
@@ -60,8 +60,8 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 ## State Transition Event
 - from_state: in_progress
 - to_state: in_progress
-- transition_reason: Owner fixed the four-level hierarchy and requested the complete program definition;
-  blueprint and nine delivery stories are now defined, with implementation still outstanding.
+- transition_reason: Owner resumed after a commit pause and is adding the RTD project. Local content
+  and pipeline implementation exist; finish their validation while owner handles hosting setup.
 
 ## Success Metrics
 - Exactly four primary learning sections, with their established names/order/identifiers.
@@ -119,7 +119,8 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 | S9 | [Quality and launch](../stories/2026-09-04_rtd_quality_and_launch_story.md) | Integrated evidence, publication verification, maintenance | S1-S8 |
 
 All nine stories have bounded execution tasks. Foundation, catalog, and all curricula are implemented;
-integrated reference, hosting, and quality work remains. Keep one documentation task actively routed.
+reference content and pipeline implementation exist; final packaging, hosting, and quality verification
+remain. Keep one documentation task actively routed.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] [Understand ThreadFactory's Sphinx/RTD setup](../tasks/2026-09-04_readthedocs_sphinx_reference_discovery_task.md).
@@ -149,7 +150,8 @@ integrated reference, hosting, and quality work remains. Keep one documentation 
 ## Validation / Test Approach
 - Current evidence: complete reference build/config reads and representative API page reads.
 - Public ThreadFactory landing and ConcurrentDict pages were retrieved and contain rendered API data.
-- Local Sphinx builds: strict HTML build passes at 194 pages.
+- Local Sphinx rendering builds 294 pages; independent navigation validation currently fails on 19 backlinks.
+- Focused CI workflow checks: 127 passed. Offline artifacts built; final review and packaging remain.
 - Saved lesson execution: all 133 scripts have passed; Expert ProtocolCrafter needed one unchanged
   retry outside the sandbox for Windows temporary-directory ACLs. This verifies executed assertions
   and handled outcomes, not every prose claim or universal runtime correctness.
@@ -474,6 +476,22 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T08:58:00Z
+  TYPE: DECISION
+  CLAIM: The local program has reached 294 declared pages with expanded references, mandatory docs CI,
+    RTD per-format configuration, and native PDF/ePub builders. It is not release-ready: independent
+    validation found 19 source-page backlinks to incorrect API fragments. The owner paused to commit,
+    then instructed continue and is now adding the project on the Read the Docs website.
+  EVIDENCE:
+  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:73-174
+  - docs/_build/site-check.json:1-26
+  - Owner continue and RTD website setup instructions on 2026-09-05.
+  IMPACT: Agent finishes local build/download validation while owner handles account setup and all
+    commits/pushes. A configured project alone does not prove a hosted build or working reader features.
+  NEXT: Finish the active CI/offline task and record the owner's project URL/branch when supplied.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -485,9 +503,11 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
 - Append corrections when new evidence or owner direction changes earlier conclusions.
 
 ## Context / Handoff Summary
-codex_2 owns this implementation. The strict local build has 194 pages: exactly Beginner,
+codex_2 owns this implementation. The local Sphinx build has 294 pages: exactly Beginner,
 Intermediate, Advanced, Expert; 48 guide chapters; all 133 canonical lesson pages; full contents and
 filterable examples. All saved scripts have passed their harness checks, with one environment-only
 ProtocolCrafter retry. All 36 Expert sources were read and limits recorded in its task.
-Next: reference/API/architecture integration, followed by CI/RTD/offline/quality work.
-Owner handles all commits and pushes. Preserve other agents' CI/disposal work.
+Reference/API/architecture integration, CI/RTD configuration, and offline builders exist.
+Next: resolve 19 source-page backlinks, finish offline review/staging and bundle checks, then perform
+integrated quality/hosted verification. The owner resumed after pausing and is adding the RTD project.
+Owner handles all commits/pushes and account setup. Preserve other agents' CI/disposal work.

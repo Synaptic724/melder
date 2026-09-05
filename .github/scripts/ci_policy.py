@@ -129,13 +129,53 @@ def git_output(arguments: Sequence[str]) -> str:
     return result.stdout.strip()
 
 
+def remote_tag_commit(output: str, tag: str) -> str:
+    """Resolve one exact remote tag from Git's tab-separated ref advertisement.
+
+    Annotated tags advertise both the tag object and a peeled target; use the
+    target when present. Missing, duplicate, or malformed identity evidence raises
+    ValueError. Exact matching avoids accepting a suffix match from ls-remote's
+    glob rules. No tags are fetched, created, updated, or trusted from local state.
+    """
+    ref = f"refs/tags/{text_value(tag, 'release.tag_name')}"
+    observed: dict[str, str] = {}
+    for line in output.splitlines():
+        if not line:
+            continue
+        fields = line.split("\t")
+        if len(fields) != 2:
+            raise ValueError("Malformed remote tag advertisement; refusing publication.")
+        sha, name = fields
+        if name not in (ref, ref + "^{}"):
+            continue
+        if name in observed or re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", sha) is None:
+            raise ValueError("Ambiguous or invalid remote release-tag identity.")
+        observed[name] = sha
+    if ref not in observed:
+        raise ValueError(f"Release tag {tag!r} is missing from origin; refusing publication.")
+    return observed.get(ref + "^{}", observed[ref])
+
+
+def current_release_tag(event: Mapping[str, object]) -> str:
+    """Read the release tag's live target without relying on checkout-cached tags."""
+    release = object_value(event.get("release"), "release")
+    tag = text_value(release.get("tag_name"), "release.tag_name")
+    ref = f"refs/tags/{tag}"
+    return remote_tag_commit(
+        git_output(("ls-remote", "--exit-code", "--tags", "origin", ref, ref + "^{}")), tag,
+    )
+
+
 def validate_release(event_name: str, ref: str, event: Mapping[str, object],
-                     event_sha: str, checkout_sha: str, prod_sha: str) -> None:
+                     event_sha: str, checkout_sha: str, prod_sha: str,
+                     tag_sha: Optional[str] = None) -> None:
     """Require a final release/manual-prod event and exact current-prod commit identity.
 
     Published prereleases are not final publication authorization. Manual dispatch
-    must select prod. All three SHAs must be full hexadecimal commit IDs and equal;
-    a prod movement since qualification raises ValueError. No branches are modified.
+    must select prod. Event, checkout, and prod SHAs must be full commit IDs and
+    equal. Release events also require the live remote tag target to equal that
+    commit. Moved/missing tag evidence or prod movement raises ValueError. No
+    branches or tags are modified, and manual prod dispatch does not need a tag.
     """
     if event_name == "release":
         release = object_value(event.get("release"), "release")
@@ -146,6 +186,8 @@ def validate_release(event_name: str, ref: str, event: Mapping[str, object],
         tag = text_value(release.get("tag_name"), "release.tag_name")
         if ref != f"refs/tags/{tag}":
             raise ValueError("The release tag does not match the workflow ref.")
+        if tag_sha is None:
+            raise ValueError("Live remote release-tag identity is required before publication.")
     elif event_name != "workflow_dispatch" or ref != "refs/heads/prod":
         raise ValueError("Manual publication must run on prod; PR/push events cannot publish.")
     for sha in (event_sha, checkout_sha, prod_sha):
@@ -155,6 +197,11 @@ def validate_release(event_name: str, ref: str, event: Mapping[str, object],
         raise ValueError(
             f"Publication requires current prod HEAD: event={event_sha}, "
             f"checkout={checkout_sha}, prod={prod_sha}. Requalify the intended release."
+        )
+    if event_name == "release" and tag_sha != event_sha:
+        raise ValueError(
+            f"Release tag no longer points to the qualified commit: tag={tag_sha}, "
+            f"qualified={event_sha}. Requalify the intended release."
         )
 
 
@@ -187,13 +234,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             if collisions:
                 raise ValueError(f"Tracked paths collide case-insensitively: {collisions}")
         else:
+            event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+            event = read_event()
+            tag_sha = current_release_tag(event) if event_name == "release" else None
+            # Read prod after the tag so the last remote query remains the
+            # current production-head check immediately before publication.
             git_output(("fetch", "--no-tags", "origin",
                         "+refs/heads/prod:refs/remotes/origin/prod"))
             event_sha = text_value(os.environ.get("GITHUB_SHA"), "GITHUB_SHA")
-            validate_release(os.environ.get("GITHUB_EVENT_NAME", ""),
-                             os.environ.get("GITHUB_REF", ""), read_event(), event_sha,
+            validate_release(event_name, os.environ.get("GITHUB_REF", ""), event, event_sha,
                              git_output(("rev-parse", "HEAD^{commit}")),
-                             git_output(("rev-parse", "refs/remotes/origin/prod^{commit}")))
+                             git_output(("rev-parse", "refs/remotes/origin/prod^{commit}")),
+                             tag_sha=tag_sha)
     except (ValueError, KeyError, OSError, subprocess.CalledProcessError) as error:
         print(f"CI gate refused: {error}", file=sys.stderr)
         return 1

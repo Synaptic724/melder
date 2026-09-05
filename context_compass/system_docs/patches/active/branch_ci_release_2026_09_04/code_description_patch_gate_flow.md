@@ -12,8 +12,10 @@ The change introduces branch policy and dependency-result gates, plus a publicat
    when required, otherwise success or intentionally skipped. Malformed/missing state fails.
 6. For publication, require the selected event commit and checkout to equal fetched prod at entry.
 7. Execute fresh checks and build; do not reuse a historical dev/preprod success as a substitute.
-8. After publication environment admission, verify downloaded distributions and repeat the prod
-   equality check as the last local step before upload.
+8. After publication environment admission, verify downloaded distributions. For release events,
+   query the exact remote tag and prefer its peeled target for annotated tags; require it to match
+   the selected event/checkout commit. Fetch/check prod last, immediately before upload. Missing,
+   moved, malformed, or ambiguous tag evidence refuses publication. Manual prod dispatch has no tag.
 
 ## Edge/error and rollback semantics
 Treat all metadata as input data. Unsupported routes/events fail; never silently default a package
