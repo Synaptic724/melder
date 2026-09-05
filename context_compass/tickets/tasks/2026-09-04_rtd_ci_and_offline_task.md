@@ -524,6 +524,53 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: HELPFUL
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T14:47:08Z
+  TYPE: FACT
+  CLAIM: Owner reports the same CI fingerprint failure after recommitting. Their GitHub screenshot
+    and local HEAD agree on codex_features2 at 2d5053c. Local status shows only .gitignore modified
+    outside excluded ContextCompass artifacts; its uncommitted addition is /_readthedocs/.
+  EVIDENCE:
+  - Owner GitHub screenshot showing codex_features2 and 2d5053c.
+  - git status --short; git log -1; git diff -- .gitignore.
+  - .gitignore:75-78
+  IMPACT: The generated other corpus may include an input edit omitted from the commit. Compare
+    manifest, worktree, and committed hashes rather than rerunning a no-op generator.
+  NEXT: Verify the .gitignore content hash against the manifest and HEAD.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T14:49:24Z
+  TYPE: FACT
+  CLAIM: Root cause confirmed: other manifest's .gitignore content hash matches the worktree
+    (916ef0cf5e8840ebe57d97f1ac458012a8efdbc0e352d3a711847f9517892d19) but not HEAD
+    (f0ca9f453ed4e10718232641f8ee7fc64a4b59a84ed44c8bc805fe8e38192617).
+    The worktree contains /_readthedocs/; committed .gitignore does not. Local regeneration is
+    correctly a no-op because outputs already encode that uncommitted input.
+  EVIDENCE:
+  - .gitignore:75-78
+  - llm_support/manifest.json:corpora.other.files[.gitignore].content_sha256
+  - Normalized SHA256 comparison of worktree bytes and git show HEAD:.gitignore.
+  IMPACT: Include the existing .gitignore edit in the owner's next commit. Stage only that missing
+    input, preserving other agents' work and leaving all commits/pushes to the owner.
+  NEXT: Stage .gitignore and verify its indexed hash plus the complete corpus check.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T14:52:13Z
+  TYPE: MEASURE
+  CLAIM: Staged only the existing .gitignore correction. Its indexed normalized hash now matches
+    the committed generated manifest exactly. The full python llm_support/_builder.py --check
+    succeeds for src, tests, and other. No bundle regeneration was needed and no commit/push ran.
+  EVIDENCE:
+  - git show :.gitignore normalized hash comparison: match True.
+  - python llm_support/_builder.py --check: all three corpora OK, exit 0.
+  - git status --short: M in the index column for .gitignore.
+  IMPACT: The owner can commit the staged missing input and rerun CI. This fixes the identified
+    committed-input discrepancy; success of the next hosted CI run remains to be observed.
+  NEXT: Owner commits/pushes staged .gitignore and reruns CI before promotion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
