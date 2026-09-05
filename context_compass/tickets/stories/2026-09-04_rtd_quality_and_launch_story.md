@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-04-rtd-quality-and-launch
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-04T21:36:46Z
+- Updated: 2026-09-05T11:55:00Z
 
 ## User Narrative
 As a reader and maintainer, I can trust that the released site is complete, navigable, accessible, and
@@ -47,8 +47,9 @@ Close the program on demonstrated reader outcomes and maintainability, not merel
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Quality and launch scope defined; no implementation or release executed.
+- to_state: in_progress
+- transition_reason: Owner explicitly requested the remaining audit and hosted verification; the
+  quality task is active, with final source qualification coordinated with the runtime lane.
 
 ## Dependencies / Related Work
 Use S1-S8 ownership to route defects. The parent epic remains open until this story and all others are accepted.

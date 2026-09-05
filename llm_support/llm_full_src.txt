@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 9f872d650279985abcdfdd2553546bea0ffc23bacefd3448fedb8ac0e19ee109
+SOURCE FINGERPRINT: 9bde848bca74e3a3d85fc297c955335640f528cc32e510f4fca99b95c4e0ca90
 FILE COUNT: 584
 
 ================================================================================
@@ -131007,7 +131007,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: e1ea13ed0608832ec7c7a23c8bc198c289822e7a742bb35f8c4391e17567d97a
+CONTENT SHA256: 6d53d170189387d61cf76e1a86205fa667f43a9626b2735e94667c574b4b786f
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -135815,10 +135815,10 @@ class Spellbook(Cleanable):
                 Secondary disambiguation key within the frame.
             disposal_method_names (Optional[Sequence[str]]):
                 Ordered per-spell candidates, combined with configured book candidates.
-                Spell names come first by default; enforce_priority_disposal_methods=True
-                puts book names first in configuration order. Missing class-profile names
-                are skipped and duplicates retain their first occurrence. None or an empty
-                sequence still permits book methods to contribute.
+                The complete matching book block comes last by default, first with
+                enforce_priority_disposal_methods=True. Shared names belong to that block
+                in both modes; spell-only names keep their supplied order. Missing names
+                are skipped and duplicates run once. Empty input still permits book methods.
             profile (str):
                 Spell profile family to attach after bind completion.
             **kwargs:
@@ -136086,10 +136086,10 @@ class Spellbook(Cleanable):
                 Spell profile family to attach after bind completion.
             disposal_method_names (Optional[Sequence[str]]):
                 Ordered per-spell candidates, combined with configured book candidates.
-                Spell names come first by default; enforce_priority_disposal_methods=True
-                puts book names first in configuration order. Missing class-profile names
-                are skipped and duplicates retain their first occurrence. None or an empty
-                sequence still permits book methods to contribute.
+                The complete matching book block comes last by default, first with
+                enforce_priority_disposal_methods=True. Shared names belong to that block
+                in both modes; spell-only names keep their supplied order. Missing names
+                are skipped and duplicates run once. Empty input still permits book methods.
             **kwargs:
                 Optional lifecycle hooks:
                 - pre_hooks
@@ -154666,7 +154666,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/graft_runner.py
-CONTENT SHA256: c81f8220cdf8bdbb4eb80097fcbd9a023666db59f68e4c8a6d3c7ba58fb24e60
+CONTENT SHA256: 354ec24b4078c73e3f2793418c6f6fe36bb71820d910da25ddfd084ddc71550c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -154690,7 +154690,10 @@ skip_resident, identically in both modes. Grafts are user-verb activity
 """
 
 import importlib
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.persistence.record_version import RecordVersion
@@ -154978,16 +154981,16 @@ class GraftRunner(Cleanable):
                 "a fresh index needs its anchor bind."
             )
 
-        live_index_id, bound = self._bind_selected(
+        live_index, bound = self._bind_selected(
             str(selected_id), members, shortfalls
         )
         parked = self._park_members(
-            str(selected_id), members, host_conduit, shortfalls
+            str(selected_id), members, host_conduit, shortfalls, live_index
         )
         return {
             "status": "complete",
             "recorded_index_id": str(self._record.get("index_id")),
-            "live_index_id": live_index_id,
+            "live_index_id": live_index.id if live_index is not None else None,
             "merged_into_existing": False,
             "selection_adopted": True,
             "members_bound": bound,
@@ -155044,7 +155047,7 @@ class GraftRunner(Cleanable):
             selected_id: str,
             members: Dict[str, Dict[str, object]],
             shortfalls: List[Dict[str, object]],
-    ) -> tuple:
+    ) -> Tuple[Optional[SpellIndex], int]:
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
@@ -155057,7 +155060,9 @@ class GraftRunner(Cleanable):
                 Collector for honest rows.
 
         Returns:
-            tuple: (live_index_id or None, members_bound count).
+            Tuple[Optional[SpellIndex], int]: Newly bound index (borrowed) and
+                member count. Parking uses this actual result because receiving
+                book policy can change the bound member's SHA.
 
         Raises:
             ValueError: If the selected member's target cannot hydrate
@@ -155084,10 +155089,10 @@ class GraftRunner(Cleanable):
             profile=str(crystal.get("profile_family", "general")),
         )
         live_spell = self._host_book.find_spell_by_id(new_spell_id)
-        live_index_id = (
-            live_spell.spell_index.id if live_spell is not None else None
+        live_index = (
+            live_spell.spell_index if live_spell is not None else None
         )
-        return live_index_id, 1
+        return live_index, 1
 
     def _park_members(
             self,
@@ -155095,27 +155100,27 @@ class GraftRunner(Cleanable):
             members: Dict[str, Dict[str, object]],
             host_conduit: Any,
             shortfalls: List[Dict[str, object]],
+            anchor_index: Optional[SpellIndex],
     ) -> int:
         """
         Park every non-selected member onto the fresh live index.
 
         Args:
             selected_id:
-                The already-bound anchor member.
+                Recorded anchor member ID, used to exclude its custody row.
             members:
                 Graftable member map.
             host_conduit:
                 The host book's live conduit (bind_inactive host).
             shortfalls:
                 Collector for honest rows.
+            anchor_index:
+                Actual index returned by the selected bind, borrowed for this call.
+                No recorded-SHA lookup is needed after receiving-book composition.
 
         Returns:
             int: Members parked.
         """
-        anchor_spell = self._host_book.find_spell_by_id(selected_id)
-        anchor_index = (
-            anchor_spell.spell_index if anchor_spell is not None else None
-        )
         parked = 0
         for spell_id, entry in members.items():
             if spell_id == selected_id:
@@ -155137,6 +155142,7 @@ class GraftRunner(Cleanable):
                 permissions=str(crystal.get("permissions_name", "create")),
                 spellframe=crystal.get("spellframe_name"),
                 binding_name=crystal.get("binding_name"),
+                disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
             )
             parked += 1
@@ -155160,9 +155166,9 @@ class GraftRunner(Cleanable):
             selection. Index internals stay untouched.
 
         Contract:
-            - Spell SHAs are content-derived and stable, so the
-              recorded selected id addresses the freshly parked live
-              spell directly for the adoption notch.
+            - Receiving-book policy applies at each bind. Selection adoption
+              follows the live ID returned by the selected member's bind,
+              which may differ from its recorded SHA.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
 
@@ -155180,20 +155186,24 @@ class GraftRunner(Cleanable):
             Tuple[int, bool]: (members parked, selection adopted).
         """
         parked = 0
+        live_selected_id: Optional[str] = None
         for spell_id, entry in members.items():
             crystal = dict(entry.get("payload", {}))
             target = self._hydrate(spell_id, crystal, shortfalls)
             if target is None:
                 continue
-            host_conduit.bind_inactive(
+            new_spell_id = host_conduit.bind_inactive(
                 spell=target,
                 spell_index=self._merge_into_index,
                 existence=str(crystal.get("existence_name", "unique")),
                 permissions=str(crystal.get("permissions_name", "create")),
                 spellframe=crystal.get("spellframe_name"),
                 binding_name=crystal.get("binding_name"),
+                disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
             )
+            if spell_id == str(selected_id):
+                live_selected_id = new_spell_id
             parked += 1
         selection_adopted = False
         if self._adopt_recorded_selection:
@@ -155207,8 +155217,8 @@ class GraftRunner(Cleanable):
             # member is parked by construction). Read-only seam; the
             # mediated write remains the public notch verb below.
             adopted_spell = (
-                self._host_book._get_owned_spell(str(selected_id))
-                if selected_id is not None
+                self._host_book._get_owned_spell(live_selected_id)
+                if live_selected_id is not None
                 else None
             )
             if adopted_spell is None:
@@ -156257,7 +156267,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/load_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/restore_engine.py
-CONTENT SHA256: 22ec5cb284d416da2eb96765f22fadd26ae62bab27d22c20cd2bb74eb2687310
+CONTENT SHA256: 5f3ae5812dc3ac03d33340b7adf8c8f7b6bfa59d9f9d710ab3999c9e7ce7647f
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -156526,7 +156536,11 @@ class RestoreReport(Cleanable):
 
     def map_identity(self, recorded_id: str, live_id: str) -> None:
         """
-        Record one recorded-ULID -> fresh-live-identity translation.
+        Record one recorded identity -> actual live identity translation.
+
+        Structural ULIDs are always translated. Spell SHA entries are added
+        when a new bind's resolved signature differs from its recorded one;
+        unchanged content IDs remain directly addressable without an entry.
 
         Args:
             recorded_id:
@@ -157984,8 +157998,9 @@ class RestoreEngine(Cleanable):
               self-admits its window), the recorded root conduit conjures,
               staged members bind_inactive onto their live anchors POST-
               conjure, then divergent selections notch.
-            - Spell SHAs are content-derived and stay STABLE across restore;
-              only index/conduit/contract/cluster ULIDs need translation.
+            - Spell SHAs stay stable when recorded signature and receiving policy
+              agree. A changed signature maps to the actual bind result in the
+              existing report, before member/selection/contract references replay.
 
         Returns:
             None.
@@ -158171,11 +158186,15 @@ class RestoreEngine(Cleanable):
         """
         Replay one ACTIVE bind from its custody payload.
 
+        Contract:
+            Forward ordered disposal names through normal book composition.
+            Record a changed SHA before resolving dependent staged members.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
             spell_id:
-                Recorded (content-stable) spell SHA.
+                Recorded spell SHA; receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
@@ -158197,6 +158216,8 @@ class RestoreEngine(Cleanable):
             profile=str(crystal.get("profile_family", "general")),
         )
         self._report.record_built("spell_active")
+        if new_spell_id != spell_id:
+            self._report.map_identity(spell_id, new_spell_id)
         live_spell = spellbook.find_spell_by_id(new_spell_id)
         recorded_index_id = self._index_id_for_member(spell_id)
         if recorded_index_id is not None and live_spell is not None:
@@ -158214,13 +158235,17 @@ class RestoreEngine(Cleanable):
         """
         Replay one STAGED member onto its live index anchor.
 
+        Contract:
+            Retain the ordered recorded names and map any changed bind identity
+            before the selection stage resolves this exact parked member.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
             conduit:
                 The live conduit hosting `bind_inactive`.
             spell_id:
-                Recorded (content-stable) spell SHA.
+                Recorded spell SHA; receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
@@ -158246,15 +158271,18 @@ class RestoreEngine(Cleanable):
         target = self._hydrate_target(spell_id, crystal)
         if target is None:
             return
-        conduit.bind_inactive(
+        new_spell_id = conduit.bind_inactive(
             spell=target,
             spell_index=anchor,
             existence=str(crystal.get("existence_name", "unique")),
             permissions=str(crystal.get("permissions_name", "create")),
             spellframe=crystal.get("spellframe_name"),
             binding_name=crystal.get("binding_name"),
+            disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
         )
+        if new_spell_id != spell_id:
+            self._report.map_identity(spell_id, new_spell_id)
         self._report.record_built("spell_staged")
 
     def _enforce_selections(
@@ -158265,6 +158293,10 @@ class RestoreEngine(Cleanable):
     ) -> None:
         """
         Notch rebuilt indexes whose live selection diverges from record.
+
+        Contract:
+            Translate changed bind identities and resolve the exact owned member,
+            including parked members, rather than the index's active projection.
 
         Args:
             spellbook_id:
@@ -158283,8 +158315,10 @@ class RestoreEngine(Cleanable):
             selected = payload.get("selected_spell_id")
             if selected is None:
                 continue
+            # Unchanged content IDs need no translation entry.
+            live_selected_id = self._report.translate(str(selected)) or str(selected)
             anchor = self._live_index_for(spellbook, index_id)
-            if anchor is None or anchor.selected_spell_id == selected:
+            if anchor is None or anchor.selected_spell_id == live_selected_id:
                 continue
             if conduit is None:
                 self._report.add_shortfall(
@@ -158292,7 +158326,7 @@ class RestoreEngine(Cleanable):
                     "selection_requires_conduit_none_recorded",
                 )
                 continue
-            live_spell = spellbook.find_spell_by_id(str(selected))
+            live_spell = spellbook._get_owned_spell(live_selected_id)
             if live_spell is None:
                 self._report.add_shortfall(
                     "spell_index", index_id,
@@ -158329,6 +158363,10 @@ class RestoreEngine(Cleanable):
         """
         Resolve one recorded index to its live rebuilt SpellIndex.
 
+        Contract:
+            Member lookup follows changed Spell IDs in the existing report map.
+            Unchanged content IDs resolve directly; index identity is always translated.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
@@ -158350,7 +158388,8 @@ class RestoreEngine(Cleanable):
         if selected is not None:
             candidates.insert(0, selected)
         for member_id in candidates:
-            live_spell = spellbook.find_spell_by_id(str(member_id))
+            live_member_id = self._report.translate(str(member_id)) or str(member_id)
+            live_spell = spellbook.find_spell_by_id(live_member_id)
             if live_spell is not None:
                 if live_spell.spell_index.id == live_index_id:
                     return live_spell.spell_index
@@ -158589,8 +158628,9 @@ class RestoreEngine(Cleanable):
         Stage 9 (LAST): re-grant recorded contract details.
 
         Contract:
-            - Spell SHAs are content-stable, so detail spell ids replay
-              as-recorded; conduit endpoints translate via the identity map.
+            - Detail Spell IDs follow recorded-to-live translation when a bind
+              changed its signature; unchanged SHAs remain direct. Conduit
+              endpoints translate through the same existing identity map.
             - Ward record truth: a plain detail lives in the map of the
               side that OWNS the lineage ("initiated" via the link-time
               bulk grant, "received" via the borrow verb, which files
@@ -158625,6 +158665,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Identical semantics to the historical stage loop body: detail
             re-grants run borrower-called inside link-transaction windows;
+            changed Spell IDs translate to the actual rebuilt bind identities;
             endpoint absence files the honest shortfall; index
             subscriptions are reported (first cut). Contracts are
             independent of one another; the parallel driver runs one unit
@@ -158661,11 +158702,13 @@ class RestoreEngine(Cleanable):
                 # called naming the owner (the ward eligibility check
                 # demands the `conduit` argument own the spell).
                 borrower = side_b if granter is side_a else side_a
+                recorded_spell_id = str(detail.get("spell_id"))
+                live_spell_id = self._report.translate(recorded_spell_id) or recorded_spell_id
                 with borrower.transaction(
                         "link", conduits=[borrower, granter]
                 ):
                     borrower.add_spell_to_contract(
-                        spell_id=str(detail.get("spell_id")),
+                        spell_id=live_spell_id,
                         conduit=granter,
                         permissions=str(
                             detail.get("permissions", "create")
@@ -164000,7 +164043,7 @@ END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystals/spell_crystal.py
-CONTENT SHA256: f3f68efe9deb836cc4d081bde5d33bc6a38f636e109e1489592803213d2adf4d
+CONTENT SHA256: edf473e14511f07bef6db17a5177fb125f3aef7dd372cb9dc0ff6a7c72d44632
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -164171,6 +164214,8 @@ class SpellCrystal(Cleanable):
               and stores the returned result (V3 carrier law).
             - Does not retain the live `Spell`, the live root target
               reference, or the analyzer after construction.
+            - Captures resolved disposal names in execution order. This detached
+              persistence value does not sort or reapply book policy.
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -164283,7 +164328,7 @@ class SpellCrystal(Cleanable):
         # is derived from the attached profile object's TYPE NAME so this
         # module never imports examiner types (typing-only pressure stays
         # zero and the crystal remains pure data).
-        self._disposal_method_names: List[str] = sorted(
+        self._disposal_method_names: List[str] = list(
             spell.disposal_method_names
         )
         self._profile_family: str = (
@@ -164658,8 +164703,9 @@ class SpellCrystal(Cleanable):
 
         Returns:
             List[str]:
-                Detached, sorted disposal method-name list (empty when the
-                spell declared none).
+                Detached disposal method-name list in recorded execution order
+                (empty when the spell declared none). Replay applies the receiving
+                book's normal bind policy; the crystal never recomposes the list.
         """
         self.check_cleaned()
         with self._lock:

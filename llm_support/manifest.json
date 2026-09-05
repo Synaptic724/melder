@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2603084,
-        "lines": 64708,
+        "bytes": 2607971,
+        "lines": 64813,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "97bbc6207215097413e951488d1988950827e6d55966b37256b3a1a47dc685ce"
+        "sha256": "0d84adc62299caaba2a15415961dbc8b2f9139e65bd9b17d338272a527c699ed"
       },
-      "content_bytes": 2406231,
-      "content_lines": 61886,
+      "content_bytes": 2411118,
+      "content_lines": 61991,
       "file_count": 352,
       "files": {
         ".gitattributes": {
@@ -162,9 +162,9 @@
           "source_encoding": "utf-8"
         },
         "README.md": {
-          "content_bytes": 47264,
-          "content_lines": 1090,
-          "content_sha256": "0446d4f1b7964399b418709d345444cc70b07ac9e01c46b13aee33fa5e992ec1",
+          "content_bytes": 47683,
+          "content_lines": 1099,
+          "content_sha256": "86876ff167f1b5a074a00b14a3a7df3b7f06a9d81c2bf20b92d74eebaf6e2ce5",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/01_beginner/01_hello_meld.py": {
@@ -372,9 +372,9 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/01_beginner/35_disposal_multiple_methods.py": {
-          "content_bytes": 980,
-          "content_lines": 36,
-          "content_sha256": "5cbfbc89440633d328cbbea315bb455d6049b1b246c4f967ff2fb455fb574a79",
+          "content_bytes": 1273,
+          "content_lines": 41,
+          "content_sha256": "9ea0cbc6118ad6aad7a142a1a2ffef385df1543eb7db14e081ec0d4a0b0abe84",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py": {
@@ -612,15 +612,15 @@
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_frozen_law.py": {
-          "content_bytes": 2531,
-          "content_lines": 65,
-          "content_sha256": "9b56b9868eac607c086c69d830f0c4c4755dfb60e366fdf7d3cb9cc854baf727",
+          "content_bytes": 4246,
+          "content_lines": 105,
+          "content_sha256": "b73820941c2ab1c03adee328bd256ac8b91c8d4893268f372e8a035cee1f298c",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py": {
-          "content_bytes": 3903,
-          "content_lines": 93,
-          "content_sha256": "5c8fe7180549638ae000a06d65502d2dc2a25a5abcf4b2928a9a2a6b8c86939f",
+          "content_bytes": 4201,
+          "content_lines": 97,
+          "content_sha256": "6a44d0fd46ef691478804deb4b43947ea3d6a8c773b5cf1b87acb78fa481c828",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/02_intermediate/32_config_meld_hooks.py": {
@@ -1908,9 +1908,9 @@
           "source_encoding": "utf-8"
         },
         "docs/intermediate/configuration.md": {
-          "content_bytes": 1906,
-          "content_lines": 39,
-          "content_sha256": "2e8cbe31005aa11136887b6f4be434fc5bea0f18752a3c9acaab00febeef3353",
+          "content_bytes": 4068,
+          "content_lines": 86,
+          "content_sha256": "e13ab7d69d3014307dcdbadf610e863220aedc9eaa001b1972f36772bcb9e2ca",
           "source_encoding": "utf-8"
         },
         "docs/intermediate/connected-subsystems.md": {
@@ -2125,22 +2125,22 @@
         }
       },
       "index": {
-        "bytes": 59433,
+        "bytes": 59434,
         "lines": 374,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "807362e681e99f93228fe1b5c709b8b6941309501dad6d9ac873a3b783c45611"
+        "sha256": "9359fb8a73d43d8c3baa924e4fc2f2ff03117ad3e825d76a1ba84d5515a9c62f"
       },
-      "source_fingerprint": "8a9e936cbdf334eb52913658c2834b5c8386b30c5fd41c704b2adf934d785861"
+      "source_fingerprint": "4432a01fa17154a2c26382a442a4afa187771243807316657b629cecbe31a272"
     },
     "src": {
       "bundle": {
-        "bytes": 10764994,
-        "lines": 275522,
+        "bytes": 10768035,
+        "lines": 275568,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "944b9bcce1971b36382beb60cb7b9abc418a4e9a0e53ed55ac7462baf924f189"
+        "sha256": "53e6275aaa5a525b33bc0e86e2463d2912c659e6a845cf1ecdce83b752b5862c"
       },
-      "content_bytes": 10408964,
-      "content_lines": 270844,
+      "content_bytes": 10412005,
+      "content_lines": 270890,
       "file_count": 584,
       "files": {
         "src/melder/__architecture__.py": {
@@ -4148,9 +4148,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook.py": {
-          "content_bytes": 294379,
+          "content_bytes": 294413,
           "content_lines": 6800,
-          "content_sha256": "e1ea13ed0608832ec7c7a23c8bc198c289822e7a742bb35f8c4391e17567d97a",
+          "content_sha256": "6d53d170189387d61cf76e1a86205fa667f43a9626b2735e94667c574b4b786f",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook_creation_system.py": {
@@ -4376,9 +4376,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/graft_runner.py": {
-          "content_bytes": 26545,
-          "content_lines": 645,
-          "content_sha256": "c81f8220cdf8bdbb4eb80097fcbd9a023666db59f68e4c8a6d3c7ba58fb24e60",
+          "content_bytes": 27323,
+          "content_lines": 655,
+          "content_sha256": "354ec24b4078c73e3f2793418c6f6fe36bb71820d910da25ddfd084ddc71550c",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/load_admission.py": {
@@ -4394,9 +4394,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/restore_engine.py": {
-          "content_bytes": 106730,
-          "content_lines": 2669,
-          "content_sha256": "22ec5cb284d416da2eb96765f22fadd26ae62bab27d22c20cd2bb74eb2687310",
+          "content_bytes": 108679,
+          "content_lines": 2702,
+          "content_sha256": "5f3ae5812dc3ac03d33340b7adf8c8f7b6bfa59d9f9d710ab3999c9e7ce7647f",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py": {
@@ -4466,9 +4466,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystals/spell_crystal.py": {
-          "content_bytes": 43804,
-          "content_lines": 1162,
-          "content_sha256": "f3f68efe9deb836cc4d081bde5d33bc6a38f636e109e1489592803213d2adf4d",
+          "content_bytes": 44084,
+          "content_lines": 1165,
+          "content_sha256": "edf473e14511f07bef6db17a5177fb125f3aef7dd372cb9dc0ff6a7c72d44632",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/crystals/spell_index_crystal.py": {
@@ -5652,20 +5652,20 @@
         "bytes": 115331,
         "lines": 606,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "9f1d3686b77cb1da6dd72e9da2eba670c2c35eeae7384fbf52191343f7b237ad"
+        "sha256": "6a9ec3737e18ff79a0e1cb156555e1a353fcff7bd92121986757be92e423a1b9"
       },
-      "source_fingerprint": "9f872d650279985abcdfdd2553546bea0ffc23bacefd3448fedb8ac0e19ee109"
+      "source_fingerprint": "9bde848bca74e3a3d85fc297c955335640f528cc32e510f4fca99b95c4e0ca90"
     },
     "tests": {
       "bundle": {
-        "bytes": 10686160,
-        "lines": 307645,
+        "bytes": 10708489,
+        "lines": 308087,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "932cd33a55134f444d5fa10a16d91afe08dd19edb0cb8775b047c725ce9ea0c2"
+        "sha256": "2ad197bdfa5fdd010cd5b1f1213598d9f7853075cffee4e74917d0552e56c24f"
       },
-      "content_bytes": 10203241,
-      "content_lines": 301207,
-      "file_count": 804,
+      "content_bytes": 10224376,
+      "content_lines": 301633,
+      "file_count": 806,
       "files": {
         "tests/_codegen_system_support.py": {
           "content_bytes": 7894,
@@ -5959,6 +5959,12 @@
           "content_bytes": 9901,
           "content_lines": 281,
           "content_sha256": "5af293325f4c36bd3b7aa43c658728ecdbfc0169487b4e681c619f1b20916c57",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/crystallizer/test_disposal_configuration_transport.py": {
+          "content_bytes": 4988,
+          "content_lines": 109,
+          "content_sha256": "b630c8feabcc8ebc39f7a1418ea7cf5522672d57af8661564c44279a2c871f1e",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/crystallizer/test_persistence_system_component.py": {
@@ -7174,9 +7180,15 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py": {
-          "content_bytes": 115746,
+          "content_bytes": 115815,
           "content_lines": 3138,
-          "content_sha256": "07b2ec9321630a3df7703f73048f0fe346fe5754227d7eff269e67afd5a19eec",
+          "content_sha256": "96909eb812705da840930e2290cbef4bcdbb7c8fa005df6cf55c007d45b7f3ac",
+          "source_encoding": "utf-8"
+        },
+        "tests/integration/melder/crystallizer/test_ordered_disposal_replay.py": {
+          "content_bytes": 16078,
+          "content_lines": 317,
+          "content_sha256": "42c5122af79de714777c84cd6539299b9a0b89c325f06b61bb3283046ace54cf",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/crystallizer/test_spell_crystal_integration.py": {
@@ -10493,12 +10505,12 @@
         }
       },
       "index": {
-        "bytes": 155186,
-        "lines": 826,
+        "bytes": 155570,
+        "lines": 828,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "10e67fdfee7a4953135c1db37323d85c0ba9ad64c27e62d12b291990db93dd52"
+        "sha256": "2f6264bae6a92fd870646d99dd0de89ff3eea629f66081f1ab5375cb9492d043"
       },
-      "source_fingerprint": "d950f65e45e29d6d273cb04a2d6df946449cc9fff486e04cdcfe18f0f28be3a2"
+      "source_fingerprint": "d829b63a563716dfac5154044040ca279b3970ac81f81a2d0259628dd59f861c"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

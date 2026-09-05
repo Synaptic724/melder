@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-persistence
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_persistence_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T11:49:24Z
+- Updated: 2026-09-05T12:35:01Z
 
 ## Objective
 Preserve the final method-list order in SpellCrystal and all existing active/staged
@@ -34,10 +34,10 @@ restore and graft paths, using the already established configuration and binding
 - Out of scope: new loader architecture, ownership-transfer policy, broader binding families.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner requested implementation of all remaining replay, docs/assets, and
-  final verification pieces. Preserve existing policy, public verbs, and unrelated actor changes.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Three source files and 23 regressions are implemented; the Crystallizer
+  test ring passes 864 tests with 3 existing xfails. Continue documentation/assets next.
 
 ## Required Reading and Evidence
 Navigate the Crystallizer component and graph rows, then read implementations in full before edits.
@@ -100,6 +100,9 @@ an evidenced data question, not a reason for an invented fallback or blanket ID 
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - `artifacts/2026-09-05_disposal_graft_policy_probe.py`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_crystal_replay.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_crystal_replay.md`
 - DISPOSITION: delete_on_close
 - CLEANUP_TRIGGER: accepted closure; replace diagnostic expectations with approved regression behavior first
 
@@ -269,13 +272,135 @@ Record exact payload/host conditions and identity evidence before choosing a rep
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T11:56:36Z
+  TYPE: FACT
+  CLAIM: All three replay files are read completely. Restore reloads/finalizes configuration
+    before active binds, then conjures, stages, and enforces selection. Active bind maps index
+    ULIDs but not changed Spell SHAs; staged bind omits names; anchor, selection, and contract
+    detail paths still consume recorded Spell IDs. RestoreReport already owns a locked identity map.
+  EVIDENCE:
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1734-1822`
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1903-2095`
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:2360-2450`
+  - `src/melder/crystallizer/crystal_loader_system/restore_engine.py:250-290`
+  IMPACT: Record changed Spell IDs in the existing translation map; unchanged IDs remain direct.
+    Translate replay references, resolving exact owned staged members for selection. Graft can pass
+    its newly bound anchor index directly and retain only the selected bind_inactive result for adoption.
+    No new runtime registry/lock or global identity mutation is needed. Older sorted records cannot
+    recover lost original order; receiving-book composition remains authoritative at each new bind.
+  NEXT: Author the replay patch contract and add real capture, staged restore, and fresh/merge graft tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T11:56:36Z
+  TYPE: PLAN
+  CLAIM: Replay patch contracts are written. Mapping: ordered crystal values -> capture/JSON
+    tests; all bind forwarding -> active/staged/fresh/merge tests; returned anchor/selected IDs
+    -> changed-host graft tests; report translation -> changed-ID anchor/selection/grant tests.
+    Existing process-wide unique-spell xfails remain out of scope; use released source worlds
+    and many bindings for independent replay tests rather than weakening that restriction.
+  EVIDENCE:
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_crystal_replay.md:1-37`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_crystal_replay.md:1-30`
+  IMPACT: Three source files suffice; no recorder orchestration or new matching family.
+  NEXT: Add focused desired-behavior regressions and establish the red baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:07:54Z
+  TYPE: MEASURE
+  CLAIM: The new 20-case replay suite ran outside the sandbox after pytest temp ACL failures.
+    All 20 fail on unchanged source: capture order differs, fresh graft loses its anchor,
+    and merge binds collide because omitted names erase the distinct member fingerprints.
+    Six restore cases also reveal a fixture/world-record setup issue (missing book payload),
+    which is not yet classified as a production defect and must be resolved separately.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/integration/melder/crystallizer/test_ordered_disposal_replay.py -q -p no:cacheprovider --tb=line --basetemp=context_compass/artifacts/ordered_disposal_validation_20260905/red3
+  - Result: 20 failed in 58.03s. Earlier sandbox attempts failed before test execution.
+  IMPACT: Capture/graft regressions evidence the planned correction. Do not broaden the source
+    fix to explain a test setup issue or count unavailable fixture runs as a feature baseline.
+  NEXT: Apply the three-file replay correction, then isolate the cached-world setup and rerun.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:07:54Z
+  TYPE: FACT
+  CLAIM: Three-file replay implementation is present; capture and merge paths now pass.
+    New tests inherited configure_aether_frame from a runtime-only helper, which freezes/locks
+    rich configuration before _conjure_dynamic_hint exists. Conjure then skips the freeze
+    emission, so the checkpoint lacks a book twin. This is an existing separate API ordering
+    defect, not caused by disposal capture. Use the suite's recorded-world configuration setup
+    for this feature and preserve the finding for follow-up. Fresh graft's initial name lookup
+    also fails before notch; exact binding IDs are used to test the replay identity contract.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spellbook.py:6164-6221`
+  - `src/melder/aether/spellbook/spellbook_creation_system.py:290-316`
+  - `src/melder/aether/spellbook/spellbook.py:5709-5774`
+  - `tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py:143-158`
+  - Result after replay source edits: 10 passed, 10 failed in 68.10s (green1).
+  IMPACT: No unrelated configuration-emission or Meld name-registry fix is added. Correct
+    test setup and failure teardown without weakening order, identity, or actual-cleanup assertions.
+  NEXT: Rerun the complete focused replay suite with recorded-world setup and exact binding IDs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:20:00Z
+  TYPE: MEASURE
+  CLAIM: Capture, cached restore on both drivers, and changed-ID restore/selection cases pass
+    (8 cases). Twelve graft cases reach teardown but the test tried retiring parked metadata
+    after permanent conduit cleanup had already destroyed the index. Corrected the test to retire
+    inactive members first, then permanently clean the conduit and assert actual method order.
+  EVIDENCE:
+  - `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py`
+  - Green3 result: 12 failed, 8 passed in 81.50s; failures are post-clean index reads in test teardown.
+  IMPACT: No production cleanup or synchronization modification is justified by this test mistake.
+  NEXT: Verify one fresh graft, then run the focused and surrounding replay suites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:26:00Z
+  TYPE: MEASURE
+  CLAIM: All 23 focused replay cases pass in 90.25s on Windows 3.14t outside the sandbox.
+    Covers ordered crystal/JSON capture, cached restore under sequential and parallel drivers,
+    active/staged actual disposal, same/changed-host fresh/merge/adopt grafts, skipped resident
+    selection honesty, changed-ID anchors/exact selection, and translated contract grants.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/integration/melder/crystallizer/test_ordered_disposal_replay.py -q -p no:cacheprovider --tb=short --basetemp=context_compass/artifacts/ordered_disposal_validation_20260905/focused_final
+  - Result: 23 passed in 90.25s, exit 0.
+  - `tests/integration/melder/crystallizer/test_ordered_disposal_replay.py`
+  IMPACT: Corrected test teardown preserves all behavioral assertions. Existing legacy-link
+    fixture uses sha-x/sha-z placeholders; its complete function was read and its exact report-key
+    assertion now includes their actual bind translations, while still forbidding a contract key.
+  NEXT: Run the surrounding Crystallizer suites, then promote docs and regenerate final assets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:35:01Z
+  TYPE: MEASURE
+  CLAIM: The complete Crystallizer unit/component/integration ring passes 864 tests with
+    3 existing xfails in 207.56s. All 23 new replay cases are included; no skip/xfail was added.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/crystallizer tests/component/melder/crystallizer tests/integration/melder/crystallizer -q -p no:cacheprovider --tb=short --basetemp=context_compass/artifacts/ordered_disposal_validation_20260905/crystal_suite
+  - Result: 864 passed, 3 xfailed in 207.56s, exit 0.
+  IMPACT: Replay is implemented/in review. Source docstrings and scoped diff checking are current;
+    canonical/public docs and generated assets remain. Do not remove unrelated unique-copy xfails.
+  NEXT: Complete docs/assets, then final verification and owner acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-READY after receiving-book ordering approval and the verified overlap correction. No persistence source edits.
-Configuration transport is verified separately (59 tests). Full GraftRunner was read and its SHA
-is recorded above. SpellCrystal/RestoreEngine still require complete reads before their edits.
-The temporary 88-line diagnostic uses real source binds and GraftRunner with recorded-value inputs,
-deliberately excluding capture sorting. Same host policy succeeds; changed host policy creates a new
-SHA and causes sibling parking to skip on the old-ID lookup. Its passing assertions describe the bug.
-Recommendation: target policy wins; follow live IDs returned by bind/park for anchors and adoption.
-Next: author persistence contracts, implement capture/order forwarding and local live-binding joins,
-replace the diagnostic with desired-behavior regressions, then validate replay and regenerate docs/assets.
+LATEST: replay is verified, 864 passed and 3 pre-existing xfails. Prior iteration details below
+are retained as history; they no longer block execution. Resume the docs/assets task.
+Three replay source files are implemented but verification is still in progress. All were read fully
+before editing: SpellCrystal 1,162 lines; RestoreEngine 2,669; GraftRunner 645 (pre-edit sizes).
+Capture preserves order; staged/park/merge paths forward names; graft carries the new index/selected
+ID; RestoreReport maps changed SHAs and anchor/selection/grant lookups translate through it.
+New 20-case test file has 8 passing capture/cache/changed-ID cases. Graft assertions reached a test
+teardown error; inactive members now retire before permanent conduit cleanup. Verify that correction.
+Use elevated pytest with a fresh --basetemp under artifacts/ordered_disposal_validation_20260905;
+sandbox-created pytest directories hit WinError 5. Do not weaken or skip tests for this ACL issue.
+Two unrelated findings are recorded above: pre-conjure configure_aether_frame suppresses book-twin
+emission, and fresh graft name lookup fails before notch. Neither is patched in this epic.
+Remaining: finish replay regressions (including changed-ID grants and skipped adoption), surrounding
+suite, canonical/public docs/descriptors, source then LLM assets, final verification/acceptance.
+Owner approved the entire remaining epic; no further policy choice, commit, or push is required/authorized.

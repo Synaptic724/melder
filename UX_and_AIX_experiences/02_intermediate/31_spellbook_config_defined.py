@@ -1,18 +1,22 @@
 """
 TIER: intermediate (31)
-GOAL: SpellbookConfiguration DEFINED - the four things you can set,
+GOAL: SpellbookConfiguration DEFINED - the core settings you can set,
       what each one means, and the four laws that guard them. This is
       the book's policy object: it decides teardown and how hard the
-      conjure pipeline works. Nothing here is exotic - four values,
+      conjure pipeline works. Nothing here is exotic - explicit values,
       four rules.
 
-      THE FOUR ITEMS
+      THE CORE SETTINGS
       disposal (bool)
-          Declares that this book's world performs teardown calls.
+          Stored configuration metadata; matched method names drive disposal calls.
       disposal_method_names (list[str])
           The teardown VOCABULARY - the method names that mean "clean
           yourself up" in this system. Cleanup calls whichever of them
           each object actually has (beginner 08 showed it firing).
+      enforce_priority_disposal_methods (bool, default False)
+          Place the matching book block last (False) or first (True).
+          Shared names always keep the book's order; spell-only names
+          keep their own order. Set this before binding.
       phase_scheduler_workers_per_spellbook (int)
           How many worker threads run the conjure pipeline. Conjure
           compiles and validates every spell in phases - more workers
@@ -32,7 +36,7 @@ GOAL: SpellbookConfiguration DEFINED - the four things you can set,
       4) COMPLETION - hand a book YOUR configuration and you own
          completing it. with_defaults() is easy mode; a bare config
          refuses at conjure-time validation.
-SURFACE EXERCISED: the four items, the four refusal laws
+SURFACE EXERCISED: core configuration settings, the four refusal laws
 """
 import melder as md
 

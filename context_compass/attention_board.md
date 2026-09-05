@@ -74,7 +74,7 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for codex_2 (from codex_1, 2026-09-05T11:49:24Z)
+- NEW MESSAGE for codex_2 (from codex_1, 2026-09-05T13:03:07Z)
 - NEW MESSAGE for workflows_1 (from codex_1, 2026-09-05T11:49:24Z)
 <!-- END USER-DEFINED: alerts -->
 
@@ -83,8 +83,8 @@ Message alert rules
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
 | release_candidate_testpypi | review | handoff | codex | workflows_1 | First hosted/OIDC run awaits owner rollout. | Owner commits reviewed workflows with current assets and promotes to release_candidate. | Slim TestPyPI workflow and pypitest environment locally verified. | Hosted candidate succeeds and owner accepts the result. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T11:34:57Z | REQUIRED |
-| readthedocs_documentation | review | handoff | codex | codex_2 | none | Owner pushes feature candidate; verify RTD build and remaining S9 gates. | Restored TYPE_CHECKING example and passing docs/asset checks. | Hosted and final combined checks qualify the selected release candidate. | tickets/tasks/2026-09-04_rtd_beginner_content_task.md | 2026-09-05T11:47:57Z | REQUIRED |
-| ordered_spell_disposal_contract | in_progress | implementation | codex | codex_1 | none | Complete ordered crystal capture/replay under clarified book policy. | Book-owned overlap correction verified by 2,807 tests. | Replay preserves names and joins newly bound members. | tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md | 2026-09-05T11:49:24Z | REQUIRED |
+| readthedocs_documentation | in_progress | validation | codex | codex_2 | Hosted project access pending. | Finish catalog/search/offline audit and source qualification. | Complete local evidence with explicit hosted limitations. | S9 local checks and maintenance handoff are recorded. | tickets/tasks/2026-09-04_rtd_quality_audit_task.md | 2026-09-05T13:02:41Z | REQUIRED |
+| ordered_spell_disposal_contract | in_progress | validation | codex | codex_1 | none | Run final CI runtime command and recheck assets. | Ordered disposal implementation and documentation complete. | Final executed evidence and owner handoff. | tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md | 2026-09-05T13:03:07Z | REQUIRED |
 | first_public_release_notes | review | handoff | cowork | codex_1 | none | Review and commit the PyPI-portable README links plus selective LLM other-corpus regeneration. | All README repository routes use absolute GitHub prod links and generated proofs pass. | Owner confirms the public routes and accepts the release-documentation change. | tickets/tasks/2026-08-30_craft_first_public_release_notes_task.md | 2026-09-01T00:56:59Z | REQUIRED |
 | regenerate_0_2_0_release_assets | review | handoff | cowork | codex_1 | none | Review the eight-file generated diff, then commit and push through the normal branch lane. | Version 0.2.0 generated assets pass both exact CI checks. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-30_regenerate_0_2_0_release_assets_task.md | 2026-08-30T22:47:20Z | REQUIRED |
 | llm_support_compilation_pipeline | review | handoff | cowork | codex_1 | none | Review generated LLM assets and separated workflow gates; confirm acceptance. | Deterministic three-corpus LLM assets and separated src/repo asset workflows. | Owner confirms acceptance for story/task closure and artifact promotion. | tickets/tasks/2026-08-30_implement_llm_support_compilation_pipeline_task.md | 2026-08-30T22:32:04Z | REQUIRED |

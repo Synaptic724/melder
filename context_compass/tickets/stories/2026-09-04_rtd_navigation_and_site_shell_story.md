@@ -9,7 +9,7 @@
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-04T21:36:46Z
+- Updated: 2026-09-05T13:02:41Z
 
 ## User Narrative
 As a reader, I can start at my level, browse the whole site, or open an example immediately, so I can
@@ -70,8 +70,9 @@ Establish one coherent navigation and local-build foundation that all content an
 - [ ] Narrow-screen, keyboard, 200% zoom, and no-custom-JS navigation checks are recorded.
 
 ## Validation / Test Plan
-Not run. Future checks: strict Sphinx HTML build, navigation graph integrity, internal anchors, example
-source equality, API import/annotation rendering, and representative browser checks.
+Strict HTML, navigation/link/source checks and desktop/mobile keyboard workflows pass in the S1 task.
+The final fixes cover hidden mobile focus, skip navigation, card focus, copy visibility, and contrast.
+No-custom-JavaScript navigation is browser-verified at 320px. Native browser zoom remains unverified.
 
 ## UX / API / Data Notes
 The navigation registry stores stable document IDs and order, not duplicated prose or executable code.
@@ -119,5 +120,5 @@ Exact compatible dependency pins and any narrow source-assembly requirements are
 Record navigation decisions, dependency pins, import findings, and downstream interface changes.
 
 ## Context / Handoff Summary
-Defined, not implemented. Begin with the README's four levels and the blueprint's homepage/contents
-contract, then establish a real local build for S2-S9.
+Implemented locally, including final S9 focus/contrast corrections. The S1 task retains build and browser
+evidence. Native 200% browser zoom requires a capable browser/manual review; S9 carries that limitation.

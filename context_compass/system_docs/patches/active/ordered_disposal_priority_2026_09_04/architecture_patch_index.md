@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `architecture_patch.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T11:35:21Z |
-| line_count | 94 |
+| generated_at | 2026-09-05T12:04:37Z |
+| line_count | 98 |
 | line_ending | lf |
-| content_sha256 | `467fa6c5c48add913706280f08c734261ba0974bd305dc321ab9362a75e8a162` |
+| content_sha256 | `30c5d1c5661aad80b4f6e2c334a7ff38d097fd78f72df005fa4bfb2b408da98f` |
 | sections | 9 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -27,12 +27,12 @@ which you did.
 
 | lines | lvl | name |
 | --- | --- | --- |
-| 3-9 | 2 | Patch scope and non-goals |
-| 10-19 | 2 | Changed-components matrix |
-| 20-38 | 2 | Interface and boundary deltas |
-| 39-53 | 2 | Cross-component invariants |
-| 54-61 | 2 | Migration / rollout order |
-| 62-68 | 2 | Rollback strategy |
-| 69-80 | 2 | Validation expectations and evidence plan |
-| 81-91 | 2 | Ticket coverage map |
-| 92-94 | 2 | Unknowns and decision requests |
+| 3-8 | 2 | Patch scope and non-goals |
+| 9-19 | 2 | Changed-components matrix |
+| 20-42 | 2 | Interface and boundary deltas |
+| 43-57 | 2 | Cross-component invariants |
+| 58-65 | 2 | Migration / rollout order |
+| 66-72 | 2 | Rollback strategy |
+| 73-84 | 2 | Validation expectations and evidence plan |
+| 85-95 | 2 | Ticket coverage map |
+| 96-98 | 2 | Unknowns and decision requests |

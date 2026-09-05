@@ -1,5 +1,18 @@
 {% extends "!layout.html" %}
 
+{% block extrabody %}
+  {{ super() }}
+  <a class="melder-skip-link" href="#melder-main-content">Skip to content</a>
+{% endblock %}
+
+{% block content %}
+  <div id="melder-main-content" tabindex="-1">{{ super() }}</div>
+{% endblock %}
+
+{% block navigation %}
+  <div id="melder-navigation">{{ super() }}</div>
+{% endblock %}
+
 {% block sidebartitle %}
   {{ super() }}
   <div class="melder-version">Melder {{ melder_release }} · {{ melder_version_name }}</div>
@@ -7,7 +20,7 @@
 
 {% block mobile_nav %}
   <button id="melder-menu-toggle" type="button" data-toggle="wy-nav-top"
-          aria-label="Toggle navigation" aria-expanded="false">☰</button>
+          aria-label="Toggle navigation" aria-controls="melder-navigation" aria-expanded="false">☰</button>
   <a class="melder-mobile-brand" href="{{ pathto(root_doc) }}">{{ project }}</a>
   <a class="melder-mobile-action" href="{{ pathto('contents') }}">Contents</a>
   <a class="melder-mobile-action" href="{{ pathto('examples/index') }}">Examples</a>

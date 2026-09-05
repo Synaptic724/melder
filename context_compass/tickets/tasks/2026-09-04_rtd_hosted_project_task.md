@@ -5,12 +5,12 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-build-and-hosting
 - Story Path: ../stories/2026-09-04_rtd_build_and_hosting_story.md
-- Status: draft
+- Status: blocked
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-04T22:07:46Z
+- Updated: 2026-09-05T12:06:59Z
 
 ## Objective
 Connect the reviewable site to its intended hosted project and verify Git builds, PR previews, versions, hosted search, canonical links, and downloads.
@@ -29,8 +29,9 @@ Connect the reviewable site to its intended hosted project and verify Git builds
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Implementation task defined; prerequisite work remains ahead of activation.
+- to_state: blocked
+- transition_reason: Advertised public latest URL returns a not-found page. Actual project URL/branch
+  and explicit private-dashboard read permission are pending owner input.
 
 ## Steps / Checklist
 - [ ] Read the exact inputs and record one bounded implementation decision.
@@ -83,11 +84,25 @@ Connect the reviewable site to its intended hosted project and verify Git builds
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T12:06:59Z
+  TYPE: BLOCKER
+  CLAIM: Browser retrieval confirms the advertised public latest page is not available. Dashboard
+    opening was rejected by automatic approval review for possible private account/project access
+    without explicit authorization. Two concise questions request project identity and read-only access.
+  EVIDENCE:
+  - https://melder.readthedocs.io/en/latest/
+  - Automatic approval rejection for https://app.readthedocs.org/projects/melder/.
+  IMPACT: Cannot verify project settings, build logs, chosen revision, or live reader features yet.
+    Public-only/local review continues in the quality task; no dashboard workaround or account write.
+  NEXT: Obtain the owner's actual project URL/branch and dashboard read authorization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-Defined task awaiting its dependency milestone.
-Connect the reviewable site to its intended hosted project and verify Git builds, PR previews, versions, hosted search, canonical links, and downloads.
-
+Public latest URL currently returns RTD's not-found page. Project identity/branch and private-dashboard
+read authorization are pending. Automatic approval review rejected the attempted dashboard read;
+do not retry or access it indirectly without authorization. Complete local quality work independently.

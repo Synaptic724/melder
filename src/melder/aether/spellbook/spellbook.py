@@ -4803,10 +4803,10 @@ class Spellbook(Cleanable):
                 Secondary disambiguation key within the frame.
             disposal_method_names (Optional[Sequence[str]]):
                 Ordered per-spell candidates, combined with configured book candidates.
-                Spell names come first by default; enforce_priority_disposal_methods=True
-                puts book names first in configuration order. Missing class-profile names
-                are skipped and duplicates retain their first occurrence. None or an empty
-                sequence still permits book methods to contribute.
+                The complete matching book block comes last by default, first with
+                enforce_priority_disposal_methods=True. Shared names belong to that block
+                in both modes; spell-only names keep their supplied order. Missing names
+                are skipped and duplicates run once. Empty input still permits book methods.
             profile (str):
                 Spell profile family to attach after bind completion.
             **kwargs:
@@ -5074,10 +5074,10 @@ class Spellbook(Cleanable):
                 Spell profile family to attach after bind completion.
             disposal_method_names (Optional[Sequence[str]]):
                 Ordered per-spell candidates, combined with configured book candidates.
-                Spell names come first by default; enforce_priority_disposal_methods=True
-                puts book names first in configuration order. Missing class-profile names
-                are skipped and duplicates retain their first occurrence. None or an empty
-                sequence still permits book methods to contribute.
+                The complete matching book block comes last by default, first with
+                enforce_priority_disposal_methods=True. Shared names belong to that block
+                in both modes; spell-only names keep their supplied order. Missing names
+                are skipped and duplicates run once. Empty input still permits book methods.
             **kwargs:
                 Optional lifecycle hooks:
                 - pre_hooks

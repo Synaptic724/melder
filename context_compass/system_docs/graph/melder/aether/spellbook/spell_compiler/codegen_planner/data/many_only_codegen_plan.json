@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
- "source_sha256": "49da147873a88833035b73474f79d90f93d855bb4d4c9bf7e6c7b32063ac4b29",
+ "source_sha256": "c62979c70f87de79e88ec7ccdf6e3cf096bdc2f3186475527653adb6cdd1f8f4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan": {
@@ -200,7 +200,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b017ff5961d2e226f64b03bd143a626d7508f56fdf35127ff95b7395cc5ff30e",
+   "span_sha256": "42d13e85e5ba9fbb4597412dd5eaef67d21d26fad76dc32dd1c84480cfcb6b70",
    "role": "Planner-owned no-overrides payload for the many-only family.",
    "responsibilities": [
     "stores ordered many-only steps plus root-step and fixed-arity dependency arrays",
@@ -228,7 +228,7 @@
    "label": "ManyOnlyOverridesPlan",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 781,
+   "lineno": 784,
    "bases": [
     "Cleanable"
    ],
@@ -271,7 +271,7 @@
    "label": "ManyOnlyCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 879,
+   "lineno": 882,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -282,7 +282,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "4b67448637de42ed96b67772317bedd261c75f81bf47a26a61474c2b97b46dfd",
+   "span_sha256": "2a735d9e1ccead5152a17323e171c5148b772342eb3da12bdfb1b2c780750361",
    "role": "Standalone builder for many-only planner payloads from SpellCodegenModel.",
    "responsibilities": [
     "builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections",

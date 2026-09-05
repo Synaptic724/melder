@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-persistence
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_persistence_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T22:06:16Z
+- Updated: 2026-09-05T13:03:07Z
 
 ## Objective
 Assemble actual evidence that the agreed order survives configuration, binding, compilation,
@@ -35,9 +35,10 @@ cleanup, and record/replay, then hand the complete program back for acceptance.
 - Out of scope: publishing, signing, committing, pushing, unrelated test repairs, coverage guesses.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested durable tasks through the complete program's validation.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Runtime, replay, docs, and generated assets are verified; run the current
+  CI runtime command locally and reconcile final evidence without publishing.
 
 ## Required Reading and Evidence
 - All eight preceding task outcomes and their test commands/results.
@@ -71,8 +72,8 @@ One concise evidence-backed acceptance report with exact remaining gaps, if any.
 
 ## Validation
 - Not run; ticket only.
-- Required outcomes: False/default gives Spell-first order; True gives book-first order;
-  first occurrence wins; matching is setup-time; final list reaches actual method calls.
+- Required outcomes: False/default gives spell-only names then the full book block; True
+  gives book block then spell-only names. Book owns overlaps in both modes; matching is setup-time.
 - Preserve class-profile matching, creation-time policy, no-disposal behavior, current failure
   handling, and existing scope disposal traversal.
 - Existing error/warning output and test totals must be reported accurately; do not imply
@@ -94,10 +95,11 @@ stack exists or because one focused test ring is green. No remote state changes 
 - [ ] Artifact dispositions and deterministic board closure sync applied when authorized.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false at ticket creation
-- ARTIFACT_PATHS: none yet; actual validation artifacts must be registered if created
-- DISPOSITION: retain_as_reference
-- CLEANUP_TRIGGER: final owner-accepted disposition
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - `artifacts/ordered_disposal_validation_20260905/runtime.xml`
+- DISPOSITION: delete_on_close
+- CLEANUP_TRIGGER: owner-accepted closure after results are preserved in notes
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -139,6 +141,24 @@ Use MEASURE only for checks actually executed; record results before another val
     execution: no new feature tests or platform checks ran in this holistic-reading pass.
   NEXT: After implementation, connect the two priority modes to actual bind/meld/cleanup,
     then verify cache and replay paths without weakening existing lifecycle tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:03:07Z
+  TYPE: PLAN
+  CLAIM: Final gate uses the current .github/scripts/run_runtime_tests.py, which checks the
+    same process's free-threaded state before and after pytest over unit/component/integration.
+    Available interpreter is Windows 3.14.0 free-threaded, GIL disabled. Current CI also targets
+    Ubuntu 3.14t, which this local run cannot qualify. Prior evidence: runtime 2,807, replay
+    864 passed/3 pre-existing xfails, three examples, and both exact asset checks.
+  EVIDENCE:
+  - `.github/scripts/run_runtime_tests.py:1-46`
+  - `.github/workflows/test-runtime.yml:1-44`
+  - `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md`
+  - `tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md`
+  IMPACT: Use PYTHON_GIL=0 and a fresh task-local pytest temp directory outside the sandbox
+    due its demonstrated Windows ACL failure. Report JUnit evidence, not coverage guesses.
+  NEXT: Run the exact CI runtime command, then final asset/diff checks and owner handoff.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

@@ -2,9 +2,8 @@
 
 ## Patch scope and non-goals
 - Patch ID: ordered_disposal_priority_2026_09_04
-- Configuration, producers, and compiler propagation are implemented; current scope adds Creations storage.
-- Replay ownership remains a separate task.
-- This slice retains the established list through compilation; full record/replay remains pending.
+- Configuration, producer, and runtime propagation are verified; current scope completes record/replay.
+- Replay honors new-bind policy; it does not overwrite live Spell identities with recorded values.
 - No new locks, snapshots of disposal lists, dependencies, root flags, or publication changes.
 
 ## Changed-components matrix
@@ -15,7 +14,8 @@
 | Binding Pipeline | Resolve both ordered groups and hash/store the resolved list | Consumers retain the resulting policy |
 | Compiler | Retain Spell list in processor, plans, and solo namespace bindings | Preserve serialized/hash tuples and all existing executor algorithms |
 | Creations | Retain names through registration, extraction, and restoration | Preserve invocation, reverse traversal, and error handling |
-| Crystallizer / Nexus | Generic paths unchanged | Verify transport and ordered replay |
+| Crystallizer | Preserve capture order, forward all active/staged/graft names, follow actual bind results | Preserve passive recording, per-verb graft admission, and all-or-nothing restore |
+| Nexus | Generic configuration transport verified | No new root policy |
 
 ## Interface and boundary deltas
 - Register `enforce_priority_disposal_methods` as bool, default False before any validation.
@@ -35,6 +35,10 @@
 - Serialized IR and hash tuples remain value boundaries; order is preserved in those values.
 - Creations in-memory transfer payloads retain raw objects and their established list references.
   This transfer is not a serialization boundary and does not create new policy values.
+- SpellCrystal captures ordered values at the existing detached persistence boundary, never sorting.
+- Restore records changed Spell SHAs in its existing report translation map and translates member,
+  selection, and contract references. Unchanged content IDs continue resolving directly.
+- Fresh graft passes its newly bound index to parking; merge adoption follows bind_inactive's result.
 
 ## Cross-component invariants
 - Supplied configurations are adopted before validation, so default availability is an init concern.
@@ -90,5 +94,5 @@ remain unchanged in either direction. Do not roll back the verified producer sli
 - Runtime, replay, docs/assets, and end-to-end tasks retain their prerequisite gates.
 
 ## Unknowns and decision requests
-No unresolved choice blocks configuration. Differing-host graft policy/recorded SHA joins
-remain scoped to the replay task and do not justify changes to this configuration slice.
+Receiving-book policy is approved and owns shared-name ordering in both modes. Older records
+that already sorted their names cannot reveal lost original order; no historical order is invented.

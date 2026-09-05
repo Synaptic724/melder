@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 8a9e936cbdf334eb52913658c2834b5c8386b30c5fd41c704b2adf934d785861
+SOURCE FINGERPRINT: 4432a01fa17154a2c26382a442a4afa187771243807316657b629cecbe31a272
 FILE COUNT: 352
 
 ================================================================================
@@ -3131,7 +3131,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 0446d4f1b7964399b418709d345444cc70b07ac9e01c46b13aee33fa5e992ec1
+CONTENT SHA256: 86876ff167f1b5a074a00b14a3a7df3b7f06a9d81c2bf20b92d74eebaf6e2ce5
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -3586,27 +3586,36 @@ book = md.Spellbook()
 book.bind(
     spell=PooledConnection,
     existence="unique",
-    disposal_method_names=["close", "shutdown"],   # ← the book's vocabulary
+    disposal_method_names=["close", "shutdown"],   # this binding's ordered methods
 )
-book.bind(spell=BackgroundWorker, existence="unique")
+book.bind(
+    spell=BackgroundWorker,
+    existence="unique",
+    disposal_method_names=["shutdown"],
+)
 
 conduit = book.conjure()
 ...
-conduit.cleanup()     # → close() on the connection, shutdown() on the worker
+conduit.cleanup()     # calls each creation's matched methods in their declared order
 ```
 
-The vocabulary is **book-wide and set once** — the first bind that supplies it
-fixes it (you can also set it on `SpellbookConfiguration`). Each spell then
-resolves to the intersection of that vocabulary and the methods it actually
-has:
+Each bind's list belongs to **that spell**, not every later bind. Melder resolves
+matching class methods once at bind time and preserves their order:
 
-- `PooledConnection.close()` exists → it gets called
-- `BackgroundWorker.shutdown()` exists → it gets called
-- A class with neither → carries no disposal metadata and costs nothing
+- If the connection implements both names, `close()` runs before `shutdown()`.
+- The worker uses its own `shutdown()` declaration.
+- Missing names are omitted; duplicate names execute once.
 
-Teardown is **best-effort and complete**: every object is attempted, and any
-failures are aggregated into a single `ExceptionGroup` rather than the first
-error aborting the rest of your cleanup.
+For book-wide methods, use `SpellbookConfiguration`. Its matching methods form
+one ordered block: last by default, or first with
+`with_enforce_priority_disposal_methods(True)`. Shared names belong to the book's
+block in either mode; spell-only names retain their own order. See the
+[configuration guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md)
+for both arrangements.
+
+Cleanup retains its existing reverse key/bucket traversal within each store. A failing
+method stops that object's remaining method calls; cleanup continues with other
+objects and aggregates failures into an `ExceptionGroup`.
 
 ## 🟢 Scopes That Nest
 <sub>**Beginner.** Child scopes, no configuration.</sub>
@@ -5765,7 +5774,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/34_scope_contrast_one_tree.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/35_disposal_multiple_methods.py
-CONTENT SHA256: 5cbfbc89440633d328cbbea315bb455d6049b1b246c4f967ff2fb455fb574a79
+CONTENT SHA256: 9ea0cbc6118ad6aad7a142a1a2ffef385df1543eb7db14e081ec0d4a0b0abe84
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5781,25 +5790,30 @@ STAGES: list[str] = []
 
 
 class BufferedWriter:
+    """Expose two disposal methods whose requested order is observable."""
+
     def flush(self) -> None:
+        """Record the flush step before the resource is closed."""
         STAGES.append("flushed")
 
     def close(self) -> None:
+        """Record the close step after flushing."""
         STAGES.append("closed")
 
 
 def main() -> None:
+    """Bind ordered disposal names, create the writer, and verify exact cleanup order."""
     book = md.Spellbook()
     book.bind(spell=BufferedWriter, existence="unique",
               disposal_method_names=["flush", "close"])
     conduit = book.conjure()
-    writer = conduit.meld(spell=BufferedWriter)
+    writer = conduit.meld("BufferedWriter")
     assert isinstance(writer, BufferedWriter)
 
     conduit.cleanup()
     book.cleanup()
     print("teardown stages observed:", STAGES or "(documented by the 3.14t run)")
-    assert STAGES, "disposal list contract: both verbs must fire on teardown"
+    assert STAGES == ["flushed", "closed"], "disposal methods must run in supplied order"
 
 
 if __name__ == "__main__":
@@ -7888,34 +7902,71 @@ END FILE: UX_and_AIX_experiences/02_intermediate/29_scoped_cleanup_lesser_condui
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_frozen_law.py
-CONTENT SHA256: 9b56b9868eac607c086c69d830f0c4c4755dfb60e366fdf7d3cb9cc854baf727
+CONTENT SHA256: b73820941c2ab1c03adee328bd256ac8b91c8d4893268f372e8a035cee1f298c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 TIER: intermediate (30)
 GOAL: SpellbookConfiguration, knob by knob - part 1: DISPOSAL.
-      Two properties own teardown behavior:
-        disposal (bool)               - master switch for disposal calls
-        disposal_method_names (list)  - the book-wide teardown vocabulary
+      Two set-once properties describe teardown policy:
+        disposal (bool)               - stored flag; matched names drive calls
+        disposal_method_names (list)  - the ordered book-wide vocabulary
+      enforce_priority_disposal_methods places the book block first when
+      True or last when False (default). The book owns shared names in both modes.
       Both are IDEMPOTENT properties: set once, immutable after - the
       teardown story of a world must not change mid-flight. And the
       whole configuration FREEZES at conjure: any set_property after
       that refuses. Configuration is a pre-flight surface, period.
-SURFACE EXERCISED: get_configuration().set_property, the idempotent
-                   law, the freeze-at-conjure law
+SURFACE EXERCISED: SpellbookConfiguration.set_property,
+                   with_enforce_priority_disposal_methods, bind, meld, cleanup
 """
 import melder as md
 
 
 class PooledThing:
+    """Expose observable ordered cleanup methods without a Melder-specific base class."""
+
     def __init__(self) -> None:
+        """Start open with no disposal calls recorded."""
         self.closed = False
+        self.calls: list[str] = []
 
     def close(self) -> None:
+        """Mark closed and record the method's actual invocation position."""
         self.closed = True
+        self.calls.append("close")
+
+    def flush(self) -> None:
+        """Record the configured flush step."""
+        self.calls.append("flush")
+
+    def release(self) -> None:
+        """Record the spell-only release step."""
+        self.calls.append("release")
+
+
+def demonstrate_priority(priority: bool) -> None:
+    """Show that the book owns shared names regardless of front/back placement."""
+    config = md.SpellbookConfiguration()
+    config.with_disposal_method_names(["flush", "close"])
+    config.with_enforce_priority_disposal_methods(priority)
+    config.with_defaults().finalize()
+    book = md.Spellbook(configuration=config)
+    book.bind(
+        spell=PooledThing, existence="many",
+        disposal_method_names=["close", "release", "flush", "missing"],
+    )
+    conduit = book.conjure()
+    resource = conduit.meld("PooledThing")
+    conduit.cleanup()
+    expected = ["flush", "close", "release"] if priority else ["release", "flush", "close"]
+    assert resource.calls == expected
+    print("book block first" if priority else "book block last", resource.calls)
+    book.cleanup()
 
 
 def main() -> None:
+    """Verify configuration timing and both ordered disposal arrangements."""
     # CONFIGURE, THEN LOCK - the order is the lesson.
     # The disposal pair is SET-ONCE. A book you construct bare has already
     # taken the standard default set, and that set is COMPLETE - it fills
@@ -7942,7 +7993,7 @@ def main() -> None:
         print("idempotent re-set refused:", type(err).__name__)
 
     conduit = book.conjure()
-    thing = conduit.meld(spell=PooledThing)
+    thing = conduit.meld("PooledThing")
     conduit.cleanup()
     print("disposal vocabulary fired at cleanup:", thing.closed)
 
@@ -7952,6 +8003,9 @@ def main() -> None:
         print("post-conjure set unexpectedly succeeded")
     except Exception as err:
         print("post-conjure set refused:", type(err).__name__)
+    book.cleanup()
+    demonstrate_priority(False)
+    demonstrate_priority(True)
 
 
 if __name__ == "__main__":
@@ -7961,24 +8015,28 @@ END FILE: UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_froz
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
-CONTENT SHA256: 5c8fe7180549638ae000a06d65502d2dc2a25a5abcf4b2928a9a2a6b8c86939f
+CONTENT SHA256: 6a44d0fd46ef691478804deb4b43947ea3d6a8c773b5cf1b87acb78fa481c828
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 TIER: intermediate (31)
-GOAL: SpellbookConfiguration DEFINED - the four things you can set,
+GOAL: SpellbookConfiguration DEFINED - the core settings you can set,
       what each one means, and the four laws that guard them. This is
       the book's policy object: it decides teardown and how hard the
-      conjure pipeline works. Nothing here is exotic - four values,
+      conjure pipeline works. Nothing here is exotic - explicit values,
       four rules.
 
-      THE FOUR ITEMS
+      THE CORE SETTINGS
       disposal (bool)
-          Declares that this book's world performs teardown calls.
+          Stored configuration metadata; matched method names drive disposal calls.
       disposal_method_names (list[str])
           The teardown VOCABULARY - the method names that mean "clean
           yourself up" in this system. Cleanup calls whichever of them
           each object actually has (beginner 08 showed it firing).
+      enforce_priority_disposal_methods (bool, default False)
+          Place the matching book block last (False) or first (True).
+          Shared names always keep the book's order; spell-only names
+          keep their own order. Set this before binding.
       phase_scheduler_workers_per_spellbook (int)
           How many worker threads run the conjure pipeline. Conjure
           compiles and validates every spell in phases - more workers
@@ -7998,7 +8056,7 @@ GOAL: SpellbookConfiguration DEFINED - the four things you can set,
       4) COMPLETION - hand a book YOUR configuration and you own
          completing it. with_defaults() is easy mode; a bare config
          refuses at conjure-time validation.
-SURFACE EXERCISED: the four items, the four refusal laws
+SURFACE EXERCISED: core configuration settings, the four refusal laws
 """
 import melder as md
 
@@ -61145,7 +61203,7 @@ END FILE: docs/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/configuration.md
-CONTENT SHA256: 2e8cbe31005aa11136887b6f4be434fc5bea0f18752a3c9acaab00febeef3353
+CONTENT SHA256: e13ab7d69d3014307dcdbadf610e863220aedc9eaa001b1972f36772bcb9e2ca
 SOURCE ENCODING: utf-8
 ================================================================================
 # Configure the book before conjure
@@ -61162,9 +61220,55 @@ configuration explicitly before handing it to `Spellbook(configuration=...)`.
 The saved disposal lesson shows the complete setup rather than a fragment that
 depends on an already-initialized configuration.
 
-Conjure validates and freezes the configuration. A post-conjure edit is a refusal,
-so finish configuration before the runtime is created. The configuration lessons
+Conjure validates and freezes the configuration. Disposal names and priority are
+resolved for each spell at bind time, so establish them before binding. The configuration lessons
 also demonstrate unknown-property and incomplete-configuration failures.
+
+## Ordered disposal: book block first or last
+
+Per-bind `disposal_method_names` belong to that binding. Book-configured names
+apply to every new binding that implements them. Matching happens once at bind;
+cleanup consumes the resulting list without rereading configuration.
+
+```python
+config = md.SpellbookConfiguration()
+config.with_disposal_method_names(["flush", "close"])
+config.with_enforce_priority_disposal_methods(False)  # default: book block last
+config.with_defaults().finalize()
+
+book = md.Spellbook(configuration=config)
+book.bind(
+    spell=Resource,
+    existence="many",
+    disposal_method_names=["close", "release", "flush"],
+)
+```
+
+Assuming `Resource` declares all three methods:
+
+| Priority flag | Calls on each instance |
+| --- | --- |
+| `False` (default) | `release()` → `flush()` → `close()` |
+| `True` | `flush()` → `close()` → `release()` |
+
+The book owns shared names in **both** modes. Its complete matching block keeps
+configuration order; spell-only methods keep their own order beside it. Missing
+names are omitted and each accepted name runs once. An empty per-bind list does
+not suppress book methods.
+
+The existing matching scope is class-profile methods declared on the class;
+inherited-only methods, factory returns, and prebuilt-instance methods are not
+discovered by this binding path. Supply a class with explicit methods when you
+want automatic disposal registration.
+
+The method-name property is set-once; choose it before `with_defaults()` fills it.
+The priority flag can be adjusted during configuration assembly and freezes with
+the configuration. This is creation-time policy, not a post-bind mutation API.
+
+Existing scope/key/bucket teardown order is unchanged. Within one object, a
+method failure stops its remaining methods; other objects still receive cleanup.
+Crystals preserve the resolved order, and replay applies the receiving book's
+normal binding policy. A different policy can yield a different content ID.
 
 ## Tune the compile phase deliberately
 
@@ -61172,8 +61276,9 @@ also demonstrate unknown-property and incomplete-configuration failures.
 | --- | --- |
 | `phase_scheduler_workers_per_spellbook` | Worker count for the compile pipeline |
 | `phase_scheduler_barrier_timeout_milliseconds` | Maximum wait at a phase barrier, in milliseconds |
-| `disposal` | Enable registered disposal calls |
-| `disposal_method_names` | Names of the teardown methods used by the book |
+| `disposal` | Stored configuration flag; matched method names drive current cleanup registration |
+| `disposal_method_names` | Ordered book-wide teardown candidates, matched once per new spell |
+| `enforce_priority_disposal_methods` | Place the book block first (`True`) or last (`False`, default) |
 
 A larger timeout allows slower work to complete; it does not repair a dependency
 error. The scheduler lesson checks that constructor DI still works with one worker

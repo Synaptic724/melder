@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
- "source_sha256": "f522af1ef9edc06f988f03a4300121eaaefde5bf48d0ec3b333ead8dcc14a457",
+ "source_sha256": "f873b88e057de359d79a1b827a53c26277d9be3535890c69c2096ca8f1018ad9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan": {
@@ -152,7 +152,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "977783eaa7984f5056cd48087b4ed92b0a7985e6ed4ea586d99be02477e2ddf0",
+   "span_sha256": "f53a193c12697246bc5416d23d7ace7617d077d548751b581f2e6fb356dbe26b",
    "role": "Reusable generalized planner step object for one execution occurrence.",
    "responsibilities": [
     "stores generalized spell, occurrence, dependency, override, and contract payload metadata for one step",
@@ -198,7 +198,7 @@
    "label": "SpellGeneralizedCodegenLanePlan",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 429,
+   "lineno": 431,
    "bases": [
     "Cleanable"
    ],
@@ -258,7 +258,7 @@
    "label": "SpellGeneralizedCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 1042,
+   "lineno": 1044,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -270,7 +270,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "fe4b93104c0d84f8a6dcc8092faa19538cf7c15ba9170685f4555a8ef6c0e94c",
+   "span_sha256": "e69bb08aa228cc271d87ed177dc78573ba1e8c4ccc4145dfaff05092801bd101",
    "role": "Base generalized lane-plan builder from SpellCodegenModel.",
    "responsibilities": [
     "builds generalized lane-plan steps from graph, order, instance, injection, and runtime model sections",
@@ -291,7 +291,7 @@
    "label": "SpellSoloCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 1912,
+   "lineno": 1918,
    "bases": [
     "SpellGeneralizedCodegenPlanBuilder"
    ],
@@ -320,7 +320,7 @@
    "label": "SpellManyOnlyCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 1948,
+   "lineno": 1954,
    "bases": [
     "SpellGeneralizedCodegenPlanBuilder"
    ],

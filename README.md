@@ -450,27 +450,36 @@ book = md.Spellbook()
 book.bind(
     spell=PooledConnection,
     existence="unique",
-    disposal_method_names=["close", "shutdown"],   # ← the book's vocabulary
+    disposal_method_names=["close", "shutdown"],   # this binding's ordered methods
 )
-book.bind(spell=BackgroundWorker, existence="unique")
+book.bind(
+    spell=BackgroundWorker,
+    existence="unique",
+    disposal_method_names=["shutdown"],
+)
 
 conduit = book.conjure()
 ...
-conduit.cleanup()     # → close() on the connection, shutdown() on the worker
+conduit.cleanup()     # calls each creation's matched methods in their declared order
 ```
 
-The vocabulary is **book-wide and set once** — the first bind that supplies it
-fixes it (you can also set it on `SpellbookConfiguration`). Each spell then
-resolves to the intersection of that vocabulary and the methods it actually
-has:
+Each bind's list belongs to **that spell**, not every later bind. Melder resolves
+matching class methods once at bind time and preserves their order:
 
-- `PooledConnection.close()` exists → it gets called
-- `BackgroundWorker.shutdown()` exists → it gets called
-- A class with neither → carries no disposal metadata and costs nothing
+- If the connection implements both names, `close()` runs before `shutdown()`.
+- The worker uses its own `shutdown()` declaration.
+- Missing names are omitted; duplicate names execute once.
 
-Teardown is **best-effort and complete**: every object is attempted, and any
-failures are aggregated into a single `ExceptionGroup` rather than the first
-error aborting the rest of your cleanup.
+For book-wide methods, use `SpellbookConfiguration`. Its matching methods form
+one ordered block: last by default, or first with
+`with_enforce_priority_disposal_methods(True)`. Shared names belong to the book's
+block in either mode; spell-only names retain their own order. See the
+[configuration guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md)
+for both arrangements.
+
+Cleanup retains its existing reverse key/bucket traversal within each store. A failing
+method stops that object's remaining method calls; cleanup continues with other
+objects and aggregates failures into an `ExceptionGroup`.
 
 ## 🟢 Scopes That Nest
 <sub>**Beginner.** Child scopes, no configuration.</sub>

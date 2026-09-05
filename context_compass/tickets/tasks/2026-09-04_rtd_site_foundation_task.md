@@ -10,7 +10,7 @@
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-04T22:07:46Z
+- Updated: 2026-09-05T13:02:41Z
 
 ## Objective
 Create the working documentation source assembly, homepage, four level landings, complete contents, navigation, visual theme, and a representative real API/example/diagram build.
@@ -28,27 +28,29 @@ Create the working documentation source assembly, homepage, four level landings,
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: User authorized implementation; this is the first active delivery task.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Observed focus/contrast defects corrected and verified; native browser zoom is
+  unavailable through the current browser controls, with 320/375/640/768/1024px reflow verified.
 
 ## Steps / Checklist
-- [ ] Read the exact inputs and record one bounded implementation decision.
-- [ ] Complete required patch contracts when the change is system-impacting.
-- [ ] Implement the scoped deliverable with notes before the next tranche.
-- [ ] Validate meaningful behavior/content and record actual outcomes.
-- [ ] Synchronize parent story and hand off or close after acceptance.
+- [x] Read the exact inputs and record one bounded implementation decision.
+- [x] Complete required patch contracts when the change is system-impacting.
+- [x] Implement the scoped deliverable with notes before the next tranche.
+- [x] Validate meaningful behavior/content and record actual outcomes.
+- [x] Synchronize parent story and hand off; formal acceptance remains open.
 
 ## Acceptance Criteria
-- [ ] Local build runs with a recorded compatible dependency set.
-- [ ] Exactly Beginner, Intermediate, Advanced, Expert appear as first-depth learning routes.
-- [ ] Examples and Full Contents are prominent and all generated page IDs have one parent.
-- [ ] A real saved example, public API signature, and architecture SVG render correctly.
+- [x] Local build runs with a recorded compatible dependency set.
+- [x] Exactly Beginner, Intermediate, Advanced, Expert appear as first-depth learning routes.
+- [x] Examples and Full Contents are prominent and all generated page IDs have one parent.
+- [x] A real saved example, public API signature, and architecture SVG render correctly.
 - [ ] Keyboard/mobile/zoom navigation and source inclusion are inspected.
 
 ## Validation
-- Not run. Implementation task just created.
-- Use the parent story's validation plan and report local/hosted/execution results separately.
+- Strict HTML and local-link/source checks pass; see the linked logs and S9 audit report.
+- Mobile/keyboard/skip/card/menu checks pass. A separate build with custom JavaScript removed exposes
+  all 133 examples and the complete contents at 320px. Native 200% browser zoom is not verified.
 
 ## Risks / Mitigations
 - Canonical source and existing lessons can change concurrently; verify relevant inputs before edits.
@@ -61,7 +63,16 @@ Create the working documentation source assembly, homepage, four level landings,
   - system_docs/patches/active/rtd_site_2026_09_04/architecture_patch.md
   - system_docs/patches/active/rtd_site_2026_09_04/component_patch_documentation_pipeline.md
   - system_docs/patches/active/rtd_site_2026_09_04/code_description_patch_documentation_pipeline.md
+  - artifacts/rtd_validation_20260904/navigation_audit_build_20260905.log
+  - artifacts/rtd_validation_20260904/navigation_audit_links_20260905.log
+  - artifacts/rtd_validation_20260904/navigation_final_build_20260905.log
+  - artifacts/rtd_validation_20260904/navigation_final_links_20260905.log
+  - artifacts/rtd_validation_20260904/accessibility_build_20260905.log
+  - artifacts/rtd_validation_20260904/accessibility_links_20260905.log
+  - artifacts/rtd_validation_20260904/accessibility_final_build_20260905.log
+  - artifacts/rtd_validation_20260904/no_custom_js_build_20260905.log
 - DISPOSITION: promote_to_documentation
+- VALIDATION_DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Promote the durable contract into docs/maintaining.md at accepted pipeline closure.
 
 ## Context Management
@@ -85,10 +96,6 @@ Create the working documentation source assembly, homepage, four level landings,
   NEXT: Prepare the docs pipeline patch contract and the isolated build environment.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
-
-## Applicable Anti-Patterns
-- [ ] No silently omitted content or invented validation.
-- [ ] No unrecorded scope changes or interference with another agent's work.
 
 - DATETIME: 2026-09-04T22:14:08Z
   TYPE: DECISION
@@ -173,6 +180,102 @@ Create the working documentation source assembly, homepage, four level landings,
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T12:21:46Z
+  TYPE: DECISION
+  CLAIM: Fix the S9 keyboard defects in docs/_static/melder.css, navigation.js, and _templates/layout.html.
+    The parent theme exposes extrabody/content/navigation blocks. Use these blocks for a static
+    skip-to-content target and navigation target; preserve the theme's toggle behavior. CSS will
+    hide the closed mobile sidebar and outline complete focused cards. JavaScript will move focus
+    into an opened menu and close/return focus on Escape without adding a second toggle mechanism.
+  EVIDENCE:
+  - tickets/tasks/2026-09-04_rtd_quality_audit_task.md
+  - Sphinx RTD theme 3.1.0 layout.html:108-194
+  - docs/_static/navigation.js:1-14
+  IMPACT: The existing publication patch covers this accessibility fix. Validate real keyboard/
+    pointer behavior and all generated pages; no runtime assets or LLM corpora are regenerated.
+  NEXT: Implement the three-file fix and rebuild the site for focused browser verification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:31:02Z
+  TYPE: MEASURE
+  CLAIM: First fix passes strict rendering and all 35,492 links across 294 pages. At 375px, closed
+    drawer controls no longer receive hidden focus; skip-link Enter focuses the content target.
+    Menu Enter moves focus inside the visible drawer; Escape closes it and restores the toggle.
+    A further Tab-out probe found the shifted brand link at x=397 outside a 375px viewport, so close
+    the non-modal drawer when focus enters the surrounding page.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/navigation_audit_links_20260905.log:1-1
+  - docs/_static/navigation.js
+  - docs/_static/melder.css
+  - Browser focus/geometry observations at 375x812.
+  IMPACT: The final focus-in handler preserves ordinary page navigation without trapping focus or
+    exposing shifted content. Rebuild and repeat the exact Tab-out case before returning to S9.
+  NEXT: Verify the final drawer/card focus behavior, then resume the remaining quality audit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:53:01Z
+  TYPE: MEASURE
+  CLAIM: Final drawer/card focus checks passed before recovery. Rendered article/download links use
+    #2980b9 on #fcfcfc (4.192:1); this misses the normal-text 4.5:1 threshold. Python comments
+    (4.580:1) and strings (5.943:1) pass. Copybutton 0.5.2 exposes buttons to keyboard focus but its
+    CSS shows them only on hover/success. Complete the bounded CSS correction: darker links,
+    keyboard-visible copy controls, consistent input/select/summary focus, and stronger filter borders.
+  EVIDENCE:
+  - docs/_static/melder.css:1-63
+  - docs/_static/navigation.js:1-38
+  - artifacts/rtd_validation_20260904/navigation_final_links_20260905.log:1-1
+  - Browser computed styles and contrast measurements on examples/hello-melder.html.
+  - sphinx_copybutton/_static/copybutton.css:1-43 (installed version 0.5.2).
+  - https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+  IMPACT: Keep passing syntax highlighting; repair the observed reading/focus defects without
+    changing Melder runtime behavior. ContextCompass recovery completed with existing approval.
+  NEXT: Apply the CSS correction and verify rendered contrast, focus, and narrow layouts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:58:00Z
+  TYPE: FACT
+  CLAIM: Darker links and keyboard copy visibility are implemented; strict build and 35,497 local
+    links pass. Copy control receives visible keyboard focus and reports Copied on Enter. Browser
+    virtual clipboard readback is unavailable, so copied bytes are not claimed verified. Capstone
+    plain inline literals still use the theme's #e74c3c on white; darken them to #b23a2d. Give sidebar
+    focused links their own dark background/light inset ring to avoid low blue-on-charcoal contrast.
+  EVIDENCE:
+  - docs/_static/melder.css:1-75
+  - artifacts/rtd_validation_20260904/accessibility_build_20260905.log
+  - artifacts/rtd_validation_20260904/accessibility_links_20260905.log:1-1
+  - Browser computed styles on beginner/capstone.html and keyboard interaction on Hello Melder.
+  IMPACT: All observed text/focus contrast defects now have bounded style corrections. The in-app
+    browser's Ctrl+= shortcut did not change CSS viewport or DPR; native 200% zoom remains unverified.
+  NEXT: Complete responsive/focus checks on the final style rules and return S1 to review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:02:41Z
+  TYPE: MEASURE
+  CLAIM: Final styles render correctly; capstone has no page overflow at 320, 375, 640, 768, or
+    1024px. Phone menu Enter/Escape moves/returns focus correctly. Skip Enter targets main content;
+    homepage retains all four named cards and visible Contents/Examples controls at 320px. Separate
+    strict Sphinx output with html_js_files empty contains neither navigation.js nor catalog.js;
+    native mobile links open Full Contents (293 links) and all 133 visible examples.
+  EVIDENCE:
+  - docs/_static/melder.css:1-72
+  - artifacts/rtd_validation_20260904/accessibility_final_build_20260905.log
+  - artifacts/rtd_validation_20260904/no_custom_js_build_20260905.log
+  - Browser inspection of local ports 8765 and 8766 at the recorded viewport widths.
+  IMPACT: S1 corrections are reviewable. Native zoom and copied-byte readback remain tool limitations,
+    not claimed passes; S9 carries those precise limits with the remaining hosted audit.
+  NEXT: Resume S9 catalog/search/reference/offline checks and final source qualification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+## Applicable Anti-Patterns
+- [ ] No silently omitted content or invented validation.
+- [ ] No unrecorded scope changes or interference with another agent's work.
+
 ## Context / Handoff Summary
-Active first delivery task.
-Create the working documentation source assembly, homepage, four level landings, complete contents, navigation, visual theme, and a representative real API/example/diagram build.
+Four-level site foundation and final focus/contrast fixes are implemented and locally verified.
+S9 resumes the integrated audit. Native 200% browser zoom and copied-byte readback could not be
+verified with this browser tool. Owner acceptance and hosted publication remain separate.

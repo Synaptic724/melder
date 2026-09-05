@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-persistence
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_persistence_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T22:06:16Z
+- Updated: 2026-09-05T13:03:07Z
 
 ## Objective
 Make public/source documentation and generated repository assets describe the verified
@@ -32,9 +32,10 @@ ordered-disposal behavior, preserving existing documentation work and generation
 - Out of scope: new documentation platform, unrelated diagrams, version bumps, commits/pushes/releases.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested a completion task for documentation and derived assets.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Public/canonical docs and examples updated; source then LLM assets rebuilt
+  for current 0.2.3 and both exact freshness commands pass. Final runtime validation follows.
 
 ## Required Reading and Evidence
 - Current implementation task notes and their successful tests, not only the design.
@@ -159,7 +160,85 @@ Record actual documentation/generation outcomes with paths; retain source truth 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T12:35:01Z
+  TYPE: PLAN
+  CLAIM: Authoring/patch instructions, all four examples, relevant public disposal lessons,
+    and both asset builders are read. Scope: README teardown, intermediate configuration page,
+    existing disposal/config lessons, two Spellbook argument docs, affected canonical descriptions
+    and descriptors. codex_2 will avoid corpus/source regeneration and requests a completion notice.
+  EVIDENCE:
+  - `README.md:440-474`
+  - `docs/intermediate/configuration.md:1-40`
+  - `UX_and_AIX_experiences/AGENTS.md`
+  - `src/melder/_build_assets/_build_asset_runner.py:1-399`
+  - `llm_support/_builder.py:1-886`
+  - Incoming codex_2 notice: tickets/tasks/2026-09-04_rtd_quality_audit_task.md.
+  IMPACT: Correct first-bind global-vocabulary and bool-master-switch claims. Keep md.*-only
+    runnable lessons and existing heading structure. Use intent-to-add for new feature test inputs
+    so standard corpus build/check includes them; do not stage existing edits, commit, or push.
+  NEXT: Capture the authored-document preservation baseline and write the scoped documentation deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T12:35:01Z
+  TYPE: MEASURE
+  CLAIM: Public/canonical disposal deltas are written. Three edited example scripts run
+    successfully with PYTHONPATH pointing at src and the checkout. Beginner 35 asserts exact
+    flush/close order; intermediate 30 executes both book-block positions; configuration text
+    no longer calls disposal a functioning master switch. README link uses verified origin owner
+    Synaptic724. Two source-doc indexes regenerate; 14 scoped C1 entries are remeasured.
+  EVIDENCE:
+  - `README.md`
+  - `docs/intermediate/configuration.md`
+  - `UX_and_AIX_experiences/01_beginner/35_disposal_multiple_methods.py`
+  - `UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_frozen_law.py`
+  - `UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py`
+  IMPACT: The first bare script run lacked source import paths; corrected environment runs pass.
+    A pre-edit line multiset records preservation. The first comparison found only eight intentionally
+    replaced legacy claim lines; all other prose survives. Later numeric C1/date changes are mechanical.
+  NEXT: Finish scoped descriptor/graph generation, then source and standard corpus build/check.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:03:07Z
+  TYPE: MEASURE
+  CLAIM: Fifteen approved descriptors were mechanically refreshed through the existing extractor,
+    preserving authored prose/stamps. Seven fully reread classes were accepted; other pre-existing
+    stale semantic entries remain honestly unstamped. Graph/index assembly validates all 591 sections
+    (1,224 nodes, 1,452 edges). Current assembler expands responsibilities into bullets, explaining
+    most global render churn; no unrelated descriptor was rewritten. Authored docs retain all prose
+    except eight approved claim replacements plus measured C1/date updates.
+  EVIDENCE:
+  - `artifacts/ordered_disposal_validation_20260905/maintain_docs.py`
+  - `system_docs/src_architecture_index.md`
+  - `system_docs/src_components_index.md`
+  - `system_docs/src_graph_index.md`
+  IMPACT: Incremental documentation maintenance, not a new claim that every historical graph
+    semantic or old C1 citation is current. No blanket semantic acceptance or graph redesign.
+  NEXT: Keep final generated checks green after the full runtime test pass.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:03:07Z
+  TYPE: MEASURE
+  CLAIM: All three source assets regenerated at the checkout's existing v0.2.3, followed by
+    src/tests/other LLM corpora. Both exact check commands pass. The two new feature test files
+    were marked intent-to-add for tracked-input discovery; no existing edit was staged and this
+    agent did not commit or push. Current corpus counts are src 584, tests 806, other 352.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe src/melder/_build_assets/_build_asset_runner.py --check
+  - Result: 3 assets current, v0.2.3/schema 2.0.0/key match, exit 0.
+  - Command: .venv_new/Scripts/python.exe llm_support/_builder.py --check
+  - Result: src/tests/other fingerprint and output proofs match, exit 0.
+  IMPACT: Generator inputs and outputs agree. Other agents' concurrent docs can still stale the
+    other corpus, so recheck immediately before handoff. No version bump was performed here.
+  NEXT: Execute final runtime verification, notify codex_2 that source/docs are settled, then recheck assets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-No work executed yet. Use implemented behavior and task evidence, preserve the separate RTD lane,
-and run source assets before LLM assets. Final task:
-`tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md`.
+Implemented/in review: README, intermediate configuration page, three runnable lessons, two Spellbook
+argument docstrings, canonical source architecture/components plus indexes, fifteen scoped descriptors,
+generated graph/index, source assets, and all LLM corpora. Three lessons run; both asset checks pass.
+Seven fully reread graph classes accepted; unrelated legacy staleness remains out of scope.
+Next: final validation task. Notify codex_2 for its independent RTD qualification. No commit/push.
