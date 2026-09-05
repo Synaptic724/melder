@@ -10,7 +10,7 @@
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-04T22:07:46Z
+- Updated: 2026-09-05T10:09:36Z
 
 ## Objective
 Deliver the complete Beginner learning path, public vocabulary, current cleanup explanation, capstone, and every saved Beginner lesson.
@@ -28,9 +28,10 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: draft
-- to_state: draft
-- transition_reason: Implementation task defined; prerequisite work remains ahead of activation.
+- from_state: review
+- to_state: in_progress
+- transition_reason: Owner requests a corrected capstone: self-mediated binding, separate Python
+  modules/bootstrap/consumer, and TYPE_CHECKING annotations where consumer code melds its objects.
 
 ## Steps / Checklist
 - [ ] Read the exact inputs and record one bounded implementation decision.
@@ -130,6 +131,27 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
   IMPACT: Beginner runtime verification is green. Later tasks must add meaningful source-backed
     assertions to the two named examples; no unrelated runtime change is authorized.
   NEXT: Extend the same curriculum registry through Intermediate, with direct lesson links.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:09:36Z
+  TYPE: DECISION
+  CLAIM: The saved capstone currently puts registrations under with book and calls that an atomic
+    registration batch. It defines all objects in one script and leaves resolved locals untyped.
+    The chapter displays only main(), so imports and module boundaries are invisible to readers.
+    Use three flat helper modules (models, bootstrap, application) plus the existing numbered entry.
+    The catalog already downloads all flat Python helpers; no catalog format change is needed.
+  EVIDENCE:
+  - UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py:1-65
+  - docs/beginner/capstone.md:1-23
+  - docs/tools/curriculum.py:99-151
+  - docs/tools/example_catalog.py:97-133
+  - docs/tools/example_catalog.py:233-257
+  - UX_and_AIX_experiences/pytest_examples/test_beginner_examples.py:17-36
+  IMPACT: Revise only the capstone chapter, its canonical script/helpers, its curriculum display flag,
+    and the Beginner harness's sibling-import setup. Use ordinary constructor injection, shared config/
+    pool, fresh handlers, meaningful outcome/cleanup assertions, and TYPE_CHECKING in the consumer.
+  NEXT: Verify Spellbook.bind's admission/lock path before writing the new bootstrap explanation.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

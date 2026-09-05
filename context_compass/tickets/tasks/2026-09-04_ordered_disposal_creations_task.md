@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-runtime
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_runtime_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T22:06:16Z
+- Updated: 2026-09-05T10:10:55Z
 
 ## Objective
 Have Creations retain and consume the established Spell disposal list directly, including
@@ -31,9 +31,10 @@ extraction/restoration, while preserving existing lifetime and cleanup behavior.
 - Out of scope: new configuration reads, new reflection probes, new disposal scopes or methods.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested a separate scoped Creations implementation task.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Owner requested continuation; compiler prerequisite passes 792 tests.
+  Read Creations and prepare its contract before editing the six metadata-copy contacts.
 
 ## Required Reading and Evidence
 Navigate Component: Creations and SpellSpace / Subcomponent: Creations Disposal Pipeline;
@@ -141,6 +142,17 @@ Capture real ownership and behavioral findings before continuing; separate exist
     producer/compiler list contract, including clear_all and pool reuse.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:10:55Z
+  TYPE: PLAN
+  CLAIM: Begin Creations ownership after verified compiler propagation. Existing method-call
+    order, fail-stop-per-object behavior, and reversed registry/bucket traversal stay intact.
+  EVIDENCE:
+  - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`
+  IMPACT: This task is one storage-owner correction, not a disposal-loop redesign.
+  NEXT: Read the complete Creations implementation and its existing tests/caller contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 The invocation loop already runs names in order; upstream frozensets caused order loss.

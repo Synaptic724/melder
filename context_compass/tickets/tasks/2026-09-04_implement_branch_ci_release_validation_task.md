@@ -388,6 +388,55 @@ tests/build verification on every final release and a last prod-head check befor
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:08:25Z
+  TYPE: DECISION
+  CLAIM: The owner explicitly accepted closeout: "turn in your tickets and we can call it".
+    The selected set is this implementation task and the preceding branch-promotion analysis task.
+    Closeout includes their board synchronization, recorded artifact dispositions, and workflows_1
+    departure. Rollout and automatic staging/dated-candidate scheduling remain recorded follow-up.
+  EVIDENCE:
+  - Owner closeout instruction on 2026-09-05, recorded verbatim above.
+  - context_compass/tickets/tasks/2026-09-04_github_branch_promotion_analysis_task.md:43-81
+  - context_compass/tickets/tasks/2026-09-04_implement_branch_ci_release_validation_task.md:41-109
+  IMPACT: Closure selection and acceptance are explicit. Preserve codex_features2, product code,
+    other agents' tickets/artifacts, and the owner's control of commits and pushes.
+  NEXT: Verify patch decisions are durable and inspect the exact temporary artifact paths for cleanup.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:09:42Z
+  TYPE: FACT
+  CLAIM: The four patch documents' durable CI, promotion, final-release, and retry rules are
+    present in .github/BRANCH_WORKFLOW.md. Validation results are already preserved in this ticket.
+    The disposable validation workspace contains only its named logs, test/package outputs, and
+    tooling; git worktree list reports only the main checkout on codex_features2. Current owner
+    commit 0a76b7884417e056b1b501336e08096572cc3baf descends from the preserved f35b15178 CI commit.
+  EVIDENCE:
+  - .github/BRANCH_WORKFLOW.md:1-117
+  - context_compass/tickets/tasks/2026-09-04_implement_branch_ci_release_validation_task.md:61-89
+  - context_compass/artifacts/branch_ci_release_20260904/validation.md:1-31
+  IMPACT: Artifact disposal loses no canonical decisions or validation summary. No source code,
+    generated product assets, Git refs, or other agents' artifacts require changes for closeout.
+  NEXT: Delete the verified task-local artifacts, complete both tickets, and synchronize the boards.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T10:11:23Z
+  TYPE: DECISION
+  CLAIM: Automatic approval review rejected recursive deletion of the patch directory because
+    those files are durable history. The rejected command did not execute. Use the safer closeout:
+    move all four patch records intact into system_docs/patches/completed/branch_ci_release_2026_09_04
+    and remove only artifacts/branch_ci_release_20260904 under its existing delete_on_close rule.
+  EVIDENCE:
+  - Automatic approval-review rejection in this closeout pass, recorded above.
+  - context_compass/artifact_board.md:112-122
+  - .github/BRANCH_WORKFLOW.md:1-117
+  IMPACT: Preserve the complete patch history and its promoted decisions while retiring active
+    routing. This changes no product code and does not retry the rejected patch deletion.
+  NEXT: Archive the patch directory intact and remove the separately verified disposable workspace.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 The CI foundation and final tag guard are preserved on local/remote codex_features2 at
 f35b1517863a846b35b7411c27c60b3547fa9cba. Final guard validation: 167 focused tests, seven workflow

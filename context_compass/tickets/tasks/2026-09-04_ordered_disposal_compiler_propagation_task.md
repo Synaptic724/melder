@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-runtime
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_runtime_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T09:46:41Z
+- Updated: 2026-09-05T10:10:55Z
 
 ## Objective
 Carry each Spell's resolved ordered list through runtime records, plans, and emitted
@@ -32,10 +32,10 @@ executor bindings without redundant live-list copies or changes to execution alg
 - Out of scope: method matching, override API redesign, arbitrary post-creation list mutation.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner requested continuation after the verified producer slice.
-  Read/classify compiler metadata and prepare its patch contract before source edits.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Six-file compiler correction and 25 regressions implemented; 792 compiler
+  unit/Spellbook component tests pass. Creations is the next separately routed task.
 
 ## Required Reading and Evidence
 Read Component: SpellCompiler and Validation Pipeline and Component: Meld Resolution Runtime
@@ -65,14 +65,14 @@ The source prefix for those relative entries is `src/melder/aether/spellbook/spe
 Open complete implementations before editing; the list is a shortlist, not an edit-all instruction.
 
 ## Steps / Checklist
-- [ ] Classify each contact as a live reference, copied inner method list, or serialized/hash values.
-- [ ] Carry the resolved list directly in SpellRuntimeRecord and generalized plan steps.
-- [ ] Adjust solo normalization and many-only metadata only where they detach live method values.
-- [ ] Preserve outer containers that already hold the same inner list references.
-- [ ] Keep genuine IR/hash projections deterministic and order-preserving, documenting why
+- [x] Classify each contact as a live reference, copied inner method list, or serialized/hash values.
+- [x] Carry the resolved list directly in SpellRuntimeRecord and generalized plan steps.
+- [x] Adjust solo normalization and many-only metadata only where they detach live method values.
+- [x] Preserve outer containers that already hold the same inner list references.
+- [x] Keep genuine IR/hash projections deterministic and order-preserving, documenting why
       they are value boundaries. Check cache hydration rebinding to live Spell metadata.
-- [ ] Preserve existing has_disposal_methods/must_register and lifetime-store routing.
-- [ ] Test family and override variants, cold and cached; append results before Creations work.
+- [x] Preserve existing has_disposal_methods/must_register and lifetime-store routing.
+- [x] Test family and override variants, cold and cached; append results before Creations work.
 
 ## Deliverables
 Minimal compiler metadata/type/docstring changes and focused family/cache regression coverage.
@@ -86,7 +86,8 @@ Minimal compiler metadata/type/docstring changes and focused family/cache regres
 - Relevant component pipeline tests; read test docs and implementations first.
 
 ## Validation
-- Not run; ticket only. Use supported Python 3.14.
+- Passed: 81 focused cases, then 792 compiler unit/Spellbook component tests on Windows 3.14t.
+- No full-suite, cross-platform, or whole-world persistence/replay claim. Assets remain deferred.
 - Assert exact names at registration, not merely tuple/list type or attribute existence.
 - Check the explicit sharing contract for live metadata; it is not a mutation feature.
 - Confirm cached value projections retain order and hydrated executors use current bound Spells.
@@ -102,8 +103,8 @@ Do not remove useful cache value normalization or make a key unhashable accident
 - [ ] No invented mutation invalidation system or extra hot-path guards.
 
 ## Done Checklist
-- [ ] Minimal changes and family/cache tests complete with evidence.
-- [ ] Live ownership versus serialized values documented in touched contracts.
+- [x] Minimal changes and family/cache tests complete with evidence.
+- [x] Live ownership versus serialized values documented in touched contracts.
 - [ ] Creations task unblocked; closure requires owner acceptance.
 
 ## Artifact Links (Optional)
@@ -248,7 +249,88 @@ Record the classification and evidence before changing each compiler family. One
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T09:59:50Z
+  TYPE: PLAN
+  CLAIM: Compiler architecture/component/control-flow contracts were indexed, linked, and
+    consumed. Mapping: processor/record -> record identity/order; generalized single/dual and
+    many-only plans -> step/array identity plus cleanup; solo normalization -> actual emitted
+    registration and reused code-object binding; preserved IR/cache boundaries -> ordered
+    marshal roundtrip and stored-code hydration against fresh Spell references.
+  EVIDENCE:
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch.md:20-73`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_compiler_disposal.md:7-39`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_compiler_disposal.md:7-30`
+  IMPACT: Compiler entry gate is satisfied. Six source files are fully read; other namespace,
+    row, and cache helper paths are verification boundaries, not new implementation scope.
+  NEXT: Add/run focused compiler regressions before applying the propagation edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:04:13Z
+  TYPE: MEASURE
+  CLAIM: New compiler regressions run: 22 failed, 3 passed in 0.35s. Twenty failures expose
+    the intended processor/solo list-copy mismatch. Two override cases need fixture review:
+    the recording store lacks its lock, and direct many-only plan steps lack the hydrated
+    runtime shape expected by the override namespace. No runtime workaround is authorized.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py -q -p no:cacheprovider --tb=line
+  - `tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py`
+  IMPACT: Source correction remains the six-file metadata patch. Trace the real many-only
+    override caller before repairing the test setup, not the production contracts.
+  NEXT: Verify the override setup boundary, apply the six-file patch, and rerun the focused tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:08:16Z
+  TYPE: FACT
+  CLAIM: Six compiler files now retain the established list: runtime record/processor,
+    generalized single/dual builders, many-only metadata, and both solo helpers. Updated
+    the existing record fixture to list inputs. Override test setup now supplies the store
+    lock and uses many-only row hydration, matching the actual many-only phase-11 caller.
+    No production locks, namespaces, hash/IR encoding, or cache formats were changed.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_overrides_codegen_creation_step.py:113-180`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py:2180-2220`
+  - `tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py`
+  IMPACT: Test-double failures are repaired at the test boundary; compiler runtime behavior
+    remains unchanged apart from list ownership. Verification is next, not yet claimed.
+  NEXT: Run focused compiler tests and then the wider existing compiler suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:08:16Z
+  TYPE: MEASURE
+  CLAIM: Focused compiler verification passes 81 tests in 0.43s: 56 existing plus 25 new.
+    Actual emitted registrations retain the supplied lists. Processor and all tested plan
+    variants retain identity/order; serialized cache rows preserve order and stored-code
+    hydration binds fresh Spell lists. Source diff is exactly six compiler files.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_compilers_core.py tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_data_migrations.py tests/unit/melder/spellbook/spell_compiler/test_spell_codegen_cache_rehydration_exec.py tests/unit/melder/spellbook/spell_compiler/codegen_planner/test_generalized_dual_build_differential.py -q -p no:cacheprovider --tb=short
+  - Result: 81 passed in 0.43s, exit 0.
+  IMPACT: Focused contract is green. Wider compiler and real component regression checks
+    precede switching to Creations ownership changes.
+  NEXT: Run the wider compiler unit/component boundary and inspect the six-file diff.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:10:55Z
+  TYPE: MEASURE
+  CLAIM: Wider compiler/Spellbook verification passes 792 tests in 3.43s. The six-file source
+    diff is reviewed and scoped whitespace checking passes. No emitted algorithms, locks,
+    cache helpers, or schema-value transforms were changed.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/spellbook/spell_compiler tests/component/melder/spellbook -q -p no:cacheprovider --tb=short
+  - Result: 792 passed in 3.43s, exit 0.
+  IMPACT: Compiler slice is in review; its verification prerequisite unblocks Creations work.
+  NEXT: Execute the separately routed Creations metadata-ownership task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-No implementation yet. Read the actual compiler files; do not claim they were all read in full
-before compaction. Preserve order and direct live references without inventing mutation support.
+Six compiler source files and focused tests are implemented/in review. All six edited files
+were read fully; namespace/cache contacts were read through their complete relevant functions.
+Twenty-five new tests cover list identity/order, plan cleanup, six solo routes with overrides
+and code-cache reuse, generalized/many-only registration, and marshal/stored-code hydration.
+81 focused tests and the wider 792-test compiler/Spellbook boundary pass on Windows 3.14t.
+Creations storage still copies names until its separate task. No commits/pushes or assets rebuilt.
 Next: `tickets/tasks/2026-09-04_ordered_disposal_creations_task.md`.

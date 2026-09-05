@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
@@ -11,6 +11,10 @@ class SpellRuntimeRecord:
     Purpose:
         Hold the spell-static runtime facts needed by planner strategies without
         forcing those strategies to reopen the live spellbook maps.
+
+    Ownership:
+        Borrows the Spell's established disposal list. Neither this record nor
+        the enclosing analysis owns or clears that list's contents.
     """
 
     __slots__ = [
@@ -41,7 +45,7 @@ class SpellRuntimeRecord:
             is_method_spell: bool,
             is_lambda_spell: bool,
             has_disposal_methods: bool,
-            disposal_method_names: Tuple[str, ...],
+            disposal_method_names: List[str],
             user_created_object: Any,
     ) -> None:
         """
@@ -70,7 +74,7 @@ class SpellRuntimeRecord:
             has_disposal_methods:
                 True when the spell declares disposal methods.
             disposal_method_names:
-                Names of the declared disposal methods.
+                Spell-owned names in established execution order, retained directly.
             user_created_object:
                 Pre-supplied object for existing-creation spells, else None.
 
