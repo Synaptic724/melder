@@ -509,6 +509,21 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T14:39:23Z
+  TYPE: MEASURE
+  CLAIM: Owner supplied CI's stale-other failure and explicitly requested the regeneration command.
+    Ran exactly python llm_support/_builder.py on the current dev checkout. It exited zero and
+    reported UNCHANGED for src, tests, other, and manifest.json. No generated files were rewritten.
+    The preceding local --check also passed all three corpora. Owner will handle promotion to prod.
+  EVIDENCE:
+  - Command output: python llm_support/_builder.py (exit 0; all four outputs UNCHANGED).
+  - Command output: llm_support/_builder.py --check (all three corpora OK).
+  - Owner's CI failure excerpt and exact-command instruction.
+  IMPACT: Requested command completed; this does not establish that the failing CI revision is fixed.
+  NEXT: Owner continues deployment; investigate revision differences only if requested.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
