@@ -155,7 +155,9 @@ class Handbook:
         """Compile the real Sphinx LaTeX with Tectonic or an installed XeLaTeX/latexmk toolchain."""
         output = self.builder._output("handbook-pdf")
         output.mkdir(parents=True, exist_ok=True)
-        compiler = str((self.builder.root / configured).resolve()) if configured else shutil.which("tectonic")
+        local = self.builder._output("tools/tectonic") / ("tectonic.exe" if os.name == "nt" else "tectonic")
+        compiler = (str((self.builder.root / configured).resolve()) if configured else
+                    str(local) if local.is_file() else shutil.which("tectonic"))
         if compiler:
             environment = dict(os.environ)
             environment["TECTONIC_CACHE_DIR"] = str(self.builder._output("tectonic-cache"))

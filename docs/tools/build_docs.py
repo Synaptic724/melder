@@ -11,8 +11,10 @@ import subprocess
 import sys
 import tomllib
 import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath
 from typing import Mapping, Optional
+from urllib.parse import urlsplit
 
 from site_model import Asset, Page
 from example_catalog import ExampleCatalog
@@ -244,12 +246,29 @@ class DocumentationBuilder:
         command = [sys.executable, "-m", "sphinx", "-q", "-b", builder, "-W", "--keep-going",
                    "-c", str(self.docs), "-d", str(self._output("doctrees")),
                    str(source), str(output)]
-        status = subprocess.run(command, cwd=self.root, check=False).returncode
+        environment = dict(os.environ)
+        if self.catalog is not None:
+            environment["MELDER_DOCS_GIT_REVISION"] = self.catalog._revision
+        status = subprocess.run(command, cwd=self.root, env=environment, check=False).returncode
         if status == 0:
             if builder == "html" and self.catalog is not None:
                 shutil.copytree(source / "downloads", output / "downloads", dirs_exist_ok=True)
+                self._sitemap(output)
             sys.stdout.write(f"Built {len(self.pages)} pages: {output}\n")
         return status
+
+    def _sitemap(self, output: Path) -> None:
+        """Emit page URLs only when the hosting environment supplies a real canonical base."""
+        base = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
+        if not base:
+            return
+        if urlsplit(base).scheme not in ("http", "https"):
+            raise ValueError("The canonical documentation URL must use HTTP(S).")
+        root = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
+        for page in self.pages:
+            entry = ET.SubElement(root, "url")
+            ET.SubElement(entry, "loc").text = base.rstrip("/") + "/" + page.identifier + ".html"
+        ET.ElementTree(root).write(output / "sitemap.xml", encoding="utf-8", xml_declaration=True)
 
     def archive(self) -> Path:
         """Archive the complete built HTML, including its local assets and stable downloads."""

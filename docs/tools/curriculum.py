@@ -146,6 +146,9 @@ class Curriculum:
                           f"— {lesson.level.title()} {lesson.number}" for lesson in selected)
         body += (f"\n\n[All {level} examples]({self._relative(identifier, 'examples/'+level+'/index')}) · "
                  f"[Level contents](index.md) · [Full contents]({self._relative(identifier, 'contents')})\n")
+        source_path = "README.md" if has_readme else "docs/" + chapter["source"]
+        body += ("\n[Canonical page source](https://github.com/Synaptic724/melder/blob/"
+                 f"{self.catalog._revision}/{source_path})\n")
         self.pages.append(Page(identifier, title, "", level + "/index"))
         self.bodies[identifier] = body
 

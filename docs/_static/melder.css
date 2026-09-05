@@ -11,6 +11,7 @@
 .wy-nav-content-wrap { background: #f3f6fa; }
 .wy-side-nav-search { padding: 1.3rem 1rem; }
 .wy-side-nav-search > a { font-size: 1.65rem; letter-spacing: -.04em; }
+.melder-version { color: #dce6f4; font-size: .8rem; margin-top: .6rem; }
 .rst-content { color: var(--melder-ink); line-height: 1.7; }
 .rst-content h1 { font-size: 2.5rem; letter-spacing: -.045em; line-height: 1.14; }
 .rst-content h2 { font-size: 1.5rem; margin-top: 2.5rem; letter-spacing: -.02em; }

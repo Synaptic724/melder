@@ -115,11 +115,11 @@ class ApiReference:
         options = "   :members:\n   :member-order: bysource\n" if directive == "autoclass" else ""
         self.bodies[identifier] = (
             f"# {name}\n\n{entry}\n\n[Implementation source]({source_url})\n\n"
-            f"```{{eval-rst}}\n.. {directive}:: {target}\n{options}```\n\n"
+            f"```{{eval-rst}}\n.. {directive}:: {origin}\n{options}```\n\n"
             f"[Topic reference]({self._link(identifier, 'reference/api/'+group)}) · "
             f"[Full contents]({self._link(identifier, 'contents')})\n"
         )
-        self.inventory.append({"name": name, "target": target,
+        self.inventory.append({"name": name, "target": target, "origin": origin,
                                "disposition": "documented " + kind, "page": identifier})
 
     def _index(self, groups: list[dict]) -> None:

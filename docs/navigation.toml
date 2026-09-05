@@ -81,3 +81,15 @@ id = "reference/releases"
 title = "Releases & Migration"
 source = "reference/releases.md"
 parent = "index"
+
+[[page]]
+id = "reference/downloads"
+title = "Downloads"
+source = "reference/downloads.md"
+parent = "index"
+
+[[page]]
+id = "maintaining"
+title = "Maintain the docs"
+source = "maintaining.md"
+parent = "index"

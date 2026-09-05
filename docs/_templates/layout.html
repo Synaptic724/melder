@@ -1,5 +1,10 @@
 {% extends "!layout.html" %}
 
+{% block sidebartitle %}
+  {{ super() }}
+  <div class="melder-version">Melder {{ melder_release }} · {{ melder_version_name }}</div>
+{% endblock %}
+
 {% block mobile_nav %}
   <button id="melder-menu-toggle" type="button" data-toggle="wy-nav-top"
           aria-label="Toggle navigation" aria-expanded="false">☰</button>

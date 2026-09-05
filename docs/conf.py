@@ -37,6 +37,7 @@ extensions = [
     "sphinx_design",
     "sphinx_copybutton",
     "docstring_format",
+    "api_aliases",
 ]
 source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 root_doc = "index"
@@ -46,6 +47,7 @@ myst_enable_extensions = ["colon_fence", "deflist", "fieldlist", "substitution"]
 myst_substitutions = {"release": release}
 myst_heading_anchors = 4
 autodoc_member_order = "bysource"
+add_module_names = False
 autodoc_typehints = "signature"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
@@ -67,6 +69,11 @@ html_theme_options = {
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
 html_show_sourcelink = True
 html_show_sphinx = False
+html_context = {
+    "melder_release": release,
+    "melder_version_name": os.environ.get("READTHEDOCS_VERSION_NAME", "Local preview"),
+    "melder_revision": os.environ.get("READTHEDOCS_GIT_COMMIT_HASH", os.environ.get("MELDER_DOCS_GIT_REVISION", "")),
+}
 copybutton_prompt_text = r">>> |\.\.\. |\$ |PS> "
 copybutton_prompt_is_regexp = True
 smartquotes = False

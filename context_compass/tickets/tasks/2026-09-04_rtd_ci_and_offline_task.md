@@ -126,6 +126,22 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   SCORE_0_TO_10: 10
 
 ## Applicable Anti-Patterns
+- DATETIME: 2026-09-05T01:52:29Z
+  TYPE: FACT
+  CLAIM: The full HTML build passes at 294 pages, but the new independent link validator found
+    nine broken viewcode back-links on ResearchLane. Sphinx stores one reference-module prefix per
+    physical module; mixing root aliases for its enums with a concrete returned class gives incorrect
+    anchors. Render all objects at their canonical import origins and register only real facade aliases
+    in the Python domain, preserving public names without inventing a melder.ResearchLane export.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/site_check.log
+  - docs/tools/api_reference.py
+  - Sphinx 9.1.0 sphinx/ext/viewcode.py:125-180
+  IMPACT: Strict rendering alone does not prove navigation. Keep the link gate mandatory.
+  NEXT: Correct canonical API source rendering and validate every public alias/back-link.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
