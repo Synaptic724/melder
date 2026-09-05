@@ -75,6 +75,8 @@ tests/build verification on every final release and a last prod-head check befor
 
 ## Risks / Rollback Notes
 - Shared checkout contains concurrent docs/disposal changes; scope edits precisely.
+- Latest owner instruction: the owner handles commits and pushes. Do not create further commits,
+  push branches, or attempt signing/passphrase workarounds; continue with edits and validation.
 - Rulesets must be activated only after their named checks are available remotely.
 - This prerequisite was met and rulesets are now active. Merge PR 121 into dev, then use the normal
   promotion PRs to carry the CI foundation forward before expecting later branches to supply its checks.
@@ -250,6 +252,23 @@ tests/build verification on every final release and a last prod-head check befor
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-04T23:34:29Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly takes responsibility for commits and pushes and asks this agent not to
+    attempt committing/signing. This supersedes earlier execution guidance about using Windows
+    ssh-keygen. Existing signed PR 121 remains unchanged; no further commits/pushes were attempted.
+    Remote codex_features2 now points to the owner's 1d300462a0334944a3a542225c016e9e9153d3fc;
+    dev/preprod/prod remain at bf610c2cb and PR 121 is still open, draft, and mergeable.
+  EVIDENCE:
+  - Owner instruction on 2026-09-04, recorded here.
+  - https://github.com/Synaptic724/melder/commit/1d300462a0334944a3a542225c016e9e9153d3fc
+  - https://github.com/Synaptic724/melder/pull/121
+  IMPACT: Owner controls commit/push operations. Remaining work is foundation rollout, staging
+    automation, dated-candidate selection/scheduling, and optional lint/warning cleanup.
+  NEXT: Explain remaining rollout steps and continue authorized edits/validation when directed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Implementation is ready for review in draft PR 121 from codex/branch-ci-release-validation to dev.
 Signed commit cb24d33b6f30a6b76b137a3a34a8ccf6e15cf80e is GitHub-verified. Hosted CI is green on both
@@ -260,7 +279,9 @@ asset checks pass. Main code/test/config changes and regenerated LLM bundles rem
 Review checkout: context_compass/artifacts/branch_ci_release_20260904/review-worktree.
 Canonical work tracking is THIS ticket in the main checkout; ignore that checkout's historical boards.
 Final release behavior: fresh tests/assets/build, then distribution identity and prod-head checks
-after environment admission and immediately before upload. Signing uses the existing Windows SSH
-agent; git -c gpg.ssh.program=C:/Windows/System32/OpenSSH/ssh-keygen.exe works without changing saved config.
+after environment admission and immediately before upload. LATEST OWNER CONSTRAINT: owner handles
+commits and pushes. Do not attempt further commits, pushes, or signing workarounds. The earlier
+Windows SSH signing notes are historical, not permission to continue committing.
+Owner's codex_features2 push is confirmed at 1d300462a0334944a3a542225c016e9e9153d3fc.
 Next: review/merge PR 121 and carry the foundation through promotion PRs. Automated dev-to-preprod
 management and dated-candidate release scheduling remain the next layer and need their configuration.

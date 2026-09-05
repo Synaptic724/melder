@@ -608,9 +608,11 @@ tenant_a = md.Spellbook(aetheric_frame="tenant-a")
 tenant_b = md.Spellbook(aetheric_frame="tenant-b")
 ```
 
-Both can bind the same class under the same name with zero collision, and a
-`unique` spell is a singleton **per frame** — not per process. Two frames, two
-instances, one interpreter.
+Use distinct `binding_name` or `spellframe` values when binding the same class
+in both worlds. Spell IDs are unique across the process: an identical binding
+fingerprint produces the same ID even in another frame and is refused.
+A `unique` spell is a singleton **per frame** — not per process. Two distinct
+bindings, two frames, two instances, one interpreter.
 
 That makes frames the natural seam for multi-tenancy, plugin isolation, and test
 isolation (a fresh frame per test is a fresh world). Conduits link *within* a

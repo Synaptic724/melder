@@ -17,6 +17,20 @@ class ReadmeSections:
     """Index real Markdown headings while ignoring code fences."""
 
     _HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
+    _FENCE = re.compile(r"^\s*(`{3,}|~{3,})(.*)$")
+
+    @classmethod
+    def _fence_state(cls, line: str, current: str) -> str:
+        """Respect fence character/length and require a bare closing marker."""
+        match = cls._FENCE.match(line)
+        if match is None:
+            return current
+        marker, tail = match.groups()
+        if not current:
+            return marker
+        if marker[0] == current[0] and len(marker) >= len(current) and not tail.strip():
+            return ""
+        return current
 
     def __init__(self, text: str) -> None:
         """Keep a source snapshot and its actual heading positions for this build."""
@@ -24,14 +38,12 @@ class ReadmeSections:
         self.headings: list[tuple[int, int, str]] = []
         fence = ""
         for index, line in enumerate(self.lines):
-            stripped = line.lstrip()
-            if stripped.startswith(("```", "~~~")):
-                marker = stripped[:3]
-                fence = "" if fence == marker else marker if not fence else fence
-                continue
+            fence = self._fence_state(line, fence)
             match = self._HEADING.match(line) if not fence else None
             if match:
                 self.headings.append((index, len(match.group(1)), match.group(2)))
+        if fence:
+            raise ValueError(f"README contains an unclosed code fence: {fence}")
 
     def body(self, title: str) -> str:
         """Return the exact named section body, with subordinate headings promoted for a page."""
@@ -44,10 +56,7 @@ class ReadmeSections:
         result: list[str] = []
         fence = ""
         for line in self.lines[start + 1:end]:
-            stripped = line.lstrip()
-            if stripped.startswith(("```", "~~~")):
-                marker = stripped[:3]
-                fence = "" if fence == marker else marker if not fence else fence
+            fence = self._fence_state(line, fence)
             match = self._HEADING.match(line) if not fence else None
             if match:
                 line = "#" * max(2, len(match.group(1)) - depth + 1) + " " + match.group(2)
@@ -64,12 +73,27 @@ class Curriculum:
         self.catalog = catalog
         self.pages: list[Page] = []
         self.bodies: dict[str, str] = {}
+        self.lesson_guides: dict[str, list[tuple[str, str]]] = {}
         self.readme = ReadmeSections((root / "README.md").read_text(encoding="utf-8"))
         payload = tomllib.loads(configuration.read_text(encoding="utf-8"))
         if payload.get("schema_version") != 1:
             raise ValueError("curriculum.toml requires schema_version = 1.")
         for chapter in payload.get("chapter", []):
             self._chapter(chapter)
+        self._connect_lessons()
+
+    def _connect_lessons(self) -> None:
+        """Give a canonical lesson direct return routes to every guide that teaches it.
+
+        The catalog bodies belong to this build. Add links only after every
+        chapter has resolved so a broken declaration cannot publish partial routes.
+        """
+        for lesson_id, guides in self.lesson_guides.items():
+            links = "\n".join(
+                f"- [{title}]({self._relative(lesson_id, chapter_id)})"
+                for chapter_id, title in guides
+            )
+            self.catalog.bodies[lesson_id] += "\n## Related guides\n\n" + links + "\n"
 
     @staticmethod
     def _relative(origin: str, target: str, suffix: str = ".md") -> str:
@@ -110,6 +134,7 @@ class Curriculum:
             if len(matches) != 1:
                 raise ValueError(f"Chapter {identifier} requires one lesson for {reference}.")
             selected.append(matches[0])
+            self.lesson_guides.setdefault(matches[0].identifier, []).append((identifier, title))
         if chapter.get("show_steps", False) and selected:
             asset = "downloads/" + selected[0].source.removeprefix("UX_and_AIX_experiences/")
             body += ("\n\n## The workflow in code\n\nThese are the core steps from the saved example. "

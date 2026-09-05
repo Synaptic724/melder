@@ -167,6 +167,7 @@ downloads. S9 audits the complete experience, launch candidate, and maintenance 
 - Hosting selection: intended public branch, supported release tags, and optional custom domain.
 
 ## Decision Log
+- 2026-09-04: Owner retains all commits and pushes; do not attempt signing or request the PGP passphrase.
 - 2026-09-04: Owner clarified that the purpose is understanding how RTD works in ThreadFactory;
   Melder will use its own strategy. Early Melder probe work is deferred.
 - 2026-09-04: Owner requested this epic and ongoing findings recorded in its notes.

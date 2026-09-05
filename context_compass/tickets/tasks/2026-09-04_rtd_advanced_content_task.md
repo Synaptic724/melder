@@ -5,7 +5,7 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-advanced-curriculum
 - Story Path: ../stories/2026-09-04_rtd_advanced_curriculum_story.md
-- Status: draft
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -47,7 +47,8 @@ Deliver isolated-world, configuration, override, cluster, viewer/room, policy, a
 - [ ] Applicable example/probe and navigation checks have recorded outcomes.
 
 ## Validation
-- Not run. Implementation task just created.
+- Advanced scripts and shared corpus metadata: 286 passed (19 scripts plus 267 metadata checks).
+- Documentation unit tests: 20 passed. Integrated HTML/reference checks remain.
 - Use the parent story's validation plan and report local/hosted/execution results separately.
 
 ## Risks / Mitigations
@@ -56,8 +57,8 @@ Deliver isolated-world, configuration, override, cluster, viewer/room, policy, a
 - Keep the four owner-defined learning levels and prominent examples invariant.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false until this task produces or owns a supporting artifact.
-- ARTIFACT_PATHS: none; the parent story links the shared blueprint.
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS: artifacts/rtd_validation_20260904/advanced.xml
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Record task-owned artifact disposition before accepted closure.
 
@@ -83,11 +84,57 @@ Deliver isolated-world, configuration, override, cluster, viewer/room, policy, a
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-04T23:53:00Z
+  TYPE: FACT
+  CLAIM: Advanced lesson 02 differentiates binding names across worlds and asserts process-wide
+    refusal for identical binding IDs, contradicting README's zero-collision claim. Use that canonical
+    lesson for the correction. Logger lesson 04 performs attachment/detachment without checking its
+    documented public logger property; add public identity/null assertions plus handler cleanup.
+    Viewer lessons distinguish host-scoped reads, required frame names, and withheld-section probes;
+    checkpoint lessons distinguish created records, local sealing, remote delivery, and replay.
+  EVIDENCE:
+  - UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py:52-110
+  - src/melder/aether/aether.py:533-666
+  - UX_and_AIX_experiences/03_advanced/13_the_frame_viewer_facade.py:69-173
+  - UX_and_AIX_experiences/03_advanced/18_loading_it_back.py:66-163
+  IMPACT: Guide prose must preserve these boundaries and not inherit stale README or lesson history.
+  NEXT: Add Advanced chapters, correct the README identity paragraph, and verify all 19 lessons.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-04T23:55:00Z
+  TYPE: FACT
+  CLAIM: Twelve Advanced chapter mappings and ten authored guides now cover the defined topics,
+    with cross-level links preserving cluster/targeting lesson placement. Corrected the README's
+    cross-frame identity claim from the canonical example. Logging lesson now checks public
+    attachment/null state and releases its handler; no Melder runtime code changed.
+  EVIDENCE:
+  - docs/curriculum.toml:211-313
+  - README.md:608-620
+  - UX_and_AIX_experiences/03_advanced/04_utility_system_logger.py:26-75
+  IMPACT: New cross-level destinations can now resolve as Expert content is added.
+  NEXT: Run Advanced examples and the shared documentation tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-04T23:55:00Z
+  TYPE: MEASURE
+  CLAIM: All 19 Advanced scripts and all 267 shared corpus metadata checks pass on Python 3.14t.
+    The documentation unit suite also passes all 20 checks. Earlier metadata failures are resolved
+    by the source-backed cluster and logger assertions; no source lesson was excluded.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/advanced.xml:1-1
+  - docs/tests/test_curriculum.py:1-51
+  IMPACT: Advanced content is ready for integrated site/reference review; proceed to Expert authoring.
+  NEXT: Read Expert lessons and map their operational chapters.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Applicable Anti-Patterns
-- [ ] No silently omitted content or invented validation.
-- [ ] No unrecorded scope changes or interference with another agent's work.
+- [x] No silently omitted content or invented validation.
+- [x] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-Defined task awaiting its dependency milestone.
-Deliver isolated-world, configuration, override, cluster, viewer/room, policy, and continuity-entry guidance with every Advanced example.
-
+Twelve Advanced chapters and all 19 saved lessons are implemented. All scripts and corpus metadata
+checks pass. The README now distinguishes frame isolation from process-wide binding identity.
+Integrated HTML, API links, and browser checks remain in the reference/quality work.

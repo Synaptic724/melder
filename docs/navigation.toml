@@ -41,7 +41,7 @@ parent = "index"
 [[page]]
 id = "examples/hello-melder"
 title = "Hello Melder"
-source = "examples/hello-melder.md"
+source = ""
 parent = "examples/index"
 
 [[page]]

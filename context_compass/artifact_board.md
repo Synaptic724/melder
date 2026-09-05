@@ -64,6 +64,9 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-04_rtd_advanced_content_task.md | artifacts/rtd_validation_20260904/advanced.xml | validation_report | active | retain_as_reference | All 19 Advanced scripts and 267 metadata checks passed. | 2026-09-04T23:55:00Z | HELPFUL |
+| tickets/tasks/2026-09-04_rtd_intermediate_content_task.md | artifacts/rtd_validation_20260904/intermediate.xml | validation_report | active | retain_as_reference | All 37 Intermediate scripts passed on Python 3.14t. | 2026-09-04T23:49:46Z | HELPFUL |
+| tickets/tasks/2026-09-04_rtd_beginner_content_task.md | artifacts/rtd_validation_20260904/beginner.xml | validation_report | active | retain_as_reference | Beginner execution and corpus metadata evidence; two later-tier corrections remain. | 2026-09-04T23:45:10Z | REQUIRED |
 | tickets/tasks/2026-09-04_implement_branch_ci_release_validation_task.md | artifacts/branch_ci_release_20260904/validation.md | validation_workspace | active | delete_on_close | Task-local test data, validation logs, and verified lint tooling. | 2026-09-04T22:43:11Z | HELPFUL |
 | tickets/tasks/2026-09-04_disposal_priority_configuration_task.md | system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch.md | patch_doc | active | promote_to_documentation | Configuration-only contract; retain until accepted promotion. | 2026-09-04T22:24:50Z | REQUIRED |
 | tickets/tasks/2026-09-04_disposal_priority_configuration_task.md | system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch_index.md | patch_index | active | promote_to_documentation | Configuration-only contract; retain until accepted promotion. | 2026-09-04T22:24:50Z | REQUIRED |

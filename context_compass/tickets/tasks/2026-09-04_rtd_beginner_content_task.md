@@ -56,8 +56,8 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
 - Keep the four owner-defined learning levels and prominent examples invariant.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false until this task produces or owns a supporting artifact.
-- ARTIFACT_PATHS: none; the parent story links the shared blueprint.
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS: artifacts/rtd_validation_20260904/beginner.xml
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Record task-owned artifact disposition before accepted closure.
 
@@ -72,6 +72,20 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
 - Keep notes append-only; label unverified claims explicitly.
 
 ## Notes
+- DATETIME: 2026-09-04T23:42:53Z
+  TYPE: DECISION
+  CLAIM: Owner handles all commits and pushes because signing needs their PGP passphrase.
+    Continue the already-authorized documentation implementation and local validation only.
+    Re-entry reads are complete for general -> engineer -> synaptic_python_developer;
+    retain the owner's existing codex_2 identity and certification under runtime instructions.
+  EVIDENCE:
+  - Owner message on 2026-09-04: do not attempt commits; owner will commit.
+  - attention_board.md:83-85
+  IMPACT: No commit, push, signing-key access, or passphrase prompt belongs to this lane.
+  NEXT: Read the existing curriculum implementation and recover its saved validation results.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-09-04T22:07:46Z
   TYPE: PLAN
   CLAIM: Implement this bounded part of the accepted documentation program under its existing story.
@@ -82,10 +96,6 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
   NEXT: Activate this task when its dependency milestone is available.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
-
-## Applicable Anti-Patterns
-- [ ] No silently omitted content or invented validation.
-- [ ] No unrecorded scope changes or interference with another agent's work.
 
 - DATETIME: 2026-09-04T23:31:19Z
   TYPE: FACT
@@ -108,6 +118,28 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-04T23:45:10Z
+  TYPE: MEASURE
+  CLAIM: Recovered the saved runtime report: all 41 Beginner scripts passed. The combined run had
+    308 tests, 305 passed and 3 failures, with no errors/skips. Metadata failures name Intermediate
+    cluster lesson 25 and Advanced logging lesson 04; the third failure is the aggregate floor.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/beginner.xml:1-1
+  - docs/curriculum.toml:1-105
+  - docs/tools/curriculum.py:15-152
+  IMPACT: Beginner runtime verification is green. Later tasks must add meaningful source-backed
+    assertions to the two named examples; no unrelated runtime change is authorized.
+  NEXT: Extend the same curriculum registry through Intermediate, with direct lesson links.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+## Applicable Anti-Patterns
+- [ ] No silently omitted content or invented validation.
+- [ ] No unrecorded scope changes or interference with another agent's work.
+
 ## Context / Handoff Summary
-Defined task awaiting its dependency milestone.
-Deliver the complete Beginner learning path, public vocabulary, current cleanup explanation, capstone, and every saved Beginner lesson.
+Twelve Beginner chapters and the 41-lesson catalog are implemented. All 41 Beginner scripts pass on
+Python 3.14t. The combined metadata run was 305 passed / 3 failed: two other-level scripts lack
+behavioral assertions, plus the aggregate floor. Intermediate lesson 25 and Advanced lesson 04 own
+those follow-ups. Finish integrated chapter/API navigation and final quality checks before acceptance.
+Owner handles all commits/pushes; do not attempt signing or request a passphrase.
