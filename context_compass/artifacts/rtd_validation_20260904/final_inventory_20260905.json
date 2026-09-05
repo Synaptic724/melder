@@ -1,0 +1,684 @@
+{
+  "declared_pages": 294,
+  "lesson_count": 133,
+  "lessons_per_level": {
+    "beginner": 41,
+    "intermediate": 37,
+    "advanced": 19,
+    "expert": 36
+  },
+  "lesson_and_helper_files": 137,
+  "guide_chapters": 48,
+  "api_dispositions": {
+    "documented export": 60,
+    "documented value": 8,
+    "documented returned": 8
+  },
+  "api_objects": [
+    {
+      "name": "Spellbook",
+      "target": "melder.Spellbook",
+      "origin": "melder.aether.spellbook.spellbook.Spellbook",
+      "disposition": "documented export",
+      "page": "reference/api/binding/spellbook"
+    },
+    {
+      "name": "SpellBinder",
+      "target": "melder.SpellBinder",
+      "origin": "melder.aether.spellbook.spellbinder.SpellBinder",
+      "disposition": "documented export",
+      "page": "reference/api/binding/spellbinder"
+    },
+    {
+      "name": "scan_bind",
+      "target": "melder.scan_bind",
+      "origin": "melder.aether.spellbook.bind.scan.scan_bind",
+      "disposition": "documented export",
+      "page": "reference/api/binding/scan-bind"
+    },
+    {
+      "name": "Spell",
+      "target": "melder.Spell",
+      "origin": "melder.aether.spellbook.spell.Spell",
+      "disposition": "documented export",
+      "page": "reference/api/binding/spell"
+    },
+    {
+      "name": "SpellIndex",
+      "target": "melder.SpellIndex",
+      "origin": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+      "disposition": "documented export",
+      "page": "reference/api/binding/spellindex"
+    },
+    {
+      "name": "Conduit",
+      "target": "melder.Conduit",
+      "origin": "melder.aether.conduit.conduit.Conduit",
+      "disposition": "documented export",
+      "page": "reference/api/resolution/conduit"
+    },
+    {
+      "name": "SpellSpace",
+      "target": "melder.SpellSpace",
+      "origin": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+      "disposition": "documented export",
+      "page": "reference/api/resolution/spellspace"
+    },
+    {
+      "name": "SpellMap",
+      "target": "melder.SpellMap",
+      "origin": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
+      "disposition": "documented export",
+      "page": "reference/api/resolution/spellmap"
+    },
+    {
+      "name": "SpellContract",
+      "target": "melder.SpellContract",
+      "origin": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+      "disposition": "documented export",
+      "page": "reference/api/resolution/spellcontract"
+    },
+    {
+      "name": "Existence",
+      "target": "melder.Existence",
+      "origin": "melder.aether.spellbook.existence.existence.Existence",
+      "disposition": "documented export",
+      "page": "reference/api/resolution/existence"
+    },
+    {
+      "name": "Aether",
+      "target": "melder.Aether",
+      "origin": "melder.aether.aether.Aether",
+      "disposition": "documented export",
+      "page": "reference/api/configuration/aether"
+    },
+    {
+      "name": "AetherConfiguration",
+      "target": "melder.AetherConfiguration",
+      "origin": "melder.aether.aether_configuration.AetherConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/configuration/aetherconfiguration"
+    },
+    {
+      "name": "AetherConfigurationBuilder",
+      "target": "melder.AetherConfigurationBuilder",
+      "origin": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+      "disposition": "documented export",
+      "page": "reference/api/configuration/aetherconfigurationbuilder"
+    },
+    {
+      "name": "AethericFrameConfiguration",
+      "target": "melder.AethericFrameConfiguration",
+      "origin": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/configuration/aethericframeconfiguration"
+    },
+    {
+      "name": "SpellbookConfiguration",
+      "target": "melder.SpellbookConfiguration",
+      "origin": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/configuration/spellbookconfiguration"
+    },
+    {
+      "name": "SystemState",
+      "target": "melder.SystemState",
+      "origin": "melder.aether.spellbook.configuration.system_state.SystemState",
+      "disposition": "documented export",
+      "page": "reference/api/configuration/systemstate"
+    },
+    {
+      "name": "Policies",
+      "target": "melder.Policies",
+      "origin": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+      "disposition": "documented export",
+      "page": "reference/api/connections/policies"
+    },
+    {
+      "name": "Permissions",
+      "target": "melder.Permissions",
+      "origin": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+      "disposition": "documented export",
+      "page": "reference/api/connections/permissions"
+    },
+    {
+      "name": "Nexus",
+      "target": "melder.Nexus",
+      "origin": "melder.nexus.nexus.Nexus",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/nexus"
+    },
+    {
+      "name": "NexusConfiguration",
+      "target": "melder.NexusConfiguration",
+      "origin": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/nexusconfiguration"
+    },
+    {
+      "name": "NexusConfigurationBuilder",
+      "target": "melder.NexusConfigurationBuilder",
+      "origin": "melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/nexusconfigurationbuilder"
+    },
+    {
+      "name": "NexusFrameMode",
+      "target": "melder.NexusFrameMode",
+      "origin": "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/nexusframemode"
+    },
+    {
+      "name": "Rift",
+      "target": "melder.Rift",
+      "origin": "melder.nexus.rift.rift.Rift",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/rift"
+    },
+    {
+      "name": "RiftConfiguration",
+      "target": "melder.RiftConfiguration",
+      "origin": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/riftconfiguration"
+    },
+    {
+      "name": "RiftSpace",
+      "target": "melder.RiftSpace",
+      "origin": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/riftspace"
+    },
+    {
+      "name": "RiftSpaceType",
+      "target": "melder.RiftSpaceType",
+      "origin": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/riftspacetype"
+    },
+    {
+      "name": "Workstation",
+      "target": "melder.Workstation",
+      "origin": "melder.nexus.rift.rift_space.workstation.Workstation",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/workstation"
+    },
+    {
+      "name": "FrameViewer",
+      "target": "melder.FrameViewer",
+      "origin": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/frameviewer"
+    },
+    {
+      "name": "ViewMultiFrame",
+      "target": "melder.ViewMultiFrame",
+      "origin": "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/viewmultiframe"
+    },
+    {
+      "name": "ViewFrame",
+      "target": "melder.ViewFrame",
+      "origin": "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/viewframe"
+    },
+    {
+      "name": "ViewConduit",
+      "target": "melder.ViewConduit",
+      "origin": "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/viewconduit"
+    },
+    {
+      "name": "ViewSpell",
+      "target": "melder.ViewSpell",
+      "origin": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",
+      "disposition": "documented export",
+      "page": "reference/api/inspection/viewspell"
+    },
+    {
+      "name": "Crystallizer",
+      "target": "melder.Crystallizer",
+      "origin": "melder.crystallizer.crystallizer.Crystallizer",
+      "disposition": "documented export",
+      "page": "reference/api/persistence/crystallizer"
+    },
+    {
+      "name": "CrystallizerConfiguration",
+      "target": "melder.CrystallizerConfiguration",
+      "origin": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/persistence/crystallizerconfiguration"
+    },
+    {
+      "name": "CrystallizerConfigurationBuilder",
+      "target": "melder.CrystallizerConfigurationBuilder",
+      "origin": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
+      "disposition": "documented export",
+      "page": "reference/api/persistence/crystallizerconfigurationbuilder"
+    },
+    {
+      "name": "CrystallizerBootstrap",
+      "target": "melder.CrystallizerBootstrap",
+      "origin": "melder.crystallizer.crystal_loader_system.bootstrap_loader.CrystallizerBootstrap",
+      "disposition": "documented export",
+      "page": "reference/api/persistence/crystallizerbootstrap"
+    },
+    {
+      "name": "ExternalPersistenceManager",
+      "target": "melder.ExternalPersistenceManager",
+      "origin": "melder.crystallizer.asset_management.external_persistence_manager.ExternalPersistenceManager",
+      "disposition": "documented export",
+      "page": "reference/api/persistence/externalpersistencemanager"
+    },
+    {
+      "name": "ExternalPersistenceManagerConfiguration",
+      "target": "melder.ExternalPersistenceManagerConfiguration",
+      "origin": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/persistence/externalpersistencemanagerconfiguration"
+    },
+    {
+      "name": "MutationResearch",
+      "target": "melder.MutationResearch",
+      "origin": "melder.mutation_research.mutation_research.MutationResearch",
+      "disposition": "documented export",
+      "page": "reference/api/research/mutationresearch"
+    },
+    {
+      "name": "MutationResearchConfiguration",
+      "target": "melder.MutationResearchConfiguration",
+      "origin": "melder.mutation_research.mutation_configuration.MutationResearchConfiguration",
+      "disposition": "documented export",
+      "page": "reference/api/research/mutationresearchconfiguration"
+    },
+    {
+      "name": "MutationResearchConfigurationBuilder",
+      "target": "melder.MutationResearchConfigurationBuilder",
+      "origin": "melder.mutation_research.mutation_configuration_builder.MutationResearchConfigurationBuilder",
+      "disposition": "documented export",
+      "page": "reference/api/research/mutationresearchconfigurationbuilder"
+    },
+    {
+      "name": "ResearchSet",
+      "target": "melder.ResearchSet",
+      "origin": "melder.mutation_research.research_set.research_set.ResearchSet",
+      "disposition": "documented export",
+      "page": "reference/api/research/researchset"
+    },
+    {
+      "name": "DiffEngine",
+      "target": "melder.DiffEngine",
+      "origin": "melder.mutation_research.diff.diff_engine.DiffEngine",
+      "disposition": "documented export",
+      "page": "reference/api/research/diffengine"
+    },
+    {
+      "name": "LaneState",
+      "target": "melder.LaneState",
+      "origin": "melder.mutation_research.research_set.research_lane.LaneState",
+      "disposition": "documented export",
+      "page": "reference/api/research/lanestate"
+    },
+    {
+      "name": "LaneType",
+      "target": "melder.LaneType",
+      "origin": "melder.mutation_research.research_set.research_lane.LaneType",
+      "disposition": "documented export",
+      "page": "reference/api/research/lanetype"
+    },
+    {
+      "name": "ProtocolCrafter",
+      "target": "melder.ProtocolCrafter",
+      "origin": "melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter",
+      "disposition": "documented export",
+      "page": "reference/api/helpers/protocolcrafter"
+    },
+    {
+      "name": "Cleanable",
+      "target": "melder.Cleanable",
+      "origin": "melder.utilities.general_base.cleanable.Cleanable",
+      "disposition": "documented export",
+      "page": "reference/api/helpers/cleanable"
+    },
+    {
+      "name": "Pack",
+      "target": "melder.Pack",
+      "origin": "melder.utilities.helpers.package.Pack",
+      "disposition": "documented export",
+      "page": "reference/api/helpers/pack"
+    },
+    {
+      "name": "Package",
+      "target": "melder.Package",
+      "origin": "melder.utilities.helpers.package.Package",
+      "disposition": "documented export",
+      "page": "reference/api/helpers/package"
+    },
+    {
+      "name": "ULID_Factory",
+      "target": "melder.ULID_Factory",
+      "origin": "melder.utilities.helpers.ulid_factory.ULID_Factory",
+      "disposition": "documented export",
+      "page": "reference/api/helpers/ulid-factory"
+    },
+    {
+      "name": "new_ulid",
+      "target": "melder.new_ulid",
+      "origin": "melder.utilities.helpers.ulid_factory.new_ulid",
+      "disposition": "documented export",
+      "page": "reference/api/helpers/new-ulid"
+    },
+    {
+      "name": "SpellbookValidationError",
+      "target": "melder.SpellbookValidationError",
+      "origin": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/spellbookvalidationerror"
+    },
+    {
+      "name": "MeldExecutionError",
+      "target": "melder.MeldExecutionError",
+      "origin": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/meldexecutionerror"
+    },
+    {
+      "name": "SpellSpaceScopeError",
+      "target": "melder.SpellSpaceScopeError",
+      "origin": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/spellspacescopeerror"
+    },
+    {
+      "name": "HookExecutionError",
+      "target": "melder.HookExecutionError",
+      "origin": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/hookexecutionerror"
+    },
+    {
+      "name": "InternalRegistrationError",
+      "target": "melder.InternalRegistrationError",
+      "origin": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/internalregistrationerror"
+    },
+    {
+      "name": "PhaseSchedulerError",
+      "target": "melder.PhaseSchedulerError",
+      "origin": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/phaseschedulererror"
+    },
+    {
+      "name": "PhaseExecutionError",
+      "target": "melder.PhaseExecutionError",
+      "origin": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/phaseexecutionerror"
+    },
+    {
+      "name": "PhaseTimeoutError",
+      "target": "melder.PhaseTimeoutError",
+      "origin": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/phasetimeouterror"
+    },
+    {
+      "name": "DeadReferenceError",
+      "target": "melder.DeadReferenceError",
+      "origin": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
+      "disposition": "documented export",
+      "page": "reference/api/errors/deadreferenceerror"
+    },
+    {
+      "name": "__architecture__",
+      "target": "melder.__architecture__.__architecture__",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "__author__",
+      "target": "melder.__author__.CREATOR",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "__components__",
+      "target": "melder.__components__.__components__",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "__description__",
+      "target": "melder.__description__.__description__",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "__graph_details__",
+      "target": "melder.__graph_details__.__graph_details__",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "__graph_network__",
+      "target": "melder.__graph_network__.__graph_network__",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "__license__",
+      "target": "melder.__license__.__license__",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "__version__",
+      "target": "melder.__version__.__version__",
+      "disposition": "documented value",
+      "page": "reference/api/metadata"
+    },
+    {
+      "name": "CommandSystem",
+      "target": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "origin": "melder.nexus.rift.command_system.command_system.CommandSystem",
+      "disposition": "documented returned",
+      "page": "reference/api/inspection/commandsystem"
+    },
+    {
+      "name": "StaticCommandSystem",
+      "target": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+      "origin": "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+      "disposition": "documented returned",
+      "page": "reference/api/inspection/staticcommandsystem"
+    },
+    {
+      "name": "CapabilityCommandSystem",
+      "target": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "origin": "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+      "disposition": "documented returned",
+      "page": "reference/api/inspection/capabilitycommandsystem"
+    },
+    {
+      "name": "CodegenCommandSystem",
+      "target": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+      "origin": "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+      "disposition": "documented returned",
+      "page": "reference/api/inspection/codegencommandsystem"
+    },
+    {
+      "name": "ResearchLane",
+      "target": "melder.mutation_research.research_set.research_lane.ResearchLane",
+      "origin": "melder.mutation_research.research_set.research_lane.ResearchLane",
+      "disposition": "documented returned",
+      "page": "reference/api/research/researchlane"
+    },
+    {
+      "name": "RiftMemorySystem",
+      "target": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+      "origin": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+      "disposition": "documented returned",
+      "page": "reference/api/inspection/riftmemorysystem"
+    },
+    {
+      "name": "SystemDocumentView",
+      "target": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "origin": "melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView",
+      "disposition": "documented returned",
+      "page": "reference/api/metadata/systemdocumentview"
+    },
+    {
+      "name": "SystemGraphView",
+      "target": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "origin": "melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView",
+      "disposition": "documented returned",
+      "page": "reference/api/metadata/systemgraphview"
+    }
+  ],
+  "source_revision_label": "20123b8a8d43985c47300e17a7b0f5fc305e2903",
+  "sources": {
+    "UX_and_AIX_experiences/01_beginner/01_hello_meld.py": "bcc79688764af1f38c2cd26d6374fbbff969e2b5087db2c0f95d4feca569501b",
+    "UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py": "9b659509356b077318e2998b6e0882af1847fe6b5f60b4bdbd06a8a0dcb91514",
+    "UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py": "81951462fb77c51420dd77c0ade842b4414696856eee495e5cff15772b29db38",
+    "UX_and_AIX_experiences/01_beginner/04_named_bindings.py": "fd45995c4778ddf0d7273affdb6513d0fed8b3a7acde490c5ca5a9e436bf7a40",
+    "UX_and_AIX_experiences/01_beginner/05_lesser_conduit_scopes.py": "dca0c3c8d16d5921b4056b48c89bf336db21519dce8b25e3903959a83c18a725",
+    "UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py": "8bf27ac6624774d950412248a7aef9440c604de53da76e1f87d97d12b8337cd9",
+    "UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py": "d564cb7452409a8a7c8f098f0fc5785052e8006841e1162a3c268f0036a653cf",
+    "UX_and_AIX_experiences/01_beginner/08_disposal_contract.py": "287db1357b4a68ab2732af89406b9b223a8498d9fb41f060ec23ef1c9443f4d5",
+    "UX_and_AIX_experiences/01_beginner/09_spellframe_grouping.py": "f533a2e0c2c6c653085285dd919d666bff1d9731a536898033205e45f11ad7a3",
+    "UX_and_AIX_experiences/01_beginner/10_explicit_cleanup.py": "38f958dc8e345b02a839a425f670a27378b1804acdec35210992de7615ba21c1",
+    "UX_and_AIX_experiences/01_beginner/11_bind_many_at_once.py": "1266adf55fff27e5c364b089b72d5a51dcb376cbcf72d78997962b96ed949c65",
+    "UX_and_AIX_experiences/01_beginner/12_agent_first_read.py": "47e5ef126b045ca0603248c5ffc99ea72f177e6a1d53383e997d4c56eb8360bc",
+    "UX_and_AIX_experiences/01_beginner/13_existence_unique.py": "764e554a527419460e33bbfd7408e72053a9ddaf4eb9372389290ae16e823d95",
+    "UX_and_AIX_experiences/01_beginner/14_existence_many.py": "9a5cae19c502075a64505100fbbcb071aa5a5b69d84eb22abc874cbb8191f66a",
+    "UX_and_AIX_experiences/01_beginner/15_existence_unique_per_conduit.py": "5f1b87b6b2ece414b81d5fa6d5a5360a0097223efc42cf598220452672346ffe",
+    "UX_and_AIX_experiences/01_beginner/16_typed_melding.py": "d14667ede51fa39380b5c45c5d47606ffb3cbd0b0413b67d2ef057d052fb3e67",
+    "UX_and_AIX_experiences/01_beginner/17_protocols_as_shapes.py": "5c9926511ec623cf0b2104e4a2cd656b2ab7164f33542790e96cc8c439688aae",
+    "UX_and_AIX_experiences/01_beginner/18_bootstrap_pattern.py": "6404e7dde65795ce285e05180a29cc2c3be8ed2112197c17f95dc1d8cfc8f1e4",
+    "UX_and_AIX_experiences/01_beginner/19_lifecycle_map.py": "11230e24942efc525fb4e509a82935f382c110d9d7b87b16e4aa1c76031d18cd",
+    "UX_and_AIX_experiences/01_beginner/20_defaults_just_work.py": "2758ea6d0453b1f57b9b8321e95dd5c7b0682652c0f0902ef57e79492e263715",
+    "UX_and_AIX_experiences/01_beginner/21_the_basic_rhythm.py": "dbf859e696134506de847f19591cbe03b4a8c5eb1cf03bf0fd8c89d0db9542f4",
+    "UX_and_AIX_experiences/01_beginner/22_same_name_different_frames.py": "61d6a6e67838914278d82b725f8743a5ffe4e9a9b9803b5bcdf90fcb07f1ee5f",
+    "UX_and_AIX_experiences/01_beginner/23_reading_the_errors.py": "e77c06c473d53854026e485b6b279620a30eac90a5648d308ec062d37ab6fa12",
+    "UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py": "ed04fa75cf53fbd7fe424d3dfa436ef3b9bd517070f2ab64f72bc6b24a881bad",
+    "UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py": "f10f563b8d9633c00b90f134aae06195cf4ffc7b31ff8e48059ec1edca843cb9",
+    "UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py": "688c58d29e6e7fd9382ab9680f2e1af83f193c878cfc4dc68811879e12e6bba9",
+    "UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py": "c276fd609c40bf75a1d4ed0b5882cb5ca956c89ae42c45e75ef9d57d2aa60eae",
+    "UX_and_AIX_experiences/01_beginner/28_real_objects_no_wrappers.py": "c57fe006e311a6917e46be2bb4ca287d22d393355094ed90aea98f627eac551a",
+    "UX_and_AIX_experiences/01_beginner/29_many_state_isolation.py": "1ba46deedd185b5d83902faa0dd2e8ae654f98cd8162a1222d7c5d584b6cbfc6",
+    "UX_and_AIX_experiences/01_beginner/30_double_bind_outcome.py": "a5c892b46a2ece854ee7b4277bd4b2d2879f0cb37c9e1400d1bd56ffb48b9540",
+    "UX_and_AIX_experiences/01_beginner/31_required_vocabulary.py": "635c0516315aaffb3db6941575fd313e4fac8c10207c472c5fd5ff22ad7ee2ef",
+    "UX_and_AIX_experiences/01_beginner/32_factory_functions.py": "0a26f12419b919ce24046d35182a6b6764d451e93b8b36721517f0f699e955b2",
+    "UX_and_AIX_experiences/01_beginner/33_prebuilt_registry.py": "6b25448cf46dc8f4c09fabbbf368498f6f7aa147134c73ef0bb875ee6aea9e4f",
+    "UX_and_AIX_experiences/01_beginner/34_scope_contrast_one_tree.py": "4e132fcc5ac9da194688cc25666455ff5d2afeefccfad72ba97d17519f960b4c",
+    "UX_and_AIX_experiences/01_beginner/35_disposal_multiple_methods.py": "ed36d0de8dd21566a046ef0ce93e580d9e4e67fd6fc2437a23b793b5f5b932ad",
+    "UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py": "3fd951d5a0f794f55af131da86834503c6b8a2d6de5c9731783cac5a4b8a9f44",
+    "UX_and_AIX_experiences/01_beginner/37_bind_vocabulary_cheatsheet.py": "07386ae878e5765af21453093004b56ce9dc4e420a4fa32788f4b63d0fe15ad1",
+    "UX_and_AIX_experiences/01_beginner/38_meld_a_frame_as_dict.py": "bed143f6efb7590a7648c652b86abf40fd14222920a4184f824015dcccb47a2d",
+    "UX_and_AIX_experiences/01_beginner/39_agent_inventory_pattern.py": "941e086711ed5095778d4ad6bffaa6f0bdfcdae0f566d9b1d9b9783e9e1bd480",
+    "UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py": "e98ce2c12b56f9bf04a146ffd7171322a5b11f7c815d9557bdcbb47fcdd0cb05",
+    "UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py": "cd86b469db64bc602b934df09427a1b27824451b00ca936dfa257a715f963be7",
+    "UX_and_AIX_experiences/01_beginner/capstone_application.py": "4d5f389d7fe17d86da9e54ef2498c16025693a9d629f15d3ff5b838c53c2c9a9",
+    "UX_and_AIX_experiences/01_beginner/capstone_bootstrap.py": "f6ee053426f874e53599d7b7245d54e59eb6f8189e49f094ded17306cea20f1c",
+    "UX_and_AIX_experiences/01_beginner/capstone_models.py": "54e79e620ffa0075d72eb7edd2534a3111439bd580285c81ac2a0f599cd5744c",
+    "UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py": "84988c41368c5c77b040d7dcb0a8bd3cabd069b09db65e78c3980141d011cd4a",
+    "UX_and_AIX_experiences/02_intermediate/02_spellbinder_full_chain.py": "a238818ec25a4ce1f2eab4bd0f5d1575c53dbe1339c0481c6ab1ab3895fdbcfa",
+    "UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py": "4e3f2ef472e70f6a831a88b1615e0bd8f4e3be471a81553149c3573cbf3021dd",
+    "UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution.py": "2303fab4f2dce6cfbd0f92f451f0e447c42499acf518845f028e448f33231dab",
+    "UX_and_AIX_experiences/02_intermediate/05_existence_unique_per_conduit_lineage.py": "f8e249a5f4f2700cece69167a3ee210ed9d1a09c94540bc0c0a68f7658b889ce",
+    "UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py": "bb730a7f174fb996eaaba1bf8bb5f364d20c6fd83653fe7cee9200b1a0ad4533",
+    "UX_and_AIX_experiences/02_intermediate/07_lesser_conduits_child_scopes.py": "47fda37cc184ed496a64c6c56e3336d9d1dade09e86e0552086febf6825f1718",
+    "UX_and_AIX_experiences/02_intermediate/08_spell_override_construction.py": "17e3b5c3993a9e1a6b67e2c0f118f2a30a9ccffc56a2c6744fde88e556f88d2c",
+    "UX_and_AIX_experiences/02_intermediate/09_permissions_block_sharing.py": "7272b1fb1bb16942df1e7885f210263443e4067302d72689a4b4ea0e982ac53c",
+    "UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py": "6ee7b34cec290fcc55f43038e62c7d9a369f36ff811232a8ec9bfeeb5a305768",
+    "UX_and_AIX_experiences/02_intermediate/11_permissions_linking_vocabulary.py": "916a4b51120bf3985ae20a852132bd147204886fa1e2340fa6c698e331975cd4",
+    "UX_and_AIX_experiences/02_intermediate/12_bind_lambda_spells.py": "1a04a71eb4a82ab449777e3fea6eee632bfc6634c412a5534fd22886124c5fc7",
+    "UX_and_AIX_experiences/02_intermediate/13_spell_ids_and_lookup.py": "94aa288e4c4b2c0fe39a7388950224ac38af7e2460bbe0af51d3ec59ad7437ce",
+    "UX_and_AIX_experiences/02_intermediate/14_introspect_the_book.py": "de69a4598979e741955461c56a52a89b46610a7cc53a1e657735aba090221d1c",
+    "UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py": "319b761a7c9a3cff106b17c3920be8ac5e3b17ad803554a3b5f4a776c39c4507",
+    "UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py": "e1f70d1178e17daf8a85ad84dfb0767581110bc05262fe8ed487ce6d0633eaeb",
+    "UX_and_AIX_experiences/02_intermediate/17_collection_di.py": "57c1427f530f40aa6dda74b073b66f0eba1ccbc46339003000eae6b6336d165c",
+    "UX_and_AIX_experiences/02_intermediate/18_live_creation_probe.py": "4b2fb3489df8802562cacfbc079d472ea6b351820ccce209a5561d872bdc19ce",
+    "UX_and_AIX_experiences/02_intermediate/19_spellbook_configuration_basics.py": "6c9da85754d6d3730b994beb197ddefc13cfe9ef8f8318d908386f19ce542a5a",
+    "UX_and_AIX_experiences/02_intermediate/20_phase_scheduler_knobs.py": "eaff91bd9dda0307f877d98a22709f02607639eabe7e6126ee4a39071cba0e53",
+    "UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py": "7ee32d97c3e028c0dd50019e0ec2b23cef2d1de2ce2152e42582ce6be51bef18",
+    "UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.py": "ea4a8eaf1a3eab11c9043593e7e50c3956949ecbcb29a21e85e9b0016ced91c4",
+    "UX_and_AIX_experiences/02_intermediate/23_transfer_of_ownership.py": "721516aa05e6b3a424c9466e163186589a2419a5074a6473e2d6b2d24e3d0f5c",
+    "UX_and_AIX_experiences/02_intermediate/24_conduit_cloud.py": "cc3c9ee4937baf388c7b94acee3e428fa8070f79a16e71abb0179072c42f8508",
+    "UX_and_AIX_experiences/02_intermediate/25_clusters_unique_per_cluster.py": "72e205033a3c7a5a6d515872bc2b6279d53e6c39107b942f7e7bbf46490226c6",
+    "UX_and_AIX_experiences/02_intermediate/26_conduit_categories_as_factories.py": "0088376e2c6a9c650fc3b63f8c47ef6dc5b641c9f094c640183b6ac89a2560ab",
+    "UX_and_AIX_experiences/02_intermediate/27_sever_link.py": "617a9c151d3241ca0b0b88c1b4f0b3824596df96947e260e71a2d8eda05cefae",
+    "UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py": "f0191fa2f496d20bbd2cf5e9c7dab0c9d9082530ba13199920a29d6775c520b7",
+    "UX_and_AIX_experiences/02_intermediate/29_scoped_cleanup_lesser_conduits.py": "bef2c0c70c5401101fe1197caf906df7b17835550d82682d59ec18b01d307ccd",
+    "UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_frozen_law.py": "9066cac140eaa24f6fd4be74230676b95b2916d1dc6678c01b15fd6b506be0bb",
+    "UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py": "51456da93ae8824337d762c288c1877e061fec8d94224d3f44e4ffaa1781a848",
+    "UX_and_AIX_experiences/02_intermediate/32_config_meld_hooks.py": "605866680d3f4b295f948ab8771eb2abda9be7e14da9d1cbeff3b743bc6f4e0d",
+    "UX_and_AIX_experiences/02_intermediate/33_config_conduit_lifecycle_hooks.py": "24de8bbc8b8b871e5e98c017e763867a08adde1f69beded6a78a2a92877e0b2b",
+    "UX_and_AIX_experiences/02_intermediate/34_config_link_and_contract_hooks.py": "6618884296af932d76737fa8c4a5b89d00e3a3ac1d1507ac8c99df661211f4c3",
+    "UX_and_AIX_experiences/02_intermediate/35_one_config_every_book.py": "aecf633007d87430cfea2271f93ac0aa9a1ebd7028d0d228de9ac0d594c2e70a",
+    "UX_and_AIX_experiences/02_intermediate/36_late_binding_with_spellcontract.py": "e5684045f31e1da6c222a4915a5e1ca1847d2fd1496c3e4468297743de61b10f",
+    "UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py": "920f0d0cec92f485287af0f873b28b88aab994fa74b6ca0b912ade9cfaa52628",
+    "UX_and_AIX_experiences/02_intermediate/_dynamic_world.py": "e483a7eb62ca40a0bdc6b77dac96e2d104b9f45d0ee35af8d3d88d45f65b52bb",
+    "UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py": "b5d422552deeed5c220b022c8716e31b993d2528a5ff1165cb23399ef02a2a16",
+    "UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py": "4ad710682082ba94e3aa1a87659448b0e4f8a42c12f6d61b5963c00eedf7e3a3",
+    "UX_and_AIX_experiences/03_advanced/03_frame_posture_public_door.py": "638685096af02809f343fd24bf225affbc0f61cabe6781c0b3cc96d54d861b86",
+    "UX_and_AIX_experiences/03_advanced/04_utility_system_logger.py": "21533f7d2a9abbf0552f989652896a841b273870176be9319b85b59cd424cc34",
+    "UX_and_AIX_experiences/03_advanced/05_frame_posture_cheatsheet.py": "7d93a37100f0653e989d38ad1ef4b52f330359111427aa6f6dbd219285f7c880",
+    "UX_and_AIX_experiences/03_advanced/06_frame_posture_object.py": "0b0ebcfdf49723b6b1c816d7543784a780b86dae33817117a9b95d098385fc9b",
+    "UX_and_AIX_experiences/03_advanced/07_aether_config_two_doors.py": "650794e985e460b9a1646504e2d5ba26b4c490fb4098d8119178267b003f3a66",
+    "UX_and_AIX_experiences/03_advanced/08_nexus_enablement.py": "041267c9279743ba534e8cceee06bcb0990f490e69e7a4651cbf3c4ed374e3cb",
+    "UX_and_AIX_experiences/03_advanced/09_opening_a_rift.py": "47f666c231dd46e6c731c4d8c0961c697c14cd62488fd59c98a5cee5a5f8f885",
+    "UX_and_AIX_experiences/03_advanced/10_the_room_and_its_fixtures.py": "8dd37e2db66fabb0403dcce4690bebe1e8a85efadcf93025051edecbc652e2c5",
+    "UX_and_AIX_experiences/03_advanced/11_static_vs_capability_authority.py": "6980299db773be7f1846388fb999327a2d0fa3b4ec81addfc2a188c3b51e2e10",
+    "UX_and_AIX_experiences/03_advanced/12_the_workstation_canvas.py": "d8d0ee8d632eaa3819e463f3f5d3deb4a4f7287937aa5c72acc01b5fc2a837e1",
+    "UX_and_AIX_experiences/03_advanced/13_the_frame_viewer_facade.py": "8d00ba36f1cf165e8382b8eee496d836a0b573927c0ffc0bee5fe4375ebd45ac",
+    "UX_and_AIX_experiences/03_advanced/14_the_describe_ladder.py": "1a2ead9b1189bd5693795a109732e6003c8842c027163d7eceeb4c58a5afcb4b",
+    "UX_and_AIX_experiences/03_advanced/15_what_you_cannot_see.py": "7d91fd7366f7842f1eb9f65921bb3c4cae07a0cfe112dd371a5265c8a279afde",
+    "UX_and_AIX_experiences/03_advanced/16_ward_policies.py": "edc43e122d327dd83d315664c3e243bcf976aa00952d9975f67eb99b55315132",
+    "UX_and_AIX_experiences/03_advanced/17_taking_a_checkpoint.py": "9581b635d8b40ff42837de3f3bf143142d5813d681e0839e976086fcc84dbabb",
+    "UX_and_AIX_experiences/03_advanced/18_loading_it_back.py": "d99b51a833cb058bdeb6132fe892cc0d0d04aa34a8536f2130ab3fd3f9c3e3ee",
+    "UX_and_AIX_experiences/03_advanced/19_wildcard_and_broadcast_overrides.py": "f3bd61855bcc7712dd7534d78b3bc1eee0812ed2f0e2489fd006657029ae14af",
+    "UX_and_AIX_experiences/04_expert/01_pod_boot_the_order_is_the_product.py": "348796aec0cafc27b45cd4608a9dd0da160fd10605f0b8b494b00dee3c071b83",
+    "UX_and_AIX_experiences/04_expert/02_persistence_mesh_your_code_their_lanes.py": "16c5b29d7b5a6731bd84bf6d84e0cc690ac93c9742e539d02f7af7d110042f2b",
+    "UX_and_AIX_experiences/04_expert/03_research_sets_lanes_and_residency.py": "3f0e21d478c673e8ca7e5b64fb50c24032a663a000d2da4d71541242c30e3502",
+    "UX_and_AIX_experiences/04_expert/04_diffs_are_derived_never_stored.py": "5d2f3f649375a1cf73f371b287c92d00a5c9bd97be40b132117ce6b8cd7a1bd4",
+    "UX_and_AIX_experiences/04_expert/05_protocol_crafter_the_tool_that_writes.py": "acddf30f995953e2766a352d458d0e08c4baa2f9f6cfb9fbfdb9676a43908e03",
+    "UX_and_AIX_experiences/04_expert/06_two_knobs_and_a_terminator_per_rung.py": "d0d6f30198c32171c4760756b80c2964765262e74c3bcc3405f033018dd01720",
+    "UX_and_AIX_experiences/04_expert/07_the_codegen_room_agents_writing_code.py": "37a005bf4fd4922f00bc8c957048d38efeac09e2b06659b2954b89ea6ce81720",
+    "UX_and_AIX_experiences/04_expert/08_research_is_graduated_by_room.py": "7807db795165f354452e99d3f02f212a3c7e5d31b82c669896561205c61e0219",
+    "UX_and_AIX_experiences/04_expert/09_getting_data_into_your_database.py": "2922b9563667972fe10e5bdaa63a5aaef1be55714ced5b278de59c9c0267e44f",
+    "UX_and_AIX_experiences/04_expert/10_deep_overrides_paths_through_a_graph.py": "66704fb8b766eee3ac28e640d401de4fd99578794acfcfd81e4b1b430128087a",
+    "UX_and_AIX_experiences/04_expert/11_pointing_a_rift_at_your_own_frame.py": "cd46cea1c0a85a93da33ee5e860d15acb0dee489bddaefe9857c6830eae7b192",
+    "UX_and_AIX_experiences/04_expert/12_the_codegen_loop_end_to_end.py": "7774e3b068ffb704861e0a3ece30a152df6f45bd690668398ce086d25d070b74",
+    "UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py": "e5cd7beaf9aab8465e6e51576b63307b94e2f7e4de62626c6b02deafd7d1f216",
+    "UX_and_AIX_experiences/04_expert/14_compositions_a_subsystem_as_one_unit.py": "15c65703015cecef05ede58da93cc5ef6f050eafd46166b923defef7ebffe3b8",
+    "UX_and_AIX_experiences/04_expert/15_campaigns_the_why_that_rides_along.py": "ceae1b24018f73f93b0e9d784bf965128f2f2ced8534e972311e05fa301edbf6",
+    "UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py": "fb300ccb239e678db6a50e5d67a79b70054211981eab094777cef141210ad4ef",
+    "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py": "873dc7afde34e09cef5fdd61b72891b3bd467923b8cc47b42391daeecdbcd3be",
+    "UX_and_AIX_experiences/04_expert/18_the_package_reads_itself_to_you.py": "654b2b73e9e1332a40a0226261f037d053ab868897454a77a2fa51c51beaa9ec",
+    "UX_and_AIX_experiences/04_expert/19_the_codebase_as_a_walkable_graph.py": "aba37e38f6f780e5906f187768f41bd733894a6e960d179517f371c67f7caa37",
+    "UX_and_AIX_experiences/04_expert/20_the_workstation_an_agents_workbench.py": "fbba35ff8ee4319eeb255baa601e19710c64b98d962f73c59ff3d3772b6b46b5",
+    "UX_and_AIX_experiences/04_expert/21_many_agents_writing_code_at_once.py": "4fc73d114426512af96e87a35c9059db622bcd2f6b311241cb9feaf2aa5a4015",
+    "UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_running_it.py": "d1dd4005de4cc9143506a639e2dfa66d32c23024cdf49be7fa9a7cd9b4b1b095",
+    "UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_back.py": "3a09495c210a55f28b41a5f3e65042d5ee23d48cbae3b1c3de4fac7374052c20",
+    "UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py": "7fed4ab0873920b555c751d0431af8a4306f0fc99d5981db96543d88bafabd90",
+    "UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py": "df72c3880965fbd6f3d54a2e0baf390d5acd8505a1d85767d17184200b1befe2",
+    "UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py": "83d3f1f83573bfbbd84e87fd29bb55b60f5aae84fa686665ef04a2eed5a32704",
+    "UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py": "06800d8dd798bbeb64bacb471bbab5008a17c746c8b0540d2103219957ba7016",
+    "UX_and_AIX_experiences/04_expert/28_the_record_crosses_as_a_json_string.py": "d5b35143fe9f63a4818fe60f9c4a9f2b60b6d561cc9cf401a284336b94eb37bc",
+    "UX_and_AIX_experiences/04_expert/29_reading_your_own_recorded_code.py": "6b3f6f231bc61e2f21644aba25b221e6ee03b27f96f7318fce59ec01e2e3b981",
+    "UX_and_AIX_experiences/04_expert/30_composing_a_version_in_the_workshop.py": "d83519bd80451b3ea92a482acfcf1504d6bddb9f0c18d4a35277d2962aee1923",
+    "UX_and_AIX_experiences/04_expert/31_organising_lanes_after_the_fact.py": "f8d52078161b4abffa98f446a1b0ce6893a4a0c2665bbfa5a82e07fd932026e7",
+    "UX_and_AIX_experiences/04_expert/32_a_subsystems_blast_radius.py": "0e97a4e37a78c1b3af29b1312143a19f857f27fafe0f5e5529d8c95fc041ab1a",
+    "UX_and_AIX_experiences/04_expert/33_what_a_synthetic_module_actually_is.py": "62f93789d2d75637de4e1c5a110de64267c5a03effb965e30bc5b3871315617c",
+    "UX_and_AIX_experiences/04_expert/34_several_worlds_of_record_in_one_process.py": "75b501636eb01a0aadda77ccb654aaad6879076c2ca17bfdd002338bc44ff275",
+    "UX_and_AIX_experiences/04_expert/35_the_gate_that_waits_for_readers.py": "c07586edf3289ba84c90c5fd1384bf888317079c60aa575cab981f835d43f2ec",
+    "UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py": "45eaec293969c620477090b67313cf72ff475ec8ec4a5c36df0c83045acb1383"
+  },
+  "errors": []
+}

@@ -1,0 +1,7 @@
+WROTE     src   584 files (source fingerprint moved)
+WROTE     tests 803 files (source fingerprint moved)
+WROTE     other 351 files (source fingerprint moved)
+WROTE manifest.json
+OK     src   fingerprint and output proofs match
+OK     tests fingerprint and output proofs match
+OK     other fingerprint and output proofs match

@@ -11,13 +11,13 @@ def test_version_is_well_formed() -> None:
         release forever, which trains people to edit the test rather than read
         it.
     Contract:
-        The version is a non-empty dotted release string.
+        The version is a non-empty dotted release string, optionally including rcN.
     """
     import re
 
     from melder.__version__ import __version__
 
-    assert re.fullmatch(r"\d+\.\d+\.\d+(?:[.\-+].+)?", __version__), __version__
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:rc\d+|[.\-+].+)?", __version__), __version__
 
 
 def test_generated_build_assets_are_stamped_for_the_live_version() -> None:

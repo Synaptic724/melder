@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py",
- "source_sha256": "b280c459ababb0c6b3582077c5bf932679c07187607085eabc01a862b8e7733f",
+ "source_sha256": "6d2cbfa7109ea1d1d1b82ecde5bdbadddc3590404a4c4ed84579a25114a67c85",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy": {
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "65d1c73ebc0685b3759204b6ba6dd90e8e64d26f251193f7925bebb5b7736ff8",
+   "span_sha256": "0e9a559ea95ac02474380eabf7ea77c467f43479c9e8174f3e77981b3ec2cc6c",
    "role": "Processor strategy fitting runtime spell facts into the codegen model.",
    "responsibilities": [
     "captures static spell facts needed by planner strategies",

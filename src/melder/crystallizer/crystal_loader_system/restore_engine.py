@@ -264,7 +264,11 @@ class RestoreReport(Cleanable):
 
     def map_identity(self, recorded_id: str, live_id: str) -> None:
         """
-        Record one recorded-ULID -> fresh-live-identity translation.
+        Record one recorded identity -> actual live identity translation.
+
+        Structural ULIDs are always translated. Spell SHA entries are added
+        when a new bind's resolved signature differs from its recorded one;
+        unchanged content IDs remain directly addressable without an entry.
 
         Args:
             recorded_id:
@@ -1722,8 +1726,9 @@ class RestoreEngine(Cleanable):
               self-admits its window), the recorded root conduit conjures,
               staged members bind_inactive onto their live anchors POST-
               conjure, then divergent selections notch.
-            - Spell SHAs are content-derived and stay STABLE across restore;
-              only index/conduit/contract/cluster ULIDs need translation.
+            - Spell SHAs stay stable when recorded signature and receiving policy
+              agree. A changed signature maps to the actual bind result in the
+              existing report, before member/selection/contract references replay.
 
         Returns:
             None.
@@ -1909,11 +1914,15 @@ class RestoreEngine(Cleanable):
         """
         Replay one ACTIVE bind from its custody payload.
 
+        Contract:
+            Forward ordered disposal names through normal book composition.
+            Record a changed SHA before resolving dependent staged members.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
             spell_id:
-                Recorded (content-stable) spell SHA.
+                Recorded spell SHA; receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
@@ -1935,6 +1944,8 @@ class RestoreEngine(Cleanable):
             profile=str(crystal.get("profile_family", "general")),
         )
         self._report.record_built("spell_active")
+        if new_spell_id != spell_id:
+            self._report.map_identity(spell_id, new_spell_id)
         live_spell = spellbook.find_spell_by_id(new_spell_id)
         recorded_index_id = self._index_id_for_member(spell_id)
         if recorded_index_id is not None and live_spell is not None:
@@ -1952,13 +1963,17 @@ class RestoreEngine(Cleanable):
         """
         Replay one STAGED member onto its live index anchor.
 
+        Contract:
+            Retain the ordered recorded names and map any changed bind identity
+            before the selection stage resolves this exact parked member.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
             conduit:
                 The live conduit hosting `bind_inactive`.
             spell_id:
-                Recorded (content-stable) spell SHA.
+                Recorded spell SHA; receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
@@ -1984,15 +1999,18 @@ class RestoreEngine(Cleanable):
         target = self._hydrate_target(spell_id, crystal)
         if target is None:
             return
-        conduit.bind_inactive(
+        new_spell_id = conduit.bind_inactive(
             spell=target,
             spell_index=anchor,
             existence=str(crystal.get("existence_name", "unique")),
             permissions=str(crystal.get("permissions_name", "create")),
             spellframe=crystal.get("spellframe_name"),
             binding_name=crystal.get("binding_name"),
+            disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
         )
+        if new_spell_id != spell_id:
+            self._report.map_identity(spell_id, new_spell_id)
         self._report.record_built("spell_staged")
 
     def _enforce_selections(
@@ -2003,6 +2021,10 @@ class RestoreEngine(Cleanable):
     ) -> None:
         """
         Notch rebuilt indexes whose live selection diverges from record.
+
+        Contract:
+            Translate changed bind identities and resolve the exact owned member,
+            including parked members, rather than the index's active projection.
 
         Args:
             spellbook_id:
@@ -2021,8 +2043,10 @@ class RestoreEngine(Cleanable):
             selected = payload.get("selected_spell_id")
             if selected is None:
                 continue
+            # Unchanged content IDs need no translation entry.
+            live_selected_id = self._report.translate(str(selected)) or str(selected)
             anchor = self._live_index_for(spellbook, index_id)
-            if anchor is None or anchor.selected_spell_id == selected:
+            if anchor is None or anchor.selected_spell_id == live_selected_id:
                 continue
             if conduit is None:
                 self._report.add_shortfall(
@@ -2030,7 +2054,7 @@ class RestoreEngine(Cleanable):
                     "selection_requires_conduit_none_recorded",
                 )
                 continue
-            live_spell = spellbook.find_spell_by_id(str(selected))
+            live_spell = spellbook._get_owned_spell(live_selected_id)
             if live_spell is None:
                 self._report.add_shortfall(
                     "spell_index", index_id,
@@ -2067,6 +2091,10 @@ class RestoreEngine(Cleanable):
         """
         Resolve one recorded index to its live rebuilt SpellIndex.
 
+        Contract:
+            Member lookup follows changed Spell IDs in the existing report map.
+            Unchanged content IDs resolve directly; index identity is always translated.
+
         Args:
             spellbook:
                 The live rebuilt Spellbook.
@@ -2088,7 +2116,8 @@ class RestoreEngine(Cleanable):
         if selected is not None:
             candidates.insert(0, selected)
         for member_id in candidates:
-            live_spell = spellbook.find_spell_by_id(str(member_id))
+            live_member_id = self._report.translate(str(member_id)) or str(member_id)
+            live_spell = spellbook.find_spell_by_id(live_member_id)
             if live_spell is not None:
                 if live_spell.spell_index.id == live_index_id:
                     return live_spell.spell_index
@@ -2327,8 +2356,9 @@ class RestoreEngine(Cleanable):
         Stage 9 (LAST): re-grant recorded contract details.
 
         Contract:
-            - Spell SHAs are content-stable, so detail spell ids replay
-              as-recorded; conduit endpoints translate via the identity map.
+            - Detail Spell IDs follow recorded-to-live translation when a bind
+              changed its signature; unchanged SHAs remain direct. Conduit
+              endpoints translate through the same existing identity map.
             - Ward record truth: a plain detail lives in the map of the
               side that OWNS the lineage ("initiated" via the link-time
               bulk grant, "received" via the borrow verb, which files
@@ -2363,6 +2393,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Identical semantics to the historical stage loop body: detail
             re-grants run borrower-called inside link-transaction windows;
+            changed Spell IDs translate to the actual rebuilt bind identities;
             endpoint absence files the honest shortfall; index
             subscriptions are reported (first cut). Contracts are
             independent of one another; the parallel driver runs one unit
@@ -2399,11 +2430,13 @@ class RestoreEngine(Cleanable):
                 # called naming the owner (the ward eligibility check
                 # demands the `conduit` argument own the spell).
                 borrower = side_b if granter is side_a else side_a
+                recorded_spell_id = str(detail.get("spell_id"))
+                live_spell_id = self._report.translate(recorded_spell_id) or recorded_spell_id
                 with borrower.transaction(
                         "link", conduits=[borrower, granter]
                 ):
                     borrower.add_spell_to_contract(
-                        spell_id=str(detail.get("spell_id")),
+                        spell_id=live_spell_id,
                         conduit=granter,
                         permissions=str(
                             detail.get("permissions", "create")

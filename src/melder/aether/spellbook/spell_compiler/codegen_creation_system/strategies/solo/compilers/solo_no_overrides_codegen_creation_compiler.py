@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
@@ -23,6 +23,8 @@ def compile_solo_no_overrides_codegen_creation_executor(
         - Emits the same route/existence logic that previously lived in the
           handwritten closure branches in this file.
         - Uses the process-wide emitted-source code-object cache.
+        - Binds the established Spell disposal list directly into each fresh
+          executor namespace, including when its code object is reused.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -238,11 +240,14 @@ def _build_source(
 
 
 def _normalize_disposal_methods(
-        disposal_method_names: Sequence[str],
-) -> Optional[Tuple[str, ...]]:
+        disposal_method_names: list[str],
+) -> Optional[list[str]]:
     """
-    Normalize spell-owned disposal metadata for creations registration.
+    Retain the established Spell list for registration; an empty list remains None.
+
+    No names are copied, reordered, or revalidated. Binding owns that policy,
+    and this namespace must not own a separate disposal collection.
     """
     if not disposal_method_names:
         return None
-    return tuple(disposal_method_names)
+    return disposal_method_names

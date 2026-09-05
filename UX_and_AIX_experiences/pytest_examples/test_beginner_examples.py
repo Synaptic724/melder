@@ -29,7 +29,11 @@ def _load(path: Path):
 
 
 @pytest.mark.parametrize("path", EXAMPLES, ids=[p.stem for p in EXAMPLES])
-def test_beginner_example_runs_green(path, capsys):
+def test_beginner_example_runs_green(
+    path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Execute each script with its sibling imports, matching direct Python script execution."""
+    monkeypatch.syspath_prepend(str(path.parent))
     module = _load(path)
     module.main()
     out = capsys.readouterr().out

@@ -1,0 +1,46 @@
+{
+  "revision": "573cdbaf8a12e52f096907bcb8eb6f6249fd3090",
+  "corpora": {
+    "src": {
+      "fingerprint_matches": true,
+      "file_count": 584,
+      "added": [],
+      "removed": [],
+      "changed": [],
+      "differences": {}
+    },
+    "tests": {
+      "fingerprint_matches": true,
+      "file_count": 806,
+      "added": [],
+      "removed": [],
+      "changed": [],
+      "differences": {}
+    },
+    "other": {
+      "fingerprint_matches": false,
+      "file_count": 352,
+      "added": [],
+      "removed": [],
+      "changed": [
+        ".gitignore"
+      ],
+      "differences": {
+        ".gitignore": {
+          "expected": {
+            "content_bytes": 5517,
+            "content_lines": 226,
+            "content_sha256": "916ef0cf5e8840ebe57d97f1ac458012a8efdbc0e352d3a711847f9517892d19",
+            "source_encoding": "utf-8"
+          },
+          "committed": {
+            "content_bytes": 5518,
+            "content_lines": 226,
+            "content_sha256": "c98ad9780d335b3e3be57eb987d40b18a4878eed275852f97153922892e00df4",
+            "source_encoding": "utf-8"
+          }
+        }
+      }
+    }
+  }
+}

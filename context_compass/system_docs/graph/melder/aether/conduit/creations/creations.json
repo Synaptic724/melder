@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/creations.py",
- "source_sha256": "e1e90a575ddd8e431bb75db86b79a6098b617ab1502eb50c80444af4b914997c",
+ "source_sha256": "f1336f35d0b1518b8a56d9f8d89fee9c0bef9d01b3614208ef2369869d2fb438",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.creations": {
@@ -15,13 +15,13 @@
    "responsibilities": [
     "hold live objects for exactly one scope",
     "keep disposal metadata apart so resolution never pays for it",
-    "dispose in reverse creation order"
+    "traverse registry keys and many buckets in reverse while executing each established method list in order"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "e1e90a575ddd8e431bb75db86b79a6098b617ab1502eb50c80444af4b914997c"
+   "semantics_authored_against": ""
   },
   "melder.aether.conduit.creations.creations.Creations": {
    "id": "melder.aether.conduit.creations.creations.Creations",
@@ -51,25 +51,27 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7d8940c38e2d92b3758c62dda70f89ceaf7529b56aa1d54445f87c06d7e5e0ca",
-   "role": "Conduit-owned live creation registry.",
+   "span_sha256": "dafdc54ae8a9c106dc6f04ceca52acf3d7b6011b714a2ea510fc614dff34ea65",
+   "role": "Generic scoped live-object registry with separate disposal metadata.",
    "responsibilities": [
-    "stores live creation wrappers under spell and spellspace scopes",
-    "owns disposal stacks for tracked creations",
-    "supports extraction and restoration during ownership transfer"
+    "stores raw objects in one scoped live registry and cleanup entries in a separate registry",
+    "retains established Spell disposal lists through registration and in-memory transfer",
+    "invokes methods in list order; the first method failure stops its object while other objects continue",
+    "supports reusable clear/reset and terminal cleanup without clearing borrowed method lists"
    ],
    "owns_state": [
     "_creations",
-    "_disposal_stack",
-    "_spellspace_disposal_stacks",
-    "_conduit"
+    "_disposable_creations",
+    "_owner_conduit_id",
+    "_id",
+    "_lock"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "7d8940c38e2d92b3758c62dda70f89ceaf7529b56aa1d54445f87c06d7e5e0ca"
+   "semantics_authored_against": "dafdc54ae8a9c106dc6f04ceca52acf3d7b6011b714a2ea510fc614dff34ea65"
   }
  },
  "edges_out": [

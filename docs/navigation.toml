@@ -1,0 +1,95 @@
+schema_version = 1
+example_catalog = "catalog.toml"
+curriculum = "curriculum.toml"
+api_reference = "api.toml"
+architecture_reference = true
+
+[[page]]
+id = "index"
+title = "Melder"
+source = "index.md"
+parent = ""
+
+[[page]]
+id = "beginner/index"
+title = "🟢 Beginner"
+source = "beginner/index.md"
+parent = "index"
+
+[[page]]
+id = "intermediate/index"
+title = "🟡 Intermediate"
+source = "intermediate/index.md"
+parent = "index"
+
+[[page]]
+id = "advanced/index"
+title = "🟠 Advanced"
+source = "advanced/index.md"
+parent = "index"
+
+[[page]]
+id = "expert/index"
+title = "🔵 Expert"
+source = "expert/index.md"
+parent = "index"
+
+[[page]]
+id = "examples/index"
+title = "Examples"
+source = "examples/index.md"
+parent = "index"
+
+[[page]]
+id = "examples/hello-melder"
+title = "Hello Melder"
+source = ""
+parent = "examples/index"
+
+[[page]]
+id = "reference/architecture"
+title = "Architecture & Drawings"
+source = ""
+parent = "index"
+
+[[page]]
+id = "reference/api"
+title = "API Reference"
+source = ""
+parent = "index"
+
+[[page]]
+id = "contents"
+title = "Full Contents"
+source = ""
+parent = "index"
+
+[[page]]
+id = "reference/glossary"
+title = "Glossary"
+source = "reference/glossary.md"
+parent = "index"
+
+[[page]]
+id = "reference/troubleshooting"
+title = "Troubleshooting"
+source = "reference/troubleshooting.md"
+parent = "index"
+
+[[page]]
+id = "reference/releases"
+title = "Releases & Migration"
+source = "reference/releases.md"
+parent = "index"
+
+[[page]]
+id = "reference/downloads"
+title = "Downloads"
+source = "reference/downloads.md"
+parent = "index"
+
+[[page]]
+id = "maintaining"
+title = "Maintain the docs"
+source = "maintaining.md"
+parent = "index"

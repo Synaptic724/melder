@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 2298
-CONTENT_SHA256 = '974a0d6571ddee484512bdec807388ec0beae5a9f8751b5b9441bd5032b0f7f4'
+LINE_COUNT = 2329
+CONTENT_SHA256 = 'e2c4c56457cfdcfe9e2a04466a80851b65db8150ecfb364c62f1ea26996ae21b'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-08-02
+- Updated: 2026-09-05
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -641,6 +641,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 1. `Spellbook.bind(...)`:
    - Enum conversion for permissions and existence.
    - `Bind._bind_logic` produces SpellIndex and Spell.
+   - Disposal candidates resolve once into a Spell-owned ordered list before fingerprinting.
+     Book names own overlaps; priority places their block first or last (default).
    - Spellbook registers spell maps and SpellSystemStates lineage.
    - If Conduit exists, stamps ownership and registers existing objects.
 
@@ -772,7 +774,7 @@ types to seven; each `cleanup()` was verified present on the class named.
 6. `Rift.cleanup()` cleans the one owned space, the owned config snapshot, the
    owned `RiftGate`, and engaged `FrameLinkContract` objects, then clears
    Rift-local metadata, logger last.
-7. `Creations.cleanup()` calls the configured disposal methods and may raise
+7. `Creations.cleanup()` calls each Spell's established methods in list order and may raise
    `ExceptionGroup` - it is the one teardown here that AGGREGATES failures
    rather than stopping at the first, so a single bad object cannot strand the
    rest of the scope.
@@ -838,6 +840,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   - src/melder/aether/spellbook/spellbook.py:642 (ownership check reads it)
   - src/melder/aether/spellbook/spellbook.py:678 (deleted on cleanup)
 - `SpellbookConfiguration` must be frozen before Conduit creation.
+- Disposal order is established at bind: both groups contribute and book order owns shared
+  names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
+  Runtime carriers retain the established list; persisted crystals retain ordered values.
+  No post-bind mutation protocol or disposal-time configuration matching is introduced.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`.
 - Existing-object spells must use `Existence.unique` for Creations registration.
 - SpellIndex identity (ULID) is immutable; the active selected spell it targets
   can change. Versions are owned by MutationResearch.
@@ -998,9 +1005,10 @@ frames own the dynamic gate that conjure's check_system_state reads.
 #### Restore invariants
 - Checkpoint-shaped replay through PUBLIC verbs only - never raw map
   merges; the engine is a driver, not a surface.
-- Never-rehydrate-ULIDs: fresh identities always; recorded ids live only
-  in the report's translation map. Spell SHA256 ids are content-derived
-  and stable, so custody replays by recorded id.
+- Never-rehydrate-ULIDs: fresh structural identities always; recorded ids live only
+  in the report's translation map. Spell SHA256 ids remain stable when bind signatures agree.
+  A changed receiving policy can change the new SHA; restore maps that result before
+  replaying anchors, selections, and contract grants.
 - All-or-nothing: any stage failure tears down every built unit in
   reverse order and re-raises with the cause chained.
 - Re-emission is intended: the rebuilt world re-records itself into the
@@ -1222,9 +1230,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 6501
-  loc: 6501
-  verified_at: 2026-08-02T16:30:22Z
+  end_line: 6800
+  loc: 6800
+  verified_at: 2026-09-05T12:55:45Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
@@ -1234,9 +1242,9 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 876
-  loc: 876
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 915
+  loc: 915
+  verified_at: 2026-09-05T12:55:45Z
   note: binding pipeline.
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
@@ -1253,9 +1261,9 @@ Spellbook and binding:
     selected spell.
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1645
-  loc: 1645
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1663
+  loc: 1663
+  verified_at: 2026-09-05T12:55:45Z
   note: spell metadata and hooks.
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
@@ -1310,9 +1318,9 @@ Configuration and hooks:
   note: fluent builder for mutation-research root configuration.
 - path: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
   start_line: 1
-  end_line: 1185
-  loc: 1185
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1243
+  loc: 1243
+  verified_at: 2026-09-05T12:55:45Z
   note: properties, hooks, freeze.
 - path: `src/melder/aether/spellbook/configuration/system_state.py`
   start_line: 1
@@ -1372,9 +1380,9 @@ Aether and frames:
     and the loader - see "Persistence Subsystem Topology" below).
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1162
-  loc: 1162
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1165
+  loc: 1165
+  verified_at: 2026-09-05T12:55:45Z
   note: bind-signature CARRIER for one spell version; delegates module-world
     analysis to crystal_analysis and carries the result (moved + slimmed,
     2026-07-10).
@@ -1893,9 +1901,9 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 615
-  loc: 615
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 625
+  loc: 625
+  verified_at: 2026-09-05T12:55:45Z
   note: instance registry.
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
@@ -2087,6 +2095,29 @@ sequenceDiagram
   LC->>AE: register conduit
   LC->>CC: register conduit (if named/dynamic)
 ```
+
+### Ordered Disposal Data Flow
+```text
+Book + per-bind candidates -> Bind -> Spell list -> compiler -> Creations -> ordered calls
+                                       |
+                                       +-> crystal ordered values -> replay -> new Bind
+```
+
+```mermaid
+flowchart LR
+  B[Book candidates and priority] --> M[Bind: match and compose once]
+  E[Per-bind candidates] --> M
+  M --> S[Spell-owned ordered list and content ID]
+  S --> P[Compiler references]
+  P --> C[Creations: ordered method calls]
+  S --> V[Crystal: ordered values]
+  V --> R[Replay through receiving book]
+  R --> M
+```
+
+Recorded values cross a persistence boundary; runtime references do not create a second
+policy source. Receiving-book order wins on replay. The loader follows changed binding IDs
+without rewriting the original record or existing live IDs.
 
 ## Information Sources
 - `README.md`
@@ -2314,4 +2345,5 @@ composition vocabulary. Re-verify those against source before relying on them.
 NOTE ON THIS SECTION: it previously held a 20-entry changelog of edits made TO this
 document, plus a 2026-07-07 marker recording that its tail had been lost to a mid-write
 truncation predating recoverable git history. Both were replaced on 2026-07-25 with the
-state-and-next-steps summary the template specifies; the edit history lives in git."""
+state-and-next-steps summary the template specifies; the edit history lives in git.
+"""

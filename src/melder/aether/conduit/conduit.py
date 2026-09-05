@@ -3333,7 +3333,7 @@ class Conduit(Cleanable):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduit.
+        conduit**.
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
 

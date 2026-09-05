@@ -3,6 +3,8 @@ TIER: beginner (07)
 GOAL: The vocabulary enums all accept their string names too - config
       files and CLI flags can drive registration without importing the
       enums. Both spellings resolve to the same lifecycles.
+SURFACE EXERCISED: md.Spellbook.bind, md.Spellbook.conjure, md.Existence.many,
+                   md.Conduit.meld
 """
 import melder as md
 

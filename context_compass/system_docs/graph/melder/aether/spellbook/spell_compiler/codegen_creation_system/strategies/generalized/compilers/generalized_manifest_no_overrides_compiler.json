@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
- "source_sha256": "a0836f99e5c28bd2f7285f3c0fb2a93b9044c35bcf857e6d2eecb02c5ee55230",
+ "source_sha256": "85c9c5fa77a356d671c208563d967284c9d066709299382a9a25c6394c3638f1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler": {

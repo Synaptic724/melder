@@ -1,0 +1,10 @@
+schema_version = 1
+title = "Melder Handbook"
+web_baseurl = "https://melder.readthedocs.io/en/latest/"
+examples = [
+  "examples/hello-melder",
+  "examples/beginner/40-beginner-capstone",
+  "examples/intermediate/26-conduit-categories-as-factories",
+  "examples/advanced/02-frames-as-worlds",
+  "examples/expert/36-an-agent-builds-a-working-system",
+]

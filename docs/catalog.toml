@@ -1,0 +1,165 @@
+schema_version = 1
+repository_url = "https://github.com/Synaptic724/melder"
+source_ref = "prod"
+
+[[level]]
+slug = "beginner"
+directory = "01_beginner"
+sources = [
+  "01_hello_meld.py",
+  "02_lifecycles_unique_vs_many.py",
+  "03_bind_functions_and_instances.py",
+  "04_named_bindings.py",
+  "05_lesser_conduit_scopes.py",
+  "06_error_vocabulary.py",
+  "07_strings_as_vocabulary.py",
+  "08_disposal_contract.py",
+  "09_spellframe_grouping.py",
+  "10_explicit_cleanup.py",
+  "11_bind_many_at_once.py",
+  "12_agent_first_read.py",
+  "13_existence_unique.py",
+  "14_existence_many.py",
+  "15_existence_unique_per_conduit.py",
+  "16_typed_melding.py",
+  "17_protocols_as_shapes.py",
+  "18_bootstrap_pattern.py",
+  "19_lifecycle_map.py",
+  "20_defaults_just_work.py",
+  "21_the_basic_rhythm.py",
+  "22_same_name_different_frames.py",
+  "23_reading_the_errors.py",
+  "24_same_class_many_names.py",
+  "25_frames_as_dict_classification.py",
+  "26_meld_address_forms.py",
+  "27_pass_the_conduit_around.py",
+  "28_real_objects_no_wrappers.py",
+  "29_many_state_isolation.py",
+  "30_double_bind_outcome.py",
+  "31_required_vocabulary.py",
+  "32_factory_functions.py",
+  "33_prebuilt_registry.py",
+  "34_scope_contrast_one_tree.py",
+  "35_disposal_multiple_methods.py",
+  "36_one_book_one_conduit.py",
+  "37_bind_vocabulary_cheatsheet.py",
+  "38_meld_a_frame_as_dict.py",
+  "39_agent_inventory_pattern.py",
+  "40_beginner_capstone.py",
+  "41_you_own_the_memory_now.py",
+]
+
+[[level]]
+slug = "intermediate"
+directory = "02_intermediate"
+sources = [
+  "01_scan_bind_decorator.py",
+  "02_spellbinder_full_chain.py",
+  "03_registration_hooks.py",
+  "04_spellspace_scoped_resolution.py",
+  "05_existence_unique_per_conduit_lineage.py",
+  "06_spell_metadata_kwargs.py",
+  "07_lesser_conduits_child_scopes.py",
+  "08_spell_override_construction.py",
+  "09_permissions_block_sharing.py",
+  "10_spellbinder_fluent_basics.py",
+  "11_permissions_linking_vocabulary.py",
+  "12_bind_lambda_spells.py",
+  "13_spell_ids_and_lookup.py",
+  "14_introspect_the_book.py",
+  "15_constructor_di_by_annotation.py",
+  "16_spellmap_defaults.py",
+  "17_collection_di.py",
+  "18_live_creation_probe.py",
+  "19_spellbook_configuration_basics.py",
+  "20_phase_scheduler_knobs.py",
+  "21_dynamic_linking_basics.py",
+  "22_permissions_create_vs_read.py",
+  "23_transfer_of_ownership.py",
+  "24_conduit_cloud.py",
+  "25_clusters_unique_per_cluster.py",
+  "26_conduit_categories_as_factories.py",
+  "27_sever_link.py",
+  "28_upgrade_to_normal.py",
+  "29_scoped_cleanup_lesser_conduits.py",
+  "30_config_disposal_and_the_frozen_law.py",
+  "31_spellbook_config_defined.py",
+  "32_config_meld_hooks.py",
+  "33_config_conduit_lifecycle_hooks.py",
+  "34_config_link_and_contract_hooks.py",
+  "35_one_config_every_book.py",
+  "36_late_binding_with_spellcontract.py",
+  "37_the_frame_conduit_cloud.py",
+]
+
+[[level]]
+slug = "advanced"
+directory = "03_advanced"
+sources = [
+  "01_deep_spell_override_paths.py",
+  "02_frames_as_worlds.py",
+  "03_frame_posture_public_door.py",
+  "04_utility_system_logger.py",
+  "05_frame_posture_cheatsheet.py",
+  "06_frame_posture_object.py",
+  "07_aether_config_two_doors.py",
+  "08_nexus_enablement.py",
+  "09_opening_a_rift.py",
+  "10_the_room_and_its_fixtures.py",
+  "11_static_vs_capability_authority.py",
+  "12_the_workstation_canvas.py",
+  "13_the_frame_viewer_facade.py",
+  "14_the_describe_ladder.py",
+  "15_what_you_cannot_see.py",
+  "16_ward_policies.py",
+  "17_taking_a_checkpoint.py",
+  "18_loading_it_back.py",
+  "19_wildcard_and_broadcast_overrides.py",
+]
+
+[[level]]
+slug = "expert"
+directory = "04_expert"
+sources = [
+  "01_pod_boot_the_order_is_the_product.py",
+  "02_persistence_mesh_your_code_their_lanes.py",
+  "03_research_sets_lanes_and_residency.py",
+  "04_diffs_are_derived_never_stored.py",
+  "05_protocol_crafter_the_tool_that_writes.py",
+  "06_two_knobs_and_a_terminator_per_rung.py",
+  "07_the_codegen_room_agents_writing_code.py",
+  "08_research_is_graduated_by_room.py",
+  "09_getting_data_into_your_database.py",
+  "10_deep_overrides_paths_through_a_graph.py",
+  "11_pointing_a_rift_at_your_own_frame.py",
+  "12_the_codegen_loop_end_to_end.py",
+  "13_one_workshop_many_worlds.py",
+  "14_compositions_a_subsystem_as_one_unit.py",
+  "15_campaigns_the_why_that_rides_along.py",
+  "16_rewiring_a_running_world.py",
+  "17_notch_swapping_a_live_object.py",
+  "18_the_package_reads_itself_to_you.py",
+  "19_the_codebase_as_a_walkable_graph.py",
+  "20_the_workstation_an_agents_workbench.py",
+  "21_many_agents_writing_code_at_once.py",
+  "22_asking_what_code_would_do_before_running_it.py",
+  "23_branching_the_record_and_joining_back.py",
+  "24_loading_a_whole_world_back.py",
+  "25_many_research_sets_one_world.py",
+  "26_codegen_create_modify_iterate.py",
+  "27_a_world_that_outlives_its_own_runtime.py",
+  "28_the_record_crosses_as_a_json_string.py",
+  "29_reading_your_own_recorded_code.py",
+  "30_composing_a_version_in_the_workshop.py",
+  "31_organising_lanes_after_the_fact.py",
+  "32_a_subsystems_blast_radius.py",
+  "33_what_a_synthetic_module_actually_is.py",
+  "34_several_worlds_of_record_in_one_process.py",
+  "35_the_gate_that_waits_for_readers.py",
+  "36_an_agent_builds_a_working_system.py",
+]
+
+[[lesson]]
+source = "UX_and_AIX_experiences/01_beginner/01_hello_meld.py"
+id = "examples/hello-melder"
+title = "Hello Melder"

@@ -144,23 +144,25 @@ def test_exception_recorded_on_future_when_function_raises():
     assert isinstance(uow.exception(), ZeroDivisionError)
 
 
-def test_thread_safety_basic_lock_usage():
+def test_thread_safety_basic_lock_usage() -> None:
+    """Allow a one-second worker hold and five-second startup wait for CI scheduling delays."""
     # Verify that concurrent acquisitions respect the lock
     uow = UnitOfWork(lambda: time.sleep(0.05))
 
     acquired_in_thread = []
     entered = threading.Event()
 
-    def worker():
+    def worker() -> None:
+        """Hold the context lock long enough for the main thread's exclusion check."""
         with uow:
             acquired_in_thread.append(True)
             entered.set()
-            time.sleep(0.05)
+            time.sleep(1.0)
 
     t = threading.Thread(target=worker)
     t.start()
     # Wait for thread to acquire lock
-    entered.wait(timeout=0.1)
+    assert entered.wait(timeout=5), "worker did not acquire the lock within 5 seconds"
     assert uow._lock.acquire(blocking=False) is False
     t.join(timeout=5)
     assert acquired_in_thread == [True]

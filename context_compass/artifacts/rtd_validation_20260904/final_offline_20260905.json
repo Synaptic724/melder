@@ -1,0 +1,29 @@
+{
+  "errors": [],
+  "pdf_pages": 107,
+  "pdf_title": "Melder Handbook",
+  "pdf_outline_root_entries": 6,
+  "pdf_version_present": true,
+  "pdf_capstone_pages": [
+    16,
+    17,
+    91,
+    92
+  ],
+  "pdf_configuration_pages": [],
+  "review_pages": [
+    1,
+    4,
+    16,
+    17,
+    91,
+    92,
+    107
+  ],
+  "epub_xhtml_pages": 62,
+  "epub_scripts": 0,
+  "epub_mimetype_ok": true,
+  "html_archive_files": 948,
+  "pdf_sha256": "f5e8710833c207d82519f0693c635576ae6ce078023f945a60a2d6f2922c634b",
+  "epub_sha256": "0b5a9aba23ddd0a3b3ee5813e71a46c50b3dbd18fc993bda24d06630e918cb27"
+}

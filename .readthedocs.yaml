@@ -1,0 +1,44 @@
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.14"
+  jobs:
+    install:
+      - python -m pip install -r docs/requirements.txt
+    build:
+      html:
+        - python docs/tools/build_docs.py build
+        - python docs/tools/check_site.py
+        - python docs/tools/build_docs.py stage --builder html
+      htmlzip:
+        - python docs/tools/build_docs.py archive
+        - python docs/tools/build_docs.py stage --builder htmlzip
+      epub:
+        - python docs/tools/build_docs.py handbook --builder epub
+        - python docs/tools/build_docs.py stage --builder epub
+      pdf:
+        - python docs/tools/install_tectonic.py
+        - python docs/tools/build_docs.py handbook --builder pdf --tectonic docs/_build/tools/tectonic/tectonic
+        - python docs/tools/build_docs.py stage --builder pdf
+
+formats:
+  - htmlzip
+  - epub
+  - pdf
+
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: true
+
+search:
+  ranking:
+    beginner/*: 3
+    intermediate/*: 2
+    advanced/*: 2
+    expert/*: 2
+    examples/*: 2
+  ignore:
+    - _modules/*
+    - _sources/*

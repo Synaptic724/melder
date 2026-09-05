@@ -1,0 +1,40 @@
+{
+  "manifest": "rebuilt working-tree outputs",
+  "revisions": {
+    "573cdbaf8a12e52f096907bcb8eb6f6249fd3090": {
+      "src": {
+        "file_count": 584,
+        "all_file_metadata_matches": true,
+        "fingerprint_matches": true
+      },
+      "tests": {
+        "file_count": 806,
+        "all_file_metadata_matches": true,
+        "fingerprint_matches": true
+      },
+      "other": {
+        "file_count": 352,
+        "all_file_metadata_matches": true,
+        "fingerprint_matches": true
+      }
+    },
+    "69c1048fa147251dde1dc2deb153de271c85947b": {
+      "src": {
+        "file_count": 584,
+        "all_file_metadata_matches": true,
+        "fingerprint_matches": true
+      },
+      "tests": {
+        "file_count": 806,
+        "all_file_metadata_matches": true,
+        "fingerprint_matches": true
+      },
+      "other": {
+        "file_count": 352,
+        "all_file_metadata_matches": true,
+        "fingerprint_matches": true
+      }
+    }
+  },
+  "passed": true
+}

@@ -1,0 +1,54 @@
+Traceback (most recent call last):
+  File "C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\01_beginner\40_beginner_capstone.py", line 44, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\01_beginner\40_beginner_capstone.py", line 21, in main
+    book, conduit = build_application()
+                    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\UX_and_AIX_experiences\01_beginner\capstone_bootstrap.py", line 20, in build_application
+    conduit = book.conjure()
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 6457, in conjure
+    return self._conjure_within_transaction_window(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy=policy,
+        ^^^^^^^^^^^^^^
+    ...<2 lines>...
+        conduit_logger=conduit_logger,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook.py", line 6561, in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 222, in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 313, in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        spellbook=spellbook,
+        ^^^^^^^^^^^^^^^^^^^^
+        phase_scheduler_cls=phase_scheduler_cls,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1380, in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+        spellbook=spellbook,
+    ...<6 lines>...
+        ),
+    )
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\aether\spellbook\spellbook_creation_system.py", line 1887, in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\utilities\synchronization\phase_scheduler.py", line 964, in run_all_phases
+    units = self._run_single_phase(name, factory)
+  File "C:\Users\Mark\PycharmProjects\melder_private\src\melder\utilities\synchronization\phase_scheduler.py", line 867, in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'config' on spell 'RequestHandler' (annotation=<class 'capstone_models.AppConfig'>).

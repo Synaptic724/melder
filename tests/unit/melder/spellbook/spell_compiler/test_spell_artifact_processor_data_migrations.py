@@ -202,7 +202,7 @@ def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
         is_method_spell=False,
         is_lambda_spell=False,
         has_disposal_methods=True,
-        disposal_method_names=("cleanup",),
+        disposal_method_names=["cleanup"],
         user_created_object=None,
     )
     dep_record = SpellRuntimeRecord(
@@ -216,7 +216,7 @@ def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
         is_method_spell=True,
         is_lambda_spell=False,
         has_disposal_methods=False,
-        disposal_method_names=(),
+        disposal_method_names=[],
         user_created_object=object(),
     )
     analysis = SpellRuntimeAnalysis(
@@ -227,7 +227,7 @@ def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
     )
 
     assert analysis.spell_count == 2
-    assert analysis.records_by_spell_id["root"].disposal_method_names == ("cleanup",)
+    assert analysis.records_by_spell_id["root"].disposal_method_names == ["cleanup"]
     assert analysis.records_by_spell_id["dep"].is_existing_creation is True
 
     analysis.cleanup()

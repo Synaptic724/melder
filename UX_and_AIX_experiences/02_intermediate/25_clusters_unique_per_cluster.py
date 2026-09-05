@@ -21,6 +21,7 @@ class ClusterBus:
 
 
 def main() -> None:
+    """Build a linked cluster and assert that its members resolve the same bus."""
     owner_book = dynamic_spellbook()
     # permissions="create" matters: cluster auto-sharing contracts the
     # spell to each joining member WITH the spell's own permissions.
@@ -48,6 +49,7 @@ def main() -> None:
 
     bus_a = owner.meld(spell=ClusterBus)
     bus_b = member.meld(spell=ClusterBus)
+    assert bus_a is bus_b, "cluster members must share the elected leader's bus"
     print("one bus per cluster, shared by members:", bus_a is bus_b)
 
 

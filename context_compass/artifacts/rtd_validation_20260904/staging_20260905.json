@@ -1,0 +1,19 @@
+{
+  "html_files": 945,
+  "archive_matches": true,
+  "all_staging_matches": true,
+  "artifacts": {
+    "htmlzip": {
+      "bytes": 12266441,
+      "sha256": "a10ec880a46456d9374927f31d1b90f5ec37c6a2e58d0f91cb52999171a0518b"
+    },
+    "epub": {
+      "bytes": 211427,
+      "sha256": "3a4ac2e5d2f14e0c851a4803a48a55b9a327a0543d1271958e45a81728ec20c8"
+    },
+    "pdf": {
+      "bytes": 481533,
+      "sha256": "a91e35aba6ac19cfb24d12ed6866271d03d365162a71073aeddc3eab06a671af"
+    }
+  }
+}

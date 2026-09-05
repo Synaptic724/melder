@@ -1,0 +1,31 @@
+{
+  "errors": [],
+  "hosted_environment_test_is_simulation": true,
+  "simulated_canonicals": {
+    "index": "https://melder.readthedocs.io/en/audit-version/index.html",
+    "beginner/capstone": "https://melder.readthedocs.io/en/audit-version/beginner/capstone.html",
+    "reference/api/resolution/spellspace": "https://melder.readthedocs.io/en/audit-version/reference/api/resolution/spellspace.html"
+  },
+  "simulated_sitemap_urls": 294,
+  "html_archive_and_staged_files": 948,
+  "formats": {
+    "pdf": {
+      "bytes": 502412,
+      "sha256": "3eb0414a86e7b9a4b2a6d37d857c65d2920395d869174245c879ccf0ea0b88db"
+    },
+    "epub": {
+      "bytes": 219394,
+      "sha256": "87224a8bb3163e4125a2d4f0383d1df0efa72dbb09b90588dc557a33178ef379"
+    },
+    "htmlzip": {
+      "bytes": 12312019,
+      "sha256": "ea3a182298d78cead75a8f20451d98a1204a3387858bacddb5126daf2fc2e7b0"
+    }
+  },
+  "pdf_pages": 107,
+  "pdf_outline_root_entries": 6,
+  "pdf_visual_review": "107-page contact sheets plus full-size capstone and corrected configuration table",
+  "epub_xhtml_pages": 62,
+  "epub_scripts": 0,
+  "epub_mimetype_ok": true
+}

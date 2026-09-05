@@ -1,14 +1,15 @@
 name: Publish Python Package
 
-# This workflow must exist on GitHub's default branch so release events reach it.
-# Publishing is still allowed only when the event commit is exactly current prod HEAD.
+# Release events must reach this workflow on the default branch. Earlier PR CI
+# never substitutes for this fresh release-time test/build qualification.
 on:
   release:
     types: [published]
   workflow_dispatch:
 
+# Serialize manual and release-event publication across every tag/ref.
 concurrency:
-  group: pypi-${{ github.event.release.tag_name || github.ref }}
+  group: pypi-publication
   cancel-in-progress: false
 
 permissions:
@@ -17,326 +18,95 @@ permissions:
 jobs:
   release-gate:
     name: Require current prod HEAD
+    # Publishing an RC on GitHub must not publish a final package automatically.
+    if: github.event_name != 'release' || !github.event.release.prerelease
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Verify the event commit is current prod
-        shell: bash
-        run: |
-          git fetch --no-tags origin \
-            +refs/heads/prod:refs/remotes/origin/prod
-
-          event_sha="$(git rev-parse "${GITHUB_SHA}^{commit}")"
-          prod_sha="$(git rev-parse "refs/remotes/origin/prod^{commit}")"
-
-          echo "event: ${GITHUB_EVENT_NAME}"
-          echo "event commit: ${event_sha}"
-          echo "prod HEAD:    ${prod_sha}"
-
-          if [ "${event_sha}" != "${prod_sha}" ]; then
-            echo "::error::PyPI publishing is allowed only from current prod HEAD."
-            exit 1
-          fi
-
-  hygiene:
-    name: Repository hygiene
-    runs-on: ubuntu-latest
-    needs: release-gate
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Reject paths differing only by case
-        shell: bash
-        run: |
-          dupes=$(git ls-files | LC_ALL=C tr '[:upper:]' '[:lower:]' | sort | uniq -d)
-          if [ -n "${dupes}" ]; then
-            echo "Paths in the index that collide case-insensitively:"
-            echo "${dupes}" | while IFS= read -r low; do
-              git ls-files | grep -ix -- "${low}" | sed 's/^/  /'
-            done
-            exit 1
-          fi
-          echo "OK: no case-colliding paths"
-
-  test:
-    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    needs: release-gate
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.14t"]
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-python@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Confirm the supported runtime
-        run: >-
-          python -c "import sys; print(sys.version);
-          assert sys.version_info >= (3, 14), sys.version"
-
-      - name: Install Melder and test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group test
-          python -m pip install --no-deps --editable .
-
-      - name: Run supported test tiers
-        run: python -m pytest -q tests/unit tests/component tests/integration
-
-  release-build:
-    name: Build and verify distributions
-    runs-on: ubuntu-latest
-    needs: [release-gate, hygiene, test]
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@v7
-
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
-
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group build
-
-      - name: Verify durable build assets
-        run: python src/melder/_build_assets/_build_asset_runner.py --check
-
-      - name: Build release distributions
-        run: python -m build --sdist --wheel
-
-      - name: Verify distribution boundaries and version agreement
+      - name: Authorize the selected final release
+        run: python .github/scripts/ci_policy.py release-head
+      - name: Require successful TestPyPI qualification of the candidate source
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          python - <<'PY'
-          import ast
-          import email.parser
-          import glob
-          import os
-          import pathlib
-          import re
-          import sys
-          import tarfile
-          import zipfile
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
 
-          wheels = glob.glob("dist/*.whl")
-          sdists = glob.glob("dist/*.tar.gz")
-          problems = []
-
-          if len(wheels) != 1:
-              problems.append(f"expected one wheel, found {wheels}")
-          if len(sdists) != 1:
-              problems.append(f"expected one sdist, found {sdists}")
-          if problems:
-              raise SystemExit("\n".join(problems))
-
-          wheel = wheels[0]
-          sdist = sdists[0]
-
-          def unsafe(name: str) -> bool:
-              path = pathlib.PurePosixPath(name)
-              return path.is_absolute() or ".." in path.parts or "\\" in name
-
-          def assignment(source: str, name: str) -> str:
-              for node in ast.parse(source).body:
-                  if isinstance(node, ast.Assign):
-                      targets = node.targets
-                  elif isinstance(node, ast.AnnAssign):
-                      targets = [node.target]
-                  else:
-                      continue
-                  if any(isinstance(target, ast.Name) and target.id == name
-                         for target in targets):
-                      return str(ast.literal_eval(node.value))
-              raise ValueError(f"{name} not found")
-
-          with zipfile.ZipFile(wheel) as archive:
-              names = sorted(name for name in archive.namelist()
-                             if not name.endswith("/"))
-
-              for name in names:
-                  if unsafe(name):
-                      problems.append(f"unsafe wheel member: {name}")
-                  if not (name.startswith("melder/") or
-                          re.match(r"melder-[^/]+\.dist-info/", name)):
-                      problems.append(f"unexpected wheel root: {name}")
-                  if ("/__pycache__/" in f"/{name}" or
-                          name.lower().endswith((
-                              ".db", ".sqlite", ".sqlite3", ".pyc",
-                              ".pyo", ".melc", ".prof", ".pstats",
-                          ))):
-                      problems.append(f"forbidden generated member: {name}")
-
-              required = {
-                  "melder/py.typed",
-                  "melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
-                  "melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
-                  "melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
-                  "melder/_build_assets/_system_documents/manifest/system_documents_index.py",
-                  "melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
-                  "melder/_build_assets/_system_documents/payloads/src_architecture_payload.py",
-                  "melder/_build_assets/_system_documents/payloads/src_components_payload.py",
-                  "melder/_build_assets/_system_documents/payloads/src_graph_payload.py",
-              }
-              missing = sorted(required.difference(names))
-              if missing:
-                  problems.append(f"wheel is missing required assets: {missing}")
-
-              metadata_name = next(
-                  (name for name in names if name.endswith(".dist-info/METADATA")),
-                  None,
-              )
-              if metadata_name is None:
-                  problems.append("wheel has no METADATA")
-                  wheel_version = "<missing>"
-              else:
-                  metadata = email.parser.Parser().parsestr(
-                      archive.read(metadata_name).decode("utf-8")
-                  )
-                  wheel_version = metadata["Version"]
-                  if metadata["Name"] != "melder":
-                      problems.append(f"unexpected package name: {metadata['Name']}")
-                  if metadata["Requires-Python"] != ">=3.14":
-                      problems.append(
-                          f"unexpected Requires-Python: {metadata['Requires-Python']}"
-                      )
-
-              source_version = assignment(
-                  archive.read("melder/__version__.py").decode("utf-8"),
-                  "__version__",
-              )
-              manifest_names = (
-                  "melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
-                  "melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
-                  "melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
-              )
-              manifest_versions = {
-                  assignment(archive.read(name).decode("utf-8"), "BUILT_FOR_VERSION")
-                  for name in manifest_names
-              }
-
-          with tarfile.open(sdist, "r:gz") as archive:
-              members = [member for member in archive.getmembers() if member.isfile()]
-              sdist_names = sorted(member.name for member in members)
-              roots = {name.split("/", 1)[0] for name in sdist_names}
-              if len(roots) != 1:
-                  problems.append(f"sdist has unexpected roots: {sorted(roots)}")
-              root = next(iter(roots), "<missing>")
-              root_files = {
-                  "LICENSE", "NOTICE", "README.md", "pyproject.toml",
-                  "PKG-INFO", "setup.cfg",
-              }
-              for name in sdist_names:
-                  if unsafe(name):
-                      problems.append(f"unsafe sdist member: {name}")
-                      continue
-                  relative = name[len(root) + 1:] if name.startswith(root + "/") else name
-                  if not (relative in root_files or
-                          relative.startswith("src/melder/") or
-                          relative.startswith("src/melder.egg-info/")):
-                      problems.append(f"unexpected sdist member: {name}")
-
-          release_tag = os.environ.get("RELEASE_TAG", "").lstrip("v")
-          if not (wheel_version == source_version and
-                  manifest_versions == {wheel_version}):
-              problems.append(
-                  "version disagreement: "
-                  f"wheel={wheel_version}, source={source_version}, "
-                  f"assets={sorted(manifest_versions)}"
-              )
-          if os.environ.get("EVENT_NAME") == "release" and release_tag != wheel_version:
-              problems.append(
-                  f"release tag v{release_tag} does not match wheel {wheel_version}"
-              )
-
-          print(f"wheel files: {len(names)}")
-          print(f"sdist files: {len(sdist_names)}")
-          print(f"version:     {wheel_version}")
-
-          if problems:
-              print("FAILED:")
-              for problem in problems:
-                  print(f"  - {problem}")
-              sys.exit(1)
-          print("OK: distributions are bounded, complete, and version-consistent")
-          PY
-
-      - name: Install the wheel and exercise packaged runtime documents
-        run: |
-          python -m venv /tmp/melder-wheel-probe
-          /tmp/melder-wheel-probe/bin/pip install --quiet --no-deps dist/*.whl
-          /tmp/melder-wheel-probe/bin/python - <<'PY'
-          import melder
-          from melder._build_assets._agent_documentation.manifest.agent_documentation_manifest import MARKED_COUNT
-          from melder._build_assets._bind_guard.manifest.bind_guard_manifest import ENTRY_COUNT
-          from melder._build_assets._system_documents.manifest.system_documents_manifest import DOCUMENT_COUNT
-
-          documents = (
-              melder.__architecture__,
-              melder.__components__,
-              melder.__graph_network__,
-              melder.__graph_details__,
-          )
-          assert all(document.verify() for document in documents)
-          assert MARKED_COUNT > 0
-          assert ENTRY_COUNT > 0
-          assert DOCUMENT_COUNT == 4
-          assert melder.__graph_network__.node_count > 0
-          assert melder.__graph_network__.edge_count > 0
-
-          node = melder.__graph_network__.node("melder.aether.aether.Aether")
-          assert melder.__graph_network__.details_key(node.node_id) == node.source
-          print(
-              f"OK: melder {melder.__version__}; "
-              f"documents={DOCUMENT_COUNT}; nodes={melder.__graph_network__.node_count}; "
-              f"edges={melder.__graph_network__.edge_count}"
-          )
-          PY
-
-      - name: Upload distributions
-        uses: actions/upload-artifact@v7
+  hygiene:
+    name: Release / repository-hygiene
+    needs: release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          name: release-dists
-          path: dist/
-          if-no-files-found: error
-          retention-days: 7
+          python-version: "3.14"
+      - run: python .github/scripts/ci_policy.py hygiene
+
+  source-assets:
+    needs: release-gate
+    uses: ./.github/workflows/build-src-assets.yml
+
+  repo-assets:
+    needs: release-gate
+    uses: ./.github/workflows/build-repo-assets.yml
+
+  tests:
+    needs: release-gate
+    uses: ./.github/workflows/test-runtime.yml
+
+  release-build:
+    needs: [release-gate, hygiene, source-assets, repo-assets, tests]
+    uses: ./.github/workflows/build-distributions.yml
+    with:
+      artifact-name: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
+      release-tag: ${{ github.event.release.tag_name || '' }}
 
   pypi-publish:
     name: Publish to PyPI
+    needs: [release-gate, hygiene, source-assets, repo-assets, tests, release-build]
     runs-on: ubuntu-latest
-    needs: release-build
     timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
     environment:
-      # Environment-scoped secret: PYPI_API_TOKEN.
+      # Only this job receives the environment-scoped PYPI_API_TOKEN.
       name: pypi
       url: https://pypi.org/project/melder/
-
     steps:
-      - name: Retrieve release distributions
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Retrieve this run's verified distributions
         uses: actions/download-artifact@v8
         with:
-          name: release-dists
+          name: release-dists-${{ github.run_id }}-${{ github.run_attempt }}
           path: dist/
-
-      - name: Publish release distributions to PyPI
+      - name: Recheck distribution and tag identity
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+        run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+      - name: Recheck exact-source candidate qualification
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
+      - name: Final tag and prod check immediately before publication
+        # This runs AFTER environment approval and fails if the release tag or
+        # prod moved while tests, builds, or a human approval were pending.
+        run: python .github/scripts/ci_policy.py release-head
+      - name: Publish freshly verified distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__

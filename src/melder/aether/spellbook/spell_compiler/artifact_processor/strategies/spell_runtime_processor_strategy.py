@@ -49,6 +49,8 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
             - Uses execution order when present to scope the records.
             - Falls back to graph-visible spell ids when no order section exists.
             - Writes only `model.spell_runtime_shape`.
+            - Borrows each Spell's resolved disposal list without conversion;
+              binding has already established its order and presence flag.
         """
         _ = artifact
         spellbook = spell._spellbook
@@ -89,7 +91,7 @@ class SpellRuntimeProcessorStrategy(SpellArtifactProcessorStrategy):
                 is_method_spell=spell_obj.is_method_spell,
                 is_lambda_spell=spell_obj.is_lambda_spell,
                 has_disposal_methods=spell_obj.has_disposal_methods,
-                disposal_method_names=tuple(spell_obj.disposal_method_names),
+                disposal_method_names=spell_obj.disposal_method_names,
                 user_created_object=spell_obj.user_created_object,
             )
 

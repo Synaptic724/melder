@@ -1,64 +1,43 @@
 """
 TIER: beginner (40) - capstone
-GOAL: Everything the tier taught, as one tiny application: classified
-      registrations under a lock batch, mixed lifecycles, a factory and
-      a prebuilt instance, disposal, explicit cleanup, error handling.
-      No scanning, no decorators, no dynamic worlds.
-SURFACE EXERCISED: the full beginner vocabulary in one story
+GOAL: Build and use a small application across separate Python modules:
+      ordinary objects, one bootstrap, a TYPE_CHECKING consumer, constructor
+      injection, shared resources, fresh handlers, and explicit cleanup.
+      Each bind manages its own transaction; no outer book lock is needed.
+SURFACE EXERCISED: md.Spellbook.bind/conjure, md.Conduit.meld/cleanup,
+                  unique/many, constructor injection, disposal_method_names
 """
-import melder as md
+from typing import TYPE_CHECKING
 
-TEARDOWN: list[str] = []
+from capstone_application import run_application
+from capstone_bootstrap import build_application
 
-
-class AppConfig:
-    def __init__(self, app_name: str) -> None:
-        self.app_name = app_name
-
-
-class DbPool:
-    def close(self) -> None:
-        TEARDOWN.append("pool closed")
-
-
-class RequestHandler:
-    served = 0
-
-    def handle(self) -> str:
-        RequestHandler.served += 1
-        return f"request #{RequestHandler.served}"
+if TYPE_CHECKING:
+    from capstone_models import DbPool
 
 
 def main() -> None:
-    book = md.Spellbook()
-    with book:  # atomic registration batch under the book lock
-        book.bind(spell=AppConfig("orders-service"), existence="unique",
-                  spellframe="app", binding_name="config")
-        book.bind(spell=DbPool, existence="unique",
-                  spellframe="app", binding_name="db",
-                  disposal_method_names=["close"])
-        book.bind(spell=RequestHandler, existence="many",
-                  spellframe="web", binding_name="handler")
-
-    conduit = book.conjure()
-    config = conduit.meld(spellframe="app", binding_name="config")
-    pool = conduit.meld(spellframe="app", binding_name="db")
-    assert config.app_name == "orders-service" and isinstance(pool, DbPool)
-
-    for _ in range(3):
-        handler = conduit.meld(spellframe="web", binding_name="handler")
-        print(handler.handle())
-
+    """Start the graph, use it, and guarantee shutdown around the application call."""
+    book, conduit = build_application()
     try:
-        conduit.meld(binding_name="nowhere")
-        print("unknown address answered None-style")
-    except Exception as err:
-        print("unknown address raised:", type(err).__name__)
+        pool: DbPool = conduit.meld(spell="DbPool")
+        messages = run_application(conduit)
+        assert messages == [
+            "orders-service: order 101 = coffee",
+            "orders-service: order 102 = tea",
+            "orders-service: order 103 = cocoa",
+        ]
+        for message in messages:
+            print(message)
+    finally:
+        try:
+            conduit.cleanup()
+        finally:
+            book.cleanup()
 
-    conduit.cleanup()
-    book.cleanup()
-    print("teardown:", TEARDOWN or "(documented by this run)")
-    print("capstone complete: classified, melded, disposed, guarded")
+    assert pool.closed and pool.query_count == 3
+    print("pool closed:", pool.closed)
+    print("capstone complete: bootstrapped, typed, injected, used, cleaned")
 
 
 if __name__ == "__main__":

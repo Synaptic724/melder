@@ -11,25 +11,30 @@ STAGES: list[str] = []
 
 
 class BufferedWriter:
+    """Expose two disposal methods whose requested order is observable."""
+
     def flush(self) -> None:
+        """Record the flush step before the resource is closed."""
         STAGES.append("flushed")
 
     def close(self) -> None:
+        """Record the close step after flushing."""
         STAGES.append("closed")
 
 
 def main() -> None:
+    """Bind ordered disposal names, create the writer, and verify exact cleanup order."""
     book = md.Spellbook()
     book.bind(spell=BufferedWriter, existence="unique",
               disposal_method_names=["flush", "close"])
     conduit = book.conjure()
-    writer = conduit.meld(spell=BufferedWriter)
+    writer = conduit.meld("BufferedWriter")
     assert isinstance(writer, BufferedWriter)
 
     conduit.cleanup()
     book.cleanup()
     print("teardown stages observed:", STAGES or "(documented by the 3.14t run)")
-    assert STAGES, "disposal list contract: both verbs must fire on teardown"
+    assert STAGES == ["flushed", "closed"], "disposal methods must run in supplied order"
 
 
 if __name__ == "__main__":

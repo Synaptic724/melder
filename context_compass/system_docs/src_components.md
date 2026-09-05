@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-08-02
+- Updated: 2026-09-05
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -500,6 +500,18 @@ Text is preserved as authored; only its location changed.
 Purpose:
 - Convert user objects into registered spell metadata with stable index identities.
 
+Ordered disposal contract (2026-09-05):
+- Spellbook forwards configured candidates and each bind's explicit candidates separately.
+- Bind matches the existing class profile once into one ordered list. Missing names disappear
+  and duplicate names occur once. Book names own overlaps in BOTH priority modes.
+- `enforce_priority_disposal_methods=False` places spell-only names before the complete book
+  block; True places that block first. Each block retains its supplied order.
+- That resolved order participates in the bind SHA and is retained directly by Spell.
+  The first bind does not configure subsequent binds; conjure does not rematch names.
+- Matching uses the class profile's own declared callable methods, not inherited-only methods,
+  factory-returned objects, or prebuilt-instance methods.
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`.
+
 Responsibilities:
 - Build binding profiles via SpellExaminer.
 - Compute fingerprints and create SpellIndex entries (the stable index that categorizes and targets spells).
@@ -706,6 +718,17 @@ Declarative DI descriptors:
 Purpose:
 - Provide the validated, freezable `SpellbookConfiguration` surface for one
   spellbook/runtime context.
+
+Disposal policy (2026-09-05):
+- `disposal_method_names` is the ordered, set-once book candidate list.
+- `enforce_priority_disposal_methods` is available as False before defaults/validation;
+  its fluent setter changes placement during assembly, and freeze seals it.
+- Configure both before binding. The generic book twin/reload path carries list and flag;
+  Nexus needs no duplicate property.
+- The separate `disposal` bool is stored metadata. Matched Spell names and
+  `has_disposal_methods` drive current runtime registration, not this bool.
+- EVIDENCE: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`.
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`.
 
 Responsibilities:
 - Maintain configuration properties and hook registry.
@@ -1029,6 +1052,19 @@ Purpose:
 - Provide the hosted crystallizer policy root, the passive persistence RECORD
   (digital-twin custody of the configured world), and the retained/live module
   world surfaces used for crystallized spell loading and activation.
+
+Ordered capture/replay (2026-09-05):
+- SpellCrystal captures detached method-name values in resolved order, never sorting.
+- Active/staged restore applies the receiving book's normal policy. Same-policy composition
+  is idempotent for newly recorded ordered metadata.
+- Changed Spell SHAs use the existing RestoreReport translation map. Staged anchors, exact
+  selected members, and contract grants follow the actual rebuilt binding identities.
+- Fresh graft passes its new index to sibling parking. Merge forwards each member's names
+  and adopts only a successfully grafted selection using its returned live ID.
+- Old sorted records cannot reveal original ordering that was already discarded.
+- EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py`.
+- EVIDENCE: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`.
+- EVIDENCE: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`.
 
 Responsibilities:
 - Own configured/activated crystallizer policy at the hosted root.
@@ -2310,8 +2346,8 @@ Responsibilities:
 Inputs:
 - Instances created by Meld, registered IN CREATION ORDER - the order is the
   input, not an incidental property, because disposal replays it in reverse.
-- Disposal method names supplied by `SpellbookConfiguration`, which is how a
-  user type declares its own teardown without this registry knowing the type.
+- The established Spell-owned disposal list, matched from book and per-bind candidates.
+  Creations retains that list; it does not reread configuration or rematch methods.
 
 Outputs:
 - Stored instances and cleanup errors (ExceptionGroup).
@@ -2350,6 +2386,13 @@ Invariants/Guarantees:
 - `ConduitCreations` uses the conduit id as both owner id and scope id.
 - Disposal uses declared per-object method-name lists and does not wrap the
   live runtime store in a second `Creation.value` carrier.
+- Method names execute in list order. A failing method stops that object's remaining
+  methods; later objects are still attempted and errors aggregate.
+- Registration and in-memory extract/restore retain the same inner list. Teardown releases
+  entry references without clearing borrowed names.
+- Reverse traversal means reverse registry-key order and reverse order within each many bucket;
+  no global chronology across interleaved buckets or scopes is added.
+- EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._attempt_cleanup`.
 
 Failure Modes:
 - ExceptionGroup raised if any disposal errors occur.
@@ -2652,6 +2695,14 @@ Spec vs implementation notes:
 ### Component: SpellCompiler and Validation Pipeline
 Purpose:
 - Compile per-spell artifacts and validate correctness before resolution.
+
+Disposal metadata propagation (2026-09-05):
+- Runtime records, generalized/many-only plans, and solo namespaces retain the established
+  Spell list. Generalized inline registration follows the same reference rule as Creations.
+- Outer arrays hold references to Spell lists, not copies of their inner names.
+- Serialized IR/hash tuples remain ordered value boundaries. Cached executors hydrate against
+  current bound Spells. No new configuration matching, lock, or disposal call is added to Meld.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py`.
 
 Responsibilities:
 - Build requirements, symbolic graph, and local frames.
@@ -5482,9 +5533,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 6501
-  loc: 6501
-  verified_at: 2026-08-02T16:30:22Z
+  end_line: 6800
+  loc: 6800
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -5497,9 +5548,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 876
-  loc: 876
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 915
+  loc: 915
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
   end_line: 507
@@ -5507,9 +5558,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1645
-  loc: 1645
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1663
+  loc: 1663
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
   end_line: 101
@@ -5537,9 +5588,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
   start_line: 1
-  end_line: 1185
-  loc: 1185
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1243
+  loc: 1243
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/aether/spellbook/configuration/system_state.py`
   start_line: 1
   end_line: 54
@@ -5862,9 +5913,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 615
-  loc: 615
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 625
+  loc: 625
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 133
@@ -6192,9 +6243,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1162
-  loc: 1162
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1165
+  loc: 1165
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
   end_line: 1445
@@ -6207,9 +6258,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
-  end_line: 2669
-  loc: 2669
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 2702
+  loc: 2702
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/mutation_research/mutation_configuration.py`
   start_line: 1
   end_line: 659
@@ -6275,9 +6326,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
-  end_line: 645
-  loc: 645
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 655
+  loc: 655
+  verified_at: 2026-09-05T12:55:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_admission.py`
   start_line: 1
   end_line: 615
@@ -7982,8 +8033,8 @@ completed epics/stories of 2026-07-11/12).
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:841`; resident member
   REFUSES by default;
   skip_resident=True skips + shortfall
-  "member_resident_in_host_skipped"; existing indexes are NEVER
-  mutated - fresh-index-only law) -> hydration via the import lane with
+  "member_resident_in_host_skipped"; fresh index is the default,
+  explicit merge uses public bind/notch verbs on the requested index) -> hydration via the import lane with
   failure->rebuild->retry through the shared user_world_rebuild lane ->
   selected member binds ACTIVE (bind creates the fresh index + selects)
   -> parked members conduit.bind_inactive onto it -> detached report

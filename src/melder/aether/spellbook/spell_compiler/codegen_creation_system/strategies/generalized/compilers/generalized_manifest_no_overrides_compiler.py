@@ -662,6 +662,8 @@ def _append_register_source(
         - The `many` slot is always a list for this spell id because existence
           is fingerprint-stable; the legacy non-list slot guard is likewise
           structurally unreachable.
+        - Both storage shapes retain the bound Spell disposal list directly,
+          matching Creations registration without allocating a copied policy.
     """
     if existence in (
             Existence.unique,
@@ -678,7 +680,7 @@ def _append_register_source(
             lines.append(
                 f"{indent}creations_{step_index}._disposable_creations"
                 f"[spell_id_{step_index}] = "
-                f"(instance_{step_index}, list(disposal_methods_{step_index}))"
+                f"(instance_{step_index}, disposal_methods_{step_index})"
             )
         return
 
@@ -709,7 +711,7 @@ def _append_register_source(
             ),
             (
                 f"{indent}many_disposable_{step_index}.append("
-                f"(instance_{step_index}, list(disposal_methods_{step_index})))"
+                f"(instance_{step_index}, disposal_methods_{step_index}))"
             ),
         ])
         return

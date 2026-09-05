@@ -1,0 +1,12 @@
+........................................................................ [ 23%]
+........................................................................ [ 46%]
+........................................................................ [ 70%]
+........................................................................ [ 93%]
+....................                                                     [100%]
+============================== warnings summary ===============================
+docs\_build\runtime-env\Lib\site-packages\_pytest\cacheprovider.py:469
+  C:\Users\Mark\PycharmProjects\melder_private\docs\_build\runtime-env\Lib\site-packages\_pytest\cacheprovider.py:469: PytestCacheWarning: could not create cache path C:\Users\Mark\PycharmProjects\melder_private\.pytest_cache\v\cache\nodeids: [WinError 183] Cannot create a file when that file already exists: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\.pytest_cache\\v\\cache'
+    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+308 passed, 1 warning in 1.88s

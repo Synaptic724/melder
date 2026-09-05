@@ -235,8 +235,10 @@ class Bind(Cleanable):
             spell: Any = None,
             spellframe: Any = None,
             binding_name: Optional[str] = None,
-            configured_disposal_method_names: Optional[frozenset[str]] = None,
+            configured_disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
+            disposal_method_names: Optional[Sequence[str]] = None,
+            enforce_priority_disposal_methods: bool = False,
             **kwargs: Any,
     ) -> Union[Spell, Any]:
         """
@@ -258,7 +260,10 @@ class Bind(Cleanable):
             binding_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
             profile (str): Spell profile family to attach to the final Spell.
             existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
-            configured_disposal_method_names (Optional[frozenset[str]]): Names of methods to be considered for disposal.
+            configured_disposal_method_names (Optional[Sequence[str]]): Ordered book-level disposal candidates.
+            disposal_method_names (Optional[Sequence[str]]): Ordered candidates specific to this binding.
+            enforce_priority_disposal_methods (bool): Place the matching book block first when
+                True, last when False (default). Book order owns shared names in both modes.
         Contract:
             - When `spell` is omitted, returns a decorator that will bind the
               later target with the supplied policy and lifecycle settings.
@@ -266,6 +271,10 @@ class Bind(Cleanable):
               immediately and returns the created `Spell`.
             - Decorator and direct-call modes are semantically equivalent once
               the target object is known.
+            - Matching book names form one ordered block, including names also supplied
+              explicitly. Spell-only names keep their order before or after that block.
+              Each matching name is retained once.
+              An empty spell-specific group does not disable configured book candidates.
 
         Returns:
             Union[Spell, Any]:
@@ -289,6 +298,8 @@ class Bind(Cleanable):
                     aetheric_frame,
                     configured_disposal_method_names,
                     profile,
+                    disposal_method_names=disposal_method_names,
+                    enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                     **kwargs,
                 )
 
@@ -304,6 +315,8 @@ class Bind(Cleanable):
                 aetheric_frame,
                 configured_disposal_method_names,
                 profile,
+                disposal_method_names=disposal_method_names,
+                enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                 **kwargs,
             )
 
@@ -315,8 +328,10 @@ class Bind(Cleanable):
             existence: Existence,
             permissions: Permissions,
             aetheric_frame: str,
-            configured_disposal_method_names: Optional[frozenset[str]] = None,
+            configured_disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
+            disposal_method_names: Optional[Sequence[str]] = None,
+            enforce_priority_disposal_methods: bool = False,
             **kwargs: Any,
     ) -> Spell:
         """
@@ -332,6 +347,8 @@ class Bind(Cleanable):
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
         * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
+        * Resolves disposal names once in group priority order, hashes the resolved
+          list, and passes that same list to Spell without another conversion.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
         * Replaces the initial raw binding artifact with the combined
@@ -346,6 +363,18 @@ class Bind(Cleanable):
             existence (Existence): The lifecycle scope for this spell.
             permissions (Permissions): The access level for this spell.
             aetheric_frame (str): The Aetheric Frame this spell belongs to.
+            configured_disposal_method_names (Optional[Sequence[str]]): Ordered book candidates.
+            disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
+            enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
+
+        Disposal contract:
+            Only names present in the existing ClassBindingProfile are retained.
+            Missing names and non-class profiles contribute nothing. Book names
+            own overlaps in both modes and keep their configured order. Spell-only
+            names keep their supplied order, before or after the book block. Each
+            matching name appears once in the single result list.
+            The result is established before identity and registration; no method
+            lookup, invocation, or policy recheck is added to the resolution path.
 
         Returns:
             Spell: The newly created and configured Spell instance.
@@ -393,16 +422,25 @@ class Bind(Cleanable):
                 )
             binding_profile: SpellBindingProfile = provisional_general_profile.binding_profile
             spell_name = getattr(spell, "__name__", type(spell).__name__)
-            resolved_disposal_method_names: frozenset[str] = frozenset()
-            if (
-                    configured_disposal_method_names
-                    and isinstance(binding_profile, ClassBindingProfile)
-            ):
-                resolved_disposal_method_names = frozenset(
-                    method_name
-                    for method_name in binding_profile.method_names
-                    if method_name in configured_disposal_method_names
-                )
+            resolved_disposal_method_names: list[str] = []
+            if isinstance(binding_profile, ClassBindingProfile):
+                # Establish book ownership of overlaps before placing spell-only names.
+                if configured_disposal_method_names is not None:
+                    for method_name in configured_disposal_method_names:
+                        if (
+                                method_name in binding_profile.method_names
+                                and method_name not in resolved_disposal_method_names
+                        ):
+                            resolved_disposal_method_names.append(method_name)
+                spell_position = len(resolved_disposal_method_names) if enforce_priority_disposal_methods else 0
+                if disposal_method_names is not None:
+                    for method_name in disposal_method_names:
+                        if (
+                                method_name in binding_profile.method_names
+                                and method_name not in resolved_disposal_method_names
+                        ):
+                            resolved_disposal_method_names.insert(spell_position, method_name)
+                            spell_position += 1
             fingerprint: str = Bind.sha256_profile(
                 binding_profile,
                 spellframe=spellframe,
@@ -508,12 +546,13 @@ class Bind(Cleanable):
             spell_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
             binding_name (Optional[str]): A specific key used to distinguish this spell.
             existence (Existence): The lifecycle scope for this spell.
-            disposal_method_names (Sequence[str]): Names of methods to be considered for disposal.
+            disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
         Contract:
             - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
               chain used by the real binding path.
             - Returns the same fingerprint that `_bind_logic(...)` would use
-              when the same optional bind inputs are supplied.
+              when supplied the same resolved name, binding metadata, and ordered
+              disposal list. This helper does not apply book priority or match names.
             - Does not register anything into a spellbook or mutate runtime
               binding state.
 
@@ -562,7 +601,7 @@ class Bind(Cleanable):
               not.
             - Includes the direct bind-time parameters that shape later
               compiler/runtime behavior: spell_name, spellframe, binding_name,
-              existence, and resolved disposal metadata.
+              existence, and resolved disposal metadata in execution order.
             - Equal bind signatures produce equal hashes; materially different
               signatures should produce different hashes.
         Returns:

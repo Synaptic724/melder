@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_crystal.py",
- "source_sha256": "f3f68efe9deb836cc4d081bde5d33bc6a38f636e109e1489592803213d2adf4d",
+ "source_sha256": "076f87f9d015c2f5a362b3581f34005752d6b3ad5f239e429d6cfc5c6170c86d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_crystal": {
@@ -18,7 +18,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "6de86f4d2339d75918c4a680413d1f73861c4b15528a37b4b3fdc0a33fec05cd"
+   "semantics_authored_against": ""
   },
   "melder.crystallizer.crystals.spell_crystal.SpellCrystal": {
    "id": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
@@ -69,22 +69,24 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4054fb6f29392b45c80a152d17ab34271240f40fd3217061168df73d25eedf22",
+   "span_sha256": "1bd984746f212d8a43d10cfb0d777460dda8bb8cce42d82d202f4ccb7b07137a",
    "role": "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).",
    "responsibilities": [
     "captures identity and the full bind signature for one live spell target",
+    "captures detached disposal names in resolved execution order without sorting or reapplying book policy",
     "delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)",
     "carries the returned CrystalAnalysisResult and exposes it via delegating properties"
    ],
    "owns_state": [
-    "_analysis (one carried CrystalAnalysisResult)"
+    "_analysis (one carried CrystalAnalysisResult)",
+    "_disposal_method_names (ordered recorded values)"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4054fb6f29392b45c80a152d17ab34271240f40fd3217061168df73d25eedf22"
+   "semantics_authored_against": "1bd984746f212d8a43d10cfb0d777460dda8bb8cce42d82d202f4ccb7b07137a"
   }
  },
  "edges_out": [

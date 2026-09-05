@@ -336,7 +336,7 @@ class ManyOnlyNoOverridesPlan(Cleanable):
             step_dep8h: List[int],
             step_spell_ids: List[str],
             step_has_disposal_methods: List[bool],
-            step_disposal_methods: List[Tuple[str, ...]],
+            step_disposal_methods: List[List[str]],
             metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
@@ -373,7 +373,8 @@ class ManyOnlyNoOverridesPlan(Cleanable):
             step_has_disposal_methods:
                 Per-step disposal-presence flags.
             step_disposal_methods:
-                Per-step disposal method-name tuples.
+                Outer array of borrowed Spell lists in established disposal order.
+                The plan owns the outer array, not the inner lists' contents.
             metadata:
                 Optional plan metadata (defaults to empty).
 
@@ -438,6 +439,8 @@ class ManyOnlyNoOverridesPlan(Cleanable):
             target/mode arrays, and every fixed-arity dependency-slot array
             (step_dep1..step_dep8h) plus the per-step metadata. Owns only value
             collections; it holds no live runtime object to dispose.
+            The disposal array is cleared only at its outer level; borrowed
+            Spell method lists remain intact for execution and Creations.
 
         Returns:
             None.
@@ -763,8 +766,8 @@ class ManyOnlyNoOverridesPlan(Cleanable):
         return tuple(self._step_has_disposal_methods)
 
     @property
-    def step_disposal_methods(self) -> Tuple[Tuple[str, ...], ...]:
-        """Return ordered step disposal method rows."""
+    def step_disposal_methods(self) -> Tuple[List[str], ...]:
+        """Return an outer tuple retaining each Spell's established disposal list."""
         return tuple(self._step_disposal_methods)
 
     @property
@@ -1057,6 +1060,11 @@ class ManyOnlyCodegenPlanBuilder:
     def _build_no_overrides_plan(self) -> ManyOnlyNoOverridesPlan:
         """
         Build the standalone many-only no-overrides plan.
+
+        Contract:
+            Retains each Spell's disposal list in the per-step outer array.
+            Presence flags and call/store routing are unchanged; no inner copy
+            or method matching is performed here.
         """
         (
             steps,
@@ -1109,8 +1117,8 @@ class ManyOnlyCodegenPlanBuilder:
             bool(step.spell.has_disposal_methods)
             for step in steps
         ]
-        step_disposal_methods: List[Tuple[str, ...]] = [
-            tuple(step.spell.disposal_method_names)
+        step_disposal_methods: List[List[str]] = [
+            step.spell.disposal_method_names
             for step in steps
         ]
 

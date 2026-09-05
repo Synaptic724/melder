@@ -92,7 +92,7 @@ class Crystallizer(Cleanable):
     Registration:
         MELDER KERNEL - guarded, access=public. A process-wide singleton privately
         hosted by `Aether`; the user configures, activates, and drives it through
-        its facade verbs but never `bind()`s it - the guard refuses that.
+        its facade verbs but never registers it with `bind()` - the guard refuses that.
 
     Subsystem Context:
         The public facade and ownership ROOT of the crystallizer. It presents one

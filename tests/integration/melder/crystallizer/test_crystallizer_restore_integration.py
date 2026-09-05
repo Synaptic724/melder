@@ -1960,8 +1960,8 @@ def test_legacy_chain_link_without_contract_twin_restores_without_mapping(
         gains no contract identity mapping and files no shortfall for it.
     Contract:
         - One link built; status complete; link lane shortfall-free.
-        - The identity map holds exactly the recorded book/conduit ids
-          (books map first, conduits second); no contract key appears.
+        - The identity map holds recorded book/conduit ids plus translations
+          for this fixture's placeholder spell ids; no contract key appears.
     Returns:
         None.
     Raises:
@@ -2077,10 +2077,10 @@ def test_legacy_chain_link_without_contract_twin_restores_without_mapping(
         row for row in payload["shortfalls"]
         if "link" in str(row.get("reason", ""))
     ]
-    # No contract twin -> no contract mapping; the map holds exactly the
-    # recorded book and conduit identities.
+    # No contract twin -> no contract mapping. The fixture uses placeholder
+    # spell ids, so normal bind results also produce explicit SHA translations.
     assert set(payload["identity_map"].keys()) == {
-        "book-x", "book-z", "cond-x", "cond-z"
+        "book-x", "book-z", "cond-x", "cond-z", "sha-x", "sha-z"
     }
 
 

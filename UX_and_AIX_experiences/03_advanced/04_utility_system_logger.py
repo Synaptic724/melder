@@ -25,14 +25,17 @@ class CollectingHandler(logging.Handler):
     """A tiny handler that keeps every record it sees."""
 
     def __init__(self) -> None:
+        """Create an empty record sink owned by this demonstration."""
         super().__init__()
         self.records = []
 
     def emit(self, record: logging.LogRecord) -> None:
+        """Retain the delivered record so the caller can inspect logger output."""
         self.records.append(record)
 
 
 def main() -> None:
+    """Verify public attach, detach, and explicit enable behavior; release the handler."""
     aether = md.Aether()
 
     # Build a real stdlib logger with a capturing handler...
@@ -43,17 +46,23 @@ def main() -> None:
 
     # ...and attach it through the public post-boot seam.
     aether.attach_logger(logger)
+    assert aether.logger is logger
     print("logger attached; the world is no longer silent")
 
     # Detaching is the same door with None - back to the null wrapper.
     aether.attach_logger(None)
+    assert aether.logger is None
     print("detached; melder is silent again (the boot default)")
 
     # enable_logging(explicit) is attach; enable_logging() with no
     # argument asks the configured channel policy instead.
     aether.enable_logging(logger)
+    assert aether.logger is logger
     print("enable_logging(explicit) attached the same logger")
     aether.attach_logger(None)
+    assert aether.logger is None
+    logger.removeHandler(handler)
+    handler.close()
 
 
 if __name__ == "__main__":

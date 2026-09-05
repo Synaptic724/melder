@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 25706
-CONTENT_SHA256 = '140c847cdaeecd167911a487f614da68c4d7df67bf1b4b7b4c735d31d93e3f8c'
+LINE_COUNT = 27700
+CONTENT_SHA256 = 'b65fd87c98f2a0123af7496a6bb8f0c857564d7185b10c51452379343a2b3328'
 
 TEXT = """# src_graph
 
@@ -41,7 +41,8 @@ descriptors and reassemble.
 - id: `melder.__architecture__`
 - defined at: `src/melder/__architecture__.py:1`
 - role: Top-level packaged architecture hardcopy module.
-- responsibilities: `publishes the top-level packaged architecture document object`
+- responsibilities:
+  - publishes the top-level packaged architecture document object
 - owns_state: `__architecture__`
 - phases: `init`, `runtime`
 
@@ -69,7 +70,8 @@ descriptors and reassemble.
 - id: `melder.__author__`
 - defined at: `src/melder/__author__.py:1`
 - role: Top-level author metadata module.
-- responsibilities: `stores human-readable package author metadata`
+- responsibilities:
+  - stores human-readable package author metadata
 - owns_state: `CREATOR`, `GITHUB`
 - phases: `runtime`
 
@@ -89,7 +91,8 @@ descriptors and reassemble.
 - id: `melder.__components__`
 - defined at: `src/melder/__components__.py:1`
 - role: Top-level packaged components hardcopy module.
-- responsibilities: `publishes the top-level packaged components document object`
+- responsibilities:
+  - publishes the top-level packaged components document object
 - owns_state: `__components__`
 - phases: `init`, `runtime`
 
@@ -117,7 +120,8 @@ descriptors and reassemble.
 - id: `melder.__description__`
 - defined at: `src/melder/__description__.py:1`
 - role: Top-level package description metadata module.
-- responsibilities: `stores the one-line human-readable package description`
+- responsibilities:
+  - stores the one-line human-readable package description
 - owns_state: `__description__`
 - phases: `runtime`
 
@@ -137,7 +141,8 @@ descriptors and reassemble.
 - id: `melder.__graph_details__`
 - defined at: `src/melder/__graph_details__.py:1`
 - role: Top-level packaged graph-details hardcopy module.
-- responsibilities: `publishes the top-level packaged graph-details document object`
+- responsibilities:
+  - publishes the top-level packaged graph-details document object
 - owns_state: `__graph_details__`
 - phases: `init`, `runtime`
 
@@ -165,7 +170,8 @@ descriptors and reassemble.
 - id: `melder.__graph_network__`
 - defined at: `src/melder/__graph_network__.py:1`
 - role: Top-level packaged graph-network hardcopy module.
-- responsibilities: `publishes the top-level packaged graph-network document object`
+- responsibilities:
+  - publishes the top-level packaged graph-network document object
 - owns_state: `__graph_network__`
 - phases: `init`, `runtime`
 
@@ -210,7 +216,8 @@ descriptors and reassemble.
 - id: `melder.__license__`
 - defined at: `src/melder/__license__.py:1`
 - role: Top-level license metadata module.
-- responsibilities: `stores the package license label and embedded license context`
+- responsibilities:
+  - stores the package license label and embedded license context
 - owns_state: `__license__`
 - phases: `runtime`
 
@@ -230,7 +237,8 @@ descriptors and reassemble.
 - id: `melder.__melder_cache__.__melder_cache__`
 - defined at: `src/melder/__melder_cache__/__melder_cache__.py:1`
 - role: Package-local marker module for the default Melder cache root.
-- responsibilities: `anchors the package-local cache-root fragment used by frame configuration defaults`
+- responsibilities:
+  - anchors the package-local cache-root fragment used by frame configuration defaults
 - phases: `runtime`
 
 <!-- END FILE: src/melder/__melder_cache__/__melder_cache__.py -->
@@ -249,7 +257,8 @@ descriptors and reassemble.
 - id: `melder.__version__`
 - defined at: `src/melder/__version__.py:1`
 - role: Top-level version metadata module.
-- responsibilities: `stores the canonical package version string`
+- responsibilities:
+  - stores the canonical package version string
 - owns_state: `__version__`
 - phases: `runtime`
 
@@ -269,7 +278,9 @@ descriptors and reassemble.
 - id: `melder._build_assets._agent_documentation._builder`
 - defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:1`
 - role: Build-time harvester turning class docstrings into a durable agent-documentation asset.
-- responsibilities: `scan the package and catalogue agent access states`, `never run at runtime`
+- responsibilities:
+  - scan the package and catalogue agent access states
+  - never run at runtime
 - phases: `init`
 
 #### `AgentMetadataPolicy` (class)
@@ -277,7 +288,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._agent_documentation._builder.AgentMetadataPolicy`
 - defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:75`
 - role: Fixed policy values for the harvester, as class constants.
-- responsibilities: `carry the marker names the harvester recognises`
+- responsibilities:
+  - carry the marker names the harvester recognises
 - phases: `init`
 
 #### `HarvestResult` (class)
@@ -285,7 +297,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._agent_documentation._builder.HarvestResult`
 - defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:381`
 - role: Collected output of one package harvest scan.
-- responsibilities: `hold the three catalogued states plus diagnostics`
+- responsibilities:
+  - hold the three catalogued states plus diagnostics
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_agent_documentation/_builder.py -->
@@ -304,7 +317,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._agent_documentation.agent_documentation`
 - defined at: `src/melder/_build_assets/_agent_documentation/agent_documentation.py:1`
 - role: Agent-facing class documentation harvested from docstrings at build time.
-- responsibilities: `serve discovery without class-bound attributes at runtime`
+- responsibilities:
+  - serve discovery without class-bound attributes at runtime
 - phases: `init`, `runtime`
 
 #### `AgentDocumentationAsset` (class)
@@ -312,7 +326,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._agent_documentation.agent_documentation.AgentDocumentationAsset`
 - defined at: `src/melder/_build_assets/_agent_documentation/agent_documentation.py:50`
 - role: Static identity namespace for the agent-documentation asset.
-- responsibilities: `carry asset name and version`
+- responsibilities:
+  - carry asset name and version
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_agent_documentation/agent_documentation.py -->
@@ -331,7 +346,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._agent_documentation.manifest.agent_documentation_manifest`
 - defined at: `src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py:1`
 - role: GENERATED committed manifest of harvested agent documentation. Do not edit by hand.
-- responsibilities: `hold the harvested entries as committed truth`
+- responsibilities:
+  - hold the harvested entries as committed truth
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py -->
@@ -350,7 +366,9 @@ descriptors and reassemble.
 - id: `melder._build_assets._bind_guard._builder`
 - defined at: `src/melder/_build_assets/_bind_guard/_builder.py:1`
 - role: Build-time scanner producing the committed internal-bind manifest.
-- responsibilities: `own the single source of truth for which classes are guarded`, `run only via the explicit asset runner`
+- responsibilities:
+  - own the single source of truth for which classes are guarded
+  - run only via the explicit asset runner
 - phases: `init`
 
 #### `BindGuardBuildPolicy` (class)
@@ -358,7 +376,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._bind_guard._builder.BindGuardBuildPolicy`
 - defined at: `src/melder/_build_assets/_bind_guard/_builder.py:39`
 - role: Fixed policy values for the manifest generator, as class constants.
-- responsibilities: `carry scan roots and exclusion rules`
+- responsibilities:
+  - carry scan roots and exclusion rules
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_bind_guard/_builder.py -->
@@ -377,7 +396,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._bind_guard.bind_guard`
 - defined at: `src/melder/_build_assets/_bind_guard/bind_guard.py:1`
 - role: Hand-written loader publishing INTERNAL_MANIFEST that assert_allowed enforces.
-- responsibilities: `hydrate the committed manifest through an accelerator cache that is never the source`
+- responsibilities:
+  - hydrate the committed manifest through an accelerator cache that is never the source
 - phases: `init`, `runtime`
 
 #### `BindGuardAsset` (class)
@@ -385,7 +405,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._bind_guard.bind_guard.BindGuardAsset`
 - defined at: `src/melder/_build_assets/_bind_guard/bind_guard.py:31`
 - role: Static identity namespace for the bind-guard asset.
-- responsibilities: `carry manifest version and entry count`
+- responsibilities:
+  - carry manifest version and entry count
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_bind_guard/bind_guard.py -->
@@ -404,7 +425,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._bind_guard.manifest.bind_guard_manifest`
 - defined at: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:1`
 - role: GENERATED committed manifest of guarded (module, qualname) pairs. The truth; do not edit by hand.
-- responsibilities: `hold the exact-match entries registration refusal tests against`
+- responsibilities:
+  - hold the exact-match entries registration refusal tests against
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py -->
@@ -429,7 +451,9 @@ descriptors and reassemble.
 - id: `melder._build_assets._build_asset_runner.BuildAssetRunnerPolicy`
 - defined at: `src/melder/_build_assets/_build_asset_runner.py:105`
 - role: Static namespace of the build-asset runner's fixed conventions, as class constants per the module-scope rule.
-- responsibilities: `name the builder filename that marks a directory as a build asset, and the runner's other fixed conventions`, `hold nothing mutated at runtime`
+- responsibilities:
+  - name the builder filename that marks a directory as a build asset, and the runner's other fixed conventions
+  - hold nothing mutated at runtime
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_build_asset_runner.py -->
@@ -448,7 +472,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._system_documents._builder`
 - defined at: `src/melder/_build_assets/_system_documents/_builder.py:1`
 - role: Build-time ingest of context-map document/index pairs into the package.
-- responsibilities: `pull the authored system documents in at build time`
+- responsibilities:
+  - pull the authored system documents in at build time
 - phases: `init`
 
 #### `SystemDocumentsBuildPolicy` (class)
@@ -456,7 +481,10 @@ descriptors and reassemble.
 - id: `melder._build_assets._system_documents._builder.SystemDocumentsBuildPolicy`
 - defined at: `src/melder/_build_assets/_system_documents/_builder.py:80`
 - role: Static namespace of the system-document generator's fixed values; class constants per the module-scope rule.
-- responsibilities: `name the asset/manifest/payload directories and the repo-relative ingest root`, `declare READ_ORDER - the order an agent should read the four documents`, `carry MANIFEST_VERSION, the manifest shape's schema version`
+- responsibilities:
+  - name the asset/manifest/payload directories and the repo-relative ingest root
+  - declare READ_ORDER - the order an agent should read the four documents
+  - carry MANIFEST_VERSION, the manifest shape's schema version
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_system_documents/_builder.py -->
@@ -509,7 +537,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._system_documents.manifest.system_documents_manifest`
 - defined at: `src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:1`
 - role: GENERATED committed manifest of packaged system documents. Do not edit by hand.
-- responsibilities: `hold the ingested document payloads`
+- responsibilities:
+  - hold the ingested document payloads
 - phases: `init`
 
 <!-- END FILE: src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py -->
@@ -579,7 +608,8 @@ descriptors and reassemble.
 - id: `melder._build_assets._system_documents.system_documents`
 - defined at: `src/melder/_build_assets/_system_documents/system_documents.py:1`
 - role: Loader building one StaticSystemDocument per packaged system document.
-- responsibilities: `expose the four package-root documents without a runtime read`
+- responsibilities:
+  - expose the four package-root documents without a runtime read
 - phases: `init`, `runtime`
 
 #### `DocumentHit` (record)
@@ -605,7 +635,10 @@ descriptors and reassemble.
 - id: `melder.aether.aether`
 - defined at: `src/melder/aether/aether.py:1`
 - role: The global singleton root hosting every AethericFrame and the process-wide support singletons.
-- responsibilities: `own the named frame registry and the default frame`, `privately host AetherUtilitySystem, Crystallizer, Nexus and the lazy MutationResearch root`, `hold the LoadGate before any frame can exist so mid-load frames inherit coverage`
+- responsibilities:
+  - own the named frame registry and the default frame
+  - privately host AetherUtilitySystem, Crystallizer, Nexus and the lazy MutationResearch root
+  - hold the LoadGate before any frame can exist so mid-load frames inherit coverage
 - phases: `init`, `runtime`, `cleanup`
 
 #### `Aether` (class)
@@ -614,7 +647,11 @@ descriptors and reassemble.
 - defined at: `src/melder/aether/aether.py:34`
 - extends: `Cleanable`
 - role: Global Melder substrate root.
-- responsibilities: `owns frames and frame registries`, `hosts hidden support roots`, `binds frame configuration`, `registers conduits and spell lineage state`
+- responsibilities:
+  - owns frames and frame registries
+  - hosts hidden support roots
+  - binds frame configuration
+  - registers conduits and spell lineage state
 - owns_state: `_aetheric_frames`, `_default_frame`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire_load_authority`, `activate`, `activated`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_conduits`, `create_configuration`, `create_configuration_builder` (+15 more)
@@ -677,7 +714,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aether_configuration`
 - defined at: `src/melder/aether/aether_configuration.py:1`
 - role: Mutable-to-frozen policy surface for the Aether root, applied into the utility host.
-- responsibilities: `hold root logger policy before activation`, `freeze once installed`
+- responsibilities:
+  - hold root logger policy before activation
+  - freeze once installed
 - phases: `init`
 
 #### `AetherConfiguration` (class)
@@ -686,7 +725,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aether_configuration.py:11`
 - extends: `Cleanable`
 - role: Mutable-to-frozen root configuration surface for process-wide Aether policy.
-- responsibilities: `stores the root logger activation and resolver policy for AetherUtilitySystem`, `validates, freezes, and activates the root configuration before Aether applies it`, `keeps root policy separate from frame-level AethericFrameConfiguration concerns`
+- responsibilities:
+  - stores the root logger activation and resolver policy for AetherUtilitySystem
+  - validates, freezes, and activates the root configuration before Aether applies it
+  - keeps root policy separate from frame-level AethericFrameConfiguration concerns
 - owns_state: `_id`, `_frozen`, `_activated`, `_properties`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `channel_logger_activation_enabled`, `channel_logger_resolver`, `cleanup`, `default_logger`, `emit_configured_twin_when_recording`, `finalize`, `freeze`, `from_recorded_payload`, `frozen`, `id` (+11 more)
@@ -729,7 +771,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aether_configuration_builder`
 - defined at: `src/melder/aether/aether_configuration_builder.py:1`
 - role: One-shot builder making ownership of an Aether configuration explicit.
-- responsibilities: `mirror the mutable-then-finalize style used across the repo`
+- responsibilities:
+  - mirror the mutable-then-finalize style used across the repo
 - phases: `init`
 
 #### `AetherConfigurationBuilder` (class)
@@ -738,7 +781,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aether_configuration_builder.py:14`
 - extends: `Cleanable`
 - role: One-shot builder for Aether root configuration assembly.
-- responsibilities: `owns a mutable AetherConfiguration during fluent assembly`, `applies default and explicit logger-policy builder steps`, `finalizes and hands off configuration ownership to the caller`
+- responsibilities:
+  - owns a mutable AetherConfiguration during fluent assembly
+  - applies default and explicit logger-policy builder steps
+  - finalizes and hands off configuration ownership to the caller
 - owns_state: `_id`, `_configuration`, `_finalized`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `build`, `cleanup`, `with_channel_logger_activation_enabled`, `with_channel_logger_resolver`, `with_default_logger`, `with_defaults`
@@ -780,7 +826,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aether_utility_system`
 - defined at: `src/melder/aether/aether_utility_system.py:1`
 - role: Process-wide host for Aether-owned shared providers, currently logger resolution.
-- responsibilities: `own the registered channel-logger resolver and stdlib fallback`, `replace the retired logger-factory layer`
+- responsibilities:
+  - own the registered channel-logger resolver and stdlib fallback
+  - replace the retired logger-factory layer
 - phases: `init`, `runtime`, `cleanup`
 
 #### `AetherUtilitySystem` (class)
@@ -789,7 +837,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aether_utility_system.py:10`
 - extends: `Cleanable`
 - role: Process-wide utility and logger provider host.
-- responsibilities: `stores the channel-logger resolver`, `stores the default logger fallback`, `resolves SafeLogger-compatible providers for runtime objects`
+- responsibilities:
+  - stores the channel-logger resolver
+  - stores the default logger fallback
+  - resolves SafeLogger-compatible providers for runtime objects
 - owns_state: `_channel_logger_resolver`, `_default_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `clear_channel_logger_resolver`, `clear_default_logger`, `emit_root_twin_when_recording`, `has_channel_logger_resolver`, `has_default_logger`, `is_channel_logger_activation_enabled`, `register_channel_logger_resolver`, `register_default_logger`, `resolve_channel_logger`, `resolve_safe_logger`, `set_channel_logger_activation_enabled`
@@ -833,7 +884,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/aetheric_frame.py:28`
 - extends: `Cleanable`
 - role: Per-frame runtime container.
-- responsibilities: `stores frame-local conduits and registries`, `owns frame-local control-plane state`, `hosts cloud and cluster services`, `holds the frame-bound configuration snapshot`, `owns the frame-local dev-ops information registry used by reporting and transaction topology`
+- responsibilities:
+  - stores frame-local conduits and registries
+  - owns frame-local control-plane state
+  - hosts cloud and cluster services
+  - holds the frame-bound configuration snapshot
+  - owns the frame-local dev-ops information registry used by reporting and transaction topology
 - owns_state: `_conduits`, `_spell_registry`, `_selected_spell_registry`, `_spell_system_states`, `_dev_ops_manager`, `_devops_information_registry`, `_configuration`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bind_frame_configuration`, `claim_lookup`, `cleanup`, `conduit_cloud`, `dev_ops_manager`, `devops_information_registry`, `find_conduit_id_for_spell`, `find_index_for_spell`, `frame_configuration`, `freeze_frame_configuration`, `get_lookup`, `get_lookup_sig_by_spell_id` (+16 more)
@@ -899,7 +955,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:16`
 - extends: `Cleanable`
 - role: Narrow frame-level runtime posture object for AR-facing behavior.
-- responsibilities: `stores frame-level system state, ai-native, and rift posture`, `carries provenance for the spellbook that first derived the frame posture`
+- responsibilities:
+  - stores frame-level system state, ai-native, and rift posture
+  - carries provenance for the spellbook that first derived the frame posture
 - owns_state: `_origin_spellbook_id`, `_system_state`, `_ai_native_enabled`, `_rift_enabled`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `ai_native_enabled`, `automatic_defaults`, `cleanup`, `describe_posture`, `disable_all_transactions_after_conjure`, `disable_bind`, `disable_conduit_cluster`, `disable_contract_mutation`, `disable_linking`, `disable_mutations`, `disable_transfer_of_ownership`, `dynamic_defaults` (+30 more)
@@ -949,7 +1007,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/conduit_cloud.py:23`
 - extends: `Cleanable`
 - role: Frame-scoped registry of named conduits.
-- responsibilities: `stores conduit name to conduit mappings`, `resolves conduits by name or id within one frame`, `provides the frame-local named conduit lookup surface`
+- responsibilities:
+  - stores conduit name to conduit mappings
+  - resolves conduits by name or id within one frame
+  - provides the frame-local named conduit lookup surface
 - owns_state: `_registry`, `_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_conduit_to_cluster`, `cleanup`, `count_conduits`, `create_cluster`, `delete_cluster`, `find_conduit_id_by_name`, `frame_name`, `get_cluster`, `get_clusters_for_conduit`, `get_conduit`, `get_conduit_by_id`, `get_conduit_by_name` (+9 more)
@@ -993,7 +1054,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:61`
 - extends: `Cleanable`
 - role: Frame-level change-control registry and admission surface.
-- responsibilities: `tracks pending changes and dirty roots by conduit`, `owns change-control transaction, conflict, embargo, and orchestrator managers`, `coordinates revalidation hooks for dirty roots`
+- responsibilities:
+  - tracks pending changes and dirty roots by conduit
+  - owns change-control transaction, conflict, embargo, and orchestrator managers
+  - coordinates revalidation hooks for dirty roots
 - owns_state: `_pending_changes`, `_component_of_by_conduit`, `_dirty_roots_by_conduit`, `_transaction_manager`, `_conflict_manager`, `_embargo_manager`, `_orchestrator`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `abort_request`, `admit_request`, `cleanup`, `clear_pending_change`, `commit_request`, `conflict_manager`, `describe`, `devops_information_registry`, `disable_change_control`, `embargo_manager`, `enable_change_control`, `get_pending_change` (+22 more)
@@ -1051,7 +1115,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py:13`
 - extends: `Cleanable`
 - role: RETIRED scope-overlap detector. find_conflicts has ZERO call sites and is NOT part of admission; admission is one atomic moded acquisition against ChangeControlEmbargoManager. Retained by owner ruling 2026-08-03 as a placeholder for a future conflict-based transaction family, not as a reusable implementation.
-- responsibilities: `RETIRED - does not participate in admission and is invoked by nothing`, `retains the mode-blind hash-and-key overlap comparison for reference only`, `holds the CONCEPT of an unsolvable clash requiring solutioning, a state the moded claim table cannot produce`
+- responsibilities:
+  - RETIRED - does not participate in admission and is invoked by nothing
+  - retains the mode-blind hash-and-key overlap comparison for reference only
+  - holds the CONCEPT of an unsolvable clash requiring solutioning, a state the moded claim table cannot produce
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `find_conflicts`
@@ -1091,7 +1158,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:18`
 - markers: `StrEnum`
 - role: Enum of scope-key claim strengths for admission gating.
-- responsibilities: `classifies how strongly one transaction claims one scope key`, `lets the admission gate admit share-compatible work in parallel while serializing true structural overlap`
+- responsibilities:
+  - classifies how strongly one transaction claims one scope key
+  - lets the admission gate admit share-compatible work in parallel while serializing true structural overlap
 - owns_state: `EXCLUSIVE`, `SHARED`, `INTENT`
 - phases: `runtime`
 
@@ -1100,7 +1169,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ChangeControlEmbargoRecord`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:71`
 - role: One row of the moded lock table: an immutable record of one request-owned scope claim.
-- responsibilities: `tie one normalized scope key to the request holding it and the mode it is held in`, `carry reason_tag - the lightweight operational reason, normally the admitted transaction type`, `stay immutable so admission, diagnostics, and advisory tooling can share it across threads without synchronization`
+- responsibilities:
+  - tie one normalized scope key to the request holding it and the mode it is held in
+  - carry reason_tag - the lightweight operational reason, normally the admitted transaction type
+  - stay immutable so admission, diagnostics, and advisory tooling can share it across threads without synchronization
 - phases: `runtime`
 
 #### `AcquisitionDecision` (class)
@@ -1108,7 +1180,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.AcquisitionDecision`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:126`
 - role: The result type of the admission gate: the immutable outcome of one all-or-nothing scope acquisition.
-- responsibilities: `report acquired=True only when EVERY requested claim was granted atomically`, `on failure carry blocking as (scope_key, holder_request_id, holder_mode) tuples - empty on success`, `stay immutable and safe to share across threads`
+- responsibilities:
+  - report acquired=True only when EVERY requested claim was granted atomically
+  - on failure carry blocking as (scope_key, holder_request_id, holder_mode) tuples - empty on success
+  - stay immutable and safe to share across threads
 - phases: `runtime`
 
 #### `ChangeControlEmbargoManager` (class)
@@ -1117,7 +1192,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:175`
 - extends: `Cleanable`
 - role: Scope-key embargo registry for transaction-driven gating.
-- responsibilities: `tracks temporary embargoes opened by admitted requests`, `answers whether requested scope is currently embargoed`
+- responsibilities:
+  - tracks temporary embargoes opened by admitted requests
+  - answers whether requested scope is currently embargoed
 - owns_state: `_embargoes_by_scope`, `_embargoes_by_owner`
 - phases: `runtime`, `cleanup`
 - public methods: `apply_implicit_embargoes`, `cleanup`, `close_embargo`, `collect_scope_claims`, `collect_scope_keys`, `collect_scope_keys_from_staged`, `describe`, `extend_embargoes`, `find_embargoes`, `list_advisory_hints`, `open_embargo`, `release_implicit_embargoes` (+3 more)
@@ -1162,7 +1239,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py:37`
 - extends: `Cleanable`
 - role: Serialized control-plane coordinator for change-control requests.
-- responsibilities: `serializes admission, staging, commit, and abort flows`, `owns staged mutation records and commit/abort hooks`
+- responsibilities:
+  - serializes admission, staging, commit, and abort flows
+  - owns staged mutation records and commit/abort hooks
 - owns_state: `_staged`, `_commit_validator`, `_commit_hook`, `_abort_hook`
 - phases: `runtime`, `cleanup`
 - public methods: `abort_request`, `admit_request`, `cleanup`, `commit_request`, `get_staged`, `list_staged`, `set_abort_hook`, `set_commit_hook`, `set_commit_validator`, `update_staged`
@@ -1213,7 +1292,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py:14`
 - role: Immutable record describing one staged change-control mutation.
-- responsibilities: `captures admitted request identity plus normalized scope metadata`, `acts as the shared payload across commit and abort hook boundaries`
+- responsibilities:
+  - captures admitted request identity plus normalized scope metadata
+  - acts as the shared payload across commit and abort hook boundaries
 - owns_state: `request_id`, `request_type`, `scope_keys`, `binding_keys`, `contract_keys`
 - phases: `runtime`
 - public methods: `from_request`, `with_updates`
@@ -1255,7 +1336,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_spell_or_index_to_contract_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Grant half of the standalone contract-mutation pair: a self-admitting envelope for an add that would otherwise ride inside a link or cluster transaction.
-- responsibilities: `seal both the borrower conduit and the provider peer, and their wards, EXCLUSIVE - the mutation writes the borrower ward and reads the provider surface`, `block link, unlink, transfer, cluster and other contract work on either side for the duration`, `claim the owning spellbook(s) alongside the conduit scope`
+- responsibilities:
+  - seal both the borrower conduit and the provider peer, and their wards, EXCLUSIVE - the mutation writes the borrower ward and reads the provider surface
+  - block link, unlink, transfer, cluster and other contract work on either side for the duration
+  - claim the owning spellbook(s) alongside the conduit scope
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1288,7 +1372,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Move-in flow of the three SpellIndex mutations: a spell leaves its current index and joins the target.
-- responsibilities: `seal both owning spellbooks and both owning conduits EXCLUSIVE (deduped when the same), plus the moved spell's binding key`, `run the move and the source-index GC inside the same held window - no empty index ever rests`, `need no runtime gate freeze: this flow is structural only, unlike notch`
+- responsibilities:
+  - seal both owning spellbooks and both owning conduits EXCLUSIVE (deduped when the same), plus the moved spell's binding key
+  - run the move and the source-index GC inside the same held window - no empty index ever rests
+  - need no runtime gate freeze: this flow is structural only, unlike notch
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1321,7 +1408,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Transaction strategy for bind and scan requests.
-- responsibilities: `builds pre-conjure and post-conjure bind admission plans from live topology`, `derives spellbook, conduit, conduit-ward, and cluster scopes for bind-family requests`, `runs Spellbook-local bind transaction start/end effects after admission and finalization`
+- responsibilities:
+  - builds pre-conjure and post-conjure bind admission plans from live topology
+  - derives spellbook, conduit, conduit-ward, and cluster scopes for bind-family requests
+  - runs Spellbook-local bind transaction start/end effects after admission and finalization
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1367,7 +1457,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_join_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Scope isolation for a conduit's ENTRY into a cluster, treated as one link over every involved conduit because joining fans out share contracts to all members.
-- responsibilities: `seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT, mirroring the link pattern`, `take the involved conduit ids from call-site metadata - scope planning only, no live-object reach`, `supply the isolation ConduitCluster itself lacks, whose documented gap is that membership mutation and share fan-out are not yet one atomic unit`
+- responsibilities:
+  - seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT, mirroring the link pattern
+  - take the involved conduit ids from call-site metadata - scope planning only, no live-object reach
+  - supply the isolation ConduitCluster itself lacks, whose documented gap is that membership mutation and share fan-out are not yet one atomic unit
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1406,7 +1499,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_leave_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Exact inverse of cluster-join: scope isolation for a conduit's EXIT, with matching claim modes because an exit mutates the same surfaces an entry does.
-- responsibilities: `seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT`, `treat the whole exit as one link over every involved conduit, since leaving tears down share contracts with every remaining member`, `take the involved conduit ids from call-site metadata - scope planning only, no live-object reach`
+- responsibilities:
+  - seal participant conduits and wards EXCLUSIVE and owning spellbooks INTENT
+  - treat the whole exit as one link over every involved conduit, since leaving tears down share contracts with every remaining member
+  - take the involved conduit ids from call-site metadata - scope planning only, no live-object reach
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1445,7 +1541,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py:19`
 - extends: `TransactionStrategy`
 - role: Transaction strategy for cluster-owned share and unshare requests.
-- responsibilities: `resolves participant conduits and owning cluster identity for cluster-link requests`, `derives conduit, conduit-ward, spellbook, and cluster scopes for admission`, `normalizes affected identities and capabilities for cluster-driven contract mutation`
+- responsibilities:
+  - resolves participant conduits and owning cluster identity for cluster-link requests
+  - derives conduit, conduit-ward, spellbook, and cluster scopes for admission
+  - normalizes affected identities and capabilities for cluster-driven contract mutation
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1492,7 +1591,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/conjure_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: The genesis member of the transaction family: spellbook -> root conduit, the event every conduit-scoped strategy presupposes.
-- responsibilities: `claim the owning spellbook EXCLUSIVE for the whole creation pipeline, so genesis is admitted through the mediator rather than riding the Spellbook lock alone`, `claim NO conduit, ward or cluster scope - the root conduit id is minted mid-pipeline and does not exist to claim`, `leave disjoint spellbooks free to conjure in parallel`
+- responsibilities:
+  - claim the owning spellbook EXCLUSIVE for the whole creation pipeline, so genesis is admitted through the mediator rather than riding the Spellbook lock alone
+  - claim NO conduit, ward or cluster scope - the root conduit id is minted mid-pipeline and does not exist to claim
+  - leave disjoint spellbooks free to conjure in parallel
 - phases: `bind`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1525,7 +1627,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/elect_conduit_cluster_leader_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Activation half of the cluster's OPTIONAL leader layer; a light envelope, because inert clusters hard-error at the door so nothing can be mid-create.
-- responsibilities: `seal the cluster member conduits EXCLUSIVE for the duration, isolated to them`, `require NO lineage drain - the inert invariant guarantees no meld is in flight against the team-store`, `run only the base fact-baseline stamp at commit; the leadership effect itself lives in the cluster`
+- responsibilities:
+  - seal the cluster member conduits EXCLUSIVE for the duration, isolated to them
+  - require NO lineage drain - the inert invariant guarantees no meld is in flight against the team-store
+  - run only the base fact-baseline stamp at commit; the leadership effect itself lives in the cluster
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1558,7 +1663,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/link_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Transaction strategy for conduit link requests.
-- responsibilities: `resolves participating conduit ids for one link request`, `derives conduit, conduit-ward, and spellbook scopes for link admission`, `normalizes affected identities and capability requirements for conduit-link transactions`
+- responsibilities:
+  - resolves participating conduit ids for one link request
+  - derives conduit, conduit-ward, and spellbook scopes for link admission
+  - normalizes affected identities and capability requirements for conduit-link transactions
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1605,7 +1713,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Intra-index active-spell repoint - the one SpellIndex flow that needs a real runtime freeze, not just structural isolation.
-- responsibilities: `seal the owning spellbook and its conduit EXCLUSIVE plus the targeted binding key, isolated to exactly those surfaces`, `drain conduit lineage gates in on_start and reopen them in on_end on EVERY exit path, including the drain-timeout abort`, `repoint the SpellIndex to a different active, resolvable spell`
+- responsibilities:
+  - seal the owning spellbook and its conduit EXCLUSIVE plus the targeted binding key, isolated to exactly those surfaces
+  - drain conduit lineage gates in on_start and reopen them in on_end on EVERY exit path, including the drain-timeout abort
+  - repoint the SpellIndex to a different active, resolvable spell
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1638,7 +1749,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Move-out counterpart to add-to-index: a removal is a move to a fresh index established in the same transaction, because a spell is always in exactly one index.
-- responsibilities: `seal the owning spellbook and conduit EXCLUSIVE plus the moved spell's binding key`, `establish the fresh index (the split) inside the held window via the Spellbook-owned apply verb`, `preserve the one-index-per-spell invariant it shares with the move-in flow`
+- responsibilities:
+  - seal the owning spellbook and conduit EXCLUSIVE plus the moved spell's binding key
+  - establish the fresh index (the split) inside the held window via the Spellbook-owned apply verb
+  - preserve the one-index-per-spell invariant it shares with the move-in flow
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1671,7 +1785,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_spell_or_index_from_contract_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Release half of the standalone contract-mutation pair and inverse of the grant, with matching claim modes because a release mutates the surfaces a grant does.
-- responsibilities: `seal both participating conduits and their wards EXCLUSIVE`, `untrack the contracted spell or index on the borrower ward while touching the provider surface`, `block link, unlink, transfer, cluster and other contract work on either side for the duration`
+- responsibilities:
+  - seal both participating conduits and their wards EXCLUSIVE
+  - untrack the contracted spell or index on the borrower ward while touching the provider surface
+  - block link, unlink, transfer, cluster and other contract work on either side for the duration
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1704,7 +1821,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py:20`
 - markers: `ABC`
 - role: Abstract contract for mediator-registered transaction strategy classes.
-- responsibilities: `defines build_start_plan, on_start, and on_end hooks for transaction families`, `defines the default commit-delta stamping path for reported fact baselines`, `keeps transaction-family planning and side effects out of the mediator core`
+- responsibilities:
+  - defines build_start_plan, on_start, and on_end hooks for transaction families
+  - defines the default commit-delta stamping path for reported fact baselines
+  - keeps transaction-family planning and side effects out of the mediator core
 - phases: `runtime`
 - public methods: `apply_commit_delta`, `build_start_plan`, `on_end`, `on_start`
 
@@ -1730,7 +1850,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy_builder.TransactionStrategyBuilder`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py:103`
 - role: Registry-backed resolver for change-control transaction strategy classes.
-- responsibilities: `registers built-in transaction strategies by normalized transaction kind`, `resolves strategy classes for mediator start/end/commit-delta dispatch`, `shares the live transaction manager and dev-ops information registry with resolved strategies`
+- responsibilities:
+  - registers built-in transaction strategies by normalized transaction kind
+  - resolves strategy classes for mediator start/end/commit-delta dispatch
+  - shares the live transaction manager and dev-ops information registry with resolved strategies
 - owns_state: `_transaction_manager`, `_devops_information_registry`, `_strategies_by_transaction_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `apply_commit_delta`, `build_start_plan`, `on_end`, `on_start`, `register_strategy`, `resolve`
@@ -1778,7 +1901,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transfer_ownership_transaction_strategy.py:19`
 - extends: `TransactionStrategy`
 - role: Transaction strategy for conduit ownership-transfer requests.
-- responsibilities: `resolves source and target conduits plus the transferred spell from live registry state`, `builds affected conduit, ward, spellbook, cluster, and borrower scope plans for transfer admission`, `reuses TransferOfOwnership preflight to discover borrower and dependency participants without mutating runtime state`
+- responsibilities:
+  - resolves source and target conduits plus the transferred spell from live registry state
+  - builds affected conduit, ward, spellbook, cluster, and borrower scope plans for transfer admission
+  - reuses TransferOfOwnership preflight to discover borrower and dependency participants without mutating runtime state
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1826,7 +1952,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unelect_conduit_cluster_leader_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Deactivation half of the leader layer and the heavier twin of election: active -> inert, so readers may be in flight and the store must not be re-targeted underneath them.
-- responsibilities: `seal the member conduits EXCLUSIVE in build_start_plan`, `quiesce every member root lineage through the gate facade in on_start in PARK mode, so concurrent melds park at their gate and resume on reopen`, `reopen every lineage after the domain effect`
+- responsibilities:
+  - seal the member conduits EXCLUSIVE in build_start_plan
+  - quiesce every member root lineage through the gate facade in on_start in PARK mode, so concurrent melds park at their gate and resume on reopen
+  - reopen every lineage after the domain effect
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1859,7 +1988,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/unlink_transaction_strategy.py:22`
 - extends: `TransactionStrategy`
 - role: Transaction strategy that resolves conduit unlink requests into mediator-ready change-control plans.
-- responsibilities: `normalizes participant conduits and owning spellbooks for unlink operations`, `builds scope keys and intent claims for unlink transactions`, `preserves caller-supplied binding and contract keys for sever-link work`
+- responsibilities:
+  - normalizes participant conduits and owning spellbooks for unlink operations
+  - builds scope keys and intent claims for unlink transactions
+  - preserves caller-supplied binding and contract keys for sever-link work
 - phases: `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -1908,7 +2040,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py:30`
 - extends: `Cleanable`
 - role: Transaction-bookkeeping root for change-control admission.
-- responsibilities: `builds immutable transaction requests before admission`, `tracks admitted in-flight requests and scope-key bookkeeping`
+- responsibilities:
+  - builds immutable transaction requests before admission
+  - tracks admitted in-flight requests and scope-key bookkeeping
 - owns_state: `_in_flight`, `_link_mirror`, `_audit_log_fn`
 - phases: `runtime`, `cleanup`
 - public methods: `add_in_flight`, `build_request`, `cleanup`, `describe`, `get_in_flight`, `list_borrowers_for_provider`, `list_in_flight`, `make_scope_key_binding`, `make_scope_key_cluster`, `make_scope_key_conduit`, `make_scope_key_contract`, `make_scope_key_identity` (+6 more)
@@ -1955,7 +2089,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py:55`
 - extends: `Cleanable`
 - role: Frame-local live transaction session mediator above admitted requests and staged mutations.
-- responsibilities: `creates or joins root transaction sessions for same-thread nested work`, `waits on scope-local admission retry when requests are blocked by overlapping claims`, `routes transaction strategy start/end/commit-delta hooks before root commit or abort finalization`
+- responsibilities:
+  - creates or joins root transaction sessions for same-thread nested work
+  - waits on scope-local admission retry when requests are blocked by overlapping claims
+  - routes transaction strategy start/end/commit-delta hooks before root commit or abort finalization
 - owns_state: `_wait_condition`, `_strategy_builder`, `_sessions_by_request_id`, `_thread_local`, `_queue_competing_root_transactions`, `_max_transaction_wait_time_in_seconds`
 - phases: `runtime`, `cleanup`
 - public methods: `begin_frame`, `begin_transaction`, `cleanup`, `configure`, `describe`, `end_frame`, `end_transaction`, `end_transaction_by_request_id`, `end_transaction_for_identity`, `get_active_request`, `get_active_session`, `get_session_by_request_id` (+5 more)
@@ -2022,7 +2159,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py:26`
 - extends: `Cleanable`
 - role: Live root transaction session for one admitted change-control request.
-- responsibilities: `tracks same-thread nesting depth and granted capabilities for one root request`, `stores commit validators, commit hooks, abort hooks, and rollback actions`, `owns abort-only, committing, committed, and aborted runtime session state`
+- responsibilities:
+  - tracks same-thread nesting depth and granted capabilities for one root request
+  - stores commit validators, commit hooks, abort hooks, and rollback actions
+  - owns abort-only, committing, committed, and aborted runtime session state
 - owns_state: `_request`, `_staged`, `_submitter_identity`, `_owner_thread_id`, `_capabilities`, `_depth`, `_status`, `_failure_reason`, `_failure_error`, `_commit_validators`, `_commit_hooks`, `_abort_hooks`, `_rollback_actions`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `depth`, `describe`, `failure_reason`, `grant_capabilities`, `join`, `leave`, `mark_abort_only`, `mark_aborted`, `mark_committed`, `mark_committing`, `owner_thread_id` (+11 more)
@@ -2073,7 +2213,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:9`
 - markers: `StrEnum`
 - role: Enum of supported change-control transaction kinds.
-- responsibilities: `labels bind, link, transfer ownership, mutation, and cluster link transactions`
+- responsibilities:
+  - labels bind, link, transfer ownership, mutation, and cluster link transactions
 - owns_state: `BIND`, `LINK`, `TRANSFER_OWNERSHIP`, `MUTATION`, `CLUSTER_LINK`
 - phases: `runtime`
 
@@ -2082,7 +2223,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:81`
 - role: Immutable pre-admission transaction request payload.
-- responsibilities: `stores normalized scope, binding, and contract metadata for one mutation request`, `acts as the canonical request record used by admission and staging logic`
+- responsibilities:
+  - stores normalized scope, binding, and contract metadata for one mutation request
+  - acts as the canonical request record used by admission and staging logic
 - owns_state: `request_id`, `request_type`, `scope_keys`, `scope_hashes`, `binding_keys`, `contract_keys`, `metadata`
 - phases: `runtime`
 
@@ -2091,7 +2234,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlAdmissionResult`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py:176`
 - role: Immutable admission decision payload for one transaction request.
-- responsibilities: `stores the admitted verdict plus conflict and embargo evidence for one request`
+- responsibilities:
+  - stores the admitted verdict plus conflict and embargo evidence for one request
 - owns_state: `admitted`, `reasons`, `conflicts`, `embargoes`
 - phases: `runtime`
 
@@ -2118,7 +2262,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/conduit_lineage_gate_ops.py:12`
 - extends: `Cleanable`
 - role: The runtime-gate seam transaction strategies reach through: a narrow drain/reopen/close/count facade over the frame's single CreationGateController.
-- responsibilities: `wrap the controller BY REFERENCE and never clean it - DevOpsManager owns that lifecycle; cleanup drops the borrowed reference only`, `scope every operation to a conduit lineage, keyed by root_conduit_id`, `capture the controller under its own RLock then delegate OUTSIDE it, so a long blocking drain never holds this facade's lock`
+- responsibilities:
+  - wrap the controller BY REFERENCE and never clean it - DevOpsManager owns that lifecycle; cleanup drops the borrowed reference only
+  - scope every operation to a conduit lineage, keyed by root_conduit_id
+  - capture the controller under its own RLock then delegate OUTSIDE it, so a long blocking drain never holds this facade's lock
 - owns_state: `_lock`, `_creation_gate_controller`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `close_and_wait_conduit_lineage`, `count_active_tickets_for_conduit_lineage`, `disable_conduit_lineage`, `enable_conduit_lineage`, `quiesce_conduit_lineage`
@@ -2159,7 +2306,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py:24`
 - extends: `Cleanable`
 - role: Frame-level DevOps and admission-control hub.
-- responsibilities: `exposes incident, change-control, and risk management through one frame-local hub`, `owns the frame-local creation gate controller`, `provides conduit and lineage gate control entrypoints`, `provides dirty-root revalidation entrypoints`
+- responsibilities:
+  - exposes incident, change-control, and risk management through one frame-local hub
+  - owns the frame-local creation gate controller
+  - provides conduit and lineage gate control entrypoints
+  - provides dirty-root revalidation entrypoints
 - owns_state: `_incident_manager`, `_change_control_manager`, `_risk_manager`, `_creation_gate_controller`, `_spell_system_states`, `_devops_information_registry`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `change_control_manager`, `cleanup`, `close_and_wait_conduit`, `close_and_wait_conduit_lineage`, `conduit_lineage_gate_ops`, `creation_gate_controller`, `devops_information_registry`, `disable_conduit_gate`, `disable_conduit_lineage`, `enable_conduit_gate`, `enable_conduit_lineage`, `incident_manager` (+3 more)
@@ -2216,7 +2367,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_identity.py:12`
 - extends: `Cleanable`
 - role: Frame-local dev-ops identity record for runtime objects.
-- responsibilities: `stores stable owner identity, frame scope, metadata, and transaction capabilities`, `attaches runtime objects to the frame-owned dev-ops information registry`, `publishes conduit-link and cluster-membership relations through the registry`
+- responsibilities:
+  - stores stable owner identity, frame scope, metadata, and transaction capabilities
+  - attaches runtime objects to the frame-owned dev-ops information registry
+  - publishes conduit-link and cluster-membership relations through the registry
 - owns_state: `_owner_kind`, `_owner_id`, `_aetheric_frame_name`, `_metadata`, `_available_transactions`, `_registry`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `aetheric_frame_name`, `attach_registry`, `available_transactions`, `cleanup`, `describe`, `detach_registry`, `metadata`, `owner_id`, `owner_kind`, `refresh_registry`, `register_cluster_member`, `register_provider_conduit` (+5 more)
@@ -2261,7 +2415,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsFactRecord`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py:41`
 - role: The freshness primitive under the information registry: when one fact family for one region was last reported, and by whom.
-- responsibilities: `name the reported truth class in fact_family (normally a transaction type such as bind or link)`, `carry region as a scope-shaped key such as conduit:<id> or spellbook:<id>`, `record last_reporter so every fact traces to its reporter, letting strategies skip re-derivation when all change since the baseline flowed through the transaction plane`
+- responsibilities:
+  - name the reported truth class in fact_family (normally a transaction type such as bind or link)
+  - carry region as a scope-shaped key such as conduit:<id> or spellbook:<id>
+  - record last_reporter so every fact traces to its reporter, letting strategies skip re-derivation when all change since the baseline flowed through the transaction plane
 - phases: `runtime`
 
 #### `DevopsInformationRegistry` (class)
@@ -2270,7 +2427,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py:106`
 - extends: `Cleanable`
 - role: Frame-local registry of dev-ops identities, topology relations, transactions, and fact baselines.
-- responsibilities: `indexes runtime identities and optional object references by owner key`, `mirrors spellbook-conduit, provider-borrower, and cluster-membership relations`, `tracks live transactions, scope indexes, and reported fact baselines for one frame`
+- responsibilities:
+  - indexes runtime identities and optional object references by owner key
+  - mirrors spellbook-conduit, provider-borrower, and cluster-membership relations
+  - tracks live transactions, scope indexes, and reported fact baselines for one frame
 - owns_state: `_identities_by_key`, `_objects_by_key`, `_spellbook_to_conduits`, `_provider_to_borrowers`, `_cluster_to_conduits`, `_transactions_by_id`, `_fact_records`, `_information_strategy_builder`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `aetheric_frame_name`, `cleanup`, `describe`, `get_cluster_objects_for_conduit`, `get_clusters_for_conduit`, `get_conduit_objects_for_spellbook`, `get_conduits_for_cluster`, `get_conduits_for_spellbook`, `get_fact_record`, `get_identity`, `get_object`, `get_primary_conduit_id_for_spellbook` (+28 more)
@@ -2320,7 +2480,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy.py:10`
 - markers: `ABC`
 - role: Abstract strategy contract for registry-backed dev-ops information queries.
-- responsibilities: `defines the execute contract for dev-ops information strategies`, `accepts the live DevopsInformationRegistry plus caller metadata`, `returns detached result payloads without owning long-lived runtime state`
+- responsibilities:
+  - defines the execute contract for dev-ops information strategies
+  - accepts the live DevopsInformationRegistry plus caller metadata
+  - returns detached result payloads without owning long-lived runtime state
 - phases: `runtime`
 - public methods: `execute`
 
@@ -2346,7 +2509,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder.DevopsInformationStrategyBuilder`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py:28`
 - role: Registry-backed resolver and executor for dev-ops information strategies.
-- responsibilities: `registers built-in dev-ops information strategy classes by normalized name`, `resolves strategy names against the live frame registry`, `executes one named strategy against the attached dev-ops information registry`, `tracks successful execution counts by strategy name`
+- responsibilities:
+  - registers built-in dev-ops information strategy classes by normalized name
+  - resolves strategy names against the live frame registry
+  - executes one named strategy against the attached dev-ops information registry
+  - tracks successful execution counts by strategy name
 - owns_state: `_devops_information_registry`, `_strategies_by_name`, `_execution_counts_by_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `execute`, `get_execution_count`, `list_execution_counts`, `list_registered_strategy_names`, `register_strategy`, `resolve`
@@ -2402,7 +2569,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py:14`
 - extends: `Cleanable`
 - role: Mutable incident record owned by IncidentManager.
-- responsibilities: `stores one incident payload plus controlled lifecycle status`, `supports acknowledge, resolve, and suppress transitions`
+- responsibilities:
+  - stores one incident payload plus controlled lifecycle status
+  - supports acknowledge, resolve, and suppress transitions
 - owns_state: `_kind`, `_severity`, `_status`, `_spell_index_id`, `_root_ids`, `_details`
 - phases: `runtime`, `cleanup`
 - public methods: `acknowledge`, `cleanup`, `details`, `id`, `kind`, `resolve`, `root_ids`, `severity`, `spell_index_id`, `status`, `summary`, `suppress`
@@ -2448,7 +2617,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py:18`
 - extends: `Cleanable`
 - role: Frame-local incident registry.
-- responsibilities: `creates and owns incident records`, `tracks incidents by id for one frame`, `filters and returns incident snapshots for tooling`
+- responsibilities:
+  - creates and owns incident records
+  - tracks incidents by id for one frame
+  - filters and returns incident snapshots for tooling
 - owns_state: `_incidents_by_id`, `_next_numeric_id`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `create_incident`, `devops_information_registry`, `get_incident`, `list_incidents`
@@ -2493,7 +2665,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py:3`
 - markers: `Enum`
 - role: Severity enum for incident records.
-- responsibilities: `labels informational through critical incident urgency levels`
+- responsibilities:
+  - labels informational through critical incident urgency levels
 - owns_state: `info`, `warning`, `error`, `critical`
 - phases: `runtime`
 
@@ -2520,7 +2693,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_status.py:3`
 - markers: `Enum`
 - role: Lifecycle status enum for incidents.
-- responsibilities: `labels open, acknowledged, resolved, and suppressed incident lifecycle states`
+- responsibilities:
+  - labels open, acknowledged, resolved, and suppressed incident lifecycle states
 - owns_state: `open`, `acknowledged`, `resolved`, `suppressed`
 - phases: `runtime`
 
@@ -2547,7 +2721,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py:16`
 - extends: `DevopsInformationStrategy`
 - role: Registry-backed dev-ops information strategy for cluster membership fan-out views.
-- responsibilities: `computes sibling or member conduit fan-out from mirrored cluster membership maps`, `returns detached conduit and cluster id sets without touching live runtime objects`, `adds freshness views for the touched conduit regions when requested`
+- responsibilities:
+  - computes sibling or member conduit fan-out from mirrored cluster membership maps
+  - returns detached conduit and cluster id sets without touching live runtime objects
+  - adds freshness views for the touched conduit regions when requested
 - phases: `runtime`
 - public methods: `execute`
 
@@ -2591,7 +2768,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py:16`
 - extends: `DevopsInformationStrategy`
 - role: Registry-backed dev-ops information strategy for frame-wide operational rollups.
-- responsibilities: `summarizes identity, ownership, link, cluster, and transaction counts for one frame`, `aggregates fact-record baselines by family across the frame registry`, `returns one detached operational view with optional freshness verdicts`
+- responsibilities:
+  - summarizes identity, ownership, link, cluster, and transaction counts for one frame
+  - aggregates fact-record baselines by family across the frame registry
+  - returns one detached operational view with optional freshness verdicts
 - phases: `runtime`
 - public methods: `execute`
 
@@ -2628,7 +2808,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/information_strategy_support.py:10`
 - role: Shared freshness-math helper for registry-backed dev-ops information strategies.
-- responsibilities: `normalizes region and scope keys into fact-record region form`, `builds detached freshness views from registry fact baselines`, `reads optional max-age tolerances used by information strategies`
+- responsibilities:
+  - normalizes region and scope keys into fact-record region form
+  - builds detached freshness views from registry fact baselines
+  - reads optional max-age tolerances used by information strategies
 - phases: `runtime`
 - public methods: `build_freshness_view`, `normalize_region`, `read_optional_max_age`
 
@@ -2670,7 +2853,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py:13`
 - extends: `DevopsInformationStrategy`
 - role: Registry-backed dev-ops information strategy for mirrored-map symmetry audits.
-- responsibilities: `checks forward and reverse registry maps for asymmetry across ownership, links, clusters, and transactions`, `returns detached consistency findings without mutating the registry`, `acts as a sampled control-plane bookkeeping audit over registry deltas`
+- responsibilities:
+  - checks forward and reverse registry maps for asymmetry across ownership, links, clusters, and transactions
+  - returns detached consistency findings without mutating the registry
+  - acts as a sampled control-plane bookkeeping audit over registry deltas
 - phases: `runtime`
 - public methods: `execute`
 
@@ -2706,7 +2892,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transaction_activity_view_strategy.py:16`
 - extends: `DevopsInformationStrategy`
 - role: Registry-backed dev-ops information strategy for live transaction activity views.
-- responsibilities: `queries in-flight transaction ids by identity, scope, or transaction type`, `returns detached transaction-activity views without live object references`, `adds freshness views for the touched regions when requested`
+- responsibilities:
+  - queries in-flight transaction ids by identity, scope, or transaction type
+  - returns detached transaction-activity views without live object references
+  - adds freshness views for the touched regions when requested
 - phases: `runtime`
 - public methods: `execute`
 
@@ -2750,7 +2939,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/information_strategies/transfer_blast_radius_strategy.py:16`
 - extends: `DevopsInformationStrategy`
 - role: Registry-backed dev-ops information strategy for ownership-transfer blast-radius views.
-- responsibilities: `enumerates spellbook, sibling conduit, borrower/provider, and cluster participants touched by one conduit transfer`, `returns detached impact-set ids before scopes are claimed`, `adds freshness views for the touched conduit and spellbook regions when requested`
+- responsibilities:
+  - enumerates spellbook, sibling conduit, borrower/provider, and cluster participants touched by one conduit transfer
+  - returns detached impact-set ids before scopes are claimed
+  - adds freshness views for the touched conduit and spellbook regions when requested
 - phases: `runtime`
 - public methods: `execute`
 
@@ -2793,7 +2985,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager._ConduitRiskState`
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:17`
 - role: Per-conduit storage bucket behind RiskManager's distillation into one validation-required flag per spellbook.
-- responsibilities: `hold one bucket per registered conduit; buckets never span conduits`, `track structural and resolution risk SEPARATELY - they have different scopes (frame-global versus conduit-local)`, `hold no lock of its own; mutated only under the owning RiskManager's RLock`
+- responsibilities:
+  - hold one bucket per registered conduit; buckets never span conduits
+  - track structural and resolution risk SEPARATELY - they have different scopes (frame-global versus conduit-local)
+  - hold no lock of its own; mutated only under the owning RiskManager's RLock
 - owns_state: `spellbook`, `lineages`, `risky_structural`, `risky_resolution`
 - phases: `runtime`
 
@@ -2803,7 +2998,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:93`
 - extends: `Cleanable`
 - role: Conduit-local risk aggregator for validation gating.
-- responsibilities: `tracks structural and resolution risk per conduit`, `reacts to validity changes from spell-system state`, `pushes validation-required flags back onto spellbooks`
+- responsibilities:
+  - tracks structural and resolution risk per conduit
+  - reacts to validity changes from spell-system state
+  - pushes validation-required flags back onto spellbooks
 - owns_state: `_conduit_states`, `_lineage_conduits`, `_spell_system_states`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `devops_information_registry`, `on_resolution_validity_change`, `on_structural_validity_change`, `register_conduit`, `register_spell`, `unregister_conduit`, `unregister_spell`
@@ -2847,7 +3045,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/conduit_resolution_state.py:45`
 - extends: `Cleanable`
 - role: Per-conduit resolution-validity container.
-- responsibilities: `tracks per-spell and per-root resolution validity for one conduit`, `stores conduit-scoped system diagnostics and dirty/validated markers`
+- responsibilities:
+  - tracks per-spell and per-root resolution validity for one conduit
+  - stores conduit-scoped system diagnostics and dirty/validated markers
 - owns_state: `_spell_validity`, `_root_validity`, `_diagnostics`, `_dirty`, `_last_validated_at`, `_last_change_reason`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `bulk_set_root_validity`, `bulk_set_spell_validity`, `cleanup`, `clear_diagnostics`, `clear_dirty`, `get_root_validity`, `get_spell_validity`, `has_errors`, `has_warnings`, `is_dirty`, `last_validated_at`, `list_diagnostics` (+6 more)
@@ -2894,7 +3094,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py:4`
 - markers: `Enum`
 - role: Fine-grained state-flag enum for one spell lineage.
-- responsibilities: `labels topology, contract, mutation, and ops state flags for a lineage`
+- responsibilities:
+  - labels topology, contract, mutation, and ops state flags for a lineage
 - owns_state: `new_lineage`, `structure_changed`, `dependencies_changed`, `impacted_by_dependency`, `contract_unvalidated`, `contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`, `has_open_incident`, `anchored_component`, `config_missing`, `transfer_in_progress`
 - phases: `validation`, `runtime`
 
@@ -2921,7 +3122,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py:3`
 - markers: `Enum`
 - role: Coarse latest-transition reason enum for one lineage.
-- responsibilities: `labels the latest event that changed a lineage state or validity posture`
+- responsibilities:
+  - labels the latest event that changed a lineage state or validity posture
 - owns_state: `new_lineage`, `register_or_rebind`, `structure_changed`, `dependencies_changed`, `dependency_changed`, `impacted_by_dependency`, `contract_unvalidated`, `contract_violation`, `mutation_promoted`, `mutation_rolled_back`, `mutation_contract_set`, `mutation_contract_cleared`, `mutation_failed`, `mutation_candidate`, `mutation_quarantined`, `validation_passed`, `validation_failed`, `incident_opened`, `incident_resolved`, `config_missing`, `config_supplied`, `anchored_component`, `transfer_in_progress`, `explicit_mark`, `other`
 - phases: `validation`, `runtime`
 
@@ -2948,7 +3150,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py:14`
 - extends: `Cleanable`
 - role: System-level state for a single spell lineage.
-- responsibilities: `stores direct topology, structural validity, flags, and latest change reason for one lineage`, `tracks last successful validation time and transitive dirt state`
+- responsibilities:
+  - stores direct topology, structural validity, flags, and latest change reason for one lineage
+  - tracks last successful validation time and transitive dirt state
 - owns_state: `_spell_index_id`, `_current_spell_id`, `_direct_dependencies`, `_direct_dependents`, `_validity`, `_flags`, `_change_reason`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `add_dependent`, `attach_dependencies`, `change_reason`, `cleanup`, `clear_dirty`, `current_spell_id`, `direct_dependencies`, `direct_dependents`, `dirty`, `flags`, `last_validated_at`, `mark_dependency_change` (+8 more)
@@ -2996,7 +3200,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:42`
 - extends: `Cleanable`
 - role: Per-frame lineage and resolution state registry.
-- responsibilities: `owns lineage state by index id and spell id`, `tracks dirty lineages and local topologies`, `owns per-conduit resolution state buckets`, `provides targeted dependency and contract invalidation`
+- responsibilities:
+  - owns lineage state by index id and spell id
+  - tracks dirty lineages and local topologies
+  - owns per-conduit resolution state buckets
+  - provides targeted dependency and contract invalidation
 - owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_lineages`, `_local_topologies`, `_resolution_by_conduit_id`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `get_by_index_id`, `get_by_spell_id`, `get_conduit_resolution_state` (+17 more)
@@ -3051,7 +3259,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py:3`
 - markers: `Enum`
 - role: Coarse validity gate enum for structural and resolution state.
-- responsibilities: `labels unknown, valid, gated, invalid, disabled, and cleaned validity states`
+- responsibilities:
+  - labels unknown, valid, gated, invalid, disabled, and cleaned validity states
 - owns_state: `unknown`, `valid`, `gated`, `invalid`, `disabled`, `cleaned`
 - phases: `validation`, `runtime`
 
@@ -3077,7 +3286,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_frame.lookup_container.LookupContainer`
 - defined at: `src/melder/aether/aetheric_frame/lookup_container.py:5`
 - role: The frame-wide binding-signature uniqueness surface: one active spell per (frame_key, bind_key), replacing per-spellbook signature checks.
-- responsibilities: `hold ACTIVE signatures only, plus the inverse spell_id -> signature index so release is O(1) on notch or cleanup`, `raise on a re-claim for a DIFFERENT spell_id and leave state unchanged`, `serialize every read and write under one non-reentrant Lock, so the forward and reverse maps are never observed mid-update`, `clear both maps and drop the lock on cleanup; idempotent`
+- responsibilities:
+  - hold ACTIVE signatures only, plus the inverse spell_id -> signature index so release is O(1) on notch or cleanup
+  - raise on a re-claim for a DIFFERENT spell_id and leave state unchanged
+  - serialize every read and write under one non-reentrant Lock, so the forward and reverse maps are never observed mid-update
+  - clear both maps and drop the lock on cleanup; idempotent
 - owns_state: `_lookup`, `_reverse`, `_lock`, `_cleaned`
 - phases: `runtime`, `cleanup`
 - public methods: `claim`, `cleanup`, `contains`, `contains_spell_id`, `get`, `get_sig_by_spell_id`, `release`, `release_by_spell_id`, `update`
@@ -3112,7 +3325,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/admission_orchestrator.py:26`
 - extends: `Cleanable`
 - role: The serialized admission decision point: the ONE place a request becomes admitted, so 'is this allowed to proceed' has a single answer arrived at a single way.
-- responsibilities: `take the admission lock for the ENTIRE decision path and perform exactly ONE atomic all-or-nothing ClaimTable.try_acquire - the moded matrix IS the decision, with no second adjudication layer and no in-flight overlap scan`, `leave NO TRACE on refusal`, `BORROW the claim table, never own it: cleanup drops the in-flight registry but does NOT release claims, because silently releasing another component's claims during teardown would be the worse failure`
+- responsibilities:
+  - take the admission lock for the ENTIRE decision path and perform exactly ONE atomic all-or-nothing ClaimTable.try_acquire - the moded matrix IS the decision, with no second adjudication layer and no in-flight overlap scan
+  - leave NO TRACE on refusal
+  - BORROW the claim table, never own it: cleanup drops the in-flight registry but does NOT release claims, because silently releasing another component's claims during teardown would be the worse failure
 - owns_state: `_lock`, `_in_flight`
 - phases: `runtime`, `cleanup`
 - public methods: `admit`, `cleanup`, `describe`, `get_in_flight`, `list_in_flight`, `release`
@@ -3153,7 +3369,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/admission_result.py:18`
 - markers: `StrEnum`
 - role: Machine-readable codes for WHY a request was refused, so callers branch without parsing rendered evidence lines.
-- responsibilities: `describe the CLASS of refusal, leaving the specific contended scopes and holders to travel separately on the result`, `keep values stable - they travel into logs and stored evidence`
+- responsibilities:
+  - describe the CLASS of refusal, leaving the specific contended scopes and holders to travel separately on the result
+  - keep values stable - they travel into logs and stored evidence
 - phases: `runtime`
 
 #### `AdmissionResult` (class)
@@ -3162,7 +3380,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/admission_result.py:52`
 - extends: `Cleanable`
 - role: The immutable verdict for one admission attempt - EVIDENCE, NOT A BOOL.
-- responsibilities: `always carry at least one reason when admitted=False; a bare False is not a legal verdict`, `carry the contended scopes and holders so a refusal is retryable by a caller, explicable to an operator, and reportable without reaching back into live plane state`, `hold value fields only - one bool and three tuples of strings, with no reference to the table, the session, or any holder`
+- responsibilities:
+  - always carry at least one reason when admitted=False; a bare False is not a legal verdict
+  - carry the contended scopes and holders so a refusal is retryable by a caller, explicable to an operator, and reportable without reaching back into live plane state
+  - hold value fields only - one bool and three tuples of strings, with no reference to the table, the session, or any holder
 - owns_state: `_admitted`, `_reasons`, `_blocked_scopes`, `_evidence`
 - phases: `runtime`, `cleanup`
 - public methods: `admitted`, `blocked_scopes`, `cleanup`, `describe`, `evidence`, `granted`, `reasons`, `refused`
@@ -3203,7 +3424,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/claim_mode.py:17`
 - markers: `StrEnum`
 - role: The access posture one holder requests over one scope key - and the vocabulary the whole plane turns on.
-- responsibilities: `EXCLUSIVE ('x'): no other claim of ANY mode may coexist`, `SHARED ('s'): coexists with other SHARED claims only`, `INTENT ('ix'): the HIERARCHICAL PARENT-SCOPE MARKER - hold ix on the parent while holding x on the child, so disjoint children proceed in parallel while a whole-unit writer is excluded`
+- responsibilities:
+  - EXCLUSIVE ('x'): no other claim of ANY mode may coexist
+  - SHARED ('s'): coexists with other SHARED claims only
+  - INTENT ('ix'): the HIERARCHICAL PARENT-SCOPE MARKER - hold ix on the parent while holding x on the child, so disjoint children proceed in parallel while a whole-unit writer is excluded
 - phases: `init`, `runtime`
 
 #### `ClaimCompatibility` (class)
@@ -3211,7 +3435,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility`
 - defined at: `src/melder/aether/aetheric_mediator/claim_mode.py:72`
 - role: The static compatibility matrix: may `requested` be granted on a scope already held under `held`?
-- responsibilities: `exclude EXCLUSIVE against everything, in both directions`, `permit SHARED with SHARED and INTENT with INTENT; DENY shared-vs-intent, matching the DevOps embargo manager exactly`, `never be instantiated - one ClassVar frozenset of permitted pairs plus two static predicates, so no Cleanable contract`
+- responsibilities:
+  - exclude EXCLUSIVE against everything, in both directions
+  - permit SHARED with SHARED and INTENT with INTENT; DENY shared-vs-intent, matching the DevOps embargo manager exactly
+  - never be instantiated - one ClassVar frozenset of permitted pairs plus two static predicates, so no Cleanable contract
 - phases: `init`, `runtime`
 - public methods: `is_exclusive`, `permits`
 
@@ -3244,7 +3471,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/claim_table.py:23`
 - extends: `Cleanable`
 - role: One reason an acquisition could not be granted - which scope, held by whom, in what mode.
-- responsibilities: `carry actionable blocking evidence out of a refused or timed-out acquisition`, `store the holder's RENDERED DESCRIPTION, never the live Identity - it takes the identity because that is what the caller has, and renders immediately`, `hold no lock: built under the table's condition, handed to exactly one caller, rendered and cleaned by that same caller, never shared`
+- responsibilities:
+  - carry actionable blocking evidence out of a refused or timed-out acquisition
+  - store the holder's RENDERED DESCRIPTION, never the live Identity - it takes the identity because that is what the caller has, and renders immediately
+  - hold no lock: built under the table's condition, handed to exactly one caller, rendered and cleaned by that same caller, never shared
 - owns_state: `_scope_key`, `_holder_description`, `_held_mode`, `_requested_mode`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `held_mode`, `holder_description`, `requested_mode`, `scope_key`
@@ -3255,7 +3485,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/claim_table.py:213`
 - extends: `Cleanable`
 - role: One granted claim on one scope key, internal to the table.
-- responsibilities: `record that one identity holds one scope in one mode for as long as the claim is held`, `retain the LIVE Identity rather than a rendered string, because release matches on it`, `hold no lock deliberately - every read, write and cleanup happens while the owning table holds its condition`
+- responsibilities:
+  - record that one identity holds one scope in one mode for as long as the claim is held
+  - retain the LIVE Identity rather than a rendered string, because release matches on it
+  - hold no lock deliberately - every read, write and cleanup happens while the owning table holds its condition
 - owns_state: `holder`, `mode`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -3266,7 +3499,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/claim_table.py:285`
 - extends: `Cleanable`
 - role: Atomic mode-aware scope-claim table: serialises structural work BY SCOPE rather than globally, so disjoint work runs in parallel and only true overlap waits.
-- responsibilities: `grant ALL requested scopes or NONE - no partial grant, so a caller can never hold half a set and believe it is isolated`, `treat re-entry as a NO-OP, not an upgrade: a holder re-claiming a scope keeps its EXISTING mode`, `wake every waiter BEFORE dropping state on cleanup, so parked threads observe a cleaned table and exit rather than hang`
+- responsibilities:
+  - grant ALL requested scopes or NONE - no partial grant, so a caller can never hold half a set and believe it is isolated
+  - treat re-entry as a NO-OP, not an upgrade: a holder re-claiming a scope keeps its EXISTING mode
+  - wake every waiter BEFORE dropping state on cleanup, so parked threads observe a cleaned table and exit rather than hang
 - owns_state: `_claims`, `_condition`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire`, `cleanup`, `describe`, `held_scopes`, `release_holder`, `try_acquire`, `wait_for_change`
@@ -3312,7 +3548,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/identity.py:18`
 - extends: `Cleanable`
 - role: The immutable identity of one claimant - the pivot the whole plane turns on, since sessions are keyed per identity.
-- responsibilities: `name WHO holds or requests a claim, stably across a span, hashably enough to key a holder table, and legibly enough that a timeout message points at something actionable`, `compare and hash over (kind, identity_id) ONLY - label is presentation and deliberately excluded, so two references to one claimant compare equal`, `be CALLER-OWNED: the plane BORROWS it for the life of a transaction and never calls cleanup() on one`
+- responsibilities:
+  - name WHO holds or requests a claim, stably across a span, hashably enough to key a holder table, and legibly enough that a timeout message points at something actionable
+  - compare and hash over (kind, identity_id) ONLY - label is presentation and deliberately excluded, so two references to one claimant compare equal
+  - be CALLER-OWNED: the plane BORROWS it for the life of a transaction and never calls cleanup() on one
 - owns_state: `_kind`, `_identity_id`, `_label`, `_thread_ident`
 - phases: `runtime`
 - public methods: `cleanup`, `describe`, `identity_id`, `identity_key`, `kind`, `label`, `thread_ident`
@@ -3352,7 +3591,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/information_registry.py:27`
 - extends: `Cleanable`
 - role: One 'this region was last changed by this reporter at this time' baseline.
-- responsibilities: `stay immutable and be REPLACED WHOLESALE on each report rather than mutated, so a reader holding one never observes it change underneath`, `carry no lock - every mutation of the map holding these happens under the registry's RLock`
+- responsibilities:
+  - stay immutable and be REPLACED WHOLESALE on each report rather than mutated, so a reader holding one never observes it change underneath
+  - carry no lock - every mutation of the map holding these happens under the registry's RLock
 - owns_state: `fact_family`, `region`, `reporter`, `reported_at`
 - phases: `runtime`, `cleanup`
 - public methods: `age_seconds`, `cleanup`, `describe`
@@ -3363,7 +3604,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/information_registry.py:157`
 - extends: `Cleanable`
 - role: The reporting surface: answers 'what is happening right now', 'has this region changed since I last looked', and 'is this subsystem running' - all without touching live subsystem state.
-- responsibilities: `stay CALLER-PAID - nothing in the runtime reports automatically, which keeps the admission hot path free of reporting cost`, `return DETACHED results: values and strings, never a live StagedTransaction or Identity`, `copy under its RLock so a caller never holds a reference into live registry state`, `hold PARTICIPATION AS A STATE, not a presence: one ParticipationState per subsystem, so 'never wired in' and 'switched off on purpose' stay different answers`, `be the ONLY store of that fact - Mediator's roster verbs delegate here rather than keeping a second map, which is how the two previously drifted apart`
+- responsibilities:
+  - stay CALLER-PAID - nothing in the runtime reports automatically, which keeps the admission hot path free of reporting cost
+  - return DETACHED results: values and strings, never a live StagedTransaction or Identity
+  - copy under its RLock so a caller never holds a reference into live registry state
+  - hold PARTICIPATION AS A STATE, not a presence: one ParticipationState per subsystem, so 'never wired in' and 'switched off on purpose' stay different answers
+  - be the ONLY store of that fact - Mediator's roster verbs delegate here rather than keeping a second map, which is how the two previously drifted apart
 - owns_state: `_lock`, `_facts`, `_active`, `_participants`
 - phases: `runtime`, `cleanup`
 - public methods: `activity_by_scope`, `activity_by_submitter`, `activity_by_type`, `announce_participant`, `cleanup`, `describe`, `describe_participants`, `forget_participant`, `get_fact`, `is_participating`, `known_subsystems`, `participant_conditions` (+8 more)
@@ -3407,7 +3653,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/mediator.py:46`
 - extends: `Cleanable`
 - role: The plane root Aether holds: the single front door every top-level structural transaction passes through.
-- responsibilities: `own and clean the claim table, admission orchestrator, information registry and strategy builder, in reverse construction order - the table LAST, because its cleanup wakes anyone parked in wait_for_change`, `key sessions PER IDENTITY, PER THREAD: same identity re-entering JOINS (depth increments); a different identity on the same thread opens its own root`, `import stdlib and melder.utilities ONLY - never melder.aether, which is what lets it exist before any frame can`, `expose the roster and the emission gate - register_participant, has_participant, participants, is_participating, participation_state - all DELEGATING to the information registry, which owns the single participant store`
+- responsibilities:
+  - own and clean the claim table, admission orchestrator, information registry and strategy builder, in reverse construction order - the table LAST, because its cleanup wakes anyone parked in wait_for_change
+  - key sessions PER IDENTITY, PER THREAD: same identity re-entering JOINS (depth increments); a different identity on the same thread opens its own root
+  - import stdlib and melder.utilities ONLY - never melder.aether, which is what lets it exist before any frame can
+  - expose the roster and the emission gate - register_participant, has_participant, participants, is_participating, participation_state - all DELEGATING to the information registry, which owns the single participant store
 - owns_state: `_lock`, `_claim_table`, `_orchestrator`, `_information_registry`, `_strategy_builder`, `_max_wait_seconds`, `_thread_local`, `_sessions_by_request_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `begin`, `cleanup`, `commit`, `describe`, `fail`, `get_active_request`, `get_session_by_request_id`, `get_session_for_identity`, `has_active_session`, `has_any_active_session`, `has_participant`, `is_participating` (+8 more)
@@ -3455,7 +3705,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/participation.py:29`
 - markers: `StrEnum`
 - role: The state a subsystem is in from the plane's point of view - and the single place the rule 'emit only when active' is written down as code rather than prose.
-- responsibilities: `REGISTERED: announced through Mediator.register_participant; known to the plane, running nothing, declaring nothing`, `CONFIGURED: a SUBSYSTEM_CONFIGURE commit; conditions recorded and trustworthy, still not running`, `ACTIVE: a SUBSYSTEM_ACTIVATE commit; THE ONLY STATE FOR WHICH `emits` IS TRUE`, `INACTIVE: a SUBSYSTEM_DEACTIVATE commit; it ran and stopped, and KEEPS its last-known conditions because every subsystem `deactivate()` promises to stop without discarding configuration`, `NO transitional member exists: the edges run inside apply_commit_delta while the transaction still holds `subsystem:<name>` EXCLUSIVE, so the claim IS the transitional marker`
+- responsibilities:
+  - REGISTERED: announced through Mediator.register_participant; known to the plane, running nothing, declaring nothing
+  - CONFIGURED: a SUBSYSTEM_CONFIGURE commit; conditions recorded and trustworthy, still not running
+  - ACTIVE: a SUBSYSTEM_ACTIVATE commit; THE ONLY STATE FOR WHICH `emits` IS TRUE
+  - INACTIVE: a SUBSYSTEM_DEACTIVATE commit; it ran and stopped, and KEEPS its last-known conditions because every subsystem `deactivate()` promises to stop without discarding configuration
+  - NO transitional member exists: the edges run inside apply_commit_delta while the transaction still holds `subsystem:<name>` EXCLUSIVE, so the claim IS the transitional marker
 - phases: `runtime`
 - public methods: `emits`
 
@@ -3464,7 +3719,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_mediator.participation.ParticipationConditions`
 - defined at: `src/melder/aether/aetheric_mediator/participation.py:130`
 - role: The declared key set for subsystem basic conditions, owned by the PLANE rather than by the subsystems, plus the pure selector that filters caller-controlled metadata down to it.
-- responsibilities: `Declare the five keys a subsystem may announce: parallel_enabled, worker_count, drain_timeout_seconds, max_active_units, policy_version`, `DROP undeclared keys silently rather than refusing - metadata legitimately carries routing values this vocabulary has no opinion about`, `Stop a subsystem widening its own registry row; without a declared set the store is unbounded scratch space every reader must defend against`
+- responsibilities:
+  - Declare the five keys a subsystem may announce: parallel_enabled, worker_count, drain_timeout_seconds, max_active_units, policy_version
+  - DROP undeclared keys silently rather than refusing - metadata legitimately carries routing values this vocabulary has no opinion about
+  - Stop a subsystem widening its own registry row; without a declared set the store is unbounded scratch space every reader must defend against
 - phases: `runtime`
 - public methods: `select`
 
@@ -3491,7 +3749,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:16`
 - markers: `StrEnum`
 - role: The CLOSED vocabulary of scope-key namespaces - the levels this plane can isolate at, as a type rather than loose strings.
-- responsibilities: `name each isolation level once, in one place`, `stay closed: a caller reaching for a non-member prefix is the signal a level is MISSING, not an invitation to format a string by hand`
+- responsibilities:
+  - name each isolation level once, in one place
+  - stay closed: a caller reaching for a non-member prefix is the signal a level is MISSING, not an invitation to format a string by hand
 - phases: `init`, `runtime`
 
 #### `ScopeKey` (class)
@@ -3499,7 +3759,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_mediator.scope_keys.ScopeKey`
 - defined at: `src/melder/aether/aetheric_mediator/scope_keys.py:56`
 - role: The only sanctioned way to build a scope key, because a typo in a hand-written key does not fail loudly - it silently claims the wrong thing.
-- responsibilities: `build FLAT, NAMESPACED keys - one string space with a subsystem or level prefix, keeping acquisition O(requested scopes) dict operations`, `express the HIERARCHY BY MODE, NOT BY KEY SHAPE: 'world' is the parent of every frame, but that relationship lives in the claim mode`, `never be instantiated - a namespace of static builders over ScopePrefix, holding no instance state`
+- responsibilities:
+  - build FLAT, NAMESPACED keys - one string space with a subsystem or level prefix, keeping acquisition O(requested scopes) dict operations
+  - express the HIERARCHY BY MODE, NOT BY KEY SHAPE: 'world' is the parent of every frame, but that relationship lives in the claim mode
+  - never be instantiated - a namespace of static builders over ScopePrefix, holding no instance state
 - phases: `init`, `runtime`
 - public methods: `frame`, `is_world`, `subsystem`, `world`
 
@@ -3532,7 +3795,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/staged_transaction.py:21`
 - extends: `Cleanable`
 - role: The immutable post-admission record - the inverse of a request: a request is what was ASKED FOR, this is what was GRANTED.
-- responsibilities: `give commit-time work a fixed detached view of what was admitted, without handing it the live session or the claim table`, `stay value-only, carrying metadata already validated through MetadataPolicy and re-copied rather than aliased`, `be cleaned by ONE owner at ONE moment: TransactionSession.cleanup()`
+- responsibilities:
+  - give commit-time work a fixed detached view of what was admitted, without handing it the live session or the claim table
+  - stay value-only, carrying metadata already validated through MetadataPolicy and re-copied rather than aliased
+  - be cleaned by ONE owner at ONE moment: TransactionSession.cleanup()
 - owns_state: `_request_id`, `_transaction_type`, `_submitter_kind`, `_submitter_id`, `_admitted_at`, `_granted_scopes`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `admitted_at`, `cleanup`, `describe`, `from_request`, `granted_scopes`, `metadata`, `regions`, `request_id`, `submitter_id`, `submitter_kind`, `transaction_type`
@@ -3573,7 +3839,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/agent_repair_transaction_strategy.py:27`
 - extends: `TransactionStrategy`
 - role: Claim exactly the scopes an agent names while mending a half-built world.
-- responsibilities: `Claim `world` ix plus each supplied scope x; drop malformed entries and deduplicate rather than refusing`, `Refuse to iterate a bare string, which would claim one scope per character`, `Take `world` EXCLUSIVE when no usable scope is given: unbounded reach into state already known to be broken has no smaller honest claim`, `EXEMPT from the frame-jurisdiction sweep by contract - a caller passing frame-internal keys is asking the wrong plane`
+- responsibilities:
+  - Claim `world` ix plus each supplied scope x; drop malformed entries and deduplicate rather than refusing
+  - Refuse to iterate a bare string, which would claim one scope per character
+  - Take `world` EXCLUSIVE when no usable scope is given: unbounded reach into state already known to be broken has no smaller honest claim
+  - EXEMPT from the frame-jurisdiction sweep by contract - a caller passing frame-internal keys is asking the wrong plane
 - phases: `init`, `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -3607,7 +3877,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/checkpoint_load_transaction_strategy.py:26`
 - extends: `TransactionStrategy`
 - role: Claim `world` EXCLUSIVE for the length of a checkpoint replay.
-- responsibilities: `Take `world` x and nothing else: a replay rebuilds the world, so there is no smaller honest claim`, `Exclude every other family by construction, including the world INTENT marker the frame-scoped families hold`, `Make LoadGate the DEGENERATE CASE of the claim vocabulary rather than a separate mechanism`
+- responsibilities:
+  - Take `world` x and nothing else: a replay rebuilds the world, so there is no smaller honest claim
+  - Exclude every other family by construction, including the world INTENT marker the frame-scoped families hold
+  - Make LoadGate the DEGENERATE CASE of the claim vocabulary rather than a separate mechanism
 - phases: `init`, `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -3641,7 +3914,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py:25`
 - extends: `TransactionStrategy`
 - role: Claim one frame exclusively under a world intent marker, so disjoint frames restore in parallel.
-- responsibilities: `Claim `world` ix plus `frame:<target>` x when the target is known`, `Degrade to `world` x when it is not: unknown reach takes the largest claim, because a guessed frame isolates the wrong surface`, `Formations are SINGLE-FRAME by law, which is what makes the narrow claim defensible rather than optimistic`
+- responsibilities:
+  - Claim `world` ix plus `frame:<target>` x when the target is known
+  - Degrade to `world` x when it is not: unknown reach takes the largest claim, because a guessed frame isolates the wrong surface
+  - Formations are SINGLE-FRAME by law, which is what makes the narrow claim defensible rather than optimistic
 - phases: `init`, `runtime`
 - public methods: `build_start_plan`, `on_end`, `on_start`
 
@@ -3675,7 +3951,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py:31`
 - extends: `TransactionStrategy`
 - role: Claim one frame exclusively while it is brought into existence.
-- responsibilities: `Claim `world` ix plus `frame:<name>` x - EXCLUSIVE because creation is a whole-unit write with no piece-work beneath it`, `Give frame creation the admission it never had: the only prior authority was the frame-local mediator, owned BY the frame being created`, `Aether opens this ONLY when the calling thread holds no plane session; re-entrancy, not contention, is the hazard here`, `Does NOT span the posture call that follows - a caller needing atomicity across both must hold ONE session`
+- responsibilities:
+  - Claim `world` ix plus `frame:<name>` x - EXCLUSIVE because creation is a whole-unit write with no piece-work beneath it
+  - Give frame creation the admission it never had: the only prior authority was the frame-local mediator, owned BY the frame being created
+  - Aether opens this ONLY when the calling thread holds no plane session; re-entrancy, not contention, is the hazard here
+  - Does NOT span the posture call that follows - a caller needing atomicity across both must hold ONE session
 - phases: `init`, `runtime`
 - public methods: `build_start_plan`
 
@@ -3709,7 +3989,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py:27`
 - extends: `TransactionStrategy`
 - role: Mark one frame as under piece-work for the duration of a graft, using intent rather than exclusive.
-- responsibilities: `Claim `world` ix plus `frame:<host>` ix so parallel grafts into different books coexist`, `Exclude the whole-frame and whole-world operations that would destroy a graft in flight`, `DELIBERATELY does not name spellbook, conduit or spell_index keys - those are inside a frame and belong to its own ChangeControlManager`, `STATED CONSEQUENCE: two grafts into the SAME host book both admit. This makes the graft visible, not safe`
+- responsibilities:
+  - Claim `world` ix plus `frame:<host>` ix so parallel grafts into different books coexist
+  - Exclude the whole-frame and whole-world operations that would destroy a graft in flight
+  - DELIBERATELY does not name spellbook, conduit or spell_index keys - those are inside a frame and belong to its own ChangeControlManager
+  - STATED CONSEQUENCE: two grafts into the SAME host book both admit. This makes the graft visible, not safe
 - phases: `init`, `runtime`
 - public methods: `build_start_plan`
 
@@ -3743,7 +4027,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py:32`
 - extends: `TransactionStrategy`
 - role: Claim one subsystem exclusively for its activation, and write the one state that emits.
-- responsibilities: `Claim `world` ix plus `subsystem:<name>` x - IDENTICAL to configure and deactivate, because all three write one surface`, `apply_commit_delta moves the row to ParticipationState.ACTIVE; nothing else in the plane writes it`, `Pass conditions ONLY when the activation announced some, so a prior CONFIGURE is not erased at the moment the subsystem starts`, `Named ACTIVATE, not ENABLE, because all three subsystem roots expose activate(configuration=None)`
+- responsibilities:
+  - Claim `world` ix plus `subsystem:<name>` x - IDENTICAL to configure and deactivate, because all three write one surface
+  - apply_commit_delta moves the row to ParticipationState.ACTIVE; nothing else in the plane writes it
+  - Pass conditions ONLY when the activation announced some, so a prior CONFIGURE is not erased at the moment the subsystem starts
+  - Named ACTIVATE, not ENABLE, because all three subsystem roots expose activate(configuration=None)
 - phases: `init`, `runtime`
 - public methods: `apply_commit_delta`, `build_start_plan`
 
@@ -3777,7 +4065,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py:31`
 - extends: `TransactionStrategy`
 - role: Claim one subsystem exclusively while its basic conditions are recorded.
-- responsibilities: `Claim `world` ix plus `subsystem:<name>` x; EXCLUSIVE even though nothing runs, because everything else reads what this writes`, `apply_commit_delta records the declared conditions and lands the row at CONFIGURED`, `PRESERVES an already-ACTIVE state rather than overwriting it - reconfiguring a running subsystem does not turn it off`, `THE PLANE'S ONLY READ-BEFORE-WRITE, safe solely because it happens inside one registry lock AND under this family's exclusive claim`, `Not invented for symmetry: all three roots document activate(configuration) as 'a convenience that configures first'`
+- responsibilities:
+  - Claim `world` ix plus `subsystem:<name>` x; EXCLUSIVE even though nothing runs, because everything else reads what this writes
+  - apply_commit_delta records the declared conditions and lands the row at CONFIGURED
+  - PRESERVES an already-ACTIVE state rather than overwriting it - reconfiguring a running subsystem does not turn it off
+  - THE PLANE'S ONLY READ-BEFORE-WRITE, safe solely because it happens inside one registry lock AND under this family's exclusive claim
+  - Not invented for symmetry: all three roots document activate(configuration) as 'a convenience that configures first'
 - phases: `init`, `runtime`
 - public methods: `apply_commit_delta`, `build_start_plan`
 
@@ -3811,7 +4104,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py:28`
 - extends: `TransactionStrategy`
 - role: Claim one subsystem exclusively for its deactivation, and record that it ran and stopped.
-- responsibilities: `Claim `world` ix plus `subsystem:<name>` x, identical to activate and configure`, `apply_commit_delta moves the row to INACTIVE and RETAINS the conditions - deleting the row made a subsystem switched off deliberately indistinguishable from one nobody wired in`, `Retention is safe ONLY because the state guards it: is_participating reads False for INACTIVE`, `THE CLAIM EXCLUDES TRANSACTIONS; IT DOES NOT QUIESCE. Work already inside the subsystem never asked the plane for anything. Pair it with the subsystem's own drain`
+- responsibilities:
+  - Claim `world` ix plus `subsystem:<name>` x, identical to activate and configure
+  - apply_commit_delta moves the row to INACTIVE and RETAINS the conditions - deleting the row made a subsystem switched off deliberately indistinguishable from one nobody wired in
+  - Retention is safe ONLY because the state guards it: is_participating reads False for INACTIVE
+  - THE CLAIM EXCLUDES TRANSACTIONS; IT DOES NOT QUIESCE. Work already inside the subsystem never asked the plane for anything. Pair it with the subsystem's own drain
 - phases: `init`, `runtime`
 - public methods: `apply_commit_delta`, `build_start_plan`
 
@@ -3844,7 +4141,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/strategy_builder.py:21`
 - extends: `Cleanable`
 - role: The registry resolving a transaction type to its strategy class - the one way to answer 'who decides what this transaction claims'.
-- responsibilities: `make a MISSING answer a loud early failure rather than a silent default`, `store the type object itself, never an instance`, `let re-registration REPLACE the previous class deliberately, so a subsystem can override a default - silently keeping the first registration would be the worse behaviour`, `SELF-SEED at construction with the plane's own family for every vocabulary member, so missing_types() is empty on a fresh registry and a gap is a build error rather than a runtime surprise`, `import each family module DIRECTLY - there is no strategies/__init__.py, because every melder subpackage is a PEP 420 namespace package and the repo keeps exactly ONE __init__.py`
+- responsibilities:
+  - make a MISSING answer a loud early failure rather than a silent default
+  - store the type object itself, never an instance
+  - let re-registration REPLACE the previous class deliberately, so a subsystem can override a default - silently keeping the first registration would be the worse behaviour
+  - SELF-SEED at construction with the plane's own family for every vocabulary member, so missing_types() is empty on a fresh registry and a gap is a build error rather than a runtime surprise
+  - import each family module DIRECTLY - there is no strategies/__init__.py, because every melder subpackage is a PEP 420 namespace package and the repo keeps exactly ONE __init__.py
 - owns_state: `_lock`, `_strategies`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `is_registered`, `missing_types`, `register`, `resolve`
@@ -3885,7 +4187,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.aetheric_mediator.transaction_request.MetadataPolicy`
 - defined at: `src/melder/aether/aetheric_mediator/transaction_request.py:22`
 - role: The value-only guard that ENFORCES, rather than documents, the rule that a frozen transaction record carries values only.
-- responsibilities: `permit None, bool, int, float, str (covering StrEnum members), and tuple/list/dict recursively composed of those with str keys`, `reject everything else LOUDLY at the construction boundary, so a record stays safe to log, ship and retain after the runtime objects it describes are gone`, `never be instantiated - two static methods over caller-supplied mappings`
+- responsibilities:
+  - permit None, bool, int, float, str (covering StrEnum members), and tuple/list/dict recursively composed of those with str keys
+  - reject everything else LOUDLY at the construction boundary, so a record stays safe to log, ship and retain after the runtime objects it describes are gone
+  - never be instantiated - two static methods over caller-supplied mappings
 - phases: `runtime`
 - public methods: `empty`, `normalize`
 
@@ -3895,7 +4200,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_request.py:172`
 - extends: `Cleanable`
 - role: The immutable pre-admission record, FROZEN BEFORE ADMISSION so acquisition reads a fixed snapshot.
-- responsibilities: `state what is being done, by whom, over which scopes, in which modes`, `stay frozen so the same request cannot admit differently depending on read timing - this is what makes admission deterministic and replayable`, `store the submitter as its two identity STRINGS, holding no live references`, `be cleaned by ONE owner at ONE moment: TransactionSession.cleanup()`
+- responsibilities:
+  - state what is being done, by whom, over which scopes, in which modes
+  - stay frozen so the same request cannot admit differently depending on read timing - this is what makes admission deterministic and replayable
+  - store the submitter as its two identity STRINGS, holding no live references
+  - be cleaned by ONE owner at ONE moment: TransactionSession.cleanup()
 - owns_state: `_request_id`, `_transaction_type`, `_submitter_kind`, `_submitter_id`, `_created_at`, `_scope_claims`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `build`, `claim_map`, `cleanup`, `created_at`, `describe`, `metadata`, `request_id`, `scope_claims`, `scope_keys`, `submitter_id`, `submitter_kind`, `transaction_type`
@@ -3940,7 +4249,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:25`
 - markers: `StrEnum`
 - role: What a transaction does to the world when it fails - an EXPLICIT per-transaction choice rather than an accident of whichever path raised.
-- responsibilities: `UNWIND: run registered rollback actions newest-first, then raise; the world is returned toward its prior shape`, `LEAVE_BROKEN: run NO rollback actions, record precisely what was left in place, and mark the session BROKEN - the half-built world is a WORK SURFACE for a repairing agent, not debris`
+- responsibilities:
+  - UNWIND: run registered rollback actions newest-first, then raise; the world is returned toward its prior shape
+  - LEAVE_BROKEN: run NO rollback actions, record precisely what was left in place, and mark the session BROKEN - the half-built world is a WORK SURFACE for a repairing agent, not debris
 - phases: `runtime`
 
 #### `SessionStatus` (enum)
@@ -3949,7 +4260,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:64`
 - markers: `StrEnum`
 - role: The lifecycle state of one session, in which BROKEN is a DISTINCT TERMINAL STATE and deliberately not a flavour of ABORTED.
-- responsibilities: `separate aborted (world returned toward its prior shape) from broken (world knowingly left mid-flight for repair)`, `preserve the distinction an agent needs to know whether there is anything to go and fix`
+- responsibilities:
+  - separate aborted (world returned toward its prior shape) from broken (world knowingly left mid-flight for repair)
+  - preserve the distinction an agent needs to know whether there is anything to go and fix
 - phases: `runtime`
 
 #### `_RollbackAction` (class)
@@ -3958,7 +4271,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:93`
 - extends: `Cleanable`
 - role: One registered inverse paired with a description - the owner of the single most dangerous reference in this package, a caller-supplied closure.
-- responsibilities: `make the DESCRIPTION mandatory: under LEAVE_BROKEN the action is never invoked, so the description is the ONLY record of what was left in place, and an undescribed action is invisible residue`, `release the closure at an exact chosen moment via cleanup`, `hold no lock - built and cleaned only while the owning session's lock is held`
+- responsibilities:
+  - make the DESCRIPTION mandatory: under LEAVE_BROKEN the action is never invoked, so the description is the ONLY record of what was left in place, and an undescribed action is invisible residue
+  - release the closure at an exact chosen moment via cleanup
+  - hold no lock - built and cleaned only while the owning session's lock is held
 - owns_state: `action`, `description`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -3969,7 +4285,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_session.py:180`
 - extends: `Cleanable`
 - role: One live transaction span owned by exactly one root thread: everything true about a transaction between admission and its terminal state.
-- responsibilities: `fail a FOREIGN-thread join FAST, naming the owning thread, rather than waiting - a cross-thread re-begin is a caller bug and blocking would turn it into a hang`, `depth-count same-thread joins so nested work by one actor is safe`, `NOT own or reference the claim table - releasing claims belongs to the orchestrator`, `drop the rollback action list on cleanup WITHOUT running it: a session being cleaned is not a session being aborted, and quietly firing inverses during teardown would be an invisible mutation`, `carry the two-outcome policy: UNWIND runs the inverses, LEAVE_BROKEN records residue and stops, and BROKEN is its own terminal status rather than a flavour of ABORTED`, `latch abort-only STICKILY, first writer wins, checked inside mark_committing - a span that has learned it cannot commit must not be able to unlearn it`, `retain an UnwindConflictError when an inverse itself fails, PURELY ADDITIVELY: the status still ends ABORTED, because a partial unwind did move toward the prior shape`
+- responsibilities:
+  - fail a FOREIGN-thread join FAST, naming the owning thread, rather than waiting - a cross-thread re-begin is a caller bug and blocking would turn it into a hang
+  - depth-count same-thread joins so nested work by one actor is safe
+  - NOT own or reference the claim table - releasing claims belongs to the orchestrator
+  - drop the rollback action list on cleanup WITHOUT running it: a session being cleaned is not a session being aborted, and quietly firing inverses during teardown would be an invisible mutation
+  - carry the two-outcome policy: UNWIND runs the inverses, LEAVE_BROKEN records residue and stops, and BROKEN is its own terminal status rather than a flavour of ABORTED
+  - latch abort-only STICKILY, first writer wins, checked inside mark_committing - a span that has learned it cannot commit must not be able to unlearn it
+  - retain an UnwindConflictError when an inverse itself fails, PURELY ADDITIVELY: the status still ends ABORTED, because a partial unwind did move toward the prior shape
 - owns_state: `_lock`, `_request`, `_staged`, `_holder`, `_owner_thread_id`, `_depth`, `_status`, `_failure_reason`, `_outcome_policy`, `_rollback_actions`, `_unwind_failures`, `_leave_broken_residue`, `_abort_only_reason`, `_unwind_conflict`
 - phases: `runtime`, `cleanup`
 - public methods: `abort_only_reason`, `cleanup`, `depth`, `describe`, `discard_inverses`, `fail`, `failure_reason`, `holder`, `is_abort_only`, `join`, `leave`, `leave_broken_residue` (+9 more)
@@ -4013,7 +4336,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_strategy.py:28`
 - markers: `ABC`
 - role: The dispatch contract every transaction family implements, and where SCOPE PROPORTIONALITY is decided.
-- responsibilities: `define what a transaction of a given type CLAIMS, plus its local work at start, end and commit`, `keep build_start_plan PURE - it reads identity and metadata and returns a claim map, mutating nothing`, `be REGISTERED AS A CLASS, never an instance: every hook is static or class level, so there is no per-strategy state to guard and concurrency lives entirely in the mediator`, `run apply_commit_delta AT COMMIT WHILE CLAIMS ARE STILL HELD - that invariant is what makes any registry write it performs race-free, and it is where families that claim identically differ from one another`, `DEFAULT on_start and on_end to nothing rather than making them abstract, so that an override MEANS SOMETHING: most families have no work there, and forcing empty overrides buries the few that freeze real state`, `keep build_start_plan ABSTRACT for the opposite reason - there is no defensible default claim set, and a guessed one is exactly how isolation is lost quietly`
+- responsibilities:
+  - define what a transaction of a given type CLAIMS, plus its local work at start, end and commit
+  - keep build_start_plan PURE - it reads identity and metadata and returns a claim map, mutating nothing
+  - be REGISTERED AS A CLASS, never an instance: every hook is static or class level, so there is no per-strategy state to guard and concurrency lives entirely in the mediator
+  - run apply_commit_delta AT COMMIT WHILE CLAIMS ARE STILL HELD - that invariant is what makes any registry write it performs race-free, and it is where families that claim identically differ from one another
+  - DEFAULT on_start and on_end to nothing rather than making them abstract, so that an override MEANS SOMETHING: most families have no work there, and forcing empty overrides buries the few that freeze real state
+  - keep build_start_plan ABSTRACT for the opposite reason - there is no defensible default claim set, and a guessed one is exactly how isolation is lost quietly
 - phases: `runtime`
 - public methods: `apply_commit_delta`, `build_start_plan`, `on_end`, `on_start`
 
@@ -4040,7 +4369,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/transaction_type.py:15`
 - markers: `StrEnum`
 - role: The CLOSED set of top-level operations the plane admits, so admission, dispatch, activity indexes and logs all key on one stable vocabulary.
-- responsibilities: `name every structural operation that can claim scopes at world level`, `stay closed: wanting to pass a non-member string is the signal a STRATEGY is missing, not a reason to widen the type`, `keep values stable - they travel into request payloads, admission evidence and logs`
+- responsibilities:
+  - name every structural operation that can claim scopes at world level
+  - stay closed: wanting to pass a non-member string is the signal a STRATEGY is missing, not a reason to widen the type
+  - keep values stable - they travel into request payloads, admission evidence and logs
 - phases: `init`, `runtime`
 
 <!-- END FILE: src/melder/aether/aetheric_mediator/transaction_type.py -->
@@ -4067,7 +4399,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/aetheric_mediator/unwind_conflict_error.py:20`
 - markers: `RuntimeError`
 - role: Raised when a rollback action itself fails, so 'we could not put it back' is recorded as evidence instead of vanishing inside the failure path.
-- responsibilities: `Carry the reason an inverse could not run, and be retained on the session as `unwind_conflict``, `LIVES IN THE PLANE, NOT `melder.utilities`, because test_plane_depends_on_nothing_but_utilities asserts exactly ONE external dependency`, `Recording it is PURELY ADDITIVE: a partial unwind still ends ABORTED, because ABORTED means 'moved toward the prior shape' and a partial unwind did exactly that`
+- responsibilities:
+  - Carry the reason an inverse could not run, and be retained on the session as `unwind_conflict`
+  - LIVES IN THE PLANE, NOT `melder.utilities`, because test_plane_depends_on_nothing_but_utilities asserts exactly ONE external dependency
+  - Recording it is PURELY ADDITIVE: a partial unwind still ends ABORTED, because ABORTED means 'moved toward the prior shape' and a partial unwind did exactly that
 - phases: `runtime`
 - public methods: `describe`, `failed`, `reason`, `request_id`, `unwound`
 
@@ -4087,7 +4422,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit`
 - defined at: `src/melder/aether/conduit/conduit.py:1`
 - role: Runtime scope, execution boundary and contract-aware access surface for one branch of the graph.
-- responsibilities: `own creations, meld, ward, gate and pools for its scope`, `create and upgrade lesser conduits`, `link and sever peers in dynamic mode`
+- responsibilities:
+  - own creations, meld, ward, gate and pools for its scope
+  - create and upgrade lesser conduits
+  - link and sever peers in dynamic mode
 - phases: `init`, `runtime`, `cleanup`
 
 #### `Conduit` (class)
@@ -4096,7 +4434,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit.py:78`
 - extends: `Cleanable`
 - role: Runtime execution scope for spell resolution.
-- responsibilities: `hosts meld execution`, `owns concrete conduit-facing runtime helpers and pooled spellspace state`, `creates lesser conduits`, `supports dynamic linking and ownership transfer in dynamic mode`
+- responsibilities:
+  - hosts meld execution
+  - owns concrete conduit-facing runtime helpers and pooled spellspace state
+  - creates lesser conduits
+  - supports dynamic linking and ownership transfer in dynamic mode
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits`, `cleanup_spell` (+58 more)
@@ -4169,7 +4511,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_cluster`
 - defined at: `src/melder/aether/conduit/conduit_cluster.py:1`
 - role: Frame-local membership group with leaderless spell sharing plus an optional elected-leader store.
-- responsibilities: `share cluster-scoped roots among members`, `elect a leader only for the optional team store`
+- responsibilities:
+  - share cluster-scoped roots among members
+  - elect a leader only for the optional team store
 - phases: `runtime`, `cleanup`
 
 #### `ConduitCluster` (class)
@@ -4178,7 +4522,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_cluster.py:26`
 - extends: `Cleanable`
 - role: Cluster-local conduit membership and shared-root manager.
-- responsibilities: `tracks conduit membership by cluster`, `tracks shareable root spell lineages per owner`, `coordinates automatic sharing and teardown between cluster members`
+- responsibilities:
+  - tracks conduit membership by cluster
+  - tracks shareable root spell lineages per owner
+  - coordinates automatic sharing and teardown between cluster members
 - owns_state: `members`, `shared_spells`, `auto_link_dependencies`, `_devops_identity`, `_devops_information_registry`
 - phases: `runtime`, `cleanup`
 - public methods: `add_and_share_spell`, `add_member`, `add_shared_spell`, `bind_elected_leader`, `bind_member`, `cleanup`, `describe`, `elect_leader`, `get_members`, `get_shared_spells`, `handle_join`, `handle_leave` (+13 more)
@@ -4220,7 +4567,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_pool`
 - defined at: `src/melder/aether/conduit/conduit_pool.py:1`
 - role: Root-conduit-owned elastic pool for reusable lesser conduits.
-- responsibilities: `keep lesser conduits alive for reuse rather than rebuilding them`
+- responsibilities:
+  - keep lesser conduits alive for reuse rather than rebuilding them
 - phases: `runtime`, `cleanup`
 
 #### `ConduitPool` (class)
@@ -4229,7 +4577,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_pool.py:9`
 - extends: `AbstractElasticPool`
 - role: Root-conduit-owned pool for reusable lesser conduit shells.
-- responsibilities: `retains reusable lesser conduit shells for one root conduit`, `returns one idle lesser shell when available`, `destroys overflow lesser conduits through the permanent cleanup lane`
+- responsibilities:
+  - retains reusable lesser conduit shells for one root conduit
+  - returns one idle lesser shell when available
+  - destroys overflow lesser conduits through the permanent cleanup lane
 - owns_state: `_root_conduit`, `_root_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `create_object`, `destroy_object`, `return_lesser_conduit`, `root_conduit`, `root_conduit_id`
@@ -4261,7 +4612,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_state.conduit_state`
 - defined at: `src/melder/aether/conduit/conduit_state/conduit_state.py:1`
 - role: Lifecycle vocabulary distinguishing normal, lesser, pooled and cleaned conduits.
-- responsibilities: `label which lifecycle position a conduit occupies`
+- responsibilities:
+  - label which lifecycle position a conduit occupies
 - phases: `runtime`
 
 #### `ConduitState` (enum)
@@ -4270,7 +4622,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_state/conduit_state.py:4`
 - markers: `Enum`
 - role: Lifecycle classification enum for conduit instances.
-- responsibilities: `distinguishes normal, lesser, and cleaned conduit states`
+- responsibilities:
+  - distinguishes normal, lesser, and cleaned conduit states
 - owns_state: `normal`, `lesser`, `cleaned`
 - phases: `runtime`
 - public methods: `resolve`
@@ -4297,7 +4650,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.conduit_ward`
 - defined at: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:1`
 - role: Control plane for one conduit: contracts, lineage links and policy.
-- responsibilities: `own the contract graph and inbound/outbound indexes`, `own and clean the lesser conduits it links`, `enforce same-frame linking`
+- responsibilities:
+  - own the contract graph and inbound/outbound indexes
+  - own and clean the lesser conduits it links
+  - enforce same-frame linking
 - phases: `runtime`, `cleanup`
 
 #### `ConduitWard` (class)
@@ -4306,7 +4662,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:54`
 - extends: `Cleanable`
 - role: Contract and lineage graph manager for a conduit.
-- responsibilities: `manages peer contracts`, `manages lesser-conduit lineage`, `applies policy to link creation and severing`, `updates contracted spell visibility`
+- responsibilities:
+  - manages peer contracts
+  - manages lesser-conduit lineage
+  - applies policy to link creation and severing
+  - updates contracted spell visibility
 - owns_state: `_contracts`, `_lesser_conduits`, `_parent_conduit`, `_root_conduit`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cleanup_all_lesser_conduits`, `root_conduit`
@@ -4357,7 +4717,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.contract.contract`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/contract.py:1`
 - role: Bidirectional contract between two wards, symmetric at the pair level.
-- responsibilities: `let each side keep its own detail projection`
+- responsibilities:
+  - let each side keep its own detail projection
 - phases: `runtime`, `cleanup`
 
 #### `Contract` (class)
@@ -4366,7 +4727,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/contract.py:19`
 - extends: `Cleanable`
 - role: Bidirectional contract between two conduit wards.
-- responsibilities: `stores symmetric spell detail maps for both wards`, `tracks the two participating ward endpoints`, `owns the detail entries recorded for that contract`
+- responsibilities:
+  - stores symmetric spell detail maps for both wards
+  - tracks the two participating ward endpoints
+  - owns the detail entries recorded for that contract
 - owns_state: `_ward_a`, `_ward_b`, `_details_a`, `_details_b`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -4411,7 +4775,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.contract.contract_types.contract_types`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py:1`
 - role: Perspective vocabulary for a Detail inside one side of a contract.
-- responsibilities: `distinguish which side of the pair a detail belongs to`
+- responsibilities:
+  - distinguish which side of the pair a detail belongs to
 - phases: `runtime`
 
 #### `ContractTypes` (enum)
@@ -4420,7 +4785,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/contract_types/contract_types.py:3`
 - markers: `Enum`
 - role: Perspective enum for contract detail entries.
-- responsibilities: `labels whether a contract detail is initiated or received from one ward perspective`
+- responsibilities:
+  - labels whether a contract detail is initiated or received from one ward perspective
 - owns_state: `initiated`, `received`
 - phases: `runtime`
 
@@ -4440,7 +4806,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.contract.detail_reason`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/detail_reason.py:1`
 - role: Vocabulary for why a contract detail exists.
-- responsibilities: `distinguish directly shared lineages from transitive dependency links`
+- responsibilities:
+  - distinguish directly shared lineages from transitive dependency links
 - phases: `runtime`
 
 #### `DetailReason` (enum)
@@ -4449,7 +4816,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/detail_reason.py:3`
 - markers: `Enum`
 - role: Reason enum for why one contract detail exists.
-- responsibilities: `labels root, dependency, manual, and other contract-detail causes`
+- responsibilities:
+  - labels root, dependency, manual, and other contract-detail causes
 - owns_state: `root`, `dependency`, `manual`, `other`
 - phases: `runtime`
 
@@ -4469,7 +4837,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.contract.details`
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/details.py:1`
 - role: Spell-level and index-level permission entries stored inside a contract.
-- responsibilities: `snapshot a version, or subscribe to a whole index`
+- responsibilities:
+  - snapshot a version, or subscribe to a whole index
 - phases: `runtime`
 
 #### `Detail` (class)
@@ -4478,7 +4847,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/details.py:14`
 - extends: `Cleanable`
 - role: Spell-level permission entry stored inside a contract.
-- responsibilities: `stores lineage identity, version-at-contract time, permission, and direction metadata`, `tracks source root spell ids for reversible dependency-linked sharing`
+- responsibilities:
+  - stores lineage identity, version-at-contract time, permission, and direction metadata
+  - tracks source root spell ids for reversible dependency-linked sharing
 - owns_state: `spell_index`, `spell_id`, `permissions`, `contract_type`, `reason`, `sources`
 - phases: `runtime`, `cleanup`
 - public methods: `add_source`, `cleanup`, `has_spell`, `remove_source`
@@ -4489,7 +4860,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/contract/details.py:245`
 - extends: `Cleanable`
 - role: Index-level entry subscribing a peer to a whole SpellIndex rather than one version.
-- responsibilities: `follow the index's selected member rather than pinning a version`
+- responsibilities:
+  - follow the index's selected member rather than pinning a version
 - phases: `runtime`
 - public methods: `add_source`, `cleanup`, `has_spell`, `index_id`, `remove_source`, `update_selected`
 
@@ -4532,7 +4904,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.permissions.permissions`
 - defined at: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py:1`
 - role: Capability ceiling vocabulary for a spell lineage across conduits.
-- responsibilities: `cap what a borrower may do with a shared lineage`
+- responsibilities:
+  - cap what a borrower may do with a shared lineage
 - phases: `runtime`
 
 #### `Permissions` (enum)
@@ -4541,7 +4914,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py:3`
 - markers: `Enum`
 - role: Capability ceiling enum for spell lineage exposure.
-- responsibilities: `labels read, create, and block capability levels for local and contracted lineages`
+- responsibilities:
+  - labels read, create, and block capability levels for local and contracted lineages
 - owns_state: `read`, `create`, `block`
 - phases: `runtime`
 
@@ -4561,7 +4935,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.policies.policies`
 - defined at: `src/melder/aether/conduit/conduit_ward/policies/policies.py:1`
 - role: Runtime policy vocabulary for conduit-to-conduit contracting.
-- responsibilities: `gate which links a ward may form in dynamic mode`
+- responsibilities:
+  - gate which links a ward may form in dynamic mode
 - phases: `runtime`
 
 #### `Policies` (enum)
@@ -4570,7 +4945,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/policies/policies.py:3`
 - markers: `Enum`
 - role: Runtime policy mode enum for conduit-to-conduit contracting.
-- responsibilities: `labels default, whitelist-all, block-all, inbound-only, and outbound-only contracting modes`
+- responsibilities:
+  - labels default, whitelist-all, block-all, inbound-only, and outbound-only contracting modes
 - owns_state: `default`, `whitelist_all`, `block_all`, `inbound_only`, `outbound_only`
 - phases: `runtime`
 
@@ -4590,7 +4966,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership`
 - defined at: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:1`
 - role: Control-plane helper migrating a spell lineage between conduit owners.
-- responsibilities: `preflight borrowers, dependencies and creations before flipping registries`, `mark lineage dirty and gated so revalidation follows`
+- responsibilities:
+  - preflight borrowers, dependencies and creations before flipping registries
+  - mark lineage dirty and gated so revalidation follows
 - phases: `runtime`
 
 #### `TransferOfOwnership` (class)
@@ -4599,7 +4977,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:40`
 - extends: `Cleanable`
 - role: Control-plane helper that migrates a spell lineage between conduit owners.
-- responsibilities: `preflights and executes dynamic spell ownership transfer between conduits`, `owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations`
+- responsibilities:
+  - preflights and executes dynamic spell ownership transfer between conduits
+  - owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations
 - owns_state: `source_conduit`, `target_conduit`, `spell`, `_preflight_summary`, `_change_control_manager`, `_incident_manager`, `_rollback_actions`
 - phases: `runtime`
 - public methods: `cleanup`, `execute`, `preflight`
@@ -4646,7 +5026,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.creations.cluster_creations`
 - defined at: `src/melder/aether/conduit/creations/cluster_creations.py:1`
 - role: Facade pointing at whichever conduit is the cluster's elected leader.
-- responsibilities: `give members one stable handle while the real store moves with the leader`
+- responsibilities:
+  - give members one stable handle while the real store moves with the leader
 - phases: `runtime`, `cleanup`
 
 #### `ClusterCreations` (class)
@@ -4655,7 +5036,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/creations/cluster_creations.py:9`
 - extends: `Cleanable`
 - role: Facade over the elected leader's store; references, never owns.
-- responsibilities: `refuse use while no leader is elected`, `never clean the store it points at`
+- responsibilities:
+  - refuse use while no leader is elected
+  - never clean the store it points at
 - phases: `runtime`, `cleanup`
 - public methods: `add_creation`, `bind`, `cleanup`, `get_creation`, `is_active`, `resolved_store`, `unbind`
 
@@ -4687,7 +5070,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.creations.conduit_creations`
 - defined at: `src/melder/aether/conduit/creations/conduit_creations.py:1`
 - role: Conduit and root specialization over the generic scoped store.
-- responsibilities: `add conduit-scoped extraction and restore for ownership transfer`
+- responsibilities:
+  - add conduit-scoped extraction and restore for ownership transfer
 - phases: `runtime`, `cleanup`
 
 #### `ConduitCreations` (class)
@@ -4696,7 +5080,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/creations/conduit_creations.py:8`
 - extends: `Creations`
 - role: Conduit/root specialization of the scoped live creation registry.
-- responsibilities: `collapses owner and scope identity onto one conduit id`, `extracts conduit-owned spell creations for transfer flows`, `restores conduit-owned spell creations after transfer or rollback`
+- responsibilities:
+  - collapses owner and scope identity onto one conduit id
+  - extracts conduit-owned spell creations for transfer flows
+  - restores conduit-owned spell creations after transfer or rollback
 - owns_state: `owner_conduit_id`, `id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `extract_spell_creations`, `restore_spell_creations`
@@ -4716,7 +5103,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `e1e90a575ddd8e431bb75db86b79a6098b617ab1502eb50c80444af4b914997c`
+- source_sha256: `f1336f35d0b1518b8a56d9f8d89fee9c0bef9d01b3614208ef2369869d2fb438`
 - nodes: 2
 
 ### Nodes
@@ -4726,7 +5113,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.creations.creations`
 - defined at: `src/melder/aether/conduit/creations/creations.py:1`
 - role: Generic scoped live-object store: the storage layer beneath Meld.
-- responsibilities: `hold live objects for exactly one scope`, `keep disposal metadata apart so resolution never pays for it`, `dispose in reverse creation order`
+- responsibilities:
+  - hold live objects for exactly one scope
+  - keep disposal metadata apart so resolution never pays for it
+  - traverse registry keys and many buckets in reverse while executing each established method list in order
 - phases: `runtime`, `cleanup`
 
 #### `Creations` (class)
@@ -4734,9 +5124,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.creations.creations.Creations`
 - defined at: `src/melder/aether/conduit/creations/creations.py:9`
 - extends: `Cleanable`
-- role: Conduit-owned live creation registry.
-- responsibilities: `stores live creation wrappers under spell and spellspace scopes`, `owns disposal stacks for tracked creations`, `supports extraction and restoration during ownership transfer`
-- owns_state: `_creations`, `_disposal_stack`, `_spellspace_disposal_stacks`, `_conduit`
+- role: Generic scoped live-object registry with separate disposal metadata.
+- responsibilities:
+  - stores raw objects in one scoped live registry and cleanup entries in a separate registry
+  - retains established Spell disposal lists through registration and in-memory transfer
+  - invokes methods in list order; the first method failure stops its object while other objects continue
+  - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
+- owns_state: `_creations`, `_disposable_creations`, `_owner_conduit_id`, `_id`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `reset_for_pool`, `reset_for_pool_unlocked`, `restore_spell_creations`
 
@@ -4771,7 +5165,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.conduit_meld`
 - defined at: `src/melder/aether/conduit/meld/conduit_meld.py:1`
 - role: Conduit-facing meld front door.
-- responsibilities: `own the caller-conduit creations store`, `refuse spellspace-scoped lineages the conduit door cannot satisfy`
+- responsibilities:
+  - own the caller-conduit creations store
+  - refuse spellspace-scoped lineages the conduit door cannot satisfy
 - phases: `runtime`
 
 #### `ConduitMeld` (class)
@@ -4780,7 +5176,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/conduit_meld.py:13`
 - extends: `Meld`
 - role: Conduit-facing meld front door.
-- responsibilities: `routes conduit-local unique_per_conduit and many storage through ConduitCreations`, `rejects spellspace-request spells on the conduit entry path`, `provides reuse-only and live-creation status probes over conduit-scoped storage`
+- responsibilities:
+  - routes conduit-local unique_per_conduit and many storage through ConduitCreations
+  - rejects spellspace-request spells on the conduit entry path
+  - provides reuse-only and live-creation status probes over conduit-scoped storage
 - owns_state: `_creations`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`
@@ -4819,7 +5218,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.contracts.spell_contract`
 - defined at: `src/melder/aether/conduit/meld/contracts/spell_contract.py:1`
 - role: Late-binding socket satisfied by conduit linking rather than local resolution.
-- responsibilities: `declare a dependency a link will supply later`
+- responsibilities:
+  - declare a dependency a link will supply later
 - phases: `validation`, `runtime`
 
 #### `SpellContract` (class)
@@ -4828,7 +5228,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/contracts/spell_contract.py:10`
 - extends: `Cleanable`
 - role: Declarative late-binding contract socket descriptor.
-- responsibilities: `describes cross-conduit dependency identity and optional override payload`, `marks late-bound contract holes without performing linking or resolution itself`
+- responsibilities:
+  - describes cross-conduit dependency identity and optional override payload
+  - marks late-bound contract holes without performing linking or resolution itself
 - owns_state: `spell`, `spellframe`, `binding_name`, `spell_override`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `canonical_key`, `cleanup`, `lookup_triplet`, `spell_key`
@@ -4861,7 +5263,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.contracts.spell_map`
 - defined at: `src/melder/aether/conduit/meld/contracts/spell_map.py:1`
 - role: Declarative DI descriptor for ordinary spellbook-local resolution.
-- responsibilities: `express explicit spell / spellframe / binding intent`, `carry optional override payloads`
+- responsibilities:
+  - express explicit spell / spellframe / binding intent
+  - carry optional override payloads
 - phases: `validation`, `runtime`
 
 #### `SpellMap` (class)
@@ -4870,7 +5274,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/contracts/spell_map.py:10`
 - extends: `Cleanable`
 - role: Declarative local DI descriptor.
-- responsibilities: `describes normal spellbook-local DI identity and optional override payload`, `lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking`
+- responsibilities:
+  - describes normal spellbook-local DI identity and optional override payload
+  - lets SpellCompiler and Meld resolve ordinary in-graph dependencies without late conduit linking
 - owns_state: `spell`, `spellframe`, `binding_name`, `spell_override`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `canonical_key`, `cleanup`, `lookup_triplet`, `spell_key`
@@ -4903,7 +5309,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.creation_context.creation_context`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context.py:1`
 - role: Spell-bound executor context running phase-11 doors under the dynamic gate.
-- responsibilities: `dispatch the prebuilt no-overrides lane directly`, `specialize only when overrides are present`
+- responsibilities:
+  - dispatch the prebuilt no-overrides lane directly
+  - specialize only when overrides are present
 - phases: `runtime`, `cleanup`
 
 #### `CreationContext` (class)
@@ -4912,7 +5320,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context.py:11`
 - extends: `Cleanable`
 - role: Compiled execution context for one spell.
-- responsibilities: `holds compiled execution lanes`, `dispatches no-override and override execution paths`, `registers or reuses instances through Creations`
+- responsibilities:
+  - holds compiled execution lanes
+  - dispatches no-override and override execution paths
+  - registers or reuses instances through Creations
 - owns_state: `_spell`, `_compiled_no_override_lane`, `_compiled_override_lane`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `execute`, `execute_no_hooks`, `load_cached`
@@ -4946,7 +5357,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.creation_context.creation_context_builder`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:1`
 - role: Builds spell-bound creation contexts from phase-11 inputs.
-- responsibilities: `require codegen creation for constructed spells`, `route existing-creation spells around the phase 8-11 group`
+- responsibilities:
+  - require codegen creation for constructed spells
+  - route existing-creation spells around the phase 8-11 group
 - phases: `runtime`
 
 #### `CreationContextBuilder` (class)
@@ -4954,7 +5367,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:15`
 - role: Stateless builder for spell-shaped CreationContext instances.
-- responsibilities: `builds CreationContext objects from spell-static data`, `selects route and override lane configuration for one spell context`
+- responsibilities:
+  - builds CreationContext objects from spell-static data
+  - selects route and override lane configuration for one spell context
 - phases: `runtime`, `cleanup`
 - public methods: `build`
 
@@ -4982,7 +5397,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.creation_context.creation_context_factory`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:1`
 - role: Centralizes context construction so front doors stay minimal.
-- responsibilities: `produce spell-shaped contexts behind one factory`
+- responsibilities:
+  - produce spell-shaped contexts behind one factory
 - phases: `runtime`
 
 #### `CreationContextFactory` (class)
@@ -4991,7 +5407,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:19`
 - extends: `Cleanable`
 - role: Factory for spell-owned CreationContext instances.
-- responsibilities: `builds or reuses spell-owned CreationContext objects`, `resolves spell-lineage gates through the frame-owned CreationGateController`
+- responsibilities:
+  - builds or reuses spell-owned CreationContext objects
+  - resolves spell-lineage gates through the frame-owned CreationGateController
 - owns_state: `_builder`, `_creation_gate_controller`, `_created_spell_lineage_ids`
 - phases: `runtime`, `cleanup`
 - public methods: `build_and_bind_for_spell`, `build_for_spell`, `cleanup`, `get_or_build_for_spell`, `rebuild_for_spell`
@@ -5030,7 +5448,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.meld`
 - defined at: `src/melder/aether/conduit/meld/meld.py:1`
 - role: Shared runtime core for spell activation and dependency resolution beneath the front doors.
-- responsibilities: `resolve by id or normalized key`, `gate on structural and per-conduit resolution validity`, `choose reuse or instantiate from Existence`
+- responsibilities:
+  - resolve by id or normalized key
+  - gate on structural and per-conduit resolution validity
+  - choose reuse or instantiate from Existence
 - phases: `runtime`, `cleanup`
 
 #### `Meld` (abstract)
@@ -5040,7 +5461,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Resolution runtime orchestrator.
-- responsibilities: `resolves target spells`, `enforces validity and dirty-root gates`, `chooses reuse versus construction`, `dispatches execution into CreationContext`
+- responsibilities:
+  - resolves target spells
+  - enforces validity and dirty-root gates
+  - chooses reuse versus construction
+  - dispatches execution into CreationContext
 - owns_state: `_spellbook`, `_conduit`, `_creation_contexts_by_spell_id`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `meld`, `meld_existing_spell`, `set_meld_hooks`
@@ -5092,7 +5517,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.overrides.spell_overrider`
 - defined at: `src/melder/aether/conduit/meld/overrides/spell_overrider.py:1`
 - role: Turns a raw override payload into a socket-aware map for one root blueprint.
-- responsibilities: `resolve override targets against blueprint sockets`, `rank competing specs by specificity`
+- responsibilities:
+  - resolve override targets against blueprint sockets
+  - rank competing specs by specificity
 - phases: `runtime`
 
 #### `_Specificity` (enum)
@@ -5101,7 +5528,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/overrides/spell_overrider.py:17`
 - markers: `IntEnum`
 - role: Precedence tiers deciding which override spec wins a contested socket.
-- responsibilities: `make higher specificity win deterministically`
+- responsibilities:
+  - make higher specificity win deterministically
 - phases: `runtime`
 
 #### `SpellOverrider` (class)
@@ -5110,7 +5538,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/overrides/spell_overrider.py:56`
 - extends: `Cleanable`
 - role: Runtime helper that resolves raw spell overrides into socket-targeted override maps.
-- responsibilities: `applies TargetSpec precedence over rooted blueprint sockets`, `returns a concrete socket-to-value override map for runtime execution`
+- responsibilities:
+  - applies TargetSpec precedence over rooted blueprint sockets
+  - returns a concrete socket-to-value override map for runtime execution
 - owns_state: `_blueprint`, `_engine`
 - phases: `runtime`, `cleanup`
 - public methods: `apply`, `cleanup`
@@ -5148,7 +5578,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.meld.spellspace_meld`
 - defined at: `src/melder/aether/conduit/meld/spellspace_meld.py:1`
 - role: Spellspace-facing meld front door.
-- responsibilities: `route unique_per_spell_space work onto spellspace-local storage`
+- responsibilities:
+  - route unique_per_spell_space work onto spellspace-local storage
 - phases: `runtime`
 
 #### `SpellSpaceMeld` (class)
@@ -5157,7 +5588,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/spellspace_meld.py:15`
 - extends: `Meld`
 - role: Spellspace-facing meld front door.
-- responsibilities: `routes unique_per_spell_space storage through spellspace-local Creations`, `routes conduit-owned lifetimes through owner-conduit ConduitCreations`, `provides live-creation status over spellspace-local and owner-conduit storage`
+- responsibilities:
+  - routes unique_per_spell_space storage through spellspace-local Creations
+  - routes conduit-owned lifetimes through owner-conduit ConduitCreations
+  - provides live-creation status over spellspace-local and owner-conduit storage
 - owns_state: `_spellspace`, `_spellspace_creations`, `_owner_conduit_creations`, `_spellspace_id`, `_owner_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`
@@ -5200,7 +5634,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.spell_space.spell_space`
 - defined at: `src/melder/aether/conduit/spell_space/spell_space.py:1`
 - role: Explicit scope handle for unique_per_spell_space resolution.
-- responsibilities: `represent one spellspace-bound resolution window`, `refuse meld when it is not the active scope`
+- responsibilities:
+  - represent one spellspace-bound resolution window
+  - refuse meld when it is not the active scope
 - phases: `runtime`, `cleanup`
 
 #### `SpellSpace` (class)
@@ -5209,7 +5645,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/spell_space/spell_space.py:21`
 - extends: `Cleanable`
 - role: Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.
-- responsibilities: `marks one active spellspace scope on a conduit`, `enforces active-scope usage for spellspace-bound meld calls`, `clears spellspace-scoped instances on reset or cleanup`
+- responsibilities:
+  - marks one active spellspace scope on a conduit
+  - enforces active-scope usage for spellspace-bound meld calls
+  - clears spellspace-scoped instances on reset or cleanup
 - owns_state: `_id`, `_owner_conduit_id`, `_meld`, `_creations`, `_owner_conduit_creations`, `_spellspace_pool`, `_spellspace_stack_state`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `id`, `meld`, `owner_conduit_id`, `permanent_cleanup`, `recycle_from_managed_context`
@@ -5249,7 +5688,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.spell_space.spell_space_pool`
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_pool.py:1`
 - role: Elastic pool recycling spellspace objects across repeated use.
-- responsibilities: `keep spellspaces alive so normal cleanup can recycle them`
+- responsibilities:
+  - keep spellspaces alive so normal cleanup can recycle them
 - phases: `runtime`, `cleanup`
 
 #### `SpellSpacePool` (class)
@@ -5258,7 +5698,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_pool.py:16`
 - extends: `AbstractElasticPool`
 - role: Conduit-local elastic pool for reusable spellspace scopes.
-- responsibilities: `creates pooled SpellSpace instances for one owner conduit`, `reactivates or acquires spellspaces for managed and manual paths`, `returns or destroys spellspaces according to fixed-capacity idle policy`
+- responsibilities:
+  - creates pooled SpellSpace instances for one owner conduit
+  - reactivates or acquires spellspaces for managed and manual paths
+  - returns or destroys spellspaces according to fixed-capacity idle policy
 - owns_state: `_owner_conduit_creations`, `_conduit_meld`, `_owner_conduit_id`, `_spellspace_registry`, `_spellspace_stack_state`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire`, `acquire_untracked`, `create_object`, `destroy_object`, `prepare_object`, `release`
@@ -5302,7 +5745,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.conduit.spell_space.spell_space_thread_state`
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:1`
 - role: Per-thread active spellspace stack for one conduit.
-- responsibilities: `give each thread its own stack without cross-thread coupling`
+- responsibilities:
+  - give each thread its own stack without cross-thread coupling
 - phases: `runtime`
 
 #### `_SpellSpaceLocal` (class)
@@ -5311,7 +5755,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:10`
 - extends: `local`
 - role: Per-thread storage backing the spellspace stack.
-- responsibilities: `hold one thread's spellspace stack`
+- responsibilities:
+  - hold one thread's spellspace stack
 - phases: `runtime`
 
 #### `SpellSpaceThreadState` (class)
@@ -5320,7 +5765,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:65`
 - extends: `Cleanable`
 - role: Per-thread active spellspace stack holder for one conduit.
-- responsibilities: `stores one independent active spellspace stack per thread`, `supports push/pop and top-of-stack validation for managed spellspace exit`, `drains or clears the current thread stack during cleanup and teardown`
+- responsibilities:
+  - stores one independent active spellspace stack per thread
+  - supports push/pop and top-of-stack validation for managed spellspace exit
+  - drains or clears the current thread stack during cleanup and teardown
 - owns_state: `_local`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `clear_current_thread`, `drain`, `get`, `get_active`, `pop`, `pop_expected`, `push`, `set`
@@ -5348,7 +5796,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `2203b8f76d71a512cbdbdb485265182890fa393821814ddecb11fd74ea21ceea`
+- source_sha256: `1afa14dba2152cfe4087d39483f9db4524d0c72bd17b3fd9b401579dcd4d8687`
 - nodes: 2
 
 ### Nodes
@@ -5365,7 +5813,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/bind/bind.py:115`
 - extends: `Cleanable`
 - role: Spell registration gateway for one Spellbook.
-- responsibilities: `examines binding targets into canonical binding profiles`, `fingerprints binding metadata into structural spell ids`, `validates binding policy and spellframe semantics`, `creates canonical Spell records for Spellbook registration`
+- responsibilities:
+  - examines binding targets into canonical binding profiles
+  - fingerprints binding metadata into structural spell ids
+  - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
+  - validates binding policy and spellframe semantics
+  - creates canonical Spell records for Spellbook registration
 - owns_state: `_spellbook`, `_spell_examiner`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bind`, `cleanup`, `sha256_profile`, `spell_id_inspector`
@@ -5424,7 +5877,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.bind.scan.ScanBindMetadata`
 - defined at: `src/melder/aether/spellbook/bind/scan.py:55`
 - role: The frozen payload a scan_bind decoration leaves behind - bind-time policy captured now, registration replayed later.
-- responsibilities: `carry every input Spellbook.bind needs during a later module scan`, `preserve Existence|str and Permissions|str AS PROVIDED, so the later replay takes the same normalization path as direct binding`, `store hook collections as tuples at rest and materialize fresh lists on use`, `stay immutable once created; safe to share across threads`
+- responsibilities:
+  - carry every input Spellbook.bind needs during a later module scan
+  - preserve Existence|str and Permissions|str AS PROVIDED, so the later replay takes the same normalization path as direct binding
+  - store hook collections as tuples at rest and materialize fresh lists on use
+  - stay immutable once created; safe to share across threads
 - phases: `bind`
 - public methods: `to_bind_kwargs`
 
@@ -5434,7 +5891,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/bind/scan.py:239`
 - extends: `Cleanable`
 - role: Module-only scanner for scan_bind metadata.
-- responsibilities: `reads scan_bind metadata from one module`, `delegates actual registration to Spellbook.bind during scan time`
+- responsibilities:
+  - reads scan_bind metadata from one module
+  - delegates actual registration to Spellbook.bind during scan time
 - owns_state: `_spellbook`
 - phases: `runtime`
 - public methods: `cleanup`, `scan_module`
@@ -5478,7 +5937,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/bind/spell_index.py:12`
 - extends: `Cleanable`
 - role: Stable index identity with a mutable selected-spell pointer.
-- responsibilities: `provides hash-stable index identity for spell registries`, `tracks selected and historical spell ids for one spell index`, `propagates selected-spell changes into owner and contracted spellbooks`, `stores owner and contract attachment metadata for one index`
+- responsibilities:
+  - provides hash-stable index identity for spell registries
+  - tracks selected and historical spell ids for one spell index
+  - propagates selected-spell changes into owner and contracted spellbooks
+  - stores owner and contract attachment metadata for one index
 - owns_state: `_id`, `_selected_spell_id`, `_spells_in_index`, `_owner_spellbook`, `_contracted_spellbooks`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_member`, `cleanup`, `has_spell`, `id`, `is_empty`, `is_sole_member`, `remove_member`, `selected_spell_id`, `spells_in_index`, `update`
@@ -5508,7 +5971,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/configuration/spellbook_configuration.py
 
-- source_sha256: `e17854a03ca49c1c32412c930d6a564f57a27c686d60ba75434adb010d3a809e`
+- source_sha256: `d5399d8aa84df3e9ad997e1d5f2ba8a561cd4456a06afc581b63d945dac02d5b`
 - nodes: 2
 
 ### Nodes
@@ -5525,10 +5988,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/configuration/spellbook_configuration.py:13`
 - extends: `Cleanable`
 - role: Mutable build-time configuration surface for one spellbook/runtime context.
-- responsibilities: `stores typed runtime posture properties and idempotent keys`, `owns hook registration for meld, conduit, link, and contract events`
-- owns_state: `_aether_frame`, `_properties`, `available_properties`, `_idempotent_keys`, `_hooks`
+- responsibilities:
+  - stores typed runtime posture properties and idempotent keys
+  - stores ordered book disposal candidates and False-default front/back priority for creation-time binding
+  - owns hook registration for meld, conduit, link, and contract events
+- owns_state: `_aether_frame`, `_properties`, `available_properties`, `_idempotent_keys`, `_conduit_hooks`, `_meld_hooks`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_disposal_methods`, `add_hook`, `add_hooks`, `build`, `cleanup`, `clear_properties`, `finalize`, `freeze`, `get_conduit_hooks`, `get_hooks`, `get_meld_hooks`, `get_property` (+13 more)
+- public methods: `add_disposal_methods`, `add_hook`, `add_hooks`, `build`, `cleanup`, `clear_properties`, `finalize`, `freeze`, `get_conduit_hooks`, `get_hooks`, `get_meld_hooks`, `get_property` (+14 more)
 
 ### Edges out
 
@@ -5574,7 +6040,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/configuration/system_state.py:3`
 - markers: `Enum`
 - role: High-level runtime posture enum for a spellbook/system.
-- responsibilities: `labels automatic and dynamic runtime posture modes`
+- responsibilities:
+  - labels automatic and dynamic runtime posture modes
 - owns_state: `automatic`, `dynamic`
 - phases: `runtime`
 
@@ -5601,7 +6068,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/existence/existence.py:3`
 - markers: `Enum`
 - role: Lifecycle mode enum for a spell binding.
-- responsibilities: `labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes`
+- responsibilities:
+  - labels the reuse boundary for bound spell instances across frame, conduit, lineage, cluster, and spellspace scopes
 - owns_state: `unique`, `unique_per_conduit`, `many`, `unique_per_conduit_cluster`, `unique_per_conduit_lineage`, `unique_per_spell_space`
 - phases: `runtime`
 
@@ -5627,7 +6095,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix`
 - defined at: `src/melder/aether/spellbook/resolution_style_matrix.py:44`
 - role: Canonical support matrix for resolution styles.
-- responsibilities: `maps binding families and spell types to supported existence modes`, `tracks resolution contract item support status`
+- responsibilities:
+  - maps binding families and spell types to supported existence modes
+  - tracks resolution contract item support status
 - owns_state: `BINDING_FAMILY_POLICY`, `SPELL_TYPE_TO_BINDING_FAMILY`, `MATRIX_BY_SPELL_TYPE`, `CONTRACT_ITEM_STATUS`
 - phases: `validation`, `runtime`
 - public methods: `get_contract_item_status`, `get_entry`, `get_family_for_spell_type`, `get_family_policy`, `get_matrix_by_spell_type`, `validate`
@@ -5648,7 +6118,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `e5741aae90715c8412d0b39f5fff039cf2d8afecc24e0ff8699958a551340bd8`
+- source_sha256: `4b0fe3c2aa973b6e3b58f76647d41e60013c8a555e02c307f33174f7254a873b`
 - nodes: 2
 
 ### Nodes
@@ -5665,8 +6135,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell.py:60`
 - extends: `Cleanable`
 - role: Canonical bound spell runtime record.
-- responsibilities: `wraps one bound target with lineage, lifecycle, and permission policy`, `owns spell-local hooks, build artifacts, and execution-plan metadata`, `lazily owns the SpellCompiler and spell-owned creation-context machinery`, `records conduit ownership changes and publishes structural changes into SpellSystemStates`
-- owns_state: `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`
+- responsibilities:
+  - wraps one bound target with lineage, lifecycle, and permission policy
+  - retains the bind-resolved ordered disposal list without copying or clearing borrowed contents at cleanup
+  - owns spell-local hooks, build artifacts, and execution-plan metadata
+  - lazily owns the SpellCompiler and spell-owned creation-context machinery
+  - records conduit ownership changes and publishes structural changes into SpellSystemStates
+- owns_state: `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+11 more)
 
@@ -5739,7 +6214,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:9`
 - role: Says where ONE injected parameter gets its value in the fitted injection section of the codegen model.
-- responsibilities: `carry is_collection forward from the phase-3 socket truth so planner and codegen can tell a one-member collection from single DI`, `never let is_collection be inferred from dependency count - a collection socket with one wired provider still injects a list`, `hold the dependency keys plus the override and contract keys for that parameter`
+- responsibilities:
+  - carry is_collection forward from the phase-3 socket truth so planner and codegen can tell a one-member collection from single DI
+  - never let is_collection be inferred from dependency count - a collection socket with one wired provider still injects a list
+  - hold the dependency keys plus the override and contract keys for that parameter
 - owns_state: `kind`, `dependency_keys`, `override_key`, `contract_key`, `is_collection`
 - phases: `compile`
 
@@ -5748,7 +6226,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:61`
 - role: The per-instance-key injection wiring and payload posture in the fitted model.
-- responsibilities: `hold the parameter sources for one concrete instance key`, `carry the aggregation and positional-override posture and the contract payload alongside them`
+- responsibilities:
+  - hold the parameter sources for one concrete instance key
+  - carry the aggregation and positional-override posture and the contract payload alongside them
 - owns_state: `param_sources`, `allow_list_aggregation`, `uses_positional_override`, `contract_payload`, `collection_param_names`
 - phases: `compile`
 
@@ -5758,7 +6238,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:106`
 - extends: `Cleanable`
 - role: Processor-owned injection section for one spell model.
-- responsibilities: `stores per-instance injection specs and payload posture for one fitted model`, `computes summary counts over positional overrides, contract payloads, and dependency arity`, `owns cleanup of the fitted injection section state`
+- responsibilities:
+  - stores per-instance injection specs and payload posture for one fitted model
+  - computes summary counts over positional overrides, contract payloads, and dependency arity
+  - owns cleanup of the fitted injection section state
 - owns_state: `root_spell_id`, `root_instance_key`, `instance_specs_by_instance_key`, `param_source_kind_counts`, `dependency_arity_histogram`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -5795,7 +6278,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py:8`
 - extends: `Cleanable`
 - role: Processor-owned occurrence contract-routing section for one spell model.
-- responsibilities: `stores SpellContract-derived payload routing by occurrence and by spell id`, `tracks contract dependency completeness and payload counts`, `owns cleanup of the fitted contract-routing section state`
+- responsibilities:
+  - stores SpellContract-derived payload routing by occurrence and by spell id
+  - tracks contract dependency completeness and payload counts
+  - owns cleanup of the fitted contract-routing section state
 - owns_state: `contract_overrides_by_occurrence`, `contract_overrides_by_spell_id`, `contract_dependencies_complete`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -5832,7 +6318,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py:9`
 - extends: `Cleanable`
 - role: Processor-owned occurrence instance/sharedness section for one spell model.
-- responsibilities: `stores instance-key and canonical-occurrence decisions derived from occurrence graph truth`, `tracks shared spell ids and total instance counts for one fitted model`, `owns cleanup of the fitted instance/sharedness section state`
+- responsibilities:
+  - stores instance-key and canonical-occurrence decisions derived from occurrence graph truth
+  - tracks shared spell ids and total instance counts for one fitted model
+  - owns cleanup of the fitted instance/sharedness section state
 - owns_state: `instance_keys_by_spell_id`, `canonical_occurrences_by_spell_id`, `root_instance_key`, `shared_spell_ids`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -5869,7 +6358,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_order_analysis.py:6`
 - extends: `Cleanable`
 - role: Processor-owned occurrence-order section for one spell model.
-- responsibilities: `stores deterministic execution order derived from occurrence graph truth`, `tracks the execution-order count for one fitted model`, `owns cleanup of the fitted occurrence-order section state`
+- responsibilities:
+  - stores deterministic execution order derived from occurrence graph truth
+  - tracks the execution-order count for one fitted model
+  - owns cleanup of the fitted occurrence-order section state
 - owns_state: `execution_order`, `execution_order_count`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -5905,7 +6397,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_override_targeting_analysis.py:6`
 - role: One normalized override-target socket identity, held WITHOUT keeping a raw SocketRef object in the fitted model.
-- responsibilities: `carry node id, param path id, param name and socket kind as plain values`, `keep the fitted model free of live runtime targeting objects`
+- responsibilities:
+  - carry node id, param path id, param name and socket kind as plain values
+  - keep the fitted model free of live runtime targeting objects
 - owns_state: `node_id`, `param_path_id`, `param_name`, `socket_kind_value`
 - phases: `compile`
 
@@ -5915,7 +6409,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_override_targeting_analysis.py:53`
 - extends: `Cleanable`
 - role: Processor-owned override-targeting section for one spell model.
-- responsibilities: `stores normalized override-targeting truth derived from rooted blueprint state`, `tracks target-spec, socket, spell, and path-depth counts for one fitted model`, `owns cleanup of the fitted override-targeting section state`
+- responsibilities:
+  - stores normalized override-targeting truth derived from rooted blueprint state
+  - tracks target-spec, socket, spell, and path-depth counts for one fitted model
+  - owns cleanup of the fitted override-targeting section state
 - owns_state: `targets_by_spec`, `specificity_by_spec`, `path_depth_histogram`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -5935,7 +6432,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py
 
-- source_sha256: `19c1e83736157f19a8822843cef48628d4cf61042354dce6c18c020d25de4141`
+- source_sha256: `42fce85bf5a56defdabb12179e75f4b8c09eb6ca0b8d95ee8e47e803a8c33cd1`
 - nodes: 3
 
 ### Nodes
@@ -5951,17 +6448,22 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord`
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py:7`
 - role: The spell-static runtime facts planner strategies need, so they never have to reopen the live spellbook maps.
-- responsibilities: `carry spell id/name, the spell and its call target, existence, and the kind flags`, `let planner strategies read runtime truth from the fitted model instead of the live book`
+- responsibilities:
+  - carry spell id/name, the spell and its call target, existence, and the kind flags
+  - let planner strategies read runtime truth from the fitted model instead of the live book
 - owns_state: `spell_id`, `spell_name`, `spell`, `call_target`, `existence`, `is_existing_creation`, `is_class_spell`
 - phases: `compile`
 
 #### `SpellRuntimeAnalysis` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py:94`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py:98`
 - extends: `Cleanable`
 - role: Processor-owned runtime spell section for one codegen model.
-- responsibilities: `stores per-spell static runtime facts needed by planner strategies`, `holds runtime spell records keyed by spell id for one fitted model`, `owns cleanup of the fitted runtime spell section state`
+- responsibilities:
+  - stores per-spell static runtime facts needed by planner strategies
+  - holds runtime spell records keyed by spell id for one fitted model
+  - owns cleanup of the fitted runtime spell section state
 - owns_state: `records_by_spell_id`, `spell_count`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -6000,7 +6502,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py:19`
 - extends: `Cleanable`
 - role: Processor facade over compiler artifact truth for Phase 9 model fitting.
-- responsibilities: `builds the shell SpellCodegenModel from spell-static and analyzer-owned truth`, `runs registered processor strategies in deterministic order against that model`, `publishes the fitted codegen model back onto SpellCompilerArtifact`
+- responsibilities:
+  - builds the shell SpellCodegenModel from spell-static and analyzer-owned truth
+  - runs registered processor strategies in deterministic order against that model
+  - publishes the fitted codegen model back onto SpellCompilerArtifact
 - owns_state: `_strategy_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `process`
@@ -6051,7 +6556,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy.py:15`
 - markers: `ABC`
 - role: Abstract contract for processor strategies that fit sections of SpellCodegenModel.
-- responsibilities: `defines the strategy_id provenance contract for processor strategies`, `defines the process() seam over Spell, SpellCompilerArtifact, and SpellCodegenModel`, `keeps strategy-specific model fitting separate from processor orchestration`
+- responsibilities:
+  - defines the strategy_id provenance contract for processor strategies
+  - defines the process() seam over Spell, SpellCompilerArtifact, and SpellCodegenModel
+  - keeps strategy-specific model fitting separate from processor orchestration
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6088,7 +6596,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py:31`
 - extends: `Cleanable`
 - role: Registry holder for built-in artifact-processor strategies.
-- responsibilities: `owns the named processor strategy registry`, `loads the default occurrence, runtime, injection, and override-targeting strategies`, `returns deterministic ordered strategy tuples for the processor pass`
+- responsibilities:
+  - owns the named processor strategy registry
+  - loads the default occurrence, runtime, injection, and override-targeting strategies
+  - returns deterministic ordered strategy tuples for the processor pass
 - owns_state: `_strategies_by_name`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `get_strategies`, `get_strategy`, `registered_strategy_names`
@@ -6154,7 +6665,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py:33`
 - extends: `Cleanable`
 - role: Processor-owned codegen model for one spell.
-- responsibilities: `stores the fitted processor output that later planner strategies consume`, `holds borrowed analyzer graph truth plus processor-owned fitted sections`, `tracks assessment data and applied strategy provenance for one spell model`
+- responsibilities:
+  - stores the fitted processor output that later planner strategies consume
+  - holds borrowed analyzer graph truth plus processor-owned fitted sections
+  - tracks assessment data and applied strategy provenance for one spell model
 - owns_state: `build_kind`, `existence`, `route_family`, `graph_shape`, `order_shape`, `instance_shape`, `contract_shape`, `injection_shape`, `override_targeting_shape`, `spell_runtime_shape`, `existence_occurrence_shape`, `assessment`, `applied_strategy_ids`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `section_names`, `snapshot_applied_strategy_ids`
@@ -6203,7 +6717,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_existence_occurrence_processor_strategy.py:20`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy publishing analyzer-owned existence-occurrence truth onto the codegen model.
-- responsibilities: `publishes phase-8 existence-occurrence truth onto SpellCodegenModel`, `moves analyzer-owned existence distribution into the processor-owned model surface`, `preserves immutable existence-occurrence payloads without extra cleanup ownership`
+- responsibilities:
+  - publishes phase-8 existence-occurrence truth onto SpellCodegenModel
+  - moves analyzer-owned existence distribution into the processor-owned model surface
+  - preserves immutable existence-occurrence payloads without extra cleanup ownership
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6245,7 +6762,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py:32`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting the injection section of the codegen model.
-- responsibilities: `builds per-instance injection specs from occurrence and contract truth`, `publishes SpellInjectionAnalysis onto SpellCodegenModel`, `derives root dependency and positional-override summary selectors for planning`
+- responsibilities:
+  - builds per-instance injection specs from occurrence and contract truth
+  - publishes SpellInjectionAnalysis onto SpellCodegenModel
+  - derives root dependency and positional-override summary selectors for planning
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6295,7 +6815,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:32`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting SpellContract routing and payload facts into the codegen model.
-- responsibilities: `compiles SpellContract override payload maps from analyzer-owned occurrence graph truth`, `publishes SpellOccurrenceContractAnalysis onto SpellCodegenModel`, `tracks contract payload counts and completeness for later planning`
+- responsibilities:
+  - compiles SpellContract override payload maps from analyzer-owned occurrence graph truth
+  - publishes SpellOccurrenceContractAnalysis onto SpellCodegenModel
+  - tracks contract payload counts and completeness for later planning
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6343,7 +6866,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py:26`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting occurrence instance/sharedness facts into the codegen model.
-- responsibilities: `maps occurrence graph truth onto per-spell instance keys and canonical occurrences`, `publishes SpellOccurrenceInstanceAnalysis onto SpellCodegenModel`, `derives shared-node and unique-node counts for later planning`
+- responsibilities:
+  - maps occurrence graph truth onto per-spell instance keys and canonical occurrences
+  - publishes SpellOccurrenceInstanceAnalysis onto SpellCodegenModel
+  - derives shared-node and unique-node counts for later planning
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6390,7 +6916,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_order_processor_strategy.py:23`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting deterministic execution order into the codegen model.
-- responsibilities: `derives dependency-safe spell execution order from analyzer-owned occurrence graph truth`, `publishes SpellOccurrenceOrderAnalysis onto SpellCodegenModel`, `falls back to stable first-seen order when graph topology is incomplete or cyclic`
+- responsibilities:
+  - derives dependency-safe spell execution order from analyzer-owned occurrence graph truth
+  - publishes SpellOccurrenceOrderAnalysis onto SpellCodegenModel
+  - falls back to stable first-seen order when graph topology is incomplete or cyclic
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6437,7 +6966,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py:24`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting override-targeting truth into the codegen model.
-- responsibilities: `derives normalized override-target targeting from rooted blueprint socket truth`, `publishes SpellOverrideTargetingAnalysis onto SpellCodegenModel`, `derives override-targeting family and target-depth selectors for planning`
+- responsibilities:
+  - derives normalized override-target targeting from rooted blueprint socket truth
+  - publishes SpellOverrideTargetingAnalysis onto SpellCodegenModel
+  - derives override-targeting family and target-depth selectors for planning
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6468,7 +7000,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py
 
-- source_sha256: `b280c459ababb0c6b3582077c5bf932679c07187607085eabc01a862b8e7733f`
+- source_sha256: `6d2cbfa7109ea1d1d1b82ecde5bdbadddc3590404a4c4ed84579a25114a67c85`
 - nodes: 2
 
 ### Nodes
@@ -6485,7 +7017,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py:21`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting runtime spell facts into the codegen model.
-- responsibilities: `captures static spell facts needed by planner strategies`, `publishes SpellRuntimeAnalysis onto SpellCodegenModel`, `scopes runtime spell records by occurrence order or graph-visible spell ids`
+- responsibilities:
+  - captures static spell facts needed by planner strategies
+  - publishes SpellRuntimeAnalysis onto SpellCodegenModel
+  - scopes runtime spell records by occurrence order or graph-visible spell ids
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -6533,7 +7068,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py:13`
 - extends: `Cleanable`
 - role: Phase 5 rooted deep-DAG blueprint for one spell.
-- responsibilities: `stores the rooted deep DAG and stable execution order for one root spell`, `owns socket references and the targeting index for override and component paths`, `hands off rooted structure to system validation, change-control, and later planning phases`
+- responsibilities:
+  - stores the rooted deep DAG and stable execution order for one root spell
+  - owns socket references and the targeting index for override and component paths
+  - hands off rooted structure to system validation, change-control, and later planning phases
 - owns_state: `_root_spell_id`, `_dag`, `_ordered_node_ids`, `_socket_refs`, `_dag_index`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `add_socket_ref`, `cleanup`, `dag`, `dag_index`, `ensure_dag_index_built`, `ordered_node_ids`, `path_registry`, `replace_dag_index`, `requires_spellspace_request`, `root_lineage_id`, `root_spell_id`, `socket_refs`
@@ -6580,7 +7118,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation.py:6`
 - extends: `Cleanable`
 - role: Artifact-owned final codegen creation container for one spell.
-- responsibilities: `stores the selected strategy provenance and discovery reason for one spell`, `stores the runtime-facing no-overrides and overrides executors plus their compiled code objects`, `stores mutable metadata for diagnostics and cache/export provenance`
+- responsibilities:
+  - stores the selected strategy provenance and discovery reason for one spell
+  - stores the runtime-facing no-overrides and overrides executors plus their compiled code objects
+  - stores mutable metadata for diagnostics and cache/export provenance
 - owns_state: `selected_strategy_ids`, `discovery_reason`, `no_overrides_executor`, `no_overrides_code_object`, `overrides_executor`, `overrides_code_object`, `metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -6610,7 +7151,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:1`
 - role: Reloadable cache helper for phase-11 SpellCodegenCreation assets.
-- responsibilities: `builds the durable marshal-safe cache payload for a spell's no-overrides and overrides lanes`, `reloads CreationContext instances from cached packages against live spellbook and phase-5 path registry truth`, `serializes and deserializes override-targeting rows for cached override rebuild paths`
+- responsibilities:
+  - builds the durable marshal-safe cache payload for a spell's no-overrides and overrides lanes
+  - reloads CreationContext instances from cached packages against live spellbook and phase-5 path registry truth
+  - serializes and deserializes override-targeting rows for cached override rebuild paths
 - owns_state: `PACKAGE_VERSION`
 - phases: `runtime`
 
@@ -6654,7 +7198,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery.CodegenCreationDiscovery`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py:6`
 - role: Immutable discovery result for one phase-11 codegen creation selection pass.
-- responsibilities: `stores the ordered creation strategy chain for one discovery result`, `stores the selected concrete codegen style for the current plan family`, `stores compact provenance for the phase-11 selection decision`
+- responsibilities:
+  - stores the ordered creation strategy chain for one discovery result
+  - stores the selected concrete codegen style for the current plan family
+  - stores compact provenance for the phase-11 selection decision
 - phases: `runtime`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py -->
@@ -6680,7 +7227,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy.py:15`
 - markers: `ABC`
 - role: Abstract contract for phase-11 codegen creation discovery strategies.
-- responsibilities: `defines the strategy_id contract for discovery strategies`, `defines the discover() seam over SpellCodegenModel and SpellCodegenPlan`, `keeps creation-strategy selection separate from the top-level creation facade`
+- responsibilities:
+  - defines the strategy_id contract for discovery strategies
+  - defines the discover() seam over SpellCodegenModel and SpellCodegenPlan
+  - keeps creation-strategy selection separate from the top-level creation facade
 - phases: `runtime`
 - public methods: `discover`, `strategy_id`
 
@@ -6707,7 +7257,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py:22`
 - extends: `Cleanable`
 - role: Registry holder for phase-11 codegen creation discovery strategies.
-- responsibilities: `owns the named discovery strategy registry`, `loads the default solo, many_only, generalized, generalized_cache, and fallback discovery strategies`, `returns deterministic ordered discovery strategy tuples for the discovery facade`
+- responsibilities:
+  - owns the named discovery strategy registry
+  - loads the default solo, many_only, generalized, generalized_cache, and fallback discovery strategies
+  - returns deterministic ordered discovery strategy tuples for the discovery facade
 - phases: `runtime`
 - public methods: `cleanup`, `get_strategies`, `get_strategy`, `registered_strategy_names`
 
@@ -6765,7 +7318,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_system.py:16`
 - extends: `Cleanable`
 - role: Facade that selects the current best codegen creation discovery result for one model/plan pair.
-- responsibilities: `iterates the registered discovery strategies in order`, `returns the first discovery result that claims the current model/plan pair`, `keeps phase-11 creation selection separate from runtime artifact construction`
+- responsibilities:
+  - iterates the registered discovery strategies in order
+  - returns the first discovery result that claims the current model/plan pair
+  - keeps phase-11 creation selection separate from runtime artifact construction
 - phases: `runtime`
 - public methods: `cleanup`, `discover`
 
@@ -6805,7 +7361,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/fallback_no_overrides_codegen_creation_discovery_strategy.py:1`
 - role: Fallback phase-11 discovery strategy.
-- responsibilities: `preserves the current fallback no-overrides discovery result when no earlier strategy claims the pair`, `returns a generalized no-overrides creation-family selection`, `acts as the terminal catch-all in the discovery chain`
+- responsibilities:
+  - preserves the current fallback no-overrides discovery result when no earlier strategy claims the pair
+  - returns a generalized no-overrides creation-family selection
+  - acts as the terminal catch-all in the discovery chain
 - phases: `runtime`
 
 #### `FallbackNoOverridesCodegenCreationDiscoveryStrategy` (class)
@@ -6814,7 +7373,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/fallback_no_overrides_codegen_creation_discovery_strategy.py:15`
 - extends: `CodegenCreationDiscoveryStrategy`
 - role: The terminal Phase-11 strategy: preserves the fallback no-overrides result when no earlier strategy claims the model/plan pair.
-- responsibilities: `produce the fallback no-overrides discovery result`, `guarantee every model/plan pair resolves to something, so discovery cannot end empty`
+- responsibilities:
+  - produce the fallback no-overrides discovery result
+  - guarantee every model/plan pair resolves to something, so discovery cannot end empty
 - phases: `compile`
 - public methods: `discover`, `strategy_id`
 
@@ -6853,7 +7414,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py:1`
 - role: Phase-11 discovery strategy for the generalized_cache family.
-- responsibilities: `claims generalized planner output for the manifest-first creation family`, `selects one concrete codegen style from plan candidates`, `sits ahead of the legacy generalized discovery strategy as the rollback seam`
+- responsibilities:
+  - claims generalized planner output for the manifest-first creation family
+  - selects one concrete codegen style from plan candidates
+  - sits ahead of the legacy generalized discovery strategy as the rollback seam
 - phases: `runtime`
 
 #### `GeneralizedCacheCodegenCreationDiscoveryStrategy` (class)
@@ -6862,7 +7426,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_cache_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
 - role: Phase-11 routing that sends generalized planner output to the manifest-first creation family - registered AHEAD of the legacy strategy, so every generalized plan resolves here concretely with no stamp and no config gate.
-- responsibilities: `claim exactly the plans the legacy generalized discovery claimed (selected_strategy_id == 'generalized_codegen_plan')`, `decline every other plan family so solo and many_only routing is untouched`, `leave the legacy strategy registered behind it as the rollback seam - removing this one restores the old routing`
+- responsibilities:
+  - claim exactly the plans the legacy generalized discovery claimed (selected_strategy_id == 'generalized_codegen_plan')
+  - decline every other plan family so solo and many_only routing is untouched
+  - leave the legacy strategy registered behind it as the rollback seam - removing this one restores the old routing
 - phases: `compile`
 - public methods: `discover`, `strategy_id`
 
@@ -6901,7 +7468,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_codegen_creation_discovery_strategy.py:1`
 - role: Default generalized phase-11 discovery strategy.
-- responsibilities: `claims generalized planner output for the generalized creation family`, `selects one concrete codegen style from plan candidates`, `preserves the previous generalized selection behavior behind an explicit strategy contract`
+- responsibilities:
+  - claims generalized planner output for the generalized creation family
+  - selects one concrete codegen style from plan candidates
+  - preserves the previous generalized selection behavior behind an explicit strategy contract
 - phases: `runtime`
 
 #### `GeneralizedCodegenCreationDiscoveryStrategy` (class)
@@ -6910,7 +7480,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/generalized_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
 - role: The legacy generalized Phase-11 strategy: the pre-existing behavior moved behind an explicit discovery contract, now the rollback seam behind the cache strategy.
-- responsibilities: `claim only generalized planner output and emit the generalized family facade id`, `choose one concrete codegen style from the plan's candidate list`, `keep the runtime contract narrow - family and style only, no new top-level output fields`
+- responsibilities:
+  - claim only generalized planner output and emit the generalized family facade id
+  - choose one concrete codegen style from the plan's candidate list
+  - keep the runtime contract narrow - family and style only, no new top-level output fields
 - phases: `compile`
 - public methods: `discover`, `strategy_id`
 
@@ -6949,7 +7522,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.many_only_codegen_creation_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py:1`
 - role: Phase-11 discovery strategy for many_only plan-family output.
-- responsibilities: `claims many_only planner output`, `routes it to the dedicated many_only creation family`, `selects one concrete codegen style from plan candidates`
+- responsibilities:
+  - claims many_only planner output
+  - routes it to the dedicated many_only creation family
+  - selects one concrete codegen style from plan candidates
 - phases: `runtime`
 
 #### `ManyOnlyCodegenCreationDiscoveryStrategy` (class)
@@ -6958,7 +7534,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/many_only_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
 - role: Phase-11 routing for many-only plan-family output, keeping it in its own creation family.
-- responsibilities: `claim phase-10 many-only planner output`, `route it to the dedicated many-only creation family rather than collapsing it back into generalized discovery`
+- responsibilities:
+  - claim phase-10 many-only planner output
+  - route it to the dedicated many-only creation family rather than collapsing it back into generalized discovery
 - phases: `compile`
 - public methods: `discover`, `strategy_id`
 
@@ -6997,7 +7575,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.solo_codegen_creation_discovery_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/solo_codegen_creation_discovery_strategy.py:1`
 - role: Phase-11 discovery strategy for solo plan-family output.
-- responsibilities: `claims solo planner output`, `routes it to the dedicated solo creation family`, `selects one concrete codegen style from plan candidates`
+- responsibilities:
+  - claims solo planner output
+  - routes it to the dedicated solo creation family
+  - selects one concrete codegen style from plan candidates
 - phases: `runtime`
 
 #### `SoloCodegenCreationDiscoveryStrategy` (class)
@@ -7006,7 +7587,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/solo_codegen_creation_discovery_strategy.py:17`
 - extends: `CodegenCreationDiscoveryStrategy`
 - role: Phase-11 routing for solo plan-family output, keeping it in its own creation family.
-- responsibilities: `claim phase-10 solo planner output`, `route it to the dedicated solo creation family rather than collapsing it back into generalized discovery`
+- responsibilities:
+  - claim phase-10 solo planner output
+  - route it to the dedicated solo creation family rather than collapsing it back into generalized discovery
 - phases: `compile`
 - public methods: `discover`, `strategy_id`
 
@@ -7052,7 +7635,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_system.py:20`
 - extends: `Cleanable`
 - role: Facade that builds and publishes the final codegen-creation artifact for one spell.
-- responsibilities: `reads the fitted spell codegen model and chosen plan from SpellCompilerArtifact`, `uses discovery plus strategy resolution to choose the creation strategy chain`, `publishes the final SpellCodegenCreation back onto SpellCompilerArtifact`
+- responsibilities:
+  - reads the fitted spell codegen model and chosen plan from SpellCompilerArtifact
+  - uses discovery plus strategy resolution to choose the creation strategy chain
+  - publishes the final SpellCodegenCreation back onto SpellCompilerArtifact
 - owns_state: `_discovery_system`, `_strategy_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `build`, `cleanup`
@@ -7108,7 +7694,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_family_step.py:5`
 - markers: `ABC`
 - role: Shared internal step contract for codegen-creation families.
-- responsibilities: `defines the step_id contract for ordered family-local build steps`, `defines the apply() seam over one family-local state object`, `keeps ordered family steps out of the public SpellCodegenStrategy facade`
+- responsibilities:
+  - defines the step_id contract for ordered family-local build steps
+  - defines the apply() seam over one family-local state object
+  - keeps ordered family steps out of the public SpellCodegenStrategy facade
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -7134,7 +7723,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:6`
 - role: Shared phase-11 helper surface for codegen-creation families.
-- responsibilities: `serializes deterministic signature parts and hashes phase-11 schema payloads`, `normalizes transient plans and instance keys into schema-safe forms`, `builds reusable phase-11 step IR rows and no-overrides compile signatures`
+- responsibilities:
+  - serializes deterministic signature parts and hashes phase-11 schema payloads
+  - normalizes transient plans and instance keys into schema-safe forms
+  - builds reusable phase-11 step IR rows and no-overrides compile signatures
 - phases: `runtime`
 - public methods: `build_fast_transient_schema`, `build_fast_transient_signature`, `build_no_overrides_codegen_creation_step_signature_row`, `build_phase11_step_ir_row`, `freeze_phase11_schema_value`, `get_phase11_step_ir_rows`, `hash_codegen_signature`, `normalize_instance_key`, `serialize_codegen_signature_part`
 
@@ -7164,7 +7756,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:1`
 - role: Shared emitted-template compiler for CreationContext runtime doors.
-- responsibilities: `compiles spell-bound no-overrides and overrides-only CreationContext executor templates`, `selects route-specific emitted runtime bodies for shared, spellspace, conduit, many, and existing-creation lanes`, `uses executor_code_cache to compile and reuse emitted template source`
+- responsibilities:
+  - compiles spell-bound no-overrides and overrides-only CreationContext executor templates
+  - selects route-specific emitted runtime bodies for shared, spellspace, conduit, many, and existing-creation lanes
+  - uses executor_code_cache to compile and reuse emitted template source
 - owns_state: `_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE`, `_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE`, `_NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST`, `_NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST`
 - phases: `runtime`
 
@@ -7194,7 +7789,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py:1`
 - role: Shared cross-family manifest cache envelope for manifest-first phase-11 families.
-- responsibilities: `builds the shared manifest cache package envelope for manifest-first families`, `checks package shape for manifest-first cache payloads`, `dispatches lazy CreationContext reload to the owning family cache loader by family id`
+- responsibilities:
+  - builds the shared manifest cache package envelope for manifest-first families
+  - checks package shape for manifest-first cache payloads
+  - dispatches lazy CreationContext reload to the owning family cache loader by family id
 - owns_state: `MANIFEST_METADATA_KEY`, `PACKAGE_VERSION`, `GENERALIZED_FAMILY_ID`, `SOLO_FAMILY_ID`, `MANY_ONLY_FAMILY_ID`
 - phases: `runtime`
 
@@ -7235,7 +7833,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py:14`
 - markers: `ABC`
 - role: Abstract contract for codegen creation strategies.
-- responsibilities: `defines the stable strategy_id contract for codegen creation strategies`, `defines the apply() seam over SpellCodegenModel, plan truth, and SpellCodegenCreation`, `keeps codegen-creation strategy behavior separate from the top-level facade`
+- responsibilities:
+  - defines the stable strategy_id contract for codegen creation strategies
+  - defines the apply() seam over SpellCodegenModel, plan truth, and SpellCodegenCreation
+  - keeps codegen-creation strategy behavior separate from the top-level facade
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
 
@@ -7272,7 +7873,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy_builder.py:22`
 - extends: `Cleanable`
 - role: Registry holder for built-in codegen creation strategies.
-- responsibilities: `owns the named codegen strategy registry`, `loads the default solo, many_only, generalized, and fallback-no-overrides strategies`, `returns deterministic ordered strategy tuples for the creation facade`
+- responsibilities:
+  - owns the named codegen strategy registry
+  - loads the default solo, many_only, generalized, and fallback-no-overrides strategies
+  - returns deterministic ordered strategy tuples for the creation facade
 - owns_state: `_strategies_by_name`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `get_strategies`, `get_strategy`, `registered_strategy_names`
@@ -7325,7 +7929,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/fallback_no_overrides/fallback_no_overrides_codegen_creation_strategy.py:21`
 - extends: `SpellCodegenStrategy`
 - role: Fallback public phase-11 strategy for no-overrides-only creation output.
-- responsibilities: `preserves the existing fallback discovery/result contract for no-overrides creation`, `routes actual work through the generalized no-overrides family step`, `populates SpellCodegenCreation through a minimal generalized family state`
+- responsibilities:
+  - preserves the existing fallback discovery/result contract for no-overrides creation
+  - routes actual work through the generalized no-overrides family step
+  - populates SpellCodegenCreation through a minimal generalized family state
 - owns_state: `_step`
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
@@ -7371,7 +7978,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py:15`
 - markers: `IntEnum`
 - role: The override-target conflict-resolution ordering, preserved from the old Phase 10 patch map: PATH > UNIQUE > BROADCAST.
-- responsibilities: `rank override target matches so the more specific match wins`
+- responsibilities:
+  - rank override target matches so the more specific match wins
 - phases: `compile`
 
 #### `SpellOverrideTargetSocketRef` (class)
@@ -7379,7 +7987,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py:31`
 - role: The compiler-owned, hashable replacement for a runtime SocketRef in the generalized creation family.
-- responsibilities: `expose the socket identity data the override runtime needs, without the runtime object`, `stay hashable so it can key the override maps`
+- responsibilities:
+  - expose the socket identity data the override runtime needs, without the runtime object
+  - stay hashable so it can key the override maps
 - phases: `compile`
 
 #### `SpellOverrideTargetingCodegenCreation` (class)
@@ -7388,7 +7998,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py:47`
 - extends: `Cleanable`
 - role: Compiler-owned override targeting artifact for generalized family runtime use.
-- responsibilities: `replaces the old OverridePatchMap runtime dependency with a compiler-owned targeting surface`, `owns targets_by_spec and specificity_by_spec for generalized override routing`, `builds deterministic socket-shape rows and override maps for specialization and runtime dispatch`
+- responsibilities:
+  - replaces the old OverridePatchMap runtime dependency with a compiler-owned targeting surface
+  - owns targets_by_spec and specificity_by_spec for generalized override routing
+  - builds deterministic socket-shape rows and override maps for specialization and runtime dispatch
 - owns_state: `_root_spell_id`, `_targets_by_spec`, `_specificity_by_spec`, `_resolved_targets_by_raw_key`, `_last_single_raw_key`, `_last_single_value`, `_last_single_override_map`, `_last_single_socket_shape`, `_last_multi_signature`, `_last_multi_override_map`, `_last_multi_socket_shape`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `from_analysis`
@@ -7428,7 +8041,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_cache_runtime_rows_SCRATCH`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py:1`
 - role: Scratch placeholder module for the replaced generalized cache runtime rows surface.
-- responsibilities: `marks the retired generalized cache runtime-rows surface as intentionally empty pending cleanup`
+- responsibilities:
+  - marks the retired generalized cache runtime-rows surface as intentionally empty pending cleanup
 - phases: `runtime`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py -->
@@ -7437,7 +8051,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `a0836f99e5c28bd2f7285f3c0fb2a93b9044c35bcf857e6d2eecb02c5ee55230`
+- source_sha256: `85c9c5fa77a356d671c208563d967284c9d066709299382a9a25c6394c3638f1`
 - nodes: 1
 
 ### Nodes
@@ -7447,7 +8061,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:1`
 - role: Family-owned no-overrides lane compiler for the generalized family.
-- responsibilities: `emits no-overrides executor source from generalized manifest rows`, `builds flat runtime bindings and transient unrolled lanes for no-overrides execution`, `hydrates inner no-overrides executors through the process-wide executor factory cache`
+- responsibilities:
+  - emits no-overrides executor source from generalized manifest rows
+  - builds flat runtime bindings and transient unrolled lanes for no-overrides execution
+  - hydrates inner no-overrides executors through the process-wide executor factory cache
 - owns_state: `EXECUTOR_NAME`, `_STEP_STATIC_NAMESPACE`, `_TRANSIENT_STATIC_NAMESPACE`, `_TRANSIENT_SCHEMA_SEQUENCE_FIELDS`
 - phases: `runtime`
 
@@ -7479,7 +8096,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py:1`
 - role: Family-owned override runtime for generalized shapes.
-- responsibilities: `builds shape-dispatching override executors over generalized plan rows`, `memoizes emitted override-shape source process-wide and bound executors per spell`, `hydrates override executors through the process-wide executor factory cache and override targeting data`
+- responsibilities:
+  - builds shape-dispatching override executors over generalized plan rows
+  - memoizes emitted override-shape source process-wide and bound executors per spell
+  - hydrates override executors through the process-wide executor factory cache and override targeting data
 - owns_state: `_OVERRIDES_STATIC_NAMESPACE`, `_SHAPE_SOURCE_CACHE_MAX_ENTRIES`, `_shape_source_cache`
 - phases: `runtime`
 
@@ -7515,7 +8135,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:1`
 - role: Spell-scoped no-overrides executor compiler for generalized lane plans and schema rows.
-- responsibilities: `compiles generalized no-overrides executors from lane plans or schema rows`, `emits transient-unrolled and step-plan no-overrides source for generalized runtime lanes`, `reuses the process-wide emitted-executor code cache while preserving creations reuse and registration semantics`
+- responsibilities:
+  - compiles generalized no-overrides executors from lane plans or schema rows
+  - emits transient-unrolled and step-plan no-overrides source for generalized runtime lanes
+  - reuses the process-wide emitted-executor code cache while preserving creations reuse and registration semantics
 - owns_state: `_MISSING`, `_TRANSIENT_SCHEMA_SEQUENCE_FIELDS`
 - phases: `runtime`
 
@@ -7549,7 +8172,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py:1`
 - role: Spell-scoped override-specialization compiler for generalized lane plans and schema rows.
-- responsibilities: `compiles override-aware generalized executors from lane plans or schema rows`, `emits shape-specialized override source and deterministic per-step target-count metadata`, `prefilters step override targets and reuses the process-wide emitted-executor code cache while binding cached override code objects`
+- responsibilities:
+  - compiles override-aware generalized executors from lane plans or schema rows
+  - emits shape-specialized override source and deterministic per-step target-count metadata
+  - prefilters step override targets and reuses the process-wide emitted-executor code cache while binding cached override code objects
 - owns_state: `_MISSING`, `_EMPTY_OVERRIDE_VALUES`
 - phases: `runtime`
 
@@ -7583,7 +8209,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.py:1`
 - role: Quarantined import manifest for the generalized family.
-- responsibilities: `centralizes the remaining bridged runtime helper imports for the generalized family`, `exposes a visible, auditable coupling surface instead of scattered private imports`, `re-exports shared runtime helpers, emitters, and targeting artifacts used by generalized runtime compilers and hydrators`
+- responsibilities:
+  - centralizes the remaining bridged runtime helper imports for the generalized family
+  - exposes a visible, auditable coupling surface instead of scattered private imports
+  - re-exports shared runtime helpers, emitters, and targeting artifacts used by generalized runtime compilers and hydrators
 - owns_state: `__all__`
 - phases: `runtime`
 
@@ -7626,7 +8255,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py:44`
 - extends: `Cleanable`
 - role: Slotted hydrated runtime step row for the generalized family.
-- responsibilities: `replaces SimpleNamespace-style plan-step adapters with an explicit slotted runtime row`, `stores exactly the runtime step attributes consumed by emitted source and shared helpers`, `owns cleanup of the hydrated row reference surface`
+- responsibilities:
+  - replaces SimpleNamespace-style plan-step adapters with an explicit slotted runtime row
+  - stores exactly the runtime step attributes consumed by emitted source and shared helpers
+  - owns cleanup of the hydrated row reference surface
 - owns_state: `instance_key`, `spell`, `existence`, `creations_target_kind`, `dependency_resolution_order`, `uses_positional_override`, `contract_positional_override`, `has_contract_payload`, `contract_payload`, `use_spell_lock_hint`, `must_register`, `shared_instance`, `override_match_prefix`, `override_match_prefix_len`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -7662,7 +8294,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_state.py:15`
 - role: Family-local mutable state for the generalized creation strategy.
-- responsibilities: `carries generalized intermediate build data across ordered internal steps`, `keeps the final SpellCodegenCreation as the narrow public output object`, `stores override-targeting, path-registry, executor, and root-spell scratch state for generalized builds`
+- responsibilities:
+  - carries generalized intermediate build data across ordered internal steps
+  - keeps the final SpellCodegenCreation as the narrow public output object
+  - stores override-targeting, path-registry, executor, and root-spell scratch state for generalized builds
 - owns_state: `spell_codegen_model`, `spell_codegen_plan`, `spell_codegen_creation`, `root_spell`, `base_no_overrides_executor`, `override_targeting`, `override_plan_signature`, `override_path_registry`, `override_plan_rows`, `override_root_spell_id`, `override_spell_lookup`, `override_empty_shape_key`, `override_baseline_executor`, `overrides_executor`
 - phases: `runtime`
 
@@ -7699,7 +8334,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_strategy.py:29`
 - extends: `SpellCodegenStrategy`
 - role: Manifest-first phase-11 strategy for generalized planner output.
-- responsibilities: `routes generalized planner output through manifest-first creation assembly`, `populates SpellCodegenCreation through ordered internal generalized family steps`, `publishes generalized manifest metadata for the family cache codec`
+- responsibilities:
+  - routes generalized planner output through manifest-first creation assembly
+  - populates SpellCodegenCreation through ordered internal generalized family steps
+  - publishes generalized manifest metadata for the family cache codec
 - owns_state: `_steps`
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
@@ -7739,7 +8377,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_creation_cache.py:1`
 - role: Cache codec for the generalized codegen-creation family.
-- responsibilities: `builds the marshal-safe generalized manifest package for one spell`, `publishes lazy or eager CreationContext rebuilds from generalized manifest packages`, `routes generalized family reload through manifest validation and shared hydrators`
+- responsibilities:
+  - builds the marshal-safe generalized manifest package for one spell
+  - publishes lazy or eager CreationContext rebuilds from generalized manifest packages
+  - routes generalized family reload through manifest validation and shared hydrators
 - owns_state: `PACKAGE_VERSION`
 - phases: `runtime`
 
@@ -7783,7 +8424,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state.GeneralizedManifestState`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_manifest_state.py:15`
 - role: Family-local mutable state for the generalized manifest-first creation strategy.
-- responsibilities: `carries manifest and hydration results across ordered generalized family steps`, `keeps the final SpellCodegenCreation narrow while holding manifest-first scratch state`, `stores the shared model, plan, and creation artifact references for generalized manifest assembly`
+- responsibilities:
+  - carries manifest and hydration results across ordered generalized family steps
+  - keeps the final SpellCodegenCreation narrow while holding manifest-first scratch state
+  - stores the shared model, plan, and creation artifact references for generalized manifest assembly
 - owns_state: `spell_codegen_model`, `spell_codegen_plan`, `spell_codegen_creation`, `manifest`, `hydrated_executors`
 - phases: `runtime`
 
@@ -7820,7 +8464,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py:25`
 - extends: `Cleanable`
 - role: Live phase-11 binding resolver over generalized plan/model truth.
-- responsibilities: `resolves spells from runtime-shape records first and lane plan steps second`, `resolves the phase-5 path registry from analyzer graph-shape truth`, `owns only temporary reference maps for one hydration/build pass`
+- responsibilities:
+  - resolves spells from runtime-shape records first and lane plan steps second
+  - resolves the phase-5 path registry from analyzer graph-shape truth
+  - owns only temporary reference maps for one hydration/build pass
 - owns_state: `_records_by_spell_id`, `_spells_by_id`, `_path_registry`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `resolve_path_registry`, `resolve_spell`
@@ -7831,7 +8478,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py:155`
 - extends: `Cleanable`
 - role: Cache-load binding resolver over the live Spellbook surface.
-- responsibilities: `resolves spells from the owning Spellbook spell-id pool during cache hydration`, `resolves the live phase-5 path registry from the root blueprint`, `raises explicit sequencing errors when hydration prerequisites are not live`
+- responsibilities:
+  - resolves spells from the owning Spellbook spell-id pool during cache hydration
+  - resolves the live phase-5 path registry from the root blueprint
+  - raises explicit sequencing errors when hydration prerequisites are not live
 - owns_state: `_spell`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `resolve_path_registry`, `resolve_spell`
@@ -7871,7 +8521,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:1`
 - role: Single executor hydrator for the generalized codegen-creation family.
-- responsibilities: `hydrates both generalized runtime doors from one manifest plus one resolver`, `publishes cold lazy doors that hydrate once at first meld and swap in hot executors`, `rebuilds generalized override runtime, step rows, and CreationContext doors from manifest truth`
+- responsibilities:
+  - hydrates both generalized runtime doors from one manifest plus one resolver
+  - publishes cold lazy doors that hydrate once at first meld and swap in hot executors
+  - rebuilds generalized override runtime, step rows, and CreationContext doors from manifest truth
 - phases: `runtime`
 
 #### `GeneralizedHydratedExecutors` (class)
@@ -7880,7 +8533,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:61`
 - extends: `Cleanable`
 - role: Hydration result container for generalized family runtime doors.
-- responsibilities: `stores the hydrated no-overrides and overrides executors for one spell`, `stores the corresponding route key and code-object references for diagnostics`, `owns cleanup of the hydrated executor container surface`
+- responsibilities:
+  - stores the hydrated no-overrides and overrides executors for one spell
+  - stores the corresponding route key and code-object references for diagnostics
+  - owns cleanup of the hydrated executor container surface
 - owns_state: `route_key`, `fast_transient_no_overrides`, `inner_no_overrides_executor`, `no_overrides_executor`, `overrides_executor`, `no_overrides_code_object`, `overrides_code_object`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -7926,7 +8582,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py:1`
 - role: Manifest builder for the generalized codegen-creation family.
-- responsibilities: `builds the family's marshal-safe generalized manifest from model and plan truth`, `extends shared phase-11 rows with generalized-family flags needed by emitted source`, `validates and normalizes generalized manifest payloads for cache and hydration paths`
+- responsibilities:
+  - builds the family's marshal-safe generalized manifest from model and plan truth
+  - extends shared phase-11 rows with generalized-family flags needed by emitted source
+  - validates and normalizes generalized manifest payloads for cache and hydration paths
 - owns_state: `MANIFEST_VERSION`, `FAMILY_ID`
 - phases: `runtime`
 
@@ -7965,7 +8624,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_finalize_creation_context_step.py:33`
 - extends: `CodegenCreationFamilyStep`
 - role: Generalized family final output step.
-- responsibilities: `builds the final generalized override runtime callable from family-local scratch state`, `wraps the no-overrides and overrides executors in route-keyed CreationContext doors`, `finishes the narrow SpellCodegenCreation output for the generalized family`
+- responsibilities:
+  - builds the final generalized override runtime callable from family-local scratch state
+  - wraps the no-overrides and overrides executors in route-keyed CreationContext doors
+  - finishes the narrow SpellCodegenCreation output for the generalized family
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8012,7 +8674,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py:15`
 - extends: `CodegenCreationFamilyStep`
 - role: Lazy-door publication step for the generalized creation family.
-- responsibilities: `publishes cold runtime doors over the manifest without hydrating at phase-11 time`, `resolves the root spell through plan truth for lazy-door publication`, `mirrors lane metadata onto SpellCodegenCreation while deferring hydration to first meld`
+- responsibilities:
+  - publishes cold runtime doors over the manifest without hydrating at phase-11 time
+  - resolves the root spell through plan truth for lazy-door publication
+  - mirrors lane metadata onto SpellCodegenCreation while deferring hydration to first meld
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8061,7 +8726,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_manifest_step.py:13`
 - extends: `CodegenCreationFamilyStep`
 - role: Manifest build step for the generalized creation family.
-- responsibilities: `converts phase-9 model and phase-10 plan truth into the family's manifest`, `publishes the manifest onto family-local state`, `mirrors the manifest into SpellCodegenCreation metadata for cache export`
+- responsibilities:
+  - converts phase-9 model and phase-10 plan truth into the family's manifest
+  - publishes the manifest onto family-local state
+  - mirrors the manifest into SpellCodegenCreation metadata for cache export
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8101,7 +8769,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_no_overrides_codegen_creation_step.py:15`
 - extends: `CodegenCreationFamilyStep`
 - role: Generalized family no-overrides executor build step.
-- responsibilities: `compiles the spell-static no-overrides executor from generalized lane truth`, `stores the compiled no-overrides executor and code object on family state and final output metadata`, `derives a deterministic no-overrides executor signature from lane rows and transient schema`
+- responsibilities:
+  - compiles the spell-static no-overrides executor from generalized lane truth
+  - stores the compiled no-overrides executor and code object on family state and final output metadata
+  - derives a deterministic no-overrides executor signature from lane rows and transient schema
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8151,7 +8822,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_overrides_codegen_creation_step.py:18`
 - extends: `CodegenCreationFamilyStep`
 - role: Generalized family overrides packaging step.
-- responsibilities: `builds override-targeting and override-runtime scratch inputs from generalized plan and model truth`, `stores override targeting, plan signature, path registry, and baseline executor on family state`, `mirrors override lane metadata onto the final codegen creation output`
+- responsibilities:
+  - builds override-targeting and override-runtime scratch inputs from generalized plan and model truth
+  - stores override targeting, plan signature, path registry, and baseline executor on family state
+  - mirrors override lane metadata onto the final codegen creation output
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8201,7 +8875,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:15`
 - markers: `IntEnum`
 - role: The many-only family's copy of the override-target ordering: PATH > UNIQUE > BROADCAST, preserved from the old Phase 10 patch map.
-- responsibilities: `rank override target matches so the more specific match wins`
+- responsibilities:
+  - rank override target matches so the more specific match wins
 - phases: `compile`
 
 #### `SpellOverrideTargetSocketRef` (class)
@@ -8209,7 +8884,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetSocketRef`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:31`
 - role: The many-only family's compiler-owned, hashable replacement for a runtime SocketRef.
-- responsibilities: `expose the socket identity data the override runtime needs, without the runtime object`, `stay hashable so it can key the override maps`
+- responsibilities:
+  - expose the socket identity data the override runtime needs, without the runtime object
+  - stay hashable so it can key the override maps
 - phases: `compile`
 
 #### `SpellOverrideTargetingCodegenCreation` (class)
@@ -8218,7 +8895,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:47`
 - extends: `Cleanable`
 - role: Compiler-owned override targeting artifact for the many-only family.
-- responsibilities: `replaces runtime patch-map dependency with compiler-owned many-only override targeting truth`, `stores resolved targets and specificity for raw override keys`, `builds deterministic socket-shape rows for override specialization and runtime dispatch`
+- responsibilities:
+  - replaces runtime patch-map dependency with compiler-owned many-only override targeting truth
+  - stores resolved targets and specificity for raw override keys
+  - builds deterministic socket-shape rows for override specialization and runtime dispatch
 - owns_state: `_root_spell_id`, `_targets_by_spec`, `_specificity_by_spec`, `_resolved_targets_by_raw_key`, `_last_single_raw_key`, `_last_single_value`, `_last_single_override_map`, `_last_single_socket_shape`, `_last_multi_signature`, `_last_multi_override_map`, `_last_multi_socket_shape`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `from_analysis`
@@ -8260,7 +8940,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:1`
 - role: Spell-scoped no-overrides compiler for the many-only family, plus its compiler-local target-kind and call-mode vocabulary.
-- responsibilities: `hydrates many-only no-overrides executors from plan objects or schema rows`, `builds transient unrolled or emitted step-plan source for many-only no-overrides execution`, `uses the process-wide executor code cache for emitted no-overrides executors`
+- responsibilities:
+  - hydrates many-only no-overrides executors from plan objects or schema rows
+  - builds transient unrolled or emitted step-plan source for many-only no-overrides execution
+  - uses the process-wide executor code cache for emitted no-overrides executors
 - owns_state: `_TRANSIENT_SCHEMA_SEQUENCE_FIELDS`
 - phases: `runtime`
 
@@ -8269,7 +8952,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:52`
 - role: Compiler-local target-kind labels for the many-only no-overrides compiler.
-- responsibilities: `name the target kinds this compiler emits, scoped to the compiler rather than shared vocabulary`
+- responsibilities:
+  - name the target kinds this compiler emits, scoped to the compiler rather than shared vocabulary
 - phases: `compile`
 
 #### `ManyOnlyCodegenPlanCallMode` (class)
@@ -8277,7 +8961,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:63`
 - role: Compiler-local call-mode labels for the many-only no-overrides compiler.
-- responsibilities: `name the call modes this compiler emits, scoped to the compiler rather than shared vocabulary`
+- responsibilities:
+  - name the call modes this compiler emits, scoped to the compiler rather than shared vocabulary
 - phases: `compile`
 
 ### Edges out
@@ -8306,7 +8991,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py:1`
 - role: Spell-scoped overrides compiler for the many-only family.
-- responsibilities: `hydrates override-aware many-only executors from plan objects or schema rows`, `emits override-specialized executor source and binds specialization namespaces from static plan rows`, `uses the process-wide executor code cache for override specialization code objects`
+- responsibilities:
+  - hydrates override-aware many-only executors from plan objects or schema rows
+  - emits override-specialized executor source and binds specialization namespaces from static plan rows
+  - uses the process-wide executor code cache for override specialization code objects
 - owns_state: `_MISSING`, `_EMPTY_OVERRIDE_VALUES`
 - phases: `runtime`
 
@@ -8336,7 +9024,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:1`
 - role: Single executor hydrator for the many_only codegen-creation family.
-- responsibilities: `hydrates both many-only runtime doors from one manifest plus one root spell`, `publishes cold lazy doors that hydrate once at first meld and swap hot doors into the published CreationContext`, `rebuilds many-only override runtime and no-overrides executor state from manifest truth`
+- responsibilities:
+  - hydrates both many-only runtime doors from one manifest plus one root spell
+  - publishes cold lazy doors that hydrate once at first meld and swap hot doors into the published CreationContext
+  - rebuilds many-only override runtime and no-overrides executor state from manifest truth
 - phases: `runtime`
 
 #### `ManyOnlyHydratedExecutors` (class)
@@ -8345,7 +9036,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:57`
 - extends: `Cleanable`
 - role: Hydration result container for one many_only spell.
-- responsibilities: `stores hydrated no-overrides and overrides executors for one many-only spell`, `stores the corresponding route key and code objects for diagnostics`, `owns cleanup of the hydrated executor container surface`
+- responsibilities:
+  - stores hydrated no-overrides and overrides executors for one many-only spell
+  - stores the corresponding route key and code objects for diagnostics
+  - owns cleanup of the hydrated executor container surface
 - owns_state: `route_key`, `no_overrides_executor`, `overrides_executor`, `no_overrides_code_object`, `overrides_code_object`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -8389,7 +9083,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:1`
 - role: Manifest builder for the many_only codegen-creation family.
-- responsibilities: `builds a marshal-safe many-only manifest from model and planner truth`, `publishes both no-overrides and overrides runtime lanes as pure data under the shared manifest metadata key`, `validates and coerces decoded many-only manifest payloads for cache and hydration paths`
+- responsibilities:
+  - builds a marshal-safe many-only manifest from model and planner truth
+  - publishes both no-overrides and overrides runtime lanes as pure data under the shared manifest metadata key
+  - validates and coerces decoded many-only manifest payloads for cache and hydration paths
 - owns_state: `MANIFEST_VERSION`, `FAMILY_ID`, `__all__`
 - phases: `runtime`
 
@@ -8427,7 +9124,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py:6`
 - role: Many-only-local phase-11 helper surface.
-- responsibilities: `provides deterministic hashing and signature serialization for the many-only family`, `normalizes instance keys and arbitrary values into deterministic tuple-backed forms`, `builds no-overrides signature rows and override step rows without depending on generalized helpers`
+- responsibilities:
+  - provides deterministic hashing and signature serialization for the many-only family
+  - normalizes instance keys and arbitrary values into deterministic tuple-backed forms
+  - builds no-overrides signature rows and override step rows without depending on generalized helpers
 - phases: `runtime`
 - public methods: `build_no_overrides_step_signature_row`, `build_override_step_row`, `freeze_value`, `hash_signature`, `normalize_instance_key`, `serialize_signature_part`
 
@@ -8453,7 +9153,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state.ManyOnlyCodegenCreationState`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_state.py:15`
 - role: Family-local mutable state for the many-only creation strategy.
-- responsibilities: `carries many-only intermediate compiler data across ordered family steps`, `stores override-targeting scratch and baseline executor data for later family steps`, `keeps the final SpellCodegenCreation artifact narrow and runtime-facing`
+- responsibilities:
+  - carries many-only intermediate compiler data across ordered family steps
+  - stores override-targeting scratch and baseline executor data for later family steps
+  - keeps the final SpellCodegenCreation artifact narrow and runtime-facing
 - owns_state: `spell_codegen_model`, `spell_codegen_plan`, `spell_codegen_creation`, `root_spell`, `base_no_overrides_executor`, `override_targeting`, `override_plan_signature`, `override_path_registry`, `override_plan_rows`, `override_root_spell_id`, `override_spell_lookup`, `override_empty_shape_key`, `override_baseline_executor`, `overrides_executor`
 - phases: `runtime`
 
@@ -8490,7 +9193,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_strategy.py:29`
 - extends: `SpellCodegenStrategy`
 - role: Manifest-first phase-11 family for many-only planner output.
-- responsibilities: `routes many-only planner output through the many-only family state and ordered family steps`, `publishes a manifest-first lazy-door runtime shape for many-only output`, `writes final family metadata onto SpellCodegenCreation after step execution`
+- responsibilities:
+  - routes many-only planner output through the many-only family state and ordered family steps
+  - publishes a manifest-first lazy-door runtime shape for many-only output
+  - writes final family metadata onto SpellCodegenCreation after step execution
 - owns_state: `_steps`
 - phases: `runtime`, `cleanup`
 - public methods: `apply`, `strategy_id`
@@ -8536,7 +9242,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_creation_cache`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_creation_cache.py:1`
 - role: Cache codec for the many-only codegen-creation family.
-- responsibilities: `validates many-only manifest cache packages against the shared cross-family envelope`, `publishes lazy CreationContext loads with zero hydration work at cache-load time`, `rebuilds eager CreationContext instances for tests and diagnostics from many-only family packages`
+- responsibilities:
+  - validates many-only manifest cache packages against the shared cross-family envelope
+  - publishes lazy CreationContext loads with zero hydration work at cache-load time
+  - rebuilds eager CreationContext instances for tests and diagnostics from many-only family packages
 - phases: `runtime`
 
 ### Edges out
@@ -8574,7 +9283,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_finalize_creation_context_step.py:31`
 - extends: `CodegenCreationFamilyStep`
 - role: Many-only family final output step.
-- responsibilities: `builds the final many-only override runtime callable from family-local scratch state`, `wraps the no-overrides and overrides executors in route-keyed CreationContext doors`, `finishes the narrow SpellCodegenCreation output for the many-only family`
+- responsibilities:
+  - builds the final many-only override runtime callable from family-local scratch state
+  - wraps the no-overrides and overrides executors in route-keyed CreationContext doors
+  - finishes the narrow SpellCodegenCreation output for the many-only family
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8619,7 +9331,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_lazy_door_step.py:15`
 - extends: `CodegenCreationFamilyStep`
 - role: Lazy-door publication step for the many_only family.
-- responsibilities: `publishes cold many-only runtime doors without compile or exec work at phase 11`, `hydrates through the shared many-only hydrator on first meld`, `mirrors lazy-door metadata parity keys onto the final codegen creation output`
+- responsibilities:
+  - publishes cold many-only runtime doors without compile or exec work at phase 11
+  - hydrates through the shared many-only hydrator on first meld
+  - mirrors lazy-door metadata parity keys onto the final codegen creation output
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8665,7 +9380,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_manifest_step.py:13`
 - extends: `CodegenCreationFamilyStep`
 - role: Manifest build step for the many_only family.
-- responsibilities: `builds the many-only family manifest from model and plan truth`, `publishes the manifest onto family-local state and final output metadata`, `resolves the live root spell needed by later many-only lazy-door hydration`
+- responsibilities:
+  - builds the many-only family manifest from model and plan truth
+  - publishes the manifest onto family-local state and final output metadata
+  - resolves the live root spell needed by later many-only lazy-door hydration
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8711,7 +9429,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.py:15`
 - extends: `CodegenCreationFamilyStep`
 - role: Many-only family no-overrides executor build step.
-- responsibilities: `compiles the spell-static no-overrides executor from many-only lane truth`, `stores the many-only no-overrides executor and code object on family state and final output metadata`, `derives a deterministic many-only no-overrides executor signature`
+- responsibilities:
+  - compiles the spell-static no-overrides executor from many-only lane truth
+  - stores the many-only no-overrides executor and code object on family state and final output metadata
+  - derives a deterministic many-only no-overrides executor signature
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8759,7 +9480,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_overrides_codegen_creation_step.py:20`
 - extends: `CodegenCreationFamilyStep`
 - role: Many-only family overrides packaging step.
-- responsibilities: `builds override-targeting and override-runtime scratch inputs from many-only plan and model truth`, `stores override targeting, plan signature, path registry, and baseline executor on family state`, `mirrors override lane metadata onto the final codegen creation output`
+- responsibilities:
+  - builds override-targeting and override-runtime scratch inputs from many-only plan and model truth
+  - stores override targeting, plan signature, path registry, and baseline executor on family state
+  - mirrors override lane metadata onto the final codegen creation output
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -8792,7 +9516,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `79fd95f6729b4df8e63c6e372b97764c72f2ce7737a69e50b897e41fe7b506b1`
+- source_sha256: `73e8064b739043e81a53c9f93136e35b9b1bd842e7522a73ae0713ceb274c8a4`
 - nodes: 1
 
 ### Nodes
@@ -8802,7 +9526,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:1`
 - role: Root-only no-overrides compiler for the solo family.
-- responsibilities: `emits deterministic root-only no-overrides executor source for the solo family`, `hydrates callable executors from emitted source against one root spell`, `uses the process-wide emitted-source code-object cache for solo no-overrides executors`
+- responsibilities:
+  - emits deterministic root-only no-overrides executor source for the solo family
+  - hydrates callable executors from emitted source against one root spell
+  - uses the process-wide emitted-source code-object cache for solo no-overrides executors
 - phases: `runtime`
 
 ### Edges out
@@ -8819,7 +9546,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
 
-- source_sha256: `73f461c7f0889385b7d51a713069924855bf023a3da390683655096a6ba178d1`
+- source_sha256: `02016fff03ba053a5c1f4dbbedba48094f5e53005c5e58b77caf4266d3c1ba24`
 - nodes: 1
 
 ### Nodes
@@ -8829,7 +9556,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:1`
 - role: Root-only overrides compiler for the solo family.
-- responsibilities: `emits deterministic root-only overrides executor source for the solo family`, `hydrates callable override executors from emitted source against one root spell`, `uses the process-wide emitted-source code-object cache for solo overrides executors`
+- responsibilities:
+  - emits deterministic root-only overrides executor source for the solo family
+  - hydrates callable override executors from emitted source against one root spell
+  - uses the process-wide emitted-source code-object cache for solo overrides executors
 - phases: `runtime`
 
 ### Edges out
@@ -8856,7 +9586,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.hydration.solo_hydrator`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/hydration/solo_hydrator.py:1`
 - role: Single executor hydrator for the solo codegen-creation family.
-- responsibilities: `hydrates both final solo runtime doors from one manifest plus the root spell`, `publishes cold lazy doors that hydrate once at first meld and swap hot doors into the published CreationContext`, `wraps root-only no-overrides and overrides executors in the shared route-keyed CreationContext doors`
+- responsibilities:
+  - hydrates both final solo runtime doors from one manifest plus the root spell
+  - publishes cold lazy doors that hydrate once at first meld and swap hot doors into the published CreationContext
+  - wraps root-only no-overrides and overrides executors in the shared route-keyed CreationContext doors
 - phases: `runtime`
 
 #### `SoloHydratedExecutors` (class)
@@ -8865,7 +9598,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/hydration/solo_hydrator.py:40`
 - extends: `Cleanable`
 - role: Hydration result container for one solo spell.
-- responsibilities: `stores hydrated no-overrides and overrides executors for one solo spell`, `stores the route key, transient flag, and code objects for diagnostics`, `owns cleanup of the hydrated executor container surface`
+- responsibilities:
+  - stores hydrated no-overrides and overrides executors for one solo spell
+  - stores the route key, transient flag, and code objects for diagnostics
+  - owns cleanup of the hydrated executor container surface
 - owns_state: `route_key`, `fast_transient_no_overrides`, `no_overrides_executor`, `overrides_executor`, `no_overrides_code_object`, `overrides_code_object`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -8907,7 +9643,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.manifest.solo_manifest`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/manifest/solo_manifest.py:1`
 - role: Manifest builder for the solo codegen-creation family.
-- responsibilities: `builds a small primitive-only solo manifest from model and planner truth`, `publishes root spell id, route key, emit key, and transient flag under the shared manifest metadata key`, `validates decoded solo manifest payloads for cache and hydration paths`
+- responsibilities:
+  - builds a small primitive-only solo manifest from model and planner truth
+  - publishes root spell id, route key, emit key, and transient flag under the shared manifest metadata key
+  - validates decoded solo manifest payloads for cache and hydration paths
 - owns_state: `MANIFEST_VERSION`, `FAMILY_ID`, `__all__`
 - phases: `runtime`
 
@@ -8941,7 +9680,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_state.py:15`
 - role: Family-local mutable state for the solo creation strategy.
-- responsibilities: `carries solo-family intermediate compiler data across ordered solo steps`, `stores root-spell, route-key, emit-key, and executor scratch for later solo family steps`, `keeps the final SpellCodegenCreation artifact narrow and runtime-facing`
+- responsibilities:
+  - carries solo-family intermediate compiler data across ordered solo steps
+  - stores root-spell, route-key, emit-key, and executor scratch for later solo family steps
+  - keeps the final SpellCodegenCreation artifact narrow and runtime-facing
 - owns_state: `spell_codegen_model`, `spell_codegen_plan`, `spell_codegen_creation`, `root_spell`, `root_spell_id`, `resolve_route_key`, `solo_emit_key`, `fast_transient_no_overrides_enabled`, `no_overrides_executor`, `overrides_executor`
 - phases: `runtime`
 
@@ -8978,7 +9720,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_codegen_creation_strategy.py:29`
 - extends: `SpellCodegenStrategy`
 - role: Manifest-first phase-11 family for solo planner output.
-- responsibilities: `routes solo planner output through solo family state and ordered steps`, `publishes a manifest-first lazy-door runtime shape for solo output`, `writes final family metadata onto SpellCodegenCreation after step execution`
+- responsibilities:
+  - routes solo planner output through solo family state and ordered steps
+  - publishes a manifest-first lazy-door runtime shape for solo output
+  - writes final family metadata onto SpellCodegenCreation after step execution
 - owns_state: `_steps`
 - phases: `runtime`, `cleanup`
 - public methods: `apply`, `strategy_id`
@@ -9022,7 +9767,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/solo_creation_cache.py:1`
 - role: Cache codec for the solo codegen-creation family.
-- responsibilities: `validates solo manifest cache packages against the shared cross-family envelope`, `publishes lazy CreationContext loads with zero hydration work at cache-load time`, `rebuilds eager CreationContext instances for tests and diagnostics from solo family packages`
+- responsibilities:
+  - validates solo manifest cache packages against the shared cross-family envelope
+  - publishes lazy CreationContext loads with zero hydration work at cache-load time
+  - rebuilds eager CreationContext instances for tests and diagnostics from solo family packages
 - phases: `runtime`
 
 ### Edges out
@@ -9060,7 +9808,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_creation_context_setup_step.py:10`
 - extends: `CodegenCreationFamilyStep`
 - role: Solo family setup step.
-- responsibilities: `resolves the visible root spell for the solo family`, `derives route-key and emit-key facts from solo model truth`, `publishes root-only setup data onto family-local solo state for later steps`
+- responsibilities:
+  - resolves the visible root spell for the solo family
+  - derives route-key and emit-key facts from solo model truth
+  - publishes root-only setup data onto family-local solo state for later steps
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -9098,7 +9849,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_lazy_door_step.py:15`
 - extends: `CodegenCreationFamilyStep`
 - role: Lazy-door publication step for the solo family.
-- responsibilities: `publishes cold solo runtime doors without compile or exec work at phase 11`, `hydrates through the shared solo hydrator on first meld`, `mirrors lazy-door metadata parity keys onto the final codegen creation output`
+- responsibilities:
+  - publishes cold solo runtime doors without compile or exec work at phase 11
+  - hydrates through the shared solo hydrator on first meld
+  - mirrors lazy-door metadata parity keys onto the final codegen creation output
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -9144,7 +9898,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_manifest_step.py:13`
 - extends: `CodegenCreationFamilyStep`
 - role: Manifest build step for the solo family.
-- responsibilities: `builds the solo family manifest from model and plan truth`, `publishes root-spell, route-key, emit-key, and transient facts onto family-local solo state`, `stores the manifest under the shared manifest metadata key on the output artifact`
+- responsibilities:
+  - builds the solo family manifest from model and plan truth
+  - publishes root-spell, route-key, emit-key, and transient facts onto family-local solo state
+  - stores the manifest under the shared manifest metadata key on the output artifact
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -9184,7 +9941,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_no_overrides_codegen_creation_step.py:12`
 - extends: `CodegenCreationFamilyStep`
 - role: Solo family no-overrides executor build step.
-- responsibilities: `compiles the root-only solo no-overrides executor`, `publishes the no-overrides executor and code object onto family state and output metadata`, `derives deterministic solo no-overrides executor signature data`
+- responsibilities:
+  - compiles the root-only solo no-overrides executor
+  - publishes the no-overrides executor and code object onto family state and output metadata
+  - derives deterministic solo no-overrides executor signature data
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -9224,7 +9984,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_overrides_codegen_creation_step.py:12`
 - extends: `CodegenCreationFamilyStep`
 - role: Solo family overrides executor build step.
-- responsibilities: `compiles the root-only solo overrides executor`, `publishes the overrides executor and code object onto family state and output metadata`, `mirrors override-lane metadata onto the final codegen creation output`
+- responsibilities:
+  - compiles the root-only solo overrides executor
+  - publishes the overrides executor and code object onto family state and output metadata
+  - mirrors override-lane metadata onto the final codegen creation output
 - phases: `runtime`
 - public methods: `apply`, `step_id`
 
@@ -9263,7 +10026,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery.CodegenPlanDiscovery`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery.py:6`
 - role: Discovery result for one codegen-plan selection pass.
-- responsibilities: `stores the selected planner strategy id and compact discovery provenance`, `stores the higher-level plan family selected from processor-owned truth`, `stores the bounded allow-list of codegen styles phase 11 may consider`
+- responsibilities:
+  - stores the selected planner strategy id and compact discovery provenance
+  - stores the higher-level plan family selected from processor-owned truth
+  - stores the bounded allow-list of codegen styles phase 11 may consider
 - owns_state: `selected_strategy_id`, `discovery_reason`, `plan_family_id`, `candidate_codegen_style_ids`
 - phases: `runtime`
 
@@ -9290,7 +10056,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_strategy.py:12`
 - markers: `ABC`
 - role: Abstract contract for one phase-10 discovery strategy.
-- responsibilities: `defines the stable strategy_id contract for planner discovery strategies`, `defines the discover seam over SpellCodegenModel`, `lets phase-10 discovery claim a planning family without building planner artifacts directly`
+- responsibilities:
+  - defines the stable strategy_id contract for planner discovery strategies
+  - defines the discover seam over SpellCodegenModel
+  - lets phase-10 discovery claim a planning family without building planner artifacts directly
 - phases: `runtime`
 - public methods: `discover`, `strategy_id`
 
@@ -9327,7 +10096,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_strategy_builder.py:19`
 - extends: `Cleanable`
 - role: Registry holder for phase-10 discovery strategies.
-- responsibilities: `owns the named discovery strategy registry`, `loads the built-in solo, many-only, and generalized discovery strategies`, `resolves ordered discovery strategy tuples for the planner discovery facade`
+- responsibilities:
+  - owns the named discovery strategy registry
+  - loads the built-in solo, many-only, and generalized discovery strategies
+  - resolves ordered discovery strategy tuples for the planner discovery facade
 - owns_state: `_strategies_by_name`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `get_strategies`, `get_strategy`, `registered_strategy_names`
@@ -9381,7 +10153,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_system.py:13`
 - extends: `Cleanable`
 - role: Facade that selects the current best codegen-plan discovery result for one model.
-- responsibilities: `iterates the registered discovery strategies in order`, `returns the first discovery result that claims the current spell codegen model`, `keeps phase-10 family selection separate from later plan mutation and phase-11 runtime style choice`
+- responsibilities:
+  - iterates the registered discovery strategies in order
+  - returns the first discovery result that claims the current spell codegen model
+  - keeps phase-10 family selection separate from later plan mutation and phase-11 runtime style choice
 - owns_state: `_strategy_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `discover`
@@ -9429,7 +10204,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py:10`
 - extends: `CodegenPlanDiscoveryStrategy`
 - role: Default generalized phase-10 discovery strategy.
-- responsibilities: `claims the current model by default`, `emits the generalized planner strategy id and generalized planning family`, `bounds phase-11 candidate codegen styles for the generalized family`
+- responsibilities:
+  - claims the current model by default
+  - emits the generalized planner strategy id and generalized planning family
+  - bounds phase-11 candidate codegen styles for the generalized family
 - phases: `runtime`
 - public methods: `discover`, `strategy_id`
 
@@ -9471,7 +10249,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py:15`
 - extends: `CodegenPlanDiscoveryStrategy`
 - role: Phase-10 discovery strategy for graphs made only of Existence.many spells.
-- responsibilities: `claims models whose visible spell set contains more than one spell and every spell is Existence.many`, `emits the many-only planner strategy id and many-only planning family`, `bounds phase-11 candidate codegen styles for the many-only family`
+- responsibilities:
+  - claims models whose visible spell set contains more than one spell and every spell is Existence.many
+  - emits the many-only planner strategy id and many-only planning family
+  - bounds phase-11 candidate codegen styles for the many-only family
 - phases: `runtime`
 - public methods: `discover`, `strategy_id`
 
@@ -9515,7 +10296,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py:14`
 - extends: `CodegenPlanDiscoveryStrategy`
 - role: Phase-10 discovery strategy for the solo spell category.
-- responsibilities: `claims models whose visible spell count is exactly one`, `emits the solo planner strategy id and solo planning family`, `bounds phase-11 candidate codegen styles for the solo family`
+- responsibilities:
+  - claims models whose visible spell count is exactly one
+  - emits the solo planner strategy id and solo planning family
+  - bounds phase-11 candidate codegen styles for the solo family
 - phases: `runtime`
 - public methods: `discover`, `strategy_id`
 
@@ -9540,7 +10324,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py
 
-- source_sha256: `49da147873a88833035b73474f79d90f93d855bb4d4c9bf7e6c7b32063ac4b29`
+- source_sha256: `c62979c70f87de79e88ec7ccdf6e3cf096bdc2f3186475527653adb6cdd1f8f4`
 - nodes: 7
 
 ### Nodes
@@ -9556,7 +10340,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:22`
 - role: Variant labels for many-only planner lanes.
-- responsibilities: `labels the many-only no-overrides and overrides planner lanes`, `keeps many-only planner variant identity separate from generalized variant names`
+- responsibilities:
+  - labels the many-only no-overrides and overrides planner lanes
+  - keeps many-only planner variant identity separate from generalized variant names
 - owns_state: `NO_OVERRIDES`, `OVERRIDES`
 - phases: `runtime`
 
@@ -9565,7 +10351,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:36`
 - role: Fixed-arity call-mode enum for many-only planner output.
-- responsibilities: `labels CALL0 through CALL8 and CALLN for many-only no-overrides execution`, `keeps many-only call-mode naming local to the planner and runtime family`
+- responsibilities:
+  - labels CALL0 through CALL8 and CALLN for many-only no-overrides execution
+  - keeps many-only call-mode naming local to the planner and runtime family
 - owns_state: `CALL0`, `CALL1`, `CALL2`, `CALL3`, `CALL4`, `CALL5`, `CALL6`, `CALL7`, `CALL8`, `CALLN`
 - phases: `runtime`
 
@@ -9574,7 +10362,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:58`
 - role: Reusable planner step object for one many-only execution occurrence.
-- responsibilities: `stores spell-static instance and occurrence identity for one many-only step`, `stores dependency resolution order and contract payload facts for emitted execution`, `stores override-match prefix metadata for many-only overrides planning`
+- responsibilities:
+  - stores spell-static instance and occurrence identity for one many-only step
+  - stores dependency resolution order and contract payload facts for emitted execution
+  - stores override-match prefix metadata for many-only overrides planning
 - owns_state: `_instance_key`, `_occurrence`, `_spell`, `_shared_instance`, `_dependency_resolution_order`, `_uses_positional_override`, `_contract_positional_override`, `_has_contract_payload`, `_contract_payload`, `_override_match_prefix`, `_override_match_prefix_len`
 - phases: `runtime`, `cleanup`
 - public methods: `collection_param_names`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_resolution_order`, `has_contract_payload`, `instance_key`, `occurrence`, `override_match_prefix`, `override_match_prefix_len`, `shared_instance`, `spell` (+1 more)
@@ -9585,7 +10376,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:232`
 - extends: `Cleanable`
 - role: Planner-owned no-overrides payload for the many-only family.
-- responsibilities: `stores ordered many-only steps plus root-step and fixed-arity dependency arrays`, `stores step spell and disposal metadata for no-overrides executor compilation`, `owns cleanup of the many-only no-overrides planner payload`
+- responsibilities:
+  - stores ordered many-only steps plus root-step and fixed-arity dependency arrays
+  - stores step spell and disposal metadata for no-overrides executor compilation
+  - owns cleanup of the many-only no-overrides planner payload
 - owns_state: `_lane_id`, `_root_spell_id`, `_root_instance_key`, `_steps`, `_root_step_index`, `_step_call_targets`, `_step_call_modes`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `has_any_disposal_methods`, `lane_id`, `metadata`, `root_instance_key`, `root_spell_id`, `root_step_index`, `step_call_modes`, `step_call_targets`, `step_dep1`, `step_dep2a`, `step_dep2b` (+37 more)
@@ -9593,10 +10387,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyOverridesPlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:781`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:784`
 - extends: `Cleanable`
 - role: Planner-owned overrides payload for the many-only family.
-- responsibilities: `stores the ordered many-only override steps for one root spell`, `keeps the many-only overrides lane separate from generalized plan payloads`, `owns cleanup of the many-only overrides planner payload`
+- responsibilities:
+  - stores the ordered many-only override steps for one root spell
+  - keeps the many-only overrides lane separate from generalized plan payloads
+  - owns cleanup of the many-only overrides planner payload
 - owns_state: `_lane_id`, `_root_spell_id`, `_root_instance_key`, `_steps`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `lane_id`, `metadata`, `root_instance_key`, `root_spell_id`, `steps`
@@ -9604,9 +10401,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:879`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:882`
 - role: Standalone builder for many-only planner payloads from SpellCodegenModel.
-- responsibilities: `builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections`, `derives fixed-arity call-mode arrays and root-step metadata for the no-overrides lane`, `returns the many-only no-overrides or overrides plan payload selected by variant`
+- responsibilities:
+  - builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections
+  - derives fixed-arity call-mode arrays and root-step metadata for the no-overrides lane
+  - returns the many-only no-overrides or overrides plan payload selected by variant
 - owns_state: `_state`, `_plan_variant`
 - phases: `runtime`
 - public methods: `build`
@@ -9657,7 +10457,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py
 
-- source_sha256: `f522af1ef9edc06f988f03a4300121eaaefde5bf48d0ec3b333ead8dcc14a457`
+- source_sha256: `f873b88e057de359d79a1b827a53c26277d9be3535890c69c2096ca8f1018ad9`
 - nodes: 9
 
 ### Nodes
@@ -9673,7 +10473,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanVariant`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:24`
 - role: Planner-owned generalized lane variant labels.
-- responsibilities: `labels generalized no-overrides and overrides lane selection`, `keeps planner variant identity stable across generalized, solo, and generalized-many-only builders`
+- responsibilities:
+  - labels generalized no-overrides and overrides lane selection
+  - keeps planner variant identity stable across generalized, solo, and generalized-many-only builders
 - owns_state: `NO_OVERRIDES`, `OVERRIDES`
 - phases: `runtime`
 
@@ -9682,7 +10484,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:39`
 - role: Planner-owned creations-target kind labels for generalized lane output.
-- responsibilities: `labels CALLER, OWNER, and SPELLSPACE creations routing for generalized planner steps`, `keeps generalized planner payloads aligned with runtime creations-target semantics without a legacy enum dependency`
+- responsibilities:
+  - labels CALLER, OWNER, and SPELLSPACE creations routing for generalized planner steps
+  - keeps generalized planner payloads aligned with runtime creations-target semantics without a legacy enum dependency
 - owns_state: `CALLER`, `OWNER`, `SPELLSPACE`
 - phases: `runtime`
 
@@ -9691,7 +10495,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:54`
 - role: Planner-owned call-mode labels for the generalized no-overrides fast path.
-- responsibilities: `labels CALL0 through CALL8 and CALLN for generalized fast-path packing`, `preserves planner-side fixed-arity call semantics for emitted executor compilation`
+- responsibilities:
+  - labels CALL0 through CALL8 and CALLN for generalized fast-path packing
+  - preserves planner-side fixed-arity call semantics for emitted executor compilation
 - owns_state: `CALL0`, `CALL1`, `CALL2`, `CALL3`, `CALL4`, `CALL5`, `CALL6`, `CALL7`, `CALL8`, `CALLN`
 - phases: `runtime`
 
@@ -9700,7 +10506,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep`
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:77`
 - role: Reusable generalized planner step object for one execution occurrence.
-- responsibilities: `stores generalized spell, occurrence, dependency, override, and contract payload metadata for one step`, `stores runtime lock, spellspace, owner-conduit, registration, and disposal metadata for later phase-11 compilation`, `preserves the old execution-plan step semantics in planner-owned form`
+- responsibilities:
+  - stores generalized spell, occurrence, dependency, override, and contract payload metadata for one step
+  - stores runtime lock, spellspace, owner-conduit, registration, and disposal metadata for later phase-11 compilation
+  - preserves the old execution-plan step semantics in planner-owned form
 - owns_state: `_instance_key`, `_occurrence`, `_spell`, `_existence`, `_creations_target_kind`, `_shared_instance`, `_inject_spec`, `_dependency_keys`, `_dependency_keys_by_param`, `_dependency_resolution_order`, `_override_keys`, `_override_match_prefix`, `_override_match_prefix_len`, `_expects_overrides`, `_contract_keys`, `_allow_list_aggregation`, `_uses_positional_override`, `_contract_payload`, `_contract_positional_override`, `_has_contract_payload`, `_lock_hint`, `_use_spell_lock_hint`, `_requires_spellspace`, `_owner_conduit_required`, `_must_register`, `_disposal_method_names`
 - phases: `runtime`, `cleanup`
 - public methods: `allow_list_aggregation`, `collection_param_names`, `contract_keys`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_keys`, `dependency_keys_by_param`, `dependency_resolution_order`, `disposal_method_names`, `existence`, `expects_overrides` (+15 more)
@@ -9708,10 +10517,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenLanePlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:429`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:431`
 - extends: `Cleanable`
 - role: Planner-owned generalized lane-plan carrier with fast-path and phase-11 row-cache state.
-- responsibilities: `stores ordered generalized planner steps plus spell-step indexes and optimistic object references`, `stores fast-path arrays and transient plan payloads for generalized no-overrides execution`, `memoizes phase-11 schema rows with and without override metadata for downstream phase-11 consumers`
+- responsibilities:
+  - stores ordered generalized planner steps plus spell-step indexes and optimistic object references
+  - stores fast-path arrays and transient plan payloads for generalized no-overrides execution
+  - memoizes phase-11 schema rows with and without override metadata for downstream phase-11 consumers
 - owns_state: `_lane_id`, `_root_spell_id`, `_root_instance_key`, `_steps`, `_spell_id_step_index`, `_optimistic_object_refs_by_spell_id`, `_available_param_by_spell_id`, `_fast_dep_indices`, `_fast_call_modes`, `_fast_transient_plan`, `_fast_has_contract_payloads`, `_fast_has_existing_creations`, `_metadata`, `_phase11_rows_no_meta`, `_phase11_rows_with_meta`
 - phases: `runtime`, `cleanup`
 - public methods: `available_param_by_spell_id`, `cleanup`, `fast_has_contract_payloads`, `fast_has_existing_creations`, `fast_plan`, `fast_transient_plan`, `lane_id`, `metadata`, `optimistic_object_refs_by_spell_id`, `root_instance_key`, `root_spell_id`, `spell_id_step_index` (+1 more)
@@ -9719,9 +10531,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1042`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1044`
 - role: Base generalized lane-plan builder from SpellCodegenModel.
-- responsibilities: `builds generalized lane-plan steps from graph, order, instance, injection, and runtime model sections`, `derives generalized fast-path arrays and transient-only plans for no-overrides lanes when eligible`, `creates the planner-owned generalized lane-plan carrier for the selected lane variant`
+- responsibilities:
+  - builds generalized lane-plan steps from graph, order, instance, injection, and runtime model sections
+  - derives generalized fast-path arrays and transient-only plans for no-overrides lanes when eligible
+  - creates the planner-owned generalized lane-plan carrier for the selected lane variant
 - owns_state: `_state`, `_plan_variant`
 - phases: `runtime`
 - public methods: `build`, `build_dual`
@@ -9729,20 +10544,24 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellSoloCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellSoloCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1912`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1918`
 - extends: `SpellGeneralizedCodegenPlanBuilder`
 - role: Solo-specialized builder over the generalized lane-plan base.
-- responsibilities: `enforces single-visible-spell preconditions before reusing generalized lane synthesis`, `stamps solo family metadata onto the resulting generalized lane-plan payload`
+- responsibilities:
+  - enforces single-visible-spell preconditions before reusing generalized lane synthesis
+  - stamps solo family metadata onto the resulting generalized lane-plan payload
 - phases: `runtime`
 - public methods: `build`
 
 #### `SpellManyOnlyCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1948`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1954`
 - extends: `SpellGeneralizedCodegenPlanBuilder`
 - role: Many-only-specialized builder over the generalized lane-plan base.
-- responsibilities: `enforces all-visible-spells-are-Existence.many preconditions before reusing generalized lane synthesis`, `builds generalized-family fast-path arrays for many-only lanes and stamps many-only family metadata`
+- responsibilities:
+  - enforces all-visible-spells-are-Existence.many preconditions before reusing generalized lane synthesis
+  - builds generalized-family fast-path arrays for many-only lanes and stamps many-only family metadata
 - phases: `runtime`
 - public methods: `build`
 
@@ -9812,7 +10631,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan.py:6`
 - extends: `Cleanable`
 - role: Planner-owned codegen plan container for one spell.
-- responsibilities: `stores the planner output lanes for no-overrides and overrides`, `stores planner provenance, plan-family selection, and candidate codegen style ids`, `lives on SpellCompilerArtifact as the generic phase-10 codegen output`
+- responsibilities:
+  - stores the planner output lanes for no-overrides and overrides
+  - stores planner provenance, plan-family selection, and candidate codegen style ids
+  - lives on SpellCompilerArtifact as the generic phase-10 codegen output
 - owns_state: `processor_strategy_ids`, `plan_strategy_ids`, `plan_family_id`, `candidate_codegen_style_ids`, `no_overrides_plan`, `overrides_plan`, `metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -9849,7 +10671,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy.py:18`
 - markers: `ABC`
 - role: Abstract contract for one codegen-plan shaping strategy.
-- responsibilities: `defines the stable strategy_id contract for planner strategies`, `defines the apply seam that mutates SpellCodegenPlan from assessed model and artifact truth`, `keeps planner strategy behavior separate from the top-level planner facade`
+- responsibilities:
+  - defines the stable strategy_id contract for planner strategies
+  - defines the apply seam that mutates SpellCodegenPlan from assessed model and artifact truth
+  - keeps planner strategy behavior separate from the top-level planner facade
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
 
@@ -9886,7 +10711,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy_builder.py:19`
 - extends: `Cleanable`
 - role: Registry holder for codegen-plan strategies.
-- responsibilities: `owns the named planner strategy registry`, `loads the built-in solo, many-only, and generalized planner strategies`, `resolves deterministic ordered strategy tuples for planner chaining`
+- responsibilities:
+  - owns the named planner strategy registry
+  - loads the built-in solo, many-only, and generalized planner strategies
+  - resolves deterministic ordered strategy tuples for planner chaining
 - owns_state: `_strategies_by_name`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `get_strategies`, `get_strategy`, `registered_strategy_names`
@@ -9940,7 +10768,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_planner.py:20`
 - extends: `Cleanable`
 - role: Planner facade over artifact-owned model truth.
-- responsibilities: `reads the fitted spell codegen model from SpellCompilerArtifact`, `uses discovery to choose the current best codegen-plan strategy and plan family`, `publishes the resulting SpellCodegenPlan back onto the compiler artifact`
+- responsibilities:
+  - reads the fitted spell codegen model from SpellCompilerArtifact
+  - uses discovery to choose the current best codegen-plan strategy and plan family
+  - publishes the resulting SpellCodegenPlan back onto the compiler artifact
 - owns_state: `_discovery_system`, `_strategy_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `build`, `cleanup`
@@ -9996,7 +10827,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_codegen_plan_strategy.py:19`
 - extends: `SpellCodegenPlanStrategy`
 - role: Generalized model-native codegen-plan strategy.
-- responsibilities: `builds no-overrides and overrides planner lanes through the generalized lane-plan builder`, `publishes generalized planner output directly from fitted model truth`, `records selected strategy and model-section provenance on the planner-owned plan`
+- responsibilities:
+  - builds no-overrides and overrides planner lanes through the generalized lane-plan builder
+  - publishes generalized planner output directly from fitted model truth
+  - records selected strategy and model-section provenance on the planner-owned plan
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
 
@@ -10040,7 +10874,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py:19`
 - extends: `SpellCodegenPlanStrategy`
 - role: Residual generalized many-only planner strategy.
-- responsibilities: `builds no-overrides and overrides planner lanes through the dedicated many-only builder surface`, `publishes generalized-many-only planner output from fitted model truth`, `records many-only discovery provenance on the planner-owned plan`
+- responsibilities:
+  - builds no-overrides and overrides planner lanes through the dedicated many-only builder surface
+  - publishes generalized-many-only planner output from fitted model truth
+  - records many-only discovery provenance on the planner-owned plan
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
 
@@ -10084,7 +10921,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_solo_codegen_plan_strategy.py:19`
 - extends: `SpellCodegenPlanStrategy`
 - role: Solo category planner strategy.
-- responsibilities: `builds no-overrides and overrides planner lanes through a dedicated solo builder surface`, `publishes solo planner output from fitted model truth`, `records solo strategy and model-section provenance on the planner-owned plan`
+- responsibilities:
+  - builds no-overrides and overrides planner lanes through a dedicated solo builder surface
+  - publishes solo planner output from fitted model truth
+  - records solo strategy and model-section provenance on the planner-owned plan
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
 
@@ -10128,7 +10968,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py:19`
 - extends: `SpellCodegenPlanStrategy`
 - role: Standalone many-only phase-10 planner strategy.
-- responsibilities: `builds no-overrides and overrides planner lanes through many-only-native builder surfaces`, `publishes many-only planner output from fitted model truth`, `records many-only strategy and model-section provenance on the planner-owned plan`
+- responsibilities:
+  - builds no-overrides and overrides planner lanes through many-only-native builder surfaces
+  - publishes many-only planner output from fitted model truth
+  - records many-only strategy and model-section provenance on the planner-owned plan
 - phases: `runtime`
 - public methods: `apply`, `strategy_id`
 
@@ -10172,7 +11015,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:26`
 - extends: `Cleanable`
 - role: Registry interning parameter paths into stable path ids.
-- responsibilities: `interns and resolves root-relative parameter paths for override targeting`
+- responsibilities:
+  - interns and resolves root-relative parameter paths for override targeting
 - owns_state: `_child_ids`, `_parent_ids`, `_segments`, `_depths`, `_formatted_path_by_id`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `depth`, `extend_path`, `format_path`, `materialize_path`, `parent_id`, `resolve_path_id`, `root_path_id`
@@ -10182,7 +11026,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:279`
 - role: Stable reference to one DAG socket for targeting.
-- responsibilities: `stores node id, parameter name, path id, and socket kind for override targeting`
+- responsibilities:
+  - stores node id, parameter name, path id, and socket kind for override targeting
 - owns_state: `node_id`, `param_name`, `param_path_id`, `socket_kind`
 - phases: `validation`, `runtime`
 
@@ -10192,7 +11037,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:335`
 - extends: `Cleanable`
 - role: Index over SocketRef instances keyed by path and parameter name.
-- responsibilities: `indexes sockets for override and mutation targeting`, `owns one PathRegistry for rooted path ids`
+- responsibilities:
+  - indexes sockets for override and mutation targeting
+  - owns one PathRegistry for rooted path ids
 - owns_state: `_path_registry`, `_by_exact_path_id`, `_by_name`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `add_socket`, `cleanup`, `get_by_exact_path`, `get_by_name`, `is_built`, `iter_all_sockets`, `path_registry`, `rebuild`
@@ -10203,7 +11050,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:521`
 - extends: `Cleanable`
 - role: Targeting engine over a DagIndex.
-- responsibilities: `resolves TargetSpec queries against indexed socket refs`
+- responsibilities:
+  - resolves TargetSpec queries against indexed socket refs
 - owns_state: `_index`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `resolve`
@@ -10213,7 +11061,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:699`
 - role: Builder for DagIndex instances from rooted blueprints.
-- responsibilities: `builds DagIndex state from rooted blueprint socket refs`
+- responsibilities:
+  - builds DagIndex state from rooted blueprint socket refs
 - phases: `validation`, `runtime`
 - public methods: `build_shallow`
 
@@ -10273,7 +11122,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_node.py:8`
 - extends: `Cleanable`
 - role: Node in the spellbook directed acyclic work graph.
-- responsibilities: `stores node identity, payload, dependency links, and param metadata for one DAG node`
+- responsibilities:
+  - stores node identity, payload, dependency links, and param metadata for one DAG node
 - owns_state: `_dependencies`, `_dependents`, `_children_by_param`, `_incoming_params`, `_payload`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `add_dependency`, `add_task`, `children_by_param`, `cleanup`, `dependencies`, `dependents`, `id`, `incoming_params`, `payload`, `payload`, `run_tasks`
@@ -10317,7 +11167,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/directed_acyclic_work_graph.py:12`
 - extends: `Cleanable`
 - role: Minimal DAG implementation specialized for Melder resolution.
-- responsibilities: `tracks nodes and dependency edges`, `computes topological order and optional execution over DAG nodes`
+- responsibilities:
+  - tracks nodes and dependency edges
+  - computes topological order and optional execution over DAG nodes
 - owns_state: `_nodes`, `_socket_kinds`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `add_dependencies_bulk`, `add_dependency`, `add_node`, `add_nodes_bulk`, `cleanup`, `collect_dependency_ids`, `execute`, `get_node`, `id`, `nodes`, `topological_levels`, `topological_sort`
@@ -10363,7 +11215,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolution_frame.py:10`
 - extends: `Cleanable`
 - role: Per-meld runtime value frame.
-- responsibilities: `stores caller overrides for one meld run`, `stores resolved node results and per-node errors`, `resets and reuses per-execution storage without graph semantics`
+- responsibilities:
+  - stores caller overrides for one meld run
+  - stores resolved node results and per-node errors
+  - resets and reuses per-execution storage without graph semantics
 - owns_state: `_overrides`, `_results`, `_errors`, `_id`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `errors`, `get_error`, `get_override`, `get_result`, `has_override`, `has_result`, `id`, `overrides`, `register_error`, `results`, `set_result`
@@ -10404,7 +11259,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:5`
 - markers: `Enum`
 - role: Enum classifying the kind of socket represented by a DAG edge.
-- responsibilities: `labels normal, spell-contract, and mutation-contract socket kinds`
+- responsibilities:
+  - labels normal, spell-contract, and mutation-contract socket kinds
 - owns_state: `NORMAL`, `SPELL_CONTRACT`, `MUTATION_CONTRACT`
 - phases: `validation`, `runtime`
 
@@ -10431,7 +11287,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:8`
 - markers: `Enum`
 - role: Enum of supported override targeting modes.
-- responsibilities: `labels path, unique, and broadcast targeting semantics`
+- responsibilities:
+  - labels path, unique, and broadcast targeting semantics
 - owns_state: `PATH`, `UNIQUE`, `BROADCAST`
 - phases: `runtime`
 
@@ -10440,7 +11297,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec`
 - defined at: `src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:37`
 - role: Parsed representation of one override target key.
-- responsibilities: `stores parsed override path or parameter targeting data`, `parses raw override keys into normalized targeting specs`
+- responsibilities:
+  - stores parsed override path or parameter targeting data
+  - parses raw override keys into normalized targeting specs
 - owns_state: `kind`, `path`, `param_name`
 - phases: `runtime`
 - public methods: `parse`
@@ -10476,7 +11335,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.executor_code_cache`
 - defined at: `src/melder/aether/spellbook/spell_compiler/executor_code_cache.py:1`
 - role: Process-wide compiled-executor code-object cache for identity-free emitted source.
-- responsibilities: `deduplicates compile() of identity-free emitted executor source by source hash`, `keeps the cache bounded with lock-light FIFO eviction`, `provides observability and maintenance helpers for cached compiled code objects`
+- responsibilities:
+  - deduplicates compile() of identity-free emitted executor source by source hash
+  - keeps the cache bounded with lock-light FIFO eviction
+  - provides observability and maintenance helpers for cached compiled code objects
 - owns_state: `_code_by_source_hash`, `_max_entries`, `_hit_count`, `_miss_count`
 - phases: `runtime`
 
@@ -10496,7 +11358,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.executor_factory_cache`
 - defined at: `src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py:1`
 - role: Process-wide exec-time factory cache above the compiled executor code cache.
-- responsibilities: `wraps identity-free emitted executor source in shareable factory functions`, `deduplicates compile+exec of factory source by source hash`, `splits static helper globals from per-spell bindings for shared executor hydration`
+- responsibilities:
+  - wraps identity-free emitted executor source in shareable factory functions
+  - deduplicates compile+exec of factory source by source hash
+  - splits static helper globals from per-spell bindings for shared executor hydration
 - owns_state: `_factory_by_source_hash`, `_max_entries`
 - phases: `runtime`
 
@@ -10522,7 +11387,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_1.CompilerPhase1`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_1.py:26`
 - role: Compiler-owned phase-1 requirements extraction surface.
-- responsibilities: `builds or borrows SpellRequirements for one spell`, `captures the phase-1 requirements shape profile for later strategy selection`, `publishes requirements onto SpellCompilerArtifact without mutating runtime graphs`
+- responsibilities:
+  - builds or borrows SpellRequirements for one spell
+  - captures the phase-1 requirements shape profile for later strategy selection
+  - publishes requirements onto SpellCompilerArtifact without mutating runtime graphs
 - phases: `validation`
 - public methods: `run`
 
@@ -10567,7 +11435,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py:16`
 - extends: `Cleanable`
 - role: Live compiler phase-10 wrapper over SpellCodegenPlanner.
-- responsibilities: `lazily imports and owns SpellCodegenPlanner`, `delegates phase-10 planning to the planner facade`, `publishes SpellCodegenPlan onto SpellCompilerArtifact as the live phase-10 output`
+- responsibilities:
+  - lazily imports and owns SpellCodegenPlanner
+  - delegates phase-10 planning to the planner facade
+  - publishes SpellCodegenPlan onto SpellCompilerArtifact as the live phase-10 output
 - owns_state: `_codegen_planner`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -10615,7 +11486,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_11.py:17`
 - extends: `Cleanable`
 - role: Live compiler phase-11 wrapper over CodegenCreationSystem.
-- responsibilities: `lazily imports and owns CodegenCreationSystem`, `delegates phase-11 creation packaging to the codegen-creation facade`, `publishes SpellCodegenCreation onto SpellCompilerArtifact as the live phase-11 output`
+- responsibilities:
+  - lazily imports and owns CodegenCreationSystem
+  - delegates phase-11 creation packaging to the codegen-creation facade
+  - publishes SpellCodegenCreation onto SpellCompilerArtifact as the live phase-11 output
 - owns_state: `_codegen_creation_system`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -10662,7 +11536,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_2.CompilerPhase2`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:33`
 - role: Compiler-owned phase-2 symbolic graph build surface.
-- responsibilities: `builds SpellSymbolicGraph from phase-1 requirements`, `creates SpellSymbolicDependency rows for constructor sockets`, `publishes the symbolic graph onto SpellCompilerArtifact for later phases`
+- responsibilities:
+  - builds SpellSymbolicGraph from phase-1 requirements
+  - creates SpellSymbolicDependency rows for constructor sockets
+  - publishes the symbolic graph onto SpellCompilerArtifact for later phases
 - phases: `validation`
 - public methods: `run`
 
@@ -10708,7 +11585,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:55`
 - role: Compiler-owned phase-3 local-frame and DAG build surface.
-- responsibilities: `resolves symbolic constructor sockets into concrete dependency spell ids`, `builds the local constructor DAG and SpellResolutionFrame for one spell`, `publishes direct dependency ids and SpellLocalTopology into SpellSystemStates`
+- responsibilities:
+  - resolves symbolic constructor sockets into concrete dependency spell ids
+  - builds the local constructor DAG and SpellResolutionFrame for one spell
+  - publishes direct dependency ids and SpellLocalTopology into SpellSystemStates
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -10767,7 +11647,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py:39`
 - role: Compiler-owned phase-4 structural validation surface.
-- responsibilities: `runs SpellValidationSystem over phase-1 to phase-3 artifacts`, `publishes SpellValidationResult and broken-state flags onto SpellCompilerArtifact`, `updates SpellSystemStates structural validity and contract gating when available`
+- responsibilities:
+  - runs SpellValidationSystem over phase-1 to phase-3 artifacts
+  - publishes SpellValidationResult and broken-state flags onto SpellCompilerArtifact
+  - updates SpellSystemStates structural validity and contract gating when available
 - phases: `validation`
 - public methods: `run`
 
@@ -10811,7 +11694,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:49`
 - role: Compiler-owned phase-5 rooted-blueprint build surface.
-- responsibilities: `builds SpellSystemAdjacencySnapshot and SpellSystemIndex from visible spell state`, `builds root and per-spell RootResolutionBlueprint artifacts for visible roots and local scopes`, `rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints`
+- responsibilities:
+  - builds SpellSystemAdjacencySnapshot and SpellSystemIndex from visible spell state
+  - builds root and per-spell RootResolutionBlueprint artifacts for visible roots and local scopes
+  - rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints
 - phases: `validation`, `runtime`
 - public methods: `run_frame_wide`, `run_local`
 
@@ -10868,7 +11754,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py:112`
 - role: Compiler-owned phase-6 system validation surface.
-- responsibilities: `builds the canonical system-validation strategy pipeline`, `runs system validation over phase-5 artifacts and phase-4 results`, `publishes SpellSystemValidationState and conduit-scoped validity back through SpellSystemStates`
+- responsibilities:
+  - builds the canonical system-validation strategy pipeline
+  - runs system validation over phase-5 artifacts and phase-4 results
+  - publishes SpellSystemValidationState and conduit-scoped validity back through SpellSystemStates
 - phases: `validation`, `runtime`
 - public methods: `run_frame_wide`, `run_local`
 
@@ -10932,7 +11821,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py:20`
 - role: Compiler-owned phase-7 change-control wiring surface.
-- responsibilities: `rebuilds or upserts change-control component-of mappings from phase-5 root blueprints`, `registers conduit-scoped revalidators with ChangeControlManager`, `bridges dirty-root revalidation back into SpellCompilerSystem re-entry`
+- responsibilities:
+  - rebuilds or upserts change-control component-of mappings from phase-5 root blueprints
+  - registers conduit-scoped revalidators with ChangeControlManager
+  - bridges dirty-root revalidation back into SpellCompilerSystem re-entry
 - phases: `runtime`
 - public methods: `run_frame_wide`, `run_local`
 
@@ -10977,7 +11869,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py:19`
 - extends: `Cleanable`
 - role: Live compiler phase-8 wrapper over SpellAnalyzer.
-- responsibilities: `owns and reuses SpellAnalyzer as the live phase-8 collaborator`, `publishes analyzer-owned occurrence graph truth onto SpellCompilerArtifact`, `bridges the current phase scheduler onto the analyzer seam without reviving old occurrence-plan code`
+- responsibilities:
+  - owns and reuses SpellAnalyzer as the live phase-8 collaborator
+  - publishes analyzer-owned occurrence graph truth onto SpellCompilerArtifact
+  - bridges the current phase scheduler onto the analyzer seam without reviving old occurrence-plan code
 - owns_state: `_spell_analyzer`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -11024,7 +11919,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py:15`
 - extends: `Cleanable`
 - role: Live compiler phase-9 wrapper over SpellArtifactProcessor.
-- responsibilities: `owns and reuses SpellArtifactProcessor as the live phase-9 collaborator`, `publishes SpellCodegenModel onto SpellCompilerArtifact`, `bridges the current phase scheduler onto the processor seam without reviving old injection-plan code`
+- responsibilities:
+  - owns and reuses SpellArtifactProcessor as the live phase-9 collaborator
+  - publishes SpellCodegenModel onto SpellCompilerArtifact
+  - bridges the current phase scheduler onto the processor seam without reviving old injection-plan code
 - owns_state: `_artifact_processor`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -11070,7 +11968,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:16`
 - role: Shared static execution helper surface for compiler phases.
-- responsibilities: `owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases`, `captures and resets phase2_5 and phase8_11 codegen IR on SpellCompilerArtifact`, `builds normalized schema rows for phase-5 DAG/socket, phase-8 occurrence, phase-9 injection, and phase-11 step payloads`
+- responsibilities:
+  - owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases
+  - captures and resets phase2_5 and phase8_11 codegen IR on SpellCompilerArtifact
+  - builds normalized schema rows for phase-5 DAG/socket, phase-8 occurrence, phase-9 injection, and phase-11 step payloads
 - phases: `validation`, `runtime`
 - public methods: `build_fast_transient_schema`, `build_fast_transient_signature`, `build_injection_instance_rows`, `build_no_overrides_codegen_creation_step_signature_row`, `build_occurrence_canonical_rows`, `build_occurrence_contract_override_rows`, `build_occurrence_contract_override_spell_rows`, `build_occurrence_graph_rows`, `build_occurrence_instance_key_rows`, `build_override_target_rows`, `build_phase11_injection_spec_signature_row`, `build_phase11_spell_signature_row` (+18 more)
 
@@ -11104,7 +12005,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/utility.py:12`
 - role: Shared static helper surface for compiler phases.
-- responsibilities: `provides generic helper behavior reused across extracted compiler phase classes`, `raises through the shared cancellation event when phase execution is cancelled`
+- responsibilities:
+  - provides generic helper behavior reused across extracted compiler phase classes
+  - raises through the shared cancellation event when phase execution is cancelled
 - phases: `validation`, `runtime`
 - public methods: `throw_if_cancelled`
 
@@ -11131,7 +12034,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:11`
 - extends: `Cleanable`
 - role: Placeholder node of the resolution_profile family's symbolic graph.
-- responsibilities: `carry a node id, kind and metadata for one element of a spell's local dependency graph`
+- responsibilities:
+  - carry a node id, kind and metadata for one element of a spell's local dependency graph
 - owns_state: `node_id`, `kind`, `metadata`
 - phases: `compile`
 - public methods: `cleanup`
@@ -11142,7 +12046,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:74`
 - extends: `Cleanable`
 - role: Placeholder edge of the resolution_profile family's symbolic graph: from_node depends on to_node, optionally via one parameter.
-- responsibilities: `pair two SpellSymbolicNodes and record the parameter the dependency travels through`
+- responsibilities:
+  - pair two SpellSymbolicNodes and record the parameter the dependency travels through
 - owns_state: `from_node`, `to_node`, `via_parameter`
 - phases: `compile`
 - public methods: `cleanup`
@@ -11153,7 +12058,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:131`
 - extends: `Cleanable`
 - role: Phase 2 artifact: the local symbolic dependency graph for ONE spell - no global DAG semantics and no resolution against the Spellbook. DISTINCT from spell_compiler/symbolic_graph's class of the same name.
-- responsibilities: `own the node and edge lists describing one spell's structure`, `stay purely structural - resolution belongs to later phases`
+- responsibilities:
+  - own the node and edge lists describing one spell's structure
+  - stay purely structural - resolution belongs to later phases
 - owns_state: `spell_id`, `nodes`, `edges`
 - phases: `compile`
 - public methods: `cleanup`
@@ -11164,7 +12071,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:210`
 - extends: `Cleanable`
 - role: Per-spell Phase 3 ordered resolution summary.
-- responsibilities: `stores the owning spell id plus topological node order`, `captures the concrete local-frame resolution order for one spell`, `feeds Phase 4 validation and later rooted plan phases`
+- responsibilities:
+  - stores the owning spell id plus topological node order
+  - captures the concrete local-frame resolution order for one spell
+  - feeds Phase 4 validation and later rooted plan phases
 - owns_state: `spell_id`, `ordered_node_ids`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -11175,7 +12085,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:268`
 - extends: `Cleanable`
 - role: One warning or error in the resolution_profile family. DISTINCT from spell_compiler/validation's class of the same name.
-- responsibilities: `carry a code, a message, and structured details`
+- responsibilities:
+  - carry a code, a message, and structured details
 - owns_state: `code`, `message`, `details`
 - phases: `compile`
 - public methods: `cleanup`
@@ -11186,7 +12097,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:325`
 - extends: `Cleanable`
 - role: Phase 4 artifact of the resolution_profile family: the readiness summary over requirements, symbolic graph and local frame. DISTINCT from spell_compiler/validation's class of the same name.
-- responsibilities: `aggregate this family's SpellValidationIssue lists into one validity verdict`
+- responsibilities:
+  - aggregate this family's SpellValidationIssue lists into one validity verdict
 - owns_state: `is_valid`, `errors`, `warnings`
 - phases: `compile`
 - public methods: `cleanup`
@@ -11197,7 +12109,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py:401`
 - extends: `Cleanable`
 - role: Canonical in-memory representation of how to resolve one spell.
-- responsibilities: `composes the phase 1-4 artifacts (requirements, symbolic graph, resolution frame, validation) for one spell`, `carries the semantic payload for DI and DAG resolution independent of execution model`
+- responsibilities:
+  - composes the phase 1-4 artifacts (requirements, symbolic graph, resolution frame, validation) for one spell
+  - carries the semantic payload for DI and DAG resolution independent of execution model
 - owns_state: `spell_id`, `existence`, `spellframe`, `binding_name`, `requirements`, `symbolic_graph`, `resolution_frame`, `validation`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -11236,7 +12150,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrence`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_existence_occurrence_analysis.py:8`
 - role: One visible spell-id to existence row captured during the phase-8 spell walk.
-- responsibilities: `stores one visible spell id, existence, and disposal-flag row for analyzer occurrence work`
+- responsibilities:
+  - stores one visible spell id, existence, and disposal-flag row for analyzer occurrence work
 - owns_state: `spell_id`, `existence`, `has_disposal_methods`
 - phases: `runtime`
 
@@ -11245,7 +12160,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_existence_occurrence_analysis.py:34`
 - role: Phase-8 existence-occurrence capture.
-- responsibilities: `holds raw spell-id to existence rows for one analyzer pass`, `stores aggregate existence and disposal histograms with no live spell references`, `supplies cheap occurrence-level existence truth to later analyzer and planner stages`
+- responsibilities:
+  - holds raw spell-id to existence rows for one analyzer pass
+  - stores aggregate existence and disposal histograms with no live spell references
+  - supplies cheap occurrence-level existence truth to later analyzer and planner stages
 - owns_state: `root_existence`, `total_spell_count`, `spell_existence_rows`, `existence_counts`, `disposal_enabled_spell_count`, `existence_disposal_counts`
 - phases: `runtime`
 
@@ -11280,7 +12198,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_occurrence_graph_analysis.py:11`
 - extends: `Cleanable`
 - role: Occurrence-graph analysis artifact.
-- responsibilities: `stores the expanded occurrence graph for one root spell`, `stores graph-level metrics and shared-collapse posture for phase-8 analysis`, `carries optional existence-occurrence analysis without owning later planner decisions`
+- responsibilities:
+  - stores the expanded occurrence graph for one root spell
+  - stores graph-level metrics and shared-collapse posture for phase-8 analysis
+  - carries optional existence-occurrence analysis without owning later planner decisions
 - owns_state: `root_spell_id`, `occurrence_graph`, `path_registry`, `occurrence_count`, `edge_count`, `topology_dependency_count`, `dag_fallback_dependency_count`, `shared_collapse_enabled`, `existence_occurrence_analysis`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -11319,7 +12240,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer.py:15`
 - extends: `Cleanable`
 - role: Compiler-side spell analyzer orchestrator.
-- responsibilities: `runs the configured occurrence-analysis strategy chain over one spell and its compiler artifact`, `owns the analyzer strategy builder and resolves strategies by explicit analysis group`, `publishes analyzer-owned occurrence graph truth back onto SpellCompilerArtifact`
+- responsibilities:
+  - runs the configured occurrence-analysis strategy chain over one spell and its compiler artifact
+  - owns the analyzer strategy builder and resolves strategies by explicit analysis group
+  - publishes analyzer-owned occurrence graph truth back onto SpellCompilerArtifact
 - owns_state: `_strategy_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `analyze_occurrence`, `cleanup`
@@ -11366,7 +12290,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy.py:12`
 - markers: `ABC`
 - role: Abstract contract for one spell-analyzer strategy.
-- responsibilities: `defines the stable strategy_id contract for analyzer strategies`, `defines the analyze seam over Spell and SpellCompilerArtifact`, `keeps bounded analysis artifact enrichment separate from the top-level analyzer facade`
+- responsibilities:
+  - defines the stable strategy_id contract for analyzer strategies
+  - defines the analyze seam over Spell and SpellCompilerArtifact
+  - keeps bounded analysis artifact enrichment separate from the top-level analyzer facade
 - phases: `runtime`
 - public methods: `analyze`, `strategy_id`
 
@@ -11401,7 +12328,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py:12`
 - extends: `Cleanable`
 - role: Registry holder for analyzer strategies.
-- responsibilities: `owns the named analyzer strategy registry`, `loads the built-in occurrence graph analyzer strategy`, `resolves deterministic ordered analyzer strategy tuples for analyzer chaining`
+- responsibilities:
+  - owns the named analyzer strategy registry
+  - loads the built-in occurrence graph analyzer strategy
+  - resolves deterministic ordered analyzer strategy tuples for analyzer chaining
 - owns_state: `_strategies_by_name`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `get_strategies`, `get_strategy`, `registered_strategy_names`
@@ -11449,7 +12379,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:48`
 - extends: `SpellAnalyzerStrategy`
 - role: Occurrence-graph analyzer strategy for phase-8 analysis.
-- responsibilities: `expands rooted blueprint truth plus topology and contract context into an occurrence graph`, `publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact`, `owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion`
+- responsibilities:
+  - expands rooted blueprint truth plus topology and contract context into an occurrence graph
+  - publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact
+  - owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion
 - phases: `runtime`
 - public methods: `analyze`, `strategy_id`
 
@@ -11503,7 +12436,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:58`
 - extends: `Cleanable`
 - role: Per-spell phase pipeline owner.
-- responsibilities: `builds Phase 1 requirements from the bound spell signature`, `builds Phase 2 symbolic graph and Phase 3 ordered local-frame artifacts`, `runs Phase 4 and later validation and planning phases`, `caches rooted blueprint, patch-map, execution-plan, and codegen artifacts for one spell`
+- responsibilities:
+  - builds Phase 1 requirements from the bound spell signature
+  - builds Phase 2 symbolic graph and Phase 3 ordered local-frame artifacts
+  - runs Phase 4 and later validation and planning phases
+  - caches rooted blueprint, patch-map, execution-plan, and codegen artifacts for one spell
 - owns_state: `_requirements`, `_symbolic_graph`, `_resolution_frame`, `_root_blueprint_phase5`, `_execution_plan_phase11`, `_spell_system_index_phase5`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `run_phase_change_control`, `run_phase_change_control_local`, `run_phase_execution_plan`, `run_phase_injection_plan`, `run_phase_local_frame`, `run_phase_occurrence_plan`, `run_phase_patch_maps`, `run_phase_requirements`, `run_phase_root_blueprints`, `run_phase_root_blueprints_local`, `run_phase_symbolic_graph` (+3 more)
@@ -11584,7 +12521,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:49`
 - extends: `Cleanable`
 - role: Spell-scoped mutable container for compiler and planning artifacts.
-- responsibilities: `stores structural, validation, rooted-blueprint, and later codegen artifacts for one spell`, `owns cleanup and reset of spell-scoped compiler artifacts across phases 1-11`, `tracks generic codegen model/plan/creation outputs plus phase8_11 IR freshness state`
+- responsibilities:
+  - stores structural, validation, rooted-blueprint, and later codegen artifacts for one spell
+  - owns cleanup and reset of spell-scoped compiler artifacts across phases 1-11
+  - tracks generic codegen model/plan/creation outputs plus phase8_11 IR freshness state
 - owns_state: `_requirements`, `_symbolic_graph`, `_resolution_frame`, `_validation_result_phase4`, `_validation_result_phase6`, `_root_blueprint_phase5`, `_spell_system_index_phase5`, `_spell_codegen_model`, `_spell_codegen_plan`, `_spell_codegen_creation`, `_codegen_ir`, `_phase8_11_codegen_ir_dirty`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `cleanup_phase_artifacts`, `clear_phase5_artifacts`, `reset_phase_artifacts`
@@ -11644,7 +12584,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:22`
 - extends: `Cleanable`
 - role: Compiler-owned orchestration facade over spell compilation phases.
-- responsibilities: `owns one instantiated SpellCompiler and SpellValidationSystem collaborator pair`, `runs phase-oriented compiler operations against the spell-owned SpellCompilerArtifact state`, `exposes convenience entrypoints for structural, rooted, validation, and change-control compiler phases`
+- responsibilities:
+  - owns one instantiated SpellCompiler and SpellValidationSystem collaborator pair
+  - runs phase-oriented compiler operations against the spell-owned SpellCompilerArtifact state
+  - exposes convenience entrypoints for structural, rooted, validation, and change-control compiler phases
 - owns_state: `_spell_compiler`, `_spell_validator`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cleanup_phase_artifacts`, `clear_phase5_artifacts`, `get_local_resolution_scoped_root_ids`, `get_local_resolution_scoped_spell_ids`, `is_current_spell_phase5_root`, `reset_phase_artifacts`, `run_all_phases`, `run_phase_change_control`, `run_phase_change_control_local`, `run_phase_execution_plan`, `run_phase_injection_plan` (+11 more)
@@ -11692,7 +12635,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:15`
 - extends: `Cleanable`
 - role: Inspector producing structured class inventories.
-- responsibilities: `inspects class metadata, provenance, members, protocol flags, and decoration state without invoking user code`
+- responsibilities:
+  - inspects class metadata, provenance, members, protocol flags, and decoration state without invoking user code
 - owns_state: `cls`, `dunders`, `max_repr`, `data`
 - phases: `validation`, `runtime`
 - public methods: `cleanup`, `inspect`
@@ -11736,7 +12680,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py:10`
 - role: Shared low-level helper surface for the spell examiner inspectors.
-- responsibilities: `provides safe repr, extension-module detection, and best-effort callable unwrapping`
+- responsibilities:
+  - provides safe repr, extension-module detection, and best-effort callable unwrapping
 - phases: `validation`, `runtime`
 - public methods: `is_extension_module`, `safe_repr`, `unwrap_callable`
 
@@ -11763,7 +12708,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py:14`
 - extends: `Cleanable`
 - role: Inspector producing structured callable inventories.
-- responsibilities: `inspects callable metadata, provenance, signature, traits, closure, and decoration state without invoking the callable`
+- responsibilities:
+  - inspects callable metadata, provenance, signature, traits, closure, and decoration state without invoking the callable
 - owns_state: `fn`, `max_repr`, `data`
 - phases: `validation`, `runtime`
 - public methods: `cleanup`, `inspect`
@@ -11808,7 +12754,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/class_profile.py:10`
 - extends: `Cleanable`
 - role: Structured class inspection profile.
-- responsibilities: `stores serializable class-inspection results for AI profile consumption`
+- responsibilities:
+  - stores serializable class-inspection results for AI profile consumption
 - owns_state: `name`, `qualname`, `module`, `members`, `methods`, `dynamic_access`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -11842,7 +12789,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py:9`
 - extends: `Cleanable`
 - role: Structured callable inspection profile.
-- responsibilities: `stores serializable callable-inspection results for AI profile consumption`
+- responsibilities:
+  - stores serializable callable-inspection results for AI profile consumption
 - owns_state: `name`, `qualname`, `signature`, `parameters`, `closure`, `decorated`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -11876,7 +12824,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:10`
 - markers: `Enum`
 - role: Enum classifying the raw binding shape of a candidate.
-- responsibilities: `labels class, callable, instance, and other binding kinds`
+- responsibilities:
+  - labels class, callable, instance, and other binding kinds
 - owns_state: `CLASS`, `CALLABLE`, `INSTANCE`, `OTHER`
 - phases: `validation`, `runtime`
 
@@ -11886,7 +12835,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:23`
 - extends: `Cleanable`
 - role: Base binding-time profile for raw registration candidates.
-- responsibilities: `stores the high-level binding kind and original candidate object`, `acts as the base for class, callable, instance, and other binding profiles`
+- responsibilities:
+  - stores the high-level binding kind and original candidate object
+  - acts as the base for class, callable, instance, and other binding profiles
 - owns_state: `kind`, `original_object`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -11897,7 +12848,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:67`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of a class candidate - enough to fingerprint it, reason about protocol compatibility, and produce diagnostics.
-- responsibilities: `record name, qualname, module, bases, MRO, annotations and origin file`, `keep the per-method view shallow (names only); deep inspection belongs to later phases`
+- responsibilities:
+  - record name, qualname, module, bases, MRO, annotations and origin file
+  - keep the per-method view shallow (names only); deep inspection belongs to later phases
 - owns_state: `name`, `qualname`, `module`, `bases`, `mro`, `annotations`, `origin_file`
 - phases: `bind`
 - public methods: `cleanup`, `source_preview`
@@ -11907,7 +12860,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:234`
 - role: The minimal binding-time view of one callable parameter, for fingerprinting and diagnostics.
-- responsibilities: `record the parameter's name, kind, default repr and annotation repr`
+- responsibilities:
+  - record the parameter's name, kind, default repr and annotation repr
 - owns_state: `name`, `kind`, `default_repr`, `annotation_repr`
 - phases: `bind`
 
@@ -11917,7 +12871,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:269`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of a function, method or lambda spell candidate.
-- responsibilities: `store callable identity, signature and the shallow parameter summaries`, `avoid deeper runtime-resolution detail, which belongs to later profile phases`
+- responsibilities:
+  - store callable identity, signature and the shallow parameter summaries
+  - avoid deeper runtime-resolution detail, which belongs to later profile phases
 - owns_state: `name`, `qualname`, `module`, `object_id`, `type_name`, `repr_string`, `signature`
 - phases: `bind`
 - public methods: `cleanup`
@@ -11928,7 +12884,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:390`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.
-- responsibilities: `record the instance's type name, module and repr`
+- responsibilities:
+  - record the instance's type name, module and repr
 - owns_state: `type_name`, `module`, `repr_string`
 - phases: `bind`
 - public methods: `cleanup`
@@ -11939,7 +12896,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:449`
 - extends: `SpellBindingProfile`
 - role: Fallback profile for candidates that fit none of the normal shapes.
-- responsibilities: `store only the minimum detached identity and representation surface`
+- responsibilities:
+  - store only the minimum detached identity and representation surface
 - owns_state: `type_name`, `module`, `repr_string`
 - phases: `bind`
 - public methods: `cleanup`
@@ -11980,7 +12938,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py:38`
 - extends: `SpellGeneralProfile`
 - role: Richer detailed spell profile as a superset of general.
-- responsibilities: `extends the general profile with class, callable, instance-member, and dynamic-access inspection payloads`
+- responsibilities:
+  - extends the general profile with class, callable, instance-member, and dynamic-access inspection payloads
 - owns_state: `class_profile`, `callable_profile`, `metadata`, `instance_members`, `dynamic_access`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `complete_with_spell`, `create_from_target`, `to_descriptor_payload`
@@ -12031,7 +12990,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py:28`
 - extends: `Cleanable`
 - role: Combined general spell profile with binding and resolution halves.
-- responsibilities: `holds a binding profile and optional resolution profile for one spell`, `completes the same profile object once a real Spell exists`
+- responsibilities:
+  - holds a binding profile and optional resolution profile for one spell
+  - completes the same profile object once a real Spell exists
 - owns_state: `binding_profile`, `resolution_profile`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `complete_with_spell`, `create_from_target`, `to_descriptor_payload`
@@ -12077,7 +13038,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py:15`
 - extends: `Cleanable`
 - role: Registry-backed front door for spell examination profiles.
-- responsibilities: `routes profile requests to named profile builders`, `seeds and owns the built-in general and detailed profile builders`
+- responsibilities:
+  - routes profile requests to named profile builders
+  - seeds and owns the built-in general and detailed profile builders
 - owns_state: `_profile_builders_by_name`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `create_profile`, `has_profile_builder`, `id`, `list_profile_builder_names`, `register_profile_builder`
@@ -12122,7 +13085,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:16`
 - role: Strategy building binding profiles from raw candidates.
-- responsibilities: `builds the correct binding-profile variant from a raw candidate surface`
+- responsibilities:
+  - builds the correct binding-profile variant from a raw candidate surface
 - phases: `validation`, `runtime`
 - public methods: `build_profile`
 
@@ -12166,7 +13130,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy.ResolutionProfileStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/resolution_profile_strategy.py:14`
 - role: Strategy building resolution profiles from live spells.
-- responsibilities: `builds a SpellResolutionProfile from a bound spell and its phase artifacts`
+- responsibilities:
+  - builds a SpellResolutionProfile from a bound spell and its phase artifacts
 - phases: `validation`, `runtime`
 - public methods: `build_profile`
 
@@ -12208,7 +13173,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py:3`
 - markers: `Enum`
 - role: Enum classifying how one parameter is satisfied during resolution.
-- responsibilities: `labels ignore, plain, single, collection, spellmap, spell-contract, and mutation-contract parameter shapes`
+- responsibilities:
+  - labels ignore, plain, single, collection, spellmap, spell-contract, and mutation-contract parameter shapes
 - owns_state: `IGNORE`, `PLAIN`, `SINGLE_BY_ANNOTATION`, `COLLECTION_BY_ANNOTATION`, `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`, `MUTATION_CONTRACT`
 - phases: `validation`, `runtime`
 
@@ -12235,7 +13201,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_parameter_requirements.py:15`
 - extends: `Cleanable`
 - role: Phase 1 description of one constructor parameter.
-- responsibilities: `stores parameter signature shape and DI classification without performing resolution`
+- responsibilities:
+  - stores parameter signature shape and DI classification without performing resolution
 - owns_state: `_name`, `_position`, `_kind`, `_annotation`, `_default_value`, `_di_shape`, `_collection_element_annotation`, `_spellmap_default`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `annotation`, `cleanup`, `collection_element_annotation`, `default_value`, `di_shape`, `has_default`, `is_keyword_only`, `is_optional`, `is_var_keyword`, `is_var_positional`, `kind`, `name` (+2 more)
@@ -12281,7 +13248,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements.py:15`
 - extends: `Cleanable`
 - role: Per-spell Phase 1 DI requirements artifact.
-- responsibilities: `records spell identity, spellframe, existence, and binding metadata`, `stores ordered parameter requirements for the primary call target`, `separates DI-resolved sockets from plain caller-supplied holes`, `feeds later symbolic-graph and validation phases`
+- responsibilities:
+  - records spell identity, spellframe, existence, and binding metadata
+  - stores ordered parameter requirements for the primary call target
+  - separates DI-resolved sockets from plain caller-supplied holes
+  - feeds later symbolic-graph and validation phases
 - owns_state: `_spell_id`, `_spell_type`, `_existence`, `_spellframe`, `_parameters`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `binding_name`, `cleanup`, `existence`, `has_required_holes`, `iter_di_parameters`, `iter_plain_parameters`, `iter_required_holes`, `parameters`, `spell_id`, `spell_type`, `spellframe`
@@ -12322,7 +13293,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:30`
 - extends: `Cleanable`
 - role: Builder for the Phase 1 spell requirements artifact.
-- responsibilities: `inspects one spell call target and classifies its parameters into DI requirement objects`, `builds and caches one SpellRequirements artifact for a spell version`
+- responsibilities:
+  - inspects one spell call target and classifies its parameters into DI requirement objects
+  - builds and caches one SpellRequirements artifact for a spell version
 - owns_state: `_spell`, `_requirements`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `build_requirements`, `cleanup`, `spell`
@@ -12371,7 +13344,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py:12`
 - extends: `Cleanable`
 - role: Phase 2 symbolic representation of one constructor socket.
-- responsibilities: `stores the DI shape and target intent for one parameter without resolving concrete spell ids`
+- responsibilities:
+  - stores the DI shape and target intent for one parameter without resolving concrete spell ids
 - owns_state: `_spell_id`, `_param_name`, `_di_shape`, `_target_annotation`, `_spellmap_default`, `_contract_key`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `contract_key`, `di_shape`, `is_collection`, `is_optional`, `param_name`, `position`, `spell_id`, `spellmap_default`, `target_annotation`
@@ -12412,7 +13386,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py:12`
 - extends: `Cleanable`
 - role: Per-spell Phase 2 symbolic constructor graph.
-- responsibilities: `records constructor sockets as symbolic dependencies`, `preserves DI shape, optionality, and contract metadata per parameter`, `stays independent from Spellbook resolution and concrete DAG state`, `feeds Phase 3 local-frame and later plan generation`
+- responsibilities:
+  - records constructor sockets as symbolic dependencies
+  - preserves DI shape, optionality, and contract metadata per parameter
+  - stays independent from Spellbook resolution and concrete DAG state
+  - feeds Phase 3 local-frame and later plan generation
 - owns_state: `_spell_id`, `_dependencies`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `dependencies`, `spell_id`
@@ -12455,7 +13433,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py:13`
 - role: Builder from SpellSystemStates into an adjacency snapshot.
-- responsibilities: `reads direct dependency and topology state from SpellSystemStates`, `derives reverse dependencies and structural roots`, `produces a frame-wide SpellSystemAdjacencySnapshot`
+- responsibilities:
+  - reads direct dependency and topology state from SpellSystemStates
+  - derives reverse dependencies and structural roots
+  - produces a frame-wide SpellSystemAdjacencySnapshot
 - phases: `validation`, `runtime`
 - public methods: `build`
 
@@ -12499,7 +13480,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py:9`
 - extends: `Cleanable`
 - role: Frame-wide structural adjacency snapshot over SpellSystemStates.
-- responsibilities: `exposes spell-id dependencies and reverse dependencies for the frame`, `tracks all spell ids and structural roots for rooted blueprint building`, `carries live topology references for later socket overlay work`
+- responsibilities:
+  - exposes spell-id dependencies and reverse dependencies for the frame
+  - tracks all spell ids and structural roots for rooted blueprint building
+  - carries live topology references for later socket overlay work
 - owns_state: `_dependencies`, `_reverse_dependencies`, `_all_spell_ids`, `_root_spell_ids`, `_topologies`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `all_spell_ids`, `cleanup`, `dependencies`, `get_dependencies_for`, `get_reverse_dependencies_for`, `reverse_dependencies`, `root_spell_ids`, `topologies`
@@ -12538,7 +13522,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py:11`
 - extends: `Cleanable`
 - role: Frame-level Phase 5+ system index keyed by spell version id.
-- responsibilities: `stores spell-system nodes for a rooted frame view`, `merges node metadata and dependencies across Phase 5 assembly`, `feeds system validation and change-control analysis`
+- responsibilities:
+  - stores spell-system nodes for a rooted frame view
+  - merges node metadata and dependencies across Phase 5 assembly
+  - feeds system validation and change-control analysis
 - owns_state: `_nodes`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `ensure_node`, `get_node`, `iter_nodes`, `nodes`, `upsert_node`
@@ -12582,7 +13569,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_node.py:10`
 - extends: `Cleanable`
 - role: Version-id keyed Phase 5-7 system node.
-- responsibilities: `stores one spell version id plus its lineage id`, `stores direct dependency spell ids and optional runtime metadata`, `acts as the node payload stored inside SpellSystemIndex`
+- responsibilities:
+  - stores one spell version id plus its lineage id
+  - stores direct dependency spell ids and optional runtime metadata
+  - acts as the node payload stored inside SpellSystemIndex
 - owns_state: `_spell_id`, `_lineage_id`, `_dependencies`, `existence`, `spell_type`, `conduit_id`, `ward_id`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `add_dependencies`, `add_dependency`, `cleanup`, `dependencies`, `lineage_id`, `spell_id`
@@ -12621,7 +13611,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:30`
 - role: Phase 5 structural rooted-blueprint builder.
-- responsibilities: `builds rooted deep DAG blueprints from a frame-wide adjacency snapshot`, `computes reachable spell ids and deterministic topological order per root`, `overlays socket refs and dag-index state from local topologies`
+- responsibilities:
+  - builds rooted deep DAG blueprints from a frame-wide adjacency snapshot
+  - computes reachable spell ids and deterministic topological order per root
+  - overlays socket refs and dag-index state from local topologies
 - phases: `validation`, `runtime`
 - public methods: `build_blueprint_for_spell_id`, `build_root_blueprints`
 
@@ -12670,7 +13663,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_state.py:11`
 - extends: `Cleanable`
 - role: Frame-level verdict returned by system validation.
-- responsibilities: `stores validity plus error and warning diagnostics for one validation pass`, `retains a snapshot of system nodes as validation context`
+- responsibilities:
+  - stores validity plus error and warning diagnostics for one validation pass
+  - retains a snapshot of system nodes as validation context
 - owns_state: `_is_valid`, `_errors`, `_warnings`, `_nodes`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `errors`, `is_valid`, `nodes`, `warnings`
@@ -12709,7 +13704,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py:50`
 - extends: `Cleanable`
 - role: System-level validation orchestrator over rooted spell graphs.
-- responsibilities: `runs configured system-validation strategies over Phase 5 artifacts and Phase 4 outcomes`, `aggregates SystemDiagnostic results into a SpellSystemValidationState`, `updates per-conduit resolution validity in SpellSystemStates when a conduit scope is provided`
+- responsibilities:
+  - runs configured system-validation strategies over Phase 5 artifacts and Phase 4 outcomes
+  - aggregates SystemDiagnostic results into a SpellSystemValidationState
+  - updates per-conduit resolution validity in SpellSystemStates when a conduit scope is provided
 - owns_state: `_strategies`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -12762,7 +13760,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py:8`
 - markers: `Enum`
 - role: The severity bucket for system-level validation diagnostics.
-- responsibilities: `separate the errors that gate resolution from the warnings that only inform review`
+- responsibilities:
+  - separate the errors that gate resolution from the warnings that only inform review
 - phases: `compile`
 
 #### `SystemDiagnostic` (class)
@@ -12771,7 +13770,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/system_diagnostic.py:14`
 - extends: `Cleanable`
 - role: System-level validation diagnostic.
-- responsibilities: `stores diagnostic code, message, and severity`, `attaches optional spell, root, and source attribution`, `carries structured diagnostic details for tooling and validation state`
+- responsibilities:
+  - stores diagnostic code, message, and severity
+  - attaches optional spell, root, and source attribution
+  - carries structured diagnostic details for tooling and validation state
 - owns_state: `_code`, `_message`, `_severity`, `_spell_id`, `_root_id`, `_details`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `code`, `details`, `message`, `root_id`, `severity`, `source`, `spell_id`
@@ -12804,7 +13806,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:1`
 - role: Phase 6 check: known-broken spells are not silently reachable from a root.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `BrokenSpellInDagStrategy` (class)
@@ -12813,7 +13816,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:28`
 - extends: `SpellSystemValidationStrategy`
 - role: Lift spell-local breakage into the rooted system view, so a spell already broken at Phase 4 cannot silently survive inside a root DAG.
-- responsibilities: `report every root blueprint that still reaches a known-broken spell`, `keep breakage from being invisible at the system level just because it was diagnosed locally`
+- responsibilities:
+  - report every root blueprint that still reaches a known-broken spell
+  - keep breakage from being invisible at the system level just because it was diagnosed locally
 - phases: `compile`
 - public methods: `run`
 
@@ -12845,7 +13850,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py:1`
 - role: Phase 6 check: contract-only edges introduce no cycles.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `ContractGraphCycleStrategy` (class)
@@ -12854,7 +13860,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that SpellContract sockets do not introduce cycles the normal-dependency DAG check cannot see.
-- responsibilities: `build the contract-only edge graph layered on top of the normal dependency structure`, `report cycles that exist only across contract edges`
+- responsibilities:
+  - build the contract-only edge graph layered on top of the normal dependency structure
+  - report cycles that exist only across contract edges
 - phases: `compile`
 - public methods: `run`
 
@@ -12886,7 +13894,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py:1`
 - role: Phase 6 check: the visible index has not drifted onto stale lineage versions.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `ContractedVersionDriftStrategy` (class)
@@ -12895,7 +13904,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that the visible system index has not drifted onto stale lineage versions, aimed at contracted spells.
-- responsibilities: `compare version ids stored on SpellSystemIndex nodes against the currently visible version for each lineage`, `report drift so a contract is not silently served by a superseded version`
+- responsibilities:
+  - compare version ids stored on SpellSystemIndex nodes against the currently visible version for each lineage
+  - report drift so a contract is not silently served by a superseded version
 - phases: `compile`
 - public methods: `run`
 
@@ -12927,7 +13938,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py:1`
 - role: Phase 6 check: the frame-level dependency graph is still acyclic.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `CycleDetectionStrategy` (class)
@@ -12936,7 +13948,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py:24`
 - extends: `SpellSystemValidationStrategy`
 - role: The broadest structural check in the Phase 6 set: can the frame-level dependency graph still be topologically ordered?
-- responsibilities: `work at SpellSystemIndex level rather than per root blueprint`, `emit at most one coarse cycle_detected error for the frame`, `honour cancellation during traversal and never mutate the index or its nodes`
+- responsibilities:
+  - work at SpellSystemIndex level rather than per root blueprint
+  - emit at most one coarse cycle_detected error for the frame
+  - honour cancellation during traversal and never mutate the index or its nodes
 - phases: `compile`
 - public methods: `run`
 
@@ -12969,7 +13984,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.dependency_type_sanity_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py:1`
 - role: Phase 6 advisory: unexpected method/lambda dependency types.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `DependencyTypeSanityStrategy` (class)
@@ -12978,7 +13994,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
 - role: An advisory check on dependency SHAPE: rooted system dependencies leaning on method/lambda spell types where class or existing-creation nodes are expected.
-- responsibilities: `emit dependency_type_unexpected for method and lambda dependencies`, `use WARNING severity - it informs system review without by itself gating resolution`
+- responsibilities:
+  - emit dependency_type_unexpected for method and lambda dependencies
+  - use WARNING severity - it informs system review without by itself gating resolution
 - phases: `compile`
 - public methods: `run`
 
@@ -13017,7 +14035,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: The runtime-mode-sensitive check: a required collection socket that wired zero providers means two different things depending on the owning book's mode.
-- responsibilities: `read local topologies from SpellSystemStates for every scoped spell`, `emit collection_socket_no_providers as an ERROR when the book is not dynamic - composition is final at conjure, so zero providers is a permanent wiring mistake`, `emit it as a WARNING in dynamic mode, where deferred contract provisioning is still viable and the consumer spawns with [] injected (owner policy 2026-07-06)`
+- responsibilities:
+  - read local topologies from SpellSystemStates for every scoped spell
+  - emit collection_socket_no_providers as an ERROR when the book is not dynamic - composition is final at conjure, so zero providers is a permanent wiring mistake
+  - emit it as a WARNING in dynamic mode, where deferred contract provisioning is still viable and the consumer spawns with [] injected (owner policy 2026-07-06)
 - phases: `compile`
 - public methods: `run`
 
@@ -13049,7 +14070,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py:1`
 - role: Phase 6 check: blueprints and index describe the same edges.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `GraphConsistencyStrategy` (class)
@@ -13058,7 +14080,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that Phase 5's two structural views agree: the rooted DAG blueprints used by planning and the SpellSystemIndex used by system validation.
-- responsibilities: `compare the dependency edges each view describes and report disagreement`, `catch the class of bug where planning and validation reason about different graphs`
+- responsibilities:
+  - compare the dependency edges each view describes and report disagreement
+  - catch the class of bug where planning and validation reason about different graphs
 - phases: `compile`
 - public methods: `run`
 
@@ -13090,7 +14114,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py:1`
 - role: Phase 6 check: dependency edges use version ids, not lineage ids.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `IdentityMixingStrategy` (class)
@@ -13099,7 +14124,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard the version-id/lineage-id boundary: the system graph routes concrete VERSIONS, lineage ids are DevOps control-plane identity.
-- responsibilities: `report dependency edges that point at lineage ids instead of version ids`, `keep the two identity vocabularies from mixing inside one graph`
+- responsibilities:
+  - report dependency edges that point at lineage ids instead of version ids
+  - keep the two identity vocabularies from mixing inside one graph
 - phases: `compile`
 - public methods: `run`
 
@@ -13131,7 +14158,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py:1`
 - role: Phase 6 check: blueprints and index describe the same node set.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `IndexCoverageStrategy` (class)
@@ -13140,7 +14168,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that the Phase 5 index and the rooted blueprints describe the same NODE SET, not just the same edges.
-- responsibilities: `compare the frame-level catalog against the rooted structural view`, `report nodes present in one view and absent from the other`
+- responsibilities:
+  - compare the frame-level catalog against the rooted structural view
+  - report nodes present in one view and absent from the other
 - phases: `compile`
 - public methods: `run`
 
@@ -13172,7 +14202,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py:1`
 - role: Phase 6 check: every index dependency edge points at a real node.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `IndexDependencySanityStrategy` (class)
@@ -13181,7 +14212,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: The index-local counterpart to graph consistency: every dependency edge in the index must point at a real node.
-- responsibilities: `emit missing_index_dependency when a node depends on an absent id`, `establish the internal self-consistency later reachability, lineage and viability strategies assume`, `leave diagnostics unchanged when every indexed dependency resolves`
+- responsibilities:
+  - emit missing_index_dependency when a node depends on an absent id
+  - establish the internal self-consistency later reachability, lineage and viability strategies assume
+  - leave diagnostics unchanged when every indexed dependency resolves
 - phases: `compile`
 - public methods: `run`
 
@@ -13213,7 +14247,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:1`
 - role: Phase 6 check: blueprint root-lineage metadata agrees with the index.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `LineageAlignmentStrategy` (class)
@@ -13222,7 +14257,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that the optional root-lineage metadata carried on version-id blueprints agrees with the index.
-- responsibilities: `emit root_lineage_mismatch when a root's lineage id disagrees with the index`, `skip the check when a blueprint intentionally carries no lineage metadata`
+- responsibilities:
+  - emit root_lineage_mismatch when a root's lineage id disagrees with the index
+  - skip the check when a blueprint intentionally carries no lineage metadata
 - phases: `compile`
 - public methods: `run`
 
@@ -13254,7 +14291,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py:1`
 - role: Phase 6 check: one root does not mix versions of the same lineage.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `LineageVersionConflictStrategy` (class)
@@ -13263,7 +14301,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that one root DAG does not mix multiple versions of the same lineage - a root is one coherent runtime slice.
-- responsibilities: `report a lineage appearing more than once under a single root as differing versions`
+- responsibilities:
+  - report a lineage appearing more than once under a single root as differing versions
 - phases: `compile`
 - public methods: `run`
 
@@ -13295,7 +14334,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py:1`
 - role: Phase 6 check: every node in a root DAG has a Phase 4 result.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `MissingPhase4Strategy` (class)
@@ -13304,7 +14344,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: The bridge between spell-local and system-level validation: every node reachable through a root DAG must already carry a Phase 4 result.
-- responsibilities: `report nodes in a root blueprint with no Phase 4 spell-validation result`, `catch the ordering failure where system validation runs over spells that were never locally validated`
+- responsibilities:
+  - report nodes in a root blueprint with no Phase 4 spell-validation result
+  - catch the ordering failure where system validation runs over spells that were never locally validated
 - phases: `compile`
 - public methods: `run`
 
@@ -13336,7 +14378,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.ownership_consistency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:1`
 - role: Phase 6 check: a lineage does not claim conflicting conduit ownership.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `OwnershipConsistencyStrategy` (class)
@@ -13345,7 +14388,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that a lineage does not claim conflicting conduit ownership - the premise contracted spells, transfer-of-ownership and conduit-scoped validation all rest on.
-- responsibilities: `report a lineage whose ownership metadata points at more than one owner`
+- responsibilities:
+  - report a lineage whose ownership metadata points at more than one owner
 - phases: `compile`
 - public methods: `run`
 
@@ -13377,7 +14421,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_coverage_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py:1`
 - role: Phase 6 check: root designation agrees between blueprints and index.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `RootCoverageStrategy` (class)
@@ -13386,7 +14431,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that root designation stays aligned between the blueprints and the index's is_root metadata.
-- responsibilities: `compare which spells the blueprints treat as roots against the index's is_root flags`, `report disagreement between the planning view and the system-reporting view`
+- responsibilities:
+  - compare which spells the blueprints treat as roots against the index's is_root flags
+  - report disagreement between the planning view and the system-reporting view
 - phases: `compile`
 - public methods: `run`
 
@@ -13418,7 +14465,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_lineage_conflict_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py:1`
 - role: Phase 6 check: one lineage does not fan out into multiple roots.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `RootLineageConflictStrategy` (class)
@@ -13427,7 +14475,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that one lineage does not fan out into multiple structural roots.
-- responsibilities: `report multiple root spell ids mapping back to the same lineage`
+- responsibilities:
+  - report multiple root spell ids mapping back to the same lineage
 - phases: `compile`
 - public methods: `run`
 
@@ -13459,7 +14508,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_reachability_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py:1`
 - role: Phase 6 check: each blueprint is exactly its root's reachable closure.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `RootReachabilityStrategy` (class)
@@ -13468,7 +14518,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that each root blueprint is a TRUE root-reachable DAG - exactly the closure reachable from its declared root.
-- responsibilities: `report a blueprint whose declared root node is missing`, `report orphaned nodes that cannot be reached from the root`
+- responsibilities:
+  - report a blueprint whose declared root node is missing
+  - report orphaned nodes that cannot be reached from the root
 - phases: `compile`
 - public methods: `run`
 
@@ -13500,7 +14552,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py:1`
 - role: Phase 6 pressure gauge: root DAG size against configured scale limits.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `RootScaleLimitStrategy` (class)
@@ -13509,7 +14562,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Not a correctness check but an operational pressure gauge: root DAG size against configured scale limits.
-- responsibilities: `warn when a root blueprint exceeds the configured node, edge, depth or fan-out limits`, `carry its own configured thresholds and severity rather than reading them per call`
+- responsibilities:
+  - warn when a root blueprint exceeds the configured node, edge, depth or fan-out limits
+  - carry its own configured thresholds and severity rather than reading them per call
 - owns_state: `_max_nodes`, `_max_edges`, `_max_depth`, `_max_fan_out`, `_severity`
 - phases: `compile`
 - public methods: `run`
@@ -13542,7 +14597,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py:1`
 - role: Phase 6 verdict: folds the root-affecting errors already reported into one viability answer.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `RootViabilityStrategy` (class)
@@ -13551,7 +14607,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
 - role: The verdict pass: performs no fresh analysis, but collapses the root-affecting errors earlier strategies already produced into one viability answer per root.
-- responsibilities: `read the diagnostics accumulated by prior strategies rather than re-deriving structure`, `answer the system-level question of whether each root is still viable given what has been reported`, `depend on registration order - it must run after the strategies whose errors it folds`
+- responsibilities:
+  - read the diagnostics accumulated by prior strategies rather than re-deriving structure
+  - answer the system-level question of whether each root is still viable given what has been reported
+  - depend on registration order - it must run after the strategies whose errors it folds
 - phases: `compile`
 - public methods: `run`
 
@@ -13583,7 +14642,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:1`
 - role: Phase 6 check: narrower-lived nodes do not leak upward into broader scopes.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `ScopeOrderingStrategy` (class)
@@ -13592,7 +14652,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard lifecycle-scope ordering across dependency edges - the leak check.
-- responsibilities: `report broader-lived nodes depending on narrower-lived ones`, `prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes`
+- responsibilities:
+  - report broader-lived nodes depending on narrower-lived ones
+  - prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes
 - phases: `compile`
 - public methods: `run`
 
@@ -13624,7 +14686,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.py:1`
 - role: Phase 6 check: blueprint socket_refs and DagIndex stay aligned.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `SocketRefSanityStrategy` (class)
@@ -13633,7 +14696,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that the two synchronized views of the targeting surface stay aligned: each blueprint's raw socket_refs list and the DagIndex lookup.
-- responsibilities: `report socket refs present in one view and missing from the other`, `protect override planning, which depends on both views agreeing`
+- responsibilities:
+  - report socket refs present in one view and missing from the other
+  - protect override planning, which depends on both views agreeing
 - phases: `compile`
 - public methods: `run`
 
@@ -13665,7 +14730,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.strategy_base`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py:1`
 - role: The contract every Phase 6 system-validation strategy implements.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `SpellSystemValidationStrategy` (abstract)
@@ -13674,7 +14740,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py:17`
 - markers: `ABC`
 - role: Contract for one Phase 6 system-validation strategy over the frame-level Phase 5 outputs.
-- responsibilities: `own ONE coherent class of system-level invariant`, `append into the shared diagnostics list rather than returning a separate result object`, `run in registration order under SpellSystemValidationSystem and stay stateless or self-contained so reuse is safe`
+- responsibilities:
+  - own ONE coherent class of system-level invariant
+  - append into the shared diagnostics list rather than returning a separate result object
+  - run in registration order under SpellSystemValidationSystem and stay stateless or self-contained so reuse is safe
 - phases: `compile`
 - public methods: `run`
 
@@ -13694,7 +14763,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py:1`
 - role: Phase 6 check: Phase 3 sockets agree with index-level edges.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `TopologyDependencyMismatchStrategy` (class)
@@ -13703,7 +14773,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that the Phase 3 socket-aware per-spell topology agrees with the index-level edges.
-- responsibilities: `compare local topology sockets against the broader system graph's dependency edges`, `report where the socket view and the graph view disagree`
+- responsibilities:
+  - compare local topology sockets against the broader system graph's dependency edges
+  - report where the socket view and the graph view disagree
 - phases: `compile`
 - public methods: `run`
 
@@ -13735,7 +14807,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py:1`
 - role: Phase 6 check: visibility filtering has not amputated needed dependencies.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `VisibilityGapStrategy` (class)
@@ -13744,7 +14817,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that spellbook visibility filtering has not silently amputated dependencies a visible spell still needs.
-- responsibilities: `compare the direct dependencies SpellSystemStates recorded against the smaller visible SpellSystemIndex`, `report dependencies dropped by filtering rather than by design`
+- responsibilities:
+  - compare the direct dependencies SpellSystemStates recorded against the smaller visible SpellSystemIndex
+  - report dependencies dropped by filtering rather than by design
 - phases: `compile`
 - public methods: `run`
 
@@ -13782,7 +14857,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor`
 - defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:12`
 - role: The immutable per-spell LOCAL description of one constructor socket, which later phases stitch into the system-level blueprint.
-- responsibilities: `describe one constructor socket, including the is_collection truth later layers must carry forward verbatim`, `stay local - it makes no claim about the system graph`
+- responsibilities:
+  - describe one constructor socket, including the is_collection truth later layers must carry forward verbatim
+  - stay local - it makes no claim about the system graph
 - phases: `compile`
 
 #### `SpellLocalTopology` (class)
@@ -13791,7 +14868,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:90`
 - extends: `Cleanable`
 - role: Per-spell local constructor socket topology.
-- responsibilities: `stores immutable socket descriptors for one spell constructor`, `indexes sockets by parameter name for later lookup`, `captures direct target spell ids and contract metadata per socket`, `feeds SpellSystemStates aggregation, change-control, and blueprint building`
+- responsibilities:
+  - stores immutable socket descriptors for one spell constructor
+  - indexes sockets by parameter name for later lookup
+  - captures direct target spell ids and contract metadata per socket
+  - feeds SpellSystemStates aggregation, change-control, and blueprint building
 - owns_state: `_spell_id`, `_sockets`, `_by_param_name`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `get_sockets_for_param`, `iter_sockets`, `sockets`, `spell_id`
@@ -13834,7 +14915,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py:27`
 - extends: `Cleanable`
 - role: Per-spell context passed to validation strategies.
-- responsibilities: `holds one spell plus its already-built validation artifacts and shared issue list`
+- responsibilities:
+  - holds one spell plus its already-built validation artifacts and shared issue list
 - owns_state: `spell`, `spellbook`, `requirements`, `symbolic_graph`, `resolution_frame`, `issues`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`
@@ -13877,7 +14959,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_issue.py:8`
 - extends: `Cleanable`
 - role: Single spell-level validation issue.
-- responsibilities: `stores severity, code, message, source, and details for one spell validation finding`
+- responsibilities:
+  - stores severity, code, message, source, and details for one spell validation finding
 - owns_state: `severity`, `code`, `message`, `source`, `details`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`
@@ -13917,7 +15000,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py:11`
 - extends: `Cleanable`
 - role: Aggregate spell validation result.
-- responsibilities: `stores the ordered issue list and exposes error/warning summary flags for one spell validation run`
+- responsibilities:
+  - stores the ordered issue list and exposes error/warning summary flags for one spell validation run
 - owns_state: `spell_id`, `spell_name`, `issues`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `errors`, `has_errors`, `has_warnings`, `warnings`
@@ -13953,7 +15037,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:1`
 - role: Phase 4 check: unsupported collection-style DI annotation shapes.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `AnnotationShapeGuardStrategy` (class)
@@ -13962,7 +15047,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:22`
 - extends: `SpellValidationStrategy`
 - role: Rejects collection-style DI annotation shapes Melder does not support, reading Phase-1 requirements annotations.
-- responsibilities: `treat list[T] as the only collection DI form worth deeper inspection in this cut`, `defer SpellMap and SpellContract defaults to their own strategies`, `emit issues into the context; never mutate the spell or attempt recovery`
+- responsibilities:
+  - treat list[T] as the only collection DI form worth deeper inspection in this cut
+  - defer SpellMap and SpellContract defaults to their own strategies
+  - emit issues into the context; never mutate the spell or attempt recovery
 - phases: `compile`
 - public methods: `validate`
 
@@ -13994,7 +15082,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:1`
 - role: Phase 4 check: cycles visible only when resolution is modeled by binding key.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `BindingResolutionCycleStrategy` (class)
@@ -14003,7 +15092,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:29`
 - extends: `SpellValidationStrategy`
 - role: The binding-KEY counterpart to the spell-id cycle check: loops invisible by spell id but visible once resolution is modeled by binding key.
-- responsibilities: `build a binding-key graph from available requirements`, `report cycles reachable from the spell under validation`, `mutate nothing - spells, spellbooks and requirements are read only`
+- responsibilities:
+  - build a binding-key graph from available requirements
+  - report cycles reachable from the spell under validation
+  - mutate nothing - spells, spellbooks and requirements are read only
 - phases: `compile`
 - public methods: `validate`
 
@@ -14035,7 +15127,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.callable_profile_hygiene_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py:1`
 - role: Phase 4 check: the binding profile matches the spell's declared kind.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `CallableProfileHygieneStrategy` (class)
@@ -14044,7 +15137,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py:32`
 - extends: `SpellValidationStrategy`
 - role: Checks that a spell's binding profile matches its declared kind - class, callable, or existing creation.
-- responsibilities: `error on MISSING_BINDING_PROFILE, and per kind on NON_CLASS_SPELL_TARGET/CLASS_PROFILE_MISSING, NON_CALLABLE_SPELL_TARGET/CALLABLE_PROFILE_MISSING, and the existing-creation instance/profile mismatches`, `read the profile via SpellExaminer's general and detailed profiles; validate only`
+- responsibilities:
+  - error on MISSING_BINDING_PROFILE, and per kind on NON_CLASS_SPELL_TARGET/CLASS_PROFILE_MISSING, NON_CALLABLE_SPELL_TARGET/CALLABLE_PROFILE_MISSING, and the existing-creation instance/profile mismatches
+  - read the profile via SpellExaminer's general and detailed profiles; validate only
 - phases: `compile`
 - public methods: `validate`
 
@@ -14076,7 +15171,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py:1`
 - role: Phase 4 check: multi-hop cycles by spell/version id.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `CircularDependencyStrategy` (class)
@@ -14085,7 +15181,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py:14`
 - extends: `SpellValidationStrategy`
 - role: The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.
-- responsibilities: `traverse the spellbook-wide dependency graph by spell/version id`, `report only cycles reachable from the spell under validation`, `leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically`
+- responsibilities:
+  - traverse the spellbook-wide dependency graph by spell/version id
+  - report only cycles reachable from the spell under validation
+  - leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically
 - phases: `compile`
 - public methods: `validate`
 
@@ -14117,7 +15216,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:1`
 - role: Phase 4 check: missing or ambiguous SpellContract providers, mode-sensitive.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `ContractProviderPresenceStrategy` (class)
@@ -14126,7 +15226,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:23`
 - extends: `SpellValidationStrategy`
 - role: Explains at Phase 4 why a contracted spell cannot resolve, rather than letting it fail later without a reason.
-- responsibilities: `error on malformed contract descriptors and on more than one provider matching a contract key`, `warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state`, `read the Spellbook's contracted-spell maps and the frame system_state`
+- responsibilities:
+  - error on malformed contract descriptors and on more than one provider matching a contract key
+  - warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state
+  - read the Spellbook's contracted-spell maps and the frame system_state
 - phases: `compile`
 - public methods: `validate`
 
@@ -14158,7 +15261,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py:1`
 - role: Phase 4 check: dependencies absent from the visible spell pool.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `DanglingDependenciesStrategy` (class)
@@ -14167,7 +15271,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py:11`
 - extends: `SpellValidationStrategy`
 - role: Owner of dangling-id reporting, which the cycle strategies deliberately ignore so this one is the single voice on it.
-- responsibilities: `validate dependency existence against the owning spellbook's current VISIBLE spell-id pool`, `distinguish 'cannot check because no spellbook exists' from 'dependency is genuinely absent'`, `never repair or prune dependency lists`
+- responsibilities:
+  - validate dependency existence against the owning spellbook's current VISIBLE spell-id pool
+  - distinguish 'cannot check because no spellbook exists' from 'dependency is genuinely absent'
+  - never repair or prune dependency lists
 - phases: `compile`
 - public methods: `validate`
 
@@ -14199,7 +15306,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py:1`
 - role: Phase 4 check: duplicate visible spell names, which make name-based resolution ambiguous.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `DuplicateSpellNameStrategy` (class)
@@ -14208,7 +15316,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py:13`
 - extends: `SpellValidationStrategy`
 - role: Guard name-based resolution: two visible spells sharing a spell_name is a hard ambiguity.
-- responsibilities: `use the visible spellbook spell pool as the source of truth`, `emit issues only - never rename or partition spells`
+- responsibilities:
+  - use the visible spellbook spell pool as the source of truth
+  - emit issues only - never rename or partition spells
 - phases: `compile`
 - public methods: `validate`
 
@@ -14240,7 +15350,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py:1`
 - role: Phase 4 check: the invariants that make an existing-creation spell resolvable.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `ExistingCreationCompatibilityStrategy` (class)
@@ -14249,7 +15360,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py:29`
 - extends: `SpellValidationStrategy`
 - role: Enforces the invariants that make an existing-creation spell - one binding an already-constructed object rather than a class Melder instantiates - resolvable.
-- responsibilities: `error per violated invariant: missing instance, existence not Existence.unique, missing instance binding profile, and the parameter cases`, `read Phase-1 requirements and the spell's binding profile`
+- responsibilities:
+  - error per violated invariant: missing instance, existence not Existence.unique, missing instance binding profile, and the parameter cases
+  - read Phase-1 requirements and the spell's binding profile
 - phases: `compile`
 - public methods: `validate`
 
@@ -14281,7 +15394,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py:1`
 - role: Phase 4 check: DI annotation policy over Phase 1 parameters.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `ParameterPolicyStrategy` (class)
@@ -14290,7 +15404,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py:24`
 - extends: `SpellValidationStrategy`
 - role: The DI-annotation policy pass over Phase-1 parameters and their ParameterDIShape.
-- responsibilities: `error on VARIADIC_DI_UNSUPPORTED, DI_MISSING_ANNOTATION, DI_BUILTIN_ANNOTATION, DI_COLLECTION_MISSING_ELEMENT and DI_COLLECTION_NON_FRAME`, `validate only - mutate nothing`
+- responsibilities:
+  - error on VARIADIC_DI_UNSUPPORTED, DI_MISSING_ANNOTATION, DI_BUILTIN_ANNOTATION, DI_COLLECTION_MISSING_ELEMENT and DI_COLLECTION_NON_FRAME
+  - validate only - mutate nothing
 - phases: `compile`
 - public methods: `validate`
 
@@ -14322,7 +15438,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:1`
 - role: Phase 4 advisory: caller-required parameters DI will never satisfy.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `RequiredHolesStrategy` (class)
@@ -14331,7 +15448,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:11`
 - extends: `SpellValidationStrategy`
 - role: Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.
-- responsibilities: `consume the Phase-1 SpellRequirements.iter_required_holes() view`, `emit warnings rather than hard errors`
+- responsibilities:
+  - consume the Phase-1 SpellRequirements.iter_required_holes() view
+  - emit warnings rather than hard errors
 - phases: `compile`
 - public methods: `validate`
 
@@ -14363,7 +15482,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py:1`
 - role: Phase 4 check: the minimum Phase 3 artifacts exist.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `ResolutionFramePresenceStrategy` (class)
@@ -14372,7 +15492,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py:11`
 - extends: `SpellValidationStrategy`
 - role: The most basic structural check of the Phase 4 family, run first in the default registration order.
-- responsibilities: `verify Phase 3 produced the minimum runtime artifacts downstream resolution needs`, `emit issues into the supplied context; never rebuild missing graph artifacts`
+- responsibilities:
+  - verify Phase 3 produced the minimum runtime artifacts downstream resolution needs
+  - emit issues into the supplied context; never rebuild missing graph artifacts
 - phases: `compile`
 - public methods: `validate`
 
@@ -14404,7 +15526,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py:1`
 - role: Phase 4 check: direct self-dependency.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `SelfDependencyStrategy` (class)
@@ -14413,7 +15536,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py:12`
 - extends: `SpellValidationStrategy`
 - role: The direct self-dependency check; sibling to CircularDependencyStrategy, which owns the multi-hop cycles this one deliberately does not.
-- responsibilities: `check only for direct self-dependency`, `emit issues into the context; never mutate the dependency graph`
+- responsibilities:
+  - check only for direct self-dependency
+  - emit issues into the context; never mutate the dependency graph
 - phases: `compile`
 - public methods: `validate`
 
@@ -14452,7 +15577,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py:9`
 - extends: `Cleanable`
 - role: Base class for spell validation strategies.
-- responsibilities: `defines the validate(context) contract for spell-level validation strategies`
+- responsibilities:
+  - defines the validate(context) contract for spell-level validation strategies
 - owns_state: `_name`, `_description`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `description`, `name`, `validate`
@@ -14486,7 +15612,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.spellmap_shape_validation_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py:1`
 - role: Phase 4 check: the shape of SpellMap defaults captured on Phase 1 parameters.
-- responsibilities: `provides one validation or examination strategy/support surface`
+- responsibilities:
+  - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
 
 #### `SpellMapShapeValidationStrategy` (class)
@@ -14495,7 +15622,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py:23`
 - extends: `SpellValidationStrategy`
 - role: Validates the SpellMap defaults captured on Phase-1 parameters, one pass per SPELLMAP_DEFAULT parameter.
-- responsibilities: `error on SPELLMAP_DEFAULT_MISSING, SPELLMAP_DEFAULT_INVALID, and SPELLMAP_MISSING_TARGET (neither spell nor spellframe)`, `warn on SPELLMAP_BINDING_NAME_NOT_NORMALIZED, normalizing via SpellInputUtils`, `validate only; mutate nothing`
+- responsibilities:
+  - error on SPELLMAP_DEFAULT_MISSING, SPELLMAP_DEFAULT_INVALID, and SPELLMAP_MISSING_TARGET (neither spell nor spellframe)
+  - warn on SPELLMAP_BINDING_NAME_NOT_NORMALIZED, normalizing via SpellInputUtils
+  - validate only; mutate nothing
 - phases: `compile`
 - public methods: `validate`
 
@@ -14534,7 +15664,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:62`
 - extends: `Cleanable`
 - role: Spell-level validation strategy registry and runner.
-- responsibilities: `owns the default spell validation strategies`, `validates one spell across requirements, symbolic graph, and phase 3 summary`, `aggregates issues into a SpellValidationResult for the caller`, `cleans validation context and strategies after use`
+- responsibilities:
+  - owns the default spell validation strategies
+  - validates one spell across requirements, symbolic graph, and phase 3 summary
+  - aggregates issues into a SpellValidationResult for the caller
+  - cleans validation context and strategies after use
 - owns_state: `_strategies`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `iter_strategies`, `register_strategy`, `unregister_strategy`, `validate_spell`
@@ -14599,7 +15733,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spell_types/spell_types.py:3`
 - markers: `Enum`
 - role: Canonical runtime binding-family classification enum for bound spells.
-- responsibilities: `labels class, existing-creation, method, and lambda spell families`
+- responsibilities:
+  - labels class, existing-creation, method, and lambda spell families
 - owns_state: `SPELL`, `SPELL_WITH_SPELLFRAME`, `SPELL_WITH_BINDING_NAME`, `SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME`, `EXISTING_CREATION`, `EXISTING_CREATION_WITH_SPELLFRAME`, `EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME`, `METHOD`, `METHOD_WITH_BINDING_NAME`, `METHOD_WITH_SPELLFRAME`, `METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME`, `LAMBDA_METHOD_WITH_BINDING_NAME`, `LAMBDA_METHOD_WITH_SPELLFRAME`, `LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME`
 - phases: `runtime`
 
@@ -14626,7 +15761,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spellbinder.py:14`
 - extends: `Cleanable`
 - role: Fluent registration helper for Spellbook bind operations.
-- responsibilities: `accumulates bind-time choices for one pending registration and delegates them to Spellbook.bind on finalize`
+- responsibilities:
+  - accumulates bind-time choices for one pending registration and delegates them to Spellbook.bind on finalize
 - owns_state: `_weak_spellbook`, `_default_existence`, `_default_permissions`, `_default_profile`, `_spell`, `_existence`, `_permissions`, `_profile`, `_spellframe`, `_binding_name`, `_kwargs`
 - phases: `runtime`, `cleanup`
 - public methods: `as_many`, `as_unique`, `as_unique_per_conduit`, `as_unique_per_conduit_cluster`, `as_unique_per_conduit_lineage`, `as_unique_per_spell_space`, `bind`, `cleanup`, `finalize`, `named`, `under_spellframe`, `with_activation_hook` (+8 more)
@@ -14656,7 +15792,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `a6f3ea05e416f8daad60cd38cbb384e5c05b60a6d7fc5f35573a7d25fd748b72`
+- source_sha256: `13dd96deadd1886ed1364c2f10e95e261daa4eb874b923978589723a58cda787`
 - nodes: 2
 
 ### Nodes
@@ -14670,10 +15806,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spellbook` (class)
 
 - id: `melder.aether.spellbook.spellbook.Spellbook`
-- defined at: `src/melder/aether/spellbook/spellbook.py:56`
+- defined at: `src/melder/aether/spellbook/spellbook.py:66`
 - extends: `Cleanable`
 - role: Public binding, validation, and conjure surface.
-- responsibilities: `binds and scans spells into local and contracted lookup surfaces`, `coordinates configuration freeze and frame publication into Aether and Nexus`, `conjures and retains exactly one root conduit`, `coordinates spell lineage state and transaction-sensitive binding changes`
+- responsibilities:
+  - binds and scans spells into local and contracted lookup surfaces
+  - coordinates configuration freeze and frame publication into Aether and Nexus
+  - conjures and retains exactly one root conduit
+  - coordinates spell lineage state and transaction-sensitive binding changes
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_spell_validator`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells`, `create_new_preset_spellbook`, `describe_spells_in_spellbook` (+15 more)
@@ -14760,7 +15900,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/spellbook/spellbook_creation_system.py:43`
 - extends: `Cleanable`
 - role: Conjure-only orchestration helper for Spellbook.
-- responsibilities: `prepares spellbook configuration and structural phase execution before conjure`, `runs conduit-scoped resolution phases and policy gating for conjure`, `builds and activates the root conduit for one conjure run`, `wires conduit ownership into local spells and fires conjure hooks`
+- responsibilities:
+  - prepares spellbook configuration and structural phase execution before conjure
+  - runs conduit-scoped resolution phases and policy gating for conjure
+  - builds and activates the root conduit for one conjure run
+  - wires conduit ownership into local spells and fires conjure hooks
 - owns_state: `_spellbook`, `_policy`, `_automatic`, `_conduit_cls`, `_phase_scheduler_cls`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory`, `phase_occurrence_plan_factory` (+15 more)
@@ -14815,7 +15959,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter`
 - defined at: `src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py:1`
 - role: First-party SQLite provider for the external persistence mesh.
-- responsibilities: `offer a durable local option requiring no custom handlers`
+- responsibilities:
+  - offer a durable local option requiring no custom handlers
 - phases: `runtime`
 
 #### `SqliteMeshAdapter` (class)
@@ -14824,7 +15969,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py:18`
 - extends: `Cleanable`
 - role: First-party SQLite provider for the external persistence mesh.
-- responsibilities: `offer durable local storage requiring no custom handlers`
+- responsibilities:
+  - offer durable local storage requiring no custom handlers
 - phases: `runtime`
 - public methods: `cleanup`, `delete_unit`, `describe`, `fetch_unit`, `list_units`, `register_with`, `store_unit`
 
@@ -14858,7 +16004,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.asset_management.asset_management_system`
 - defined at: `src/melder/crystallizer/asset_management/asset_management_system.py:1`
 - role: Bytes-at-rest custody: cache files, formations, and the external DB seam.
-- responsibilities: `seal then ship - cache write, FIFO retention, then lenient upload`, `land reloads in the record's insert sink`
+- responsibilities:
+  - seal then ship - cache write, FIFO retention, then lenient upload
+  - land reloads in the record's insert sink
 - phases: `init`, `runtime`, `cleanup`
 
 #### `AssetManagementSystem` (class)
@@ -14867,7 +16015,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/asset_management/asset_management_system.py:37`
 - extends: `Cleanable`
 - role: Bytes-at-rest custody (S3): cache files, formation files, and the ExternalPersistenceManager DB seam over a borrowed record.
-- responsibilities: `flush_checkpoint = seal-then-ship (cache write, FIFO retention at the record's live cap, lenient upload leg; one feedstock pull)`, `reload lanes (cache/remote) feed the record's insert sink insert-if-absent`, `formation file store/load/list`, `EPM configure/describe/reload_from_external`
+- responsibilities:
+  - flush_checkpoint = seal-then-ship (cache write, FIFO retention at the record's live cap, lenient upload leg; one feedstock pull)
+  - reload lanes (cache/remote) feed the record's insert sink insert-if-absent
+  - formation file store/load/list
+  - EPM configure/describe/reload_from_external
 - owns_state: `CrystallizerCache`, `optional ExternalPersistenceManager`
 - phases: `runtime`
 - public methods: `apply_external_retention`, `cleanup`, `configure_external_persistence_manager`, `delete_cached_checkpoint`, `delete_formation`, `describe_external_interface`, `describe_external_persistence_manager`, `emission_tap_enabled`, `fetch_index_graft`, `flush_checkpoint`, `list_cached_checkpoint_ids`, `list_formations` (+9 more)
@@ -14915,7 +16067,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.asset_management.crystallizer_cache`
 - defined at: `src/melder/crystallizer/asset_management/crystallizer_cache.py:1`
 - role: Local filesystem custody for checkpoint cached items and formations.
-- responsibilities: `write atomically per checkpoint ULID`, `FIFO-cap cached files at the record's live limit`
+- responsibilities:
+  - write atomically per checkpoint ULID
+  - FIFO-cap cached files at the record's live limit
 - phases: `runtime`
 
 #### `CrystallizerCache` (class)
@@ -14924,7 +16078,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/asset_management/crystallizer_cache.py:10`
 - extends: `Cleanable`
 - role: Disk clerk for checkpoints: profile-scoped JSON files under __crystallizer_cache__.
-- responsibilities: `atomic tmp+replace writes at {profile}/{checkpoint_id}.json (legacy flat reads tolerated)`, `FIFO file retention at the checkpoint limit (enforce_cache_retention)`, `per-profile listings feed reload_profile_from_cache`
+- responsibilities:
+  - atomic tmp+replace writes at {profile}/{checkpoint_id}.json (legacy flat reads tolerated)
+  - FIFO file retention at the checkpoint limit (enforce_cache_retention)
+  - per-profile listings feed reload_profile_from_cache
 - owns_state: `cache root layout`
 - phases: `runtime`
 - public methods: `cleanup`, `delete_cached_item`, `delete_formation`, `enforce_cache_retention`, `list_cached_item_ids`, `list_cached_item_ids_for_profile`, `list_formation_names`, `load_cached_item`, `load_formation`, `resolve_cache_root_path`, `store_cached_item`, `store_formation`
@@ -14960,7 +16117,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.asset_management.external_persistence_manager`
 - defined at: `src/melder/crystallizer/asset_management/external_persistence_manager.py:1`
 - role: User-callable transport carrying mesh units to storage the application chose.
-- responsibilities: `carry checkpoints, formations, grafts and emission events across the boundary`, `stay lenient on upload so a failure never breaks the seal lane`
+- responsibilities:
+  - carry checkpoints, formations, grafts and emission events across the boundary
+  - stay lenient on upload so a failure never breaks the seal lane
 - phases: `runtime`
 
 #### `ExternalPersistenceManager` (class)
@@ -14969,7 +16128,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/asset_management/external_persistence_manager.py:11`
 - extends: `Cleanable`
 - role: Crystallizer-owned remote transport (the DB opt-in) built on USER callables.
-- responsibilities: `uploads flushed cached items (lenient default posture with failure diagnostics; strict optional)`, `downloads single checkpoints and whole profiles (loud refusals on missing handlers/inconsistent remotes)`, `records as presence flags only (callables never enter the record)`
+- responsibilities:
+  - uploads flushed cached items (lenient default posture with failure diagnostics; strict optional)
+  - downloads single checkpoints and whole profiles (loud refusals on missing handlers/inconsistent remotes)
+  - records as presence flags only (callables never enter the record)
 - owns_state: `configuration`, `upload_failure_count`
 - phases: `runtime`
 - public methods: `cleanup`, `delete_unit`, `describe`, `download_checkpoint`, `download_profile`, `fetch_unit`, `has_store_handler`, `list_units`, `store_enabled`, `store_failure_count`, `store_unit`, `stream_emissions_enabled` (+3 more)
@@ -15008,7 +16170,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.asset_management.external_persistence_manager_configuration`
 - defined at: `src/melder/crystallizer/asset_management/external_persistence_manager_configuration.py:1`
 - role: Handler configuration connecting crystallizer assets to user-chosen storage.
-- responsibilities: `hold the user's store/fetch/list/delete callables`
+- responsibilities:
+  - hold the user's store/fetch/list/delete callables
 - phases: `init`
 
 #### `ExternalPersistenceManagerConfiguration` (class)
@@ -15017,7 +16180,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/asset_management/external_persistence_manager_configuration.py:9`
 - extends: `Cleanable`
 - role: Separate user-facing configuration carrying upload/download/list callables plus posture knobs.
-- responsibilities: `fluent authoring then freeze; validate refuses upload_on_flush without a handler`, `describe_presence() is the record-safe surface (presence flags only)`
+- responsibilities:
+  - fluent authoring then freeze; validate refuses upload_on_flush without a handler
+  - describe_presence() is the record-safe surface (presence flags only)
 - owns_state: `handlers`, `upload_on_flush`, `strict_uploads`
 - phases: `init`, `runtime`
 - public methods: `cleanup`, `delete_handler`, `describe_presence`, `download_handler`, `fetch_handler`, `freeze`, `frozen`, `id`, `list_handler`, `list_units_handler`, `store_handler`, `stream_emissions` (+14 more)
@@ -15053,7 +16218,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.asset_management.mesh_interface_contract`
 - defined at: `src/melder/crystallizer/asset_management/mesh_interface_contract.py:1`
 - role: Static authority describing the value and callable boundary of the external mesh.
-- responsibilities: `document the complete interface an integrator must satisfy`
+- responsibilities:
+  - document the complete interface an integrator must satisfy
 - phases: `init`
 
 #### `MeshInterfaceContract` (class)
@@ -15061,7 +16227,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.asset_management.mesh_interface_contract.MeshInterfaceContract`
 - defined at: `src/melder/crystallizer/asset_management/mesh_interface_contract.py:6`
 - role: Static authority describing the mesh value/callable boundary.
-- responsibilities: `document the complete interface an integrator must satisfy`
+- responsibilities:
+  - document the complete interface an integrator must satisfy
 - phases: `init`
 - public methods: `describe`, `unit_kinds`
 
@@ -15081,7 +16248,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.configuration.crystallizer_configuration`
 - defined at: `src/melder/crystallizer/configuration/crystallizer_configuration.py:1`
 - role: Authoring surface for capture and durability policy.
-- responsibilities: `tell the crystallizer which modules are user-owned`, `set retention and checkpoint cadence`
+- responsibilities:
+  - tell the crystallizer which modules are user-owned
+  - set retention and checkpoint cadence
 - phases: `init`
 
 #### `CrystallizerConfiguration` (class)
@@ -15090,7 +16259,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/configuration/crystallizer_configuration.py:10`
 - extends: `Cleanable`
 - role: Mutable-to-frozen configuration surface for the crystallizer root.
-- responsibilities: `stores crystallizer-wide policy inputs before root activation`, `owns user-source root path classification policy`, `validates and freezes configuration before activation`
+- responsibilities:
+  - stores crystallizer-wide policy inputs before root activation
+  - owns user-source root path classification policy
+  - validates and freezes configuration before activation
 - owns_state: `_properties`, `available_properties`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `auto_flush_checkpoints`, `checkpoint_interval_minutes`, `cleanup`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `id`, `load_recorded_dictionary` (+16 more)
@@ -15127,7 +16299,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.configuration.crystallizer_configuration_builder`
 - defined at: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py:1`
 - role: One-shot ownership handoff around a mutable crystallizer configuration.
-- responsibilities: `give callers an explicit boundary between authoring and installing`
+- responsibilities:
+  - give callers an explicit boundary between authoring and installing
 - phases: `init`
 
 #### `CrystallizerConfigurationBuilder` (class)
@@ -15136,7 +16309,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py:12`
 - extends: `Cleanable`
 - role: Standalone builder for crystallizer root configuration assembly.
-- responsibilities: `owns one mutable CrystallizerConfiguration during assembly`, `applies defaults and user-source-root policy before handoff`, `transfers configuration ownership through build, finalize, or activate`
+- responsibilities:
+  - owns one mutable CrystallizerConfiguration during assembly
+  - applies defaults and user-source-root policy before handoff
+  - transfers configuration ownership through build, finalize, or activate
 - owns_state: `_configuration`, `_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `build`, `cleanup`, `finalize`, `id`, `with_defaults`, `with_user_source_root_paths`
@@ -15174,7 +16350,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.crystal_analysis_result`
 - defined at: `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py:1`
 - role: Value-only carrier of one analysis pass (the payload crystals CARRY per the V3 carrier law).
-- responsibilities: `holds manifest maps, synthetic sources, physical SHA256 fingerprints, export surfaces, topological load order, walk errors`, `describe() is the persistence-facing analysis payload (superset of the pre-decomposition SpellCrystal manifest keys)`
+- responsibilities:
+  - holds manifest maps, synthetic sources, physical SHA256 fingerprints, export surfaces, topological load order, walk errors
+  - describe() is the persistence-facing analysis payload (superset of the pre-decomposition SpellCrystal manifest keys)
 - owns_state: `analysis maps (detached, value-only)`
 - phases: `runtime`
 
@@ -15184,7 +16362,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py:21`
 - extends: `Cleanable`
 - role: Value-only carrier for one module-world analysis pass; crystals hold analysis OUTPUT without owning the machinery.
-- responsibilities: `hold every analysis-derived fact as plain str/list/dict/bool - never a live module, spell, or strategy`, `accept record_*/set_* writes from the analyzer during the write phase, then serve detached reads`, `guard every mutation and detached read with the instance RLock`
+- responsibilities:
+  - hold every analysis-derived fact as plain str/list/dict/bool - never a live module, spell, or strategy
+  - accept record_*/set_* writes from the analyzer during the write phase, then serve detached reads
+  - guard every mutation and detached read with the instance RLock
 - owns_state: `_lock`, `_root_module_kind`, `_module_targets`, `_path_targets`, `_synthetic_module_targets`, `_synthetic_module_sources`, `_user_module_sources`
 - phases: `bind`, `runtime`, `cleanup`
 - public methods: `ast_from_import_targets_by_module`, `ast_import_targets_by_module`, `cleanup`, `describe`, `distribution_provenance`, `export_surfaces`, `module_load_order`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension`, `module_to_kind`, `module_to_path` (+19 more)
@@ -15217,7 +16398,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.crystal_analyzer`
 - defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:1`
 - role: Standalone module-world analyzer: custody dispatch + single shared AST walk over fact strategies (S1 decomposition).
-- responsibilities: `walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves)`, `classifies via the first-match custody chain (synthetic/user_source/site_package/fallback)`, `runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)`, `analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)`, `public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths`
+- responsibilities:
+  - walks the module dependency graph (LIFO, cycle-protected, honest unknown leaves)
+  - classifies via the first-match custody chain (synthetic/user_source/site_package/fallback)
+  - runs fact strategies in one shared AST pass (byte-order parity with the historical extractor)
+  - analyze_spell_root for live spells; analyze_payload rebuilds results from RETAINED payloads (MR seam)
+  - public statics: resolve_module_path/resolve_file_extension/resolve_user_root_paths/resolve_site_package_root_paths
 - owns_state: `custody strategy chain`, `fact strategy list`
 - phases: `runtime`
 
@@ -15227,7 +16413,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:77`
 - extends: `Cleanable`
 - role: Single-use composer of custody and fact strategies that produces one CrystalAnalysisResult per module world.
-- responsibilities: `consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies`, `drive ONE ast.walk per module and dispatch every node to the fact strategies`, `own its strategy instances and clean them children-first; the shared syntax memo survives instance cleanup`
+- responsibilities:
+  - consult custody strategies in priority order [synthetic, user_source, site_package, fallback]; first match classifies
+  - drive ONE ast.walk per module and dispatch every node to the fact strategies
+  - own its strategy instances and clean them children-first; the shared syntax memo survives instance cleanup
 - owns_state: `_custody_strategies`, `_fact_strategies`, `_retain_user_sources`, `_site_package_dependency_descent`, `_uses_default_fact_strategies`
 - phases: `bind`, `runtime`, `cleanup`
 - public methods: `analyze_payload`, `analyze_spell_root`, `cleanup`, `resolve_file_extension`, `resolve_module_path`, `resolve_site_package_root_paths`, `resolve_user_root_paths`
@@ -15289,7 +16478,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/binary_unknown_custody_strategy.py:21`
 - extends: `SourceCustodyStrategy`
 - role: Terminal fallback custody: guarantees every module classifies by claiming whatever the prior authorities declined.
-- responsibilities: `match unconditionally - MUST be last in the analyzer's priority order`, `offer no source, no fingerprint, and no descent`, `expose compiled leaves (.so/.pyd/.dylib) through harvest_binary_identity - hash the bytes, never parse them`
+- responsibilities:
+  - match unconditionally - MUST be last in the analyzer's priority order
+  - offer no source, no fingerprint, and no descent
+  - expose compiled leaves (.so/.pyd/.dylib) through harvest_binary_identity - hash the bytes, never parse them
 - phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_binary_identity`, `kind`, `matches`, `reads_physical_source`, `resolve_source`
 
@@ -15322,7 +16514,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py:24`
 - extends: `SourceCustodyStrategy`
 - role: Custody for installed site-package modules; reads their source but asserts no fingerprint over third-party code.
-- responsibilities: `claim modules under interpreter site roots or the historical path-text fallback`, `expose source for fact analysis while returning None from fingerprint (no custody claim)`, `hold the site-root tuple fixed at construction and delete it on cleanup`
+- responsibilities:
+  - claim modules under interpreter site roots or the historical path-text fallback
+  - expose source for fact analysis while returning None from fingerprint (no custody claim)
+  - hold the site-root tuple fixed at construction and delete it on cleanup
 - owns_state: `_site_package_root_paths`
 - phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_provenance`, `kind`, `matches`, `resolve_source`
@@ -15357,7 +16552,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Contract for one authority class's custody behavior: match, resolve source, fingerprint, and decide descent.
-- responsibilities: `answer matches/resolve_source/fingerprint/descends for exactly one authority class`, `stay deterministic for a given input triple and never raise for content problems (errors ride the error channel)`, `remain immutable after construction - thread-confined to one analyzer pass, so no locks`
+- responsibilities:
+  - answer matches/resolve_source/fingerprint/descends for exactly one authority class
+  - stay deterministic for a given input triple and never raise for content problems (errors ride the error channel)
+  - remain immutable after construction - thread-confined to one analyzer pass, so no locks
 - phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `descends`, `fingerprint`, `harvest_payload`, `kind`, `matches`, `reads_physical_source`, `resolve_source`
 
@@ -15390,7 +16588,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/synthetic_custody_strategy.py:21`
 - extends: `SourceCustodyStrategy`
 - role: Custody for crystallizer-born synthetic modules, whose explicit authority wins over every path-driven class.
-- responsibilities: `match by strict protocol identity, first in the priority order`, `resolve source from the protocol surface only - never touch disk`, `harvest the rebuildable payload SyntheticModule's constructor needs at restore`
+- responsibilities:
+  - match by strict protocol identity, first in the priority order
+  - resolve source from the protocol surface only - never touch disk
+  - harvest the rebuildable payload SyntheticModule's constructor needs at restore
 - phases: `bind`, `cleanup`
 - public methods: `claims_sha256_source_fingerprint`, `cleanup`, `descends`, `fingerprint`, `harvest_payload`, `kind`, `matches`, `reads_physical_source`, `resolve_source`
 
@@ -15423,7 +16624,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/custody/user_source_custody_strategy.py:21`
 - extends: `SourceCustodyStrategy`
 - role: Custody for policy-rooted user source modules; stamps the fingerprint that makes on-disk drift detectable.
-- responsibilities: `claim modules whose backing file lives under a configured user root; pathless modules never match`, `expose .py/.pyi text for fact analysis`, `hold the root tuple fixed at construction and delete it on cleanup`
+- responsibilities:
+  - claim modules whose backing file lives under a configured user root; pathless modules never match
+  - expose .py/.pyi text for fact analysis
+  - hold the root tuple fixed at construction and delete it on cleanup
 - owns_state: `_user_root_paths`
 - phases: `bind`, `cleanup`
 - public methods: `cleanup`, `descends`, `harvest_payload`, `kind`, `matches`, `resolve_source`
@@ -15457,7 +16661,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/impact_engine.py:24`
 - extends: `Cleanable`
 - role: Read-only blast-radius view over custody manifests (reverse import closure + source drift; spell_id vocabulary).
-- responsibilities: `indexes module->spells and module->importers from detached custody payloads`, `answers blast_radius_of_module/spell and describe_source_drift`
+- responsibilities:
+  - indexes module->spells and module->importers from detached custody payloads
+  - answers blast_radius_of_module/spell and describe_source_drift
 - owns_state: `_spells_by_module`, `_importers_by_module`, `_fingerprints_by_module`
 - phases: `runtime`
 - public methods: `blast_radius_of_module`, `blast_radius_of_spell`, `cleanup`, `describe`, `describe_source_drift`, `spells_touching_module`
@@ -15497,7 +16703,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache`
 - defined at: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py:36`
 - role: Process-wide stat-guarded fingerprint cache: one answer for a source file's current sha256 without redundant disk reads.
-- responsibilities: `serve fingerprint_if_unchanged without ever reading file content`, `own the single read law for physical source (read_text_and_fingerprint) and feed the cache from it`, `serialize entry-map access under the class RLock while running IO outside it`, `LRU-evict beyond class capacity`
+- responsibilities:
+  - serve fingerprint_if_unchanged without ever reading file content
+  - own the single read law for physical source (read_text_and_fingerprint) and feed the cache from it
+  - serialize entry-map access under the class RLock while running IO outside it
+  - LRU-evict beyond class capacity
 - owns_state: `class-level entry map`, `class-level RLock`, `hit/miss counters`
 - phases: `runtime`
 - public methods: `fingerprint_if_unchanged`, `read_text_and_fingerprint`
@@ -15532,7 +16742,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight for cluster members outside the bundle, which cannot re-join and shortfall at restore.
-- responsibilities: `warn per absent member conduit`, `report a recorded leader as info once per cluster - election re-runs live and the recorded leader is never replayed`
+- responsibilities:
+  - warn per absent member conduit
+  - report a recorded leader as info once per cluster - election re-runs live and the recorded leader is never replayed
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15565,7 +16777,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/configuration_loss_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight naming the code participation a bootloader must re-supply, since callable-bearing config never round-trips.
-- responsibilities: `report spellbook hooks and aether-root resolver/default-logger flags the record carries as presence only`, `emit info severity - these are honest expectations the restore reports as shortfalls, not failures`
+- responsibilities:
+  - report spellbook hooks and aether-root resolver/default-logger flags the record carries as presence only
+  - emit info severity - these are honest expectations the restore reports as shortfalls, not failures
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15598,7 +16812,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/contract_peer_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight for contracts captured around one endpoint, whose details cannot re-grant until the peer exists.
-- responsibilities: `warn per contract whose conduit endpoints are not both in the bundle (endpoint_not_rebuilt)`, `stay stateless so one instance is reusable across bundles`
+- responsibilities:
+  - warn per contract whose conduit endpoints are not both in the bundle (endpoint_not_rebuilt)
+  - stay stateless so one instance is reusable across bundles
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15631,7 +16847,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/frame_posture_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight for books whose frame twin is absent, so their dynamic posture is a guessed fallback rather than truth.
-- responsibilities: `warn once per (frame_name, spellbook) pair whose recorded frame twin is missing from the bundle`, `stay stateless so one instance is reusable across bundles`
+- responsibilities:
+  - warn once per (frame_name, spellbook) pair whose recorded frame twin is missing from the bundle
+  - stay stateless so one instance is reusable across bundles
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15664,7 +16882,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/hydration_strategy.py:10`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight over every custody payload for the bootloader's hardest class of failure: hydration.
-- responsibilities: `block on custody that will not rebuild - absent owning book, pre-M3 synthetic root, unfindable module`, `warn on replay_required target kinds, where the restore completes but the custody shortfalls`, `probe modules with importlib.util.find_spec only - nothing imports during analysis`
+- responsibilities:
+  - block on custody that will not rebuild - absent owning book, pre-M3 synthetic root, unfindable module
+  - warn on replay_required target kinds, where the restore completes but the custody shortfalls
+  - probe modules with importlib.util.find_spec only - nothing imports during analysis
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15697,7 +16918,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/link_integrity_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight for the owner's founding case: conduit link_targets pointing outside the bundle.
-- responsibilities: `warn per recorded link target absent from the bundle - the restore completes, the link is reported not rebuilt`, `stay stateless so one instance is reusable across bundles`
+- responsibilities:
+  - warn per recorded link target absent from the bundle - the restore completes, the link is reported not rebuilt
+  - stay stateless so one instance is reusable across bundles
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15730,7 +16953,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/mutation_research_composition_strategy.py:9`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight proving the recorded MR composition is worth handing to load_recorded_composition wholesale.
-- responsibilities: `block only when the payload is UNPARSEABLE - the seams cannot read the shape at all`, `warn on organization/residence disagreement: teach-grade drift evidence, not a refusal`, `produce no rows for an absent or empty composition`
+- responsibilities:
+  - block only when the payload is UNPARSEABLE - the seams cannot read the shape at all
+  - warn on organization/residence disagreement: teach-grade drift evidence, not a refusal
+  - produce no rows for an absent or empty composition
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15763,7 +16989,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analysis_strategy.py:7`
 - markers: `ABC`
 - role: Contract for one preflight concern over a persistence payload bundle; the sanctioned runtime-inheritance ABC.
-- responsibilities: `inspect one concern and return finding rows of the shared shape - never mutate the bundle`, `never touch live runtime objects; read the detached payload only`, `stay stateless so the analyzer can share and iterate implementations polymorphically`
+- responsibilities:
+  - inspect one concern and return finding rows of the shared shape - never mutate the bundle
+  - never touch live runtime objects; read the detached payload only
+  - stay stateless so the analyzer can share and iterate implementations polymorphically
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15790,7 +17019,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py:40`
 - extends: `Cleanable`
 - role: Strategy-driven bootload pre-flight: runs the analysis set over a bundle and folds findings into a verdict.
-- responsibilities: `run the ten-strategy default set in order, or an explicit caller-supplied sequence`, `run the same default set at load time inside the RestoreEngine (owner ruling)`, `drop the strategy list on cleanup; idempotent, and the stateless strategies need no teardown of their own`
+- responsibilities:
+  - run the ten-strategy default set in order, or an explicit caller-supplied sequence
+  - run the same default set at load time inside the RestoreEngine (owner ruling)
+  - drop the strategy list on cleanup; idempotent, and the stateless strategies need no teardown of their own
 - owns_state: `_strategies`
 - phases: `restore`, `cleanup`
 - public methods: `analyze`, `cleanup`
@@ -15839,7 +17071,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/source_drift_strategy.py:13`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight owning ALL disk-vs-seal comparison: every bind-time fingerprint against the live file at load.
-- responsibilities: `warn on drift - the live file wins at import, so this is notice and never a refusal`, `warn on absent backing files without claiming unimportability (hydration owns that blocker)`, `report unreadable files as info (unverifiable, not proven divergence) and dedupe per (module, path)`
+- responsibilities:
+  - warn on drift - the live file wins at import, so this is notice and never a refusal
+  - warn on absent backing files without claiming unimportability (hydration owns that blocker)
+  - report unreadable files as info (unverifiable, not proven divergence) and dedupe per (module, path)
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15878,7 +17113,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/synthetic_source_integrity_strategy.py:10`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight recomputing recorded synthetic source SHA256s, because synthetic source IS the record and would execute at restore.
-- responsibilities: `block on mismatch - executing unverified source is worse than not booting`, `report absent/empty recorded shas as info: a documentation gap, not proven corruption`
+- responsibilities:
+  - block on mismatch - executing unverified source is worse than not booting
+  - report absent/empty recorded shas as info: a documentation gap, not proven corruption
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15911,7 +17148,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/preflight/user_source_integrity_strategy.py:10`
 - extends: `PersistenceAnalysisStrategy`
 - role: Preflight owning the record's SELF-CONSISTENCY half: retained user text versus its own recorded sha.
-- responsibilities: `block on tamper - retained text disagreeing with its recorded sha must never rebuild`, `scope to modules carried in user_module_sources; retention-off worlds produce no rows`, `leave disk-vs-seal comparison to SourceDriftStrategy`
+- responsibilities:
+  - block on tamper - retained text disagreeing with its recorded sha must never rebuild
+  - scope to modules carried in user_module_sources; retention-off worlds produce no rows
+  - leave disk-vs-seal comparison to SourceDriftStrategy
 - phases: `restore`
 - public methods: `analyze`, `name`
 
@@ -15937,7 +17177,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.base_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/base_strategy.py:1`
 - role: Fact-strategy ABC + FactContext: shared-walk node dispatch, per-module analyze, post-walk finalize.
-- responsibilities: `implemented S1 (decomposition epic); see crystal_analysis component docs`
+- responsibilities:
+  - implemented S1 (decomposition epic); see crystal_analysis component docs
 - phases: `runtime`
 
 #### `FactContext` (class)
@@ -15946,7 +17187,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/base_strategy.py:29`
 - extends: `Cleanable`
 - role: Per-(module, pass) accumulator carrying parse inputs to the fact strategies and collecting their contributions.
-- responsibilities: `carry module name, package, source text, and syntax tree for exactly one module of one pass`, `collect flat/from import targets in visit order (duplicates allowed - the analyzer dedupes first-seen on merge)`, `preserve the mixed Import/ImportFrom event sequence as value-only memo entries`
+- responsibilities:
+  - carry module name, package, source text, and syntax tree for exactly one module of one pass
+  - collect flat/from import targets in visit order (duplicates allowed - the analyzer dedupes first-seen on merge)
+  - preserve the mixed Import/ImportFrom event sequence as value-only memo entries
 - owns_state: `_module_name`, `_current_package`, `_source_text`, `_syntax_tree`, `flat_import_targets`, `from_import_targets`, `import_events`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `current_package`, `module_name`, `source_text`, `syntax_tree`
@@ -15958,7 +17202,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Contract letting independent fact passes share the analyzer's single AST walk without owning traversal or record order.
-- responsibilities: `receive visit_node for EVERY node of the analyzer's walk, in walk order, and act only on owned node types`, `receive analyze_module once per module after node dispatch`, `stay thread-confined to one analyzer pass; default cleanup is a flag flip`
+- responsibilities:
+  - receive visit_node for EVERY node of the analyzer's walk, in walk order, and act only on owned node types
+  - receive analyze_module once per module after node dispatch
+  - stay thread-confined to one analyzer pass; default cleanup is a flag flip
 - phases: `runtime`, `cleanup`
 - public methods: `analyze_module`, `cleanup`, `finalize`, `name`, `visit_node`
 
@@ -15985,7 +17232,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:1`
 - role: Deterministic topological module load order over walked edges; cycle-tolerant with an honesty walk error.
-- responsibilities: `implemented S1 (decomposition epic); see crystal_analysis component docs`
+- responsibilities:
+  - implemented S1 (decomposition epic); see crystal_analysis component docs
 - phases: `runtime`
 
 #### `DependencyViewStrategy` (class)
@@ -15994,7 +17242,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/dependency_view_strategy.py:22`
 - extends: `CrystalFactStrategy`
 - role: Fact pass computing the topological dependencies-first unfold order, making load order recorded truth instead of restore-time guessing.
-- responsibilities: `order every walked module over dependency->dependent edges restricted to walked modules`, `stay deterministic by processing ready nodes in sorted name order`, `stay cycle-tolerant: append the blocked remainder in sorted order and name them in one walk error`
+- responsibilities:
+  - order every walked module over dependency->dependent edges restricted to walked modules
+  - stay deterministic by processing ready nodes in sorted name order
+  - stay cycle-tolerant: append the blocked remainder in sorted order and name them in one walk error
 - phases: `runtime`
 - public methods: `finalize`, `name`
 
@@ -16020,7 +17271,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.export_surface_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/export_surface_strategy.py:1`
 - role: Static __all__ + public top-level names per module (MR impact-engine prerequisite; honest under-claim on dynamic __all__).
-- responsibilities: `implemented S1 (decomposition epic); see crystal_analysis component docs`
+- responsibilities:
+  - implemented S1 (decomposition epic); see crystal_analysis component docs
 - phases: `runtime`
 
 #### `ExportSurfaceStrategy` (class)
@@ -16029,7 +17281,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/export_surface_strategy.py:25`
 - extends: `CrystalFactStrategy`
 - role: Fact pass recording what a module EXPOSES, so retained versions answer that without a live import.
-- responsibilities: `extract __all__ statically - only literal list/tuple of string constants resolve; dynamic forms under-claim honestly`, `collect public top-level function/class/assignment names in first-seen order`, `consider top-level statements only; nested definitions are not exports`
+- responsibilities:
+  - extract __all__ statically - only literal list/tuple of string constants resolve; dynamic forms under-claim honestly
+  - collect public top-level function/class/assignment names in first-seen order
+  - consider top-level statements only; nested definitions are not exports
 - phases: `runtime`
 - public methods: `analyze_module`, `name`
 
@@ -16055,7 +17310,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.from_import_statement_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/from_import_statement_strategy.py:1`
 - role: Resolves from-imports (relative via package context), probes member submodules, keeps the member map.
-- responsibilities: `implemented S1 (decomposition epic); see crystal_analysis component docs`
+- responsibilities:
+  - implemented S1 (decomposition epic); see crystal_analysis component docs
 - phases: `runtime`
 
 #### `FromImportStatementStrategy` (class)
@@ -16064,7 +17320,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/from_import_statement_strategy.py:26`
 - extends: `CrystalFactStrategy`
 - role: Fact pass contributing from-import bases, probed submodule members, and the from-import diagnostics map.
-- responsibilities: `handle ast.ImportFrom only; resolve relative levels against the context package and skip unresolvable bases silently`, `record star imports in the member map but never probe them`, `emit candidates per node as probed member submodules first (alias order), then the base module`
+- responsibilities:
+  - handle ast.ImportFrom only; resolve relative levels against the context package and skip unresolvable bases silently
+  - record star imports in the member map but never probe them
+  - emit candidates per node as probed member submodules first (alias order), then the base module
 - phases: `runtime`
 - public methods: `name`, `visit_node`
 
@@ -16090,7 +17349,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_analysis.strategies.import_statement_strategy`
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/import_statement_strategy.py:1`
 - role: Extracts plain import candidates in visit order.
-- responsibilities: `implemented S1 (decomposition epic); see crystal_analysis component docs`
+- responsibilities:
+  - implemented S1 (decomposition epic); see crystal_analysis component docs
 - phases: `runtime`
 
 #### `ImportStatementStrategy` (class)
@@ -16099,7 +17359,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_analysis/strategies/import_statement_strategy.py:19`
 - extends: `CrystalFactStrategy`
 - role: Fact pass contributing `import x` alias names as dependency candidates in visit order.
-- responsibilities: `handle ast.Import nodes only and append alias names verbatim, dotted names included`, `capture nested imports too, because the analyzer walks the full tree`, `append one value-only memo event per matching node (kind 'import', level zero)`
+- responsibilities:
+  - handle ast.Import nodes only and append alias names verbatim, dotted names included
+  - capture nested imports too, because the analyzer walks the full tree
+  - append one value-only memo event per matching node (kind 'import', level zero)
 - phases: `runtime`
 - public methods: `name`, `visit_node`
 
@@ -16125,7 +17388,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_loader_system.bootstrap_loader`
 - defined at: `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py:1`
 - role: Fluent pod-boot lane composing a fresh process into a rebuilt world.
-- responsibilities: `compose activate -> attach -> reload -> verify -> restore as one single-use chain`
+- responsibilities:
+  - compose activate -> attach -> reload -> verify -> restore as one single-use chain
 - phases: `init`, `runtime`
 
 #### `CrystallizerBootstrap` (class)
@@ -16134,7 +17398,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py:14`
 - extends: `Cleanable`
 - role: Single-use fluent pod-boot lane composing ONLY Crystallizer facades.
-- responsibilities: `activate -> attach manager -> cache reload (fresh-ever pods legally boot empty) -> remote pull with local re-store -> chain-verify gate (broken refuses) -> newest-checkpoint load_checkpoint`, `returns one bootstrap report (reload summaries, chain verdict, restore report)`
+- responsibilities:
+  - activate -> attach manager -> cache reload (fresh-ever pods legally boot empty) -> remote pull with local re-store -> chain-verify gate (broken refuses) -> newest-checkpoint load_checkpoint
+  - returns one bootstrap report (reload summaries, chain verdict, restore report)
 - owns_state: `held configurations until consumed`
 - phases: `init`
 - public methods: `bootstrap`, `cleanup`, `with_crystallizer_configuration`, `with_external_persistence_manager`, `with_formation_reload`, `with_preflight_gate`, `with_profile`, `with_pull_remote`
@@ -16174,7 +17440,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_loader_system.crystal_loader_system`
 - defined at: `src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py:1`
 - role: The unfold owner: durable load state over the mediated boot pipeline.
-- responsibilities: `own checkpoint world loads and scoped formation loads`, `retain last-load state for describe_last_load`
+- responsibilities:
+  - own checkpoint world loads and scoped formation loads
+  - retain last-load state for describe_last_load
 - phases: `init`, `runtime`, `cleanup`
 
 #### `CrystalLoaderSystem` (class)
@@ -16183,7 +17451,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py:31`
 - extends: `Cleanable`
 - role: The unfold owner (S4): mediated load verbs + durable last-load state over a borrowed record.
-- responsibilities: `load_checkpoint / restore_formation_record through the BootMediator admission pipeline`, `describe_last_load = durable detached last-load payload + admission view`
+- responsibilities:
+  - load_checkpoint / restore_formation_record through the BootMediator admission pipeline
+  - describe_last_load = durable detached last-load payload + admission view
 - owns_state: `BootMediator`, `last-load payload`
 - phases: `runtime`
 - public methods: `cleanup`, `configure_restore_scheduler`, `describe_last_load`, `load_checkpoint`, `restore_formation_record`
@@ -16216,7 +17486,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/graft_runner.py
 
-- source_sha256: `e675056c3297eb0e3b203a83d430075b223348571831d8a24a54bfdd14741cf6`
+- source_sha256: `4dedb612226d94b78c675176677e2640195a39c64e35d985a651808054f5191d`
 - nodes: 2
 
 ### Nodes
@@ -16226,17 +17496,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_loader_system.graft_runner`
 - defined at: `src/melder/crystallizer/crystal_loader_system/graft_runner.py:1`
 - role: Restore grain below the conduit slice: re-integrates one captured spell index into a live host book.
-- responsibilities: `replay index membership, custody and selection through public verbs only`, `never mutate an existing index - fresh-index-only`
+- responsibilities:
+  - replay index membership, custody and selection through public verbs only
+  - fresh index by default; explicit merge uses public bind/notch verbs without mutating index internals
 - phases: `runtime`
 
 #### `GraftRunner` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner`
-- defined at: `src/melder/crystallizer/crystal_loader_system/graft_runner.py:28`
+- defined at: `src/melder/crystallizer/crystal_loader_system/graft_runner.py:31`
 - extends: `Cleanable`
 - role: Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only.
-- responsibilities: `gates the versioned graft record (RecordVersion MAJOR + graft_kind)`, `refuses unconjured hosts via the public Spellbook.conduit accessor`, `applies the overlap rule per member via frame.find_index_for_spell (refuse-by-default; skip_resident skips with shortfall; never mutates existing indexes)`, `hydrates members via the import lane with a rebuild-then-retry arc through user_world_rebuild`, `binds the selected member ACTIVE (fresh index) and parks the rest via bind_inactive`, `emits a detached report with recorded-to-live identity mapping`
-- owns_state: `_record`, `_host_spellbook`, `_skip_resident`
+- responsibilities:
+  - gates the versioned graft record (RecordVersion MAJOR + graft_kind)
+  - refuses unconjured hosts via the public Spellbook.conduit accessor
+  - applies the resident-member rule via frame.find_index_for_spell; explicit merge grows the requested index through public verbs
+  - hydrates members via the import lane with a rebuild-then-retry arc through user_world_rebuild
+  - binds the selected member ACTIVE (fresh index) and parks the rest via bind_inactive
+  - forwards ordered disposal names for every member and carries the new index directly to fresh-graft parking
+  - adopts only a successfully grafted selected member using its returned live binding ID
+  - emits a detached membership and index-identity report with explicit shortfalls
+- owns_state: `_record`, `_host_book (borrowed)`, `_skip_resident`, `_merge_into_index (borrowed)`, `_adopt_recorded_selection`, `_consumed`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
 
@@ -16275,7 +17555,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_loader_system.load_admission`
 - defined at: `src/melder/crystallizer/crystal_loader_system/load_admission.py:1`
 - role: Admission plane for load transactions: plan in, gated engine, scope adjudication out.
-- responsibilities: `turn a request into a declarative LoadPlan`, `refuse blockers pre-engine`, `reclassify scope-blind findings as expected_for_scope`
+- responsibilities:
+  - turn a request into a declarative LoadPlan
+  - refuse blockers pre-engine
+  - reclassify scope-blind findings as expected_for_scope
 - phases: `runtime`
 
 #### `LoadAdmission` (class)
@@ -16284,7 +17567,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_loader_system/load_admission.py:35`
 - extends: `Cleanable`
 - role: Small admission plane for loads (owner design; renamed from BootMediator 2026-07-11): plan -> gated engine -> scope adjudication; no fold duplication.
-- responsibilities: `plan_checkpoint_load via the record's detach_profile_chain`, `plan_formation_load mints the canonical-kind-order synthetic window (moved from the ledger)`, `execute_plan runs the engine with refuse_on_blockers=True always`, `adjudicates conduit/frame scopes (frame_posture warnings -> expected_for_scope in the additive admission view)`
+- responsibilities:
+  - plan_checkpoint_load via the record's detach_profile_chain
+  - plan_formation_load mints the canonical-kind-order synthetic window (moved from the ledger)
+  - execute_plan runs the engine with refuse_on_blockers=True always
+  - adjudicates conduit/frame scopes (frame_posture warnings -> expected_for_scope in the additive admission view)
 - phases: `runtime`
 - public methods: `cleanup`, `execute_plan`, `plan_checkpoint_load`, `plan_formation_load`
 
@@ -16325,7 +17612,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_loader_system.load_plan`
 - defined at: `src/melder/crystallizer/crystal_loader_system/load_plan.py:1`
 - role: Declarative description of one planned load, inspectable before anything executes.
-- responsibilities: `carry scope, profile, checkpoint ids and per-kind key counts`, `let a caller inspect a load before activating it`
+- responsibilities:
+  - carry scope, profile, checkpoint ids and per-kind key counts
+  - let a caller inspect a load before activating it
 - phases: `runtime`
 
 #### `LoadPlan` (class)
@@ -16334,7 +17623,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_loader_system/load_plan.py:17`
 - extends: `Cleanable`
 - role: Declarative single-use load plan: scope (world|conduit|frame), profile, per-kind key counts, carried detached windows.
-- responsibilities: `describe() = counts + identity, never payload dumps`
+- responsibilities:
+  - describe() = counts + identity, never payload dumps
 - owns_state: `detached chain windows`
 - phases: `runtime`
 - public methods: `chain`, `checkpoint_ids`, `cleanup`, `describe`, `kind_key_counts`, `profile_name`, `scope`, `skip_existing`, `source_label`, `target_frame_name`
@@ -16357,7 +17647,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `bd3aade6c2f0f8ad9e487b6fdc0ac31ecddf0c0c452451a460ff07d97c3320e8`
+- source_sha256: `e29296c891d1b20c806c978f50cfc579e97874f3ec74da0d199ecb7ec0a8e993`
 - nodes: 3
 
 ### Nodes
@@ -16367,7 +17657,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_loader_system.restore_engine`
 - defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:1`
 - role: Single-use driver unfolding one folded checkpoint chain into the live runtime through public verbs.
-- responsibilities: `fold the chain oldest-first, later-wins`, `refuse on blockers before any replay`, `tear down in reverse order on failure`
+- responsibilities:
+  - fold the chain oldest-first, later-wins
+  - refuse on blockers before any replay
+  - tear down in reverse order on failure
 - phases: `init`, `runtime`
 
 #### `RestoreReport` (class)
@@ -16376,18 +17669,27 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:23`
 - extends: `Cleanable`
 - role: Detached outcome record for one restore run, built to be judged honestly rather than trusted.
-- responsibilities: `carry built counts by kind`, `carry named shortfalls for everything unreplayable`, `carry the old-to-new identity map`
-- owns_state: `_lock`, `_profile_name`, `_checkpoint_ids`, `_built_counts`, `_shortfalls`, `_identity_map`, `_status`, `_failed_stage`, `_preflight`
+- responsibilities:
+  - carry built counts by kind
+  - carry named shortfalls for everything unreplayable
+  - carry structural identity translations and changed bind-SHA translations in one locked report map
+- owns_state: `_lock`, `_profile_name`, `_checkpoint_ids`, `_built_counts`, `_shortfalls`, `_identity_map`, `_status`, `_failed_stage`, `_preflight`, `_plan_summary`
 - phases: `runtime`
 - public methods: `add_shortfall`, `cleanup`, `describe`, `map_identity`, `mark_complete`, `mark_failed`, `record_built`, `set_plan_summary`, `set_preflight`, `translate`
 
 #### `RestoreEngine` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine`
-- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:374`
+- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:378`
 - extends: `Cleanable`
 - role: Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.
-- responsibilities: `fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall`, `canonical stage order: aether -> crystallizer policy (report) -> MR (report) -> nexus -> frames -> books/binds/conjure/staged/selections -> links -> clusters -> contracts`, `configuration rebuilds ride the reload verbs (recorded truth, never defaults)`, `M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration`, `fresh identities always (old->new in the report); failure tears down in reverse order`
+- responsibilities:
+  - fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall
+  - canonical stage order: aether -> crystallizer policy (report) -> MR reload -> nexus -> frames -> books/binds/conjure/staged/selections -> links -> clusters -> contracts
+  - configuration rebuilds ride the reload verbs (recorded truth, never defaults)
+  - M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration
+  - forwards ordered disposal for active/staged binds; translated actual IDs drive anchors, exact selections, and contract grants
+  - fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order
 - owns_state: `folded stores`, `built_stack`, `report`
 - phases: `runtime`
 - public methods: `cleanup`, `restore`
@@ -16443,7 +17745,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystal_loader_system.user_world_rebuild`
 - defined at: `src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py:1`
 - role: Shared retained-text rebuild lane: reconstructs absent user modules from a custody crystal through the SyntheticModule lifecycle.
-- responsibilities: `rebuilds ABSENT user-module files only (the live file always wins)`, `skips sys.modules residents and orders parents-first by dot depth`, `routes every rebuild through the normal SyntheticModule register/publish/execute verbs`, `reports honest shortfalls through caller callbacks (engine built-stack vs runner no-op)`
+- responsibilities:
+  - rebuilds ABSENT user-module files only (the live file always wins)
+  - skips sys.modules residents and orders parents-first by dot depth
+  - routes every rebuild through the normal SyntheticModule register/publish/execute verbs
+  - reports honest shortfalls through caller callbacks (engine built-stack vs runner no-op)
 - phases: `runtime`
 
 <!-- END FILE: src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py -->
@@ -16462,7 +17768,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystallizer`
 - defined at: `src/melder/crystallizer/crystallizer.py:1`
 - role: Public facade and singleton ownership root over the three V3 crystallizer subsystems.
-- responsibilities: `present one stable surface over record, assets and loader`, `stay a passive sink - emitters push, the sink never reaches back`
+- responsibilities:
+  - present one stable surface over record, assets and loader
+  - stay a passive sink - emitters push, the sink never reaches back
 - phases: `init`, `runtime`, `cleanup`
 
 #### `Crystallizer` (class)
@@ -16471,7 +17779,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystallizer.py:41`
 - extends: `Cleanable`
 - role: Hosted singleton crystallizer root.
-- responsibilities: `owns installed crystallizer configuration and activation state`, `builds SpellCrystal manifests from live spells under installed policy`, `anchors crystallizer policy above retained and live module-world surfaces`
+- responsibilities:
+  - owns installed crystallizer configuration and activation state
+  - builds SpellCrystal manifests from live spells under installed policy
+  - anchors crystallizer policy above retained and live module-world surfaces
 - owns_state: `_configuration`, `_configured`, `_activated`, `_aether`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `active_profile_name`, `analyze_checkpoint`, `analyze_formation`, `analyze_impact`, `apply_external_retention`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `configuration` (+52 more)
@@ -16535,7 +17846,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.aether_crystal`
 - defined at: `src/melder/crystallizer/crystals/aether_crystal.py:1`
 - role: Twin carrying the Aether root's configured surface for the record.
-- responsibilities: `persist root logger policy`
+- responsibilities:
+  - persist root logger policy
 - phases: `runtime`
 
 #### `AetherCrystal` (class)
@@ -16544,7 +17856,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/aether_crystal.py:8`
 - extends: `Cleanable`
 - role: Pure-data twin of the process Aether root's configuration.
-- responsibilities: `carry root configuration as a detached payload`, `round-trip losslessly through describe()`
+- responsibilities:
+  - carry root configuration as a detached payload
+  - round-trip losslessly through describe()
 - owns_state: `_configuration_payload`
 - phases: `init`, `runtime`
 - public methods: `cleanup`, `configuration_payload`, `describe`
@@ -16571,7 +17885,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.aetheric_frame_crystal`
 - defined at: `src/melder/crystallizer/crystals/aetheric_frame_crystal.py:1`
 - role: Twin carrying one frame's identity and feature-gating posture.
-- responsibilities: `persist frame posture so restore rebuilds the gate before books`
+- responsibilities:
+  - persist frame posture so restore rebuilds the gate before books
 - phases: `runtime`
 
 #### `AethericFrameCrystal` (class)
@@ -16580,7 +17895,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/aetheric_frame_crystal.py:8`
 - extends: `Cleanable`
 - role: Pure-data twin of one AethericFrame: identity plus the system_state / rift_enabled / ai_native trio.
-- responsibilities: `carry the posture conjure reads`, `carry frame-local dev-ops payload`
+- responsibilities:
+  - carry the posture conjure reads
+  - carry frame-local dev-ops payload
 - owns_state: `_frame_name`, `_system_state_name`, `_rift_enabled`, `_ai_native_enabled`, `_dev_ops_payload`
 - phases: `init`, `runtime`
 - public methods: `ai_native_enabled`, `cleanup`, `describe`, `dev_ops_payload`, `frame_name`, `rift_enabled`, `system_state_name`
@@ -16613,7 +17930,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.cluster_crystal`
 - defined at: `src/melder/crystallizer/crystals/cluster_crystal.py:1`
 - role: Twin carrying frame-local cluster topology - the third inter-conduit relationship.
-- responsibilities: `persist named member groups and their elected leader`
+- responsibilities:
+  - persist named member groups and their elected leader
 - phases: `runtime`
 
 #### `ClusterCrystal` (class)
@@ -16622,7 +17940,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/cluster_crystal.py:6`
 - extends: `Cleanable`
 - role: Digital twin of one ConduitCluster: membership, elected leader and shared lineage entries.
-- responsibilities: `carry member conduit ids and the leader`, `carry shared lineage entries`, `emit from the cluster's own mutators, having no crystallizer-bearing parent`
+- responsibilities:
+  - carry member conduit ids and the leader
+  - carry shared lineage entries
+  - emit from the cluster's own mutators, having no crystallizer-bearing parent
 - owns_state: `_cluster_id`, `_cluster_name`, `_frame_name`, `_member_conduit_ids`, `_leader_conduit_id`, `_shared_spells`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cluster_id`, `describe`, `frame_name`
@@ -16649,7 +17970,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.conduit_crystal`
 - defined at: `src/melder/crystallizer/crystals/conduit_crystal.py:1`
 - role: Twin carrying one root conduit's structural surface and outbound links.
-- responsibilities: `persist conjure posture so replay reconstructs the same scope`
+- responsibilities:
+  - persist conjure posture so replay reconstructs the same scope
 - phases: `runtime`
 
 #### `ConduitCrystal` (class)
@@ -16658,7 +17980,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/conduit_crystal.py:8`
 - extends: `Cleanable`
 - role: Pure-data twin of one ROOT conduit: identity, conjure posture and its initiated link edges.
-- responsibilities: `carry name / policy / dynamic as conjured`, `carry outbound link targets`
+- responsibilities:
+  - carry name / policy / dynamic as conjured
+  - carry outbound link targets
 - owns_state: `_conduit_id`, `_spellbook_id`, `_conduit_name`, `_policy_name`, `_dynamic`, `_link_targets`, `_configuration_payload`
 - phases: `init`, `runtime`
 - public methods: `cleanup`, `conduit_id`, `conduit_name`, `configuration_payload`, `describe`, `dynamic`, `link_targets`, `policy_name`, `spellbook_id`
@@ -16691,7 +18015,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.contract_crystal`
 - defined at: `src/melder/crystallizer/crystals/contract_crystal.py:1`
 - role: Twin carrying one ward contract - the record's inter-conduit relationship map.
-- responsibilities: `persist which conduits are linked and what each side may reach`
+- responsibilities:
+  - persist which conduits are linked and what each side may reach
 - phases: `runtime`
 
 #### `ContractCrystal` (class)
@@ -16700,7 +18025,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/contract_crystal.py:6`
 - extends: `Cleanable`
 - role: Digital twin of one Contract, carrying both endpoints and each side's own projection.
-- responsibilities: `carry both conduit endpoints`, `carry per-side detail and index-detail projections`, `evict at sever through the single _remove_contract choke point`
+- responsibilities:
+  - carry both conduit endpoints
+  - carry per-side detail and index-detail projections
+  - evict at sever through the single _remove_contract choke point
 - owns_state: `_contract_id`, `_conduit_a_id`, `_conduit_b_id`, `_details_a`, `_details_b`, `_index_details_a`, `_index_details_b`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `conduit_a_id`, `conduit_b_id`, `contract_id`, `describe`
@@ -16727,7 +18055,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.crystallizer_crystal`
 - defined at: `src/melder/crystallizer/crystals/crystallizer_crystal.py:1`
 - role: Twin carrying the recorder's own policy, so every snapshot is self-describing.
-- responsibilities: `persist the policy that produced the snapshot alongside it`
+- responsibilities:
+  - persist the policy that produced the snapshot alongside it
 - phases: `runtime`
 
 #### `CrystallizerCrystal` (class)
@@ -16736,7 +18065,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/crystallizer_crystal.py:8`
 - extends: `Cleanable`
 - role: Pure-data twin of the crystallizer's configured surface, re-emitted into every sealed window.
-- responsibilities: `carry source-root and retention policy`, `make a cached crystal name the policy that made it`
+- responsibilities:
+  - carry source-root and retention policy
+  - make a cached crystal name the policy that made it
 - owns_state: `_configuration_payload`
 - phases: `init`, `runtime`
 - public methods: `cleanup`, `configuration_payload`, `describe`
@@ -16763,7 +18094,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.mutation_research_crystal`
 - defined at: `src/melder/crystallizer/crystals/mutation_research_crystal.py:1`
 - role: Twin carrying the MutationResearch root plus DB-storable node rows.
-- responsibilities: `persist research composition and derive flat storable rows at construction`
+- responsibilities:
+  - persist research composition and derive flat storable rows at construction
 - phases: `runtime`
 
 #### `MutationResearchCrystal` (class)
@@ -16772,7 +18104,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/mutation_research_crystal.py:8`
 - extends: `Cleanable`
 - role: Pure-data twin of the MR root that derives explicit node rows for both node families at construction.
-- responsibilities: `carry configuration and composition payloads`, `derive research_nodes and grouped_research_node rows so blob and objects cannot disagree`
+- responsibilities:
+  - carry configuration and composition payloads
+  - derive research_nodes and grouped_research_node rows so blob and objects cannot disagree
 - owns_state: `_activated`, `_configuration_payload`, `_composition_payload`, `_research_node_rows`, `_grouped_research_node_rows`
 - phases: `init`, `runtime`
 - public methods: `activated`, `cleanup`, `composition_payload`, `configuration_payload`, `describe`, `grouped_research_nodes`, `research_nodes`
@@ -16799,7 +18133,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.nexus_crystal`
 - defined at: `src/melder/crystallizer/crystals/nexus_crystal.py:1`
 - role: Twin carrying the Nexus root's configured and enabled state.
-- responsibilities: `persist AR root state as a switch rather than by eviction`
+- responsibilities:
+  - persist AR root state as a switch rather than by eviction
 - phases: `runtime`
 
 #### `NexusCrystal` (class)
@@ -16808,7 +18143,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/nexus_crystal.py:8`
 - extends: `Cleanable`
 - role: Pure-data twin of the process Nexus root.
-- responsibilities: `carry configured / enabled flags and the config payload`
+- responsibilities:
+  - carry configured / enabled flags and the config payload
 - owns_state: `_configured`, `_enabled`, `_configuration_payload`
 - phases: `init`, `runtime`
 - public methods: `cleanup`, `configuration_payload`, `configured`, `describe`, `enabled`
@@ -16835,7 +18171,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.recorded_unit_state`
 - defined at: `src/melder/crystallizer/crystals/recorded_unit_state.py:1`
 - role: Lifecycle vocabulary for singletons the record tracks by state switch rather than eviction.
-- responsibilities: `let a disabled singleton keep its twin instead of vanishing`
+- responsibilities:
+  - let a disabled singleton keep its twin instead of vanishing
 - phases: `runtime`
 
 #### `RecordedUnitState` (enum)
@@ -16844,7 +18181,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/recorded_unit_state.py:4`
 - markers: `Enum`
 - role: Recorded lifecycle state for state-switch tracked singletons such as Nexus and MutationResearch.
-- responsibilities: `distinguish enabled / disabled / cleaned without evicting the twin`
+- responsibilities:
+  - distinguish enabled / disabled / cleaned without evicting the twin
 - phases: `runtime`, `cleanup`
 
 <!-- END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py -->
@@ -16853,7 +18191,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `f3f68efe9deb836cc4d081bde5d33bc6a38f636e109e1489592803213d2adf4d`
+- source_sha256: `076f87f9d015c2f5a362b3581f34005752d6b3ad5f239e429d6cfc5c6170c86d`
 - nodes: 2
 
 ### Nodes
@@ -16863,7 +18201,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.spell_crystal`
 - defined at: `src/melder/crystallizer/crystals/spell_crystal.py:1`
 - role: Custody carrier for one concrete spell version and the module world it depends on.
-- responsibilities: `carry the bind signature and delegate module analysis to crystal_analysis`
+- responsibilities:
+  - carry the bind signature and delegate module analysis to crystal_analysis
 - phases: `runtime`
 
 #### `SpellCrystal` (class)
@@ -16872,8 +18211,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/spell_crystal.py:17`
 - extends: `Cleanable`
 - role: Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).
-- responsibilities: `captures identity and the full bind signature for one live spell target`, `delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)`, `carries the returned CrystalAnalysisResult and exposes it via delegating properties`
-- owns_state: `_analysis (one carried CrystalAnalysisResult)`
+- responsibilities:
+  - captures identity and the full bind signature for one live spell target
+  - captures detached disposal names in resolved execution order without sorting or reapplying book policy
+  - delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)
+  - carries the returned CrystalAnalysisResult and exposes it via delegating properties
+- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `binding_name`, `cleanup`, `describe`, `disposal_method_names`, `existence_name`, `id`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension`, `module_to_kind`, `module_to_path`, `path_targets` (+20 more)
 
@@ -16915,7 +18258,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.spell_index_crystal`
 - defined at: `src/melder/crystallizer/crystals/spell_index_crystal.py:1`
 - role: Twin carrying index membership - which members ride which index and which is selected.
-- responsibilities: `persist grouping that per-spell custody cannot express`
+- responsibilities:
+  - persist grouping that per-spell custody cannot express
 - phases: `runtime`
 
 #### `SpellIndexCrystal` (class)
@@ -16924,7 +18268,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/spell_index_crystal.py:6`
 - extends: `Cleanable`
 - role: Digital twin of one live SpellIndex: owner edge, selection and member set.
-- responsibilities: `carry selected spell id and all member ids`, `re-snapshot at bind, notch, disposal and transfer`
+- responsibilities:
+  - carry selected spell id and all member ids
+  - re-snapshot at bind, notch, disposal and transfer
 - owns_state: `_index_id`, `_spellbook_id`, `_selected_spell_id`, `_member_spell_ids`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `index_id`, `spellbook_id`
@@ -16951,7 +18297,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.crystals.spellbook_crystal`
 - defined at: `src/melder/crystallizer/crystals/spellbook_crystal.py:1`
 - role: Twin carrying one spellbook's frame membership, frozen configuration and bind order.
-- responsibilities: `persist bind order so replay reproduces registration sequence`
+- responsibilities:
+  - persist bind order so replay reproduces registration sequence
 - phases: `runtime`
 
 #### `SpellbookCrystal` (class)
@@ -16960,7 +18307,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/crystals/spellbook_crystal.py:8`
 - extends: `Cleanable`
 - role: Pure-data twin of one Spellbook's configured and binding surface.
-- responsibilities: `carry frame membership and frozen configuration`, `carry hook names and bind order`
+- responsibilities:
+  - carry frame membership and frozen configuration
+  - carry hook names and bind order
 - owns_state: `_spellbook_id`, `_frame_name`, `_configuration_payload`, `_hook_names`, `_bind_order`
 - phases: `init`, `runtime`
 - public methods: `bind_order`, `cleanup`, `configuration_payload`, `describe`, `frame_name`, `hook_names`, `spellbook_id`
@@ -16993,7 +18342,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.persistence.persistence_crystal`
 - defined at: `src/melder/crystallizer/persistence/persistence_crystal.py:1`
 - role: One sealed checkpoint - the snapshot artifact of a profile's segment.
-- responsibilities: `capture everything journaled since the previous mark`, `detach to and from a cached item losslessly`
+- responsibilities:
+  - capture everything journaled since the previous mark
+  - detach to and from a cached item losslessly
 - phases: `runtime`
 
 #### `PersistenceCrystal` (class)
@@ -17002,7 +18353,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/persistence/persistence_crystal.py:10`
 - extends: `Cleanable`
 - role: One sealed checkpoint: journal window + captured payloads; the durable unit.
-- responsibilities: `replay_data() feeds the restore engine`, `to_cached_item()/from_cached_item() is the JSON codec for cache/DB transport`
+- responsibilities:
+  - replay_data() feeds the restore engine
+  - to_cached_item()/from_cached_item() is the JSON codec for cache/DB transport
 - owns_state: `journal_segment`, `captured_payloads`, `sequence_range`
 - phases: `runtime`
 - public methods: `checkpoint_number`, `cleanup`, `created_at`, `describe`, `description`, `from_cached_item`, `id`, `profile_name`, `replay_data`, `sequence_range`, `to_cached_item`
@@ -17038,7 +18391,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.persistence.persistence_profile`
 - defined at: `src/melder/crystallizer/persistence/persistence_profile.py:1`
 - role: One recorded world: the flat level-mapped twin store for a single profile.
-- responsibilities: `hold twins by level with an insertion-ordered journal`, `carry the emission mark that bounds each checkpoint window`
+- responsibilities:
+  - hold twins by level with an insertion-ordered journal
+  - carry the emission mark that bounds each checkpoint window
 - phases: `runtime`
 
 #### `PersistenceProfile` (class)
@@ -17047,7 +18402,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/persistence/persistence_profile.py:29`
 - extends: `Cleanable`
 - role: One recorded world: replace-on-emit twin stores plus the insertion-ordered emission journal.
-- responsibilities: `records every twin kind (root singletons, frames, books, conduits, indexes, contracts, clusters, spell custody)`, `journals (sequence, kind, key) per emission; tombstones on evictions`, `captures delta windows (capture_segment_since) with custody_location annotation`
+- responsibilities:
+  - records every twin kind (root singletons, frames, books, conduits, indexes, contracts, clusters, spell custody)
+  - journals (sequence, kind, key) per emission; tombstones on evictions
+  - captures delta windows (capture_segment_since) with custody_location annotation
 - owns_state: `twin stores`, `emission_log`, `last_checkpoint_sequence`
 - phases: `runtime`
 - public methods: `capture_formation_slice`, `capture_index_graft`, `capture_segment_since`, `cleanup`, `clear`, `describe`, `describe_mutation_research_record`, `describe_spell_crystals`, `get_spell_crystal`, `last_checkpoint_sequence`, `mark_checkpoint`, `profile_name` (+11 more)
@@ -17086,7 +18444,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.persistence.persistence_system`
 - defined at: `src/melder/crystallizer/persistence/persistence_system.py:1`
 - role: The RECORD: profiles and the checkpoint ledger, in-process truth only.
-- responsibilities: `own profiles and the shared checkpoint ledger`, `call nobody and construct no engines - the edge law`
+- responsibilities:
+  - own profiles and the shared checkpoint ledger
+  - call nobody and construct no engines - the edge law
 - phases: `init`, `runtime`, `cleanup`
 
 #### `PersistenceSystem` (class)
@@ -17095,7 +18455,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/persistence/persistence_system.py:14`
 - extends: `Cleanable`
 - role: Owns ALL persistence stores: profiles, the checkpoint ledger, and the cache.
-- responsibilities: `routes twin emissions to the ACTIVE profile`, `seals checkpoints (per-profile numbers minted highest+1)`, `verifies chain fold-safety (verify_checkpoint_chain)`, `flushes/reloads the profile-scoped cache and enforces its FIFO cap`, `constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)`, `inserts cached items insert-if-absent (cache and external-manager import sinks)`
+- responsibilities:
+  - routes twin emissions to the ACTIVE profile
+  - seals checkpoints (per-profile numbers minted highest+1)
+  - verifies chain fold-safety (verify_checkpoint_chain)
+  - flushes/reloads the profile-scoped cache and enforces its FIFO cap
+  - constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)
+  - inserts cached items insert-if-absent (cache and external-manager import sinks)
 - owns_state: `profiles_by_name`, `checkpoint_crystals_by_id`, `crystallizer_cache`, `max_persistence_crystals`
 - phases: `runtime`
 - public methods: `active_profile`, `active_profile_name`, `cached_item_form`, `cached_item_forms`, `capture_formation_record`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `create_checkpoint`, `create_profile`, `default_profile` (+26 more)
@@ -17139,7 +18505,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.persistence.record_version`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:1`
 - role: Schema version authority for every durable crystallizer artifact.
-- responsibilities: `stamp outgoing payloads`, `refuse newer-major artifacts on read`
+- responsibilities:
+  - stamp outgoing payloads
+  - refuse newer-major artifacts on read
 - phases: `runtime`
 
 #### `RecordVersion` (class)
@@ -17147,7 +18515,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:17`
 - role: Static record-schema version authority (stamp 1.0.0; readers gate on MAJOR; absent stamps read 0.0.0).
-- responsibilities: `stamps cached items, formation records, and emission-tap envelopes`, `refuses newer-major payloads at the read gates`
+- responsibilities:
+  - stamps cached items, formation records, and emission-tap envelopes
+  - refuses newer-major payloads at the read gates
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -17180,7 +18550,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/synthetic_module.py:14`
 - extends: `Loader`
 - role: The create/exec half of the SyntheticModule importlib bridge - lets restored or synthesized code enter sys.modules through the normal machinery.
-- responsibilities: `resolve specs back to the EXACT SyntheticModule held by the class registry; never allocate a second world object`, `delegate execution to that object's retained source`, `own no module and expose no independent cleanup surface; one process-wide loader created lazily by SyntheticModule`
+- responsibilities:
+  - resolve specs back to the EXACT SyntheticModule held by the class registry; never allocate a second world object
+  - delegate execution to that object's retained source
+  - own no module and expose no independent cleanup surface; one process-wide loader created lazily by SyntheticModule
 - phases: `runtime`
 - public methods: `create_module`, `exec_module`, `get_source`
 
@@ -17190,7 +18563,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/synthetic_module.py:154`
 - extends: `MetaPathFinder`
 - role: The DISCOVERY half of the same bridge: sits on sys.meta_path so plain `import ...` finds registered synthetic modules.
-- responsibilities: `return a spec only for a currently registered name`, `return None otherwise, delegating to later meta-path finders without touching any synthetic state`, `tolerate repeated install/remove - removal does not unregister, unpublish, execute, or clean a module`
+- responsibilities:
+  - return a spec only for a currently registered name
+  - return None otherwise, delegating to later meta-path finders without touching any synthetic state
+  - tolerate repeated install/remove - removal does not unregister, unpublish, execute, or clean a module
 - phases: `runtime`
 - public methods: `find_spec`
 
@@ -17200,7 +18576,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/crystallizer/synthetic_module.py:227`
 - extends: `ModuleType`
 - role: Live in-memory module embodiment for crystallized source.
-- responsibilities: `stores live source text and dependency metadata for one managed module`, `supports sys.modules and importlib publication and execution`, `owns synthetic import registry and cleanup-aware module activation helpers`
+- responsibilities:
+  - stores live source text and dependency metadata for one managed module
+  - supports sys.modules and importlib publication and execution
+  - owns synthetic import registry and cleanup-aware module activation helpers
 - owns_state: `_registered_modules_by_name`, `_source_text`, `_internal_dependency_names`, `_external_dependency_names`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `binding_signature`, `build_registered_spec`, `check_cleaned`, `cleaned`, `cleanup`, `clear_import_registry`, `create_module_for_spec`, `create_package_shell`, `describe`, `exec_registered_module`, `execute_source`, `executed_source` (+27 more)
@@ -17239,7 +18618,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.diff.diff_engine`
 - defined at: `src/melder/mutation_research/diff/diff_engine.py:1`
 - role: Strategy-dispatched derived-diff computation over custody material.
-- responsibilities: `resolve two versions' recorded material and dispatch to a named strategy`, `keep diffs a READ over the record, never storage`
+- responsibilities:
+  - resolve two versions' recorded material and dispatch to a named strategy
+  - keep diffs a READ over the record, never storage
 - phases: `runtime`
 
 #### `DiffEngine` (class)
@@ -17248,7 +18629,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/diff/diff_engine.py:17`
 - extends: `Cleanable`
 - role: Strategy-dispatched derived-diff engine over custody material (diffs are READS, never storage); source (whole-module text) / structural (AST shape) / parts (per-class code) register by default - the agent's grain choice; diff_materials() additionally accepts caller-supplied materials so unrecorded codegen candidates can be previewed.
-- responsibilities: `resolves both version identities through the injected material_resolver (custody-backed at the root; fakes in tests)`, `owns the named strategy registry with source and structural defaults; register_strategy extends the family open/closed`, `returns detached verdicts stamped with both spell_ids and the strategy name; resolver errors stay loud`, `diff_materials() = strategy dispatch over caller-supplied materials (candidate-preview entry; resolver untouched)`
+- responsibilities:
+  - resolves both version identities through the injected material_resolver (custody-backed at the root; fakes in tests)
+  - owns the named strategy registry with source and structural defaults; register_strategy extends the family open/closed
+  - returns detached verdicts stamped with both spell_ids and the strategy name; resolver errors stay loud
+  - diff_materials() = strategy dispatch over caller-supplied materials (candidate-preview entry; resolver untouched)
 - owns_state: `_material_resolver`, `_strategies_by_name`, `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `diff`, `diff_materials`, `list_strategy_names`, `register_strategy`
@@ -17300,7 +18685,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.diff.diff_strategy`
 - defined at: `src/melder/mutation_research/diff/diff_strategy.py:1`
 - role: Base contract for one derived-diff computation over version material.
-- responsibilities: `let the caller choose the grain rather than fixing one`
+- responsibilities:
+  - let the caller choose the grain rather than fixing one
 - phases: `runtime`
 
 #### `DiffStrategy` (class)
@@ -17309,7 +18695,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/diff/diff_strategy.py:7`
 - extends: `Cleanable`
 - role: Abstract contract for one derived-diff computation over two version material payloads.
-- responsibilities: `defines the stable registry name plus diff(left_material, right_material) seam`, `strategies receive detached {spell_id, sources, fingerprints} payloads and return value-typed verdicts without retaining material`
+- responsibilities:
+  - defines the stable registry name plus diff(left_material, right_material) seam
+  - strategies receive detached {spell_id, sources, fingerprints} payloads and return value-typed verdicts without retaining material
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `diff`, `name`
 
@@ -17344,7 +18732,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.diff.strategies.part_diff_strategy`
 - defined at: `src/melder/mutation_research/diff/strategies/part_diff_strategy.py:1`
 - role: Class- and function-grain comparison: the code grain of the diff family.
-- responsibilities: `report added/removed parts with full text and changed parts as unified diffs`, `compare module-body residue as its own region`
+- responsibilities:
+  - report added/removed parts with full text and changed parts as unified diffs
+  - compare module-body residue as its own region
 - phases: `runtime`
 
 #### `PartDiffStrategy` (class)
@@ -17353,7 +18743,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/diff/strategies/part_diff_strategy.py:8`
 - extends: `DiffStrategy`
 - role: Part-grain text comparison between two version materials: per common module, top-level classes/functions compare as individual code regions (added/removed WITH full text, changed as unified diffs, module-body residue as its own region) - the class-code grain of the derived-diff family (owner ruling 2026-07-11: the agent chooses module or class grain).
-- responsibilities: `per-module part split incl. decorator spans; <module_body> residue region so imports/constants never escape comparison`, `parse errors report per module naming the failing side; text-less modules ride text_unavailable_modules`
+- responsibilities:
+  - per-module part split incl. decorator spans; <module_body> residue region so imports/constants never escape comparison
+  - parse errors report per module naming the failing side; text-less modules ride text_unavailable_modules
 - phases: `runtime`, `cleanup`
 - public methods: `diff`, `name`
 
@@ -17382,7 +18774,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.diff.strategies.source_diff_strategy`
 - defined at: `src/melder/mutation_research/diff/strategies/source_diff_strategy.py:1`
 - role: Per-module source comparison: which modules were added, removed or changed.
-- responsibilities: `report module-level text differences between two versions`
+- responsibilities:
+  - report module-level text differences between two versions
 - phases: `runtime`
 
 #### `SourceDiffStrategy` (class)
@@ -17391,7 +18784,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/diff/strategies/source_diff_strategy.py:7`
 - extends: `DiffStrategy`
 - role: Per-module source-text comparison strategy (the transport layer of the diff family).
-- responsibilities: `reports added/removed/changed/identical modules over the union of both sides' sources and fingerprints`, `emits unified diffs where text exists on both sides and honest fingerprint-only verdicts (text_unavailable) where it does not`
+- responsibilities:
+  - reports added/removed/changed/identical modules over the union of both sides' sources and fingerprints
+  - emits unified diffs where text exists on both sides and honest fingerprint-only verdicts (text_unavailable) where it does not
 - phases: `runtime`
 - public methods: `diff`, `name`
 
@@ -17420,7 +18815,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.diff.strategies.structural_diff_strategy`
 - defined at: `src/melder/mutation_research/diff/strategies/structural_diff_strategy.py:1`
 - role: AST-level structural comparison for reasoning about shape rather than text.
-- responsibilities: `report structural deltas so agents can judge candidate futures`
+- responsibilities:
+  - report structural deltas so agents can judge candidate futures
 - phases: `runtime`
 
 #### `StructuralDiffStrategy` (class)
@@ -17429,7 +18825,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/diff/strategies/structural_diff_strategy.py:8`
 - extends: `DiffStrategy`
 - role: AST-level structural comparison strategy (the reasoning layer of the diff family).
-- responsibilities: `reports per-module class/function adds, removes, and changes split into signature, docstring, and body aspects`, `docstring-stripped AST fingerprints decide body change; unparseable source reports a loud per-module parse_error, never a crash`
+- responsibilities:
+  - reports per-module class/function adds, removes, and changes split into signature, docstring, and body aspects
+  - docstring-stripped AST fingerprints decide body change; unparseable source reports a loud per-module parse_error, never a crash
 - phases: `runtime`
 - public methods: `diff`, `name`
 
@@ -17458,7 +18856,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.group_diff.group_diff_engine`
 - defined at: `src/melder/mutation_research/group_diff/group_diff_engine.py:1`
 - role: Grouped mirror of DiffEngine, computing derived diffs over composition material.
-- responsibilities: `dispatch composition diffs by named strategy`
+- responsibilities:
+  - dispatch composition diffs by named strategy
 - phases: `runtime`
 
 #### `GroupDiffEngine` (class)
@@ -17467,7 +18866,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/group_diff/group_diff_engine.py:13`
 - extends: `Cleanable`
 - role: Strategy-dispatched derived-diff engine over composition material - the grouped mirror of DiffEngine: resolver-injected, registry-dispatched, open/closed; "members" registers by default.
-- responsibilities: `diff(left_group_id, right_group_id, strategy="members") -> stamped detached verdict`, `register_strategy open/closed; unknown names teach-grade`
+- responsibilities:
+  - diff(left_group_id, right_group_id, strategy="members") -> stamped detached verdict
+  - register_strategy open/closed; unknown names teach-grade
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `diff`, `list_strategy_names`, `register_strategy`
 
@@ -17508,7 +18909,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.group_diff.group_diff_strategy`
 - defined at: `src/melder/mutation_research/group_diff/group_diff_strategy.py:1`
 - role: Base contract for one derived-diff computation over composition material.
-- responsibilities: `give compositions their own strategy family rather than reusing the spell one`
+- responsibilities:
+  - give compositions their own strategy family rather than reusing the spell one
 - phases: `runtime`
 
 #### `GroupDiffStrategy` (class)
@@ -17517,7 +18919,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/group_diff/group_diff_strategy.py:7`
 - extends: `Cleanable`
 - role: Base contract of the MIRRORED grouped strategy family (beside DiffStrategy; duplication accepted by ruling): one way of comparing two composition materials.
-- responsibilities: `name registry key + diff(left_material, right_material) over composition materials`
+- responsibilities:
+  - name registry key + diff(left_material, right_material) over composition materials
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `diff`, `name`
 
@@ -17549,7 +18952,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.group_diff.strategies.member_diff_strategy`
 - defined at: `src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py:1`
 - role: Default grouped strategy comparing two subsystem compositions at member grain.
-- responsibilities: `report added and removed members`, `pair version_moved from lane evidence rather than guessing`
+- responsibilities:
+  - report added and removed members
+  - pair version_moved from lane evidence rather than guessing
 - phases: `runtime`
 
 #### `MemberDiffStrategy` (class)
@@ -17558,7 +18963,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py:8`
 - extends: `GroupDiffStrategy`
 - role: Default grouped strategy: added/removed/unchanged members plus LANE-EVIDENCED version_moved pairing (a removed+added identity sharing a lane = one object at a new version; no residence truth = plain rows, never guessed) + ancestry_related.
-- responsibilities: `roster set math + lane-join pairing + composition-ancestry signal`
+- responsibilities:
+  - roster set math + lane-join pairing + composition-ancestry signal
 - phases: `runtime`, `cleanup`
 - public methods: `diff`, `name`
 
@@ -17587,7 +18993,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.mutation_configuration`
 - defined at: `src/melder/mutation_research/mutation_configuration.py:1`
 - role: Mutable-to-frozen policy surface for the mutation-research root.
-- responsibilities: `hold research policy before activation`, `carry the recorded composition forward at activate - the docking-loop law`
+- responsibilities:
+  - hold research policy before activation
+  - carry the recorded composition forward at activate - the docking-loop law
 - phases: `init`
 
 #### `MutationResearchConfiguration` (class)
@@ -17596,7 +19004,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/mutation_configuration.py:10`
 - extends: `Cleanable`
 - role: Mutable-to-frozen configuration surface for the mutation-research root. DOCKING-LOOP LAW (2026-07-12 live-bug fix): activation is the emission factor AND carries the recorded composition FORWARD into its twin (replace-on-emit would otherwise wipe the record moments before virgin hydration reads it - config activation necessarily precedes root activation); the configuration owns only its property payload, the composition is carried, never authored.
-- responsibilities: `stores mutation-research-wide policy inputs before root activation`, `validates required properties before freeze and activation`, `owns unrestricted-module-mutations policy state`, `activate() reads describe_mutation_research_record and re-emits the prior composition_payload on its twin (carry-forward, not authorship)`
+- responsibilities:
+  - stores mutation-research-wide policy inputs before root activation
+  - validates required properties before freeze and activation
+  - owns unrestricted-module-mutations policy state
+  - activate() reads describe_mutation_research_record and re-emits the prior composition_payload on its twin (carry-forward, not authorship)
 - owns_state: `_properties`, `available_properties`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `cleanup`, `describe_configuration_payload`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `id`, `load_recorded_dictionary`, `set_property` (+4 more)
@@ -17634,7 +19046,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.mutation_configuration_builder`
 - defined at: `src/melder/mutation_research/mutation_configuration_builder.py:1`
 - role: One-shot builder for mutation-research configuration assembly.
-- responsibilities: `make the authoring-to-installing handoff explicit`
+- responsibilities:
+  - make the authoring-to-installing handoff explicit
 - phases: `init`
 
 #### `MutationResearchConfigurationBuilder` (class)
@@ -17643,7 +19056,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/mutation_configuration_builder.py:11`
 - extends: `Cleanable`
 - role: One-shot builder for mutation-research configuration assembly.
-- responsibilities: `owns one mutable MutationResearchConfiguration during assembly`, `applies default and unrestricted-module-mutations policy before handoff`, `transfers configuration ownership through build, finalize, or activate`
+- responsibilities:
+  - owns one mutable MutationResearchConfiguration during assembly
+  - applies default and unrestricted-module-mutations policy before handoff
+  - transfers configuration ownership through build, finalize, or activate
 - owns_state: `_configuration`, `_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `build`, `cleanup`, `finalize`, `id`, `with_defaults`, `with_lane_type_enforcement`, `with_unrestricted_module_mutations`
@@ -17681,7 +19097,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.mutation_research`
 - defined at: `src/melder/mutation_research/mutation_research.py:1`
 - role: Singleton mutation-research root hosted by Aether, owning the formal research record.
-- responsibilities: `own the ResearchSet registry and the composition emission seam`, `be the package's only crystallizer touchpoint`
+- responsibilities:
+  - own the ResearchSet registry and the composition emission seam
+  - be the package's only crystallizer touchpoint
 - phases: `init`, `runtime`, `cleanup`
 
 #### `MutationResearch` (class)
@@ -17690,7 +19108,23 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/mutation_research.py:37`
 - extends: `Cleanable`
 - role: Aether-hosted singleton mutation-research root: the formal declaration record over the live spell world, plus the agent foresight surface (source_view / impact_view with residency join / module_graph_view / source_drift_view / preview_candidate - all read-only over crystallizer custody).
-- responsibilities: `owns the ResearchSet registry with one guaranteed default set`, `carries the mutation-research configuration lifecycle`, `is the package's ONLY crystallizer touchpoint: re-emits the MutationResearchCrystal composition twin after every set mutation and flips RecordedUnitState`, `rebuilds the registry from recorded compositions (load_recorded_composition hydration seam)`, `residency_view = the query-time active/parked/stored join (frame scan + custody probe; total read)`, `ambient campaign context (set/clear/active_campaign) stamps every runtime auto-record`, `diff_research/create_diff_engine = derived diff reads over custody material through the owned strategy-dispatched DiffEngine (source + structural defaults)`, `foresight reads = source_view (recorded-first module text, live-disk fallback w/ drift marker), impact_view (blast radius JOINED with research residency), module_graph_view (walkable module world), source_drift_view (full drift report), preview_candidate (read-only candidate mock: AST analysis + would-be diff + would-be radius)`, `surgical synthesis = synthesize_candidate (donor parts spliced into the base root module via StructuralSynthesizer + full preview) with the staged-ancestry mint seam (stage/clear/staged_ancestry, campaign-pattern one-shot: the next fresh world entry mints the multi-parent node)`, `lane-type policy propagation = configuration lane_type_enforcement pushed to every set at activation/hydration/creation (type-mixing joins then require force=True)`, `crystal-well reads (2026-07-11 ruling) = module_view (one-call module dossier: text by kind synthetic/user/live_disk, fingerprint, path, deps both ways, exports, drift), part_view (named top-level part text/span), part_diff (part text diff between versions over RECORDED material only + automatic module-grain radius); diff material drinks BOTH recorded carriers and never the live disk`, `composition reads (GroupedResearchNode ruling) = group_view (roster + behind drift vs member lane tips), group_diff_research (mirrored GroupDiffEngine), group_impact_view (union member radii + internal/outbound split + CLOSURE + adjacency lift); residency_view kind-aware (compositions = informational, no probes)`, `composition shadow + story reads = group_footprint_view (union member module worlds + shared-module coupling; honest custody-less members), group_drift_view (full custody drift narrowed to the footprint, counts recomputed), group_history_view (journal events touching the subsystem lane / pinned members / member lanes), compositions_of (reverse lift; pinned_by_compositions on every spell residency row)`, `recent_activity_view (cold-landing newest-window journal read) + group_history campaign= narrowing (the WHERE x WHEN join) + impact_view composition lift (every radius names the current subsystems it touches)`, `POLYMORPHIC VERBS (2026-07-12): spell-grain reads dispatch on node kind - source/parts/module_graph/module fan out per member, part_view roster-searches naming the carrying member, impact_view on a composition answers the group radius, diff_research routes two compositions through the members engine; code-grain verbs (preview-against/synthesize) refuse compositions teach-grade`, `parity laws: root register_group/recompose_group apply the ambient campaign stamp; composition-grade rediscovery teaches roster cycles (identical member set = same content-addressed identity)`
+- responsibilities:
+  - owns the ResearchSet registry with one guaranteed default set
+  - carries the mutation-research configuration lifecycle
+  - is the package's ONLY crystallizer touchpoint: re-emits the MutationResearchCrystal composition twin after every set mutation and flips RecordedUnitState
+  - rebuilds the registry from recorded compositions (load_recorded_composition hydration seam)
+  - residency_view = the query-time active/parked/stored join (frame scan + custody probe; total read)
+  - ambient campaign context (set/clear/active_campaign) stamps every runtime auto-record
+  - diff_research/create_diff_engine = derived diff reads over custody material through the owned strategy-dispatched DiffEngine (source + structural defaults)
+  - foresight reads = source_view (recorded-first module text, live-disk fallback w/ drift marker), impact_view (blast radius JOINED with research residency), module_graph_view (walkable module world), source_drift_view (full drift report), preview_candidate (read-only candidate mock: AST analysis + would-be diff + would-be radius)
+  - surgical synthesis = synthesize_candidate (donor parts spliced into the base root module via StructuralSynthesizer + full preview) with the staged-ancestry mint seam (stage/clear/staged_ancestry, campaign-pattern one-shot: the next fresh world entry mints the multi-parent node)
+  - lane-type policy propagation = configuration lane_type_enforcement pushed to every set at activation/hydration/creation (type-mixing joins then require force=True)
+  - crystal-well reads (2026-07-11 ruling) = module_view (one-call module dossier: text by kind synthetic/user/live_disk, fingerprint, path, deps both ways, exports, drift), part_view (named top-level part text/span), part_diff (part text diff between versions over RECORDED material only + automatic module-grain radius); diff material drinks BOTH recorded carriers and never the live disk
+  - composition reads (GroupedResearchNode ruling) = group_view (roster + behind drift vs member lane tips), group_diff_research (mirrored GroupDiffEngine), group_impact_view (union member radii + internal/outbound split + CLOSURE + adjacency lift); residency_view kind-aware (compositions = informational, no probes)
+  - composition shadow + story reads = group_footprint_view (union member module worlds + shared-module coupling; honest custody-less members), group_drift_view (full custody drift narrowed to the footprint, counts recomputed), group_history_view (journal events touching the subsystem lane / pinned members / member lanes), compositions_of (reverse lift; pinned_by_compositions on every spell residency row)
+  - recent_activity_view (cold-landing newest-window journal read) + group_history campaign= narrowing (the WHERE x WHEN join) + impact_view composition lift (every radius names the current subsystems it touches)
+  - POLYMORPHIC VERBS (2026-07-12): spell-grain reads dispatch on node kind - source/parts/module_graph/module fan out per member, part_view roster-searches naming the carrying member, impact_view on a composition answers the group radius, diff_research routes two compositions through the members engine; code-grain verbs (preview-against/synthesize) refuse compositions teach-grade
+  - parity laws: root register_group/recompose_group apply the ambient campaign stamp; composition-grade rediscovery teaches roster cycles (identical member set = same content-addressed identity)
 - owns_state: `_research_sets_by_name`, `_configuration`, `_configured`, `_activated`, `_crystallizer`, `_aether`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `active_campaign`, `cleanup`, `clear_active_campaign`, `clear_staged_ancestry`, `compositions_of`, `configuration`, `configure`, `configured`, `create_configuration`, `create_configuration_builder` (+37 more)
@@ -17754,7 +19188,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.grouped_research_node`
 - defined at: `src/melder/mutation_research/research_set/grouped_research_node.py:1`
 - role: One immutable composition record: a subsystem declared as a set of pinned members.
-- responsibilities: `content-address identity over the canonical member list so an identical roster is a rediscovery`, `stay purely informational - never gate, never execute`
+- responsibilities:
+  - content-address identity over the canonical member list so an identical roster is a rediscovery
+  - stay purely informational - never gate, never execute
 - phases: `runtime`
 
 #### `GroupedResearchNode` (class)
@@ -17763,7 +19199,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/grouped_research_node.py:9`
 - extends: `Cleanable`
 - role: Immutable COMPOSITION record - its OWN node type beside ResearchNode (owner ruling 2026-07-11): pins member spell_ids by reference; identity = content-addressed sha256 over the canonical member list; parent_group_ids = composition ancestry; PURELY INFORMATIONAL (no custody crystal, no gating). A lane of these is a subsystem timeline.
-- responsibilities: `content-addressed group_id (identical roster = same identity = rediscovery)`, `describe()/from_payload() exact inverses w/ node_type="group" tag + recorded-id integrity refusal`
+- responsibilities:
+  - content-addressed group_id (identical roster = same identity = rediscovery)
+  - describe()/from_payload() exact inverses w/ node_type="group" tag + recorded-id integrity refusal
 - phases: `runtime`, `cleanup`
 - public methods: `author`, `campaign`, `cleanup`, `compute_group_id`, `created_at`, `describe`, `from_payload`, `group_id`, `member_count`, `member_spell_ids`, `metadata`, `parent_group_ids` (+1 more)
 
@@ -17795,7 +19233,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.network_versioner`
 - defined at: `src/melder/mutation_research/research_set/network_versioner.py:1`
 - role: Content-addressed snapshots of the network's organization, with a FIFO retention ring.
-- responsibilities: `snapshot organization, never the journal`, `dedupe by canonical-JSON sha so identical states cost nothing`
+- responsibilities:
+  - snapshot organization, never the journal
+  - dedupe by canonical-JSON sha so identical states cost nothing
 - phases: `runtime`
 
 #### `NetworkVersioner` (class)
@@ -17804,7 +19244,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/network_versioner.py:9`
 - extends: `Cleanable`
 - role: Content-addressed version control of the graph ORGANIZATION itself (objects are indestructible; arrangement is what restore recovers).
-- responsibilities: `canonical-JSON SHA256 addressing with dedupe; bounded FIFO retention ring`, `get() returns detached value copies; journal excluded from snapshots by design`
+- responsibilities:
+  - canonical-JSON SHA256 addressing with dedupe; bounded FIFO retention ring
+  - get() returns detached value copies; journal excluded from snapshots by design
 - owns_state: `_canonical_by_sha`, `_order`, `_max_snapshots`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `from_payload`, `get`, `has`, `latest_sha`, `max_snapshots`, `snapshot`, `snapshot_count`, `snapshot_shas`
@@ -17842,7 +19284,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.research_journal`
 - defined at: `src/melder/mutation_research/research_set/research_journal.py:1`
 - role: Set-level monotonic append-only log of world-entry events.
-- responsibilities: `own one forward-only event stream per set`, `mint sequence numbers without reuse across hydration`
+- responsibilities:
+  - own one forward-only event stream per set
+  - mint sequence numbers without reuse across hydration
 - phases: `runtime`
 
 #### `ResearchJournal` (class)
@@ -17851,7 +19295,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/research_journal.py:11`
 - extends: `Cleanable`
 - role: Set-level monotonic append-only event log; SURVIVES network restore by design.
-- responsibilities: `mints gapless sequences; lane/identity filtered reads`, `bounded describe window feeds the persistence twin; from_payload continues minting without reuse`
+- responsibilities:
+  - mints gapless sequences; lane/identity filtered reads
+  - bounded describe window feeds the persistence twin; from_payload continues minting without reuse
 - owns_state: `_entries`, `_next_sequence`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe`, `entries`, `entries_for_lane`, `entries_for_spell_id`, `entry_count`, `from_payload`, `latest_sequence`, `record`
@@ -17891,7 +19337,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.research_lane`
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:1`
 - role: One lane of a research network, plus its lifecycle and policy vocabularies.
-- responsibilities: `hold an ordered node sequence with an anchor and a tip`, `keep every mutator set-internal so residence cannot be bypassed`
+- responsibilities:
+  - hold an ordered node sequence with an anchor and a tip
+  - keep every mutator set-internal so residence cannot be bypassed
 - phases: `runtime`
 
 #### `LaneState` (enum)
@@ -17900,7 +19348,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:49`
 - markers: `Enum`
 - role: Lifecycle vocabulary for a lane: open, joined or archived.
-- responsibilities: `name the terminal states a lane can reach`
+- responsibilities:
+  - name the terminal states a lane can reach
 - phases: `runtime`
 
 #### `LaneType` (enum)
@@ -17909,7 +19358,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:96`
 - markers: `Enum`
 - role: Policy vocabulary classifying a lane as development, experiment, production or test.
-- responsibilities: `carry the type the join gate enforces when armed`
+- responsibilities:
+  - carry the type the join gate enforces when armed
 - phases: `runtime`
 
 #### `ResearchLane` (class)
@@ -17918,7 +19368,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/research_lane.py:144`
 - extends: `Cleanable`
 - role: One object's line of full-object version records; lifecycle open -> joined | archived; anchors onto other lanes at nodes. Carries the LaneType policy vocabulary (development/experiment/production/test; freeform lanes default experiment, the default lane is development; back-compat hydration by the same rule).
-- responsibilities: `holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)`, `carries the ancestry anchor (organization only, never content)`, `detach_nodes powers the join transfer; terminal states refuse further work`
+- responsibilities:
+  - holds ordered ResearchNode records keyed by binding-signature SHA256 (dedup per lane)
+  - carries the ancestry anchor (organization only, never content)
+  - detach_nodes powers the join transfer; terminal states refuse further work
 - owns_state: `_nodes_by_spell_id`, `_node_order`, `_tip_spell_id`, `_state`, `_anchor_lane_id`, `_anchor_spell_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `anchor_lane_id`, `anchor_spell_id`, `cleanup`, `clear_anchor`, `created_at`, `describe`, `from_payload`, `get_node`, `has_node`, `joined_into_lane_id`, `lane_id`, `lane_type` (+6 more)
@@ -17963,7 +19416,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.research_node`
 - defined at: `src/melder/mutation_research/research_set/research_node.py:1`
 - role: One immutable version record: a full object reference, never a diff.
-- responsibilities: `pin one bound version by spell id and module source sha`, `carry parent ancestry for multi-parent composition`
+- responsibilities:
+  - pin one bound version by spell id and module source sha
+  - carry parent ancestry for multi-parent composition
 - phases: `runtime`
 
 #### `ResearchNode` (class)
@@ -17972,7 +19427,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/research_node.py:8`
 - extends: `Cleanable`
 - role: Immutable reference-based version record: spell_id IS the custody SpellCrystal id (no source pinning).
-- responsibilities: `carries spell_id + module_sha + parent ancestry + author/reason/campaign`, `multi-parent records express codegen-workshop composition (no merge machinery exists)`
+- responsibilities:
+  - carries spell_id + module_sha + parent ancestry + author/reason/campaign
+  - multi-parent records express codegen-workshop composition (no merge machinery exists)
 - owns_state: `_spell_id`, `_module_source_sha256`, `_parent_spell_ids`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `author`, `campaign`, `cleanup`, `created_at`, `describe`, `from_payload`, `metadata`, `module_source_sha256`, `parent_spell_ids`, `reason`, `spell_id`
@@ -18008,7 +19465,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.research_set`
 - defined at: `src/melder/mutation_research/research_set/research_set.py:1`
 - role: The agent-facing research network: every lane, one journal, one residence partition.
-- responsibilities: `own lanes and the single forward-only journal`, `enforce single residence through the registry`, `notify on mutation so the composition twin stays current`
+- responsibilities:
+  - own lanes and the single forward-only journal
+  - enforce single residence through the registry
+  - notify on mutation so the composition twin stays current
 - phases: `init`, `runtime`, `cleanup`
 
 #### `ResearchSet` (class)
@@ -18017,7 +19477,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/research_set.py:32`
 - extends: `Cleanable`
 - role: The overarching research network: every lane, one journal, one residence partition; the single agent-facing MR surface.
-- responsibilities: `verbs: create_lane, register_spell, attach/detach, join (divergence-aware; collapse/force dials), archive, walk/history/heads`, `version-controls its own organization (snapshot_network/restore_network); journal survives restore`, `guarantees the default lane; enforces single residence via the owned registry`, `fires the injected on_mutation callback after every mutating verb (persistence emission seam; set stays crystallizer-free)`, `group_history(group_id) = the subsystem-area journal gather (own lane + member ids + member lanes, journal order)`
+- responsibilities:
+  - verbs: create_lane, register_spell, attach/detach, join (divergence-aware; collapse/force dials), archive, walk/history/heads
+  - version-controls its own organization (snapshot_network/restore_network); journal survives restore
+  - guarantees the default lane; enforces single residence via the owned registry
+  - fires the injected on_mutation callback after every mutating verb (persistence emission seam; set stays crystallizer-free)
+  - group_history(group_id) = the subsystem-area journal gather (own lane + member ids + member lanes, journal order)
 - owns_state: `_lanes_by_id`, `_lane_id_by_name`, `_journal`, `_residence`, `_versioner`, `_on_mutation`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `archive`, `attach`, `campaign_view`, `cleanup`, `create_lane`, `default_lane`, `describe`, `describe_composition`, `detach`, `from_payload`, `get_lane`, `group_history` (+20 more)
@@ -18074,7 +19539,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.residence_registry`
 - defined at: `src/melder/mutation_research/research_set/residence_registry.py:1`
 - role: Single-residence partition enforcing that one identity lives in exactly one lane.
-- responsibilities: `raise the rediscovery signal on a claim collision, naming the holding lane`, `offer no release verb - residence is permanent by design`
+- responsibilities:
+  - raise the rediscovery signal on a claim collision, naming the holding lane
+  - offer no release verb - residence is permanent by design
 - phases: `runtime`
 
 #### `ResidenceRegistry` (class)
@@ -18083,7 +19550,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/residence_registry.py:7`
 - extends: `Cleanable`
 - role: Single-residence partition: one binding-signature SHA256 lives in exactly ONE lane network-wide, permanently.
-- responsibilities: `claim raises the rediscovery signal naming the holding lane (identical content rebinds to the same SHA)`, `all-or-nothing transfer powers join; NO release verb exists (residence permanent through archive)`
+- responsibilities:
+  - claim raises the rediscovery signal naming the holding lane (identical content rebinds to the same SHA)
+  - all-or-nothing transfer powers join; NO release verb exists (residence permanent through archive)
 - owns_state: `_lane_id_by_spell_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `claim`, `cleanup`, `describe`, `from_payload`, `is_resident`, `residence_of`, `resident_count`, `transfer`
@@ -18122,7 +19591,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.research_set.transition_entry`
 - defined at: `src/melder/mutation_research/research_set/transition_entry.py:1`
 - role: The act vocabulary and immutable event shape for the research journal.
-- responsibilities: `name the only acts the record acknowledges`, `keep the stream forward-only with no rollback act`
+- responsibilities:
+  - name the only acts the record acknowledges
+  - keep the stream forward-only with no rollback act
 - phases: `runtime`
 
 #### `TransitionAct` (enum)
@@ -18131,7 +19602,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/transition_entry.py:9`
 - markers: `Enum`
 - role: Vocabulary of world-entry acts; deliberately contains no rollback act.
-- responsibilities: `name lane_created, registered, staged, promoted, attached, detached, joined, archived, restored`
+- responsibilities:
+  - name lane_created, registered, staged, promoted, attached, detached, joined, archived, restored
 - phases: `runtime`
 
 #### `TransitionEntry` (class)
@@ -18140,7 +19612,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/research_set/transition_entry.py:83`
 - extends: `Cleanable`
 - role: Immutable forward-only journal event; TransitionAct vocabulary is world-entry only (no checkout/rollback acts).
-- responsibilities: `records act, subject lane, from/to identity, actor, campaign stamp, reason`, `describe()/from_payload() exact-inverse persistence seam`
+- responsibilities:
+  - records act, subject lane, from/to identity, actor, campaign stamp, reason
+  - describe()/from_payload() exact-inverse persistence seam
 - owns_state: `_sequence`, `_act`, `_lane_id`, `_from_spell_id`, `_to_spell_id`, `_campaign`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `act`, `actor`, `campaign`, `cleanup`, `created_at`, `describe`, `from_payload`, `from_spell_id`, `lane_id`, `metadata`, `reason`, `sequence` (+2 more)
@@ -18177,7 +19651,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.mutation_research.synthesis.structural_synthesizer`
 - defined at: `src/melder/mutation_research/synthesis/structural_synthesizer.py:1`
 - role: AST-guided source composition splicing donor parts into a base module.
-- responsibilities: `replace same-named parts and append new ones, carrying decorators`, `refuse unknown selections loudly rather than silently dropping them`
+- responsibilities:
+  - replace same-named parts and append new ones, carrying decorators
+  - refuse unknown selections loudly rather than silently dropping them
 - phases: `runtime`
 
 #### `StructuralSynthesizer` (class)
@@ -18186,7 +19662,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/mutation_research/synthesis/structural_synthesizer.py:9`
 - extends: `Cleanable`
 - role: AST-guided source composition over two recorded version texts: pick named top-level functions/classes from a donor and splice them into a base (replace same-named, append new, decorators travel) - the SELECTION+SYNTHESIS half of the May surgical-mutation flow (the diff family is the report half). Pure text-in/text-out; never touches custody, never executes, never records.
-- responsibilities: `synthesize(base, donor, take_functions/take_classes) -> composed source + per-selection provenance`, `unknown selections refuse loudly naming available donor parts; parse errors answer honestly per side`, `stateless between calls; owned lazily by the MutationResearch root`, `extract_part(source, name, kind=None) = the query companion (part span/text lookup; misses answer None, unparseable source is loud)`, `list_parts(source) = the inventory companion (every top-level part with code, source order)`, `part FINGERPRINTS: list_parts rows carry sha256 over exact part text (depth-3 change index - inventories compare part-by-part without pulling texts)`
+- responsibilities:
+  - synthesize(base, donor, take_functions/take_classes) -> composed source + per-selection provenance
+  - unknown selections refuse loudly naming available donor parts; parse errors answer honestly per side
+  - stateless between calls; owned lazily by the MutationResearch root
+  - extract_part(source, name, kind=None) = the query companion (part span/text lookup; misses answer None, unparseable source is loud)
+  - list_parts(source) = the inventory companion (every top-level part with code, source order)
+  - part FINGERPRINTS: list_parts rows carry sha256 over exact part text (depth-3 change index - inventories compare part-by-part without pulling texts)
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `extract_part`, `list_parts`, `synthesize`
@@ -18227,7 +19709,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/builder/frame_acl_builder.py:49`
 - extends: `Cleanable`
 - role: Frame-local mutable ACL authoring surface.
-- responsibilities: `owns one family-scoped ACL draft session for a frame`, `creates and installs family-specific ACL configurations through the owning container`
+- responsibilities:
+  - owns one family-scoped ACL draft session for a frame
+  - creates and installs family-specific ACL configurations through the owning container
 - owns_state: `_container`, `_draft_family_name`, `_draft_contract_name`, `_draft_configuration`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `apply_frame_acl_profile`, `begin_change`, `begin_codegen_change`, `begin_command_change`, `begin_view_change`, `change_active`, `cleanup`, `commit_change`, `discard_change`, `draft_contract_name`, `draft_family_name`, `load_json_configuration_string` (+2 more)
@@ -18288,7 +19772,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/builder/frame_acl_codegen_builder.py:16`
 - extends: `Cleanable`
 - role: Fluent authoring surface for one active codegen-family ACL draft.
-- responsibilities: `borrows one active codegen draft from the generic ACL builder`, `mutates the borrowed typed codegen configuration in place through fluent capability and rule helpers`, `commits or discards the active codegen draft through the generic builder`
+- responsibilities:
+  - borrows one active codegen draft from the generic ACL builder
+  - mutates the borrowed typed codegen configuration in place through fluent capability and rule helpers
+  - commits or discards the active codegen draft through the generic builder
 - owns_state: `_id`, `_frame_acl_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `allow_builtin_names`, `allow_dunder_access`, `allow_import_module_roots`, `allow_recursive_codegen`, `allow_unsafe_reflection`, `cleanup`, `commit_change`, `deny_builtin_names`, `deny_dunder_access`, `deny_import_module_roots`, `deny_recursive_codegen`, `deny_unsafe_reflection` (+12 more)
@@ -18339,7 +19826,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/builder/frame_acl_command_builder.py:16`
 - extends: `Cleanable`
 - role: Fluent authoring surface for one active command-family ACL draft.
-- responsibilities: `borrows one active command draft from the generic ACL builder`, `mutates the borrowed typed command configuration in place through fluent rule helpers`, `commits or discards the active command draft through the generic builder`
+- responsibilities:
+  - borrows one active command draft from the generic ACL builder
+  - mutates the borrowed typed command configuration in place through fluent rule helpers
+  - commits or discards the active command draft through the generic builder
 - owns_state: `_id`, `_frame_acl_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `allow_conduit_enable`, `allow_frame_enable`, `allow_member_dunder_access`, `allow_member_invoke_method`, `allow_member_read_attribute`, `allow_member_write_attribute`, `allow_spell_enable`, `cleanup`, `commit_change`, `deny_conduit_enable`, `deny_frame_enable`, `deny_member_dunder_access` (+14 more)
@@ -18390,7 +19880,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/builder/frame_acl_view_builder.py:16`
 - extends: `Cleanable`
 - role: Fluent authoring surface for one active view-family ACL draft.
-- responsibilities: `borrows one active view draft from the generic ACL builder`, `mutates the borrowed typed view configuration in place through fluent rule helpers`, `commits or discards the active view draft through the generic builder`
+- responsibilities:
+  - borrows one active view draft from the generic ACL builder
+  - mutates the borrowed typed view configuration in place through fluent rule helpers
+  - commits or discards the active view draft through the generic builder
 - owns_state: `_id`, `_frame_acl_builder`
 - phases: `runtime`, `cleanup`
 - public methods: `allow_conduit_peer_links`, `allow_conduit_policy`, `allow_frame_payload`, `allow_frame_visibility`, `allow_member_name`, `allow_member_pattern`, `allow_spell_callable_profile`, `allow_spell_class_profile`, `allow_spell_dynamic_access`, `allow_spell_instance_members`, `cleanup`, `commit_change` (+20 more)
@@ -18441,7 +19934,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py:13`
 - extends: `Cleanable`
 - role: Applied codegen-side ACL configuration revision.
-- responsibilities: `stores reusable codegen-profile identity plus override rulesets`, `carries revision metadata for container-owned configuration chains`
+- responsibilities:
+  - stores reusable codegen-profile identity plus override rulesets
+  - carries revision metadata for container-owned configuration chains
 - owns_state: `_profile_name`, `_frame_override_ruleset`, `_conduit_override_ruleset`, `_spell_override_ruleset`, `_capability_override_ruleset`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `capability_override_ruleset`, `cleanup`, `clone`, `conduit_override_ruleset`, `configuration_id`, `create_new_from_configuration`, `created_at`, `finalize`, `frame_override_ruleset`, `from_json_dict`, `from_profile`, `locked` (+12 more)
@@ -18490,7 +19985,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/frame_acl_command_configuration.py:16`
 - extends: `Cleanable`
 - role: Applied command-side ACL configuration revision.
-- responsibilities: `stores reusable command-profile identity plus override rulesets`, `carries revision metadata for container-owned configuration chains`
+- responsibilities:
+  - stores reusable command-profile identity plus override rulesets
+  - carries revision metadata for container-owned configuration chains
 - owns_state: `_profile_name`, `_frame_override_ruleset`, `_conduit_override_ruleset`, `_spell_override_ruleset`, `_member_override_ruleset`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `clone`, `conduit_override_ruleset`, `configuration_id`, `create_default`, `create_new_from_configuration`, `created_at`, `finalize`, `frame_override_ruleset`, `from_json_dict`, `from_profile`, `locked` (+13 more)
@@ -18539,7 +20036,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/frame_acl_view_configuration.py:13`
 - extends: `Cleanable`
 - role: Applied view-side ACL configuration revision.
-- responsibilities: `stores reusable view-profile identity plus override rulesets`, `carries revision metadata for container-owned configuration chains`
+- responsibilities:
+  - stores reusable view-profile identity plus override rulesets
+  - carries revision metadata for container-owned configuration chains
 - owns_state: `_profile_name`, `_required_nexus_label`, `_minimum_spell_payload_type`, `_frame_override_ruleset`, `_conduit_override_ruleset`, `_spell_override_ruleset`, `_member_override_ruleset`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `clone`, `conduit_override_ruleset`, `configuration_id`, `create_new_from_configuration`, `created_at`, `finalize`, `frame_override_ruleset`, `from_json_dict`, `from_profile`, `locked`, `member_override_ruleset` (+16 more)
@@ -18588,7 +20087,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:29`
 - markers: `Protocol`
 - role: Structural contract - the two things (name, cleanup) the generic profile-registry helpers need from any family profile.
-- responsibilities: `expose a stable registry name and a cleanup entry point`, `let view, command, and codegen profiles share registry code without an inheritance relationship the domain does not have`
+- responsibilities:
+  - expose a stable registry name and a cleanup entry point
+  - let view, command, and codegen profiles share registry code without an inheritance relationship the domain does not have
 - phases: `init`, `cleanup`
 - public methods: `cleanup`, `name`
 
@@ -18598,7 +20099,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:82`
 - extends: `Cleanable`
 - role: Registry and composer for reusable ACL profiles.
-- responsibilities: `owns the reusable view, command, and codegen profile catalogs`, `owns family-specific profile builders for those three ACL families`, `seeds standard reusable profiles during initialization and composes detached FrameACLProfile bundles on demand`
+- responsibilities:
+  - owns the reusable view, command, and codegen profile catalogs
+  - owns family-specific profile builders for those three ACL families
+  - seeds standard reusable profiles during initialization and composes detached FrameACLProfile bundles on demand
 - owns_state: `_view_profile_builder`, `_command_profile_builder`, `_codegen_profile_builder`, `_view_profiles_by_name`, `_command_profiles_by_name`, `_codegen_profiles_by_name`, `_view_precision_profiles_by_name`, `_command_precision_profiles_by_name`, `_codegen_precision_profiles_by_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `codegen_precision_profiles_by_name`, `codegen_profile_builder`, `codegen_profiles_by_name`, `command_precision_profiles_by_name`, `command_profile_builder`, `command_profiles_by_name`, `create_profile`, `get_required_codegen_precision_profile`, `get_required_codegen_profile`, `get_required_command_precision_profile`, `get_required_command_profile` (+25 more)
@@ -18660,7 +20164,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile.py:10`
 - extends: `Cleanable`
 - role: Reusable typed codegen-profile ruleset bundle.
-- responsibilities: `owns frame, conduit, spell, and capability codegen rulesets`, `carries one validator-owned strategy key for codegen-specific validation behavior`
+- responsibilities:
+  - owns frame, conduit, spell, and capability codegen rulesets
+  - carries one validator-owned strategy key for codegen-specific validation behavior
 - owns_state: `_frame_ruleset`, `_conduit_ruleset`, `_spell_ruleset`, `_capability_ruleset`, `_validation_strategy_name`
 - phases: `runtime`, `cleanup`
 - public methods: `capability_ruleset`, `cleanup`, `conduit_ruleset`, `create_default`, `create_full_access`, `create_hybrid`, `create_permissive`, `create_precision`, `create_safe`, `frame_ruleset`, `id`, `name` (+3 more)
@@ -18709,7 +20215,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile_builder.py:33`
 - extends: `Cleanable`
 - role: Registry-backed builder for reusable codegen ACL profiles.
-- responsibilities: `owns the reusable codegen-profile strategy registry`, `loads the standard safe, hybrid, permissive, full_access, and precision codegen strategies`, `builds fresh FrameACLCodegenProfile instances from the selected strategy`
+- responsibilities:
+  - owns the reusable codegen-profile strategy registry
+  - loads the standard safe, hybrid, permissive, full_access, and precision codegen strategies
+  - builds fresh FrameACLCodegenProfile instances from the selected strategy
 - owns_state: `_id`, `_strategies_by_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `build_profile`, `cleanup`, `get_required_strategy`, `id`, `list_strategy_names`, `load_defaults`, `register_strategy`
@@ -18757,7 +20266,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.full_access_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py:1`
 - role: Factory module for the reusable full_access codegen ACL profile.
-- responsibilities: `constructs the unconstrained top-end codegen profile variant`, `enables broad conduit, spell, and capability operations including recursive codegen`, `returns fresh FrameACLCodegenProfile instances through its strategy class`
+- responsibilities:
+  - constructs the unconstrained top-end codegen profile variant
+  - enables broad conduit, spell, and capability operations including recursive codegen
+  - returns fresh FrameACLCodegenProfile instances through its strategy class
 - phases: `runtime`
 
 #### `FullAccessCodegenProfileStrategy` (class)
@@ -18765,7 +20277,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.full_access_profile.FullAccessCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py:7`
 - role: The unconstrained top end of the codegen ACL model - above the standard ladder, not a rung of it.
-- responsibilities: `enable imports without an allowlist and leave builtin/meta posture open`, `allow the broadest conduit, spell, and capability operations including recursive codegen`
+- responsibilities:
+  - enable imports without an allowlist and leave builtin/meta posture open
+  - allow the broadest conduit, spell, and capability operations including recursive codegen
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -18791,7 +20305,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.hybrid_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py:1`
 - role: Factory module for reusable hybrid codegen ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `HybridCodegenProfileStrategy` (class)
@@ -18799,7 +20314,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.hybrid_profile.HybridCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py:12`
 - role: Middle rung of the codegen posture ladder, between safe and permissive.
-- responsibilities: `allow core query/link/invoke/read operations`, `still deny local creation, direct mutation, and the more aggressive capability overrides`
+- responsibilities:
+  - allow core query/link/invoke/read operations
+  - still deny local creation, direct mutation, and the more aggressive capability overrides
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -18835,7 +20352,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.permissive_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py:1`
 - role: Factory module for reusable permissive codegen ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `PermissiveCodegenProfileStrategy` (class)
@@ -18843,7 +20361,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.permissive_profile.PermissiveCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/permissive_profile.py:10`
 - role: Top standard rung of the codegen posture ladder: broadest conduit and spell operations still under capability gates.
-- responsibilities: `allow the broadest set of conduit and spell operations`, `still deny the highest-risk capability gates - mutation and unsafe reflection`
+- responsibilities:
+  - allow the broadest set of conduit and spell operations
+  - still deny the highest-risk capability gates - mutation and unsafe reflection
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -18879,7 +20399,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.precision`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/precision.py:1`
 - role: Factory module for reusable precision codegen ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `PrecisionCodegenProfileStrategy` (class)
@@ -18887,7 +20408,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/precision.py:12`
 - role: The enumerate-exactly posture, deliberately outside the safe/hybrid/permissive ordering.
-- responsibilities: `build the precision codegen profile from explicitly-enumerated allowances (frame: query only)`, `draw its import posture from the PRECISION_* stdlib import sets rather than an open allowlist`, `exist for operators who enumerate what is permitted instead of picking a tier`
+- responsibilities:
+  - build the precision codegen profile from explicitly-enumerated allowances (frame: query only)
+  - draw its import posture from the PRECISION_* stdlib import sets rather than an open allowlist
+  - exist for operators who enumerate what is permitted instead of picking a tier
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -18923,7 +20447,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.safe_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py:1`
 - role: Factory module for reusable safe codegen ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `SafeCodegenProfileStrategy` (class)
@@ -18931,7 +20456,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.safe_profile.SafeCodegenProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py:10`
 - role: Bottom rung of the codegen posture ladder: the reviewed restrictive default.
-- responsibilities: `build a FrameACLCodegenProfile limited to safe query/bind-existing operations`, `deny link mutation, local creation, invocation, writes, and dangerous capability escalation`, `register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset`
+- responsibilities:
+  - build a FrameACLCodegenProfile limited to safe query/bind-existing operations
+  - deny link mutation, local creation, invocation, writes, and dangerous capability escalation
+  - register by name as a preset so authoring starts from a reviewed posture, never an empty ruleset
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -18967,7 +20495,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets`
 - defined at: `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py:1`
 - role: Shared import-root and builtin-name constant catalog for codegen ACL profiles.
-- responsibilities: `defines reusable safe, hybrid, precision, and permissive import-root sets`, `defines shared denied builtin-name sets for codegen profile factories`, `keeps codegen profile factory modules aligned on import-surface policy constants`
+- responsibilities:
+  - defines reusable safe, hybrid, precision, and permissive import-root sets
+  - defines shared denied builtin-name sets for codegen profile factories
+  - keeps codegen profile factory modules aligned on import-surface policy constants
 - owns_state: `_COMMON_SAFE_IMPORT_MODULE_ROOTS`, `_PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS`, `SAFE_DENIED_BUILTIN_NAMES`
 - phases: `runtime`
 
@@ -18994,7 +20525,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py:15`
 - extends: `Cleanable`
 - role: Reusable typed command-profile ruleset bundle.
-- responsibilities: `owns frame, conduit, spell, and member command rulesets`, `carries one validator-owned strategy key for command-specific validation behavior`
+- responsibilities:
+  - owns frame, conduit, spell, and member command rulesets
+  - carries one validator-owned strategy key for command-specific validation behavior
 - owns_state: `_frame_ruleset`, `_conduit_ruleset`, `_spell_ruleset`, `_member_ruleset`, `_validation_strategy_name`
 - phases: `runtime`, `cleanup`
 - public methods: `build_rule`, `build_ruleset`, `cleanup`, `coerce_ruleset`, `conduit_ruleset`, `create_default`, `create_hybrid`, `create_permissive`, `create_precision`, `create_safe`, `frame_ruleset`, `id` (+5 more)
@@ -19045,7 +20578,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile_builder.py:29`
 - extends: `Cleanable`
 - role: Registry-backed builder for reusable command ACL profiles.
-- responsibilities: `owns the reusable command-profile strategy registry`, `loads the standard safe, hybrid, permissive, and precision command strategies`, `builds fresh FrameACLCommandProfile instances from the selected strategy`
+- responsibilities:
+  - owns the reusable command-profile strategy registry
+  - loads the standard safe, hybrid, permissive, and precision command strategies
+  - builds fresh FrameACLCommandProfile instances from the selected strategy
 - owns_state: `_id`, `_strategies_by_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `build_profile`, `cleanup`, `get_required_strategy`, `id`, `list_strategy_names`, `load_defaults`, `register_strategy`
@@ -19090,7 +20626,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.hybrid_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py:1`
 - role: Factory module for reusable hybrid command ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `HybridCommandProfileStrategy` (class)
@@ -19098,7 +20635,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.hybrid_profile.HybridCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py:4`
 - role: Middle rung of the command posture ladder: invocation without writes.
-- responsibilities: `allow member method invocation on top of the safe posture`, `still deny member writes and dunder access`
+- responsibilities:
+  - allow member method invocation on top of the safe posture
+  - still deny member writes and dunder access
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19132,7 +20671,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.permissive_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py:1`
 - role: Factory module for reusable permissive command ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `PermissiveCommandProfileStrategy` (class)
@@ -19140,7 +20680,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.permissive_profile.PermissiveCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py:4`
 - role: Top standard rung of the command posture ladder: reads, invocation, and writes.
-- responsibilities: `allow member reads, invocation, and writes`, `still deny dunder access`
+- responsibilities:
+  - allow member reads, invocation, and writes
+  - still deny dunder access
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19174,7 +20716,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.precision`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/precision.py:1`
 - role: Factory module for reusable precision command ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `PrecisionCommandProfileStrategy` (class)
@@ -19182,7 +20725,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.precision.PrecisionCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/precision.py:4`
 - role: The enumerate-exactly command posture, deliberately outside the safe/hybrid/permissive ordering.
-- responsibilities: `build the precision command profile from explicitly-enumerated allowances`, `exist for operators who enumerate what is permitted instead of picking a tier`
+- responsibilities:
+  - build the precision command profile from explicitly-enumerated allowances
+  - exist for operators who enumerate what is permitted instead of picking a tier
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19216,7 +20761,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.safe_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/safe_profile.py:1`
 - role: Factory module for reusable safe command ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `SafeCommandProfileStrategy` (class)
@@ -19224,7 +20770,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.command.safe_profile.SafeCommandProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/command/safe_profile.py:4`
 - role: Bottom rung of the command posture ladder: reads only at the member surface.
-- responsibilities: `keep the main frame/conduit/spell enablement surfaces available`, `limit member operations to read-only access`
+- responsibilities:
+  - keep the main frame/conduit/spell enablement surfaces available
+  - limit member operations to read-only access
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19265,7 +20813,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py:20`
 - extends: `Cleanable`
 - role: Composed ACL profile pairing reusable family profiles with local override rulesets.
-- responsibilities: `references shared view, command, and codegen base profiles`, `owns detached family-specific override rulesets for one composed bundle`
+- responsibilities:
+  - references shared view, command, and codegen base profiles
+  - owns detached family-specific override rulesets for one composed bundle
 - owns_state: `_view_profile`, `_command_profile`, `_codegen_profile`, `_view_override_ruleset`, `_command_override_ruleset`, `_codegen_override_ruleset`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `codegen_override_ruleset`, `codegen_profile`, `command_override_ruleset`, `command_profile`, `id`, `name`, `version`, `view_override_ruleset`, `view_profile`
@@ -19316,7 +20866,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py:8`
 - extends: `Cleanable`
 - role: Typed ACL rule object.
-- responsibilities: `stores one rule name, operation, effect, and detached conditions payload`
+- responsibilities:
+  - stores one rule name, operation, effect, and detached conditions payload
 - owns_state: `_rule_name`, `_operation`, `_effect`, `_conditions`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `conditions`, `effect`, `from_json_dict`, `id`, `operation`, `rule_name`, `to_json_dict`
@@ -19358,7 +20909,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_ruleset.py:9`
 - extends: `Cleanable`
 - role: Named collection of typed ACL rules.
-- responsibilities: `stores FrameACLRule objects by rule_name`, `cleans and replaces rules inside one owned ruleset registry`
+- responsibilities:
+  - stores FrameACLRule objects by rule_name
+  - cleans and replaces rules inside one owned ruleset registry
 - owns_state: `_name`, `_rules_by_name`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `from_json_dict`, `get_required_rule`, `id`, `list_rule_names`, `name`, `register_rule`, `remove_rule`, `rules_by_name`, `to_json_dict`
@@ -19404,7 +20957,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py:11`
 - extends: `Cleanable`
 - role: Reusable typed view-profile ruleset bundle.
-- responsibilities: `owns frame, conduit, spell, and member view rulesets`, `carries required Nexus dataset and minimum spell-payload floors`
+- responsibilities:
+  - owns frame, conduit, spell, and member view rulesets
+  - carries required Nexus dataset and minimum spell-payload floors
 - owns_state: `_required_nexus_label`, `_required_nexus_version`, `_minimum_spell_payload_type`, `_minimum_spell_payload_version`, `_frame_ruleset`, `_conduit_ruleset`, `_spell_ruleset`, `_member_ruleset`
 - phases: `runtime`, `cleanup`
 - public methods: `build_rule`, `build_ruleset`, `cleanup`, `coerce_ruleset`, `conduit_ruleset`, `create_default`, `create_hybrid`, `create_permissive`, `create_precision`, `create_safe`, `frame_ruleset`, `id` (+9 more)
@@ -19455,7 +21010,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile_builder.py:29`
 - extends: `Cleanable`
 - role: Registry-backed builder for reusable view ACL profiles.
-- responsibilities: `owns the reusable view-profile strategy registry`, `loads the standard safe, hybrid, permissive, and precision view strategies`, `builds fresh FrameACLViewProfile instances from the selected strategy`
+- responsibilities:
+  - owns the reusable view-profile strategy registry
+  - loads the standard safe, hybrid, permissive, and precision view strategies
+  - builds fresh FrameACLViewProfile instances from the selected strategy
 - owns_state: `_id`, `_strategies_by_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `build_profile`, `cleanup`, `get_required_strategy`, `id`, `list_strategy_names`, `load_defaults`, `register_strategy`
@@ -19500,7 +21058,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.hybrid_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py:1`
 - role: Factory module for reusable hybrid view ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `HybridViewProfileStrategy` (class)
@@ -19508,7 +21067,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.hybrid_profile.HybridViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py:4`
 - role: Middle rung of the view posture ladder, between safe and permissive.
-- responsibilities: `allow the main frame/conduit/spell payloads plus selected profile information`, `still deny the more aggressive dynamic and instance-member surfaces`
+- responsibilities:
+  - allow the main frame/conduit/spell payloads plus selected profile information
+  - still deny the more aggressive dynamic and instance-member surfaces
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19542,7 +21103,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.permissive_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py:1`
 - role: Factory module for reusable permissive view ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `PermissiveViewProfileStrategy` (class)
@@ -19550,7 +21112,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.permissive_profile.PermissiveViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py:4`
 - role: Top standard rung of the view posture ladder: adds the dynamic and instance-member visibility the stricter rungs deny.
-- responsibilities: `keep the main frame/conduit/spell surfaces visible`, `allow instance-member and dynamic-access visibility`
+- responsibilities:
+  - keep the main frame/conduit/spell surfaces visible
+  - allow instance-member and dynamic-access visibility
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19584,7 +21148,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.precision`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/precision.py:1`
 - role: Factory module for reusable precision view ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `PrecisionViewProfileStrategy` (class)
@@ -19592,7 +21157,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/precision.py:4`
 - role: The enumerate-exactly view posture, deliberately outside the safe/hybrid/permissive ordering.
-- responsibilities: `build the precision view profile from explicitly-enumerated allowances`, `exist for operators who enumerate what is permitted instead of picking a tier`
+- responsibilities:
+  - build the precision view profile from explicitly-enumerated allowances
+  - exist for operators who enumerate what is permitted instead of picking a tier
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19626,7 +21193,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.safe_profile`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/safe_profile.py:1`
 - role: Factory module for reusable safe view ACL profile.
-- responsibilities: `constructs one reusable ACL profile variant`
+- responsibilities:
+  - constructs one reusable ACL profile variant
 - phases: `runtime`
 
 #### `SafeViewProfileStrategy` (class)
@@ -19634,7 +21202,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy`
 - defined at: `src/melder/nexus/acl/configurations/profiles/view/safe_profile.py:4`
 - role: Bottom rung of the view posture ladder: the core surfaces visible, introspection closed.
-- responsibilities: `keep the main frame/conduit/spell surfaces visible`, `deny policy, peer-link, class-profile, callable-profile, instance-member and other introspection-heavy surfaces`
+- responsibilities:
+  - keep the main frame/conduit/spell surfaces visible
+  - deny policy, peer-link, class-profile, callable-profile, instance-member and other introspection-heavy surfaces
 - phases: `init`
 - public methods: `build`, `name`
 
@@ -19675,7 +21245,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/frame_acl_compiled_access_surface.py:8`
 - extends: `Cleanable`
 - role: Derived consumer-facing ACL access surface for one frame.
-- responsibilities: `stores derived visibility and command enablement answers`, `stores visible conduit and spell payload-section maps`, `carries the compiled profile/config identity for one frame`
+- responsibilities:
+  - stores derived visibility and command enablement answers
+  - stores visible conduit and spell payload-section maps
+  - carries the compiled profile/config identity for one frame
 - owns_state: `_allowed_kinds`, `_allowed_commands`, `_frame_payload_fields`, `_visible_conduit_ids`, `_visible_spell_keys`, `_enabled_conduit_ids`, `_enabled_spell_index_ids`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `allowed_commands`, `allowed_import_module_roots`, `allowed_kinds`, `cleanup`, `codegen_dunder_access_allowed`, `codegen_imports_enabled`, `codegen_profile_name`, `codegen_profile_version`, `codegen_recursive_codegen_allowed`, `codegen_unsafe_reflection_allowed`, `command_frame_enabled`, `conduit_payload_sections_by_id` (+14 more)
@@ -19715,7 +21288,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/frame_acl_compiler.py:17`
 - extends: `Cleanable`
 - role: Compiler from descriptor truth and typed ACL config into a consumer-facing access surface.
-- responsibilities: `compiles typed ACL configuration against descriptor truth`, `derives visible and enabled access sets`, `creates the consumer-facing compiled access surface`
+- responsibilities:
+  - compiles typed ACL configuration against descriptor truth
+  - derives visible and enabled access sets
+  - creates the consumer-facing compiled access surface
 - owns_state: `_profile_builder`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `compile_frame_access_surface`
@@ -19764,7 +21340,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/frame_acl_configuration.py:52`
 - extends: `Cleanable`
 - role: Typed frame-local ACL bundle.
-- responsibilities: `holds typed view, command, and codegen ACL configuration for one frame`, `preserves bundle identity and linked-history metadata`
+- responsibilities:
+  - holds typed view, command, and codegen ACL configuration for one frame
+  - preserves bundle identity and linked-history metadata
 - owns_state: `_view_configuration`, `_command_configuration`, `_codegen_configuration`, `_configuration_id`, `_previous_configuration_id`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `codegen_configuration`, `command_configuration`, `configuration_id`, `create_default`, `create_from_selected_configurations`, `create_new_from_acl_configuration`, `created_at`, `finalize`, `frame_name`, `from_json_configuration_string`, `locked` (+12 more)
@@ -19807,7 +21385,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/frame_acl_configuration_chain.py:23`
 - extends: `Cleanable`
 - role: Named revision chain for one ACL configuration family.
-- responsibilities: `owns one family/name lineage of configuration revisions`, `tracks head and current configuration selection across retained history`
+- responsibilities:
+  - owns one family/name lineage of configuration revisions
+  - tracks head and current configuration selection across retained history
 - owns_state: `_family_name`, `_contract_name`, `_head_configuration_id`, `_current_configuration_id`, `_configurations_by_id`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `contract_name`, `count_configurations`, `create_new_from_acl_configuration`, `current_configuration_id`, `family_name`, `get_configuration`, `get_current_configuration`, `get_head_configuration`, `has_configuration`, `head_configuration_id`, `history_limit` (+6 more)
@@ -19857,7 +21437,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/frame_acl_container.py:41`
 - extends: `Cleanable`
 - role: Frame-local ACL subsystem container.
-- responsibilities: `owns separate named ACL chains for view, command, and codegen`, `owns frame-local ACL builder and validator services`, `assembles selected ACL bundle snapshots for one frame`
+- responsibilities:
+  - owns separate named ACL chains for view, command, and codegen
+  - owns frame-local ACL builder and validator services
+  - assembles selected ACL bundle snapshots for one frame
 - owns_state: `_view_configuration_chains_by_name`, `_command_configuration_chains_by_name`, `_codegen_configuration_chains_by_name`, `_frame_acl_validator`, `_frame_acl_set_compatibility_validator`, `_frame_acl_builder`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `build_selected_configuration`, `cleanup`, `codegen_chain_names`, `command_chain_names`, `create_new_from_codegen_configuration`, `create_new_from_command_configuration`, `create_new_from_view_configuration`, `frame_acl_builder`, `frame_acl_configuration`, `frame_acl_profile_builder`, `frame_acl_set_compatibility_validator`, `frame_acl_validator` (+22 more)
@@ -19917,7 +21500,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_report.py:8`
 - extends: `Cleanable`
 - role: Detached compatibility-validation report for one ACL bundle.
-- responsibilities: `stores warning and error messages for one selected frame ACL configuration bundle`
+- responsibilities:
+  - stores warning and error messages for one selected frame ACL configuration bundle
 - owns_state: `_frame_name`, `_configuration_id`, `_warnings`, `_errors`
 - phases: `validation`, `refresh`, `cleanup`
 - public methods: `add_error`, `add_warning`, `cleanup`, `configuration_id`, `errors`, `first_error`, `frame_name`, `has_errors`, `has_warnings`, `warnings`
@@ -19958,7 +21542,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:20`
 - extends: `Cleanable`
 - role: Cross-family ACL bundle compatibility validator.
-- responsibilities: `validates whether selected view, command, and codegen ACL policies are internally coherent`, `produces compatibility reports for one frame ACL bundle`
+- responsibilities:
+  - validates whether selected view, command, and codegen ACL policies are internally coherent
+  - produces compatibility reports for one frame ACL bundle
 - owns_state: `_frame_name`, `_profile_builder`, `_last_report`
 - phases: `validation`, `refresh`, `cleanup`
 - public methods: `cleanup`, `frame_name`, `last_report`, `validate_configuration`
@@ -20006,7 +21592,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/acl/validator/frame_acl_validator.py:61`
 - extends: `Cleanable`
 - role: Frame-scoped ACL validator against descriptor truth.
-- responsibilities: `validates typed ACL configuration for one frame`, `checks descriptor payload contracts against ACL requirements`, `validates selector-aware spell rules against published descriptor records`
+- responsibilities:
+  - validates typed ACL configuration for one frame
+  - checks descriptor payload contracts against ACL requirements
+  - validates selector-aware spell rules against published descriptor records
 - owns_state: `_frame_name`, `_profile_builder`, `_last_validated_configuration_id`
 - phases: `validation`, `refresh`, `cleanup`
 - public methods: `cleanup`, `frame_name`, `last_validated_configuration_id`, `validate_configuration`, `validate_configuration_against_descriptor`
@@ -20047,7 +21636,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.validator.profiles.codegen.precision_strategy`
 - defined at: `src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py:1`
 - role: Validator strategy module for precision codegen-profile configuration.
-- responsibilities: `provides one validator-side profile strategy or helper surface`
+- responsibilities:
+  - provides one validator-side profile strategy or helper surface
 - phases: `validation`, `runtime`
 
 ### Edges out
@@ -20074,7 +21664,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.validator.profiles.codegen.safe_strategy`
 - defined at: `src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py:1`
 - role: Validator strategy module for safe codegen-profile configuration.
-- responsibilities: `provides one validator-side profile strategy or helper surface`
+- responsibilities:
+  - provides one validator-side profile strategy or helper surface
 - phases: `validation`, `runtime`
 
 ### Edges out
@@ -20101,7 +21692,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.validator.profiles.command.precision_strategy`
 - defined at: `src/melder/nexus/acl/validator/profiles/command/precision_strategy.py:1`
 - role: Validator strategy module for precision command-profile configuration.
-- responsibilities: `provides one validator-side profile strategy or helper surface`
+- responsibilities:
+  - provides one validator-side profile strategy or helper surface
 - phases: `validation`, `runtime`
 
 ### Edges out
@@ -20128,7 +21720,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.validator.profiles.command.safe_strategy`
 - defined at: `src/melder/nexus/acl/validator/profiles/command/safe_strategy.py:1`
 - role: Validator strategy module for safe command-profile configuration.
-- responsibilities: `provides one validator-side profile strategy or helper surface`
+- responsibilities:
+  - provides one validator-side profile strategy or helper surface
 - phases: `validation`, `runtime`
 
 ### Edges out
@@ -20155,7 +21748,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.validator.profiles.common`
 - defined at: `src/melder/nexus/acl/validator/profiles/common.py:1`
 - role: Shared no-op helper module for ACL profile validators.
-- responsibilities: `provides one validator-side profile strategy or helper surface`
+- responsibilities:
+  - provides one validator-side profile strategy or helper surface
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/nexus/acl/validator/profiles/common.py -->
@@ -20174,7 +21768,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.validator.profiles.view.precision_strategy`
 - defined at: `src/melder/nexus/acl/validator/profiles/view/precision_strategy.py:1`
 - role: Validator strategy module for precision view-profile configuration.
-- responsibilities: `provides one validator-side profile strategy or helper surface`
+- responsibilities:
+  - provides one validator-side profile strategy or helper surface
 - phases: `validation`, `runtime`
 
 ### Edges out
@@ -20201,7 +21796,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.acl.validator.profiles.view.safe_strategy`
 - defined at: `src/melder/nexus/acl/validator/profiles/view/safe_strategy.py:1`
 - role: Validator strategy module for safe view-profile configuration.
-- responsibilities: `provides one validator-side profile strategy or helper surface`
+- responsibilities:
+  - provides one validator-side profile strategy or helper surface
 - phases: `validation`, `runtime`
 
 ### Edges out
@@ -20228,7 +21824,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.configuration.nexus_configuration`
 - defined at: `src/melder/nexus/configuration/nexus_configuration.py:1`
 - role: Process-wide Nexus governance policy, held apart from per-Rift room semantics.
-- responsibilities: `carry freeze-once process policy for Rift creation and access`
+- responsibilities:
+  - carry freeze-once process policy for Rift creation and access
 - phases: `init`, `runtime`
 
 #### `NexusConfiguration` (class)
@@ -20237,7 +21834,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/configuration/nexus_configuration.py:17`
 - extends: `Cleanable`
 - role: Process-wide configuration for Nexus.
-- responsibilities: `stores typed process-wide Rift creation/access and frame-topology policy`, `freezes into the active Nexus governance surface`
+- responsibilities:
+  - stores typed process-wide Rift creation/access and frame-topology policy
+  - freezes into the active Nexus governance surface
 - owns_state: `_properties`, `available_properties`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `build`, `cleanup`, `emit_configured_twin_when_recording`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `id`, `load_default_dictionary`, `load_recorded_dictionary`, `set_property` (+27 more)
@@ -20282,7 +21881,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.configuration.nexus_frame_mode`
 - defined at: `src/melder/nexus/configuration/nexus_frame_mode.py:1`
 - role: Topology vocabulary for how Nexus-managed frames are allocated to workspaces.
-- responsibilities: `distinguish single / indexed / one_per_workspace allocation`
+- responsibilities:
+  - distinguish single / indexed / one_per_workspace allocation
 - phases: `runtime`
 
 #### `NexusFrameMode` (enum)
@@ -20291,7 +21891,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/configuration/nexus_frame_mode.py:5`
 - markers: `Enum`
 - role: Topology mode enum for Nexus-assigned internal frames.
-- responsibilities: `labels single, indexed, and one-per-workspace Nexus frame allocation modes`
+- responsibilities:
+  - labels single, indexed, and one-per-workspace Nexus frame allocation modes
 - owns_state: `single`, `indexed`, `one_per_workspace`
 - phases: `runtime`
 
@@ -20311,7 +21912,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.configuration.rift_access_mode`
 - defined at: `src/melder/nexus/configuration/rift_access_mode.py:1`
 - role: Policy vocabulary for whether direct Rift lookup requires a token.
-- responsibilities: `gate direct Rift retrieval as open or token_required`
+- responsibilities:
+  - gate direct Rift retrieval as open or token_required
 - phases: `runtime`
 
 #### `RiftAccessMode` (enum)
@@ -20320,7 +21922,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/configuration/rift_access_mode.py:5`
 - markers: `Enum`
 - role: System-level policy enum for direct Rift retrieval.
-- responsibilities: `labels open, token-required, and system-only Rift access modes`
+- responsibilities:
+  - labels open, token-required, and system-only Rift access modes
 - owns_state: `open`, `token_required`, `system_only`
 - phases: `runtime`
 
@@ -20340,7 +21943,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.configuration.rift_configuration`
 - defined at: `src/melder/nexus/configuration/rift_configuration.py:1`
 - role: Per-Rift configuration consumed once to build one live Rift.
-- responsibilities: `capture room posture and gate settings without putting them on the live Rift`, `freeze and be consumed at creation`
+- responsibilities:
+  - capture room posture and gate settings without putting them on the live Rift
+  - freeze and be consumed at creation
 - phases: `init`
 
 #### `RiftConfiguration` (class)
@@ -20349,7 +21954,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/configuration/rift_configuration.py:11`
 - extends: `Cleanable`
 - role: Per-Rift configuration object used to build one live Rift.
-- responsibilities: `stores typed room/runtime defaults for one Rift`, `freezes into a consumed configuration during Rift creation`
+- responsibilities:
+  - stores typed room/runtime defaults for one Rift
+  - freezes into a consumed configuration during Rift creation
 - owns_state: `_properties`, `available_properties`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `build`, `cleanup`, `consumed`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `load_default_dictionary`, `mark_consumed`, `set_property`, `space_type` (+6 more)
@@ -20390,7 +21997,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.configuration.rift_creation_mode`
 - defined at: `src/melder/nexus/configuration/rift_creation_mode.py:1`
 - role: Policy vocabulary for whether Rift creation requires a token.
-- responsibilities: `gate Rift creation as open or token_required`
+- responsibilities:
+  - gate Rift creation as open or token_required
 - phases: `runtime`
 
 #### `RiftCreationMode` (enum)
@@ -20399,7 +22007,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/configuration/rift_creation_mode.py:5`
 - markers: `Enum`
 - role: System-level policy enum for Rift creation/programming.
-- responsibilities: `labels open, token-required, and prebuilt-only Rift creation modes`
+- responsibilities:
+  - labels open, token-required, and prebuilt-only Rift creation modes
 - owns_state: `open`, `token_required`, `prebuilt_only`
 - phases: `runtime`
 
@@ -20419,7 +22028,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.configuration.rift_space_type`
 - defined at: `src/melder/nexus/configuration/rift_space_type.py:1`
 - role: The room-posture vocabulary selecting which primary room a Rift programs.
-- responsibilities: `distinguish static / capability / codegen room behaviour`
+- responsibilities:
+  - distinguish static / capability / codegen room behaviour
 - phases: `runtime`
 
 #### `RiftSpaceType` (enum)
@@ -20428,7 +22038,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/configuration/rift_space_type.py:5`
 - markers: `Enum`
 - role: Enum of supported top-level Rift room types.
-- responsibilities: `labels static, capability, codegen, and legacy dynamic room types`
+- responsibilities:
+  - labels static, capability, codegen, and legacy dynamic room types
 - owns_state: `static`, `capability`, `codegen`, `dynamic`
 - phases: `runtime`
 
@@ -20448,7 +22059,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.configuration.rift_validation_mode`
 - defined at: `src/melder/nexus/configuration/rift_validation_mode.py:1`
 - role: Validation posture vocabulary for Rift codegen and runtime execution.
-- responsibilities: `select strict or relaxed contract enforcement`
+- responsibilities:
+  - select strict or relaxed contract enforcement
 - phases: `runtime`
 
 #### `RiftValidationMode` (enum)
@@ -20457,7 +22069,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/configuration/rift_validation_mode.py:5`
 - markers: `Enum`
 - role: Validation posture enum for Rift execution.
-- responsibilities: `labels strict, relaxed, and unsafe Rift validation modes`
+- responsibilities:
+  - labels strict, relaxed, and unsafe Rift validation modes
 - owns_state: `strict`, `relaxed`, `unsafe`
 - phases: `runtime`
 
@@ -20477,7 +22090,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_acl_manager`
 - defined at: `src/melder/nexus/frame_acl_manager.py:1`
 - role: Owner of every frame-scoped ACL container held by one Nexus.
-- responsibilities: `create containers on demand and expose profile registries`, `propagate frame-level ACL change callbacks back through Nexus`
+- responsibilities:
+  - create containers on demand and expose profile registries
+  - propagate frame-level ACL change callbacks back through Nexus
 - phases: `runtime`, `cleanup`
 
 #### `FrameACLManager` (class)
@@ -20486,7 +22101,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_acl_manager.py:35`
 - extends: `Cleanable`
 - role: Nexus-owned frame ACL container and profile manager.
-- responsibilities: `owns frame ACL containers by frame name`, `owns the frame ACL profile registry and profile builder`, `creates and resolves frame-local ACL builders and containers`, `assembles selected ACL configurations for frames`
+- responsibilities:
+  - owns frame ACL containers by frame name
+  - owns the frame ACL profile registry and profile builder
+  - creates and resolves frame-local ACL builders and containers
+  - assembles selected ACL configurations for frames
 - owns_state: `_frame_acl_containers_by_name`, `_frame_acl_profiles_by_name`, `_frame_acl_profile_builder`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `frame_acl_containers_by_name`, `frame_acl_profile_builder`, `frame_acl_profiles_by_name`, `id`, `version`
@@ -20528,7 +22147,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor.conduit_descriptor_payload`
 - defined at: `src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:1`
 - role: Descriptor-safe conduit payload, kept off the record surface.
-- responsibilities: `carry conduit state, policy and peers without flattening them into ConduitRecord`
+- responsibilities:
+  - carry conduit state, policy and peers without flattening them into ConduitRecord
 - phases: `runtime`
 
 #### `ConduitDescriptorPayload` (class)
@@ -20537,7 +22157,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py:9`
 - extends: `Cleanable`
 - role: Descriptor-safe published conduit payload.
-- responsibilities: `stores published conduit posture and lineage summary values`
+- responsibilities:
+  - stores published conduit posture and lineage summary values
 - owns_state: `conduit_name`, `conduit_state`, `policy`, `peer_conduit_ids`, `parent_conduit_id`, `lineage_depth`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -20571,7 +22192,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor.conduit_record`
 - defined at: `src/melder/nexus/frame_descriptor/conduit_record.py:1`
 - role: Canonical Nexus record for one published conduit.
-- responsibilities: `hold directly targetable conduit identity and lineage`
+- responsibilities:
+  - hold directly targetable conduit identity and lineage
 - phases: `runtime`
 
 #### `ConduitRecord` (class)
@@ -20580,7 +22202,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor/conduit_record.py:9`
 - extends: `Cleanable`
 - role: Canonical Nexus record for one published conduit.
-- responsibilities: `stores published conduit identity and lineage anchor data`, `owns one conduit descriptor payload`
+- responsibilities:
+  - stores published conduit identity and lineage anchor data
+  - owns one conduit descriptor payload
 - owns_state: `conduit_id`, `root_conduit_id`, `frame_name`, `origin_spellbook_id`, `payload`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -20618,7 +22242,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor.frame_descriptor`
 - defined at: `src/melder/nexus/frame_descriptor/frame_descriptor.py:1`
 - role: Per-frame aggregate of Nexus-owned metadata and record indexes.
-- responsibilities: `hold at most one descriptor per frame name`, `index conduit and spell records for that frame`
+- responsibilities:
+  - hold at most one descriptor per frame name
+  - index conduit and spell records for that frame
 - phases: `runtime`, `cleanup`
 
 #### `FrameDescriptor` (class)
@@ -20627,7 +22253,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor/frame_descriptor.py:17`
 - extends: `Cleanable`
 - role: Per-frame Nexus metadata aggregate.
-- responsibilities: `owns frame, conduit, and spell records for one frame`, `stores descriptor-local secondary indexes`, `holds non-owned references to the runtime frame and frame configuration`
+- responsibilities:
+  - owns frame, conduit, and spell records for one frame
+  - stores descriptor-local secondary indexes
+  - holds non-owned references to the runtime frame and frame configuration
 - owns_state: `_frame_overview`, `_nexus_frame_record`, `_conduit_records_by_id`, `_spell_records_by_key`, `_spell_keys_by_conduit_id`, `_spell_keys_by_spellbook_id`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `clear_runtime_publication_state`, `conduit_records_by_id`, `frame_configuration`, `frame_handle`, `frame_name`, `frame_overview`, `remove_conduit_record`, `remove_spell_record`, `set_frame_configuration`, `set_frame_handle`, `set_frame_overview` (+5 more)
@@ -20667,7 +22296,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor.frame_descriptor_payload`
 - defined at: `src/melder/nexus/frame_descriptor/frame_descriptor_payload.py:1`
 - role: Descriptor-safe frame payload, kept off the record surface.
-- responsibilities: `carry posture and topology without flattening them into FrameRecord`
+- responsibilities:
+  - carry posture and topology without flattening them into FrameRecord
 - phases: `runtime`
 
 #### `FrameDescriptorPayload` (class)
@@ -20676,7 +22306,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor/frame_descriptor_payload.py:8`
 - extends: `Cleanable`
 - role: Descriptor-safe published frame payload.
-- responsibilities: `stores published frame posture and topology summary values`
+- responsibilities:
+  - stores published frame posture and topology summary values
 - owns_state: `system_state`, `ai_native_enabled`, `rift_enabled`, `root_conduit_ids`, `cluster_names`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -20710,7 +22341,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor.frame_record`
 - defined at: `src/melder/nexus/frame_descriptor/frame_record.py:1`
 - role: Canonical Nexus record for one AR-publishable frame.
-- responsibilities: `hold frame posture without depending on the live frame object`
+- responsibilities:
+  - hold frame posture without depending on the live frame object
 - phases: `runtime`
 
 #### `FrameRecord` (class)
@@ -20719,7 +22351,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor/frame_record.py:9`
 - extends: `Cleanable`
 - role: Canonical Nexus record for one published frame.
-- responsibilities: `stores published frame identity and frame-level posture`, `owns one frame descriptor payload`
+- responsibilities:
+  - stores published frame identity and frame-level posture
+  - owns one frame descriptor payload
 - owns_state: `frame_name`, `frame_id`, `config_origin_spellbook_id`, `payload`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -20757,7 +22391,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor.spell_descriptor_payload`
 - defined at: `src/melder/nexus/frame_descriptor/spell_descriptor_payload.py:1`
 - role: Descriptor-safe spell payload carrying profiles without live runtime references.
-- responsibilities: `carry binding/resolution profiles as detached data`
+- responsibilities:
+  - carry binding/resolution profiles as detached data
 - phases: `runtime`
 
 #### `SpellDescriptorPayload` (class)
@@ -20766,7 +22401,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor/spell_descriptor_payload.py:85`
 - extends: `Cleanable`
 - role: Descriptor-safe published spell payload.
-- responsibilities: `stores published spell-facing detail without live runtime object references`
+- responsibilities:
+  - stores published spell-facing detail without live runtime object references
 - owns_state: `binding_payload`, `resolution_payload`, `class_profile`, `callable_profile`, `metadata`, `instance_members`, `dynamic_access`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `from_spell_profile`
@@ -20800,7 +22436,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor.spell_record`
 - defined at: `src/melder/nexus/frame_descriptor/spell_record.py:1`
 - role: Canonical Nexus record for one published spell.
-- responsibilities: `hold spell-facing identity without re-reading the owning Spellbook`
+- responsibilities:
+  - hold spell-facing identity without re-reading the owning Spellbook
 - phases: `runtime`
 
 #### `SpellRecord` (class)
@@ -20809,7 +22446,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor/spell_record.py:11`
 - extends: `Cleanable`
 - role: Canonical Nexus record for one published spell.
-- responsibilities: `stores published spell identity, lineage, and provenance`, `owns one spell descriptor payload`
+- responsibilities:
+  - stores published spell identity, lineage, and provenance
+  - owns one spell descriptor payload
 - owns_state: `origin_spellbook_id`, `owner_conduit_id`, `spell_id`, `spell_index_id`, `spell_name`, `payload`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `record_key`
@@ -20847,7 +22486,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.frame_descriptor_manager`
 - defined at: `src/melder/nexus/frame_descriptor_manager.py:1`
 - role: Sole owner of the frame-name to FrameDescriptor registry and canonical record publication.
-- responsibilities: `publish and remove frame, conduit and spell records`, `refresh frame posture before passive publication`
+- responsibilities:
+  - publish and remove frame, conduit and spell records
+  - refresh frame posture before passive publication
 - phases: `runtime`, `cleanup`
 
 #### `FrameDescriptorManager` (class)
@@ -20856,7 +22497,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/frame_descriptor_manager.py:35`
 - extends: `Cleanable`
 - role: Nexus-owned frame descriptor and canonical record manager.
-- responsibilities: `owns frame descriptors by frame name`, `publishes frame, conduit, and spell records`, `owns Nexus-managed frame record creation and lookup`, `refreshes frame posture cache from Aether`
+- responsibilities:
+  - owns frame descriptors by frame name
+  - publishes frame, conduit, and spell records
+  - owns Nexus-managed frame record creation and lookup
+  - refreshes frame posture cache from Aether
 - owns_state: `_frame_descriptors_by_name`, `_aether`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `list_published_frame_names`
@@ -20902,7 +22547,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.nexus`
 - defined at: `src/melder/nexus/nexus.py:1`
 - role: Public singleton AR root owning Rift registry, process policy and Nexus-managed frame topology.
-- responsibilities: `gate Rift creation and direct access`, `own descriptor and ACL managers`, `compile and fan out frame projection sets`
+- responsibilities:
+  - gate Rift creation and direct access
+  - own descriptor and ACL managers
+  - compile and fan out frame projection sets
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 
 #### `Nexus` (class)
@@ -20911,7 +22559,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/nexus.py:61`
 - extends: `Cleanable`
 - role: Public AR root.
-- responsibilities: `creates and registers live Rift instances`, `owns managed Nexus-frame authoring and realization policy`, `owns descriptor publication`, `owns frame ACL management`, `coordinates projection refresh across affected Rifts`
+- responsibilities:
+  - creates and registers live Rift instances
+  - owns managed Nexus-frame authoring and realization policy
+  - owns descriptor publication
+  - owns frame ACL management
+  - coordinates projection refresh across affected Rifts
 - owns_state: `_rifts_by_id`, `_frame_descriptor_manager`, `_frame_acl_manager`, `_frame_manager`, `_rift_gate_controller`, `_configuration`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `add_rift`, `authorize_frame_link_for_rift`, `check_for_aetheric_frame`, `cleanup`, `close_and_wait_rift`, `configuration`, `count_active_rift_threads`, `count_active_rift_threads_total`, `create_frame_projection_sets`, `create_frame_projection_sets_for_rift`, `create_nexus_frame_for_rift`, `create_rift` (+39 more)
@@ -20977,7 +22630,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.nexus_frame_builder`
 - defined at: `src/melder/nexus/nexus_frame_builder.py:1`
 - role: Fluent builder staging one Nexus-managed frame configuration before rooted creation.
-- responsibilities: `default authored frames to dynamic + ai_native + rift_enabled`, `return the rooted conduit rather than the frame`
+- responsibilities:
+  - default authored frames to dynamic + ai_native + rift_enabled
+  - return the rooted conduit rather than the frame
 - phases: `init`
 
 #### `NexusFrameBuilder` (class)
@@ -20986,7 +22641,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/nexus_frame_builder.py:12`
 - extends: `Cleanable`
 - role: Fluent authored-frame builder for Nexus-managed frames.
-- responsibilities: `stages one Nexus-managed frame configuration`, `defaults authored posture to dynamic AI-native Rift-enabled`, `builds detached NexusFrameConfiguration objects`, `delegates rooted creation into NexusFrameManager`
+- responsibilities:
+  - stages one Nexus-managed frame configuration
+  - defaults authored posture to dynamic AI-native Rift-enabled
+  - builds detached NexusFrameConfiguration objects
+  - delegates rooted creation into NexusFrameManager
 - owns_state: `_manager`, `_frame_name`, `_system_state`, `_ai_native_enabled`, `_rift_enabled`, `_metadata`, `_root_conduit_name`
 - phases: `runtime`, `cleanup`
 - public methods: `build`, `cleanup`, `create`, `dynamic_defaults`, `immutable`, `metadata`, `with_root_conduit`
@@ -21026,7 +22685,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.nexus_frame_configuration`
 - defined at: `src/melder/nexus/nexus_frame_configuration.py:1`
 - role: Authored posture and root-conduit bootstrap intent for one Nexus-managed frame.
-- responsibilities: `capture the posture the frame will be created with`
+- responsibilities:
+  - capture the posture the frame will be created with
 - phases: `init`
 
 #### `NexusFrameConfiguration` (class)
@@ -21035,7 +22695,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/nexus_frame_configuration.py:12`
 - extends: `Cleanable`
 - role: Authored configuration snapshot for one Nexus-managed frame before realization.
-- responsibilities: `stores authored Nexus frame posture and root-conduit bootstrap intent`, `enforces the fixed Nexus-managed frame contract: dynamic, AI-native, and Rift-enabled`, `compiles authored posture into AethericFrameConfiguration and SpellbookConfiguration inputs for realization`
+- responsibilities:
+  - stores authored Nexus frame posture and root-conduit bootstrap intent
+  - enforces the fixed Nexus-managed frame contract: dynamic, AI-native, and Rift-enabled
+  - compiles authored posture into AethericFrameConfiguration and SpellbookConfiguration inputs for realization
 - owns_state: `_frame_name`, `_system_state`, `_ai_native_enabled`, `_rift_enabled`, `_immutable`, `_metadata`, `_root_conduit_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `ai_native_enabled`, `cleanup`, `create_dynamic_defaults`, `frame_name`, `id`, `immutable`, `metadata`, `rift_enabled`, `root_conduit_name`, `system_state`, `to_aetheric_frame_configuration`, `to_spellbook_configuration`
@@ -21079,7 +22742,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.nexus_frame_manager`
 - defined at: `src/melder/nexus/nexus_frame_manager.py:1`
 - role: Authoring and topology facade for Nexus-managed frames above the lower Aether frame surface.
-- responsibilities: `own the managed-frame registry and authored metadata`, `enforce single / indexed / one_per_workspace creation rules`
+- responsibilities:
+  - own the managed-frame registry and authored metadata
+  - enforce single / indexed / one_per_workspace creation rules
 - phases: `init`, `runtime`
 
 #### `NexusFrameManager` (class)
@@ -21088,7 +22753,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/nexus_frame_manager.py:20`
 - extends: `Cleanable`
 - role: Nexus-owned manager for authored managed frames.
-- responsibilities: `stores authored Nexus-frame configurations by frame name`, `creates NexusFrameBuilder authoring surfaces`, `realizes rooted conduits for Nexus-managed frames`, `tracks live Nexus-managed frames and their metadata`
+- responsibilities:
+  - stores authored Nexus-frame configurations by frame name
+  - creates NexusFrameBuilder authoring surfaces
+  - realizes rooted conduits for Nexus-managed frames
+  - tracks live Nexus-managed frames and their metadata
 - owns_state: `_nexus_frames_by_name`, `_frame_configurations_by_name`, `_nexus`
 - phases: `runtime`, `cleanup`
 - public methods: `authorize_frame_link_for_rift`, `begin`, `cleanup`, `create`, `create_dynamic_frame`, `create_frame_for_rift`, `exists`, `get_frame_for_rift`, `get_frame_names_to_cleanup_for_removed_rift`, `handle_aether_frame_disposal`, `id`, `list_accessible_frame_names_for_rift` (+2 more)
@@ -21139,7 +22808,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/codegen_system.py:46`
 - extends: `Cleanable`
 - role: Room-owned internal codegen engine.
-- responsibilities: `builds per-call transaction contexts`, `owns validation namespace execution and monitor collaborators`, `validates before execution`, `delegates compile and execute stages for accepted requests`
+- responsibilities:
+  - builds per-call transaction contexts
+  - owns validation namespace execution and monitor collaborators
+  - validates before execution
+  - delegates compile and execute stages for accepted requests
 - owns_state: `_rift`, `_space`, `_validator`, `_validation_reporter`, `_namespace_builder`, `_compiler`, `_executor`, `_monitor`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `codegen_system_id`, `execute_codegen`, `execute_codegen_request`, `owner_space_id`, `report_validation_result`, `validate_codegen`, `validate_codegen_request`
@@ -21205,7 +22878,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py:19`
 - extends: `Cleanable`
 - role: Per-call codegen transaction context.
-- responsibilities: `carries code frame projection and namespace state for one request`, `stores a deterministic code hash and transaction id`, `shares request-local metadata across validation execution and monitoring`
+- responsibilities:
+  - carries code frame projection and namespace state for one request
+  - stores a deterministic code hash and transaction id
+  - shares request-local metadata across validation execution and monitoring
 - owns_state: `_transaction_id`, `_frame_name`, `_code`, `_code_hash`, `_projection`, `_namespace_configuration`, `_namespace`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `code`, `code_hash`, `frame_name`, `metadata`, `namespace`, `namespace_configuration`, `projection`, `set_namespace`, `set_namespace_configuration`, `set_projection`, `transaction_id`
@@ -21246,7 +22922,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py:13`
 - extends: `Cleanable`
 - role: Internal compile stage for codegen execution.
-- responsibilities: `compiles generated Python into an executable code object`, `keeps execution and validation responsibilities out of the compile step`
+- responsibilities:
+  - compiles generated Python into an executable code object
+  - keeps execution and validation responsibilities out of the compile step
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `compile`
 
@@ -21286,7 +22964,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py:8`
 - extends: `Cleanable`
 - role: Execution-layer result for one codegen request.
-- responsibilities: `stores accepted or rejected execution outcome`, `stores runtime result validation issues and runtime error details`
+- responsibilities:
+  - stores accepted or rejected execution outcome
+  - stores runtime result validation issues and runtime error details
 - owns_state: `_accepted`, `_frame_name`, `_reason`, `_validation_issues`, `_runtime_error`, `_result`, `_transaction_id`
 - phases: `runtime`, `cleanup`
 - public methods: `accepted`, `cleanup`, `executed`, `frame_name`, `not_implemented`, `reason`, `result`, `runtime_error`, `runtime_failed`, `to_payload`, `transaction_id`, `validation_failed` (+1 more)
@@ -21327,7 +23007,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py:16`
 - extends: `Cleanable`
 - role: Owner of governed code execution for one codegen request.
-- responsibilities: `executes compiled code against the built namespace`, `returns execution-layer result objects for the request`
+- responsibilities:
+  - executes compiled code against the built namespace
+  - returns execution-layer result objects for the request
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `execute`
 
@@ -21370,7 +23052,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface`
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py:13`
 - role: Runtime wrapper for the internal codegen namespace object.
-- responsibilities: `exposes recursive validate and execute entrypoints without leaking the raw CodegenSystem object`, `applies recursive-codegen permission checks at runtime`, `returns public payload dictionaries instead of internal result objects`
+- responsibilities:
+  - exposes recursive validate and execute entrypoints without leaking the raw CodegenSystem object
+  - applies recursive-codegen permission checks at runtime
+  - returns public payload dictionaries instead of internal result objects
 - owns_state: `_codegen_system`, `_default_frame_name`, `_recursive_codegen_allowed`
 - phases: `runtime`
 - public methods: `execute_codegen`, `validate_codegen`
@@ -21412,7 +23097,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py:13`
 - extends: `Cleanable`
 - role: Live namespace payload for one codegen request.
-- responsibilities: `stores the globals and locals dictionaries used for execution`, `keeps namespace metadata separate from raw execution mappings`, `preserves the configuration that shaped the namespace`
+- responsibilities:
+  - stores the globals and locals dictionaries used for execution
+  - keeps namespace metadata separate from raw execution mappings
+  - preserves the configuration that shaped the namespace
 - owns_state: `_configuration`, `_globals_dict`, `_locals_dict`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `configuration`, `create_placeholder`, `get_result`, `globals_dict`, `locals_dict`, `metadata`
@@ -21453,7 +23141,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py:35`
 - extends: `Cleanable`
 - role: Builder for live codegen namespaces.
-- responsibilities: `owns namespace entry strategies for room workstation command target builtins and control surfaces`, `builds one live namespace from configuration and room collaborators`, `cleans owned strategies on teardown`
+- responsibilities:
+  - owns namespace entry strategies for room workstation command target builtins and control surfaces
+  - builds one live namespace from configuration and room collaborators
+  - cleans owned strategies on teardown
 - owns_state: `_room_objects_strategy`, `_workstation_strategy`, `_command_strategy`, `_target_strategy`, `_builtins_strategy`, `_control_strategy`
 - phases: `runtime`, `cleanup`
 - public methods: `build`, `cleanup`
@@ -21516,7 +23207,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py:8`
 - extends: `Cleanable`
 - role: Namespace exposure policy for one codegen request.
-- responsibilities: `defines which stable room names are exposed`, `stores import and builtin policy for the namespace`, `keeps policy separate from the live namespace object`
+- responsibilities:
+  - defines which stable room names are exposed
+  - stores import and builtin policy for the namespace
+  - keeps policy separate from the live namespace object
 - owns_state: `_frame_name`, `_include_viewer`, `_include_workstation`, `_include_command`, `_include_codegen`, `_imports_enabled`, `_allowed_import_module_roots`, `_denied_import_module_roots`, `_denied_builtin_names`, `_allow_unsafe_reflection`, `_allow_dunder_access`, `_allow_recursive_codegen`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `allow_dunder_access`, `allow_recursive_codegen`, `allow_unsafe_reflection`, `allowed_import_module_roots`, `cleanup`, `create_default`, `denied_builtin_names`, `denied_import_module_roots`, `exposed_names`, `frame_name`, `imports_enabled`, `metadata`
@@ -21557,7 +23251,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py:13`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for Python builtins.
-- responsibilities: `builds the __builtins__ mapping from the current namespace configuration`, `applies the compiled builtin denylist for one request`
+- responsibilities:
+  - builds the __builtins__ mapping from the current namespace configuration
+  - applies the compiled builtin denylist for one request
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -21603,7 +23299,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_command_strategy.py:13`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for the room-facing command surface.
-- responsibilities: `exposes the room-local command object into the codegen namespace when enabled by configuration`
+- responsibilities:
+  - exposes the room-local command object into the codegen namespace when enabled by configuration
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -21649,7 +23346,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py:16`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for the room-owned codegen object.
-- responsibilities: `exposes a CodegenControlSurface as the codegen namespace object when enabled by configuration`
+- responsibilities:
+  - exposes a CodegenControlSurface as the codegen namespace object when enabled by configuration
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -21696,7 +23394,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_room_objects_strategy.py:14`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for stable room/runtime objects.
-- responsibilities: `exposes stable room/runtime objects such as the viewer when enabled by configuration`
+- responsibilities:
+  - exposes stable room/runtime objects such as the viewer when enabled by configuration
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -21742,7 +23441,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_target_strategy.py:13`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for the current room target.
-- responsibilities: `exposes the current workstation target into the namespace while keeping missing-target behavior non-fatal`
+- responsibilities:
+  - exposes the current workstation target into the namespace while keeping missing-target behavior non-fatal
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -21788,7 +23488,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_workstation_strategy.py:13`
 - extends: `Cleanable`
 - role: Namespace exposure strategy for the room-local workstation.
-- responsibilities: `exposes the existing workstation object into the codegen namespace when enabled by configuration`
+- responsibilities:
+  - exposes the existing workstation object into the codegen namespace when enabled by configuration
 - owns_state: `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `build_namespace_entries`, `cleanup`
@@ -21834,7 +23535,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py:19`
 - extends: `Cleanable`
 - role: Room-event publisher for codegen lifecycle signals.
-- responsibilities: `reuses the owning room RiftEventSystem for codegen lifecycle publication`, `emits lightweight validation and execution lifecycle events without retaining history`, `keeps full code bodies out of room events`
+- responsibilities:
+  - reuses the owning room RiftEventSystem for codegen lifecycle publication
+  - emits lightweight validation and execution lifecycle events without retaining history
+  - keeps full code bodies out of room events
 - owns_state: `_lock`, `_space`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `publish_execution_finished`, `publish_execution_started`, `publish_validation_finished`, `publish_validation_started`
@@ -21880,7 +23584,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py:21`
 - extends: `Cleanable`
 - role: Thin room-event monitor for codegen lifecycle publication.
-- responsibilities: `owns one CodegenEventPublisher`, `publishes validation and execution lifecycle events through the room event system`, `avoids owning retained history or workflow state`
+- responsibilities:
+  - owns one CodegenEventPublisher
+  - publishes validation and execution lifecycle events through the room event system
+  - avoids owning retained history or workflow state
 - owns_state: `_event_publisher`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `on_execution_finished`, `on_execution_started`, `on_validation_finished`, `on_validation_started`
@@ -21924,7 +23631,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py:12`
 - extends: `Cleanable`
 - role: Validation payload formatter for codegen results.
-- responsibilities: `formats validator-owned results into the public payload shape`, `does not perform validation itself`
+- responsibilities:
+  - formats validator-owned results into the public payload shape
+  - does not perform validation itself
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `report`
 
@@ -21964,7 +23673,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py:8`
 - extends: `Cleanable`
 - role: Validation-layer result for one codegen request.
-- responsibilities: `stores acceptance state reason and validation issues`, `serializes to the public validation payload shape`
+- responsibilities:
+  - stores acceptance state reason and validation issues
+  - serializes to the public validation payload shape
 - owns_state: `_accepted`, `_frame_name`, `_reason`, `_validation_issues`, `_transaction_id`
 - phases: `validation`, `cleanup`
 - public methods: `accepted`, `cleanup`, `frame_name`, `not_implemented`, `reason`, `syntax_error`, `to_payload`, `transaction_id`, `validation_accepted`, `validation_failed`, `validation_issues`
@@ -22005,7 +23716,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py:36`
 - extends: `Cleanable`
 - role: Root validation orchestrator for one codegen request.
-- responsibilities: `parses generated Python into a syntax tree`, `runs the ordered codegen validation strategy family`, `returns validation results for the request`
+- responsibilities:
+  - parses generated Python into a syntax tree
+  - runs the ordered codegen validation strategy family
+  - returns validation results for the request
 - owns_state: `_ast_structure_strategy`, `_import_policy_strategy`, `_builtin_policy_strategy`, `_name_resolution_strategy`, `_attribute_access_strategy`, `_reflection_policy_strategy`, `_recursive_control_strategy`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22070,7 +23784,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_ast_structure_strategy.py:16`
 - extends: `Cleanable`
 - role: Structural AST validation strategy.
-- responsibilities: `rejects AST shapes outside the governed codegen execution contract before deeper policy checks run`
+- responsibilities:
+  - rejects AST shapes outside the governed codegen execution contract before deeper policy checks run
 - owns_state: `_lock`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22113,7 +23828,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_attribute_access_strategy.py:16`
 - extends: `Cleanable`
 - role: Attribute-access validation strategy.
-- responsibilities: `rejects unsafe dunder attribute access when the selected codegen posture forbids it`
+- responsibilities:
+  - rejects unsafe dunder attribute access when the selected codegen posture forbids it
 - owns_state: `_lock`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22158,7 +23874,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py:16`
 - extends: `Cleanable`
 - role: Builtins-policy validation strategy.
-- responsibilities: `blocks denied builtin usage in the selected codegen posture`
+- responsibilities:
+  - blocks denied builtin usage in the selected codegen posture
 - owns_state: `_lock`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22203,7 +23920,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py:19`
 - extends: `Cleanable`
 - role: Import-policy validation strategy.
-- responsibilities: `validates import statements against the selected codegen posture`
+- responsibilities:
+  - validates import statements against the selected codegen posture
 - owns_state: `_lock`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22248,7 +23966,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py:20`
 - extends: `Cleanable`
 - role: Name-resolution validation strategy.
-- responsibilities: `validates load-time ast.Name usage against the namespace configuration contract`
+- responsibilities:
+  - validates load-time ast.Name usage against the namespace configuration contract
 - owns_state: `_lock`, `_ALWAYS_ALLOWED_NAME_NODES`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22293,7 +24012,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_recursive_control_strategy.py:16`
 - extends: `Cleanable`
 - role: Recursive-codegen validation strategy.
-- responsibilities: `rejects obvious direct recursive codegen calls when recursive execution is denied`
+- responsibilities:
+  - rejects obvious direct recursive codegen calls when recursive execution is denied
 - owns_state: `_lock`, `_RECURSIVE_METHOD_NAMES`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22338,7 +24058,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py:16`
 - extends: `Cleanable`
 - role: Reflection-policy validation strategy.
-- responsibilities: `rejects obvious reflection and introspection helper usage when unsafe reflection is denied`
+- responsibilities:
+  - rejects obvious reflection and introspection helper usage when unsafe reflection is denied
 - owns_state: `_lock`, `_REFLECTION_MODULE_NAMES`, `_REFLECTION_BUILTIN_NAMES`, `_REFLECTION_HELPER_NAMES_BY_MODULE`
 - phases: `validation`, `cleanup`
 - public methods: `cleanup`, `validate`
@@ -22383,7 +24104,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/command_system/capability_command_system.py:6`
 - extends: `CommandSystem`
 - role: Capability-room specialization of the shared command surface.
-- responsibilities: `preserves the shared broad runtime command behavior for CapabilityRiftSpace`, `owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only`
+- responsibilities:
+  - preserves the shared broad runtime command behavior for CapabilityRiftSpace
+  - owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only
 - phases: `runtime`
 - public methods: `count_conduits`, `create_cluster`, `create_lesser_conduit`, `delete_cluster`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_initiated_conduit`, `get_initiated_conduits`, `get_lesser_conduit` (+39 more)
 
@@ -22427,7 +24150,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/command_system/codegen_command_system.py:25`
 - extends: `CommandSystem`
 - role: Codegen-room command facade over the internal engine.
-- responsibilities: `preserves the selected runtime-helper subset for codegen rooms`, `delegates validate and execute requests into the attached CodegenSystem`, `emits full-source codegen room-memory records for top-level codegen actions`, `owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal`
+- responsibilities:
+  - preserves the selected runtime-helper subset for codegen rooms
+  - delegates validate and execute requests into the attached CodegenSystem
+  - emits full-source codegen room-memory records for top-level codegen actions
+  - owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal
 - owns_state: `_codegen_system`
 - phases: `runtime`
 - public methods: `attach_codegen_system`, `cleanup`, `count_conduits`, `execute_codegen`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_links`, `get_spell_in_contracts`, `get_spells_in_contract_by_conduit_name` (+40 more)
@@ -22477,7 +24204,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/command_system/command_system.py:18`
 - extends: `Cleanable`
 - role: Room-local mediated command layer.
-- responsibilities: `resolves room-scoped records and runtime objects`, `executes allowed runtime actions`, `binds command results into the workstation when requested`, `enforces room and ACL posture on command paths`
+- responsibilities:
+  - resolves room-scoped records and runtime objects
+  - executes allowed runtime actions
+  - binds command results into the workstation when requested
+  - enforces room and ACL posture on command paths
 - owns_state: `_id`, `_space`, `_workstation`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id` (+7 more)
@@ -22526,7 +24257,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/command_system/static_command_system.py:12`
 - extends: `CommandSystem`
 - role: Static-room command specialization.
-- responsibilities: `preserves the shared command API while denying topology mutation and direct create-path spell activation`, `restricts spell retrieval to already-live static-compatible spell lifecycles`
+- responsibilities:
+  - preserves the shared command API while denying topology mutation and direct create-path spell activation
+  - restricts spell retrieval to already-live static-compatible spell lifecycles
 - phases: `runtime`, `cleanup`
 - public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id`, `list_supported_command_methods`, `meld_existing_spell`
 
@@ -22569,7 +24302,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_link/frame_link.py:14`
 - extends: `Cleanable`
 - role: View-safe frame target entry.
-- responsibilities: `stores stable identity and metadata for one visible frame-scoped target`, `avoids exposing raw runtime objects through viewer helper surfaces`
+- responsibilities:
+  - stores stable identity and metadata for one visible frame-scoped target
+  - avoids exposing raw runtime objects through viewer helper surfaces
 - owns_state: `_frame_name`, `_source_kind`, `_source_id`, `_display_name`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `display_name`, `frame_name`, `from_view_subject`, `link_id`, `metadata`, `source_id`, `source_kind`
@@ -22611,7 +24346,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_link/frame_link_contract.py:15`
 - extends: `Cleanable`
 - role: Per-frame ACL contract selection for one Rift.
-- responsibilities: `stores selected view, command, and codegen contract names for one frame`, `owns the per-frame contract identity for one Rift/frame pair`
+- responsibilities:
+  - stores selected view, command, and codegen contract names for one frame
+  - owns the per-frame contract identity for one Rift/frame pair
 - owns_state: `_frame_name`, `_selected_contract_names`, `_rift_id`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `clone`, `contract_id`, `describe`, `frame_name`, `get_selected_contract_name`, `get_selected_contract_names`, `metadata`, `rift_id`
@@ -22653,7 +24390,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:48`
 - extends: `Cleanable`
 - role: Projection-backed room viewer asset.
-- responsibilities: `holds the current per-frame projection-set references for the room`, `owns the helper cache for frame, conduit, and spell view surfaces`, `provides the visible frame-local query surface`
+- responsibilities:
+  - holds the current per-frame projection-set references for the room
+  - owns the helper cache for frame, conduit, and spell view surfaces
+  - provides the visible frame-local query surface
 - owns_state: `_projection_sets_by_frame_name`, `_view_multiframe`, `_helper_surfaces_by_frame_name`, `_default_view_frame_name`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `clone`, `compare_conduit_records`, `compare_conduits`, `compare_frame_conduits`, `compare_frame_spells`, `compare_frames`, `compare_frames_brief`, `compare_spell_records`, `compare_spells`, `count_conduit_records`, `count_frames` (+140 more)
@@ -22713,7 +24453,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py:14`
 - extends: `FrameViewer`
 - role: Static-room viewer specialization.
-- responsibilities: `filters spell-facing visibility down to already-live spells`, `rebuilds filtered compiled access surfaces from the base view surface`
+- responsibilities:
+  - filters spell-facing visibility down to already-live spells
+  - rebuilds filtered compiled access surfaces from the base view surface
 - owns_state: `_base_compiled_access_surfaces_by_frame_name`, `_filtered_compiled_access_surfaces_by_frame_name`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `clone`, `from_frame_viewer`, `list_spell_source_ids_for_frame`
@@ -22751,7 +24493,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.rift.frame_viewer.view_action_hooks`
 - defined at: `src/melder/nexus/rift/frame_viewer/view_action_hooks.py:1`
 - role: Shared public view-action hook wrapper surface.
-- responsibilities: `wraps public viewer methods in a shared action-hook boundary`, `provides a no-op action scope when no hook owner is available`
+- responsibilities:
+  - wraps public viewer methods in a shared action-hook boundary
+  - provides a no-op action scope when no hook owner is available
 - phases: `runtime`
 
 <!-- END FILE: src/melder/nexus/rift/frame_viewer/view_action_hooks.py -->
@@ -22777,7 +24521,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_viewer/view_conduit.py:27`
 - extends: `Cleanable`
 - role: Conduit-scoped helper surface for one selected frame view.
-- responsibilities: `returns ACL-filtered conduit links and conduit-aware record views`, `provides conduit-to-spell traversal over the selected frame helper`
+- responsibilities:
+  - returns ACL-filtered conduit links and conduit-aware record views
+  - provides conduit-to-spell traversal over the selected frame helper
 - owns_state: `_frame_view`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `compare_conduits`, `describe_conduit`, `describe_conduit_access_summary`, `describe_conduit_brief`, `describe_conduit_crosswalk`, `describe_conduit_inventory`, `describe_conduit_missing_sections`, `describe_conduit_relationships`, `describe_conduit_topology`, `describe_conduits`, `explain_conduit_access` (+16 more)
@@ -22824,7 +24570,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_viewer/view_frame.py:29`
 - extends: `Cleanable`
 - role: Frame-scoped helper surface for one selected view projection.
-- responsibilities: `converts one descriptor and compiled ACL surface into visible target links and frame summaries`, `returns ACL-filtered frame payload and inventory views`
+- responsibilities:
+  - converts one descriptor and compiled ACL surface into visible target links and frame summaries
+  - returns ACL-filtered frame payload and inventory views
 - owns_state: `_frame_name`, `_frame_descriptor`, `_frame_acl_configuration`, `_compiled_access_surface`, `_default_detail_level`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `describe_frame`, `describe_frame_access_contract`, `describe_frame_brief`, `describe_frame_inventory`, `describe_frame_payload`, `describe_frame_topology`, `describe_missing_surface`, `describe_target_brief`, `describe_target_identity`, `describe_targets`, `describe_visible_collisions` (+21 more)
@@ -22871,7 +24619,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_viewer/view_multiframe.py:25`
 - extends: `Cleanable`
 - role: Cross-frame descriptor helper surface for FrameViewer.
-- responsibilities: `reuses FrameViewer utilities for multi-frame inventory and comparison behavior`, `holds only a borrowed viewer reference`
+- responsibilities:
+  - reuses FrameViewer utilities for multi-frame inventory and comparison behavior
+  - holds only a borrowed viewer reference
 - owns_state: `_viewer`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `compare_conduit_records`, `compare_frame_conduits`, `compare_frame_spells`, `compare_frames`, `compare_frames_brief`, `compare_spell_records`, `count_conduit_records`, `count_frames`, `count_root_conduits`, `count_spell_records`, `count_spellbooks` (+39 more)
@@ -22917,7 +24667,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/frame_viewer/view_spell.py:33`
 - extends: `Cleanable`
 - role: Spell-scoped helper surface for one selected frame view.
-- responsibilities: `returns ACL-filtered spell links and spell descriptions`, `surfaces spell payload, lineage, and comparison behavior through the selected frame helper`, `describe_spell_research joins viewer truth with the research record (residency payload or honest research_available=False)`
+- responsibilities:
+  - returns ACL-filtered spell links and spell descriptions
+  - surfaces spell payload, lineage, and comparison behavior through the selected frame helper
+  - describe_spell_research joins viewer truth with the research record (residency payload or honest research_available=False)
 - owns_state: `_frame_view`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `compare_spells`, `describe_spell`, `describe_spell_access_summary`, `describe_spell_binding`, `describe_spell_brief`, `describe_spell_callable_profile`, `describe_spell_class_profile`, `describe_spell_crosswalk`, `describe_spell_detail`, `describe_spell_dunder_members`, `describe_spell_dynamic_access` (+27 more)
@@ -22966,7 +24719,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/projection/codegen_projection.py:13`
 - extends: `Cleanable`
 - role: Codegen-facing projection for one frame.
-- responsibilities: `holds descriptor truth for later codegen work`, `owns detached ACL configuration for the codegen surface`, `owns detached compiled access surface for the codegen surface`
+- responsibilities:
+  - holds descriptor truth for later codegen work
+  - owns detached ACL configuration for the codegen surface
+  - owns detached compiled access surface for the codegen surface
 - owns_state: `_frame_acl_configuration`, `_compiled_access_surface`, `_frame_descriptor`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `compiled_access_surface`, `frame_acl_configuration`, `frame_descriptor`, `frame_name`, `metadata`
@@ -23009,7 +24765,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/projection/command_projection.py:13`
 - extends: `Cleanable`
 - role: Command-facing projection for one frame.
-- responsibilities: `holds descriptor truth for the command layer`, `owns detached ACL configuration for the command surface`, `owns detached compiled access surface for the command surface`
+- responsibilities:
+  - holds descriptor truth for the command layer
+  - owns detached ACL configuration for the command surface
+  - owns detached compiled access surface for the command surface
 - owns_state: `_frame_acl_configuration`, `_compiled_access_surface`, `_frame_descriptor`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `compiled_access_surface`, `frame_acl_configuration`, `frame_descriptor`, `frame_name`, `metadata`
@@ -23052,7 +24811,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/projection/frame_projection_set.py:13`
 - extends: `Cleanable`
 - role: Owned bundle of view, command, and codegen projections for one frame.
-- responsibilities: `holds the current projection family for one targeted frame`, `owns one generation marker for projection refresh`, `cleans the projection family as one unit`
+- responsibilities:
+  - holds the current projection family for one targeted frame
+  - owns one generation marker for projection refresh
+  - cleans the projection family as one unit
 - owns_state: `_view_projection`, `_command_projection`, `_codegen_projection`, `_generation`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `codegen_projection`, `command_projection`, `frame_name`, `generation`, `metadata`, `view_projection`
@@ -23099,7 +24861,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/projection/view_projection.py:13`
 - extends: `Cleanable`
 - role: Viewer-facing projection for one frame.
-- responsibilities: `holds descriptor truth for the viewer layer`, `owns detached ACL configuration for the view surface`, `owns detached compiled access surface for the view surface`
+- responsibilities:
+  - holds descriptor truth for the viewer layer
+  - owns detached ACL configuration for the view surface
+  - owns detached compiled access surface for the view surface
 - owns_state: `_frame_acl_configuration`, `_compiled_access_surface`, `_frame_descriptor`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `cleanup`, `compiled_access_surface`, `frame_acl_configuration`, `frame_descriptor`, `frame_name`, `metadata`
@@ -23142,7 +24907,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift.py:26`
 - extends: `Cleanable`
 - role: Live AR session object.
-- responsibilities: `owns exactly one primary room`, `stores frame-link contracts for engaged frames`, `owns one RiftGate`, `refreshes room assets from current projection state`
+- responsibilities:
+  - owns exactly one primary room
+  - stores frame-link contracts for engaged frames
+  - owns one RiftGate
+  - refreshes room assets from current projection state
 - owns_state: `_space`, `_frame_link_contracts_by_name`, `_rift_gate`, `_configuration`, `_projection_sets_by_frame_name`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `configuration`, `create_frame_link`, `create_nexus_frame`, `get_frame_link_contract`, `get_frame_viewer`, `get_nexus_frame`, `get_selected_contract_names`, `id`, `is_active`, `is_registered`, `list_accessible_nexus_frame_names` (+11 more)
@@ -23203,7 +24972,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_gate/rift_gate.py:9`
 - extends: `Cleanable`
 - role: Rift-scoped admission and drain gate.
-- responsibilities: `blocks or admits Rift-scoped work`, `tracks in-flight tickets`, `supports terminal close-and-drain behavior`
+- responsibilities:
+  - blocks or admits Rift-scoped work
+  - tracks in-flight tickets
+  - supports terminal close-and-drain behavior
 - owns_state: `_event`, `_tickets`, `_closed`, `enabled`
 - phases: `runtime`, `refresh`, `cleanup`
 - public methods: `active_ticket_count`, `admit`, `admit_ticket`, `cleanup`, `close`, `close_and_wait_until_free`, `entry_mode`, `has_active_tickets`, `is_closed`, `open`, `register_ticket`, `set_entry_mode` (+2 more)
@@ -23246,7 +25018,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py:8`
 - extends: `Cleanable`
 - role: Central registry and control plane for Rift gates.
-- responsibilities: `registers RiftGate instances by Rift id`, `fans out enable and disable operations across Rift gates`, `provides drain and admission-mode control for one or many Rift gates`
+- responsibilities:
+  - registers RiftGate instances by Rift id
+  - fans out enable and disable operations across Rift gates
+  - provides drain and admission-mode control for one or many Rift gates
 - owns_state: `_rift_gates_by_rift_id`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `close_and_wait_until_rift_free`, `count_active_threads_for_rift`, `count_active_threads_total`, `create_rift_gate`, `disable_all`, `disable_all_rift_gates`, `enable_all`, `enable_all_rift_gates`, `get_rift_gate`, `register_rift_gate`, `set_all_rift_gate_entry_mode` (+2 more)
@@ -23288,7 +25063,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_space/capability_rift_space.py:15`
 - extends: `RiftSpace`
 - role: Broad manual non-codegen room specialization.
-- responsibilities: `fixes room kind to capability`, `composes the capability command posture`, `preserves the generic viewer posture and strong-default workstation mode`
+- responsibilities:
+  - fixes room kind to capability
+  - composes the capability command posture
+  - preserves the generic viewer posture and strong-default workstation mode
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `command_system`
 
@@ -23332,7 +25110,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_space/codegen_rift_space.py:17`
 - extends: `RiftSpace`
 - role: Codegen-oriented room specialization.
-- responsibilities: `fixes room kind to codegen`, `owns the internal codegen engine for the room`, `attaches the internal engine to the codegen command facade`
+- responsibilities:
+  - fixes room kind to codegen
+  - owns the internal codegen engine for the room
+  - attaches the internal engine to the codegen command facade
 - owns_state: `_codegen_system`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `codegen_system`, `command_system`
@@ -23379,7 +25160,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.rift.rift_space.event_system.rift_event.RiftEvent`
 - defined at: `src/melder/nexus/rift/rift_space/event_system/rift_event.py:7`
 - role: Immutable emitted event object for RiftSpace.
-- responsibilities: `captures one structured runtime event with copied payload and metadata`, `does not own cleanup or orchestration behavior`
+- responsibilities:
+  - captures one structured runtime event with copied payload and metadata
+  - does not own cleanup or orchestration behavior
 - owns_state: `_event_type`, `_rift_id`, `_space_id`, `_space_kind`, `_frame_name`, `_payload`, `_metadata`
 - phases: `runtime`
 - public methods: `emitted_at`, `event_id`, `event_type`, `frame_name`, `metadata`, `payload`, `rift_id`, `space_id`, `space_kind`
@@ -23413,7 +25196,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py:9`
 - extends: `Cleanable`
 - role: Room-local callback-driven event publisher.
-- responsibilities: `owns the callback registry for one RiftSpace`, `creates and synchronously emits RiftEvent objects`
+- responsibilities:
+  - owns the callback registry for one RiftSpace
+  - creates and synchronously emits RiftEvent objects
 - owns_state: `_rift_id`, `_space_id`, `_space_kind`, `_callbacks_by_subscription_id`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `create_and_emit_event`, `create_event`, `emit_event`, `register_event_callback`, `rift_id`, `space_id`, `space_kind`, `unregister_event_callback`
@@ -23458,7 +25243,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory`
 - defined at: `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py:7`
 - role: Immutable executed-step memory record emitted from RiftSpace.
-- responsibilities: `captures one immutable memory record for a completed Rift-level action`
+- responsibilities:
+  - captures one immutable memory record for a completed Rift-level action
 - owns_state: `_frame_name`, `_action_name`, `_step_counter`, `_epoch_counter`, `_metadata`
 - phases: `runtime`
 - public methods: `action_name`, `created_at`, `epoch_counter`, `frame_name`, `memory_id`, `metadata`, `step_counter`
@@ -23492,7 +25278,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py:10`
 - extends: `Cleanable`
 - role: Locked source of truth for RiftSpace memory sequencing and shared context.
-- responsibilities: `owns step and epoch counters plus shared context metadata`, `produces immutable RiftMemory snapshots for room actions`
+- responsibilities:
+  - owns step and epoch counters plus shared context metadata
+  - produces immutable RiftMemory snapshots for room actions
 - owns_state: `_rift_id`, `_space_type`, `_step_counter`, `_epoch_counter`, `_metadata`, `_memory_callbacks_by_subscription_id`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `clear_context`, `create_and_emit_memory`, `create_memory`, `describe_state`, `emit_memory`, `epoch_counter`, `increment_epoch`, `increment_step`, `memory_enabled`, `register_memory_callback`, `reset_epoch` (+6 more)
@@ -23538,7 +25326,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_space/rift_space.py:25`
 - extends: `Cleanable`
 - role: Room-local workspace object.
-- responsibilities: `owns the room-local viewer asset`, `owns the workstation`, `owns the room-local command system`, `owns room-local event and memory systems`
+- responsibilities:
+  - owns the room-local viewer asset
+  - owns the workstation
+  - owns the room-local command system
+  - owns room-local event and memory systems
 - owns_state: `_frame_viewer`, `_workstation`, `_command_system`, `_event_system`, `_memory_system`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system`, `event_system`, `frame_viewer`, `memory_system`, `metadata`, `owner_rift_id`, `register_action_post_hook`, `register_action_pre_hook`, `register_category_post_hook`, `register_category_pre_hook`, `rift_gate` (+5 more)
@@ -23597,7 +25389,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_space/static_rift_space.py:15`
 - extends: `RiftSpace`
 - role: Lower-risk static room specialization.
-- responsibilities: `fixes room kind to static`, `composes the static command posture`, `uses the static viewer overlay and weak-default workstation posture`
+- responsibilities:
+  - fixes room kind to static
+  - composes the static command posture
+  - uses the static viewer overlay and weak-default workstation posture
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `command_system`
 
@@ -23639,7 +25434,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/nexus/rift/rift_space/workstation.py:11`
 - extends: `Cleanable`
 - role: Room-local binding canvas.
-- responsibilities: `stores bound objects, attributes, and methods`, `tracks one active target`, `supports result rebinding for later room work`
+- responsibilities:
+  - stores bound objects, attributes, and methods
+  - tracks one active target
+  - supports result rebinding for later room work
 - owns_state: `_objects_by_name`, `_attributes_by_name`, `_methods_by_name`, `_active_target_name`
 - phases: `runtime`, `cleanup`
 - public methods: `bind_attribute`, `bind_method`, `bind_object`, `call_target`, `cleanup`, `cleanup_target`, `clear_target`, `describe_bindings`, `get`, `get_target`, `owner_space_id`, `release` (+2 more)
@@ -23675,7 +25473,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.system_document`
 - defined at: `src/melder/system_document.py:1`
 - role: Immutable hardcopy system-document carrier queried directly at the package root.
-- responsibilities: `carry a packaged document without entering the runtime graph`, `render as json or markdown on demand`
+- responsibilities:
+  - carry a packaged document without entering the runtime graph
+  - render as json or markdown on demand
 - phases: `init`, `runtime`
 
 #### `StaticSystemDocument` (class)
@@ -23683,7 +25483,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.system_document.StaticSystemDocument`
 - defined at: `src/melder/system_document.py:19`
 - role: Packaged hardcopy system document object.
-- responsibilities: `stores one minified JSON hardcopy string for a system document`, `renders both JSON and markdown views for agent-facing queries`
+- responsibilities:
+  - stores one minified JSON hardcopy string for a system document
+  - renders both JSON and markdown views for agent-facing queries
 - owns_state: `_document_name`, `_document_json`, `_document_markdown`
 - phases: `init`, `runtime`
 - public methods: `char_count`, `document_name`, `from_markdown`, `head`, `line_count`, `lines`, `reader`, `render_json`, `render_markdown`, `tail`
@@ -23711,7 +25513,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:1`
 - role: Bounded, resumable cursor over large documents for agent consumption.
-- responsibilities: `index a document once and share it across readers`, `let an agent walk in steps it chose the size of`, `report whether more remains`
+- responsibilities:
+  - index a document once and share it across readers
+  - let an agent walk in steps it chose the size of
+  - report whether more remains
 - phases: `runtime`
 
 #### `ReaderPolicy` (class)
@@ -23719,7 +25524,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader.ReaderPolicy`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:69`
 - role: Fixed bounds and defaults for the reader, held as class constants rather than module globals.
-- responsibilities: `carry chunk-size and budget defaults`
+- responsibilities:
+  - carry chunk-size and budget defaults
 - phases: `runtime`
 
 #### `TextChunk` (record)
@@ -23728,7 +25534,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:119`
 - markers: `NamedTuple`
 - role: One bounded read result plus everything needed to decide what to do next.
-- responsibilities: `report what was read, from where, and whether more remains`
+- responsibilities:
+  - report what was read, from where, and whether more remains
 - phases: `runtime`
 
 #### `IndexedText` (class)
@@ -23736,7 +25543,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:170`
 - role: An immutable document plus its line-offset index, shared across readers.
-- responsibilities: `pay the indexing cost once per document`, `serve any number of concurrent readers`
+- responsibilities:
+  - pay the indexing cost once per document
+  - serve any number of concurrent readers
 - phases: `init`, `runtime`
 - public methods: `char_count`, `head`, `line_count`, `line_of_offset`, `line_start`, `line_text`, `lines_text`, `reader`, `split_lines`, `tail`, `text`
 
@@ -23745,7 +25554,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader`
 - defined at: `src/melder/utilities/ai_native_support_tools/agent_text_reader.py:585`
 - role: Resumable budget-bounded cursor over one IndexedText.
-- responsibilities: `walk a document in caller-chosen steps`, `remember position between calls`
+- responsibilities:
+  - walk a document in caller-chosen steps
+  - remember position between calls
 - phases: `runtime`
 - public methods: `char_target`, `current_line`, `current_offset`, `document`, `exhausted`, `head`, `line_target`, `peek`, `read`, `remaining_chars`, `remaining_lines`, `reset` (+6 more)
 
@@ -23778,7 +25589,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.ai_native_support_tools.protocol_crafter`
 - defined at: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py:1`
 - role: Protocol generation and bounded protocol-block maintenance inside interface files.
-- responsibilities: `generate protocol code from a class or object`, `WRITES TO DISK - the unusual capability in this package`
+- responsibilities:
+  - generate protocol code from a class or object
+  - WRITES TO DISK - the unusual capability in this package
 - phases: `runtime`
 
 #### `ProtocolCrafter` (class)
@@ -23787,7 +25600,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py:21`
 - extends: `Cleanable`
 - role: AI-native support utility for protocol generation and interface-file maintenance.
-- responsibilities: `generates runtime-checkable protocol code from reflected classes or concrete objects`, `builds protocol-module source from parsed class ASTs including joined shared-surface protocols`, `appends and removes bounded protocol blocks inside interface files without broad file refactors`
+- responsibilities:
+  - generates runtime-checkable protocol code from reflected classes or concrete objects
+  - builds protocol-module source from parsed class ASTs including joined shared-surface protocols
+  - appends and removes bounded protocol blocks inside interface files without broad file refactors
 - owns_state: `_id`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_protocol_to_interface_file`, `cleanup`, `craft_joined_protocol_module_code`, `craft_protocol_code`, `craft_protocol_module_code_from_source_file`, `id`, `remove_protocol_from_interface_file`, `write_joined_protocol_module`, `write_protocol_module_from_source_file`
@@ -23842,7 +25658,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:81`
 - markers: `NamedTuple`
 - role: One addressable span of a system document, keyed by heading path or by repository-relative source path depending on the document's addressing scheme.
-- responsibilities: `carry the addressing key plus first and last line of the span`
+- responsibilities:
+  - carry the addressing key plus first and last line of the span
 - phases: `runtime`
 
 #### `SearchHit` (record)
@@ -23851,7 +25668,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:131`
 - markers: `NamedTuple`
 - role: One section whose BODY matches a search term, with a ranking signal attached.
-- responsibilities: `carry the section key, usable directly with get()`, `carry the match count - a section mentioning a term twenty times is usually the one wanted`
+- responsibilities:
+  - carry the section key, usable directly with get()
+  - carry the match count - a section mentioning a term twenty times is usually the one wanted
 - phases: `runtime`
 
 #### `Group` (record)
@@ -23860,7 +25679,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:160`
 - markers: `NamedTuple`
 - role: A cluster of sections sharing a prefix, so a caller can see the cost of reading a whole group before asking for it.
-- responsibilities: `carry the prefix - a directory path under source_path addressing, a top-level heading under section addressing`, `carry the section count and their combined line count`
+- responsibilities:
+  - carry the prefix - a directory path under source_path addressing, a top-level heading under section addressing
+  - carry the section count and their combined line count
 - phases: `runtime`
 
 #### `Edge` (record)
@@ -23869,7 +25690,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:185`
 - markers: `NamedTuple`
 - role: One outbound relationship between two graph nodes, as resolved at build time.
-- responsibilities: `carry source, relation, target, cardinality and the rest of the edge's authored shape`
+- responsibilities:
+  - carry source, relation, target, cardinality and the rest of the edge's authored shape
 - phases: `runtime`
 
 #### `Impact` (record)
@@ -23885,7 +25707,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:260`
 - markers: `NamedTuple`
 - role: One graph node; its `source` path is also its section key in __graph_details__, which is the join between the two graph views.
-- responsibilities: `carry node_id, source path, bare name and kind`
+- responsibilities:
+  - carry node_id, source path, bare name and kind
 - phases: `runtime`
 
 #### `SystemDocumentView` (class)
@@ -23893,7 +25716,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView`
 - defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:293`
 - role: An indexed, sliceable view over one shipped system document - a document an agent can interrogate rather than one it must consume.
-- responsibilities: `state every bound up front through index(), so every read is bounded`, `look sections up exactly by key, with find() covering the substring case`, `RAISE when slicing an unavailable document - a silent empty slice reads exactly like a section that says nothing`, `stay immutable and shared`
+- responsibilities:
+  - state every bound up front through index(), so every read is bounded
+  - look sections up exactly by key, with find() covering the substring case
+  - RAISE when slicing an unavailable document - a silent empty slice reads exactly like a section that says nothing
+  - stay immutable and shared
 - phases: `runtime`
 - public methods: `addressing`, `available`, `char_count`, `cite`, `content_sha256`, `document_name`, `find`, `get`, `groups`, `head`, `index`, `keys` (+14 more)
 
@@ -23903,7 +25730,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:958`
 - extends: `SystemDocumentView`
 - role: A document view that is also a walkable graph; backs __graph_network__ and __graph_details__ over the same document.
-- responsibilities: `add build-time adjacency so a node's neighbours are a dict lookup rather than a parse`, `import the adjacency module on FIRST graph access, never at construction - a process that never walks pays nothing`
+- responsibilities:
+  - add build-time adjacency so a node's neighbours are a dict lookup rather than a parse
+  - import the adjacency module on FIRST graph access, never at construction - a process that never walks pays nothing
 - phases: `runtime`
 - public methods: `describe`, `details_key`, `edge_count`, `edges_from`, `edges_to`, `find_nodes`, `impact`, `neighbors`, `node`, `node_at`, `node_count`, `node_ids` (+3 more)
 
@@ -23946,7 +25775,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.caching_system.asset_cache`
 - defined at: `src/melder/utilities/caching_system/asset_cache.py:1`
 - role: Shared hydration lane taking a committed build manifest into a hot per-interpreter cache.
-- responsibilities: `treat the committed manifest as truth and the cache as an accelerator`
+- responsibilities:
+  - treat the committed manifest as truth and the cache as an accelerator
 - phases: `init`, `runtime`
 
 #### `AssetCachePolicy` (class)
@@ -23954,7 +25784,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.caching_system.asset_cache.AssetCachePolicy`
 - defined at: `src/melder/utilities/caching_system/asset_cache.py:85`
 - role: Fixed values for the asset cache, held as class constants per the module-scope rule.
-- responsibilities: `carry cache location and naming policy`
+- responsibilities:
+  - carry cache location and naming policy
 - phases: `init`
 
 <!-- END FILE: src/melder/utilities/caching_system/asset_cache.py -->
@@ -23973,7 +25804,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.caching_system.caching_system`
 - defined at: `src/melder/utilities/caching_system/caching_system.py:1`
 - role: Conduit-scoped cache file persistence owned by the runtime.
-- responsibilities: `own cache-file lifecycle so a user never registers one`
+- responsibilities:
+  - own cache-file lifecycle so a user never registers one
 - phases: `runtime`, `cleanup`
 
 #### `CachingSystem` (class)
@@ -23982,7 +25814,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/caching_system/caching_system.py:15`
 - extends: `Cleanable`
 - role: Conduit-scoped cache persistence utility.
-- responsibilities: `owns one rooted-conduit cache file and its in-memory spell-payload dictionary`, `loads, normalizes, mutates, and emits marshal-backed spell payload bundles`, `supports spell-payload transfer and persistence for the spellbook/runtime cache lane`
+- responsibilities:
+  - owns one rooted-conduit cache file and its in-memory spell-payload dictionary
+  - loads, normalizes, mutates, and emits marshal-backed spell payload bundles
+  - supports spell-payload transfer and persistence for the spellbook/runtime cache lane
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `has_spell_payload`, `remove_spell_payload`, `spell_payloads`, `transfer_spell_payload_to`, `upsert_spell_payload`
@@ -24026,7 +25861,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.dead_reference_error`
 - defined at: `src/melder/utilities/custom_exceptions/dead_reference_error.py:1`
 - role: Raised when a weak referent is requested after collection, turning a silent None into a failure at the point of use.
-- responsibilities: `fail loudly instead of returning None for a collected referent`
+- responsibilities:
+  - fail loudly instead of returning None for a collected referent
 - phases: `runtime`
 
 #### `DeadReferenceError` (class)
@@ -24035,7 +25871,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/dead_reference_error.py:4`
 - extends: `ReferenceError`
 - role: Exception for dereferencing a dead weak reference.
-- responsibilities: `signals attempts to access a dead weak reference`
+- responsibilities:
+  - signals attempts to access a dead weak reference
 - phases: `runtime`
 
 ### Edges out
@@ -24060,7 +25897,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.empty_error`
 - defined at: `src/melder/utilities/custom_exceptions/empty_error.py:1`
 - role: Raised when an operation required at least one item and the container was empty.
-- responsibilities: `signal emptiness where emptiness is the contract violation`
+- responsibilities:
+  - signal emptiness where emptiness is the contract violation
 - phases: `runtime`
 
 #### `Empty` (class)
@@ -24069,7 +25907,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/empty_error.py:1`
 - markers: `Exception`
 - role: Generic empty-state exception.
-- responsibilities: `signals unexpected empty-state conditions`
+- responsibilities:
+  - signals unexpected empty-state conditions
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/empty_error.py -->
@@ -24088,7 +25927,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.hook_execution_error`
 - defined at: `src/melder/utilities/custom_exceptions/hook_execution_error.py:1`
 - role: Raised when a user-supplied lifecycle hook fails during melding, carrying which hook failed and why.
-- responsibilities: `separate user hook failure from runtime failure`, `preserve the identity of the failing hook`
+- responsibilities:
+  - separate user hook failure from runtime failure
+  - preserve the identity of the failing hook
 - phases: `runtime`
 
 #### `HookExecutionError` (class)
@@ -24097,7 +25938,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/hook_execution_error.py:1`
 - markers: `Exception`
 - role: Exception for lifecycle hook failures.
-- responsibilities: `signals failures while running configured hooks`
+- responsibilities:
+  - signals failures while running configured hooks
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/hook_execution_error.py -->
@@ -24116,7 +25958,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.internal_registration_error`
 - defined at: `src/melder/utilities/custom_exceptions/internal_registration_error.py:1`
 - role: Raised when code attempts to bind a Melder-owned object that the internal manifest reserves.
-- responsibilities: `give the bind guard one stable refusal type`
+- responsibilities:
+  - give the bind guard one stable refusal type
 - phases: `init`, `runtime`
 
 #### `InternalRegistrationError` (class)
@@ -24125,7 +25968,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/internal_registration_error.py:4`
 - markers: `RuntimeError`
 - role: Exception raised when internal Melder objects are registered as spells.
-- responsibilities: `signals forbidden registration of internal control-plane objects`
+- responsibilities:
+  - signals forbidden registration of internal control-plane objects
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/internal_registration_error.py -->
@@ -24144,7 +25988,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.meld_execution_error`
 - defined at: `src/melder/utilities/custom_exceptions/meld_execution_error.py:1`
 - role: Single stable failure type for DAG-based meld execution, so the Conduit/Meld boundary has one resolution-failed signal.
-- responsibilities: `collapse many low-level failures into one boundary error`, `keep callers from catching a dozen leaked exception types`
+- responsibilities:
+  - collapse many low-level failures into one boundary error
+  - keep callers from catching a dozen leaked exception types
 - phases: `runtime`
 
 #### `MeldExecutionError` (class)
@@ -24153,7 +25999,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/meld_execution_error.py:5`
 - markers: `RuntimeError`
 - role: Runtime exception for meld execution failures.
-- responsibilities: `captures spell/runtime context for meld execution errors`
+- responsibilities:
+  - captures spell/runtime context for meld execution errors
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/meld_execution_error.py -->
@@ -24172,7 +26019,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.operation_cancelled_error`
 - defined at: `src/melder/utilities/custom_exceptions/operation_cancelled_error.py:1`
 - role: Raised when work stops because cooperative cancellation was observed - an abort, not a failure.
-- responsibilities: `distinguish told-to-stop from something-went-wrong`
+- responsibilities:
+  - distinguish told-to-stop from something-went-wrong
 - phases: `runtime`, `cleanup`
 
 #### `OperationCancelledError` (class)
@@ -24181,7 +26029,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/operation_cancelled_error.py:4`
 - markers: `RuntimeError`
 - role: Exception raised for cooperative cancellation.
-- responsibilities: `signals cancellation through shared cancellation events`
+- responsibilities:
+  - signals cancellation through shared cancellation events
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/operation_cancelled_error.py -->
@@ -24200,7 +26049,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.phase_execution_error`
 - defined at: `src/melder/utilities/custom_exceptions/phase_execution_error.py:1`
 - role: Raised when units inside a scheduled phase fail, aggregating the whole failure set rather than the first error.
-- responsibilities: `carry every failing unit, not just the first`, `abort the resolution pipeline at the phase barrier`
+- responsibilities:
+  - carry every failing unit, not just the first
+  - abort the resolution pipeline at the phase barrier
 - phases: `validation`, `runtime`
 
 #### `PhaseExecutionError` (class)
@@ -24209,7 +26060,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/phase_execution_error.py:7`
 - extends: `PhaseSchedulerError`
 - role: Exception raised when a phase unit fails during execution.
-- responsibilities: `specializes PhaseSchedulerError for unit execution failures`
+- responsibilities:
+  - specializes PhaseSchedulerError for unit execution failures
 - phases: `runtime`
 
 ### Edges out
@@ -24234,7 +26086,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.phase_scheduler_error`
 - defined at: `src/melder/utilities/custom_exceptions/phase_scheduler_error.py:1`
 - role: Base type for phase pipeline failures, so callers can catch the family without enumerating causes.
-- responsibilities: `parent the timeout and execution failure types`
+- responsibilities:
+  - parent the timeout and execution failure types
 - phases: `validation`, `runtime`
 
 #### `PhaseSchedulerError` (class)
@@ -24243,7 +26096,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/phase_scheduler_error.py:4`
 - markers: `RuntimeError`
 - role: Base exception for phase scheduler failures.
-- responsibilities: `acts as the base error family for phase scheduler execution problems`
+- responsibilities:
+  - acts as the base error family for phase scheduler execution problems
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/phase_scheduler_error.py -->
@@ -24262,7 +26116,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.phase_timeout_error`
 - defined at: `src/melder/utilities/custom_exceptions/phase_timeout_error.py:1`
 - role: Raised when a phase's units do not all report before the configured barrier deadline.
-- responsibilities: `distinguish a stalled phase from a failed one`
+- responsibilities:
+  - distinguish a stalled phase from a failed one
 - phases: `validation`, `runtime`
 
 #### `PhaseTimeoutError` (class)
@@ -24271,7 +26126,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/phase_timeout_error.py:5`
 - extends: `PhaseSchedulerError`
 - role: Exception raised when a scheduler phase times out.
-- responsibilities: `specializes PhaseSchedulerError for barrier timeout failures`
+- responsibilities:
+  - specializes PhaseSchedulerError for barrier timeout failures
 - phases: `runtime`
 
 ### Edges out
@@ -24296,7 +26152,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.spell_space_scope_error`
 - defined at: `src/melder/utilities/custom_exceptions/spell_space_scope_error.py:1`
 - role: Raised when a SpellSpace scoping rule is violated - a lifetime or ownership failure, not a generic runtime error.
-- responsibilities: `refuse unique_per_spell_space resolution with no active spellspace`, `refuse use of a spellspace that is not the active scope`
+- responsibilities:
+  - refuse unique_per_spell_space resolution with no active spellspace
+  - refuse use of a spellspace that is not the active scope
 - phases: `runtime`
 
 #### `SpellSpaceScopeError` (class)
@@ -24305,7 +26163,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/spell_space_scope_error.py:5`
 - markers: `RuntimeError`
 - role: Exception raised for missing spell-space scope.
-- responsibilities: `signals illegal spellspace-scoped execution without an active spell space`
+- responsibilities:
+  - signals illegal spellspace-scoped execution without an active spell space
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/spell_space_scope_error.py -->
@@ -24324,7 +26183,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.custom_exceptions.spellbook_validation_error`
 - defined at: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:1`
 - role: Raised when spellbook validation finds broken spells, preserving per-spell context for remediation.
-- responsibilities: `surface phase 1-4 breakage at conjure`, `keep per-spell detail attached for the fix`
+- responsibilities:
+  - surface phase 1-4 breakage at conjure
+  - keep per-spell detail attached for the fix
 - phases: `validation`
 
 #### `SpellbookValidationError` (class)
@@ -24333,7 +26194,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:8`
 - markers: `RuntimeError`
 - role: Exception raised for spellbook validation failures.
-- responsibilities: `signals fatal spellbook validation failures`
+- responsibilities:
+  - signals fatal spellbook validation failures
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/spellbook_validation_error.py -->
@@ -24352,7 +26214,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:1`
 - role: Thread-safe dictionary holding values weakly, with live dynamic views.
-- responsibilities: `store values as weak nodes and dereference lazily`, `expose keys/items/values views that snapshot through the parent`
+- responsibilities:
+  - store values as weak nodes and dereference lazily
+  - expose keys/items/values views that snapshot through the parent
 - phases: `runtime`, `cleanup`
 
 #### `_WeakDictKeysView` (class)
@@ -24361,7 +26225,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:69`
 - extends: `Collection`
 - role: Dynamic keys view over the live-key surface of a WeakConcurrentDict.
-- responsibilities: `mirror dict_keys while snapshotting through the parent`
+- responsibilities:
+  - mirror dict_keys while snapshotting through the parent
 - phases: `runtime`
 
 #### `_WeakDictItemsView` (class)
@@ -24370,7 +26235,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:141`
 - extends: `Collection`
 - role: Dynamic items view dereferencing weak values lazily.
-- responsibilities: `mirror dict_items over weakly-held values`
+- responsibilities:
+  - mirror dict_items over weakly-held values
 - phases: `runtime`
 
 #### `_WeakDictValuesView` (class)
@@ -24379,7 +26245,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:220`
 - extends: `Collection`
 - role: Dynamic values view dereferencing weak nodes on iteration.
-- responsibilities: `mirror dict_values over weakly-held values`
+- responsibilities:
+  - mirror dict_values over weakly-held values
 - phases: `runtime`
 
 #### `WeakConcurrentDict` (class)
@@ -24389,7 +26256,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `Generic`
 - role: Concurrent weak-key dictionary.
-- responsibilities: `stores weakly referenced keys in a concurrent dictionary-like container`
+- responsibilities:
+  - stores weakly referenced keys in a concurrent dictionary-like container
 - phases: `runtime`, `cleanup`
 - public methods: `auto_prune`, `auto_prune`, `batch_update`, `cleanup`, `clear`, `copy`, `filter`, `freeze`, `fromkeys`, `get`, `id`, `is_frozen` (+12 more)
 
@@ -24431,7 +26299,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_list`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py:1`
 - role: Thread-safe list-like container holding weak references rather than strong ones.
-- responsibilities: `let elements be collected without the container extending their life`
+- responsibilities:
+  - let elements be collected without the container extending their life
 - phases: `runtime`, `cleanup`
 
 #### `WeakConcurrentList` (class)
@@ -24441,7 +26310,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `Generic`
 - role: Concurrent weak-reference list.
-- responsibilities: `stores weakly referenced items in a list-like concurrent container`
+- responsibilities:
+  - stores weakly referenced items in a list-like concurrent container
 - phases: `runtime`, `cleanup`
 - public methods: `append`, `append_with_callback`, `auto_prune`, `auto_prune`, `cleanup`, `clear`, `copy`, `count`, `extend`, `filter`, `freeze`, `id` (+11 more)
 
@@ -24481,7 +26351,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.data_structures.weak_data_structures.weak_concurrent_set`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py:1`
 - role: Thread-safe set holding members weakly.
-- responsibilities: `hold membership without ownership`
+- responsibilities:
+  - hold membership without ownership
 - phases: `runtime`, `cleanup`
 
 #### `WeakConcurrentSet` (class)
@@ -24491,7 +26362,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `Generic`
 - role: Concurrent weak-reference set.
-- responsibilities: `stores weakly referenced items in a set-like concurrent container`
+- responsibilities:
+  - stores weakly referenced items in a set-like concurrent container
 - phases: `runtime`, `cleanup`
 - public methods: `add`, `auto_prune`, `auto_prune`, `batch_update`, `cleanup`, `clear`, `difference`, `difference_update`, `discard`, `filter`, `freeze`, `id` (+18 more)
 
@@ -24530,7 +26402,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.data_structures.weak_data_structures.weak_ref_node`
 - defined at: `src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py:1`
 - role: Reusable weak-reference element with phantom-style collection notification.
-- responsibilities: `wrap one referent weakly for a container that owns synchronization`, `notify on collection so the container can prune`
+- responsibilities:
+  - wrap one referent weakly for a container that owns synchronization
+  - notify on collection so the container can prune
 - phases: `runtime`, `cleanup`
 
 #### `WeakRefNode` (class)
@@ -24540,7 +26414,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `Generic`
 - role: Weak-reference node wrapper.
-- responsibilities: `wraps one weak reference plus bookkeeping state for weak containers`
+- responsibilities:
+  - wraps one weak reference plus bookkeeping state for weak containers
 - phases: `runtime`, `cleanup`
 - public methods: `add_callback`, `cas`, `cleanup`, `dead`, `deref`, `deref`, `deref`, `fire_callbacks`, `get`, `has_fired`, `id`, `is_alive` (+6 more)
 
@@ -24577,7 +26452,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.general_base.abstract_elastic_pool`
 - defined at: `src/melder/utilities/general_base/abstract_elastic_pool.py:1`
 - role: Shared bounded elastic pooling policy for expensive reusable runtime objects.
-- responsibilities: `provide one pooling policy surface for lesser conduits and spellspaces`
+- responsibilities:
+  - provide one pooling policy surface for lesser conduits and spellspaces
 - phases: `init`, `runtime`, `cleanup`
 
 #### `AbstractElasticPool` (abstract)
@@ -24587,7 +26463,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `Generic`, `ABC`
 - role: Reusable bounded elastic object-pool base for expensive runtime shells.
-- responsibilities: `implements bounded acquire and release policy over one idle deque`, `stretches and decays advisory idle targets under changing demand`, `defines subclass hooks for object creation, preparation, and destruction`
+- responsibilities:
+  - implements bounded acquire and release policy over one idle deque
+  - stretches and decays advisory idle targets under changing demand
+  - defines subclass hooks for object creation, preparation, and destruction
 - owns_state: `_baseline_idle`, `_target_idle`, `_max_idle`, `_idle`, `_in_use_count`, `_last_expand_at`, `_last_decay_at`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `acquire`, `baseline_idle`, `cleanup`, `create_object`, `describe`, `destroy_object`, `idle_count`, `in_use_count`, `max_idle`, `prepare_object`, `release`, `target_idle`
@@ -24624,7 +26503,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.general_base.cleanable`
 - defined at: `src/melder/utilities/general_base/cleanable.py:1`
 - role: The single teardown contract shared across the entire runtime.
-- responsibilities: `define idempotent explicit cleanup`, `provide check_cleaned so post-teardown use fails loudly`
+- responsibilities:
+  - define idempotent explicit cleanup
+  - provide check_cleaned so post-teardown use fails loudly
 - phases: `init`, `cleanup`
 
 #### `Cleanable` (abstract)
@@ -24633,7 +26514,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/general_base/cleanable.py:10`
 - markers: `ABC`
 - role: Universal explicit-cleanup base contract.
-- responsibilities: `stores the canonical cleaned-state flag`, `defines idempotent cleanup and cleaned-state guard expectations`, `provides the cleanup-context helper for deterministic teardown`
+- responsibilities:
+  - stores the canonical cleaned-state flag
+  - defines idempotent cleanup and cleaned-state guard expectations
+  - provides the cleanup-context helper for deterministic teardown
 - owns_state: `_cleaned`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `async_cleanup`, `check_cleaned`, `cleaned`, `cleanup`, `is_cleaned`, `using_cleanup`
@@ -24643,7 +26527,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.general_base.cleanable._CleanupContext`
 - defined at: `src/melder/utilities/general_base/cleanable.py:187`
 - role: Internal context helper supporting the Cleanable teardown contract.
-- responsibilities: `scope one cleanup pass`
+- responsibilities:
+  - scope one cleanup pass
 - phases: `cleanup`
 
 ### Edges out
@@ -24680,7 +26565,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.general_base.sync`
 - defined at: `src/melder/utilities/general_base/sync.py:1`
 - role: Abstract mix-in supplying shared coordination for thread-safe value wrappers.
-- responsibilities: `carry the deterministic two-wrapper lock ordering that prevents deadlock between cells`
+- responsibilities:
+  - carry the deterministic two-wrapper lock ordering that prevents deadlock between cells
 - phases: `runtime`
 
 #### `Sync` (class)
@@ -24688,7 +26574,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.general_base.sync.Sync`
 - defined at: `src/melder/utilities/general_base/sync.py:6`
 - role: Abstract mix-in supplying shared coordination for thread-safe value wrappers.
-- responsibilities: `provide deterministic two-wrapper lock ordering to prevent deadlock between cells`
+- responsibilities:
+  - provide deterministic two-wrapper lock ordering to prevent deadlock between cells
 - phases: `runtime`
 - public methods: `get`
 
@@ -24719,7 +26606,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.class_surface_ast_describer`
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:1`
 - role: AST-backed class-surface describer: the consumer of `__ast_helper_access__`.
-- responsibilities: `describe a class surface without importing or instantiating it`, `emit typed payloads rather than live references`
+- responsibilities:
+  - describe a class surface without importing or instantiating it
+  - emit typed payloads rather than live references
 - phases: `runtime`
 
 #### `InheritedAgentPurposeDescription` (record)
@@ -24728,7 +26617,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:19`
 - markers: `TypedDict`
 - role: Typed payload for one parent class's inherited purpose in the MRO.
-- responsibilities: `carry inherited purpose as a shape, not a live object`
+- responsibilities:
+  - carry inherited purpose as a shape, not a live object
 - phases: `runtime`
 
 #### `ClassMemberDescription` (record)
@@ -24737,7 +26627,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:44`
 - markers: `TypedDict`
 - role: Typed payload for one AST-described method or property.
-- responsibilities: `carry member shape without importing the class`
+- responsibilities:
+  - carry member shape without importing the class
 - phases: `runtime`
 
 #### `ClassSurfaceDescription` (record)
@@ -24746,7 +26637,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:74`
 - markers: `TypedDict`
 - role: Typed top-level payload returned by the class-surface describer.
-- responsibilities: `carry the whole described surface as detached data`
+- responsibilities:
+  - carry the whole described surface as detached data
 - phases: `runtime`
 
 #### `ClassSurfaceAstDescriber` (class)
@@ -24754,7 +26646,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber`
 - defined at: `src/melder/utilities/helpers/class_surface_ast_describer.py:106`
 - role: Helper for extracting structural class-surface descriptions via AST.
-- responsibilities: `describes class surfaces structurally for tooling/AI use`
+- responsibilities:
+  - describes class surfaces structurally for tooling/AI use
 - phases: `validation`, `runtime`
 - public methods: `describe_agent_onboarding_json`, `describe_agent_purpose_json`, `describe_class_surface_ast`, `describe_class_surface_ast_json`, `list_class_method_names_ast_json`
 
@@ -24789,7 +26682,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.class_wraps`
 - defined at: `src/melder/utilities/helpers/class_wraps.py:1`
 - role: Class-level wrapping helpers.
-- responsibilities: `support decoration patterns applied at class scope`
+- responsibilities:
+  - support decoration patterns applied at class scope
 - phases: `runtime`
 
 <!-- END FILE: src/melder/utilities/helpers/class_wraps.py -->
@@ -24808,7 +26702,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.general_helpers`
 - defined at: `src/melder/utilities/helpers/general_helpers.py:1`
 - role: Enum normalization and canonical spell-input identification.
-- responsibilities: `let API boundaries accept a raw string and still hold a real enum`, `own the single source of truth for spell identity normalization`
+- responsibilities:
+  - let API boundaries accept a raw string and still hold a real enum
+  - own the single source of truth for spell identity normalization
 - phases: `runtime`
 
 #### `EnumHelpers` (class)
@@ -24816,7 +26712,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.general_helpers.EnumHelpers`
 - defined at: `src/melder/utilities/helpers/general_helpers.py:10`
 - role: Stateless enum normalization helper.
-- responsibilities: `converts raw strings into concrete enum members`, `rejects invalid or incompatible enum inputs early`
+- responsibilities:
+  - converts raw strings into concrete enum members
+  - rejects invalid or incompatible enum inputs early
 - phases: `init`, `runtime`
 - public methods: `convert_enum_and_check`
 
@@ -24825,7 +26723,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.general_helpers.SpellInputUtils`
 - defined at: `src/melder/utilities/helpers/general_helpers.py:109`
 - role: Canonical spell-key normalization helper.
-- responsibilities: `normalizes frame keys and binding names into canonical lowercase lookup keys`, `builds spellbook and meld lookup tuples from spell and frame inputs`
+- responsibilities:
+  - normalizes frame keys and binding names into canonical lowercase lookup keys
+  - builds spellbook and meld lookup tuples from spell and frame inputs
 - owns_state: `DEFAULT_BINDING_NAME`
 - phases: `init`, `runtime`
 - public methods: `make_spell_key_from_parts`, `normalize_binding_name`, `normalize_frame_key`, `normalize_spell_key`, `normalize_spell_name`
@@ -24865,7 +26765,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.id_builder`
 - defined at: `src/melder/utilities/helpers/id_builder.py:1`
 - role: Stable lineage-style identifier construction for every runtime-owned object.
-- responsibilities: `compose ids one way instead of per call site`
+- responsibilities:
+  - compose ids one way instead of per call site
 - phases: `init`, `runtime`
 
 #### `IDBuilder` (class)
@@ -24873,7 +26774,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.id_builder.IDBuilder`
 - defined at: `src/melder/utilities/helpers/id_builder.py:5`
 - role: Stateless ULID and lineage-id helper.
-- responsibilities: `creates fresh ULID strings for runtime-owned identities`, `composes object-aware lineage ids from `_id` or `id` attributes`
+- responsibilities:
+  - creates fresh ULID strings for runtime-owned identities
+  - composes object-aware lineage ids from `_id` or `id` attributes
 - phases: `init`, `runtime`
 - public methods: `compose`, `conduit_id`, `create_id`, `ward_id`
 
@@ -24915,7 +26818,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.init_helpers`
 - defined at: `src/melder/utilities/helpers/init_helpers.py:1`
 - role: Startup-time logger resolution wrappers over the utility provider host.
-- responsibilities: `resolve a provider-backed channel logger`, `wrap an explicit logger as a SafeLogger`, `fall back silently rather than failing boot`
+- responsibilities:
+  - resolve a provider-backed channel logger
+  - wrap an explicit logger as a SafeLogger
+  - fall back silently rather than failing boot
 - phases: `init`
 
 #### `InitHelpers` (class)
@@ -24923,7 +26829,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.init_helpers.InitHelpers`
 - defined at: `src/melder/utilities/helpers/init_helpers.py:10`
 - role: Thin startup helper wrappers for logger resolution.
-- responsibilities: `routes safe and channel logger resolution through AetherUtilitySystem`, `keeps logger bootstrapping logic out of runtime constructors`
+- responsibilities:
+  - routes safe and channel logger resolution through AetherUtilitySystem
+  - keeps logger bootstrapping logic out of runtime constructors
 - phases: `init`, `runtime`
 - public methods: `resolve_channel_logger`, `resolve_safe_logger`
 
@@ -24965,7 +26873,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.package`
 - defined at: `src/melder/utilities/helpers/package.py:1`
 - role: Thread-safe wrapper around a callable, sync or coroutine.
-- responsibilities: `accept both sync callables and coroutine functions behind one surface`
+- responsibilities:
+  - accept both sync callables and coroutine functions behind one surface
 - phases: `runtime`
 
 #### `Package` (class)
@@ -24975,7 +26884,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - markers: `Generic`
 - role: Packaged callable/result helper wrapper.
-- responsibilities: `wraps a callable and its result metadata in one reusable helper object`
+- responsibilities:
+  - wraps a callable and its result metadata in one reusable helper object
 - phases: `runtime`, `cleanup`
 - public methods: `args`, `bind`, `bind_args`, `bundle`, `cleanup`, `curry`, `describe`, `execute_async`, `execute_sync`, `freeze`, `get_coroutine`, `id` (+9 more)
 
@@ -25018,7 +26928,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.helpers.ulid_factory`
 - defined at: `src/melder/utilities/helpers/ulid_factory.py:1`
 - role: Minimal internal ULID generator replacing the external dependency.
-- responsibilities: `produce lexicographically sortable time-ordered ids`, `remove a third-party runtime dependency`
+- responsibilities:
+  - produce lexicographically sortable time-ordered ids
+  - remove a third-party runtime dependency
 - owns_state: `_CROCKFORD32`
 - phases: `runtime`
 
@@ -25038,7 +26950,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.interfaces.ichannellogger`
 - defined at: `src/melder/utilities/interfaces/ichannellogger.py:1`
 - role: Structural description of the channel-logger shape.
-- responsibilities: `let the runtime accept any conforming logger without importing one`
+- responsibilities:
+  - let the runtime accept any conforming logger without importing one
 - phases: `runtime`
 
 #### `IChannelLogger` (interface)
@@ -25047,7 +26960,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/interfaces/ichannellogger.py:6`
 - markers: `Protocol`
 - role: Protocol for channel-backed logger implementations.
-- responsibilities: `defines the channel logger surface SafeLogger can wrap with channel-aware metadata behavior`
+- responsibilities:
+  - defines the channel logger surface SafeLogger can wrap with channel-aware metadata behavior
 - owns_state: `_id`
 - phases: `runtime`, `cleanup`
 - public methods: `add_channel`, `add_group`, `add_metadata`, `clear_groups`, `clear_override_enabled`, `clear_override_min_level`, `clear_properties`, `critical`, `debug`, `error`, `exception`, `get_effective_enabled` (+24 more)
@@ -25068,7 +26982,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.interfaces.icleanable`
 - defined at: `src/melder/utilities/interfaces/icleanable.py:1`
 - role: Structural mirror of the Cleanable public API.
-- responsibilities: `let a caller depend on the cleanup contract without inheriting the ABC`
+- responsibilities:
+  - let a caller depend on the cleanup contract without inheriting the ABC
 - phases: `cleanup`
 
 #### `ICleanable` (interface)
@@ -25077,7 +26992,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/interfaces/icleanable.py:4`
 - markers: `Protocol`
 - role: Protocol mirror of the cleanup lifecycle contract.
-- responsibilities: `defines the public cleaned-state and cleanup surface expected across runtime objects`
+- responsibilities:
+  - defines the public cleaned-state and cleanup surface expected across runtime objects
 - owns_state: `_cleaned`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `async_cleanup`, `check_cleaned`, `cleaned`, `cleanup`, `is_cleaned`
@@ -25098,7 +27014,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.logger.safe_logger`
 - defined at: `src/melder/utilities/logger/safe_logger.py:1`
 - role: Unified logging adapter over channel loggers and stdlib loggers.
-- responsibilities: `give the runtime one stable logging surface`, `never raise during init on a None logger`, `stay safe to call during teardown`
+- responsibilities:
+  - give the runtime one stable logging surface
+  - never raise during init on a None logger
+  - stay safe to call during teardown
 - phases: `init`, `runtime`, `cleanup`
 
 #### `SafeLogger` (class)
@@ -25107,7 +27026,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/logger/safe_logger.py:13`
 - extends: `Cleanable`
 - role: Unified logger adapter over channel and stdlib loggers.
-- responsibilities: `presents one stable logging surface to runtime objects`, `wraps either channel loggers, stdlib loggers, or a null target`, `preserves channel-specific metadata behavior when available`
+- responsibilities:
+  - presents one stable logging surface to runtime objects
+  - wraps either channel loggers, stdlib loggers, or a null target
+  - preserves channel-specific metadata behavior when available
 - owns_state: `_logger`, `_is_channel`, `_id`, `_level`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `critical`, `debug`, `error`, `exception`, `fatal`, `info`, `is_attached`, `set_level`, `set_level_by_name`, `warn`, `warning`
@@ -25146,7 +27068,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.cancellation_event_signal`
 - defined at: `src/melder/utilities/synchronization/cancellation_event_signal.py:1`
 - role: Cooperative cancellation for a scheduler run, split into a writer and a read-only view.
-- responsibilities: `own the threading.Event carrying cancellation state`, `hand workers a read-only view that cannot cancel`, `keep the worker poll path lock-free`, `tear the view down with the signal`
+- responsibilities:
+  - own the threading.Event carrying cancellation state
+  - hand workers a read-only view that cannot cancel
+  - keep the worker poll path lock-free
+  - tear the view down with the signal
 - owns_state: `_lock`, `_flag`, `_event`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25156,7 +27082,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/cancellation_event_signal.py:11`
 - extends: `Cleanable`
 - role: Read-only view over a shared cancellation signal.
-- responsibilities: `exposes lock-free cancellation polling for worker code`, `throws a standardized cancellation error when signalled`
+- responsibilities:
+  - exposes lock-free cancellation polling for worker code
+  - throws a standardized cancellation error when signalled
 - owns_state: `_flag`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `is_set`, `throw_if_set`
@@ -25167,7 +27095,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/cancellation_event_signal.py:183`
 - extends: `Cleanable`
 - role: Mutable source of shared cancellation events.
-- responsibilities: `owns the underlying event flag`, `produces and cleans the shared CancellationEvent view`, `signals cooperative cancellation for worker pipelines`
+- responsibilities:
+  - owns the underlying event flag
+  - produces and cleans the shared CancellationEvent view
+  - signals cooperative cancellation for worker pipelines
 - owns_state: `_flag`, `_event`
 - phases: `runtime`, `cleanup`
 - public methods: `cancel`, `cleanup`, `event`, `is_set`
@@ -25214,7 +27145,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.counter_switch`
 - defined at: `src/melder/utilities/synchronization/counter_switch.py:1`
 - role: Deque-cardinality coordination primitive with leader election on the idle-to-pending edge.
-- responsibilities: `encode idle / pending / open as ticket count`, `elect exactly one leader out of the idle state`, `keep advance and the open fast path lock-free`, `expose a lock-free int mirror for hot reads`
+- responsibilities:
+  - encode idle / pending / open as ticket count
+  - elect exactly one leader out of the idle state
+  - keep advance and the open fast path lock-free
+  - expose a lock-free int mirror for hot reads
 - owns_state: `_lock`, `_event`, `_tickets`, `fast_state`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25224,7 +27159,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/counter_switch.py:9`
 - extends: `Cleanable`
 - role: Minimal deque-backed selector latch.
-- responsibilities: `tracks a small integer state via ticket cardinality`, `elects one leader for pending work and releases followers when open`
+- responsibilities:
+  - tracks a small integer state via ticket cardinality
+  - elects one leader for pending work and releases followers when open
 - owns_state: `_tickets`, `_event`, `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `advance`, `cleanup`, `selector`, `state`
@@ -25262,7 +27199,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.creation_gate`
 - defined at: `src/melder/utilities/synchronization/creation_gate.py:1`
 - role: Admission boundary guarding creation-oriented paths, with ticket tracking and terminal close.
-- responsibilities: `block or admit callers via an enabled flag`, `track in-flight work as tickets`, `support close-and-drain so teardown waits for active work`, `keep the wait path lock-free`
+- responsibilities:
+  - block or admit callers via an enabled flag
+  - track in-flight work as tickets
+  - support close-and-drain so teardown waits for active work
+  - keep the wait path lock-free
 - owns_state: `_lock`, `enabled`, `_event`, `_tickets`, `_closed`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25272,7 +27213,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/creation_gate.py:9`
 - extends: `Cleanable`
 - role: Reusable admission and drain gate for creation work.
-- responsibilities: `blocks or releases entry to guarded creation paths`, `tracks in-flight tickets and supports terminal drain waits`
+- responsibilities:
+  - blocks or releases entry to guarded creation paths
+  - tracks in-flight tickets and supports terminal drain waits
 - owns_state: `enabled`, `_event`, `_tickets`, `_closed`
 - phases: `runtime`, `cleanup`
 - public methods: `active_ticket_count`, `admit_ticket`, `cleanup`, `close`, `close_and_drain`, `close_and_wait_until_free`, `has_active_tickets`, `is_closed`, `open`, `register_ticket`, `unregister_ticket`, `wait`
@@ -25310,7 +27253,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.creation_gate_controller`
 - defined at: `src/melder/utilities/synchronization/creation_gate_controller.py:1`
 - role: Frame-owned registry indexing creation gates by conduit lineage and by spell index.
-- responsibilities: `index conduit gates by root and by conduit id`, `index spell-index gates by index id`, `fan enable/disable across both registries`, `aggregate active-thread counts and drive lineage drain`
+- responsibilities:
+  - index conduit gates by root and by conduit id
+  - index spell-index gates by index id
+  - fan enable/disable across both registries
+  - aggregate active-thread counts and drive lineage drain
 - owns_state: `_lock`, `_conduit_creation_gates`, `_conduit_creation_gates_by_root`, `_conduit_root_by_conduit`, `_spell_index_creation_gates`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25320,7 +27267,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/creation_gate_controller.py:7`
 - extends: `Cleanable`
 - role: Registry and control plane for CreationGate instances.
-- responsibilities: `indexes conduit-scope and spell-lineage gates`, `fan-outs enable, disable, and drain operations across both registries`
+- responsibilities:
+  - indexes conduit-scope and spell-lineage gates
+  - fan-outs enable, disable, and drain operations across both registries
 - owns_state: `_conduit_creation_gates`, `_conduit_creation_gates_by_root`, `_spell_lineage_creation_gates`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `close_and_drain_conduit_lineage`, `close_and_wait_until_conduit_free`, `close_and_wait_until_conduit_lineage_free`, `close_and_wait_until_spell_index_free`, `count_active_threads_conduits`, `count_active_threads_for_conduit`, `count_active_threads_for_conduit_lineage`, `count_active_threads_for_spell_index`, `count_active_threads_spell_indexes`, `count_active_threads_total`, `create_conduit_gate` (+15 more)
@@ -25360,7 +27309,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.fast_switch`
 - defined at: `src/melder/utilities/synchronization/fast_switch.py:1`
 - role: Cheapest boolean-like primitive in the package; truth is deque length and nothing else.
-- responsibilities: `derive truth from ticket cardinality`, `offer set_true / set_false without a Python lock`, `serve hot paths that cannot afford lock acquisition`
+- responsibilities:
+  - derive truth from ticket cardinality
+  - offer set_true / set_false without a Python lock
+  - serve hot paths that cannot afford lock acquisition
 - owns_state: `_tickets`
 - phases: `runtime`, `cleanup`
 
@@ -25370,7 +27322,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/fast_switch.py:9`
 - extends: `Cleanable`
 - role: Small fast path switching primitive.
-- responsibilities: `provides lightweight state switching for hot synchronization paths`
+- responsibilities:
+  - provides lightweight state switching for hot synchronization paths
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `clear_tickets`, `set_false`, `set_true`, `value`, `value`
 
@@ -25399,7 +27352,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.load_gate`
 - defined at: `src/melder/utilities/synchronization/load_gate.py:1`
 - role: Process-wide admission barrier granting one crystallizer load exclusive authority over new root transactions.
-- responsibilities: `let the holding thread and its enrolled cohort pass freely`, `park foreign threads at root transaction start`, `name the blocking load when a wait times out`, `open terminally on cleanup so nothing stays parked`
+- responsibilities:
+  - let the holding thread and its enrolled cohort pass freely
+  - park foreign threads at root transaction start
+  - name the blocking load when a wait times out
+  - open terminally on cleanup so nothing stays parked
 - owns_state: `_condition`, `_holder_thread_id`, `_holder_label`, `_cohort_thread_ids`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25409,7 +27366,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/load_gate.py:8`
 - extends: `Cleanable`
 - role: Exclusive system-wide load-authority gate (holder-thread passthrough; teach-grade timeout; tombstoned teardown).
-- responsibilities: `grants one crystallizer load exclusive authority`, `parks foreign new-root transaction starts until release`
+- responsibilities:
+  - grants one crystallizer load exclusive authority
+  - parks foreign new-root transaction starts until release
 - owns_state: `_condition`, `_holder_thread_id`, `_holder_label`
 - phases: `runtime`
 - public methods: `acquire`, `cleanup`, `describe`, `enroll_worker`, `is_held`, `release`, `wait_for_passage`, `withdraw_worker`
@@ -25444,7 +27403,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.phase_latch`
 - defined at: `src/melder/utilities/synchronization/phase_latch.py:1`
 - role: Per-phase countdown barrier letting the control thread wait on one event instead of every unit's Future.
-- responsibilities: `count down unit completions to zero`, `fire immediately on the first error for fail-fast`, `expose a separate all-reported quiesce barrier`, `hand the control thread a copied error list`
+- responsibilities:
+  - count down unit completions to zero
+  - fire immediately on the first error for fail-fast
+  - expose a separate all-reported quiesce barrier
+  - hand the control thread a copied error list
 - owns_state: `_lock`, `_event`, `_all_reported_event`, `_remaining`, `_errors`
 - phases: `runtime`
 
@@ -25453,7 +27416,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.phase_latch.PhaseLatch`
 - defined at: `src/melder/utilities/synchronization/phase_latch.py:7`
 - role: Per-phase countdown latch used by PhaseScheduler barriers.
-- responsibilities: `tracks remaining unit completions for one phase barrier`, `records failed units and wakes the control thread immediately on error`, `provides timeout-bounded wait plus copied error snapshots for control flow`
+- responsibilities:
+  - tracks remaining unit completions for one phase barrier
+  - records failed units and wakes the control thread immediately on error
+  - provides timeout-bounded wait plus copied error snapshots for control flow
 - owns_state: `_event`, `_remaining`, `_errors`
 - phases: `runtime`, `cleanup`
 - public methods: `complete`, `errors`, `record_error`, `wait`, `wait_all_reported`
@@ -25482,7 +27448,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.phase_scheduler`
 - defined at: `src/melder/utilities/synchronization/phase_scheduler.py:1`
 - role: Persistent per-owner pipeline runner executing registered phases in order across a reused worker pool.
-- responsibilities: `own a lazily spawned worker pool reused across runs`, `feed one queue that workers block on rather than poll`, `enforce a per-phase barrier through one PhaseLatch`, `open a fresh cancellation scope per run so one failure cannot poison the next`
+- responsibilities:
+  - own a lazily spawned worker pool reused across runs
+  - feed one queue that workers block on rather than poll
+  - enforce a per-phase barrier through one PhaseLatch
+  - open a fresh cancellation scope per run so one failure cannot poison the next
 - owns_state: `_configuration`, `_workers`, `_barrier_timeout_ms`, `_cancel_signal`, `_cancel_event`, `_queue`, `_threads`, `_lock`, `_workers_started`, `_shutdown`, `_phase_factories`, `_phase_order`, `_sentinel`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 
@@ -25492,7 +27462,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/phase_scheduler.py:37`
 - extends: `Cleanable`
 - role: One-shot multi-phase scheduler for spellbook work.
-- responsibilities: `owns the shared cancellation signal, queue, worker threads, and phase registry`, `runs registered phases in order with barriers, timeout, and cancellation semantics`, `creates UnitOfWork instances bound to its shared cancellation event`
+- responsibilities:
+  - owns the shared cancellation signal, queue, worker threads, and phase registry
+  - runs registered phases in order with barriers, timeout, and cancellation semantics
+  - creates UnitOfWork instances bound to its shared cancellation event
 - owns_state: `_cancel_signal`, `_cancel_event`, `_queue`, `_threads`, `_phase_factories`, `_phase_order`
 - phases: `validation`, `runtime`, `cleanup`
 - public methods: `barrier_timeout_ms`, `cancel`, `cancel_event`, `cleanup`, `clear_phases`, `create_unit_of_work`, `is_cancelled`, `register_phase`, `run_all_phases`, `worker_thread_idents`, `workers`
@@ -25551,7 +27524,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.safeguard`
 - defined at: `src/melder/utilities/synchronization/safeguard.py:1`
 - role: Deadlock-avoidance helper acquiring an arbitrary lock set in one deterministic global order.
-- responsibilities: `drop None locks and de-duplicate by identity`, `sort by id(lock) so every caller converges on one order`, `release in reverse acquisition order`, `default to single use so a guard cannot be silently reused`
+- responsibilities:
+  - drop None locks and de-duplicate by identity
+  - sort by id(lock) so every caller converges on one order
+  - release in reverse acquisition order
+  - default to single use so a guard cannot be silently reused
 - owns_state: `_locks`, `_acquired`, `_timeout`, `_one_time_use`, `_cleanup_lock`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25561,7 +27538,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/safeguard.py:8`
 - extends: `Cleanable`
 - role: Ordered multi-lock guard context manager.
-- responsibilities: `acquires multiple locks in a deterministic safe order`
+- responsibilities:
+  - acquires multiple locks in a deterministic safe order
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
 
@@ -25597,7 +27575,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.sync_weak_ref`
 - defined at: `src/melder/utilities/synchronization/sync_weak_ref.py:1`
 - role: Self-synchronizing weak reference cell supporting compare-and-swap and phantom-style collection callbacks.
-- responsibilities: `hold one referent weakly without extending its life`, `serialize get/set/cas/swap on its own lock`, `notify registered callbacks when the referent is collected`, `optionally self-clean on collection`
+- responsibilities:
+  - hold one referent weakly without extending its life
+  - serialize get/set/cas/swap on its own lock
+  - notify registered callbacks when the referent is collected
+  - optionally self-clean on collection
 - owns_state: `_cleaned`, `_weak`, `_lock`, `_id`, `_on_collect`, `_auto_cleanup`, `_phantom_fired`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25608,7 +27590,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Sync`
 - markers: `Generic`
 - role: Synchronized weak reference wrapper.
-- responsibilities: `wraps a weak reference with synchronization and optional collection callbacks`
+- responsibilities:
+  - wraps a weak reference with synchronization and optional collection callbacks
 - phases: `runtime`, `cleanup`
 - public methods: `cas`, `check_cleaned`, `cleaned`, `cleanup`, `disable_auto_cleanup`, `enable_auto_cleanup`, `get`, `has_fired`, `is_alive`, `is_cleaned`, `locked`, `map` (+6 more)
 
@@ -25647,7 +27630,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.ticket_flag`
 - defined at: `src/melder/utilities/synchronization/ticket_flag.py:1`
 - role: Deque-cardinality boolean with context-manager support and forgiving unbalanced exits.
-- responsibilities: `derive truth from ticket count`, `treat empty-pop as a no-op so unbalanced exits degrade quietly`, `never suppress exceptions raised inside a with-body`
+- responsibilities:
+  - derive truth from ticket count
+  - treat empty-pop as a no-op so unbalanced exits degrade quietly
+  - never suppress exceptions raised inside a with-body
 - owns_state: `_tickets`
 - phases: `runtime`, `cleanup`
 
@@ -25657,7 +27643,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/ticket_flag.py:9`
 - extends: `Cleanable`
 - role: Small ticket-count synchronization flag.
-- responsibilities: `tracks entry/exit tickets for lightweight synchronization cases`
+- responsibilities:
+  - tracks entry/exit tickets for lightweight synchronization cases
 - phases: `runtime`, `cleanup`
 - public methods: `active_ticket_count`, `cleanup`, `clear_tickets`, `has_tickets`, `set_false`, `set_true`, `value`, `value`
 
@@ -25686,7 +27673,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.utilities.synchronization.unit_of_work`
 - defined at: `src/melder/utilities/synchronization/unit_of_work.py:1`
 - role: Future-backed single work item carrying a bound call, a cancellation view and supervision metadata.
-- responsibilities: `bind a callable with its args for later execution`, `observe a borrowed CancellationEvent without owning it`, `carry label and metadata for supervision`, `leave Future result state intact through cleanup`
+- responsibilities:
+  - bind a callable with its args for later execution
+  - observe a borrowed CancellationEvent without owning it
+  - carry label and metadata for supervision
+  - leave Future result state intact through cleanup
 - owns_state: `_func`, `_args`, `_kwargs`, `_cancel_event`, `_label`, `_metadata`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
 
@@ -25696,7 +27687,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/utilities/synchronization/unit_of_work.py:13`
 - extends: `Cleanable`, `Future`
 - role: Future-backed executable work item with cooperative cancellation.
-- responsibilities: `wraps one callable plus its args and metadata`, `records result or exception on the underlying Future`, `checks the shared cancellation event before execution`
+- responsibilities:
+  - wraps one callable plus its args and metadata
+  - records result or exception on the underlying Future
+  - checks the shared cancellation event before execution
 - owns_state: `_func`, `_args`, `_kwargs`, `_cancel_event`, `_metadata`
 - phases: `runtime`, `cleanup`
 - public methods: `cancel_event`, `cleanup`, `label`, `metadata`, `run_for_scheduler`, `run_synchronously`

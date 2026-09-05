@@ -166,6 +166,8 @@ class SpellCrystal(Cleanable):
               and stores the returned result (V3 carrier law).
             - Does not retain the live `Spell`, the live root target
               reference, or the analyzer after construction.
+            - Captures resolved disposal names in execution order. This detached
+              persistence value does not sort or reapply book policy.
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -278,7 +280,7 @@ class SpellCrystal(Cleanable):
         # is derived from the attached profile object's TYPE NAME so this
         # module never imports examiner types (typing-only pressure stays
         # zero and the crystal remains pure data).
-        self._disposal_method_names: List[str] = sorted(
+        self._disposal_method_names: List[str] = list(
             spell.disposal_method_names
         )
         self._profile_family: str = (
@@ -653,8 +655,9 @@ class SpellCrystal(Cleanable):
 
         Returns:
             List[str]:
-                Detached, sorted disposal method-name list (empty when the
-                spell declared none).
+                Detached disposal method-name list in recorded execution order
+                (empty when the spell declared none). Replay applies the receiving
+                book's normal bind policy; the crystal never recomposes the list.
         """
         self.check_cleaned()
         with self._lock:

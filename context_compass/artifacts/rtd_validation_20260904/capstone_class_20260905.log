@@ -1,0 +1,5 @@
+orders-service: order 101 = coffee
+orders-service: order 102 = tea
+orders-service: order 103 = cocoa
+pool closed: True
+capstone complete: bootstrapped, typed, injected, used, cleaned

@@ -178,6 +178,7 @@ def test_nexus_frame_configuration_to_aetheric_frame_configuration_matches_contr
 
 
 def test_nexus_frame_configuration_to_spellbook_configuration_matches_contract() -> None:
+    """Nexus conversion supplies ordinary book defaults before validation or a caller's defaults load."""
     configuration = NexusFrameConfiguration.create_dynamic_defaults(
         "ops",
         immutable=True,
@@ -186,6 +187,8 @@ def test_nexus_frame_configuration_to_spellbook_configuration_matches_contract()
     )
 
     spellbook_configuration = configuration.to_spellbook_configuration()
+    assert spellbook_configuration.get_property("enforce_priority_disposal_methods") is False
+    assert spellbook_configuration.get_property("disposal_method_names") == []
 
     frame_configuration = configuration.to_aetheric_frame_configuration()
     spellbook_configuration.load_default_dictionary()
