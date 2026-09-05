@@ -3,7 +3,7 @@
 ## Before and after
 Before: preprod/prod perform local distribution checks; no index round-trip qualifies a candidate.
 After: release-candidate.yml calls the existing package builder for the frozen branch, records identity,
-uploads to TestPyPI, and checks an exact downloaded wheel on Linux/Windows Python 3.14t.
+uploads to TestPyPI, and checks an exact downloaded wheel on Linux/Windows/macOS Python 3.14t.
 
 ## Interfaces
 - ci.yml recognizes release_candidate PRs. Candidate pushes are handled by the dedicated workflow.
@@ -11,9 +11,14 @@ uploads to TestPyPI, and checks an exact downloaded wheel on Linux/Windows Pytho
 - A candidate helper verifies package/index identity without importing Melder in publication jobs.
 - Shared builds normalize sdist tar/gzip metadata to the commit timestamp, preserving all file bytes.
   This closes measured same-source retry drift without weakening immutable-upload hash checks.
-- TestPyPI upload remains a top-level job with pypitest environment and id-token: write.
-- Linux/Windows install jobs resolve the TestPyPI wheel with pinned version/hash and invoke an
-  isolated installed-package probe. Neither runs the whole source suite or obtains upload authority.
+- TestPyPI upload remains a top-level job using the pypitest environment's melder_api_token secret.
+  No id-token permission or OIDC attestations remain. Missing secret fails explicitly before upload.
+- Linux/Windows/macOS install jobs resolve the TestPyPI wheel with pinned version/hash and invoke an
+  isolated installed-package probe. None runs the whole source suite or obtains upload authority.
+  The shared full runtime matrix covers the same three OSes in normal CI and final publication.
+- Runtime, candidate-install, and distribution-build jobs leave PYTHON_GIL unset during Python setup.
+  Only their test/installed-wheel verification steps set it to 0. Existing runtime checks still refuse
+  unsupported interpreters or an enabled GIL; setup helpers may use standard Python.
 
 ## State and failure
 The Git tree is the source identity and distributions are the publication identity. Never infer

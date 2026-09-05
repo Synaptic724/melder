@@ -13,11 +13,15 @@ advancement is an owner-selected promotion, never automatic mirroring of preprod
 - release_candidate accepts this repository's preprod and reviewed release-fix/* preparation PRs;
   prod accepts only release_candidate. Carry candidate fixes/version preparation back to dev.
 - Candidate PRs receive shared CI. Candidate pushes run package qualification without another full suite.
-- Only the TestPyPI upload job uses the pypitest environment and its OIDC publication permission.
+- Only the TestPyPI upload job uses the pypitest environment and its melder_api_token secret.
+  Token authentication replaces OIDC at owner request; id-token permission and attestations are disabled.
 - Candidate identity includes repository, commit, complete Git tree, package version, workflow run
   and attempt, and the exact wheel/sdist filenames, lengths, and SHA256 hashes.
 - TestPyPI installation resolves the exact version and verifies downloaded bytes against that record.
-- Only successful Linux/Windows installed-package checks produce the candidate-ready result.
+- Only successful Linux/Windows/macOS installed-package checks produce the candidate-ready result.
+  macos-latest uses the runner's native Apple Silicon arm64 architecture with Python 3.14t.
+- Scope PYTHON_GIL=0 to test/probe steps. Interpreter setup must permit standard-Python bootstrap
+  helpers, including macOS certificate installation, without weakening runtime GIL-state verification.
 - Prod PR checks require successful candidate qualification of the exact source head and matching tree.
 - Final publication verifies that its prod merge came from that qualified candidate tree, then retains
   the existing fresh tests/build and live tag/prod guards. It publishes its own freshly verified files;
@@ -40,7 +44,7 @@ Rollback callers, branch policy, and required rules together. Never bypass faile
 
 ## Non-goals and unknowns
 No actual upload, account creation, signing, commit, push, or branch rename in local implementation.
-No date/time scheduler yet. TestPyPI project ownership/trusted publisher and hosted runs remain
+No date/time scheduler yet. TestPyPI project/token setup and successful hosted runs remain
 external setup/validation. Candidate artifacts are retained in GitHub rather than relying on TestPyPI
 as permanent storage.
 
