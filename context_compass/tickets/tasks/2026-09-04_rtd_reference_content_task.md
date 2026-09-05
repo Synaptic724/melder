@@ -5,7 +5,7 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-reference-and-architecture
 - Story Path: ../stories/2026-09-04_rtd_reference_and_architecture_story.md
-- Status: draft
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -47,7 +47,8 @@ Publish curated public API, canonical architecture/drawings, glossary, troublesh
 - [ ] Machine-readable content is explicitly selected and audited before inclusion.
 
 ## Validation
-- Not run. Implementation task just created.
+- Strict Sphinx HTML build: 292 pages. Documentation unit suite: 31 passed.
+- Browser inspection confirmed formatted Spellbook signatures, parameter links, and source navigation.
 - Use the parent story's validation plan and report local/hosted/execution results separately.
 
 ## Risks / Mitigations
@@ -56,8 +57,8 @@ Publish curated public API, canonical architecture/drawings, glossary, troublesh
 - Keep the four owner-defined learning levels and prominent examples invariant.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false until this task produces or owns a supporting artifact.
-- ARTIFACT_PATHS: none; the parent story links the shared blueprint.
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS: artifacts/rtd_validation_20260904/reference_build.log
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Record task-owned artifact disposition before accepted closure.
 
@@ -83,11 +84,66 @@ Publish curated public API, canonical architecture/drawings, glossary, troublesh
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T00:07:14Z
+  TYPE: DECISION
+  CLAIM: The package root explicitly declares its public exports. Build an exhaustive disposition
+    registry over those names, group reference pages by user activity, and render selected contracts
+    from canonical source docstrings. Include documented returned command/document surfaces explicitly.
+    Integrate architecture prose/assets through its existing manifest with contained relative links.
+    The existing patch's validate-before-output and public-input-only invariants remain mandatory.
+  EVIDENCE:
+  - src/melder/__init__.py:46-166
+  - src/melder/__init__.py:200-269
+  - system_docs/patches/active/rtd_site_2026_09_04/architecture_patch.md:15-38
+  IMPACT: References extend the same publisher and cannot silently expose all internal modules or work records.
+  NEXT: Inspect the architecture manifest and expand the API proof beyond SpellMap.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T00:11:29Z
+  TYPE: FACT
+  CLAIM: Full Spellbook autodoc produces 11 docutils warnings/errors from malformed indentation
+    and list boundaries. The class docstring contains a continuation at column zero, which breaks
+    dedenting of the entire class contract. No annotation import failure appeared in this probe.
+    Architecture manifest declares 18 public documents and 10 generated diagram pairs; its drawing
+    document additionally references 17 authored SVG/Mermaid pairs. Preserve their original sources.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/api_probe.log:1-15
+  - src/melder/aether/spellbook/spellbook.py:67-170
+  - architecture_and_design/manifest.json:1-361
+  - architecture_and_design/05_engineering_drawings/README.md:1-449
+  IMPACT: Correct demonstrated prose formatting; no blanket warning suppression or runtime rewrite.
+  NEXT: Build exhaustive API selectors and canonical architecture/link assembly, then resolve strict warnings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T00:50:29Z
+  TYPE: MEASURE
+  CLAIM: Integrated references build at 292 pages with 31 documentation tests passing. Every declared
+    package export has a selected disposition, plus eight explicit returned surfaces. Architecture
+    publication consumes 18 canonical documents and 27 drawing pairs. Normalized Mermaid source hashes
+    and exact SVG hashes match the existing manifest. Fixed four isolated source-docstring formatting
+    defects and adapted documented lists/code examples in the presentation layer; no warning suppression.
+    Browser inspection shows correct Spellbook signatures and cross-linked type/source references.
+  EVIDENCE:
+  - docs/api.toml
+  - docs/tools/api_reference.py
+  - docs/tools/architecture_reference.py
+  - docs/tests/test_references.py
+  - artifacts/rtd_validation_20260904/reference_build.log
+  IMPACT: Reference, glossary, troubleshooting, source navigation, and featured applications are ready
+    for integrated quality checks. Current source changes require normal generated-asset verification.
+  NEXT: Wire the shared build into CI/RTD and produce the defined offline handbook.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
-- [ ] No silently omitted content or invented validation.
-- [ ] No unrecorded scope changes or interference with another agent's work.
+- [x] No silently omitted content or invented validation.
+- [x] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
-Defined task awaiting its dependency milestone.
-Publish curated public API, canonical architecture/drawings, glossary, troubleshooting, migration, and audited agent-reference routes.
-
+Reference implementation is in review. The latest complete build produced 292 pages; the subsequent
+small link/fence-preservation changes pass the 31-test docs suite and need the final integrated rebuild.
+Four source changes are docstring formatting only. API inventory, canonical architecture selection,
+glossary, troubleshooting, migration, and feature cards are implemented. S8 owns build/host/offline;
+S9 still owns final link, browser, source-fidelity, and launch checks.

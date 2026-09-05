@@ -121,6 +121,25 @@ class DocstringPresentationTests(unittest.TestCase):
         lines = ["Return `value`.", "", ".. code-block:: python", "", "    result = 1"]
         self.assertEqual(DocstringFormatter.normalize(lines, "Sample"), lines)
 
+    def test_native_class_code_keeps_its_body_without_nested_directives(self) -> None:
+        """A literal Python class body must not be reinterpreted as an indented prose example."""
+        lines = [".. code-block:: python", "", "    class Example:", "        value = 3", ""]
+        self.assertEqual(DocstringFormatter.normalize(lines, "Sample"), lines)
+
+    def test_contract_list_is_separated_from_following_prose(self) -> None:
+        """The Nexus-style list followed by prose at the same indent remains valid reStructuredText."""
+        lines = ["Contract:", "    - Return the live configuration.", "    The caller borrows it."]
+        result = DocstringFormatter.normalize(lines, "Sample")
+        self.assertEqual(result[-2:], ["", "    The caller borrows it."])
+
+    def test_indented_call_example_retains_its_exact_python(self) -> None:
+        """An unfenced multiline call gets a literal code block without losing argument indentation."""
+        lines = ["Example:", "    config.with_hooks(", "        'book', on_ready=callback,", "    )", "", "Returns:", "    None."]
+        result = DocstringFormatter.normalize(lines, "Sample")
+        self.assertIn("    .. code-block:: python", result)
+        self.assertIn("        config.with_hooks(", result)
+        self.assertIn("            'book', on_ready=callback,", result)
+
 
 if __name__ == "__main__":
     unittest.main()

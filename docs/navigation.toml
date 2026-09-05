@@ -1,6 +1,8 @@
 schema_version = 1
 example_catalog = "catalog.toml"
 curriculum = "curriculum.toml"
+api_reference = "api.toml"
+architecture_reference = true
 
 [[page]]
 id = "index"
@@ -47,13 +49,13 @@ parent = "examples/index"
 [[page]]
 id = "reference/architecture"
 title = "Architecture & Drawings"
-source = "reference/architecture.md"
+source = ""
 parent = "index"
 
 [[page]]
 id = "reference/api"
 title = "API Reference"
-source = "reference/api.md"
+source = ""
 parent = "index"
 
 [[page]]
@@ -62,10 +64,20 @@ title = "Full Contents"
 source = ""
 parent = "index"
 
-[[asset]]
-source = "UX_and_AIX_experiences/01_beginner/01_hello_meld.py"
-target = "downloads/01_hello_meld.py"
+[[page]]
+id = "reference/glossary"
+title = "Glossary"
+source = "reference/glossary.md"
+parent = "index"
 
-[[asset]]
-source = "architecture_and_design/diagrams/rendered/system_context.svg"
-target = "media/system_context.svg"
+[[page]]
+id = "reference/troubleshooting"
+title = "Troubleshooting"
+source = "reference/troubleshooting.md"
+parent = "index"
+
+[[page]]
+id = "reference/releases"
+title = "Releases & Migration"
+source = "reference/releases.md"
+parent = "index"

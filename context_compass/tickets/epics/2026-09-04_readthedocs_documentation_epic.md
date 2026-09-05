@@ -17,8 +17,9 @@ Beginner, Intermediate, Advanced, Expert. The site must make its 133 saved examp
 readers a complete table of contents for freely exploring any topic. ThreadFactory's build mechanics
 have been investigated; Melder's information architecture is defined independently here.
 
-The current checkout advertises an RTD URL and contains extensive authored material, but no live docs/
-or RTD configuration was found. Hosting settings and a new Sphinx build remain unverified.
+The local Sphinx site now builds 194 pages, including all four learning levels, 48 guide chapters,
+and all 133 saved lesson pages. Reference expansion, CI/RTD configuration, offline outputs, and final
+quality/hosting verification remain.
 
 ## MRP Alignment
 Establish an understood, reproducible authoring/build/publishing model before committing to a site
@@ -27,9 +28,9 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 
 ## Ticket Contract
 - ENTRY_GATE: Certified codex_2 with this epic routed; implementation uses bounded child-story tasks.
-- EXECUTION_BOUNDARY: Define the complete four-level site, blueprint, and nine delivery stories.
-  The present request changes ContextCompass planning records; live site implementation and hosting
-  actions are governed by the resulting implementation tasks and their entry gates.
+- EXECUTION_BOUNDARY: Implement the accepted four-level site through the existing eleven bounded tasks.
+  Local documentation/source corrections and validation are authorized. Owner handles commits and
+  pushes; actual account configuration and publication require verified service access.
 - DEPENDENCIES: Linked reference-discovery task, ThreadFactory checkout, official Sphinx/RTD docs,
   and Melder's existing authored documentation and packaging metadata.
 - EXIT_GATE: Owner accepts the eventual Melder strategy and its implementation/hosting validation;
@@ -51,10 +52,10 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 - Treating a published URL, badge, or configuration file as proof of current account settings.
 
 ## Scope Boundaries
-- Current: Define the complete product/build/quality contract in the linked blueprint and nine stories.
+- Current: Implement the product/build/quality contract in the linked blueprint and nine stories.
 - Completed investigation: ThreadFactory source/config/build/hosting mechanics are recorded below.
 - Defined delivery: site foundation, catalog, four curricula, references, CI/hosting, quality/launch.
-- Excluded now: Runtime changes, deployment, credential handling, and repository/account mutations.
+- Excluded now: Unrelated runtime changes, credential handling, commits, and pushes.
 
 ## State Transition Event
 - from_state: in_progress
@@ -85,7 +86,7 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 - Owner-selected reference: ../ThreadFactory (C:/Users/Mark/PycharmProjects/ThreadFactory).
 - Melder package metadata requires Python >=3.14 and declares zero runtime dependencies.
 - No child agents have been authorized.
-- No Sphinx build has been executed; an early environment probe is deferred after scope clarification.
+- Strict Sphinx builds and isolated Python 3.14t example checks are operational.
 
 ## Dependencies / External References
 - ../tasks/2026-09-04_readthedocs_sphinx_reference_discovery_task.md
@@ -99,7 +100,7 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 - [x] Reference inspected: file responsibilities and authoring/build/publication/update explanation ready.
 - [x] Owner direction fixed: four levels, full contents, prominent examples, comprehensive scope definition.
 - [x] Product blueprint and nine delivery stories defined with boundaries, dependencies, and acceptance.
-- [ ] Foundation and complete catalog delivered (S1-S2).
+- [x] Foundation and complete catalog delivered (S1-S2).
 - [ ] All four curricula and reference layer delivered (S3-S7).
 - [ ] CI/RTD features and offline formats demonstrated (S8).
 - [ ] Integrated quality, launch, and maintenance accepted (S9).
@@ -117,8 +118,8 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 | S8 | [Build and hosting](../stories/2026-09-04_rtd_build_and_hosting_story.md) | CI/RTD parity, previews, versions, search, downloads, redirects | S1-S7 |
 | S9 | [Quality and launch](../stories/2026-09-04_rtd_quality_and_launch_story.md) | Integrated evidence, publication verification, maintenance | S1-S8 |
 
-All nine stories are draft delivery contracts. None claims implementation has begun. Open bounded,
-routed tasks under them as work starts; do not create nine concurrent active board assignments.
+All nine stories have bounded execution tasks. Foundation, catalog, and all curricula are implemented;
+integrated reference, hosting, and quality work remains. Keep one documentation task actively routed.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] [Understand ThreadFactory's Sphinx/RTD setup](../tasks/2026-09-04_readthedocs_sphinx_reference_discovery_task.md).
@@ -148,8 +149,10 @@ routed tasks under them as work starts; do not create nine concurrent active boa
 ## Validation / Test Approach
 - Current evidence: complete reference build/config reads and representative API page reads.
 - Public ThreadFactory landing and ConcurrentDict pages were retrieved and contain rendered API data.
-- Local Sphinx builds: Not run.
-- Melder runtime tests: Not run; the current work defined the documentation program.
+- Local Sphinx builds: strict HTML build passes at 194 pages.
+- Saved lesson execution: all 133 scripts have passed; Expert ProtocolCrafter needed one unchanged
+  retry outside the sandbox for Windows temporary-directory ACLs. This verifies executed assertions
+  and handled outcomes, not every prose claim or universal runtime correctness.
 - An existing architecture-doc check was run; its result and a line-ending diagnosis are retained below.
 - Delivery validation is defined in blueprint section 15 and in every story's acceptance/test plan.
 - Definition checks: nine linked story files resolve; distinct IDs/status/parent pointers inspected;
@@ -482,9 +485,9 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
 - Append corrections when new evidence or owner direction changes earlier conclusions.
 
 ## Context / Handoff Summary
-codex_2 owns the documentation epic. Definition is complete: the linked blueprint and nine draft
-stories cover the full program. Exactly Beginner, Intermediate, Advanced, Expert drive the site;
-Full Contents and all 133 saved examples are primary requirements. Current definitions supersede the
-earlier two-part proposal retained in Notes. All new definition files were read and their links checked.
-Implementation, Sphinx/example execution, and hosted setup remain outstanding. Next: start a bounded
-S1 task for the navigation and local-build foundation when implementation is requested.
+codex_2 owns this implementation. The strict local build has 194 pages: exactly Beginner,
+Intermediate, Advanced, Expert; 48 guide chapters; all 133 canonical lesson pages; full contents and
+filterable examples. All saved scripts have passed their harness checks, with one environment-only
+ProtocolCrafter retry. All 36 Expert sources were read and limits recorded in its task.
+Next: reference/API/architecture integration, followed by CI/RTD/offline/quality work.
+Owner handles all commits and pushes. Preserve other agents' CI/disposal work.

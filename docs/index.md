@@ -92,6 +92,42 @@ Agent rooms, transactions, checkpoints, research, and governed change.
 :::
 ::::
 
+## Build something real
+
+::::{grid} 1 2 2 2
+:gutter: 3
+
+:::{grid-item-card} 🟢 A complete first application
+:link: beginner/capstone
+:link-type: doc
+
+Combine registration, categories, lifetimes, and a working application graph.
+:::
+
+:::{grid-item-card} 🟡 Connect three subsystems
+:link: intermediate/connected-subsystems
+:link-type: doc
+
+Wire platform → services → workflows through explicit contracts.
+:::
+
+:::{grid-item-card} 🟠 Inspect an isolated world
+:link: advanced/inspection-walkthrough
+:link-type: doc
+
+Choose the world, open its view, and understand what is visible.
+:::
+
+:::{grid-item-card} 🔵 Generate a working application
+:link: expert/codegen
+:link-type: doc
+
+Turn source strings into a tokenizer, counter, reporter, and independent workers.
+:::
+::::
+
+[Browse all saved examples](examples/index.md) by level, topic, or name.
+
 ## Three verbs, a high ceiling
 
 Your classes stay ordinary Python. A spellbook describes what can be built;

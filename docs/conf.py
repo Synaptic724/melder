@@ -33,6 +33,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
     "sphinx_design",
     "sphinx_copybutton",
     "docstring_format",
@@ -41,7 +42,8 @@ source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 root_doc = "index"
 language = "en"
 exclude_patterns = ["_build", ".DS_Store", "Thumbs.db"]
-myst_enable_extensions = ["colon_fence", "deflist", "fieldlist"]
+myst_enable_extensions = ["colon_fence", "deflist", "fieldlist", "substitution"]
+myst_substitutions = {"release": release}
 myst_heading_anchors = 4
 autodoc_member_order = "bysource"
 autodoc_typehints = "signature"
@@ -68,3 +70,4 @@ html_show_sphinx = False
 copybutton_prompt_text = r">>> |\.\.\. |\$ |PS> "
 copybutton_prompt_is_regexp = True
 smartquotes = False
+todo_include_todos = True

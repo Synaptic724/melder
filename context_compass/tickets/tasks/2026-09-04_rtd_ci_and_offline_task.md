@@ -5,7 +5,7 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-build-and-hosting
 - Story Path: ../stories/2026-09-04_rtd_build_and_hosting_story.md
-- Status: draft
+- Status: in_progress
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -17,7 +17,8 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 
 ## Ticket Contract
 - ENTRY_GATE: Parent story/blueprint read, dependency milestone available, and this task actively routed.
-- EXECUTION_BOUNDARY: .readthedocs.yaml, .github/workflows/docs.yml, docs dependency locks/configuration, offline builders, version/source-link code, and docs/maintaining.md.
+- EXECUTION_BOUNDARY: .readthedocs.yaml, docs workflow and its required-CI integration, docs dependency
+  locks/configuration, offline builders, version/source-link code, and docs/maintaining.md.
 - DEPENDENCIES: Local foundation/catalog; content and reference contracts; live hosting activation is the separate hosted-project task.
 - EXIT_GATE: Acceptance checks have evidence; delivery state and parent story are synchronized.
 - FAILURE_ESCALATION: Record concrete failures and preserve unaffected progress; do not infer success.
@@ -84,10 +85,28 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   SCORE_0_TO_10: 9
 
 ## Applicable Anti-Patterns
+- DATETIME: 2026-09-05T00:50:29Z
+  TYPE: DECISION
+  CLAIM: Add a reusable docs workflow to the existing required CI graph, including the exact job
+    evidence list in ci_policy.py. Keep runtime verification in its existing 3.14t workflow.
+    RTD supports Python 3.14 and per-format build.jobs overrides; outputs must be staged under
+    READTHEDOCS_OUTPUT for html/htmlzip/pdf/epub. Local and hosted formats must share the same builders.
+    The handbook will contain the four guide levels, glossary, and selected complete examples.
+  EVIDENCE:
+  - .github/workflows/ci.yml:1-82
+  - .github/scripts/ci_policy.py:16-25
+  - .github/scripts/ci_policy.py:96-117
+  - https://docs.readthedocs.com/platform/stable/config-file/v2.html
+  - https://docs.readthedocs.com/platform/stable/build-customization.html
+  IMPACT: A docs failure must block merge-ready just like the existing mandatory checks; account setup
+    remains separate from checked-in configuration. Owner retains all commits and pushes.
+  NEXT: Implement the curated handbook and format staging, then wire CI and RTD configuration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
 Defined task awaiting its dependency milestone.
 Wire the proven local command into CI and RTD configuration, implement version/canonical/source behavior, and build offline formats.
-

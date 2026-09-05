@@ -5,7 +5,7 @@
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-expert-curriculum
 - Story Path: ../stories/2026-09-04_rtd_expert_curriculum_story.md
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
@@ -47,7 +47,9 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
 - [ ] Applicable example/probe and long-code/render checks have recorded outcomes.
 
 ## Validation
-- Not run. Implementation task just created.
+- Expert scripts: 35 passed in the normal harness; ProtocolCrafter passed unchanged in an isolated
+  retry outside the sandbox after a Windows temporary-directory ACL error.
+- Strict integrated Sphinx HTML build: 194 pages, with all four levels and 133 lesson pages.
 - Use the parent story's validation plan and report local/hosted/execution results separately.
 
 ## Risks / Mitigations
@@ -56,8 +58,10 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
 - Keep the four owner-defined learning levels and prominent examples invariant.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false until this task produces or owns a supporting artifact.
-- ARTIFACT_PATHS: none; the parent story links the shared blueprint.
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - artifacts/rtd_validation_20260904/expert.xml
+  - artifacts/rtd_validation_20260904/expert_protocol.xml
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Record task-owned artifact disposition before accepted closure.
 
@@ -83,7 +87,6 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
-## Applicable Anti-Patterns
 - DATETIME: 2026-09-04T23:55:00Z
   TYPE: DECISION
   CLAIM: Expert authoring extends the same validated curriculum/lesson pipeline. Read each saved
@@ -99,10 +102,6 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
-- [ ] No silently omitted content or invented validation.
-- [ ] No unrecorded scope changes or interference with another agent's work.
-
-## Context / Handoff Summary
 - DATETIME: 2026-09-05T00:02:51Z
   TYPE: FACT
   CLAIM: All 36 Expert lesson source files have now been read completely. Final 29-34 review covers
@@ -209,5 +208,30 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
-Defined task awaiting its dependency milestone.
-Deliver the complete agent, codegen, transaction, persistence, restore, research, and governed-change level with honest execution evidence.
+- DATETIME: 2026-09-05T00:06:02Z
+  TYPE: MEASURE
+  CLAIM: Twelve Expert guides are implemented and all 36 sources have been read. The full site
+    now builds strictly at 194 pages: all four levels, 48 guide chapters, and 133 lesson pages.
+    Curriculum generation also adds reverse lesson-to-guide links, preserving cross-level placement
+    and the established Hello URL. The original Hello page now uses the common catalog template.
+  EVIDENCE:
+  - docs/curriculum.toml:1-417
+  - docs/tools/curriculum.py:65-168
+  - docs/_build/html/contents.html
+  - artifacts/rtd_validation_20260904/expert.xml:1-1
+  - artifacts/rtd_validation_20260904/expert_protocol.xml:1-1
+  IMPACT: All curricula are ready for integrated reference/navigation review. A handled demonstration
+    refusal remains distinguished from successful replay in the public restore guidance.
+  NEXT: Implement the reference and architecture layer.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+## Applicable Anti-Patterns
+- [x] No silently omitted content or invented validation.
+- [x] No unrecorded scope changes or interference with another agent's work.
+
+## Context / Handoff Summary
+All 36 Expert scripts were read; all have passed execution (ProtocolCrafter required an ACL retry).
+The full 194-page site builds strictly, including 48 chapters across the exact four learning levels.
+Reference, CI/hosting, offline outputs, and integrated quality work remain. Owner handles all commits
+and pushes. Do not use inherited VERIFY comments or a handled restore refusal as proof of full replay.

@@ -115,7 +115,7 @@ class Spellbook(Cleanable):
 
     Lifecycle / Cleanup:
         - This object owns local registries, contracted registries, validators, configuration,
-and logging.
+          and logging.
         - Cleanup is staged so component teardown happens under the lock first
           and high-level references are dropped afterward.
 

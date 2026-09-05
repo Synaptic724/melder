@@ -171,7 +171,7 @@ class Spell(Cleanable):
             contract used for internal coordination, graph wiring, diagnostics,
             and spell-system-state attachment.
 
-        *args / **kwargs:
+        args and kwargs:
             Arbitrary tags and metadata for internal use or future extensions.
 
     Threading / Concurrency:

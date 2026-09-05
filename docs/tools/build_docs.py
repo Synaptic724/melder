@@ -16,6 +16,8 @@ from typing import Mapping, Optional
 from site_model import Asset, Page
 from example_catalog import ExampleCatalog
 from curriculum import Curriculum
+from api_reference import ApiReference
+from architecture_reference import ArchitectureReference
 
 
 class DocumentationBuilder:
@@ -38,6 +40,7 @@ class DocumentationBuilder:
         self.pages: list[Page] = []
         self.assets: list[Asset] = []
         self.catalog: Optional[ExampleCatalog] = None
+        self.api: Optional[ApiReference] = None
         self.generated_bodies: dict[str, str] = {}
 
     @staticmethod
@@ -84,6 +87,7 @@ class DocumentationBuilder:
         self.assets = [Asset(self._text(row, "source"), self._text(row, "target"))
                        for row in self._rows(payload, "asset")]
         self.catalog = None
+        self.api = None
         self.generated_bodies = {}
         if "example_catalog" in payload:
             self.catalog = ExampleCatalog(self.root, self._input(self.docs, self._text(payload, "example_catalog")))
@@ -100,6 +104,21 @@ class DocumentationBuilder:
             curriculum = Curriculum(self.root, self._input(self.docs, self._text(payload, "curriculum")), self.catalog)
             self.pages.extend(curriculum.pages)
             self.generated_bodies.update(curriculum.bodies)
+        if "api_reference" in payload:
+            if self.catalog is None:
+                raise ValueError("API references require the catalog's source revision.")
+            self.api = ApiReference(self.root, self._input(self.docs, self._text(payload, "api_reference")),
+                                    self.catalog._revision)
+            self.pages.extend(self.api.pages)
+            self.generated_bodies.update(self.api.bodies)
+            self.api.connect_examples(self.catalog)
+        if payload.get("architecture_reference", False):
+            if self.catalog is None:
+                raise ValueError("Architecture references require the catalog's source revision.")
+            architecture = ArchitectureReference(self.root, self.catalog._revision)
+            self.pages.extend(architecture.pages)
+            self.assets.extend(architecture.assets)
+            self.generated_bodies.update(architecture.bodies)
         identifiers = [page.identifier for page in self.pages]
         if len(set(identifiers)) != len(identifiers):
             raise ValueError("Navigation contains duplicate page IDs.")
@@ -209,6 +228,8 @@ class DocumentationBuilder:
             shutil.copyfile(self._input(self.root, asset.source), destination)
         if self.catalog is not None:
             self.catalog.write_assets(source)
+        if self.api is not None:
+            self.api.write_assets(source)
         return source
 
     def build(self, builder: str = "html") -> int:

@@ -64,6 +64,9 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-04_rtd_reference_content_task.md | artifacts/rtd_validation_20260904/reference_build.log | validation_report | active | retain_as_reference | Complete strict reference build at 292 pages. | 2026-09-05T00:50:29Z | HELPFUL |
+| tickets/tasks/2026-09-04_rtd_expert_content_task.md | artifacts/rtd_validation_20260904/expert.xml | validation_report | active | retain_as_reference | 35 scripts passed; ProtocolCrafter hit sandbox temp ACL. | 2026-09-05T00:06:02Z | HELPFUL |
+| tickets/tasks/2026-09-04_rtd_expert_content_task.md | artifacts/rtd_validation_20260904/expert_protocol.xml | validation_report | active | retain_as_reference | ProtocolCrafter passed unchanged outside sandbox. | 2026-09-05T00:06:02Z | HELPFUL |
 | tickets/tasks/2026-09-04_rtd_advanced_content_task.md | artifacts/rtd_validation_20260904/advanced.xml | validation_report | active | retain_as_reference | All 19 Advanced scripts and 267 metadata checks passed. | 2026-09-04T23:55:00Z | HELPFUL |
 | tickets/tasks/2026-09-04_rtd_intermediate_content_task.md | artifacts/rtd_validation_20260904/intermediate.xml | validation_report | active | retain_as_reference | All 37 Intermediate scripts passed on Python 3.14t. | 2026-09-04T23:49:46Z | HELPFUL |
 | tickets/tasks/2026-09-04_rtd_beginner_content_task.md | artifacts/rtd_validation_20260904/beginner.xml | validation_report | active | retain_as_reference | Beginner execution and corpus metadata evidence; two later-tier corrections remain. | 2026-09-04T23:45:10Z | REQUIRED |

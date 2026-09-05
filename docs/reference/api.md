@@ -3,15 +3,12 @@
 Use the public `melder` namespace in applications. Detailed reference pages
 connect those public objects to their contracts, examples, and source.
 
-## Explicit dependency targets
+Choose a topic, then an object. Use the guides for complete application workflows
+and these references for signatures, parameters, return values, and lifecycle contracts.
 
-`SpellMap` describes an explicit resolution target when an annotation alone
-does not identify the desired dependency.
+Some exports identify objects you receive from a facade rather than construct
+yourself. Follow the documented ownership and registration contract; a type being
+importable does not mean it can be bound as an application spell.
 
-```{eval-rst}
-.. autoclass:: melder.aether.conduit.meld.contracts.spell_map.SpellMap
-   :members:
-   :member-order: bysource
-```
-
-[Beginner](../beginner/index.md) · [Intermediate](../intermediate/index.md)
+[Beginner](../beginner/index.md) · [Intermediate](../intermediate/index.md) ·
+[Advanced](../advanced/index.md) · [Expert](../expert/index.md)
