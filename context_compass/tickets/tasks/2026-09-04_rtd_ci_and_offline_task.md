@@ -571,6 +571,21 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T15:23:41Z
+  TYPE: FACT
+  CLAIM: Owner could not see .gitignore in local changes. Git confirmed it was staged with no
+    unstaged diff. Ran git restore --staged -- .gitignore only; the /_readthedocs/ edit remains
+    intact and git status now shows an unstaged modification. Its review-panel request is queued.
+  EVIDENCE:
+  - git diff --cached -- .gitignore before the change.
+  - git status --short -- .gitignore after: unstaged M.
+  - git diff -- .gitignore after: /_readthedocs/ addition remains.
+  IMPACT: Owner can select the ordinary working-tree change in their commit view. The missing
+    input still needs to be included in the next commit; no generated payload changed.
+  NEXT: Owner commits/pushes the visible .gitignore change and reruns CI.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
