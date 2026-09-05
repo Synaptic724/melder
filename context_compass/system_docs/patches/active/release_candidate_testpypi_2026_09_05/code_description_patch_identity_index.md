@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `code_description_patch_identity.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T16:11:19Z |
-| line_count | 28 |
+| generated_at | 2026-09-05T17:30:48Z |
+| line_count | 31 |
 | line_ending | lf |
-| content_sha256 | `9ee1793dee46dc7ca0fff00e2f81e278fd5d9451752ccd8b0f52a806cf3719c4` |
+| content_sha256 | `1ce54cac2127c5347ae638dae5d7761cc9d7170d9073c8dad362b2505984e569` |
 | sections | 4 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -27,7 +27,7 @@ which you did.
 
 | lines | lvl | name |
 | --- | --- | --- |
-| 3-12 | 2 | Candidate path |
-| 13-20 | 2 | Production path |
-| 21-26 | 2 | Failure and rollback semantics |
-| 27-28 | 2 | Non-goals |
+| 3-15 | 2 | Candidate path |
+| 16-23 | 2 | Production path |
+| 24-29 | 2 | Failure and rollback semantics |
+| 30-31 | 2 | Non-goals |

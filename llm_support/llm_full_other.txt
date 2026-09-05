@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 310021e9c1809b34beaea046cecb82bfc541d4e98254488b45503ec0249bc36a
+SOURCE FINGERPRINT: e703141c265a29e7281422915430a3e1213b69a75eaccf387b10155e04ffdda6
 FILE COUNT: 352
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: 5e4509417c20e009efe67644556c6402ffda505f271a18afe481a1e63e2612ee
+CONTENT SHA256: a9a098eebcaa216cdd592c433bd7d9392397ca5e03d01432e402dc48f9a6a3bc
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -97,6 +97,11 @@ The final status fails for missing evidence, failure, cancellation, or an
 unexpected skipped job. Only dev intentionally skips distribution building.
 Repository variables cannot disable mandatory asset checks. Helpers remain
 manually runnable. `ci.yml` owns source CI; `release-candidate.yml` owns candidate pushes.
+
+Scope `PYTHON_GIL=0` to the runtime-test and installed-package probe steps. Do not
+set it for the whole job: macOS Python setup runs a standard-Python certificate
+installer that cannot start with the GIL disabled. The test driver and wheel probe
+still reject an unsupported interpreter or an enabled GIL during qualification.
 
 ## Working on a feature
 
@@ -1502,7 +1507,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: 053a1f6cd05d1821b1e2381979c1e53592099a4876f9b54de9ba7ee3ff8c1e63
+CONTENT SHA256: 227dbc111d3b44bcd5cebfba27dd24af0c8eb1da76df6adc6e14a9208362d281
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -1535,8 +1540,6 @@ jobs:
     name: Distributions / build-and-verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      PYTHON_GIL: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -1561,6 +1564,8 @@ jobs:
           RELEASE_TAG: ${{ inputs.release-tag }}
         run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
       - name: Install and verify the wheel in isolation
+        env:
+          PYTHON_GIL: "0"
         run: |
           python -m venv "$RUNNER_TEMP/melder-wheel-probe"
           "$RUNNER_TEMP/melder-wheel-probe/bin/python" -m pip install --quiet --no-deps dist/*.whl
@@ -1946,7 +1951,7 @@ END FILE: .github/workflows/python-publish.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
-CONTENT SHA256: e633ad4fb49ad0dfe17bd1e3e35cf336fa4116f3d8922a4188f947c8a98bc0ef
+CONTENT SHA256: 442250134b328c8c8609c676ad2480fe5b370c6c0a89bfd283c189723e258c8e
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Release candidate
@@ -2043,8 +2048,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    env:
-      PYTHON_GIL: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -2055,6 +2058,8 @@ jobs:
           name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
           path: dist/
       - name: Download the hash-pinned wheel and test its isolated installation
+        env:
+          PYTHON_GIL: "0"
         run: python .github/scripts/testpypi_candidate.py probe-install --report reports/installed.json
       - name: Retain installed-package evidence
         uses: actions/upload-artifact@v7
@@ -2086,7 +2091,7 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: c46f598ba01da8f2f7a09bf554923d3f904acd8a6cbbecd3eeeafed008e06ea2
+CONTENT SHA256: fb3e1729990cc61d92d0606167a9f084c11f91e772188931808933af69db2e70
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
@@ -2107,9 +2112,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    env:
-      # Fix the posture for the actual pytest process, including its plugins.
-      PYTHON_GIL: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -2123,6 +2125,9 @@ jobs:
           python -m pip install --group test
           python -m pip install --no-deps --editable .
       - name: Run supported test tiers with runtime verification
+        env:
+          # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
+          PYTHON_GIL: "0"
         run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
       - name: Retain test results
         if: always()

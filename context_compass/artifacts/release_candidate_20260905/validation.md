@@ -42,3 +42,13 @@ TestPyPI token repair, 2026-09-05T17:02:19Z:
 - The owner's previous OIDC run failed invalid-publisher. Updated YAML must reach release_candidate
   before a new hosted run can prove token validity and installation across all three operating systems.
 - No commit, push, workflow dispatch/rerun, or package upload was performed by the agent.
+
+macOS setup environment repair, 2026-09-05T17:31:43Z:
+- Three parsed setup-environment regression cases failed on the original job-wide PYTHON_GIL=0.
+- All 269 focused workflow/package/builder tests pass after the fix (macos-setup.xml).
+- All eight workflows pass actionlint; scoped Ruff and whitespace checks pass.
+- Changed patch indexes and tests/other corpora are regenerated; corpus output/input proofs pass.
+- Python 3.14t, Linux/Windows/macOS matrices, and runtime GIL-state checks remain intact.
+- Upstream macOS installation launches the standard-Python certificate helper; setup now receives
+  no forced GIL-off setting. Qualification steps retain PYTHON_GIL=0.
+- A hosted macOS installation was not executed here. No commits, pushes, reruns, or uploads occurred.

@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T17:02:19Z
+- Updated: 2026-09-05T17:31:43Z
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -37,9 +37,9 @@ commit, version, workflow run, and distribution hashes before final production p
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: RC upload failed because TestPyPI rejected its OIDC publisher. Owner-selected
-  token authentication is implemented and locally verified; GitHub secret placement is verified.
-  Owner commit/promotion and the first successful token-authenticated hosted run remain.
+- transition_reason: Upstream certificate-helper source proves the macOS setup environment failure.
+  The three workflow GIL settings are now scoped to qualification steps; 269 focused tests and all
+  workflow lint pass. Owner commit/push and a fresh hosted macOS run remain.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -55,6 +55,10 @@ commit, version, workflow run, and distribution hashes before final production p
 - Durable operator instructions including TestPyPI project and GitHub environment configuration.
 
 ## Validation
+- 2026-09-05T17:31:43Z macOS setup repair: the three setup-inheritance regressions fail on the old
+  job-wide settings; all 269 focused tests pass after scoping the environment to qualification steps.
+  All eight workflows pass actionlint; scoped Ruff, whitespace, and regenerated tests/other proofs pass.
+  Actual macOS installer execution was not performed locally; a new hosted run must verify the repair.
 - 2026-09-05T17:02:19Z token repair: 266 focused workflow/package/builder tests pass on Python 3.14t.
   All eight workflows pass actionlint; scoped Ruff, whitespace, and tests/other corpus checks pass.
   GitHub secret-name metadata verifies MELDER_API_TOKEN inside pypitest; the value was not accessed.
@@ -618,7 +622,114 @@ commit, version, workflow run, and distribution hashes before final production p
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: HYPOTHESIS
+  CLAIM: The owner-provided macOS log selected the expected darwin-arm64-freethreaded archive and
+    installed it successfully, then failed at Install OpenSSL certificates with config_read_gil.
+    Job-wide PYTHON_GIL=0 may be reaching a standard Python helper during setup. Runtime tests must
+    still run free-threaded; inspect the upstream installer and both matrix workflows before editing.
+  EVIDENCE:
+  - Owner macOS setup-python v7 failure log on 2026-09-05, recorded here.
+  - https://github.com/actions/python-versions/blob/main/installers/macos-pkg-setup-template.sh
+  IMPACT: This is a setup boundary failure before Melder tests or TestPyPI consumer code executes.
+  NEXT: Read the installer certificate invocation and all workflow PYTHON_GIL scopes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: FACT
+  CLAIM: The upstream macOS installer invokes Install Certificates.command after installing the
+    free-threaded interpreter. CPython's certificate script explicitly launches Python.framework's
+    standard python3.14, so inherited PYTHON_GIL=0 causes the reported startup refusal. Both local
+    runtime and candidate-install jobs currently set that variable job-wide; the Linux package-build
+    job has the same scope. The runtime driver already checks the actual pytest process's GIL state.
+  EVIDENCE:
+  - https://github.com/actions/python-versions/blob/main/installers/macos-pkg-setup-template.sh
+  - https://github.com/python/cpython/blob/3.14/Mac/BuildScript/resources/install_certificates.command
+  - .github/workflows/test-runtime.yml:10-35
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/scripts/run_runtime_tests.py:20-39
+  IMPACT: The selected 3.14t interpreter is correct. Scope PYTHON_GIL=0 to actual qualification steps;
+    do not downgrade Python, enable the GIL for tests, or disable certificate installation.
+  NEXT: Read the package-build and smoke-probe boundary, then update the three workflow scopes and contracts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: DECISION
+  CLAIM: Keep Python 3.14t and all three supported OSes. Move PYTHON_GIL=0 from job scope to the
+    runtime test driver, RC probe-install step, and distribution installed-wheel probe step. Leave
+    setup/dependency installation unforced. Update existing consumer assertions and add one parsed
+    setup-environment regression per workflow; prove those fail on the existing three job-wide settings.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml:10-35
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/workflows/build-distributions.yml:26-60
+  - .github/scripts/smoke_wheel.py:39-80
+  IMPACT: Scope is the three workflows, test_workflow_contracts.py, branch guide, patch contracts,
+    and their derived assets. Mapping: setup/runtime boundary -> job/step env changes -> parsed
+    setup-inheritance and consumer-posture tests plus existing runtime guard tests and actionlint.
+  NEXT: Read the patch delta and add/run the three setup-environment regressions before changing YAML.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:24:07Z
+  TYPE: MEASURE
+  CLAIM: The three new parsed setup-environment regression cases all fail on the original YAML:
+    setup-python inherits PYTHON_GIL=0 in runtime, RC install, and distribution build. This reproduces
+    the configuration defect without claiming that the macOS installer ran on this Windows host.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_workflow_contracts.py:58-73
+  IMPACT: The regressions distinguish setup from runtime posture and fail before the fix.
+  NEXT: Move the three env mappings to their qualification steps and update runtime-step assertions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T17:29:45Z
+  TYPE: FACT
+  CLAIM: All three workflow job-wide PYTHON_GIL settings are now scoped to their runtime-test or
+    installed-wheel probe steps. The guide and patch contract explain the standard-Python macOS
+    bootstrap boundary. Existing runtime/probe checks still validate actual GIL state and all three
+    OSes remain required. No publisher, interpreter version, branch route, or source helper changed.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml:10-35
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/workflows/build-distributions.yml:26-64
+  - .github/BRANCH_WORKFLOW.md:32-35
+  IMPACT: Runtime policy now starts after interpreter setup. The setup regressions and runtime-step
+    assertions together prove the intended boundary without dropping free-threaded qualification.
+  NEXT: Regenerate patch indexes and tests/other assets, then run focused regressions and workflow lint.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:31:43Z
+  TYPE: MEASURE
+  CLAIM: After the GIL environment scope repair, all 269 focused workflow/package/builder tests pass.
+    Three new setup-inheritance regressions previously failed on the old YAML. All eight workflows
+    pass actionlint 1.7.12 (optional shellcheck/pyflakes disabled); scoped correctness Ruff, whitespace,
+    regenerated tests/other corpus proofs, and patch-index generation also pass. No runtime helper,
+    interpreter selection, platform matrix, upload credential, or release gate changed.
+  EVIDENCE:
+  - artifacts/release_candidate_20260905/macos-setup.xml
+  - artifacts/release_candidate_20260905/validation.md
+  - tests/unit/github_workflows/test_workflow_contracts.py:58-87
+  - .github/workflows/test-runtime.yml:10-36
+  - .github/workflows/release-candidate.yml:85-108
+  - .github/workflows/build-distributions.yml:26-62
+  IMPACT: Ready for owner commit on codex_features2. This Windows check proves configuration and
+    regression behavior; it does not claim that the macOS installer or the hosted matrix ran here.
+  NEXT: Owner commits/pushes the repair and lets a new run execute the updated workflow on macOS.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+Latest repair: job-wide PYTHON_GIL=0 reached the standard Python used by macOS's certificate helper
+during setup-python. Runtime tests, RC installation, and distribution builds now scope that variable
+to their test/probe steps only. Python 3.14t, all three OSes, and actual-process GIL checks remain.
+The three setup-environment regressions failed before the fix; 269 focused tests now pass, together
+with actionlint, scoped Ruff, whitespace, regenerated corpus proofs, and updated patch indexes.
+A fresh hosted run after owner commit/push must verify macOS installation; it was not executed here.
+
 Local changes are verified and ready for owner commit on codex_features2. The owner selected explicit
 TestPyPI API-token authentication using melder_api_token in the pypitest environment. GitHub metadata
 confirms MELDER_API_TOKEN exists there; its value was never accessed. Only the upload job references
@@ -635,14 +746,15 @@ fields. An old run uses old workflow YAML: adding a secret or rerunning that old
 not deploy this fix. Commit/promote the new YAML through dev -> preprod -> release_candidate, wait for
 RC / package-ready, then rerun an already-failed prod PR check. The agent does not commit, push, or upload.
 
-Latest evidence: 266 focused tests pass; all eight workflows pass actionlint; scoped Ruff, whitespace,
-and regenerated tests/other corpus proofs pass. The previous working-directory test repair and real
+Token-repair evidence: 266 focused tests passed; all eight workflows passed actionlint; scoped Ruff,
+whitespace, and regenerated tests/other corpus proofs passed. The working-directory test repair and real
 Windows wheel/archive checks are recorded above. No new hosted upload/install or Mac run was dispatched.
 Token validity/scope awaits that new hosted run; secret metadata proves placement only.
 
 Version stays explicitly committed in src/melder/__version__.py. Stable and rcN versions are supported;
 rcN must be finalized and requalified before prod. Existing package bytes cannot be replaced under the
 same TestPyPI filename. Candidate fixes remain reviewed release-fix/* changes and return to dev.
-The local macOS extension and all derived asset changes belong in the owner's next commit.
+Token wiring and the original macOS matrix were committed in 1fc53c523. The local environment-scope
+repair, its tests/guide, and derived assets belong in the owner's next commit.
 Apply candidate branch rules after CI rollout; checked-in JSON alone does not activate protection.
 Dates/scheduling remain future work. Preserve all unrelated lanes and leave this task in review.

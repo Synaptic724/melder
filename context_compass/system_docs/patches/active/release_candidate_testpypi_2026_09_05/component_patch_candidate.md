@@ -16,6 +16,9 @@ uploads to TestPyPI, and checks an exact downloaded wheel on Linux/Windows/macOS
 - Linux/Windows/macOS install jobs resolve the TestPyPI wheel with pinned version/hash and invoke an
   isolated installed-package probe. None runs the whole source suite or obtains upload authority.
   The shared full runtime matrix covers the same three OSes in normal CI and final publication.
+- Runtime, candidate-install, and distribution-build jobs leave PYTHON_GIL unset during Python setup.
+  Only their test/installed-wheel verification steps set it to 0. Existing runtime checks still refuse
+  unsupported interpreters or an enabled GIL; setup helpers may use standard Python.
 
 ## State and failure
 The Git tree is the source identity and distributions are the publication identity. Never infer

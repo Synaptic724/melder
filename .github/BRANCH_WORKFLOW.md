@@ -29,6 +29,11 @@ unexpected skipped job. Only dev intentionally skips distribution building.
 Repository variables cannot disable mandatory asset checks. Helpers remain
 manually runnable. `ci.yml` owns source CI; `release-candidate.yml` owns candidate pushes.
 
+Scope `PYTHON_GIL=0` to the runtime-test and installed-package probe steps. Do not
+set it for the whole job: macOS Python setup runs a standard-Python certificate
+installer that cannot start with the GIL disabled. The test driver and wheel probe
+still reject an unsupported interpreter or an enabled GIL during qualification.
+
 ## Working on a feature
 
 Create a short-lived branch from current dev and explicitly target dev when

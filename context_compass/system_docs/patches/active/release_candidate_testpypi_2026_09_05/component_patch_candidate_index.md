@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `component_patch_candidate.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T17:01:02Z |
-| line_count | 31 |
+| generated_at | 2026-09-05T17:30:48Z |
+| line_count | 34 |
 | line_ending | lf |
-| content_sha256 | `bab7e179b3283b09eb4a0370c4267278e2efb11db005bce29773d99eb16d2147` |
+| content_sha256 | `161fcefa876b97b245f40b4d1d8fb0e1a4a3d1c0cb0e756a20befbbcb1df54f6` |
 | sections | 4 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -28,6 +28,6 @@ which you did.
 | lines | lvl | name |
 | --- | --- | --- |
 | 3-7 | 2 | Before and after |
-| 8-19 | 2 | Interfaces |
-| 20-26 | 2 | State and failure |
-| 27-31 | 2 | Ownership and validation |
+| 8-22 | 2 | Interfaces |
+| 23-29 | 2 | State and failure |
+| 30-34 | 2 | Ownership and validation |

@@ -92,8 +92,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    env:
-      PYTHON_GIL: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -104,6 +102,8 @@ jobs:
           name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
           path: dist/
       - name: Download the hash-pinned wheel and test its isolated installation
+        env:
+          PYTHON_GIL: "0"
         run: python .github/scripts/testpypi_candidate.py probe-install --report reports/installed.json
       - name: Retain installed-package evidence
         uses: actions/upload-artifact@v7

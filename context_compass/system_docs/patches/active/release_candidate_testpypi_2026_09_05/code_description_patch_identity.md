@@ -1,6 +1,9 @@
 # Code-description patch: candidate identity and upload ordering
 
 ## Candidate path
+Interpreter setup runs without a forced GIL-off environment. PYTHON_GIL=0 is applied only when
+running runtime tests or installed-package probes after setup, including the shared package builder.
+
 1. Verify the triggering event/ref and checkout commit identify release_candidate in this repository.
 2. Reuse the package builder/version checks; full source tests already guard the promotion PR.
 3. Record commit/tree/version/run/attempt and the exact built wheel/sdist digest pair.
