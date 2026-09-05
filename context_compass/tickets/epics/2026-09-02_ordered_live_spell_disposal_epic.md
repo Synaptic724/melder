@@ -2,12 +2,12 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-09-02-ordered-live-spell-disposal
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-03T01:05:17Z
-- Updated: 2026-09-05T11:37:10Z
+- Updated: 2026-09-05T13:21:33Z
 - Target Window: 2026-Q3
 - Related Program/Initiative: Melder public lifecycle contract
 
@@ -73,10 +73,10 @@ restore without adding a new abstraction or weakening reverse dependency teardow
   - commits, pushes, releases, or publication
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner requested an epic before compaction and established the
-  central ordered-disposal contract.
+- from_state: in_progress
+- to_state: review
+- transition_reason: All implementation phases, documentation/assets, and final Windows CI
+  runtime verification are complete; owner acceptance precedes closure and artifact disposition.
 
 ## Success Metrics
 - Every current contact is classified by source-backed responsibility.
@@ -131,9 +131,9 @@ Each phase records its concrete correction before implementation. Matching scope
 cleanup-failure policy, and private-attribute mutation defenses are not expanded.
 
 ## Milestones (Track Progress)
-- [ ] Phase 1: Configuration/Bind/Spell contract established and implemented.
+- [x] Phase 1: Configuration/Bind/Spell contract established and implemented (in review).
 - [x] Phase 2: Compiler/Creations propagation and method invocation verified (in review).
-- [ ] Phase 3: Persistence/replay order, documentation, and generated assets verified.
+- [x] Phase 3: Persistence/replay order, documentation, and generated assets verified (in review).
 
 ## Stories (Required to Complete)
 - [ ] `tickets/stories/2026-09-04_ordered_disposal_binding_story.md`
@@ -864,6 +864,21 @@ behavior, future design, and tests actually executed remain distinct.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T13:21:33Z
+  TYPE: MEASURE
+  CLAIM: Remaining ordered-disposal work is implemented. Book-owned overlap order survives
+    binding, compiler/Creations, crystal capture, active/staged restore, and fresh/merge graft.
+    Actual new bind identities drive replay joins. Docs/examples and generated assets are updated.
+    Full Windows 3.14t CI runtime run: 11,359 passed, 28 skipped, 15 xfailed, 1 xpassed; exit 0.
+  EVIDENCE:
+  - `tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md`
+  IMPACT: Epic is in review, not closed/published. Source/corpus checks and hygiene pass.
+    Ubuntu CI and independent RTD qualification remain external evidence; unrelated findings are
+    recorded separately in the final task. No commit or push was issued by this agent.
+  NEXT: Owner accepts the delivered feature, then close tickets and dispose temporary artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ### Current source contact inventory
 
 Configuration, bind, and Spell ownership:
@@ -915,7 +930,8 @@ Generated contacts, never hand-edited:
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Current resume route: `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md` (ready).
+Current resume route: `tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md` (review).
+ALL TECHNICAL PHASES COMPLETE: final evidence and separate findings are in that task. Await owner closure.
 Latest ruling: book owns overlap order in both modes; False positions its block last, True first.
 Configuration, producers, compiler/Creations, and configuration transport are verified. Runtime
 verification passes 2,797 selected tests; transport adds a 59-test focused boundary.

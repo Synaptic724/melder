@@ -19,7 +19,7 @@
 | Mobile, keyboard/focus, zoom/reflow | Reflow passed 320/375/640/768/1024px; menu/skip/card/copy focus fixed. Native 200% zoom unavailable; do not equate reflow with a zoom test |
 | No-custom-JavaScript browsing | Separate strict build omits navigation.js/catalog.js; Full Contents and all 133 visible lessons work at 320px |
 | Text and control contrast | Article links 5.697:1; inline literals 5.939:1; filter border 3.725:1; sidebar focus 10.238:1 |
-| Diagrams and long code | Pending final browser review |
+| Diagrams and long code | 17 SVGs loaded at 375px; full-size/download actions present; Tab/Right scrolls long code without page overflow |
 | HTML/PDF/ePub output and source identity | Prior local evidence retained; final-output checks pending |
 | Maintainer add/update/recover workflow | Source runbook read; final workflow review pending |
 | Public RTD build/project/revision | Advertised latest URL shows not-found; actual project identity requested |

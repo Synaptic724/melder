@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-04-ordered-disposal-persistence
 - Epic: EPIC-2026-09-02-ordered-live-spell-disposal
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: ready
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-04T21:17:27Z
+- Updated: 2026-09-05T13:21:33Z
 
 ## User Narrative
 As a Melder user, I want recorded and restored worlds to retain disposal policy and order,
@@ -46,9 +46,10 @@ Order is only a dependable feature when it survives persistence and every suppor
 - Out of scope: Nexus rich-config API expansion, unrelated restore redesign, publication.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Owner requested tasks covering later persistence and completion phases.
+- from_state: ready
+- to_state: review
+- transition_reason: Replay, docs/assets, and final Windows CI runtime verification completed;
+  owner acceptance and external platform/hosting checks remain explicit.
 
 ## Dependencies / Related Work
 - `tickets/stories/2026-09-04_ordered_disposal_binding_story.md`
@@ -56,9 +57,9 @@ Order is only a dependable feature when it survives persistence and every suppor
 - `tickets/tasks/2026-09-04_disposal_configuration_roundtrip_task.md`
 
 ## Tasks (Implementation Checklist)
-- [ ] `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md`
-- [ ] `tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md`
-- [ ] `tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md`
+- [x] `tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md` (in review)
+- [x] `tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md` (in review)
+- [x] `tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md` (in review)
 
 ## Acceptance Criteria
 - Recorded configuration True/False and final names preserve agreed replay behavior.
@@ -121,8 +122,19 @@ do not claim that missing information can be reconstructed without evidence.
 ## Noting Behavior
 Keep cross-task acceptance and release-readiness evidence here; child tasks carry details.
 
-## Context / Handoff Summary
-Replay follows producer/runtime work. Documentation and generated assets follow replay.
-Final validation reconciles all tasks and available platform evidence without publishing.
-No implementation has started, and the discovery probe was not a full Melder test run.
+- DATETIME: 2026-09-05T13:21:33Z
+  TYPE: MEASURE
+  CLAIM: Phase 3 is implemented and verified: ordered capture/all replay paths, actual binding
+    identity joins, public/canonical docs, and regenerated assets. Full Windows CI runtime run
+    passes 11,359 tests with existing skip/xfail/xpass outcomes; source/corpus checks pass.
+  EVIDENCE:
+  - `tickets/tasks/2026-09-04_ordered_disposal_end_to_end_validation_task.md`
+  IMPACT: Technical work is complete, not owner-accepted or published. Separate existing issues
+    and unexecuted Ubuntu/hosted checks are recorded in the final task.
+  NEXT: Owner review and explicit closure acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
+## Context / Handoff Summary
+All three child tasks are implemented/in review. Final runtime and asset evidence is recorded
+in the end-to-end validation task. No commit/push; artifacts await accepted closure.

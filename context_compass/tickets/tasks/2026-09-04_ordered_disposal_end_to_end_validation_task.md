@@ -5,12 +5,12 @@
 - Story: STORY-2026-09-04-ordered-disposal-persistence
 - Story Ticket: `tickets/stories/2026-09-04_ordered_disposal_persistence_story.md`
 - Epic Ticket: `tickets/epics/2026-09-02_ordered_live_spell_disposal_epic.md`
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-04T21:17:27Z
-- Updated: 2026-09-05T13:03:07Z
+- Updated: 2026-09-05T13:21:33Z
 
 ## Objective
 Assemble actual evidence that the agreed order survives configuration, binding, compilation,
@@ -35,10 +35,10 @@ cleanup, and record/replay, then hand the complete program back for acceptance.
 - Out of scope: publishing, signing, committing, pushing, unrelated test repairs, coverage guesses.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Runtime, replay, docs, and generated assets are verified; run the current
-  CI runtime command locally and reconcile final evidence without publishing.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Full current CI runtime command passes on Windows 3.14t; both asset checks,
+  documentation indexes, graph assembly, examples, and hygiene pass. Owner acceptance remains.
 
 ## Required Reading and Evidence
 - All eight preceding task outcomes and their test commands/results.
@@ -71,7 +71,11 @@ One concise evidence-backed acceptance report with exact remaining gaps, if any.
 - Actual patch artifact disposition after successful validation and owner acceptance.
 
 ## Validation
-- Not run; ticket only.
+- Full CI runtime command: 11,359 passed, 28 skipped, 15 xfailed, 1 xpassed in 278.44s, exit 0.
+- Windows Python 3.14.0 free-threaded with PYTHON_GIL=0; runner verifies mode before/after pytest.
+- Ubuntu/other Python builds and coverage measurement: Not run locally.
+- Existing unawaited coroutine warning remains; no unrelated coroutine/locking repair was made.
+- Source and repository assets, canonical indexes/graph, three examples, and hygiene pass.
 - Required outcomes: False/default gives spell-only names then the full book block; True
   gives book block then spell-only names. Book owns overlaps in both modes; matching is setup-time.
 - Preserve class-profile matching, creation-time policy, no-disposal behavior, current failure
@@ -162,7 +166,52 @@ Use MEASURE only for checks actually executed; record results before another val
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T13:21:33Z
+  TYPE: MEASURE
+  CLAIM: The full current CI runtime command passes on Windows 3.14.0 free-threaded with
+    PYTHON_GIL=0: 11,359 passed, 28 skipped, 15 xfailed, 1 xpassed in 278.44s, exit 0.
+    The runner verifies the actual process's free-threaded/GIL state before and after pytest.
+    The existing unawaited coroutine warning remains. No skip/xfail was added by this feature.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe .github/scripts/run_runtime_tests.py --report context_compass/artifacts/ordered_disposal_validation_20260905/runtime.xml
+  - Environment: PYTHON_GIL=0; PYTHONPATH=src plus checkout; PYTEST_ADDOPTS=-p no:cacheprovider --tb=short --basetemp=context_compass/artifacts/ordered_disposal_validation_20260905/runtime_all
+  - `artifacts/ordered_disposal_validation_20260905/runtime.xml`
+  IMPACT: Ordered binding, compiler/Creations, transport, capture/replay, and existing runtime
+    contracts have executed full-tier evidence. This is not a Linux run or a coverage measurement.
+  NEXT: Owner reviews the completed feature and accepts ticket/patch closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:21:33Z
+  TYPE: MEASURE
+  CLAIM: Final canonical source indexes, graph assembly --check, repository hygiene, and
+    both source/corpus freshness commands pass. Corpora remain unchanged across the full runtime
+    run. Current version is 0.2.3; the agent did not bump it, commit, or push. Public examples
+    executed with their existing source-tree import setup and both priorities produce exact order.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe src/melder/_build_assets/_build_asset_runner.py --check
+  - Command: .venv_new/Scripts/python.exe llm_support/_builder.py --check
+  - Command: .venv_new/Scripts/python.exe .github/scripts/ci_policy.py hygiene
+  - `tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md`
+  IMPACT: No ordered-disposal implementation remains. Ubuntu CI, separate RTD hosting/UI
+    qualification, and owner acceptance are not represented as locally completed work.
+  NEXT: Hand off for review; retain artifacts until owner-approved closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+## Separate Findings (Not Patched)
+- Pre-conjure configure_aether_frame freezes/locks configuration before the dynamic hint;
+  later conjure skips its book-twin emission. The existing recorded-world configuration path works.
+- Fresh graft's initial human-name lookup failed before notch in the diagnostic; explicit bind-ID
+  resolution works. This is outside disposal ordering and has not received a separate source repair.
+- Evidence and reproduction context are in the crystal/replay task notes. Do not silently fix these
+  through new locks, recorder sweeps, or Meld fallbacks under the disposal epic.
+
 ## Context / Handoff Summary
-No tests executed for this new feature yet. This is the last task, not a route to jump ahead
-of implementation. Use the child tasks' recorded outcomes and report all material gaps honestly.
-Final closure is a user decision; no commits, pushes, releases, or unrelated cleanup.
+IMPLEMENTED AND VERIFIED, awaiting owner review/closure. Full CI runtime result: 11,359 passed,
+28 skipped, 15 xfailed, 1 xpassed on Windows 3.14t. No new skip/xfail or coverage claim.
+Source/repository assets at existing v0.2.3, examples, canonical indexes/graph, and hygiene pass.
+All three feature phases are complete; detailed implementation evidence stays in their tasks.
+Ubuntu CI and independent RTD hosting/UI qualification remain external checks, not local evidence.
+Two unrelated existing recording/name-lookup findings are recorded above, untouched.
+No commit/push. Temporary patch/validation artifacts remain until owner accepts closure.

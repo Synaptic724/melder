@@ -172,6 +172,43 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-05T13:18:03Z
+  TYPE: FACT
+  CLAIM: Consumed codex_1's source-settled notice: ordered-disposal code/docs and v0.2.3 generated
+    assets/corpora pass its checks. The changed public inputs include README teardown, Intermediate
+    configuration, and Beginner 35 / Intermediate 30-31. Final RTD qualification may now run. Browser
+    checks also confirmed all 17 engineering SVGs loaded at 375px, full-size download controls are
+    available, and native Tab/Right moves long preformatted code horizontally (scrollLeft 0 -> 40).
+  EVIDENCE:
+  - tickets/tasks/2026-09-04_ordered_disposal_docs_assets_task.md
+  - Browser reference/architecture/05_engineering_drawings/index.html and beginner/capstone.html.
+  - docs/tools/example_catalog.py:108-143
+  - docs/tools/check_site.py:110-156
+  IMPACT: Final docs builds can use settled public inputs; no source/LLM regeneration should be
+    necessary unless their explicit checks detect new drift. Notify codex_1 before more public prose edits.
+  NEXT: Reconcile all sources/API dispositions and rebuild/test the final HTML/PDF/ePub outputs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T13:24:58Z
+  TYPE: MEASURE
+  CLAIM: Inventory reconciles 294 pages, 48 guide chapters, 133 lessons (41/37/19/36), 137 lesson/helper
+    files, and 76 API dispositions (60 exports, eight values, eight returned surfaces). All four ZIPs
+    match canonical bytes. All 36 docs tests pass. Current HEAD advanced to 20123b8a during owner work;
+    the final HTML was rebuilt. The 3.14t lesson run passed 132/133; Expert 05 failed only at the
+    temporary interface-file write with Windows PermissionError, matching the prior sandbox failure.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/final_inventory_20260905.json
+  - artifacts/rtd_validation_20260904/final_docs_tests_20260905.log
+  - artifacts/rtd_validation_20260904/final_examples_20260905.log:1-180
+  - artifacts/rtd_validation_20260904/final_html_20260905.log
+  - UX_and_AIX_experiences/04_expert/05_protocol_crafter_the_tool_that_writes.py:122-160
+  IMPACT: No catalog/API/source omission or new lesson assertion failure was found. Retry only the
+    unchanged filesystem-writing lesson outside the sandbox; keep its outcome separate from the 132.
+  NEXT: Run the bounded ProtocolCrafter retry and final offline/link/asset qualification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
