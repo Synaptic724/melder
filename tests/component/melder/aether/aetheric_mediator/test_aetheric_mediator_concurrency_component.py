@@ -35,6 +35,11 @@ Run:
 
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
 
 import pytest
 
@@ -57,10 +62,10 @@ JOIN_TIMEOUT_SECONDS = 30.0
 # that never achieves concurrency is worse than no test, because it reports
 # green.
 #
-# Three milliseconds is long enough that eight threads genuinely overlap and
-# short enough that the whole file stays under a second. The tests below do not
-# TRUST that this produces contention - they measure elapsed time against what
-# serialised work would cost and fail if the plane was never actually contended.
+# Three milliseconds gives peers a chance to contend without making each stress
+# round expensive. Elapsed lower bounds remain stress checks; they do not prove
+# overlap. The disjoint-frame test instead waits at a barrier while claims are held and
+# checks the public claim snapshot, without a machine-speed upper bound.
 HOLD_SECONDS = 0.003
 
 # One metadata bundle per family. Every family reads only its own keys and
@@ -96,16 +101,15 @@ def _plane():
         built.cleanup()
 
 
-def _run(workers):
+def _run(workers: Sequence[Callable[[threading.Barrier], None]]) -> float:
     """
     Start every worker at once and join them all, failing on a stuck thread.
 
     Returns:
-        float: Wall-clock seconds from the barrier release to the last join.
-            Several tests assert against this, because ELAPSED TIME IS THE ONLY
-            DIRECT EVIDENCE that claims actually excluded each other - a green
-            assertion on final state is equally green whether the threads
-            serialised or never met.
+        float: Wall-clock seconds including thread startup, barrier waits, and
+            joins. Some stress tests use elapsed lower bounds; the disjoint-frame
+            contract uses an in-session rendezvous to prove overlap directly.
+            Duration alone cannot distinguish scheduler delay from serialization.
 
     Raises:
         AssertionError: If any thread is still alive after the join timeout,
@@ -162,7 +166,7 @@ def _drive(plane, identity, transaction_type, metadata, hold=HOLD_SECONDS):
 
 
 # --------------------------------------------------------------------------
-# Contention is REAL, proven by the clock rather than assumed
+# Contention controls and direct proof of disjoint progress
 # --------------------------------------------------------------------------
 
 def test_world_exclusive_transactions_actually_serialise(plane):
@@ -206,44 +210,72 @@ def test_world_exclusive_transactions_actually_serialise(plane):
     assert plane.describe()["claims"]["scope_count"] == 0
 
 
-def test_disjoint_frames_do_not_serialise_under_threads(plane):
+def test_disjoint_frames_do_not_serialise_under_threads(plane: Mediator) -> None:
     """
     The converse, and the reason `world` INTENT exists at all.
 
     Eight threads load EIGHT DIFFERENT frames, each holding `world` ix plus its
     own `frame:<name>` x. Intent markers coexist and the child keys are
-    disjoint, so none of these should wait for any other - the wall clock should
-    land near ONE hold, not eight.
+    disjoint. In each of three rounds, all eight sessions must reach a barrier
+    while their claims remain held. Its action checks the public claim snapshot
+    before releasing any worker, proving concurrent ownership directly.
+
+    The timeout only guards a stuck rendezvous. Thread startup, scheduler delay,
+    and transaction bookkeeping are not subject to a millisecond performance
+    threshold. Worker failures propagate through their futures; admitted sessions
+    and caller identities are cleaned on both successful and failed rounds.
 
     Without this test the previous one is satisfiable by a plane that simply
     serialises everything, which would be a global mutex with extra vocabulary.
     """
     rounds = 3
 
-    def make_worker(index):
-        """Build one worker loading its own frame."""
-        def worker(barrier):
-            identity = Identity(kind="crystallizer", identity_id=f"f-{index}")
-            try:
-                barrier.wait()
-                for _ in range(rounds):
-                    _drive(
-                        plane, identity, TransactionType.FORMATION_LOAD,
-                        {"target_frame_name": f"frame-{index}"},
-                    )
-            finally:
-                identity.cleanup()
-        return worker
+    def require_concurrent_claims() -> None:
+        """Observe every distinct frame and world-intent holder before any session can leave."""
+        claims = plane.describe()["claims"]
+        expected = {ScopeKey.frame(f"frame-{index}") for index in range(THREADS)}
+        expected.add(ScopeKey.world())
+        assert set(claims["scopes"]) == expected
+        assert len(claims["scopes"][ScopeKey.world()]) == THREADS
 
-    elapsed = _run([make_worker(index) for index in range(THREADS)])
-
-    serial_cost = THREADS * rounds * HOLD_SECONDS
-    assert elapsed < serial_cost * 0.5, (
-        "disjoint frame loads took {0:.3f}s against a serial cost of {1:.3f}s - "
-        "they are serialising against each other, which is the over-claim the "
-        "mode vocabulary exists to prevent".format(elapsed, serial_cost)
+    admitted = threading.Barrier(
+        THREADS, action=require_concurrent_claims, timeout=JOIN_TIMEOUT_SECONDS,
     )
-    assert plane.describe()["claims"]["scope_count"] == 0
+
+    def worker(index: int) -> int:
+        """Finish every round while releasing owned sessions and waking peers on failure."""
+        identity = Identity(kind="crystallizer", identity_id=f"f-{index}")
+        try:
+            for _ in range(rounds):
+                session = plane.begin(
+                    transaction_type=TransactionType.FORMATION_LOAD,
+                    submitter=identity,
+                    metadata={"target_frame_name": f"frame-{index}"},
+                )
+                try:
+                    admitted.wait()
+                finally:
+                    try:
+                        session.leave()
+                        plane.commit(session)
+                    finally:
+                        session.cleanup()
+            return rounds
+        except BaseException:
+            # Release peers immediately when admission or finalization fails.
+            admitted.abort()
+            raise
+        finally:
+            identity.cleanup()
+
+    with ThreadPoolExecutor(max_workers=THREADS) as executor:
+        futures = [executor.submit(worker, index) for index in range(THREADS)]
+        assert [future.result(timeout=JOIN_TIMEOUT_SECONDS) for future in futures] == [rounds] * THREADS
+
+    snapshot = plane.describe()
+    assert snapshot["claims"]["scope_count"] == 0
+    assert snapshot["admission"]["in_flight_count"] == 0
+    assert snapshot["reporting"]["active_count"] == 0
 
 
 # --------------------------------------------------------------------------

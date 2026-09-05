@@ -16,8 +16,9 @@ Contributions enter `dev` through a pull request. Promotion proceeds through
 - Repository assets: the LLM builder verifies committed bundles and indexes.
 - Repository hygiene: tracked filenames must not collide case-insensitively.
 - Documentation: the shared documentation validation workflow must succeed.
-- Runtime tests: unit, component, and integration tiers on Linux and Windows,
+- Runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
   using Python 3.14t with the GIL disabled in the actual pytest process.
+  The macOS job uses `macos-latest` on native Apple Silicon (arm64).
 - Distribution verification for preprod/release_candidate/prod: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
@@ -27,6 +28,11 @@ The final status fails for missing evidence, failure, cancellation, or an
 unexpected skipped job. Only dev intentionally skips distribution building.
 Repository variables cannot disable mandatory asset checks. Helpers remain
 manually runnable. `ci.yml` owns source CI; `release-candidate.yml` owns candidate pushes.
+
+Scope `PYTHON_GIL=0` to the runtime-test and installed-package probe steps. Do not
+set it for the whole job: macOS Python setup runs a standard-Python certificate
+installer that cannot start with the GIL disabled. The test driver and wheel probe
+still reject an unsupported interpreter or an enabled GIL during qualification.
 
 ## Working on a feature
 
@@ -68,30 +74,55 @@ back into dev through a reviewed synchronization PR.
 
 Select a green preprod revision through a PR into `release_candidate`. Keep
 this branch on one candidate while preprod continues receiving new work.
-Every push to release_candidate runs `release-candidate.yml`; no GitHub Release
+The PR runs required source/package CI before merge. Merging it pushes the chosen
+revision onto release_candidate and starts `release-candidate.yml`; no GitHub Release
 or tag is required. Manual dispatch must select the same branch.
 
+| Boundary | Work performed |
+| --- | --- |
+| `preprod -> release_candidate` PR | Full source CI and local package verification. |
+| Merge lands on `release_candidate` | Build, TestPyPI upload, and installed-package probes. |
+| `release_candidate -> prod` PR | Verify the earlier RC run succeeded for this exact source; run required CI. |
+
+TestPyPI publication belongs to the RC stage. The prod promotion check does not
+upload to TestPyPI; it blocks promotion until the earlier RC qualification succeeds.
+
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
-fresh installation on Linux and Windows Python 3.14t. It does not run the whole
+fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
 match this run's built wheel. No editable installation or repository conftest is used.
 
-Use these exact values for the TestPyPI Trusted Publisher:
+Configure the TestPyPI upload credential as follows:
 
 | Field | Value |
 | --- | --- |
 | Project | `melder` |
-| GitHub owner | `Synaptic724` |
-| Repository | `melder` |
+| GitHub repository | `Synaptic724/melder` |
 | Workflow filename | `release-candidate.yml` |
 | GitHub environment | `pypitest` |
+| Environment secret name | `melder_api_token` |
+| Token issuer | `test.pypi.org` |
 
 Create `pypitest` under repository Settings -> Environments and allow deployments
-only from the branch `release_candidate`. The upload job alone receives
-`id-token: write`. No TestPyPI API token secret is needed with Trusted Publishing.
-The production `pypi` environment and its existing authentication stay separate.
+only from the branch `release_candidate`. Add the generated TestPyPI token under
+Environment secrets with the name `melder_api_token`; do not put credentials in
+Variables or repository files. Select the melder project scope when available.
+Creating the first project with token authentication may require an account-scoped
+TestPyPI token; replace it with a project-scoped token once the project exists.
+
+This workflow uses explicit API-token authentication (`user: __token__`) and disables
+OIDC-only attestations. Only its upload job references the secret. A missing secret
+fails with a clear message rather than falling back to OIDC. A token issued by the
+production pypi.org service cannot authenticate to TestPyPI. Production continues
+using its independent pypi environment and PYPI_API_TOKEN credential.
+
+The initial OIDC run failed with `invalid-publisher`; the owner subsequently chose
+token authentication. Adding the secret alone does not change that old workflow.
+Commit/promote this updated YAML into release_candidate to use token authentication.
+Wait for package-ready to succeed, then rerun any prod PR check that already failed
+while qualification was missing. The prod error includes the inspected RC run URL and status.
 
 The package version comes from `src/melder/__version__.py`; CI does not rewrite
 it or create version commits. For example, use `0.2.4rc1`, then `0.2.4rc2` for
@@ -114,7 +145,7 @@ for fresh same-run/attempt artifacts. Download retries are bounded for index
 propagation; failed consumer tests are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, build,
-upload, and both platform probes succeeded. Prod's existing required CI gate
+upload, and all three platform probes succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
 source commit/tree, version, run/attempt, and both distribution hashes.
