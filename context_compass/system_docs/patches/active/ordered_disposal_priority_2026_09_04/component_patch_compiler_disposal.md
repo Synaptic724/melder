@@ -25,8 +25,10 @@ Existing presence/register flags, no-disposal fast paths, and construction error
 Do not introduce fallbacks for arbitrary private mutation or obsolete collection types.
 
 ## Dependency and ordering
-The verified producer result precedes this change. Only six source files require edits:
-runtime record, runtime processor, generalized plan, many-only plan, and both solo compilers.
+The verified producer result precedes this change. Seven source files require edits:
+runtime record, runtime processor, generalized plan, many-only plan, both solo compilers,
+and the generalized manifest no-overrides emitter's inline registration helper.
+The emitter MUST retain names in both singleton and many entries, matching Creations directly.
 Hash/schema helpers remain unchanged: they intentionally emit ordered plain-value tuples.
 Executor hydration continues resolving Spells from the current bound lookup.
 
@@ -36,4 +38,5 @@ nonempty lists. Exercise generalized single/dual, standalone many-only, both sol
 and cached executor hydration. Run existing family/cache tests and later actual Creations tests.
 
 ## Unknowns and open decisions
-None in this six-file correction. Full durable replay and Creations ownership have separate tasks.
+The real Creations tests exposed two inline emitted list copies after the initial six-file pass.
+They are included here; full durable replay remains a separate task.

@@ -2,8 +2,8 @@
 
 ## Patch scope and non-goals
 - Patch ID: ordered_disposal_priority_2026_09_04
-- Configuration and producers are implemented; the current slice adds compiler-list propagation.
-- Creations storage and replay ownership changes remain separate tasks.
+- Configuration, producers, and compiler propagation are implemented; current scope adds Creations storage.
+- Replay ownership remains a separate task.
 - This slice retains the established list through compilation; full record/replay remains pending.
 - No new locks, snapshots of disposal lists, dependencies, root flags, or publication changes.
 
@@ -14,7 +14,7 @@
 | Spellbook Core | Forward both groups and priority at each active/inactive bind; retire shared candidate latch | Existing admission, indexes, and lifecycle remain unchanged |
 | Binding Pipeline | Resolve both ordered groups and hash/store the resolved list | Consumers retain the resulting policy |
 | Compiler | Retain Spell list in processor, plans, and solo namespace bindings | Preserve serialized/hash tuples and all existing executor algorithms |
-| Creations | Unchanged in compiler task | Preserve the established list to actual disposal |
+| Creations | Retain names through registration, extraction, and restoration | Preserve invocation, reverse traversal, and error handling |
 | Crystallizer / Nexus | Generic paths unchanged | Verify transport and ordered replay |
 
 ## Interface and boundary deltas
@@ -31,6 +31,8 @@
 - Compiler runtime records, generalized steps, many-only metadata, and solo namespaces borrow
   the established Spell list. They do not create a second inner collection.
 - Serialized IR and hash tuples remain value boundaries; order is preserved in those values.
+- Creations in-memory transfer payloads retain raw objects and their established list references.
+  This transfer is not a serialization boundary and does not create new policy values.
 
 ## Cross-component invariants
 - Supplied configurations are adopted before validation, so default availability is an init concern.
@@ -42,6 +44,8 @@
 - Missing names and non-class profiles retain the existing matching scope; no new reflection.
 - Retire conjure's obsolete frozenset/flag recheck; do not replace it with private-mutation guards.
 - Compiler cleanup clears only its own outer containers, never borrowed disposal lists.
+- Creations teardown drops entry references without clearing borrowed method lists. Empty
+  supplied lists retain identity; omitted optional metadata still uses an empty list.
 - Cached executor hydration resolves current bound Spells; serialized names do not become
   a competing live policy source. No new cache format or invalidation mechanism is introduced.
 
@@ -57,7 +61,7 @@
 Revert a producer change coherently across forwarding, matching, storage, and its tests.
 The verified configuration slice can remain independently installed.
 No stored record is rewritten and no user/other-agent change is reverted.
-Compiler rollback restores the six metadata/type changes together; retained schema tuples
+Compiler rollback restores metadata/type and inline-registration changes together; retained schema tuples
 remain unchanged in either direction. Do not roll back the verified producer slice.
 
 ## Validation expectations and evidence plan
@@ -79,6 +83,7 @@ remain unchanged in either direction. Do not roll back the verified producer sli
 - Configuration: TASK-2026-09-04-disposal-priority-configuration (implemented/in review).
 - Producer implementation: TASK-2026-09-04-ordered-disposal-bind-and-spell.
 - Compiler implementation: TASK-2026-09-04-ordered-disposal-compiler-propagation.
+- Creations implementation: TASK-2026-09-04-ordered-disposal-creations.
 - Generic transport verification: TASK-2026-09-04-disposal-configuration-roundtrip (later).
 - Runtime, replay, docs/assets, and end-to-end tasks retain their prerequisite gates.
 

@@ -11,10 +11,12 @@ An indiscriminate tuple removal would conflate live ownership with serialized va
 4. Solo compiler normalization returns the same nonempty list, preserving its existing empty case.
 5. Existing namespace builders keep outer tuples of Spell-list references.
 6. IR/hash emitters retain ordered tuple projections; hydration resolves current bound Spells.
+7. Generalized manifest inline registration retains the bound list directly in both singleton
+   and many entries; it must not reintroduce copies while bypassing Creations methods.
 
 ## Edge/error behavior and rollback
 Empty metadata never enables disposal registration. Preserve existing no-disposal, existence,
-construction-error, and override behavior. Restore the six propagation/type edits together if
+construction-error, and override behavior. Restore propagation/type and inline-registration edits together if
 validation exposes a real contract conflict; do not modify synchronization to repair tests.
 
 ## Invariants and idempotency

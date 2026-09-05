@@ -3,12 +3,15 @@
 ## Metadata
 - Task ID: TASK-2026-09-04-github-branch-promotion-analysis
 - Story: none (standalone discovery)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-04T21:45:20Z
-- Updated: 2026-09-04T22:08:19Z
+- Updated: 2026-09-05T10:12:21Z
+- Completed: 2026-09-05T10:12:21Z
+- Summary: Workflow analysis and branch-promotion design accepted. The CI foundation was delivered
+  by the implementation successor; automated staging and dated candidates remain future work.
 
 ## Objective
 Explain the existing GitHub workflow and branch-management system, then propose a concrete process
@@ -32,10 +35,10 @@ and discussion before implementation.
   changes, or taking over another agent's active work.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Concrete feature-to-dev commands, required-check enforcement, and reusable
-  workflow boundaries are documented after checking the test layout and current contract tests.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in workflows_1's tickets on 2026-09-05.
+  The analysis was delivered and its agreed CI foundation implemented by the successor task.
 
 ## Steps / Checklist
 - [x] Read current workflows and invoked scripts; map feature/dev/preprod/prod events and checks.
@@ -73,7 +76,7 @@ and discussion before implementation.
 - [x] Proposed branch process is concrete and evidence-backed.
 - [x] Unknown remote settings and owner choices are explicit.
 - [x] Notes and handoff summary are current.
-- [ ] Owner has confirmed acceptance.
+- [x] Owner has confirmed acceptance.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -507,16 +510,17 @@ No tests, linters, or workflows were run in this follow-up; this is configuratio
 - https://docs.python.org/3.14/howto/free-threading-python.html
 
 ## Context / Handoff Summary
-Analysis is ready for owner review. The three existing workflows are asset checks plus a prod-only
-publication pipeline. Live GitHub confirms no PR history, no protected branches, and no rulesets.
-Owner wants continuous preprod CI and a release candidate associated with a specific release time.
-Recommended order: PR CI and protection, automatic staging promotion, then fixed-candidate timed
-publication. Product files, branches, GitHub settings, and CI runs were not changed or dispatched.
-The owner follow-up is answered by Concrete Feature-to-dev CI Adaptation: all three test tiers on
-Linux/Windows 3.14t, both asset checks, hygiene, branch-policy, and one stable final merge gate.
-Existing asset workflows become callable; runtime and packaging jobs are extracted for shared use.
-Ruff/mypy clean baselines remain unmeasured; workflow-shape tests must change with the intended design.
-Next: discuss this concrete CI adaptation and select implementation scope, then create the patch contract.
+Accepted and closed on 2026-09-05 at the owner's explicit request. This document preserves the
+original workflow analysis and proposed staging/candidate process; its initial GitHub observations
+are dated history, not the current repository configuration. No tests were run in this discovery task.
+
+The implementation successor delivered shared CI, enforced branch rules, and fresh final release
+validation, including the live release-tag guard. Its completed ticket carries validation evidence,
+temporary-branch cleanup, and the remaining owner rollout:
+`tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md`.
+
+Automatic staging and dated-candidate scheduling remain future work. No analysis artifacts existed;
+there is no further action assigned to workflows_1 in this task.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

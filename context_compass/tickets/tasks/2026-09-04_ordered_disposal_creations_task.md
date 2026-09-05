@@ -92,8 +92,14 @@ to solve a producer-order problem. No new getattr/hasattr existence check is req
 - [ ] Owner accepts closure; no unrequested ticket cleanup.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false at ticket creation
-- ARTIFACT_PATHS: none yet; consume actual runtime patch first
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/architecture_patch_index.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_creations_disposal.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_creations_disposal_index.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_creations_disposal.md`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_creations_disposal_index.md`
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: accepted program closure
 
@@ -151,6 +157,113 @@ Capture real ownership and behavioral findings before continuing; separate exist
   - `context_compass/tickets/tasks/2026-09-04_ordered_disposal_compiler_propagation_task.md`
   IMPACT: This task is one storage-owner correction, not a disposal-loop redesign.
   NEXT: Read the complete Creations implementation and its existing tests/caller contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T10:15:32Z
+  TYPE: FACT
+  CLAIM: Full Creations (614 lines) and ConduitCreations (133) rereads confirm six copies
+    and no required caller changes. Existing-object Conduit registration passes names directly.
+    Invocation, reverse traversal, cleanup/clear/pool, and exception behavior are unchanged targets.
+    Existing method-order/failure/reverse unit tests and real disposal-order integration tests
+    were read. Creations component/control-flow contracts now capture this one-file correction.
+  EVIDENCE:
+  - `src/melder/aether/conduit/creations/creations.py:148-614`
+  - `src/melder/aether/conduit/creations/conduit_creations.py:95-133`
+  - `src/melder/aether/conduit/conduit.py:1386-1428`
+  - `tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py:1-211`
+  - `tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py:1-342`
+  IMPACT: Change references only. Preserve optional metadata fallback and supplied empty-list identity.
+  NEXT: Index/consume the contracts, run baseline, and add direct ownership/runtime regressions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:19:26Z
+  TYPE: PLAN
+  CLAIM: Creations contracts are indexed, linked, and consumed. Mapping: registration ->
+    singleton/many and empty-list identity; extraction/restoration -> identity plus actual
+    calls after transfer; unchanged teardown -> existing failure/reverse regressions and
+    reusable clear/pool checks; compiler-to-store -> real three-family, two-priority runtime cases.
+    Baseline passes 47 existing tests in 0.29s before storage source edits.
+  EVIDENCE:
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/component_patch_creations_disposal.md:7-38`
+  - `system_docs/patches/active/ordered_disposal_priority_2026_09_04/code_description_patch_creations_disposal.md:7-27`
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/aether/conduit/creations tests/component/melder/aether/conduit/test_conduit_component_creations.py tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py -q -p no:cacheprovider --tb=short
+  IMPACT: Entry gate is satisfied. New tests may inspect list identity because sharing is an
+    explicit ownership contract, but must also verify observable disposal behavior.
+  NEXT: Add and run the targeted reference and real-runtime regressions, then remove six copies.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:22:17Z
+  TYPE: MEASURE
+  CLAIM: New ownership/runtime regressions reproduce the six-copy defect: 22 failed,
+    4 passed in 0.24s. All failures are list-reference mismatches, including every real
+    solo/generalized/many-only graph under both priorities and actual override values.
+    Disabled and omitted-metadata cases already pass. No runtime setup conflict remains.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/aether/conduit/creations/test_creations_disposal_references.py tests/integration/melder/conduit/test_ordered_disposal_runtime.py -q -p no:cacheprovider --tb=line
+  - `tests/unit/melder/aether/conduit/creations/test_creations_disposal_references.py`
+  - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
+  IMPACT: Real runtime family selection and value order are correct before the storage edit;
+    Creations still detaches the list reference. The planned six substitutions address it.
+  NEXT: Replace six inner-list copies and run new plus existing disposal regressions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:22:17Z
+  TYPE: FACT
+  CLAIM: Applied six reference substitutions in creations.py and documented ownership at
+    registration and transfer boundaries. The invocation loop, detach operation, exception
+    handling, locks, pooling, and scope routing are unchanged.
+  EVIDENCE:
+  - `src/melder/aether/conduit/creations/creations.py`
+  IMPACT: The existing established list now survives this last runtime storage boundary.
+  NEXT: Run the 26 new cases and 47 existing disposal checks together.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T10:22:17Z
+  TYPE: MEASURE
+  CLAIM: Storage verification now passes 71 of 73 tests. Only real generalized/no-overrides
+    runtime cases still detach names; solo, many-only, overrides, transfer, pool reuse, and
+    prior cleanup regressions pass. The remaining producer of a copied list is UNKNOWN
+    until the actual generalized registration call path is traced.
+  EVIDENCE:
+  - Command: .venv_new/Scripts/python.exe -m pytest tests/unit/melder/aether/conduit/creations tests/component/melder/aether/conduit/test_conduit_component_creations.py tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py tests/integration/melder/conduit/test_ordered_disposal_runtime.py -q -p no:cacheprovider --tb=short
+  - Result: 2 failed, 71 passed in 0.49s.
+  IMPACT: Do not weaken the reference assertion. This real runtime test exposes a compiler
+    registration path not covered by the focused namespace probes.
+  NEXT: Trace that generalized registration caller and update the compiler contract if needed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:26:15Z
+  TYPE: FACT
+  CLAIM: The remaining copies are in generated source, not Creations: generalized manifest
+    _append_register_source emits list(disposal_methods_N) for both singleton and many entries.
+    This bypasses the store methods. The complete 1,500-line emitter is now read. Both generic
+    and warm-tail-specialized executors share this helper, so two substitutions cover both.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:641-722`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:1330-1342`
+  IMPACT: Earlier field-name inventory missed emitted variable names. The direct-caller clause
+    covers this repair; compiler/Creations contracts now include it. No lock or loop redesign.
+  NEXT: Consume updated contracts, remove two emitted copies, and verify cold/warm real calls.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:26:15Z
+  TYPE: FACT
+  CLAIM: Updated compiler/Creations contracts were consumed. Removed the two emitted list
+    copies from generalized manifest registration; no surrounding emitted control flow changed.
+    Real runtime cases now perform two melds each, covering repeated/specialized execution
+    and checking every returned instance's stored metadata and actual cleanup sequence.
+  EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:641-724`
+  - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
+  IMPACT: The scoped caller repair covers both singleton and many inline entries.
+  NEXT: Rerun disposal checks, then the combined compiler/runtime regression boundary.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 

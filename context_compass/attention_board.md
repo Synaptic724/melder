@@ -74,14 +74,13 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- GitHub dev/preprod/prod require PRs and CI / merge-ready. Land the latest CI changes through dev before promotion; details: tickets/tasks/2026-09-04_implement_branch_ci_release_validation_task.md.
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| branch_ci_release_validation | review | handoff | codex | workflows_1 | none | Owner opens the codex_features2 to dev PR, then follows promotion. | CI work preserved; temporary branch/worktree retired and PR 121 closed. | Owner rolls out the CI foundation. | tickets/tasks/2026-09-04_implement_branch_ci_release_validation_task.md | 2026-09-05T09:57:39Z | REQUIRED |
+| release_candidate_testpypi | in_progress | discovery | codex | workflows_1 | none | Define candidate identity and consume patch contracts. | Full preprod CI plus a frozen, TestPyPI-qualified release candidate. | Contract maps to local implementation and validation. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T10:25:12Z | REQUIRED |
 | readthedocs_documentation | in_progress | implementation | codex | codex_2 | none | Revise capstone modules, typed consumer, and binding explanation. | Runnable beginner application with accurate self-mediated binding. | Capstone runs and revised pages/downloads validate. | tickets/tasks/2026-09-04_rtd_beginner_content_task.md | 2026-09-05T10:09:37Z | REQUIRED |
 | ordered_spell_disposal_contract | in_progress | implementation | codex | codex_1 | none | Prepare and implement Creations direct-list storage. | Compiler verified; preserve ordered metadata through registration and transfer. | Real disposal order and transfer tests pass. | tickets/tasks/2026-09-04_ordered_disposal_creations_task.md | 2026-09-05T10:10:55Z | REQUIRED |
 | first_public_release_notes | review | handoff | cowork | codex_1 | none | Review and commit the PyPI-portable README links plus selective LLM other-corpus regeneration. | All README repository routes use absolute GitHub prod links and generated proofs pass. | Owner confirms the public routes and accepts the release-documentation change. | tickets/tasks/2026-08-30_craft_first_public_release_notes_task.md | 2026-09-01T00:56:59Z | REQUIRED |
@@ -96,6 +95,8 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| branch_ci_release_validation | done | workflows_1 | tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md | CI foundation accepted; cleanup complete; owner rollout and later automation recorded. | 2026-09-05T10:12:21Z |
+| github_branch_promotion_analysis | done | workflows_1 | tickets/tasks/completed/2026-09-04_github_branch_promotion_analysis_task.md | Workflow analysis and branch/candidate design accepted; foundation delivered by successor. | 2026-09-05T10:12:21Z |
 | root_readme_documentation_routes | done | codex_1 | tickets/tasks/completed/2026-08-29_root_readme_documentation_routes_task.md | Compact architecture, examples, purpose-route, and hosted-docs pointers accepted. | 2026-08-29T18:41:47Z |
 | architecture_and_design_documentation | done | codex_1 | tickets/epics/completed/2026-08-28_architecture_and_design_documentation_epic.md | Full public documentation program accepted and closed. | 2026-08-29T16:31:01Z |
 | system_document_engineering_drawings | done | codex_1 | tickets/tasks/completed/2026-08-29_system_document_engineering_drawings_task.md | Seventeen validated SVG/Mermaid engineering pairs accepted. | 2026-08-29T16:31:01Z |
@@ -105,8 +106,6 @@ Message alert rules
 | architecture_docs_foundation_task | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_docs_foundation_task.md | Tooling/render foundation validated and closed. | 2026-08-29T16:31:01Z |
 | architecture_docs_human_mrp_task | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_docs_human_mrp_task.md | Human MRP implementation validated and closed. | 2026-08-29T16:31:01Z |
 | architecture_docs_advanced_ceiling_task | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_docs_advanced_ceiling_task.md | Advanced implementation validated and closed. | 2026-08-29T16:31:01Z |
-| architecture_and_design_docs_discovery | done | codex_1 | tickets/tasks/completed/2026-08-28_architecture_and_design_documentation_discovery_task.md | Ten-step AGPL-corrected design accepted and promoted to implementation. | 2026-08-29T00:44:49Z |
-| full_src_components_read | done | codex_1 | tickets/tasks/completed/2026-08-28_full_src_components_read_task.md | Complete 8,370-line read accepted; integrity verified. | 2026-08-29T00:25:46Z |
 | llm_support_compilation_pipeline_discovery | done | codex_1 | tickets/tasks/completed/2026-08-30_llm_support_compilation_pipeline_discovery_task.md | Three-corpus indexed build design accepted and promoted to implementation. | 2026-08-30T22:07:25Z |
 <!-- END USER-DEFINED: closed_anchors -->
 

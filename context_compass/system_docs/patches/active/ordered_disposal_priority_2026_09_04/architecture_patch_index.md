@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `architecture_patch.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T09:56:56Z |
-| line_count | 87 |
+| generated_at | 2026-09-05T10:28:17Z |
+| line_count | 92 |
 | line_ending | lf |
-| content_sha256 | `d9d44e61842120abd027db299f1a5e5e73210b264bb29070ccc677300bb3581c` |
+| content_sha256 | `8157d65803c9912b7c3bdd469e66444b7f391d03344a5207ab0d704975745138` |
 | sections | 9 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -29,10 +29,10 @@ which you did.
 | --- | --- | --- |
 | 3-9 | 2 | Patch scope and non-goals |
 | 10-19 | 2 | Changed-components matrix |
-| 20-34 | 2 | Interface and boundary deltas |
-| 35-47 | 2 | Cross-component invariants |
-| 48-55 | 2 | Migration / rollout order |
-| 56-62 | 2 | Rollback strategy |
-| 63-74 | 2 | Validation expectations and evidence plan |
-| 75-84 | 2 | Ticket coverage map |
-| 85-87 | 2 | Unknowns and decision requests |
+| 20-36 | 2 | Interface and boundary deltas |
+| 37-51 | 2 | Cross-component invariants |
+| 52-59 | 2 | Migration / rollout order |
+| 60-66 | 2 | Rollback strategy |
+| 67-78 | 2 | Validation expectations and evidence plan |
+| 79-89 | 2 | Ticket coverage map |
+| 90-92 | 2 | Unknowns and decision requests |

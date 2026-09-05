@@ -3,12 +3,16 @@
 ## Metadata
 - Task ID: TASK-2026-09-04-implement-branch-ci-release-validation
 - Story: none (implementation successor to branch-promotion analysis)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-04T22:25:15Z
-- Updated: 2026-09-05T09:57:39Z
+- Updated: 2026-09-05T10:12:21Z
+- Completed: 2026-09-05T10:12:21Z
+- Summary: Owner accepted shared branch CI, active merge rules, and fresh final release/tag checks.
+  The temporary Git branch/worktree was retired; patch history is archived and disposable artifacts removed.
+  Owner rollout and later staging/candidate automation remain explicitly separate follow-up work.
 
 ## Objective
 Implement the accepted shared CI design for feature-to-dev and branch promotion, retaining fresh
@@ -19,7 +23,7 @@ tests/build verification on every final release and a last prod-head check befor
 - EXECUTION_BOUNDARY: Existing/new .github workflows, scripts, ruleset definitions and process docs;
   tests/unit/github_workflows; tests/unit/llm_support/test_builder.py; pyproject.toml test dependencies;
   generated llm_support assets.
-- DEPENDENCIES: tickets/tasks/2026-09-04_github_branch_promotion_analysis_task.md.
+- DEPENDENCIES: tickets/tasks/completed/2026-09-04_github_branch_promotion_analysis_task.md.
 - EXIT_GATE: Shared jobs and fail-closed merge gate are implemented; focused tests, workflow lint,
   supported local runtime suite, packaging checks, and asset checks are run or concretely blocked.
 - FAILURE_ESCALATION: Preserve unrelated concurrent work. Record environment/external blockers and
@@ -33,10 +37,10 @@ tests/build verification on every final release and a last prod-head check befor
 - Excluded: Runtime feature changes, dependency upgrades, PyPI publication, unrelated agent edits.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: The final release-tag regression is fixed and scoped validation passes.
-  Latest hardening is local for the owner's commit/push; prior hosted results apply to PR 121's baseline.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested ticket closeout. The implemented CI foundation and
+  final tag guard are accepted; durable documentation, artifact disposition, and board sync are complete.
 
 ## Steps / Checklist
 - [x] Author/read architecture, component, and gate-flow contracts.
@@ -57,12 +61,16 @@ tests/build verification on every final release and a last prod-head check befor
 - Workflow and branch policy behavior has meaningful regression tests.
 
 ## Validation
+- Closeout verification 2026-09-05T10:15:29Z: both tickets are completed, all 12 closed anchors are
+  consistent, five artifact associations are cleared, four original patches are archived, and
+  every remaining active ticket route resolves. Scoped board whitespace validation passes.
 - Final review 2026-09-05: 167 focused tests pass, all seven workflows pass actionlint,
   correctness-scoped Ruff passes, and regenerated tests/other repository bundles verify.
 - The new tag guard was first reproduced with a failing test, then verified for moved/deleted,
   malformed, duplicate, lightweight, and annotated-tag cases. Prod is queried after the tag.
-- This final hardening is uncommitted locally and has not been run on GitHub; the hosted results
-  below describe the earlier PR 121 baseline. No commits or pushes were attempted in this pass.
+- The owner subsequently committed/pushed the final hardening in f35b15178, as recorded in Notes.
+  The hosted results below describe the earlier PR 121 baseline, not a fresh run of the final guard.
+  This closeout performs file/state consistency checks only; no test suite or publication was rerun.
 - Focused CI/asset-builder tests: 147 passed in the main and isolated checkouts.
 - Hosted PR CI: success; Linux and Windows each report 11,109 passed, 28 skipped, 15 xfailed,
   one non-strict xpass, and a coroutine shutdown warning. CI / merge-ready succeeds.
@@ -88,18 +96,18 @@ tests/build verification on every final release and a last prod-head check befor
   codex_features2; use a PR from that branch to dev, then normal promotion PRs.
 - Roll back workflow callers and reusable workflows together; preserve final publication guards.
 - The temporary review worktree and branch refs were removed at owner request on 2026-09-05.
-  Remaining validation logs/tooling follow the recorded artifact disposition at ticket closure.
+  Disposable validation logs/tooling were removed at ticket closure; results remain in this ticket.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: true
+- ARTIFACTS_REQUIRED: false (all associations resolved at closure)
 - ARTIFACT_PATHS:
-  - artifacts/branch_ci_release_20260904/validation.md
-  - system_docs/patches/active/branch_ci_release_2026_09_04/architecture_patch.md
-  - system_docs/patches/active/branch_ci_release_2026_09_04/component_patch_ci_validation.md
-  - system_docs/patches/active/branch_ci_release_2026_09_04/component_patch_release_publication.md
-  - system_docs/patches/active/branch_ci_release_2026_09_04/code_description_patch_gate_flow.md
-- DISPOSITION: promote_to_documentation
-- CLEANUP_TRIGGER: Owner-accepted closure after durable decisions reach .github/BRANCH_WORKFLOW.md.
+  - system_docs/patches/completed/branch_ci_release_2026_09_04/architecture_patch.md
+  - system_docs/patches/completed/branch_ci_release_2026_09_04/component_patch_ci_validation.md
+  - system_docs/patches/completed/branch_ci_release_2026_09_04/component_patch_release_publication.md
+  - system_docs/patches/completed/branch_ci_release_2026_09_04/code_description_patch_gate_flow.md
+- DISPOSITION: Patch decisions promoted to .github/BRANCH_WORKFLOW.md; original records archived intact.
+  Disposable artifacts/branch_ci_release_20260904 removed under its delete_on_close disposition.
+- CLEANUP_TRIGGER: Applied at owner-accepted closure on 2026-09-05T10:12:21Z.
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -437,17 +445,34 @@ tests/build verification on every final release and a last prod-head check befor
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:12:21Z
+  TYPE: FACT
+  CLAIM: Closeout archived all four patch documents intact, with matching before/after SHA256
+    hashes. The separate disposable validation workspace was removed after verifying all 4,589
+    entries, exact path containment, no reparse points, and no registered worktree in the target.
+    No product edits, commits, code pushes, branch changes, or publication occurred in this closeout.
+  EVIDENCE:
+  - .github/BRANCH_WORKFLOW.md:1-117
+  - context_compass/system_docs/patches/completed/branch_ci_release_2026_09_04/architecture_patch.md:1-50
+  - Scoped filesystem/hash verification and successful removal on 2026-09-05T10:12:21Z.
+  IMPACT: Selected tickets can leave active routing with durable decisions and test results preserved.
+  NEXT: none; closeout consistency checks passed on 2026-09-05T10:15:29Z and the agent is departing.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-The CI foundation and final tag guard are preserved on local/remote codex_features2 at
-f35b1517863a846b35b7411c27c60b3547fa9cba. Final guard validation: 167 focused tests, seven workflow
-lint checks, correctness Ruff, and tests/other bundle checks passed. Earlier hosted baseline CI
-passed Linux and Windows; that evidence remains in the Notes and closed PR 121.
+Accepted and closed on 2026-09-05 at the owner's explicit request. The CI foundation and final tag
+guard were preserved in owner commit f35b15178; current codex_features2 at 0a76b7884 descends from it.
+Final guard validation was 167 focused tests, seven workflow lint checks, correctness Ruff, and
+tests/other bundle checks. Earlier hosted baseline CI passed Linux and Windows; its evidence remains
+in Notes and closed PR 121. No new runtime-test or hosted-run claim is made at closeout.
 
-At owner request, PR 121 was closed and codex/branch-ci-release-validation was deleted locally and
-remotely. Its registered review-worktree was removed after confirming it was clean and its work
-preserved. Do not route new work to that branch or directory. Validation records remain available.
+PR 121 and codex/branch-ci-release-validation were retired at owner request, including the registered
+review-worktree. The disposable validation directory is now removed; original patch records are
+retained under patches/completed and durable operating guidance lives in .github/BRANCH_WORKFLOW.md.
 
-Owner handles commits and pushes; do not attempt them or signing workarounds. The next rollout is
-codex_features2 -> dev -> preprod -> prod through PRs. All three permanent-branch rulesets are active.
-Final publication reruns tests/assets/build and rechecks live tag/prod identity immediately before
-upload. Automated staging and dated-candidate scheduling remain a separate next layer.
+Owner handles commits and pushes, including these closeout edits. Remaining rollout is
+codex_features2 -> dev -> preprod -> prod through PRs; the recorded permanent-branch rulesets are active.
+Final publication retains fresh tests/assets/build and live tag/prod checks immediately before upload.
+Automated staging and dated-candidate scheduling remain future work. No further task is assigned to
+workflows_1 in this completed lane.

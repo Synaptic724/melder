@@ -86,7 +86,7 @@ title = "Build a complete beginner application"
 level = "beginner"
 source = "beginner/capstone.md"
 lessons = ["beginner:40", "beginner:18", "beginner:39"]
-show_steps = true
+show_steps = false
 
 [[chapter]]
 id = "intermediate/registration"

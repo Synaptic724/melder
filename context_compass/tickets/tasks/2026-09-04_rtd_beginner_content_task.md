@@ -155,6 +155,90 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T10:13:20Z
+  TYPE: FACT
+  CLAIM: Spellbook.bind executes registration within self.transaction('bind'); transaction opens/
+    ends admission and marks failure on exceptions. Bind's strategy claims the book's scope before
+    conjure. Spellbook.__enter__/__exit__ only acquire/release its lock. The capstone therefore must
+    not teach with book as a requirement for normal binding or as an atomic registration guarantee.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5026-5290
+  - src/melder/aether/spellbook/spellbook.py:4451-4548
+  - src/melder/aether/spellbook/spellbook.py:738-781
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py:86-194
+  IMPACT: Use direct registrations of config/pool/handler, plain constructor injection, and spell-name
+    resolution so the consumer can import its concrete annotation types only under TYPE_CHECKING.
+    Display every module through literalinclude; keep constructor dependency classes runtime-visible.
+  NEXT: Implement the four-file application and run both its direct entry point and existing harness.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:18:51Z
+  TYPE: FACT
+  CLAIM: The first direct run reached conjure and failed to resolve RequestHandler.config.
+    Phase 3 matches a concrete annotation against the bound object or its explicit spellframe,
+    not type(instance). A prebuilt AppConfig therefore needs spellframe=AppConfig to advertise
+    the constructor dependency shape; this is a registration correction, not a runtime defect.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/capstone_direct_20260905.log
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:175-246
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:272-337
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:435-504
+  IMPACT: Teach the real configured-instance contract alongside constructor injection. Keep the
+    consumer's concrete type imports under TYPE_CHECKING and its runtime lookup explicit.
+  NEXT: Bind the configured instance under its AppConfig type and rerun the capstone.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:21:29Z
+  TYPE: FACT
+  CLAIM: Adding the explicit AppConfig frame resolves the first dependency match but the current
+    plan_group compiler then rejects the configured instance as not callable. Keep this capstone on
+    ordinary class bindings with constructor defaults, which still teaches the requested module,
+    bootstrap, typed consumer, injection, lifetime, and cleanup structure. Prebuilt-instance injection
+    is a separately recorded runtime case; do not modify the concurrently changing compiler here.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/capstone_fixed_20260905.log
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:175-246
+  IMPACT: Bind AppConfig as a class with its ordinary app_name default. Remove the unverified
+    configured-instance explanation and verify the complete actual application before publication.
+  NEXT: Run the class-bound capstone and then its isolated Beginner harness row.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:23:51Z
+  TYPE: MEASURE
+  CLAIM: The class-bound four-file capstone passes directly on the free-threaded interpreter.
+    It returns all three expected order messages, proves shared config/pool and fresh handlers,
+    and confirms pool.closed with three queries after shutdown. The guide now source-includes all
+    four modules and explicitly explains self-mediated binding and TYPE_CHECKING consumer imports.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/capstone_class_20260905.log:1-5
+  - UX_and_AIX_experiences/01_beginner/capstone_application.py:1-35
+  - UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py:1-44
+  - docs/beginner/capstone.md:1-113
+  IMPACT: The requested pattern is executable and the expected output is now observed. Existing
+    harness and download-source checks remain before refreshing the browser and offline formats.
+  NEXT: Run the Beginner harness/metadata checks and rebuild the public source/site.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T10:27:29Z
+  TYPE: MEASURE
+  CLAIM: All 308 combined Beginner execution/metadata checks pass, including all 41 runnable lessons.
+    The only warning is pytest's shared cache directory creation race. All 36 documentation tests
+    pass and strict HTML rendering completes at 294 pages with the four capstone source files included.
+  EVIDENCE:
+  - artifacts/rtd_validation_20260904/capstone_beginner_20260905.xml:1-1
+  - artifacts/rtd_validation_20260904/capstone_beginner_20260905.log
+  - artifacts/rtd_validation_20260904/capstone_docs_tests_20260905.log:1-7
+  - artifacts/rtd_validation_20260904/capstone_html_20260905.log:1-5
+  IMPACT: The canonical application and harness integration are verified. Check the published
+    helper downloads and refreshed page, then rebuild affected offline outputs and corpus assets.
+  NEXT: Validate the complete HTML links and run the capstone from its extracted collection download.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
