@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: f062320afde8cba1e51a2d03c9a0987b5b859c164e953517f69e872635e72a56
+SOURCE FINGERPRINT: 310021e9c1809b34beaea046cecb82bfc541d4e98254488b45503ec0249bc36a
 FILE COUNT: 352
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: 98c0e5b861c75200b714d60d221d3296ab4b929e7da97eb18b8470da34b38377
+CONTENT SHA256: 5e4509417c20e009efe67644556c6402ffda505f271a18afe481a1e63e2612ee
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -85,8 +85,9 @@ Contributions enter `dev` through a pull request. Promotion proceeds through
 - Repository assets: the LLM builder verifies committed bundles and indexes.
 - Repository hygiene: tracked filenames must not collide case-insensitively.
 - Documentation: the shared documentation validation workflow must succeed.
-- Runtime tests: unit, component, and integration tiers on Linux and Windows,
+- Runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
   using Python 3.14t with the GIL disabled in the actual pytest process.
+  The macOS job uses `macos-latest` on native Apple Silicon (arm64).
 - Distribution verification for preprod/release_candidate/prod: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
@@ -137,30 +138,55 @@ back into dev through a reviewed synchronization PR.
 
 Select a green preprod revision through a PR into `release_candidate`. Keep
 this branch on one candidate while preprod continues receiving new work.
-Every push to release_candidate runs `release-candidate.yml`; no GitHub Release
+The PR runs required source/package CI before merge. Merging it pushes the chosen
+revision onto release_candidate and starts `release-candidate.yml`; no GitHub Release
 or tag is required. Manual dispatch must select the same branch.
 
+| Boundary | Work performed |
+| --- | --- |
+| `preprod -> release_candidate` PR | Full source CI and local package verification. |
+| Merge lands on `release_candidate` | Build, TestPyPI upload, and installed-package probes. |
+| `release_candidate -> prod` PR | Verify the earlier RC run succeeded for this exact source; run required CI. |
+
+TestPyPI publication belongs to the RC stage. The prod promotion check does not
+upload to TestPyPI; it blocks promotion until the earlier RC qualification succeeds.
+
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
-fresh installation on Linux and Windows Python 3.14t. It does not run the whole
+fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
 match this run's built wheel. No editable installation or repository conftest is used.
 
-Use these exact values for the TestPyPI Trusted Publisher:
+Configure the TestPyPI upload credential as follows:
 
 | Field | Value |
 | --- | --- |
 | Project | `melder` |
-| GitHub owner | `Synaptic724` |
-| Repository | `melder` |
+| GitHub repository | `Synaptic724/melder` |
 | Workflow filename | `release-candidate.yml` |
 | GitHub environment | `pypitest` |
+| Environment secret name | `melder_api_token` |
+| Token issuer | `test.pypi.org` |
 
 Create `pypitest` under repository Settings -> Environments and allow deployments
-only from the branch `release_candidate`. The upload job alone receives
-`id-token: write`. No TestPyPI API token secret is needed with Trusted Publishing.
-The production `pypi` environment and its existing authentication stay separate.
+only from the branch `release_candidate`. Add the generated TestPyPI token under
+Environment secrets with the name `melder_api_token`; do not put credentials in
+Variables or repository files. Select the melder project scope when available.
+Creating the first project with token authentication may require an account-scoped
+TestPyPI token; replace it with a project-scoped token once the project exists.
+
+This workflow uses explicit API-token authentication (`user: __token__`) and disables
+OIDC-only attestations. Only its upload job references the secret. A missing secret
+fails with a clear message rather than falling back to OIDC. A token issued by the
+production pypi.org service cannot authenticate to TestPyPI. Production continues
+using its independent pypi environment and PYPI_API_TOKEN credential.
+
+The initial OIDC run failed with `invalid-publisher`; the owner subsequently chose
+token authentication. Adding the secret alone does not change that old workflow.
+Commit/promote this updated YAML into release_candidate to use token authentication.
+Wait for package-ready to succeed, then rerun any prod PR check that already failed
+while qualification was missing. The prod error includes the inspected RC run URL and status.
 
 The package version comes from `src/melder/__version__.py`; CI does not rewrite
 it or create version commits. For example, use `0.2.4rc1`, then `0.2.4rc2` for
@@ -183,7 +209,7 @@ for fresh same-run/attempt artifacts. Download retries are bounded for index
 propagation; failed consumer tests are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, build,
-upload, and both platform probes succeeded. Prod's existing required CI gate
+upload, and all three platform probes succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
 source commit/tree, version, run/attempt, and both distribution hashes.
@@ -382,7 +408,7 @@ END FILE: .github/rulesets/release_candidate.json
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/check_candidate_run.py
-CONTENT SHA256: 03172b729fc52ae70f0ed6cb94c9691b7ba325f855a58a35a4c8a3203e2fa691
+CONTENT SHA256: 1f0faee691502d934a019f24f43c3753cd3ebc74881d83ec0909f4c2367ae7ae
 SOURCE ENCODING: utf-8
 ================================================================================
 """Require exact-source TestPyPI qualification before prod promotion or publication."""
@@ -444,6 +470,8 @@ def require_qualified_run(payload: Mapping[str, object], repository: str, sha: s
 
     Do not fall back to an older green run when the newest run is pending/failed.
     A rerun's current attempt and conclusion come from GitHub's run record.
+    Rejection identifies the inspected run and differing fields so callers can
+    diagnose upstream qualification failures without weakening this gate.
     """
     raw_runs = payload.get("workflow_runs")
     if not isinstance(raw_runs, list) or not raw_runs:
@@ -455,15 +483,21 @@ def require_qualified_run(payload: Mapping[str, object], repository: str, sha: s
     for field in ("repository", "head_repository"):
         if object_value(latest.get(field), field).get("full_name") != repository:
             raise ValueError("Candidate workflow repository identity does not match.")
+    run_id = positive_integer(latest.get("id"))
+    attempt = positive_integer(latest.get("run_attempt"))
     expected = {"head_sha": sha, "head_branch": "release_candidate",
                 "path": ".github/workflows/release-candidate.yml",
                 "status": "completed", "conclusion": "success"}
-    if any(latest.get(key) != value for key, value in expected.items()):
-        raise ValueError("Latest candidate workflow is unsuccessful, incomplete, or for different source.")
+    differences = [f"{key}={latest.get(key)!r} (expected {value!r})"
+                   for key, value in expected.items() if latest.get(key) != value]
+    if differences:
+        raise ValueError(
+            f"Candidate qualification has not passed for {sha}: {'; '.join(differences)}. "
+            f"Inspect https://github.com/{repository}/actions/runs/{run_id} (attempt {attempt}). "
+            "Complete or fix that RC workflow, then rerun this prod check."
+        )
     if latest.get("event") not in ("push", "workflow_dispatch"):
         raise ValueError("Candidate qualification must originate from its branch push/manual workflow.")
-    for field in ("id", "run_attempt"):
-        positive_integer(latest.get(field))
     return latest
 
 
@@ -1912,7 +1946,7 @@ END FILE: .github/workflows/python-publish.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
-CONTENT SHA256: 308db1c502b09e34327509bae907e9aaae8d9e8f115603b0981fea2aa7c853e5
+CONTENT SHA256: e633ad4fb49ad0dfe17bd1e3e35cf336fa4116f3d8922a4188f947c8a98bc0ef
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Release candidate
@@ -1959,7 +1993,6 @@ jobs:
       url: https://test.pypi.org/project/melder/
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -1972,14 +2005,26 @@ jobs:
       - name: Verify existing files and prepare an exact upload
         id: upload
         run: python .github/scripts/testpypi_candidate.py prepare-upload --report reports/upload.json
+      - name: Require the TestPyPI environment secret
+        if: steps.upload.outputs.upload-required == 'true'
+        env:
+          TESTPYPI_API_TOKEN: ${{ secrets.melder_api_token }}
+        run: |
+          if [ -z "$TESTPYPI_API_TOKEN" ]; then
+            echo "::error::Add melder_api_token under the pypitest environment's Secrets, not Variables."
+            exit 1
+          fi
       - name: Recheck the candidate after environment admission
         run: python .github/scripts/ci_policy.py candidate-head
-      - name: Publish missing verified files with Trusted Publishing
+      - name: Publish missing verified files with the TestPyPI token
         if: steps.upload.outputs.upload-required == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          user: __token__
+          password: ${{ secrets.melder_api_token }}
           repository-url: https://test.pypi.org/legacy/
           packages-dir: upload/
+          attestations: false
           print-hash: true
       - name: Retain upload identity
         uses: actions/upload-artifact@v7
@@ -1997,7 +2042,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     env:
       PYTHON_GIL: "0"
     steps:
@@ -2041,7 +2086,7 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: 41c21335d4539bdf5346e6d7cb99051670332256856abd47d5b5a77393ec305f
+CONTENT SHA256: c46f598ba01da8f2f7a09bf554923d3f904acd8a6cbbecd3eeeafed008e06ea2
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
@@ -2061,7 +2106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     env:
       # Fix the posture for the actual pytest process, including its plugins.
       PYTHON_GIL: "0"

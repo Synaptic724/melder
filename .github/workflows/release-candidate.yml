@@ -42,7 +42,6 @@ jobs:
       url: https://test.pypi.org/project/melder/
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -55,14 +54,26 @@ jobs:
       - name: Verify existing files and prepare an exact upload
         id: upload
         run: python .github/scripts/testpypi_candidate.py prepare-upload --report reports/upload.json
+      - name: Require the TestPyPI environment secret
+        if: steps.upload.outputs.upload-required == 'true'
+        env:
+          TESTPYPI_API_TOKEN: ${{ secrets.melder_api_token }}
+        run: |
+          if [ -z "$TESTPYPI_API_TOKEN" ]; then
+            echo "::error::Add melder_api_token under the pypitest environment's Secrets, not Variables."
+            exit 1
+          fi
       - name: Recheck the candidate after environment admission
         run: python .github/scripts/ci_policy.py candidate-head
-      - name: Publish missing verified files with Trusted Publishing
+      - name: Publish missing verified files with the TestPyPI token
         if: steps.upload.outputs.upload-required == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          user: __token__
+          password: ${{ secrets.melder_api_token }}
           repository-url: https://test.pypi.org/legacy/
           packages-dir: upload/
+          attestations: false
           print-hash: true
       - name: Retain upload identity
         uses: actions/upload-artifact@v7
@@ -80,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     env:
       PYTHON_GIL: "0"
     steps:

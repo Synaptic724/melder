@@ -56,9 +56,9 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
 
 
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
-    """Both supported OSes use 3.14t with the GIL off and retain failing-test evidence."""
+    """All three supported OSes use 3.14t with the GIL off and retain failing-test evidence."""
     job = workflow("test-runtime.yml")["jobs"]["test"]
-    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
+    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
     assert job["strategy"]["fail-fast"] == "false"
     assert job["env"]["PYTHON_GIL"] == "0"
     setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
@@ -143,19 +143,29 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     publisher = jobs["publish"]
     assert set(publisher["needs"]) == {"authorize", "build"}
     assert publisher["environment"]["name"] == "pypitest"
-    assert publisher["permissions"] == {"contents": "read", "id-token": "write"}
+    assert publisher["permissions"] == {"contents": "read"}
     upload = next(step for step in publisher["steps"]
                   if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@"))
     assert upload["with"]["repository-url"] == "https://test.pypi.org/legacy/"
     assert upload["with"]["packages-dir"] == "upload/"
-    assert set(upload["with"]).isdisjoint({"password", "user", "skip-existing"})
+    assert upload["with"]["user"] == "__token__"
+    assert upload["with"]["password"] == "${{ secrets.melder_api_token }}"
+    assert upload["with"]["attestations"] == "false"
+    assert "skip-existing" not in upload["with"]
     assert upload["if"] == "steps.upload.outputs.upload-required == 'true'"
+    credential_check = next(step for step in publisher["steps"]
+                            if step.get("env", {}).get("TESTPYPI_API_TOKEN"))
+    assert credential_check["env"]["TESTPYPI_API_TOKEN"] == "${{ secrets.melder_api_token }}"
+    assert credential_check["if"] == upload["if"]
+    assert 'if [ -z "$TESTPYPI_API_TOKEN" ]' in credential_check["run"]
+    assert "exit 1" in credential_check["run"]
+    assert publisher["steps"].index(credential_check) < publisher["steps"].index(upload)
     for name, job in jobs.items():
         if name != "publish":
             assert "environment" not in job
             assert job.get("permissions", {}).get("id-token") != "write"
     install = jobs["install"]
-    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
+    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
     assert install["env"]["PYTHON_GIL"] == "0"
     artifact = jobs["build"]["with"]["artifact-name"]
     for job in (publisher, install):

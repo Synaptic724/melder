@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `code_description_patch_identity.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T11:24:35Z |
+| generated_at | 2026-09-05T16:11:19Z |
 | line_count | 28 |
 | line_ending | lf |
-| content_sha256 | `4d4e5c38aa507fae62421878dc5504921f439867ebae1b7bbc3204ec246e0131` |
+| content_sha256 | `9ee1793dee46dc7ca0fff00e2f81e278fd5d9451752ccd8b0f52a806cf3719c4` |
 | sections | 4 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
