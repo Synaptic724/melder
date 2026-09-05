@@ -64,6 +64,8 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | artifacts/release_candidate_20260905/test_mediator_overlap_controls.py | validation_control | active | delete_on_close | Delayed-start and forced-serialization controls for the repaired test. | 2026-09-05T18:11:50Z | HELPFUL |
+| tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | artifacts/release_candidate_20260905/mediator-overlap.xml | validation_report | active | delete_on_close | 270 mediator cases plus two adversarial controls pass. | 2026-09-05T18:11:50Z | HELPFUL |
 | tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md | artifacts/rtd_validation_20260904/committed_corpus_audit_20260905.json | validation_report | active | retain_as_reference | Exact committed-input failure: one additional # byte in .gitignore. | 2026-09-05T15:54:51Z | HELPFUL |
 | tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md | artifacts/rtd_validation_20260904/rebuilt_commit_corpus_proof_20260905.json | validation_report | active | retain_as_reference | Rebuilt manifest matches both branch and actual CI merge inputs. | 2026-09-05T15:54:51Z | REQUIRED |
 | tickets/tasks/2026-09-04_rtd_quality_audit_task.md | artifacts/rtd_validation_20260904/final_inventory_20260905.json | validation_report | active | retain_as_reference | Interpreted by the final quality audit; release qualification is current output proof. | 2026-09-05T14:03:49Z | HELPFUL |

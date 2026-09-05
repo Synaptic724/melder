@@ -52,3 +52,12 @@ macOS setup environment repair, 2026-09-05T17:31:43Z:
 - Upstream macOS installation launches the standard-Python certificate helper; setup now receives
   no forced GIL-off setting. Qualification steps retain PYTHON_GIL=0.
 - A hosted macOS installation was not executed here. No commits, pushes, reruns, or uploads occurred.
+
+Disjoint-frame overlap repair, 2026-09-05T18:11:50Z:
+- Removed the arbitrary 36ms upper bound from the reported test.
+- All 270 mediator unit/component tests and two adversarial controls pass with PYTHON_GIL=0.
+- JUnit evidence: mediator-overlap.xml. Controls: test_mediator_overlap_controls.py.
+- Added 10ms delay to each of eight thread starts: actual repaired overlap test passes.
+- Forced world-exclusive claims: actual repaired overlap test fails as intended; bookkeeping clears.
+- Scoped Ruff, whitespace, and regenerated test-corpus input/output proofs pass.
+- No runtime or workflow code changed. Full-repository and hosted macOS runs were not executed here.

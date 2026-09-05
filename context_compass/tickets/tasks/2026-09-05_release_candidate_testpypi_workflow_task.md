@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T17:31:43Z
+- Updated: 2026-09-05T18:11:50Z
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -18,7 +18,8 @@ commit, version, workflow run, and distribution hashes before final production p
 ## Ticket Contract
 - ENTRY_GATE: Existing certification, this active route, and consumed patch contracts before edits.
 - EXECUTION_BOUNDARY: .github workflows/scripts/ruleset payloads/branch guide; focused workflow and consumer tests;
-  generated llm_support assets; this ticket and its associated coordination/artifact rows.
+  the reported aetheric-mediator concurrency component test; generated llm_support assets;
+  this ticket and its associated coordination/artifact rows.
 - DEPENDENCIES: tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md.
 - EXIT_GATE: Branch gates and candidate/publication workflow are implemented and locally validated;
   owner-only setup/rollout and unexecuted external publication checks are explicitly recorded.
@@ -37,9 +38,8 @@ commit, version, workflow run, and distribution hashes before final production p
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Upstream certificate-helper source proves the macOS setup environment failure.
-  The three workflow GIL settings are now scoped to qualification steps; 269 focused tests and all
-  workflow lint pass. Owner commit/push and a fresh hosted macOS run remain.
+- transition_reason: The direct-overlap test is implemented and 272 focused mediator/control checks
+  pass. Delayed thread startup succeeds; deliberately serialized claims are rejected. Ready for owner commit.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -55,6 +55,10 @@ commit, version, workflow run, and distribution hashes before final production p
 - Durable operator instructions including TestPyPI project and GitHub environment configuration.
 
 ## Validation
+- 2026-09-05T18:11:50Z concurrency repair: 270 mediator unit/component cases plus two adversarial
+  controls pass on Python 3.14t with PYTHON_GIL=0. Added startup delay passes; forced serialization
+  is rejected with clean final bookkeeping. Scoped Ruff, whitespace, and regenerated test-corpus
+  proofs pass. Full repository and hosted macOS runs were not executed for this test-only repair.
 - 2026-09-05T17:31:43Z macOS setup repair: the three setup-inheritance regressions fail on the old
   job-wide settings; all 269 focused tests pass after scoping the environment to qualification steps.
   All eight workflows pass actionlint; scoped Ruff, whitespace, and regenerated tests/other proofs pass.
@@ -103,6 +107,8 @@ commit, version, workflow run, and distribution hashes before final production p
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/release_candidate_20260905/validation.md
+  - artifacts/release_candidate_20260905/test_mediator_overlap_controls.py
+  - artifacts/release_candidate_20260905/mediator-overlap.xml
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/architecture_patch.md
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_candidate.md
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_publication.md
@@ -722,7 +728,124 @@ commit, version, workflow run, and distribution hashes before final production p
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T17:50:59Z
+  TYPE: FACT
+  CLAIM: Owner's new failure is in macos-latest job 101347496028 of run 33981528038, verified from
+    GitHub metadata. The disjoint-frame test compares elapsed time to 8 * 3 * 0.003 * 0.5 = 0.036s.
+    Its _run clock starts before starting eight threads and includes their startup/barrier/join work.
+    Requested sleep time is therefore treated as if it were the whole transaction/scheduler cost.
+    The reported 0.054374709s exceeds that threshold but does not itself prove claim serialization.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/actions/runs/33981528038/job/101347496028
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:93-128
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:209-248
+  - https://docs.python.org/3/library/time.html#time.sleep
+  IMPACT: Treat this as a timing-sensitive test diagnosis, not evidence that macOS or the mediator
+    cannot run concurrently. Owner asks why it appears in CI; production changes are not authorized
+    by this single duration. No runtime or test implementation has changed during this diagnosis.
+  NEXT: Confirm the formation-load claim contract and explain a direct overlap assertion as the repair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T17:56:00Z
+  TYPE: FACT
+  CLAIM: The formation strategy supplies world INTENT plus an exclusive target-frame key, and
+    ClaimCompatibility explicitly permits INTENT with INTENT. The reported test verifies none of
+    the active-session overlap directly; its 0.5 multiplier imposes an uncalibrated 36ms deadline.
+    Python documents that sleep can exceed the requested duration because of scheduling. The owner
+    challenges this arbitrary cutoff; agree that it is unsuitable as the concurrency correctness gate.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/strategies/formation_load_transaction_strategy.py:104-145
+  - src/melder/aether/aetheric_mediator/claim_mode.py:119-154
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:99-130
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:209-248
+  - https://docs.python.org/3/library/time.html#time.sleep
+  IMPACT: Recommend a post-admission barrier/event test proving all disjoint sessions coexist before
+    any releases, with a generous hang timeout and explicit worker outcomes. Exact hosted scheduler
+    delay was not profiled; the duration alone cannot establish a production lock defect. This turn
+    is diagnosis only: no test or runtime implementation changed, and no tests were executed.
+  NEXT: Replace the timing assertion with direct overlap proof when continuing the test repair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:00:22Z
+  TYPE: DECISION
+  CLAIM: Owner asked whether the diagnosed test was fixed; it was not. Proceed with the previously
+    explained test-only correction: post-admission rendezvous for eight distinct frame transactions,
+    explicit successful worker outcomes, and cleanup proof across three rounds. The existing generous
+    thread timeout remains a hang guard. Do not change mediator production behavior or raise the 36ms limit.
+  EVIDENCE:
+  - Owner follow-up on 2026-09-05 and previous timing diagnosis, recorded here.
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:99-248
+  IMPACT: Scope is the reported test, inaccurate timing-only helper documentation, generated test
+    corpus, and this ticket's tracking. Test correctness changes no runtime architecture or release gate.
+  NEXT: Confirm session admission/finalization contracts, then replace the timing assertion with overlap proof.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:00:22Z
+  TYPE: FACT
+  CLAIM: Mediator.begin returns with claims held; leave then commit releases claims/bookkeeping.
+    Finalized session objects remain caller-owned and must be cleaned after commit. ClaimTable.describe
+    exposes detached scope keys and holder/mode rows. A barrier action can therefore verify all eight
+    world-intent holders and all eight frame keys before any worker leaves its session.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/mediator.py:447-589
+  - src/melder/aether/aetheric_mediator/mediator.py:591-700
+  - src/melder/aether/aetheric_mediator/mediator.py:1092-1154
+  - src/melder/aether/aetheric_mediator/transaction_session.py:619-639
+  - src/melder/aether/aetheric_mediator/claim_table.py:623-649
+  IMPACT: Use a bounded reusable barrier across three rounds and futures that propagate worker
+    exceptions. Always finalize/clean admitted sessions and caller identities; abort the barrier on
+    worker failure so peers can finish. Final public snapshots must show no claims or active bookkeeping.
+  NEXT: Implement that targeted test and validate it against delayed starts and forced exclusive claims.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:00:22Z
+  TYPE: MEASURE
+  CLAIM: The replacement disjoint-frame test passes its first focused run. Every round waits at a
+    barrier while all sessions remain open; the barrier action verifies all eight frame keys and
+    eight world holders. Futures propagate worker failures; session finalization/cleanup occurs in
+    finally blocks, and final snapshots require no claims or active bookkeeping. Helper docs no longer
+    describe elapsed time as the only concurrency evidence. Production code remains unchanged.
+  EVIDENCE:
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:209-284
+  IMPACT: The arbitrary elapsed-time assertion is removed without dropping the overlap requirement.
+  NEXT: Run delayed-start and forced-serialization controls, then the complete focused mediator suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:11:50Z
+  TYPE: MEASURE
+  CLAIM: All 272 selected checks pass: 270 mediator unit/component tests plus two disposable
+    controls using the actual repaired test. Eight delayed Thread.start calls add at least 80ms and
+    still pass; forcing formation loads to claim world exclusively correctly fails overlap proof.
+    That failure also leaves no claims, admission registrations, or reporting activity. Scoped Ruff,
+    whitespace, and regenerated tests-corpus proofs pass. JUnit includes both control cases.
+  EVIDENCE:
+  - artifacts/release_candidate_20260905/mediator-overlap.xml
+  - artifacts/release_candidate_20260905/test_mediator_overlap_controls.py:25-66
+  - tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py:213-281
+  IMPACT: The fixed test tolerates scheduler delay while detecting a real serialization defect.
+    Runtime/CI workflow code is unchanged. Full-repository and hosted macOS validation remain unrun
+    for this repair. Disposable controls/reports are delete_on_close artifacts in the task workspace.
+  NEXT: Owner commits the test and regenerated test corpus, then runs the updated CI revision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+The disjoint-frame timing failure is now fixed locally on codex_features2. The test requires eight
+concurrently held frame claims and eight world holders at a barrier in each of three rounds, with
+future results carrying worker failures and deterministic session/identity cleanup. The arbitrary
+36ms upper bound is gone; the existing generous timeout serves only as a stuck-rendezvous guard.
+270 mediator unit/component cases plus two adversarial controls pass with PYTHON_GIL=0. Added startup
+delay succeeds; forced world-exclusive serialization fails the test as required and leaves no live
+bookkeeping. Scoped Ruff, whitespace, and regenerated test-corpus checks pass. No runtime/workflow code,
+commit, push, or package upload was performed. The owner commits the changed test and derived assets.
+The first hosted macOS run of this replacement and the full repository suite remain unexecuted locally.
+The prior GIL-scope repair is committed in 335981247.
+
 Latest repair: job-wide PYTHON_GIL=0 reached the standard Python used by macOS's certificate helper
 during setup-python. Runtime tests, RC installation, and distribution builds now scope that variable
 to their test/probe steps only. Python 3.14t, all three OSes, and actual-process GIL checks remain.
