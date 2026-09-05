@@ -64,6 +64,7 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | artifacts/release_candidate_20260905/uow-timing.xml | validation_report | active | delete_on_close | 279 synchronization unit cases pass with the owner-selected timing margin. | 2026-09-05T18:37:46Z | HELPFUL |
 | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | artifacts/release_candidate_20260905/test_mediator_overlap_controls.py | validation_control | active | delete_on_close | Delayed-start and forced-serialization controls for the repaired test. | 2026-09-05T18:11:50Z | HELPFUL |
 | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | artifacts/release_candidate_20260905/mediator-overlap.xml | validation_report | active | delete_on_close | 270 mediator cases plus two adversarial controls pass. | 2026-09-05T18:11:50Z | HELPFUL |
 | tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md | artifacts/rtd_validation_20260904/committed_corpus_audit_20260905.json | validation_report | active | retain_as_reference | Exact committed-input failure: one additional # byte in .gitignore. | 2026-09-05T15:54:51Z | HELPFUL |

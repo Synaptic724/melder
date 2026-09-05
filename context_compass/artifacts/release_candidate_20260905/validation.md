@@ -61,3 +61,10 @@ Disjoint-frame overlap repair, 2026-09-05T18:11:50Z:
 - Forced world-exclusive claims: actual repaired overlap test fails as intended; bookkeeping clears.
 - Scoped Ruff, whitespace, and regenerated test-corpus input/output proofs pass.
 - No runtime or workflow code changed. Full-repository and hosted macOS runs were not executed here.
+
+UnitOfWork timing margin, 2026-09-05T18:37:46Z:
+- Owner selected the small timing change over an event-handshake rewrite.
+- Worker hold is 1 second; startup wait is 5 seconds and its result is asserted.
+- All 279 synchronization unit tests pass with PYTHON_GIL=0 (uow-timing.xml).
+- Scoped Ruff, whitespace, and regenerated tests-corpus proofs pass.
+- No production code, commits, pushes, hosted reruns, or package uploads changed here.

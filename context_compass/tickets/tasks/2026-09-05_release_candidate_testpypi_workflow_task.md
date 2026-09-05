@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T18:11:50Z
+- Updated: 2026-09-05T18:37:46Z
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -18,7 +18,7 @@ commit, version, workflow run, and distribution hashes before final production p
 ## Ticket Contract
 - ENTRY_GATE: Existing certification, this active route, and consumed patch contracts before edits.
 - EXECUTION_BOUNDARY: .github workflows/scripts/ruleset payloads/branch guide; focused workflow and consumer tests;
-  the reported aetheric-mediator concurrency component test; generated llm_support assets;
+  the reported aetheric-mediator concurrency component test and UnitOfWork lock test; generated llm_support assets;
   this ticket and its associated coordination/artifact rows.
 - DEPENDENCIES: tickets/tasks/completed/2026-09-04_implement_branch_ci_release_validation_task.md.
 - EXIT_GATE: Branch gates and candidate/publication workflow are implemented and locally validated;
@@ -38,8 +38,8 @@ commit, version, workflow run, and distribution hashes before final production p
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: The direct-overlap test is implemented and 272 focused mediator/control checks
-  pass. Delayed thread startup succeeds; deliberately serialized claims are rejected. Ready for owner commit.
+- transition_reason: Owner-selected larger timing windows are implemented in the existing test.
+  All 279 synchronization unit tests and generated test-corpus checks pass; ready for owner commit.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -55,6 +55,9 @@ commit, version, workflow run, and distribution hashes before final production p
 - Durable operator instructions including TestPyPI project and GitHub environment configuration.
 
 ## Validation
+- 2026-09-05T18:37:46Z UnitOfWork repair: all 279 synchronization unit tests pass with PYTHON_GIL=0.
+  The worker holds for 1 second, startup waits up to 5 seconds with an asserted result, and the
+  existing test structure remains. Scoped Ruff, whitespace, and regenerated test-corpus proofs pass.
 - 2026-09-05T18:11:50Z concurrency repair: 270 mediator unit/component cases plus two adversarial
   controls pass on Python 3.14t with PYTHON_GIL=0. Added startup delay passes; forced serialization
   is rejected with clean final bookkeeping. Scoped Ruff, whitespace, and regenerated test-corpus
@@ -109,6 +112,7 @@ commit, version, workflow run, and distribution hashes before final production p
   - artifacts/release_candidate_20260905/validation.md
   - artifacts/release_candidate_20260905/test_mediator_overlap_controls.py
   - artifacts/release_candidate_20260905/mediator-overlap.xml
+  - artifacts/release_candidate_20260905/uow-timing.xml
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/architecture_patch.md
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_candidate.md
   - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_publication.md
@@ -834,7 +838,69 @@ commit, version, workflow run, and distribution hashes before final production p
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T18:33:09Z
+  TYPE: HYPOTHESIS
+  CLAIM: Owner's UnitOfWork lock test waits up to 100ms for an entered event but ignores the return;
+    its worker releases the context after a 50ms sleep. The nonblocking assertion can therefore run
+    before acquisition or after release. Its own successful acquire explains the subsequently locked
+    repr. Verify the source before concluding whether the context manager violates mutual exclusion.
+  EVIDENCE:
+  - Owner-provided test_thread_safety_basic_lock_usage traceback on 2026-09-05.
+  IMPACT: Preserve production locking unless source and a synchronized reproduction prove a defect.
+  NEXT: Read UnitOfWork and the full target test, then coordinate holder release explicitly.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:33:09Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly chose a larger millisecond window instead of the proposed event-based
+    rewrite. Keep the test structure: hold the worker context for 1 second rather than 50ms, wait
+    up to 5 seconds for startup, and assert the entered wait succeeded. UnitOfWork.__enter__/__exit__
+    directly acquire/release its RLock; no production locking change is needed for this repair.
+  EVIDENCE:
+  - Owner's "just make the ms window decent" instruction on 2026-09-05.
+  - src/melder/utilities/synchronization/unit_of_work.py:280-332
+  - tests/unit/melder/utilities/synchronization/test_unit_of_work.py:145-169
+  IMPACT: This supersedes the handshake plan. Use the owner's timing choice and keep the patch small;
+    update the existing test, run focused synchronization checks, and regenerate the test corpus.
+  NEXT: Apply the longer hold/startup windows and verify the synchronization tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T18:36:58Z
+  TYPE: FACT
+  CLAIM: The existing UnitOfWork test now holds the worker lock for 1 second and asserts a
+    successful entered event within 5 seconds. Its thread structure and lock assertions are preserved.
+    The test corpus is regenerated. No handshake rewrite or production code change was made.
+  EVIDENCE:
+  - tests/unit/melder/utilities/synchronization/test_unit_of_work.py:145-172
+  IMPACT: The owner's requested timing margin is implemented and ready for focused checks.
+  NEXT: Run synchronization unit tests and check the generated test corpus.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-05T18:37:46Z
+  TYPE: MEASURE
+  CLAIM: All 279 synchronization unit tests pass on local Python 3.14t with PYTHON_GIL=0 after the
+    owner-directed window increase. Scoped correctness Ruff, git diff whitespace checks, and the
+    regenerated tests-corpus proof pass. The patch changes only test timing, startup-wait assertion,
+    and touched test docstrings/type hints; production code and thread structure are unchanged.
+  EVIDENCE:
+  - artifacts/release_candidate_20260905/uow-timing.xml
+  - tests/unit/melder/utilities/synchronization/test_unit_of_work.py:147-173
+  IMPACT: Ready for owner commit and hosted CI. Owner explicitly chose this wider timing window;
+    the proposed event-handshake rewrite was not implemented. No hosted rerun or package upload occurred.
+  NEXT: Owner commits the test and regenerated test corpus, then runs the updated CI revision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+Latest local repair is the owner-requested small UnitOfWork test change: worker hold 50ms -> 1 second,
+startup wait 100ms -> 5 seconds, and an assertion that startup signaled. Existing thread/test structure
+is preserved; no event-handshake rewrite or production code change. All 279 synchronization unit tests
+pass with PYTHON_GIL=0, plus scoped Ruff, whitespace, and regenerated tests-corpus proofs. Ready for
+owner commit and hosted CI. The prior mediator overlap repair was already committed at this intake.
+
 The disjoint-frame timing failure is now fixed locally on codex_features2. The test requires eight
 concurrently held frame claims and eight world holders at a barrier in each of three rounds, with
 future results carrying worker failures and deterministic session/identity cleanup. The arbitrary
