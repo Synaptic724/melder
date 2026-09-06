@@ -12,7 +12,8 @@ import pytest
 def result_map() -> dict[str, object]:
     """Build the complete, successful dependency report emitted by the CI workflow."""
     return {name: {"result": "success"} for name in
-            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages")}
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
+             "source-qualification", "packages")}
 
 
 def pr_event(base: str = "dev", head: str = "feature/example",
@@ -132,7 +133,7 @@ def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
         policy.require_success(results, False)
 
 
-@pytest.mark.parametrize("job", ["authorize", "build", "publish", "install"])
+@pytest.mark.parametrize("job", ["authorize", "source-qualification", "build", "publish", "install"])
 @pytest.mark.parametrize("result", ["failure", "cancelled", "skipped", "neutral", None])
 def test_candidate_requires_all_upload_and_install_stages(policy: ModuleType, job: str, result: object) -> None:
     """Neither a skipped publisher nor one failing platform can yield package-ready success."""
@@ -176,7 +177,8 @@ def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, eve
         policy.validate_candidate_head(event, ref, "a" * 40, checkout, advertisement)
 
 
-@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages"])
+@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
+                                "documentation", "source-qualification", "packages"])
 def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
     """Deleting a failed job from the report must not conceal its absence."""
     results = result_map()
@@ -346,6 +348,11 @@ def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,
     """Return a failing process result for skipped tests or missing branch-policy outputs."""
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
+    monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
+    monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setattr(policy, "read_event", pr_event)
     assert policy.main(["merge-ready"]) == 0
     failed = result_map()
     failed["tests"] = {"result": "skipped"}
@@ -368,7 +375,72 @@ def test_branch_cli_writes_the_actual_package_requirement(policy: ModuleType,
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
     assert policy.main(["branch"]) == 0
-    assert output.read_text(encoding="utf-8") == "package-required=true\n"
+    assert output.read_text(encoding="utf-8") == (
+        "runtime-required=true\npackage-required=true\nsource-required=false\n"
+    )
+
+
+@pytest.mark.parametrize(("base", "head", "expected"), [
+    ("dev", "feature/work", (True, False, False)),
+    ("preprod", "dev", (True, True, False)),
+    ("release_candidate", "preprod", (False, False, True)),
+    ("release_candidate", "release-fix/correction", (True, True, False)),
+    ("prod", "release_candidate", (False, False, False)),
+])
+def test_pr_stages_select_full_or_proven_promotion(policy: ModuleType, base: str, head: str,
+                                                   expected: tuple[bool, bool, bool]) -> None:
+    """Only dev/preprod and changed candidate PRs run full CI; unchanged promotions require evidence."""
+    assert policy.validation_requirements(
+        "pull_request", pr_event(base, head), "refs/pull/1/merge", "owner/repo",
+    ) == expected
+
+
+@pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])
+def test_manual_ci_always_requalifies_the_selected_branch(policy: ModuleType, branch: str) -> None:
+    """Manual CI can establish fresh full evidence, including historical/expired candidate proof."""
+    assert policy.validation_requirements(
+        "workflow_dispatch", {}, f"refs/heads/{branch}", "owner/repo",
+    ) == (True, branch != "dev", False)
+    with pytest.raises(ValueError, match="not pushes"):
+        policy.validation_requirements("push", {}, f"refs/heads/{branch}", "owner/repo")
+
+
+@pytest.mark.parametrize("source_required", [False, True])
+def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: ModuleType,
+                                                                 source_required: bool) -> None:
+    """Skipping runtime never waives source proof when that is the promotion's mandatory evidence."""
+    results = result_map()
+    for name in policy.CIPolicy.FULL_JOBS:
+        results[name] = {"result": "skipped"}
+    results["packages"] = {"result": "skipped"}
+    results["source-qualification"] = {"result": "success" if source_required else "skipped"}
+    policy.require_success(results, False, False, source_required)
+    if source_required:
+        results["source-qualification"] = {"result": "skipped"}
+        with pytest.raises(ValueError, match="source-qualification"):
+            policy.require_success(results, False, False, True)
+    results["tests"] = {"result": "failure"}
+    with pytest.raises(ValueError, match="tests"):
+        policy.require_success(results, False, False, source_required)
+
+
+@pytest.mark.parametrize(("flag", "value"), [
+    ("RUNTIME", "false"), ("PACKAGE", "false"), ("SOURCE", "true"), ("RUNTIME", ""),
+])
+def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
+                                                       monkeypatch: pytest.MonkeyPatch,
+                                                       flag: str, value: str) -> None:
+    """The final gate derives policy independently of branch-job output strings."""
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setattr(policy, "read_event", lambda: pr_event("preprod", "dev"))
+    monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
+    monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
+    monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
+    monkeypatch.setenv(f"CI_{flag}_REQUIRED", value)
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
+    with pytest.raises(ValueError, match="Missing/invalid"):
+        policy.require_ci_results()
 
 
 @pytest.mark.parametrize(("version", "supported", "gil", "valid"), [
@@ -408,3 +480,32 @@ def test_test_driver_preserves_tiers_failure_code_and_runtime_checks(runtime: Mo
     assert calls == ["runtime-check", [
         "-q", "tests/unit", "tests/component", "tests/integration", f"--junitxml={report}",
     ], "runtime-check"]
+
+
+@pytest.mark.parametrize("exit_code", [0, 1, 2, 5])
+def test_coverage_driver_preserves_runtime_contract_and_pytest_exit(runtime: ModuleType,
+                                                                 tmp_path: pathlib.Path,
+                                                                 monkeypatch: pytest.MonkeyPatch,
+                                                                 exit_code: int) -> None:
+    """Optional coverage adds one XML report without rerunning tests or masking pytest outcomes."""
+    calls: list[object] = []
+
+    def fake_pytest(arguments: list[str]) -> int:
+        """Capture pytest's invocation boundary without starting a nested test session."""
+        calls.append(arguments)
+        return exit_code
+
+    def runtime_check(*arguments: object) -> None:
+        """Observe both runtime checks; the guard predicate is validated independently."""
+        calls.append("runtime-check")
+
+    monkeypatch.setattr(pytest, "main", fake_pytest)
+    monkeypatch.setattr(runtime, "require_free_threading", runtime_check)
+    junit = tmp_path / "junit/runtime.xml"
+    coverage = tmp_path / "coverage reports/coverage.xml"
+    assert runtime.main(["--report", str(junit), "--coverage-report", str(coverage)]) == exit_code
+    assert calls == ["runtime-check", [
+        "-q", "tests/unit", "tests/component", "tests/integration", f"--junitxml={junit}",
+        "--cov=melder", "--cov-branch", f"--cov-report=xml:{coverage}",
+    ], "runtime-check"]
+    assert junit.parent.is_dir() and coverage.parent.is_dir()

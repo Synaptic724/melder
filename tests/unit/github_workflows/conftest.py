@@ -59,3 +59,15 @@ def candidate_proof() -> ModuleType:
 def normalizer() -> ModuleType:
     """Provide archive normalization without rewriting any artifact at import."""
     return load_script("normalize_sdist")
+
+
+@pytest.fixture
+def source_qualification() -> ModuleType:
+    """Provide source-proof logic without GitHub requests or repository changes."""
+    return load_script("ci_qualification")
+
+
+@pytest.fixture
+def runtime_matrix() -> ModuleType:
+    """Provide stable-version discovery with HTTP and filesystem boundaries available to mock."""
+    return load_script("python_runtime_matrix")

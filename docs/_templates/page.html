@@ -1,7 +1,12 @@
 {% extends "!page.html" %}
 
 {% block body %}
-  {% if toc %}
+  {% if pagename == root_doc %}
+  <img class="melder-banner"
+       src="{{ pathto('_static/branding/melder-banner.jpg', 1) }}"
+       alt="Melder — two mages channeling aether in a modern city"
+       width="3966" height="1586" fetchpriority="high">
+  {% elif toc %}
   <details class="melder-page-toc">
     <summary>On this page</summary>
     {{ toc }}

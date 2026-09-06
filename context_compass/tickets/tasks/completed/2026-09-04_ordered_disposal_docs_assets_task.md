@@ -176,7 +176,7 @@ Record actual documentation/generation outcomes with paths; retain source truth 
   - `UX_and_AIX_experiences/AGENTS.md`
   - `src/melder/_build_assets/_build_asset_runner.py:1-399`
   - `llm_support/_builder.py:1-886`
-  - Incoming codex_2 notice: tickets/tasks/2026-09-04_rtd_quality_audit_task.md.
+  - Incoming codex_2 notice: tickets/tasks/completed/2026-09-04_rtd_quality_audit_task.md.
   IMPACT: Correct first-bind global-vocabulary and bool-master-switch claims. Keep md.*-only
     runnable lessons and existing heading structure. Use intent-to-add for new feature test inputs
     so standard corpus build/check includes them; do not stage existing edits, commit, or push.

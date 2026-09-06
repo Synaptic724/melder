@@ -5,35 +5,112 @@ Contributions enter `dev` through a pull request. Promotion proceeds through
 
 ## Required checks
 
-`CI / merge-ready` is the stable status to require in GitHub. It depends on:
+`CI / merge-ready` remains the stable required status. The branch route selects
+which checks must run; the final gate independently verifies that selection.
+
+| Event | Full runtime matrix | Other required work |
+| --- | --- | --- |
+| Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification |
+| `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
+| `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
+| `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
+| Manual `CI` on a permanent branch | Yes | Full checks; distributions on every branch except dev |
+| Ordinary branch push | No source CI | RC pushes retain their dedicated package workflow |
+| Final publication | Yes | Fresh package validation and final tag/prod checks |
+
+The checks enforce these contracts:
 
 - Branch policy: contributions target dev; preprod accepts this repository's dev,
   release_candidate accepts preprod, and prod accepts release_candidate. Forks
   cannot impersonate promotion branches. Permanent-branch synchronization PRs
   may return to dev. Same-repository `release-fix/*` PRs can prepare or fix the
   frozen candidate; keep their scope narrow and carry fixes back to dev.
-- Source assets: the existing build-asset runner verifies committed manifests.
-- Repository assets: the LLM builder verifies committed bundles and indexes.
+- Source assets in full CI: the existing build-asset runner verifies committed manifests.
+- Repository assets in full CI: the LLM builder verifies committed bundles and indexes.
 - Repository hygiene: tracked filenames must not collide case-insensitively.
-- Documentation: the shared documentation validation workflow must succeed.
-- Runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
-  using Python 3.14t with the GIL disabled in the actual pytest process.
+- Documentation in full CI: the shared documentation validation workflow must succeed.
+- Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
+  using the latest stable patch of every supported Python minor, with the GIL disabled
+  in the actual pytest process.
   The macOS job uses `macos-latest` on native Apple Silicon (arm64).
-- Distribution verification for preprod/release_candidate/prod: wheel and sdist boundaries,
+- Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
   qualification, a final package version, and the same tree as the merge result.
   This runs last inside `CI / merge-ready`, after the other required checks succeed.
+- Source qualification: unchanged preprod promotions must prove that their entire
+  merge tree passed full CI before the source suite may be skipped.
 
 The final status fails for missing evidence, failure, cancellation, or an
-unexpected skipped job. Only dev intentionally skips distribution building.
-Repository variables cannot disable mandatory asset checks. Helpers remain
+unexpected skipped job. Optional jobs may succeed or be explicitly skipped, never
+fail or disappear from the result map. Profile flags are derived from the event;
+repository variables cannot waive a required check. Helpers remain
 manually runnable. `ci.yml` owns source CI; `release-candidate.yml` owns candidate pushes.
 
 Scope `PYTHON_GIL=0` to the runtime-test and installed-package probe steps. Do not
 set it for the whole job: macOS Python setup runs a standard-Python certificate
 installer that cannot start with the GIL disabled. The test driver and wheel probe
 still reject an unsupported interpreter or an enabled GIL during qualification.
+
+## Supported Python versions
+
+Runtime discovery reads the Python floor from `project.requires-python` in `pyproject.toml`
+(currently `>=3.14`) and GitHub's official `actions/python-versions` release manifest.
+It selects the latest stable patch of every matching minor: 3.14, then 3.15 once stable,
+and subsequent stable versions automatically. Alpha, beta and release-candidate Python builds
+are excluded. Historical patch releases are not separate matrix entries.
+
+Every selected version runs on Linux x64, Windows x64 and macOS arm64. Runtime tests and
+RC installation probes use `freethreaded: true` with the discovered exact Python version.
+The test driver verifies free-threading support and GIL-off state before and after pytest;
+the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
+may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
+
+The discovery helper refuses empty/malformed catalog data, missing support for the declared
+floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
+on the actual runner also fail the matrix. No missing version/platform silently disappears.
+Each runtime/RC run retains its selected OS/version matrix as a JSON artifact for 90 days.
+Tests, coverage and installed-package reports include OS, exact Python version and run/attempt.
+
+Distribution building still produces one wheel/sdist pair. Its Python selection comes from
+`pyproject.toml` with free threading enabled; the full compatibility matrix belongs to runtime
+tests and RC installed-package checks. Existing full-test stages stay unchanged. Historical
+source proof refers to its recorded full-CI run, while final publication discovers and tests
+the currently available stable matrix afresh.
+
+## Coverage reporting and README badges
+
+The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
+They do not run the suite a second time. Each matrix cell retains a coverage artifact for 14 days;
+one reporting job uploads those reports to Codecov after the full matrix succeeds.
+It requires an XML file for every discovered OS/version from the same run/attempt; missing artifacts
+leave a reporting warning/failure rather than publishing an incomplete matrix as the current result.
+Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
+and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
+
+One-time setup:
+
+1. Sign into Codecov with GitHub and enable the public Synaptic724/melder repository.
+2. Copy that repository's Codecov upload token.
+3. In GitHub, open Settings -> Secrets and variables -> Actions -> New repository secret.
+4. Use the name CODECOV_TOKEN and paste the Codecov token as its value.
+
+This is a repository Actions secret, not an environment secret or variable. No new GitHub
+environment or id-token permission is needed. Do not reuse either PyPI token or store the token
+in the checkout. CI and final publication explicitly pass only CODECOV_TOKEN to the reusable
+workflow; only its credential check and Codecov upload steps receive it.
+If the token is absent, a setup warning is emitted and reporting is skipped. Fork PRs retain
+their test/coverage artifacts but skip credentialed uploads.
+
+The README coverage badge tracks prod. It shows no percentage until the first prod report is
+processed. Normal final-release tests populate it; the release tag is attributed to prod only
+after the existing release gate verifies that tag against current prod HEAD. To seed the badge
+without publishing a package, run Actions -> Runtime tests -> Run workflow on prod after these
+files reach that branch. Do not run Publish Python Package merely to refresh coverage.
+
+The CI badge uses GitHub's default-branch/latest-run behavior, not a hardcoded passing label.
+Reference: https://github.com/codecov/codecov-action#usage
 
 ## Working on a feature
 
@@ -51,9 +128,9 @@ added input files before running the repository builder so its tracked-file
 inventory includes them. Never hand-merge generated bundles. After updating a
 feature from dev, regenerate again when the combined source changed.
 
-CI runs on PR updates, including a changed PR base, and on dev/preprod/prod
-pushes. Candidate pushes run the slim package workflow below. Heavy CI does not
-also run on every feature push before its PR. New PR
+CI runs on PR updates, including a changed PR base, and explicit manual dispatch.
+It does not repeat source CI after pushes to dev/preprod/prod. Candidate pushes
+run the slim package workflow below. New PR
 commits supersede old CI runs. Reusable helpers have no concurrency group that
 could accidentally cancel their caller or a final release.
 
@@ -71,31 +148,69 @@ merge commit, which otherwise creates a perpetual merge-back requirement.
 Resolve conflicts on the source branch and rerun CI; carry release/hotfix changes
 back into dev through a reviewed synchronization PR.
 
+## Reusing full qualification
+
+A successful full CI run retains `source-qualification-<run-id>-<attempt>` for
+90 days. Its JSON record binds the repository, run/attempt, event/PR identity and
+the actual tested checkout and Git tree. A PR run's head SHA is not assumed to
+be its tested merge SHA.
+
+Checkout verification requires an unchanged Git index and rejects actual tracked content or mode
+changes. Git can report older committed CRLF files as modified under a newer LF attribute policy
+even when their bytes are identical. Only matching unfiltered blob identity and unchanged regular-file
+mode clear that false positive. This does not ignore whitespace or exclude documentation directories;
+real changes fail with affected path names. A skipped source-qualification job is expected for
+dev-to-preprod full CI: that run creates fresh evidence instead of reusing an earlier run.
+
+`verify-source-qualification.yml` finds the full run behind the actual preprod
+promotion, downloads one immutable artifact ID with read-only credentials, and
+checks its record against the current tree. It refreshes the selection after
+download so a changed attempt cannot reuse an old record. Light CI does not issue
+full-runtime evidence. Historical GitHub run records may omit their PR association;
+the downloaded record must still prove the correct PR, head and base.
+
+Any difference in the Git tree—including source, dependencies, tests, workflow
+configuration or generated assets—requires qualification of those contents.
+Release-fix PRs therefore run full CI. An exact-commit manual CI run on the
+expected branch provides explicit fresh evidence and takes precedence over
+historical PR evidence; its latest failed or pending run cannot be bypassed.
+
+For rollout, commit the new workflows, helpers, tests and regenerated bundles
+together and promote through dev and preprod. Older green runs without the new
+record do not qualify. If proof is absent, expired, or no longer matches the
+historical merge, run **CI → Run workflow** with the updated workflow installed.
+Choose `preprod` for its promotion PR, or `release_candidate` for the frozen
+candidate's package workflow. Wait for full CI to pass, then retry the blocked step.
+This manual CI builds/tests only; it does not upload to PyPI or TestPyPI.
+
+A tree mismatch requires resolving the differing contents in preprod or a reviewed
+release-fix PR. Repeating qualification of the old source cannot approve a different merge.
+
 ## Release candidate and TestPyPI
 
 Select a green preprod revision through a PR into `release_candidate`. Keep
 this branch on one candidate while preprod continues receiving new work.
-The PR runs required source/package CI before merge. Merging it pushes the chosen
+The PR verifies full preprod qualification and identical merge contents. Merging it pushes the chosen
 revision onto release_candidate and starts `release-candidate.yml`; no GitHub Release
 or tag is required. Manual dispatch must select the same branch.
 
 | Boundary | Work performed |
 | --- | --- |
-| `preprod -> release_candidate` PR | Full source CI and local package verification. |
-| Merge lands on `release_candidate` | Build, TestPyPI upload, and installed-package probes. |
-| `release_candidate -> prod` PR | Run required CI, then verify exact-source RC success in the final merge-ready check. |
+| `preprod -> release_candidate` PR | Verify the previously qualified preprod tree. |
+| Merge lands on `release_candidate` | Recheck source proof, build, upload to TestPyPI, and run installed-package probes. |
+| `release_candidate -> prod` PR | Verify exact-source RC success in the final merge-ready check. |
 
 TestPyPI publication belongs to the RC stage. The prod promotion check does not
 upload to TestPyPI; it blocks promotion until the earlier RC qualification succeeds.
 
-Branch-route validation stays at the start. Candidate proof runs after runtime tests,
-documentation, assets, hygiene and the required distribution build. This lets RC
-qualification finish alongside those checks. If RC is still pending at that final
-step, the check fails with its run link; rerun the failed CI jobs after RC succeeds.
-Elapsed time never substitutes for a successful exact-source candidate result.
+Branch-route validation stays at the start. The lighter prod PR can finish before
+RC upload/probes, so its final candidate check waits up to ten minutes for an
+authentic pending run. Completed failure, wrong identity, missing evidence and API
+errors still refuse. If the wait expires, finish/fix RC and rerun the failed CI
+jobs. Elapsed time never substitutes for successful exact-source qualification.
 
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
-fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
+fresh installation across the discovered stable no-GIL OS/version matrix. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
@@ -139,8 +254,9 @@ The build uses the commit timestamp and normalizes sdist timestamp/ownership
 headers so unchanged package contents do not acquire different hashes on retry.
 
 When finalizing, use a reviewed `release-fix/*` PR from the frozen candidate to
-set the final version, for example `0.2.4`, and regenerate assets. That push runs
-TestPyPI qualification again. Only the final-version candidate may enter prod.
+set the final version, for example `0.2.4`, and regenerate assets. The release-fix
+PR runs full CI; its merge triggers TestPyPI qualification again.
+Only the final-version candidate may enter prod.
 The final Git tag, for example `v0.2.4`, must match the package version; a tag
 cannot turn an rc1 wheel into a final wheel.
 
@@ -151,8 +267,8 @@ bytes fail rather than being hidden by `skip-existing`. Use **Re-run all jobs**
 for fresh same-run/attempt artifacts. Download retries are bounded for index
 propagation; failed consumer tests are not retried or ignored.
 
-`RC / package-ready` reports explicit success only when authorization, build,
-upload, and all three platform probes succeeded. Prod's existing required CI gate
+`RC / package-ready` reports explicit success only when authorization, source proof, build,
+upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
 source commit/tree, version, run/attempt, and both distribution hashes.

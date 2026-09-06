@@ -2,9 +2,9 @@
 
 - Design ID: RTD-DESIGN-2026-09-04
 - Owner: codex_2
-- Status: defined for implementation planning; implementation not started
+- Status: historical design implemented and accepted; program closed by owner on 2026-09-06.
 - Created: 2026-09-04T21:30:46Z
-- Epic: ../tickets/epics/2026-09-04_readthedocs_documentation_epic.md
+- Epic: ../tickets/epics/completed/2026-09-04_readthedocs_documentation_epic.md
 - Authority: owner's latest four-level instruction, README level table, saved example corpus
 
 ## 1. Product Contract
