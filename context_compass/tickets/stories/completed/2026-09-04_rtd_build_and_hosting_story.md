@@ -1,15 +1,22 @@
 # Story: Make documentation builds, previews, versions, and downloads reproducible
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Story ID: STORY-2026-09-04-rtd-build-and-hosting
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: blocked
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-05T14:13:38Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## User Narrative
 As a maintainer, I can review a documentation change before release and publish consistent versions
@@ -47,17 +54,16 @@ Make publishing a repeatable release process with identifiable source/version in
 - Out of scope: runtime changes, paid-plan purchases, invented credentials, or retroactive tag modification.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: blocked
-- transition_reason: Local pipeline, formats, and recovery procedure are verified; actual hosted
-  setup/build verification is blocked on project identity/access.
+- from_state: blocked
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Dependencies / Related Work
 S9 validates the complete release and owns final launch acceptance after this pipeline is demonstrated.
 
 ## Tasks (Implementation Checklist)
-- [ ] [Implement docs CI parity, RTD configuration, and offline outputs](../tasks/2026-09-04_rtd_ci_and_offline_task.md)
-- [ ] [Verify and configure the intended Read the Docs project](../tasks/2026-09-04_rtd_hosted_project_task.md)
+- [ ] [Implement docs CI parity, RTD configuration, and offline outputs](../../tasks/completed/2026-09-04_rtd_ci_and_offline_task.md)
+- [ ] [Verify and configure the intended Read the Docs project](../../tasks/completed/2026-09-04_rtd_hosted_project_task.md)
 - [ ] Align local/CI/RTD inputs and requirements; add the docs workflow and RTD configuration.
 - [ ] Verify project ownership/repository/branch, Git integration, and a real PR preview.
 - [ ] Implement/test version identity, search integration, source links, canonical URL, and redirects.
@@ -119,7 +125,7 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
   CLAIM: CI/RTD parity and native handbook builders are implemented; source-link validation and final
     offline packaging remain in the active task. The owner is creating the Read the Docs project.
   EVIDENCE:
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:46-66
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md:46-66
   - Owner RTD website setup instruction on 2026-09-05.
   IMPACT: Local validation and owner account setup can progress independently; no hosted success is claimed.
   NEXT: Complete local format/link validation and obtain the project URL/branch from the owner.
@@ -132,7 +138,7 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
     local formats/staging validated, source/repository assets current, and prominent README routes added.
   EVIDENCE:
   - artifacts/2026-09-05_rtd_local_build_validation.md:1-62
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:1-71
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md:1-71
   IMPACT: Local pipeline evidence is available for the owner-created RTD project. S8 cannot close until
     the actual hosted project, previews, versions, search, canonical links, and downloads are verified.
   NEXT: Confirm the owner's project URL and chosen docs-bearing branch/revision for hosted verification.
@@ -146,10 +152,23 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
     Hosted verification remains blocked; simulation and staging are explicitly labeled local.
   EVIDENCE:
   - artifacts/2026-09-05_rtd_final_quality_audit.md
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md
   IMPACT: The remaining S8 boundary is actual project/build access and live feature verification.
   NEXT: Continue the hosted-project task after the owner supplies its URL/branch and read authorization.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Applicable Anti-Patterns
@@ -163,6 +182,11 @@ Project ownership, chosen public branch, optional custom domain, compatible pins
 Record exact pins, build revisions, service settings without secrets, feature verification, and recovery steps.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 CI/RTD configuration and handbook builders are implemented and locally validated; the CI/offline task
 is in review. The owner is adding the RTD project. The project URL/branch and hosted behavior
 remain to be verified. S9 still owns integrated launch acceptance; all commits/pushes remain owner-only.

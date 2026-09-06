@@ -34,7 +34,7 @@ tickets, authorship, chronology, and current uncommitted work.
   temporary tooling, ContextCompass tracking, and deliberate local commits only.
   No sibling `melder` write, remote mutation, push, visibility change, or PyPI action.
 - DEPENDENCIES: The audit and removal plan in
-  `tickets/tasks/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md`.
+  `tickets/tasks/completed/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md`.
 - EXIT_GATE: Backups verify; forbidden historical paths/text are absent; tickets
   and source outside the manifest remain equivalent; Gitleaks is clean; the working
   tree is restored without forbidden files.
@@ -161,7 +161,7 @@ tickets, authorship, chronology, and current uncommitted work.
   EVIDENCE:
   - `.github/workflows/build-assets.yml`
   - `attention_board.md:80-84`
-  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tickets/tasks/completed/2026-08-29_sanitize_publication_history_task.md`
   - `tests/experiments/cprofile_testing/results/.gitignore:1-2`
   IMPACT: The authorized local commit boundary is exact and contains no runtime
     source, unrelated file, or sibling-repository content.
@@ -195,7 +195,7 @@ tickets, authorship, chronology, and current uncommitted work.
   EVIDENCE:
   - `.github/workflows/build-assets.yml`
   - `attention_board.md:80-84`
-  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tickets/tasks/completed/2026-08-29_sanitize_publication_history_task.md`
   - `tests/experiments/cprofile_testing/results/.gitignore:1-2`
   IMPACT: The local finalization commit is scoped, reviewable, and does not need
     another three-minute test run over an unchanged source tree.
@@ -477,7 +477,7 @@ tickets, authorship, chronology, and current uncommitted work.
     retained and rewritten; no mixed reset is required. The sibling `melder`
     repository remains strictly outside scope.
   EVIDENCE:
-  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tickets/tasks/completed/2026-08-29_sanitize_publication_history_task.md`
   IMPACT: The no-commit blocker is cleared. Local history may be finalized with
     a scoped commit after binary-aware sanitation and full validation.
   NEXT: Capture a fresh post-checkpoint recovery set, stash current work, remove
@@ -635,7 +635,7 @@ tickets, authorship, chronology, and current uncommitted work.
     is an actual user-home path, not a secret-pattern or filename false positive.
   EVIDENCE:
   - `artifacts/`
-  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tickets/tasks/completed/2026-08-29_sanitize_publication_history_task.md`
   - `.git`
   IMPACT: A global content callback constrained by the decoded user-home regex is
     safer than enumerating 81 filenames and preserves every artifact. It will
@@ -742,7 +742,7 @@ tickets, authorship, chronology, and current uncommitted work.
   EVIDENCE:
   - `artifacts/spellbook_typecheck_report.txt:1-253`
   - `artifacts/dev_ops_typecheck_scan.json:1-848`
-  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tickets/tasks/completed/2026-08-29_sanitize_publication_history_task.md`
   IMPACT: The earlier path-clean conclusion is incomplete for at least the
     current branch; final publication safety is blocked until affected refs and
     replacement-rule coverage are identified.
@@ -759,7 +759,7 @@ tickets, authorship, chronology, and current uncommitted work.
     is corrected to `<external-recovery>`, but the full worktree still requires
     a targeted path scan before publication safety can be claimed.
   EVIDENCE:
-  - `tickets/tasks/2026-08-29_sanitize_publication_history_task.md`
+  - `tickets/tasks/completed/2026-08-29_sanitize_publication_history_task.md`
   IMPACT: Reachable Git history remains clean, but uncommitted files are part of
     the future public tree and must meet the same path-redaction gate.
   NEXT: Scan every non-ignored current-worktree file for local path forms and

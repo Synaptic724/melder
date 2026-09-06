@@ -1,16 +1,23 @@
 # Task: Complete release acceptance and documentation maintenance handoff
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-rtd-launch-and-maintenance
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-quality-and-launch
-- Story Path: ../stories/2026-09-04_rtd_quality_and_launch_story.md
-- Status: blocked
+- Story Path: ../../stories/completed/2026-09-04_rtd_quality_and_launch_story.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T14:13:38Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Deliver the final accepted documentation release, verify the public outcome, and leave a reproducible content/release maintenance procedure.
@@ -28,10 +35,9 @@ Deliver the final accepted documentation release, verify the public outcome, and
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: draft
-- to_state: blocked
-- transition_reason: Maintenance implementation and local qualification are delivered through S8/S9;
-  actual hosted release identity/access and owner acceptance remain prerequisites for launch.
+- from_state: blocked
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [ ] Read the exact inputs and record one bounded implementation decision.
@@ -91,12 +97,25 @@ Deliver the final accepted documentation release, verify the public outcome, and
     RTD project/branch and authorized dashboard access are unknown.
   EVIDENCE:
   - artifacts/2026-09-05_rtd_final_quality_audit.md
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
-  - tickets/tasks/2026-09-04_rtd_hosted_project_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_hosted_project_task.md
   IMPACT: Keep launch and epic acceptance open. Owner commits/pushes; finish real service verification
     and the explicitly documented manual browser checks before recording launch acceptance.
   NEXT: Resume through the hosted-project task when the owner supplies project identity/access.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Applicable Anti-Patterns
@@ -104,5 +123,10 @@ Deliver the final accepted documentation release, verify the public outcome, and
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 The runbook and local implementation are complete; actual release acceptance remains blocked by
 hosted-project verification. The S9 final audit holds current evidence and precise remaining checks.

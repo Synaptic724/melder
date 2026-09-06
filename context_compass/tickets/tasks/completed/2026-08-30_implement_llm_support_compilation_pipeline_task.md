@@ -282,7 +282,7 @@ and its source/repository asset workflows.
     follow the Ticket Microcycle and leave committed outputs current.
   EVIDENCE:
   - `llm_support/_builder.py --check --include-untracked`
-  - `context_compass/tickets/tasks/2026-08-30_implement_llm_support_compilation_pipeline_task.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_implement_llm_support_compilation_pipeline_task.md`
   IMPACT: `other` must retain ContextCompass policy, roles, tools, examples,
     and system documents while excluding its mutable work-state/history lanes.
   NEXT: Add explicit live-state/artifact/scratch exclusions, update README/

@@ -1,16 +1,23 @@
 # Task: Audit complete documentation coverage and reader workflows
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-rtd-quality-audit
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-quality-and-launch
-- Story Path: ../stories/2026-09-04_rtd_quality_and_launch_story.md
-- Status: review
+- Story Path: ../../stories/completed/2026-09-04_rtd_quality_and_launch_story.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T14:09:36Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Verify all four levels, complete contents, source/example/API coverage, accessible reading, search, and downloads with a requirements-to-evidence matrix.
@@ -28,10 +35,9 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Local audit and corrections are complete; hosted launch and documented manual
-  browser checks remain explicit, with current evidence in the final audit artifact.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [x] Read the exact inputs and record one bounded implementation decision.
@@ -110,7 +116,7 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
     Consume codex_1's notice: runtime/replay and disposal docs are changing; that lane will regenerate
     source assets and LLM corpora. Avoid competing asset regeneration while it runs.
   EVIDENCE:
-  - tickets/tasks/2026-09-04_rtd_beginner_content_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_beginner_content_task.md
   - artifacts/2026-09-05_rtd_local_build_validation.md
   - tickets/tasks/2026-09-04_ordered_disposal_crystal_replay_task.md
   - Owner instruction to finish all remaining documentation work.
@@ -167,7 +173,7 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
     restores all 133 and removes query parameters. Filters reflow to one column at 375px without
     page overflow. A strict no-custom-JS build keeps all 133 lessons and full contents usable at 320px.
   EVIDENCE:
-  - tickets/tasks/2026-09-04_rtd_site_foundation_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_site_foundation_task.md
   - docs/_static/catalog.js:1-37
   - Browser checks on examples/index.html at local ports 8765/8766.
   IMPACT: Core reader navigation and catalog workflows are verified. Native 200% zoom and copied-byte
@@ -253,7 +259,7 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
   EVIDENCE:
   - artifacts/2026-09-05_rtd_final_quality_audit.md
   - artifacts/rtd_validation_20260904/release_qualification_20260905.json
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md
   - Browser fresh reload of https://melder.readthedocs.io/en/latest/.
   IMPACT: No implementation is knowingly left unfinished locally. Keep exact zoom/clipboard
     limits and hosted dependencies visible; owner acceptance and publication are not claimed.
@@ -261,11 +267,29 @@ Verify all four levels, complete contents, source/example/API coverage, accessib
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Local quality audit is complete and in review. The final audit artifact is the entry point for all
 evidence, fixes, and precise limits. Hosted-project verification remains blocked; native 200% zoom
 and clipboard payload readback need manual/capable-browser checks. Owner retains final acceptance.

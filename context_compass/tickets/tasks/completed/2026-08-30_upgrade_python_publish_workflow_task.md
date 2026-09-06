@@ -108,7 +108,7 @@ only from current `prod` HEAD.
 - `tests/unit/melder/aether/dev_ops/change_control_manager/test_transaction_mediator.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py`
 - `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context_factory.py`
-- `context_compass/system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/`
+- `context_compass/system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/`
 - `context_compass/attention_board.md`
 - This task.
 
@@ -160,9 +160,9 @@ only from current `prod` HEAD.
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - `system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/architecture_patch.md`
-  - `system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/component_patch_shared_spell_context.md`
-  - `system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/code_description_patch_shared_spell_context_rebuild.md`
+  - `system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/architecture_patch.md`
+  - `system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/component_patch_shared_spell_context.md`
+  - `system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/code_description_patch_shared_spell_context_rebuild.md`
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: owner acceptance
 
@@ -464,9 +464,9 @@ only from current `prod` HEAD.
     remains unchanged. Validation proceeds focused GIL/3.14t, repeated stress,
     supported suites, then docs/assets/diff gates.
   EVIDENCE:
-  - `system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/architecture_patch.md:1-57`
-  - `system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/component_patch_shared_spell_context.md:1-35`
-  - `system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/code_description_patch_shared_spell_context_rebuild.md:1-37`
+  - `system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/architecture_patch.md:1-57`
+  - `system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/component_patch_shared_spell_context.md:1-35`
+  - `system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/code_description_patch_shared_spell_context_rebuild.md:1-37`
   IMPACT: System-impacting source editing is unblocked inside a no-public-API,
     no-hot-path-lock boundary with explicit rollback and validation contracts.
   NEXT: Read every target source/test file completely, then apply the runtime

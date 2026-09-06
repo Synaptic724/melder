@@ -1,14 +1,21 @@
 # Epic: Deliver Melder documentation through Beginner, Intermediate, Advanced, and Expert
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Epic ID: EPIC-2026-09-04-readthedocs-documentation
-- Status: blocked
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p2
 - Created: 2026-09-04T21:06:12Z
-- Updated: 2026-09-05T14:18:48Z
-- Target Window: Local implementation verified; hosted launch awaits project access and owner acceptance.
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
+- Target Window: Closed under owner acceptance on 2026-09-06.
 - Related Program/Initiative: Melder public documentation.
 
 ## Problem / Opportunity
@@ -59,10 +66,9 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 - Excluded now: Unrelated runtime changes, credential handling, commits, and pushes.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: blocked
-- transition_reason: All local implementation and maintenance work is verified; public RTD still
-  displays 404 and private-dashboard read authorization/project identity are pending.
+- from_state: blocked
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Success Metrics
 - Exactly four primary learning sections, with their established names/order/identifiers.
@@ -109,22 +115,22 @@ the design. ThreadFactory provides a concrete working example of the mechanisms.
 ## Stories (Required to Complete)
 | Part | Story | Deliverable | Dependencies |
 | --- | --- | --- | --- |
-| S1 | [Navigation and site foundation](../stories/2026-09-04_rtd_navigation_and_site_shell_story.md) | Local build, homepage, four levels, full contents, accessible shell | Blueprint |
-| S2 | [Complete example catalog](../stories/2026-09-04_rtd_example_catalog_story.md) | Canonical source inclusion and all 133 lesson routes | S1 |
-| S3 | [Beginner curriculum](../stories/2026-09-04_rtd_beginner_curriculum_story.md) | Complete Beginner chapters and 41 saved lessons | S1-S2 |
-| S4 | [Intermediate curriculum](../stories/2026-09-04_rtd_intermediate_curriculum_story.md) | Complete Intermediate chapters and 37 saved lessons | S1-S2; Beginner vocabulary |
-| S5 | [Advanced curriculum](../stories/2026-09-04_rtd_advanced_curriculum_story.md) | Complete Advanced chapters and 19 saved lessons | S1-S2; Intermediate vocabulary |
-| S6 | [Expert curriculum](../stories/2026-09-04_rtd_expert_curriculum_story.md) | Complete Expert chapters and 36 saved lessons | S1-S2; Advanced vocabulary |
-| S7 | [Reference and architecture](../stories/2026-09-04_rtd_reference_and_architecture_story.md) | API, diagrams, glossary, troubleshooting, source links | S1-S2; curriculum link map |
-| S8 | [Build and hosting](../stories/2026-09-04_rtd_build_and_hosting_story.md) | CI/RTD parity, previews, versions, search, downloads, redirects | S1-S7 |
-| S9 | [Quality and launch](../stories/2026-09-04_rtd_quality_and_launch_story.md) | Integrated evidence, publication verification, maintenance | S1-S8 |
+| S1 | [Navigation and site foundation](../../stories/completed/2026-09-04_rtd_navigation_and_site_shell_story.md) | Local build, homepage, four levels, full contents, accessible shell | Blueprint |
+| S2 | [Complete example catalog](../../stories/completed/2026-09-04_rtd_example_catalog_story.md) | Canonical source inclusion and all 133 lesson routes | S1 |
+| S3 | [Beginner curriculum](../../stories/completed/2026-09-04_rtd_beginner_curriculum_story.md) | Complete Beginner chapters and 41 saved lessons | S1-S2 |
+| S4 | [Intermediate curriculum](../../stories/completed/2026-09-04_rtd_intermediate_curriculum_story.md) | Complete Intermediate chapters and 37 saved lessons | S1-S2; Beginner vocabulary |
+| S5 | [Advanced curriculum](../../stories/completed/2026-09-04_rtd_advanced_curriculum_story.md) | Complete Advanced chapters and 19 saved lessons | S1-S2; Intermediate vocabulary |
+| S6 | [Expert curriculum](../../stories/completed/2026-09-04_rtd_expert_curriculum_story.md) | Complete Expert chapters and 36 saved lessons | S1-S2; Advanced vocabulary |
+| S7 | [Reference and architecture](../../stories/completed/2026-09-04_rtd_reference_and_architecture_story.md) | API, diagrams, glossary, troubleshooting, source links | S1-S2; curriculum link map |
+| S8 | [Build and hosting](../../stories/completed/2026-09-04_rtd_build_and_hosting_story.md) | CI/RTD parity, previews, versions, search, downloads, redirects | S1-S7 |
+| S9 | [Quality and launch](../../stories/completed/2026-09-04_rtd_quality_and_launch_story.md) | Integrated evidence, publication verification, maintenance | S1-S8 |
 
 All nine stories have bounded execution tasks. Foundation, catalog, and all curricula are implemented;
 reference content and pipeline implementation exist; final packaging, hosting, and quality verification
 remain. Keep one documentation task actively routed.
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] [Understand ThreadFactory's Sphinx/RTD setup](../tasks/2026-09-04_readthedocs_sphinx_reference_discovery_task.md).
+- [ ] [Understand ThreadFactory's Sphinx/RTD setup](../../tasks/completed/2026-09-04_readthedocs_sphinx_reference_discovery_task.md).
 
 ## Acceptance Criteria (Epic Done)
 - [ ] Exactly Beginner, Intermediate, Advanced, Expert drive the learning hierarchy.
@@ -185,8 +191,11 @@ downloads. S9 audits the complete experience, launch candidate, and maintenance 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  - artifacts/2026-09-06_close_codex_2.ps1
   - artifacts/2026-09-04_readthedocs_site_blueprint.md
 - DISPOSITION: promote_to_documentation
+- CLOSURE_RECORD_DISPOSITION: retain_as_reference for the closure record and mechanical procedure.
 - CLEANUP_TRIGGER: Parent epic closure after all dependent stories; retain the shared blueprint until then.
 
 ## Context Management
@@ -196,7 +205,7 @@ downloads. S9 audits the complete experience, launch candidate, and maintenance 
 - IF_UNKNOWN: none
 
 ## Current Site Definition
-The [site blueprint](../../artifacts/2026-09-04_readthedocs_site_blueprint.md) is the detailed product
+The [site blueprint](../../../artifacts/2026-09-04_readthedocs_site_blueprint.md) is the detailed product
 contract. The story table above owns delivery routing. The latest owner direction takes precedence
 over historical proposals retained in Notes.
 
@@ -296,7 +305,7 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
   - ../ThreadFactory/docs/requirements.txt:1-3
   - ../ThreadFactory/docs/make.bat:12-15
   - ../ThreadFactory/.readthedocs.yaml:20-22
-  - tickets/tasks/2026-09-04_readthedocs_sphinx_reference_discovery_task.md:167-224
+  - tickets/tasks/completed/2026-09-04_readthedocs_sphinx_reference_discovery_task.md:167-224
   IMPACT: These are maintenance details and future design inputs, not proof the hosted reference is
     currently broken. A fresh local build has not been run.
   NEXT: Present the reference explanation and carry unresolved design questions into the next stage.
@@ -455,7 +464,7 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
     for the parent and all nine stories; its lifecycle remains owned by the parent epic.
   EVIDENCE:
   - artifacts/2026-09-04_readthedocs_site_blueprint.md:10-356
-  - tickets/epics/2026-09-04_readthedocs_documentation_epic.md:107-121
+  - tickets/epics/completed/2026-09-04_readthedocs_documentation_epic.md:107-121
   IMPACT: The owner's established four levels now control every current navigation and curriculum
     definition. Prior two-part recommendations survive only as superseded history in Notes.
   NEXT: Open a bounded S1 implementation task when execution begins.
@@ -471,7 +480,7 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
     rather than requiring all curriculum prose complete before reference destinations can be authored.
   EVIDENCE:
   - artifacts/2026-09-04_readthedocs_site_blueprint.md:293-344
-  - tickets/stories/2026-09-04_rtd_reference_and_architecture_story.md:49-54
+  - tickets/stories/completed/2026-09-04_rtd_reference_and_architecture_story.md:49-54
   - Scoped local link, metadata, retired-layout, and whitespace checks on the definition files.
   IMPACT: Planning artifacts are connected and reviewable without implying implementation or a working
     hosted site. The definition is ready for owner review and subsequent S1 execution.
@@ -486,7 +495,7 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
     validation found 19 source-page backlinks to incorrect API fragments. The owner paused to commit,
     then instructed continue and is now adding the project on the Read the Docs website.
   EVIDENCE:
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:73-174
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md:73-174
   - docs/_build/site-check.json:1-26
   - Owner continue and RTD website setup instructions on 2026-09-05.
   IMPACT: Agent finishes local build/download validation while owner handles account setup and all
@@ -504,7 +513,7 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
   EVIDENCE:
   - artifacts/2026-09-05_rtd_local_build_validation.md:1-62
   - README.md:9-23
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md:1-71
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md:1-71
   IMPACT: Local implementation is reviewable and the entry link is discoverable. No commit, push,
     hosted publication, or epic/story closure is claimed. Maintain the complete nine-story scope.
   NEXT: Verify the owner's RTD project and chosen revision, then finish integrated S9 acceptance.
@@ -552,13 +561,42 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
     one unchanged filesystem-writing lesson required the documented sandbox-free retry.
   EVIDENCE:
   - artifacts/2026-09-05_rtd_final_quality_audit.md
-  - tickets/tasks/2026-09-04_rtd_quality_audit_task.md
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_quality_audit_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md
   IMPACT: Local work is ready for owner review/commit. Actual hosted setup/versions/search/redirects/
     downloads remain blocked by project access; native 200% zoom and clipboard readback are unverified.
     No commit, push, publication, or formal ticket closure was performed by codex_2.
   NEXT: Obtain the RTD project URL/branch and explicit read-only settings/build-log authorization.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T09:46:21Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly requested turning in all codex_2 tickets and confirmed that the hosted
+    documentation now updates to the current version. Close the selected 22-ticket RTD program:
+    one epic, nine stories, and twelve tasks. The later workflows_1 hosted diagnosis supersedes
+    the old 404 blocker. Preserve historical validation and any unperformed checks as recorded.
+  EVIDENCE:
+  - Owner instructions: turn in all your tickets and call it; continue.
+  - tickets/tasks/completed/2026-09-05_diagnose_readthedocs_hosted_build_task.md:50-68
+  - docs/conf.py:18-31
+  IMPACT: Acceptance and closure are authorized. Retain evidence; archive the three publication
+    patch contracts; repair moved-ticket links and clear only this agent's routing/artifact rows.
+  NEXT: Apply the bounded closure and verify all 22 destinations plus board/artifact consistency.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Closure Confirmation
@@ -572,6 +610,11 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
 - Append corrections when new evidence or owner direction changes earlier conclusions.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 codex_2 owns this implementation. The local Sphinx build has 294 pages: exactly Beginner,
 Intermediate, Advanced, Expert; 48 guide chapters; all 133 canonical lesson pages; full contents and
 filterable examples. All saved scripts have passed their harness checks, with one environment-only

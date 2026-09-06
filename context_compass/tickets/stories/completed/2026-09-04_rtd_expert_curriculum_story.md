@@ -1,15 +1,22 @@
 # Story: Deliver the complete Expert learning level
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Story ID: STORY-2026-09-04-rtd-expert-curriculum
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-04T21:36:46Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## User Narrative
 As a runtime or agent infrastructure builder, I can understand and operate mediated execution,
@@ -46,14 +53,14 @@ independent value and the owner's established progression.
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Expert delivery scope defined; no implementation started.
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Dependencies / Related Work
 S7 provides detailed references. S8 publishes tested source/version outputs; S9 audits full coverage.
 
 ## Tasks (Implementation Checklist)
-- [ ] [Implement Expert operational chapters and all 36 lesson presentations](../tasks/2026-09-04_rtd_expert_content_task.md)
+- [ ] [Implement Expert operational chapters and all 36 lesson presentations](../../tasks/completed/2026-09-04_rtd_expert_content_task.md)
 - [ ] Read and map every current Expert lesson; reconcile older map counts against actual files.
 - [ ] Author per-topic guides and explanations for all 36 lessons.
 - [ ] Verify complete codegen, restore, and governed-change demonstrations in isolated test contexts.
@@ -108,6 +115,19 @@ Current correctness and resource needs of each demonstration must be measured du
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No invented output, shallow smoke-only proof, or silent difficult-lesson omissions.
 - [ ] No accidental execution of the corpus during documentation rendering.
@@ -119,4 +139,9 @@ Current correctness and resource needs of each demonstration must be measured du
 Record verified operational sequences, current limitations, output evidence, and cross-reference needs.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Defined, not implemented. Deliver all Expert guides and lessons with honest, current operational evidence.

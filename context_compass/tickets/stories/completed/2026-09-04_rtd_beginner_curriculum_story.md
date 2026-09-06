@@ -1,15 +1,22 @@
 # Story: Deliver the complete Beginner learning level
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Story ID: STORY-2026-09-04-rtd-beginner-curriculum
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: in_progress
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-04T21:36:46Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## User Narrative
 As a first-time user, I can build, resolve, scope, and clean up a useful application without needing
@@ -44,15 +51,15 @@ Preserve the owner's low-entry-cost curriculum as a complete, independently usef
 - Out of scope: relocating lessons, adding dynamic/agent machinery to the beginner path, runtime redesign.
 
 ## State Transition Event
-- from_state: draft
-- to_state: draft
-- transition_reason: Beginner delivery scope defined; no implementation started.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Dependencies / Related Work
 Read UX_and_AIX_experiences/AGENTS.md and 01_beginner/_concept_map.txt. S4 inherits this vocabulary.
 
 ## Tasks (Implementation Checklist)
-- [ ] [Implement Beginner chapters and all 41 lesson presentations](../tasks/2026-09-04_rtd_beginner_content_task.md)
+- [ ] [Implement Beginner chapters and all 41 lesson presentations](../../tasks/completed/2026-09-04_rtd_beginner_content_task.md)
 - [ ] Map every Beginner chapter to lesson IDs and public API references.
 - [ ] Author the guide sequence and all lesson explanations from actual source.
 - [ ] Verify first run, lifetimes, errors, cleanup, and capstone against the target revision.
@@ -117,6 +124,19 @@ Per-lesson drift is resolved during scoped authoring tasks; do not silently chan
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No advanced prerequisites or hand-copied example code.
 - [ ] No stale disposal claims or invented execution evidence.
@@ -128,5 +148,10 @@ Per-lesson drift is resolved during scoped authoring tasks; do not silently chan
 Record chapter coverage, verified contracts, example drift, and vocabulary handed to Intermediate.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 The Beginner level and 41 lessons are implemented. The revised four-file capstone and 308 combined
 execution/metadata checks pass. Its task is in review; complete integrated quality/hosted acceptance later.

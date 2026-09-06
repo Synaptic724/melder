@@ -88,7 +88,7 @@ Every measured claim includes the exact command, environment, output and next ac
   TYPE: PLAN
   CLAIM: Qualify only after the atomic producer/reader fix; no local or hosted pass is claimed yet.
   EVIDENCE:
-  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:253-298
+  - tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md:253-298
   IMPACT: Keep runtime implementation separate from release/workflow ownership.
   NEXT: Consume the protocol-repair result once its controlled tests pass.
   REREAD: REQUIRED

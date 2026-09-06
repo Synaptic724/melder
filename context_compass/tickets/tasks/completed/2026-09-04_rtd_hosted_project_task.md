@@ -1,16 +1,23 @@
 # Task: Verify and configure the intended Read the Docs project
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-rtd-hosted-project
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-build-and-hosting
-- Story Path: ../stories/2026-09-04_rtd_build_and_hosting_story.md
-- Status: blocked
+- Story Path: ../../stories/completed/2026-09-04_rtd_build_and_hosting_story.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T14:13:38Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Connect the reviewable site to its intended hosted project and verify Git builds, PR previews, versions, hosted search, canonical links, and downloads.
@@ -28,10 +35,9 @@ Connect the reviewable site to its intended hosted project and verify Git builds
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: draft
-- to_state: blocked
-- transition_reason: Advertised public latest URL returns a not-found page. Actual project URL/branch
-  and explicit private-dashboard read permission are pending owner input.
+- from_state: blocked
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [ ] Read the exact inputs and record one bounded implementation decision.
@@ -100,11 +106,29 @@ Connect the reviewable site to its intended hosted project and verify Git builds
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Public latest URL currently returns RTD's not-found page. Project identity/branch and private-dashboard
 read authorization are pending. Automatic approval review rejected the attempted dashboard read;
 do not retry or access it indirectly without authorization. Complete local quality work independently.

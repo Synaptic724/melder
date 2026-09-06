@@ -63,7 +63,7 @@ staleness, encoding, exclusion, and incremental rebuild contracts.
   workflow, documentation, and validation acceptance criterion.
 
 ## Dependencies / Related Work
-- `tickets/tasks/2026-08-30_implement_llm_support_compilation_pipeline_task.md`
+- `tickets/tasks/completed/2026-08-30_implement_llm_support_compilation_pipeline_task.md`
 - `artifacts/2026-08-30_llm_support_compilation_pipeline_discovery.md`
 
 ## Tasks (Implementation Checklist)
@@ -121,7 +121,7 @@ staleness, encoding, exclusion, and incremental rebuild contracts.
   CLAIM: The accepted three-corpus system and separated source/repository asset
     workflows are implemented and fully validated by the linked task.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_implement_llm_support_compilation_pipeline_task.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_implement_llm_support_compilation_pipeline_task.md`
   IMPACT: Story technical acceptance is complete and ready for owner review.
   NEXT: Close only after explicit owner acceptance.
   REREAD: REQUIRED

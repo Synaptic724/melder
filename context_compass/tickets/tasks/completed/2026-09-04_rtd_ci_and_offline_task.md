@@ -1,16 +1,23 @@
 # Task: Implement docs CI parity, RTD configuration, and offline outputs
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-rtd-ci-and-offline
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-build-and-hosting
-- Story Path: ../stories/2026-09-04_rtd_build_and_hosting_story.md
-- Status: review
+- Story Path: ../../stories/completed/2026-09-04_rtd_build_and_hosting_story.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T14:09:36Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Wire the proven local command into CI and RTD configuration, implement version/canonical/source behavior, and build offline formats.
@@ -30,10 +37,9 @@ Wire the proven local command into CI and RTD configuration, implement version/c
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Local builds, source links, offline formats, staging, and generated assets have
-  evidence. Owner-requested README entry links are implemented; hosted verification remains separate.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [x] Read the exact inputs and record one bounded implementation decision.
@@ -447,7 +453,7 @@ Wire the proven local command into CI and RTD configuration, implement version/c
     identifier characters. Select Pygments default explicitly for consistent web/PDF/ePub colors and
     use the HTML code background in the PDF. No lesson or runtime prose change is needed.
   EVIDENCE:
-  - tickets/tasks/2026-09-04_rtd_quality_audit_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_quality_audit_task.md
   - docs/conf.py:54-119
   - docs/_build/handbook-latex/sphinxlatexstyletext.sty:11-18
   - https://www.sphinx-doc.org/en/master/latex.html
@@ -657,11 +663,29 @@ Wire the proven local command into CI and RTD configuration, implement version/c
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Local implementation is verified, including the final PDF table-wrap correction and recovery runbook.
 Use the S9 final quality audit and release_qualification_20260905.json for current evidence and hashes.
 The 294-page site, 107-page PDF, ePub, HTML ZIP, and local staging pass. Current package is 0.2.3.

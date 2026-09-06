@@ -1,15 +1,22 @@
 # Story: Verify the complete documentation experience and launch it with a maintenance contract
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Story ID: STORY-2026-09-04-rtd-quality-and-launch
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: blocked
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-05T14:13:38Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## User Narrative
 As a reader and maintainer, I can trust that the released site is complete, navigable, accessible, and
@@ -46,17 +53,16 @@ Close the program on demonstrated reader outcomes and maintainability, not merel
 - Out of scope: unrequested runtime rewrites, new learning-level taxonomy, and broad unrelated cleanup.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: blocked
-- transition_reason: Local audit/corrections and maintenance are complete; actual hosted verification
-  and the documented manual browser checks remain before launch acceptance.
+- from_state: blocked
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Dependencies / Related Work
 Use S1-S8 ownership to route defects. The parent epic remains open until this story and all others are accepted.
 
 ## Tasks (Implementation Checklist)
-- [ ] [Audit complete documentation coverage and reader workflows](../tasks/2026-09-04_rtd_quality_audit_task.md)
-- [ ] [Complete release acceptance and documentation maintenance handoff](../tasks/2026-09-04_rtd_launch_and_maintenance_task.md)
+- [ ] [Audit complete documentation coverage and reader workflows](../../tasks/completed/2026-09-04_rtd_quality_audit_task.md)
+- [ ] [Complete release acceptance and documentation maintenance handoff](../../tasks/completed/2026-09-04_rtd_launch_and_maintenance_task.md)
 - [ ] Open an audit task and produce the complete requirements-to-evidence matrix.
 - [ ] Run content/navigation/source/example checks and review representative reader journeys.
 - [ ] Resolve issues with the owning stories; repeat only affected checks when warranted.
@@ -119,10 +125,23 @@ Any remaining defects/hosting limitations must have an owner and disposition bef
     Complete coverage, execution, output, and remaining-check evidence is retained in the audit.
   EVIDENCE:
   - artifacts/2026-09-05_rtd_final_quality_audit.md
-  - tickets/tasks/2026-09-04_rtd_launch_and_maintenance_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_launch_and_maintenance_task.md
   IMPACT: The program is locally reviewable. Hosted access and final owner acceptance still block launch.
   NEXT: Obtain project identity/read access and finish real hosted qualification.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Applicable Anti-Patterns
@@ -136,5 +155,10 @@ Any remaining defects/hosting limitations must have an owner and disposition bef
 Record integrated evidence, unresolved defects and owners, acceptance decisions, and maintenance obligations.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Local implementation, audit fixes, and maintenance are complete. The final audit artifact is the
 evidence entry point. Hosted launch and specific manual browser checks remain; owner retains acceptance.

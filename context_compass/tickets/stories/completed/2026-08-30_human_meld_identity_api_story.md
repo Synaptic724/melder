@@ -60,7 +60,7 @@ Restores the canonical human API while preserving Melder's optimized internal sp
   assets, and complete supported tests are green.
 
 ## Dependencies / Related Work
-- `context_compass/tickets/epics/2026-08-30_human_meld_identity_api_epic.md`
+- `context_compass/tickets/epics/completed/2026-08-30_human_meld_identity_api_epic.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-08-30-meld-spell-reference-ergonomics - implement and validate.
@@ -95,9 +95,9 @@ Restores the canonical human API while preserving Melder's optimized internal sp
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/architecture_patch.md`
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md`
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/architecture_patch.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md`
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: story acceptance
 
@@ -115,7 +115,7 @@ Restores the canonical human API while preserving Melder's optimized internal sp
     all three public surfaces, 83 callers are migrated, five lessons execute,
     and the complete supported suite passes 10,962 tests.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md`
   IMPACT: The story has met its expanded technical acceptance criteria and is
     ready for owner review.
   NEXT: Close only after explicit owner acceptance.
@@ -127,7 +127,7 @@ Restores the canonical human API while preserving Melder's optimized internal sp
   CLAIM: Extend the story with the public `spell_override=` to `override=`
     rename while retaining internal runtime terminology and behavior.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md`
   IMPACT: Story acceptance now includes the shorter public override call shape.
   NEXT: Complete the linked task's patch update, implementation, migration, and validation.
   REREAD: REQUIRED
@@ -139,7 +139,7 @@ Restores the canonical human API while preserving Melder's optimized internal sp
     passes the complete supported suite with 10,962 passes plus every final
     migration, asset, focused-test, and diff-hygiene gate.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md`
   IMPACT: The story has met its technical acceptance criteria and is ready for
     owner review; closure still requires explicit acceptance.
   NEXT: Walk through the delivered syntax and validation with the owner, then
@@ -152,7 +152,7 @@ Restores the canonical human API while preserving Melder's optimized internal sp
   CLAIM: Implement facade dispatch first, migrate callers/docs second, regenerate
     derived assets third, then validate from focused to full scope.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md`
   IMPACT: The story has one ordered, reviewable migration path.
   NEXT: Link and author the patch artifacts before source edits.
   REREAD: REQUIRED

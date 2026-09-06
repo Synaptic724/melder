@@ -141,9 +141,9 @@ concise public `override=` keyword.
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/architecture_patch.md`
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md`
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/architecture_patch.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md`
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: epic acceptance
 
@@ -434,9 +434,9 @@ concise public `override=` keyword.
     artifacts, and cache keys unchanged. Repository callers map to a
     syntax-aware codemod plus manual human-document prose updates.
   EVIDENCE:
-  - `context_compass/system_docs/patches/active/human_meld_identity_api_2026_08_30/architecture_patch.md:1-58`
-  - `context_compass/system_docs/patches/active/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md:1-38`
-  - `context_compass/system_docs/patches/active/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md:1-43`
+  - `context_compass/system_docs/patches/completed/human_meld_identity_api_2026_08_30/architecture_patch.md:1-58`
+  - `context_compass/system_docs/patches/completed/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md:1-38`
+  - `context_compass/system_docs/patches/completed/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md:1-43`
   IMPACT: Source editing is unblocked within a precise public-only keyword
     boundary and has explicit behavioral/static validation targets.
   NEXT: Extend the existing codemod to rename only public Meld-call keywords,
@@ -588,7 +588,7 @@ concise public `override=` keyword.
     agree with its review status, changed-file inventory, validation evidence,
     and handoff summary.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md:1-105`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md:1-105`
   IMPACT: ContextCompass now presents one coherent, resumable record instead of
     mixing the superseded read-only investigation with the delivered migration.
   NEXT: Run final diff hygiene and inspect branch/worktree scope, then present
@@ -604,7 +604,7 @@ concise public `override=` keyword.
     The status, impacted-file list, validation, and handoff already reflect the
     implemented scope.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md:1-89`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md:1-89`
   IMPACT: Leaving the original objective/contract/scope intact would make the
     ticket contradict its own authorized work and final evidence.
   NEXT: Reconcile only the task title, objective, contract, scope, deliverables,
@@ -948,9 +948,9 @@ concise public `override=` keyword.
     pre-gate normalization and conflict tests; coverage rows map to focused,
     fast-door, example, asset, and full supported validation.
   EVIDENCE:
-  - `context_compass/system_docs/patches/active/human_meld_identity_api_2026_08_30/architecture_patch.md:1-59`
-  - `context_compass/system_docs/patches/active/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md:1-35`
-  - `context_compass/system_docs/patches/active/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md:1-39`
+  - `context_compass/system_docs/patches/completed/human_meld_identity_api_2026_08_30/architecture_patch.md:1-59`
+  - `context_compass/system_docs/patches/completed/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md:1-35`
+  - `context_compass/system_docs/patches/completed/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md:1-39`
   IMPACT: Required artifacts exist, are linked, agree with one another, and give
     an implementation/test mapping. Source editing is unblocked.
   NEXT: Patch the two public facades and focused regressions only, then validate

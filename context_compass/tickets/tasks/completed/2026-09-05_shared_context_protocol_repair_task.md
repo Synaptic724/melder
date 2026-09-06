@@ -58,7 +58,7 @@ input rebuild/context publication/active-reader lifetime protocol. Covers epic S
 - Targeted component regression under `tests/component/melder/aether/conduit/`.
 - Spell, context factory/context, Meld doors/base and affected phase orchestration.
 - Private coordination helper only when required by the verified ownership contract.
-- Patch contracts under `system_docs/patches/active/shared_context_rebuild_2026_09_05/`.
+- Patch contracts under `system_docs/patches/completed/shared_context_rebuild_2026_09_05/`.
 
 ## Validation
 - Not run by codex_1 yet. Earlier workflows_1 measurements remain attributed in original evidence.
@@ -84,11 +84,11 @@ input rebuild/context publication/active-reader lifetime protocol. Covers epic S
 ## Artifact Links
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/shared_context_rebuild_2026_09_05/architecture_patch.md
-  - system_docs/patches/active/shared_context_rebuild_2026_09_05/component_patch_spell_context.md
-  - system_docs/patches/active/shared_context_rebuild_2026_09_05/component_patch_meld_runtime.md
-  - system_docs/patches/active/shared_context_rebuild_2026_09_05/component_patch_compiler.md
-  - system_docs/patches/active/shared_context_rebuild_2026_09_05/code_description_patch_context_protocol.md
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/architecture_patch.md
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/component_patch_spell_context.md
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/component_patch_meld_runtime.md
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/component_patch_compiler.md
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/code_description_patch_context_protocol.md
   - artifacts/shared_context_race_20260905/controlled-window.json
   - artifacts/shared_context_race_20260905/validation.md
 - DISPOSITION: retain_as_reference; original proof remains owned by parent epic.
@@ -109,7 +109,7 @@ Append tactical source findings and measurements, with exact evidence and one ne
     changes from the failing CI revision a116ec22cd89cc148c719847ac83662078cd87e6. The working tree
     contains coordination/proof files only; no runtime or test edits have been made by codex_1.
   EVIDENCE:
-  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md:293-360
+  - tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md:293-360
   - artifacts/shared_context_race_20260905/controlled-window.json:6-51
   IMPACT: The retained reproduction applies to current source; start from the proven window.
   NEXT: Finish the scope/publication contract and add the controlled real-meld regression.
@@ -140,8 +140,8 @@ Append tactical source findings and measurements, with exact evidence and one ne
     shared admitted execution helper and both-door ticket/lifetime tests; compiler patch to one rare
     affected-scope writer window and original-gap/dependency-overlap regressions. CounterSwitch is unchanged.
   EVIDENCE:
-  - system_docs/patches/active/shared_context_rebuild_2026_09_05/architecture_patch.md:1-55
-  - system_docs/patches/active/shared_context_rebuild_2026_09_05/code_description_patch_context_protocol.md:1-28
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/architecture_patch.md:1-55
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/code_description_patch_context_protocol.md:1-28
   IMPACT: Runtime implementation entry gate is satisfied for this bounded attempt; nested/teardown,
     failure and performance verification remain required before qualification or any completion claim.
   NEXT: Add the rare writer scope and wire admitted context access plus producer publication together.
@@ -153,7 +153,7 @@ Append tactical source findings and measurements, with exact evidence and one ne
   CLAIM: Owner rejected and rolled back the implementation attempt. This task is stopped;
     implementation is not authorized. Discovery resumes under the original investigation task.
   EVIDENCE:
-  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md
+  - tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md
   IMPACT: Do not reconstruct the rejected patch or treat its temporary contracts as approved design.
   NEXT: Await source-led lifecycle findings and a new explicit owner decision before any runtime edits.
   REREAD: REQUIRED

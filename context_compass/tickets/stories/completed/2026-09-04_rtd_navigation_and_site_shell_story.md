@@ -1,15 +1,22 @@
 # Story: Build Melder's four-level documentation foundation and navigation
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Story ID: STORY-2026-09-04-rtd-navigation-and-site-shell
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: review
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-05T13:02:41Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## User Narrative
 As a reader, I can start at my level, browse the whole site, or open an example immediately, so I can
@@ -46,16 +53,16 @@ Establish one coherent navigation and local-build foundation that all content an
 - Out of scope: complete lesson catalog, full curricula, complete API coverage, and hosted setup.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: Owner authorized implementation; the site foundation task is active.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Dependencies / Related Work
 - Provides the local build and page/navigation contracts to every other story.
 - S2 supplies the complete example catalog; S8 adds CI/hosting after content is complete.
 
 ## Tasks (Implementation Checklist)
-- [ ] [Implement the four-level site foundation and local Sphinx build](../tasks/2026-09-04_rtd_site_foundation_task.md)
+- [ ] [Implement the four-level site foundation and local Sphinx build](../../tasks/completed/2026-09-04_rtd_site_foundation_task.md)
 - [ ] Define and route an implementation task with exact paths and navigation schema.
 - [ ] Build homepage/four level shells and complete contents from one registry.
 - [ ] Configure the docs environment and prove imports/source inclusion with real content.
@@ -109,6 +116,19 @@ Exact compatible dependency pins and any narrow source-assembly requirements are
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No hidden curriculum or duplicate source/navigation truth.
 - [ ] No claims of a working build before it runs.
@@ -120,5 +140,10 @@ Exact compatible dependency pins and any narrow source-assembly requirements are
 Record navigation decisions, dependency pins, import findings, and downstream interface changes.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Implemented locally, including final S9 focus/contrast corrections. The S1 task retains build and browser
 evidence. Native 200% browser zoom requires a capable browser/manual review; S9 carries that limitation.

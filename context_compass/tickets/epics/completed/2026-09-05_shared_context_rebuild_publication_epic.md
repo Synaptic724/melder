@@ -264,10 +264,10 @@ No nonexistent child-ticket links are implied. Merge scopes if that produces a s
   then hand exact tested revision/results to workflows_1 for hosted qualification and rollout.
 
 ## Tasks (Epic-Level)
-- Delivery story: `tickets/stories/2026-09-05_shared_context_safety_story.md`.
-- S1-S3 atomic implementation: `tickets/tasks/2026-09-05_shared_context_protocol_repair_task.md`.
-- S4 qualification: `tickets/tasks/2026-09-05_shared_context_qualification_task.md`.
-- Existing investigation input: `tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md`.
+- Delivery story: `tickets/stories/completed/2026-09-05_shared_context_safety_story.md`.
+- S1-S3 atomic implementation: `tickets/tasks/completed/2026-09-05_shared_context_protocol_repair_task.md`.
+- S4 qualification: `tickets/tasks/completed/2026-09-05_shared_context_qualification_task.md`.
+- Existing investigation input: `tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md`.
 - codex_1 owns further decomposition, implementation and validation tasks under this epic.
 - Workflow delivery was closed at the owner's request in
   `tickets/tasks/completed/2026-09-05_release_candidate_testpypi_workflow_task.md`.
@@ -378,7 +378,7 @@ Ranges below match the diagnostic revision and must be rechecked if source moves
 | `tests/integration/melder/conduit/test_conduit_integration_concurrency.py:940-1015` | reported test and final cleanup |
 
 Related prior context: the existing release_matrix_concurrency_repair_2026_08_30 patch documents and
-`tickets/tasks/2026-08-30_upgrade_python_publish_workflow_task.md`. They remain owned by their original
+`tickets/tasks/completed/2026-08-30_upgrade_python_publish_workflow_task.md`. They remain owned by their original
 lane. They are historical/reference inputs; this epic must select the final current-source mechanism.
 
 ## Applicable Anti-Patterns
@@ -397,7 +397,7 @@ lane. They are historical/reference inputs; this epic must select the final curr
     ownership. The existing investigation task remains factual input; workflows_1 stays on workflows.
   EVIDENCE:
   - Project-owner assignment instruction in the active conversation on 2026-09-05.
-  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md
+  - tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md
   - artifacts/shared_context_race_20260905/controlled-window.json
   IMPACT: The assignee owns further runtime design/implementation after consuming proof and satisfying
     repository gates. No particular lock or ticket redesign is approved merely by this handoff.
@@ -428,8 +428,8 @@ lane. They are historical/reference inputs; this epic must select the final curr
     runtime handoff. Owner now directs execution. The implementation mechanism remains source-led;
     workflow edits, signing, commits, pushes, releases, and uploads stay outside this epic.
   EVIDENCE:
-  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:17-30
-  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md:293-325
+  - tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md:17-30
+  - tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md:293-325
   IMPACT: Transition ready -> in_progress. Create bounded child work and patch contracts before code.
     The earlier codex_2 RTD notice is consumed as separate-lane context, not runtime qualification.
   NEXT: Read the retained controlled proof and current component/source paths, then select the repair.
@@ -443,7 +443,7 @@ lane. They are historical/reference inputs; this epic must select the final curr
     no runtime or test changes will be made until the owner approves the selected mechanism.
   EVIDENCE:
   - Owner instruction immediately following fresh certification on 2026-09-05.
-  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:195-225
+  - tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md:195-225
   IMPACT: The handoff's candidate lifecycle is not a selected design. Preserve fast-path behavior,
     report exact affected surfaces and test contracts, and do not assume approval from urgency.
   NEXT: Trace current producer/reader admission before presenting a bounded implementation proposal.
@@ -459,7 +459,7 @@ lane. They are historical/reference inputs; this epic must select the final curr
     retire old context/inputs, rebuild, publish a complete usable result, then reopen. Failed work
     must wake callers into an explicit failure; it must not strand state 1 or advertise ready.
   EVIDENCE:
-  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md
+  - tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md
   - src/melder/utilities/synchronization/creation_gate.py:349-415
   - src/melder/utilities/synchronization/creation_gate.py:544-603
   - src/melder/aether/spellbook/spellbook_creation_system.py:1541-1635
@@ -495,7 +495,7 @@ lane. They are historical/reference inputs; this epic must select the final curr
     within that proposal. CounterSwitch remains unchanged; workflow/release/commit/push boundaries stand.
   EVIDENCE:
   - Owner approval: "sure but make sure you understand the epic yeah go ahead and try that and run tests".
-  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:436-473
+  - tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md:436-473
   IMPACT: Complete bounded child work and patch contracts, then implement/qualify the full boundary;
     do not ship a root-only fix that leaves dependency readers or failed waiters unsafe.
   NEXT: Finalize producer overlap and reader-lifetime design before applying the coordinated repair.
@@ -510,7 +510,7 @@ lane. They are historical/reference inputs; this epic must select the final curr
     tests confirm missing-dependency invalidity, recovery after contract repair, dependency gating,
     and normal Conduit cleanup/unlinking. No runtime implementation is currently selected.
   EVIDENCE:
-  - tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md
+  - tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md
   - artifacts/shared_context_race_20260905/owner-lifecycle-observation.json:187-234
   IMPACT: Historical patch contracts and implementation task must not authorize reconstructing the
     rejected design. Remain in owner review; code/test changes require a new explicit decision.

@@ -1,16 +1,23 @@
 # Task: Implement Beginner chapters and all 41 lesson presentations
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-rtd-beginner-content
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-beginner-curriculum
-- Story Path: ../stories/2026-09-04_rtd_beginner_curriculum_story.md
-- Status: review
+- Story Path: ../../stories/completed/2026-09-04_rtd_beginner_curriculum_story.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T11:47:57Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Deliver the complete Beginner learning path, public vocabulary, current cleanup explanation, capstone, and every saved Beginner lesson.
@@ -28,10 +35,9 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Requested capstone structure and binding correction are implemented, executed,
-  published locally, and included in refreshed downloads. Broader launch acceptance remains separate.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [x] Read the exact inputs and record one bounded implementation decision.
@@ -474,11 +480,29 @@ Deliver the complete Beginner learning path, public vocabulary, current cleanup 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Twelve Beginner chapters and all 41 lessons are implemented. Current execution/metadata verification
 is 308 passed, superseding the old mixed result. The capstone now has four modules, direct self-mediated
 bind calls, constructor injection, TYPE_CHECKING consumer imports, typed meld results, and tested cleanup.

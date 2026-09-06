@@ -95,12 +95,12 @@ cleanup sequence. Prove the cause of the missing spell_codegen_creation failure 
   - artifacts/shared_context_race_20260905/owner-lifecycle-observation.json
   - artifacts/shared_context_race_20260905/validation.md
   - artifacts/shared_context_race_20260905/controlled-window.json
-- LIFECYCLE_OWNER: tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md.
+- LIFECYCLE_OWNER: tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md.
   This investigation borrows the two core evidence documents; the successor epic owns retention.
 - CONTRACT_REFERENCES (read-only; owned by the original release-matrix task):
-  - system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/architecture_patch.md
-  - system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/component_patch_shared_spell_context.md
-  - system_docs/patches/active/release_matrix_concurrency_repair_2026_08_30/code_description_patch_shared_spell_context_rebuild.md
+  - system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/architecture_patch.md
+  - system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/component_patch_shared_spell_context.md
+  - system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/code_description_patch_shared_spell_context_rebuild.md
 - DISPOSITION: retain_as_reference for core proof, under the successor epic's lifecycle.
 - CLEANUP_TRIGGER: Closing this investigation must not delete the core proof or shared patch
   contracts. codex_1 adjudicates disposable reproduction outputs at accepted epic closure.
@@ -309,7 +309,7 @@ cleanup sequence. Prove the cause of the missing spell_codegen_creation failure 
     historical findings remain attributed to workflows_1. Runtime implementation belongs to the
     successor epic, while workflows_1 retains workflow and release qualification responsibility.
   EVIDENCE:
-  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:17-30
+  - tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md:17-30
   - artifacts/shared_context_race_20260905/controlled-window.json:29-51
   IMPACT: Core proof is retained under the epic and must survive investigation closure. The proposed
     mechanism remains open to codex_1's evidence-backed design; this task has made no runtime edits.
@@ -535,7 +535,7 @@ cleanup sequence. Prove the cause of the missing spell_codegen_creation failure 
     from the original cluster test that was explicitly skipped. Owner reports all three builds
     now fail this added reproduction; no new local run or source/test disposition is made here.
   EVIDENCE:
-  - tickets/tasks/2026-09-05_shared_context_protocol_repair_task.md:106-121
+  - tickets/tasks/completed/2026-09-05_shared_context_protocol_repair_task.md:106-121
   - git log --follow -- tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py
   - tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py:68-159
   IMPACT: Explain this as a leftover known-red reproduction, not three newly diagnosed platform
@@ -636,7 +636,7 @@ Implementation remains rejected/blocked; do not reconstruct the old patch from h
 
 Historical handoff follows; it does not override the latest discovery-only owner authority.
 Owner transferred runtime ownership to codex_1 through
-tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md.
+tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md.
 This task remains the review-state investigation input. codex_1 selects and validates the repair
 under that epic; workflows_1 stays on workflows and candidate qualification. The epic owns retention
 of controlled-window.json and validation.md, so closing this task cannot remove the proof.

@@ -76,7 +76,7 @@ identifying only material that must not become public.
 - Evidence-backed keep/remove/relocate/review inventory for the public repository.
 
 ## Files / Paths Impacted
-- `context_compass/tickets/tasks/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md`
+- `context_compass/tickets/tasks/completed/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md`
 - `context_compass/attention_board.md`
 - Both repository trees remain read-only during comparison.
 
@@ -269,7 +269,7 @@ identifying only material that must not become public.
     content-specific: remove only named private instructions, unauthorized copied
     code, secrets, machine-local data, or other specifically evidenced material.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md:11-37`
+  - `context_compass/tickets/tasks/completed/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md:11-37`
   IMPACT: Do not propose a clean slate or directory-wide history purge merely
     because the history is large or messy.
   NEXT: Run automated all-ref path, blob-pattern, binary, and competitor-code scans.
@@ -388,7 +388,7 @@ identifying only material that must not become public.
     pre-push retention audit because `melder` may replace `melder_private` as
     the sole Melder code repository.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md:11-37`
+  - `context_compass/tickets/tasks/completed/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md:11-37`
   IMPACT: Reopen discovery, inventory without an allowlist filter, and classify
     public retention before proposing any cleanup.
   NEXT: Compare all top-level surfaces and all non-ignored paths in both trees.
@@ -422,7 +422,7 @@ identifying only material that must not become public.
     scope. ContextCompass and its special instructions are private-only and must not
     be treated as public payload.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md:11-37`
+  - `context_compass/tickets/tasks/completed/2026-08-29_private_to_public_deployment_pipeline_discovery_task.md:11-37`
   IMPACT: Stop architecture discovery and produce only the filtered hash comparison.
   NEXT: Run the comparison script over approved surfaces and report its categories.
   REREAD: REQUIRED
@@ -555,7 +555,7 @@ identifying only material that must not become public.
 Ticket history and meaningful commits remain presumptive KEEP. The owner approved
 local execution against `melder_private`, with no commit or remote action. Active
 implementation routes through
-`tickets/tasks/2026-08-29_sanitize_publication_history_task.md`.
+`tickets/tasks/completed/2026-08-29_sanitize_publication_history_task.md`.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

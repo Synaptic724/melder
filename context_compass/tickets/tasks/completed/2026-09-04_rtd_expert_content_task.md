@@ -1,16 +1,23 @@
 # Task: Implement Expert operational chapters and all 36 lesson presentations
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-rtd-expert-content
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-expert-curriculum
-- Story Path: ../stories/2026-09-04_rtd_expert_curriculum_story.md
-- Status: review
+- Story Path: ../../stories/completed/2026-09-04_rtd_expert_curriculum_story.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-04T22:07:46Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Deliver the complete agent, codegen, transaction, persistence, restore, research, and governed-change level with honest execution evidence.
@@ -28,9 +35,9 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: draft
-- to_state: draft
-- transition_reason: Implementation task defined; prerequisite work remains ahead of activation.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [ ] Read the exact inputs and record one bounded implementation decision.
@@ -95,7 +102,7 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
     Existing demonstrations run in their own free-threaded verification environment, never in Sphinx.
   EVIDENCE:
   - docs/tools/curriculum.py:65-152
-  - system_docs/patches/active/rtd_site_2026_09_04/architecture_patch.md:15-38
+  - system_docs/patches/completed/rtd_site_2026_09_04/architecture_patch.md:15-38
   - README.md:683-1034
   IMPACT: Preserve all 36 lesson routes and keep claims tied to source and actual execution.
   NEXT: Read the Expert operational scripts in coherent topic groups.
@@ -226,11 +233,29 @@ Deliver the complete agent, codegen, transaction, persistence, restore, research
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [x] No silently omitted content or invented validation.
 - [x] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 All 36 Expert scripts were read; all have passed execution (ProtocolCrafter required an ACL retry).
 The full 194-page site builds strictly, including 48 chapters across the exact four learning levels.
 Reference, CI/hosting, offline outputs, and integrated quality work remain. Owner handles all commits

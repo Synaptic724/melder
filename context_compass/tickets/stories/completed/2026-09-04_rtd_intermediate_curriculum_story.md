@@ -1,15 +1,22 @@
 # Story: Deliver the complete Intermediate learning level
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Story ID: STORY-2026-09-04-rtd-intermediate-curriculum
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-04T21:36:46Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## User Narrative
 As an application integrator, I can configure scopes and connect independently owned subsystems while
@@ -45,14 +52,14 @@ Turn the established Intermediate curriculum into a complete composition guide w
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Intermediate delivery scope defined; no implementation started.
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Dependencies / Related Work
 S5 builds on the composition vocabulary. S7 supplies detailed public-reference destinations.
 
 ## Tasks (Implementation Checklist)
-- [ ] [Implement Intermediate composition chapters and all 37 lessons](../tasks/2026-09-04_rtd_intermediate_content_task.md)
+- [ ] [Implement Intermediate composition chapters and all 37 lessons](../../tasks/completed/2026-09-04_rtd_intermediate_content_task.md)
 - [ ] Map chapters to all Intermediate lessons and their source/helper requirements.
 - [ ] Author configuration, scoping, linking, and late-binding explanations.
 - [ ] Verify public ordering and outcomes using current example/probe harnesses.
@@ -106,6 +113,19 @@ Exact helper packaging and per-lesson drift are established in the implementatio
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No invented ordering, hidden helper dependencies, or silent tier moves.
 - [ ] No publication claims based only on old concept-map run notes.
@@ -117,4 +137,9 @@ Exact helper packaging and per-lesson drift are established in the implementatio
 Record source-backed ordering, chapter coverage, helper requirements, and cross-level links.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Defined, not implemented. Deliver the complete configuration/composition level and all Intermediate lessons.

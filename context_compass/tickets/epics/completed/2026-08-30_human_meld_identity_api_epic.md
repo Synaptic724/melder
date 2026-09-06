@@ -131,9 +131,9 @@ supported-suite proof.
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/architecture_patch.md`
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md`
-  - `system_docs/patches/active/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/architecture_patch.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/component_patch_meld_resolution.md`
+  - `system_docs/patches/completed/human_meld_identity_api_2026_08_30/code_description_patch_meld_identity_dispatch.md`
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: epic acceptance
 
@@ -151,8 +151,8 @@ supported-suite proof.
     repository callers, curriculum, canonical docs, packaged assets, and the
     10,962-test supported suite.
   EVIDENCE:
-  - `context_compass/tickets/stories/2026-08-30_human_meld_identity_api_story.md`
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md`
+  - `context_compass/tickets/stories/completed/2026-08-30_human_meld_identity_api_story.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md`
   IMPACT: The expanded epic is ready for owner acceptance with no technical blocker.
   NEXT: Present the final contract and wait for acceptance before closure.
   REREAD: REQUIRED
@@ -163,7 +163,7 @@ supported-suite proof.
   CLAIM: The epic remains atomic and now includes the short public
     `override=` keyword as part of the human-first Meld facade contract.
   EVIDENCE:
-  - `context_compass/tickets/stories/2026-08-30_human_meld_identity_api_story.md`
+  - `context_compass/tickets/stories/completed/2026-08-30_human_meld_identity_api_story.md`
   IMPACT: Epic review resumes only after runtime, repository callers,
     documentation, assets, and supported tests agree on the shorter keyword.
   NEXT: Execute the existing story/task extension without changing internal
@@ -177,8 +177,8 @@ supported-suite proof.
     callers, human documentation, canonical component context, generated assets,
     and supported tests. All three epic milestones are validated.
   EVIDENCE:
-  - `context_compass/tickets/stories/2026-08-30_human_meld_identity_api_story.md`
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md`
+  - `context_compass/tickets/stories/completed/2026-08-30_human_meld_identity_api_story.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md`
   IMPACT: The epic is ready for owner review with no unresolved implementation
     blocker; explicit acceptance remains required before closure and artifact disposition.
   NEXT: Present the delivered public contract and validation proof to the owner.
@@ -190,7 +190,7 @@ supported-suite proof.
   CLAIM: One epic owns the public facade split, repository call-site migration,
     human curriculum correction, documentation/assets, and full validation.
   EVIDENCE:
-  - `context_compass/tickets/tasks/2026-08-30_meld_spell_reference_ergonomics_task.md`
+  - `context_compass/tickets/tasks/completed/2026-08-30_meld_spell_reference_ergonomics_task.md`
   IMPACT: The breaking migration is atomic and cannot leave docs or tests on mixed semantics.
   NEXT: Create the implementation story and required patch artifacts.
   REREAD: REQUIRED

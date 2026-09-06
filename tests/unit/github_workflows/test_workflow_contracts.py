@@ -28,7 +28,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert "edited" in events["pull_request"]["types"]
     assert "paths" not in events["pull_request"]
     assert "paths-ignore" not in events["pull_request"]
-    assert set(events["push"]["branches"]) == {"dev", "preprod", "prod"}
+    assert set(events) == {"pull_request", "workflow_dispatch"}
     jobs = document["jobs"]
     final = jobs["merge-ready"]
     assert final["name"] == "CI / merge-ready"
@@ -39,10 +39,17 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert "if" not in aggregate
     assert aggregate["env"]["CI_JOB_RESULTS"] == "${{ toJSON(needs) }}"
     assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
+    assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
+    assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
-    for name in policy.CIPolicy.REQUIRED_JOBS:
+    for name in policy.CIPolicy.FULL_JOBS:
+        assert jobs[name]["needs"] == "branch-policy"
+        assert jobs[name]["if"] == "needs.branch-policy.outputs.runtime-required == 'true'"
+    for name in ("branch-policy", "hygiene"):
         assert "if" not in jobs[name]
+    for name in policy.CIPolicy.REQUIRED_JOBS:
         assert "continue-on-error" not in jobs[name]
+    assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
 @pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "docs.yml"])
@@ -164,7 +171,10 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     assert jobs["build"]["uses"] == "./.github/workflows/build-distributions.yml"
     assert all(job.get("uses") != "./.github/workflows/test-runtime.yml" for job in jobs.values())
     publisher = jobs["publish"]
-    assert set(publisher["needs"]) == {"authorize", "build"}
+    assert set(publisher["needs"]) == {"authorize", "source-qualification", "build"}
+    assert set(jobs["build"]["needs"]) == {"authorize", "source-qualification"}
+    assert jobs["source-qualification"]["needs"] == "authorize"
+    assert jobs["source-qualification"]["uses"] == "./.github/workflows/verify-source-qualification.yml"
     assert publisher["environment"]["name"] == "pypitest"
     assert publisher["permissions"] == {"contents": "read"}
     upload = next(step for step in publisher["steps"]
@@ -225,10 +235,55 @@ def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
                      if step.get("run") == "python .github/scripts/ci_policy.py merge-ready")
     proof = steps[-1]
     assert aggregate < len(steps) - 1
-    assert proof["run"] == "python .github/scripts/check_candidate_run.py"
+    assert proof["run"] == "python .github/scripts/check_candidate_run.py --wait-seconds 600"
+    assert int(final["timeout-minutes"]) * 60 > 600
     assert proof["if"] == "github.base_ref == 'prod' || github.ref == 'refs/heads/prod'"
     assert proof["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
     assert proof.get("continue-on-error", "false") == "false"
     release = workflow("python-publish.yml")["jobs"]["release-gate"]
     assert release["steps"][-1]["run"] == "python .github/scripts/check_candidate_run.py"
     assert release["permissions"]["actions"] == "read"
+
+
+def test_only_full_ci_records_qualification_after_successful_aggregation() -> None:
+    """Light promotions cannot issue a substitute full-test record."""
+    final = workflow("ci.yml")["jobs"]["merge-ready"]
+    steps = final["steps"]
+    aggregate = next(index for index, step in enumerate(steps)
+                     if step.get("run") == "python .github/scripts/ci_policy.py merge-ready")
+    record = next(index for index, step in enumerate(steps)
+                  if step.get("run") == "python .github/scripts/ci_qualification.py record")
+    upload = next(index for index, step in enumerate(steps)
+                  if step.get("uses", "").startswith("actions/upload-artifact@"))
+    assert aggregate < record < upload
+    assert steps[record]["if"] == steps[upload]["if"] == "needs.branch-policy.outputs.runtime-required == 'true'"
+    assert steps[record]["env"] == steps[aggregate]["env"]
+    assert steps[upload]["with"]["name"] == "source-qualification-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert steps[upload]["with"]["if-no-files-found"] == "error"
+
+
+def test_source_proof_download_is_pinned_and_has_only_read_permissions() -> None:
+    """A reusable verifier downloads one immutable artifact and checks it without publication authority."""
+    document = workflow("verify-source-qualification.yml")
+    assert set(document["on"]) == {"workflow_call"}
+    assert document["permissions"] == {"contents": "read", "actions": "read", "pull-requests": "read"}
+    job = document["jobs"]["verify"]
+    assert "environment" not in job and "continue-on-error" not in job
+    steps = job["steps"]
+    select = next(index for index, step in enumerate(steps)
+                  if step.get("run") == "python .github/scripts/ci_qualification.py select")
+    download = next(index for index, step in enumerate(steps)
+                    if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert select < download < len(steps) - 1
+    inputs = steps[download]["with"]
+    assert inputs["artifact-ids"] == "${{ steps.source.outputs.artifact-id }}"
+    assert inputs["run-id"] == "${{ steps.source.outputs.run-id }}"
+    assert inputs["repository"] == "${{ github.repository }}"
+    assert inputs["github-token"] == "${{ github.token }}"
+    assert inputs.get("digest-mismatch", "error") == "error"
+    assert steps[-1]["run"] == (
+        "python .github/scripts/ci_qualification.py verify --record source-proof/qualification.json"
+    )
+    for name in ("ci.yml", "release-candidate.yml"):
+        caller = workflow(name)["jobs"]["source-qualification"]
+        assert caller["permissions"] == document["permissions"]

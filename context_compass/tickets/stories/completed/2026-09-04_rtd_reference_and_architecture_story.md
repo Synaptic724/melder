@@ -1,15 +1,22 @@
 # Story: Complete the architecture, public API, and lookup references
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Story ID: STORY-2026-09-04-rtd-reference-and-architecture
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
-- Status: draft
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T21:36:46Z
-- Updated: 2026-09-04T21:36:46Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## User Narrative
 As a reader following a guide or solving a problem, I can move directly to the relevant architectural
@@ -46,8 +53,8 @@ Make the four learning levels connect to durable, current reference material wit
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Reference delivery scope defined; no implementation started.
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Dependencies / Related Work
 S3-S6 supply an agreed topic/API target map; their completed prose is not an entry prerequisite for S7.
@@ -55,7 +62,7 @@ Reference destinations can be delivered while curricula are authored. S8 applies
 S7's revision-specific source-link logic uses the local build revision. S9 audits integrated completeness.
 
 ## Tasks (Implementation Checklist)
-- [ ] [Implement public API and architecture reference integration](../tasks/2026-09-04_rtd_reference_content_task.md)
+- [ ] [Implement public API and architecture reference integration](../../tasks/completed/2026-09-04_rtd_reference_content_task.md)
 - [ ] Map public API/document coverage and reconcile inclusions/exclusions explicitly.
 - [ ] Integrate architecture pages/SVGs and resolve local links to source/site destinations.
 - [ ] Build public API, glossary, troubleshooting, migration, and agent reference pages.
@@ -110,6 +117,19 @@ Exact current API inventory and the public eligibility of existing machine-reada
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No unexplained API exclusions, stale diagrams, or private-record publication.
 - [ ] No runtime contract changes just to satisfy the documentation builder.
@@ -121,4 +141,9 @@ Exact current API inventory and the public eligibility of existing machine-reada
 Record coverage decisions, source freshness, import/typing findings, and cross-curriculum relationships.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Defined, not implemented. Complete the reference layer after the foundation/catalog and curriculum map exist.

@@ -1,16 +1,23 @@
 # Task: Implement the four-level site foundation and local Sphinx build
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-rtd-site-foundation
 - Epic: EPIC-2026-09-04-readthedocs-documentation
 - Story: STORY-2026-09-04-rtd-navigation-and-site-shell
-- Story Path: ../stories/2026-09-04_rtd_navigation_and_site_shell_story.md
-- Status: review
+- Story Path: ../../stories/completed/2026-09-04_rtd_navigation_and_site_shell_story.md
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p1
 - Created: 2026-09-04T22:07:46Z
-- Updated: 2026-09-05T13:02:41Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Create the working documentation source assembly, homepage, four level landings, complete contents, navigation, visual theme, and a representative real API/example/diagram build.
@@ -28,10 +35,9 @@ Create the working documentation source assembly, homepage, four level landings,
 - User authorization: implementation requested on 2026-09-04; ordinary scoped edits/checks may proceed.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Observed focus/contrast defects corrected and verified; native browser zoom is
-  unavailable through the current browser controls, with 320/375/640/768/1024px reflow verified.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [x] Read the exact inputs and record one bounded implementation decision.
@@ -60,9 +66,9 @@ Create the working documentation source assembly, homepage, four level landings,
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/rtd_site_2026_09_04/architecture_patch.md
-  - system_docs/patches/active/rtd_site_2026_09_04/component_patch_documentation_pipeline.md
-  - system_docs/patches/active/rtd_site_2026_09_04/code_description_patch_documentation_pipeline.md
+  - system_docs/patches/completed/rtd_site_2026_09_04/architecture_patch.md
+  - system_docs/patches/completed/rtd_site_2026_09_04/component_patch_documentation_pipeline.md
+  - system_docs/patches/completed/rtd_site_2026_09_04/code_description_patch_documentation_pipeline.md
   - artifacts/rtd_validation_20260904/navigation_audit_build_20260905.log
   - artifacts/rtd_validation_20260904/navigation_audit_links_20260905.log
   - artifacts/rtd_validation_20260904/navigation_final_build_20260905.log
@@ -104,9 +110,9 @@ Create the working documentation source assembly, homepage, four level landings,
     interfaces map to prepare/build/check CLI behavior; control-flow gates map to invalid-input and
     repeat-build checks. No Melder runtime behavior change is part of this task.
   EVIDENCE:
-  - system_docs/patches/active/rtd_site_2026_09_04/architecture_patch.md
-  - system_docs/patches/active/rtd_site_2026_09_04/component_patch_documentation_pipeline.md
-  - system_docs/patches/active/rtd_site_2026_09_04/code_description_patch_documentation_pipeline.md
+  - system_docs/patches/completed/rtd_site_2026_09_04/architecture_patch.md
+  - system_docs/patches/completed/rtd_site_2026_09_04/component_patch_documentation_pipeline.md
+  - system_docs/patches/completed/rtd_site_2026_09_04/code_description_patch_documentation_pipeline.md
   IMPACT: Required patch scope and implementation/validation mapping are explicit before code edits.
   NEXT: Read the authored patch contracts and implement the navigation/build foundation.
   REREAD: REQUIRED
@@ -188,7 +194,7 @@ Create the working documentation source assembly, homepage, four level landings,
     hide the closed mobile sidebar and outline complete focused cards. JavaScript will move focus
     into an opened menu and close/return focus on Escape without adding a second toggle mechanism.
   EVIDENCE:
-  - tickets/tasks/2026-09-04_rtd_quality_audit_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_quality_audit_task.md
   - Sphinx RTD theme 3.1.0 layout.html:108-194
   - docs/_static/navigation.js:1-14
   IMPACT: The existing publication patch covers this accessibility fix. Validate real keyboard/
@@ -271,11 +277,29 @@ Create the working documentation source assembly, homepage, four level landings,
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Applicable Anti-Patterns
 - [ ] No silently omitted content or invented validation.
 - [ ] No unrecorded scope changes or interference with another agent's work.
 
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Four-level site foundation and final focus/contrast fixes are implemented and locally verified.
 S9 resumes the integrated audit. Native 200% browser zoom and copied-byte readback could not be
 verified with this browser tool. Owner acceptance and hosted publication remain separate.

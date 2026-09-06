@@ -56,8 +56,8 @@ before its inputs exist, and a context already acquired by a permitted caller ca
 - transition_reason: Owner approved the proposed repair direction and test execution.
 
 ## Tasks
-- [ ] `tickets/tasks/2026-09-05_shared_context_protocol_repair_task.md`: proof plus atomic S1-S3 repair.
-- [ ] `tickets/tasks/2026-09-05_shared_context_qualification_task.md`: S4 tests, performance, docs/assets.
+- [ ] `tickets/tasks/completed/2026-09-05_shared_context_protocol_repair_task.md`: proof plus atomic S1-S3 repair.
+- [ ] `tickets/tasks/completed/2026-09-05_shared_context_qualification_task.md`: S4 tests, performance, docs/assets.
 
 ## Acceptance Criteria
 - Parent epic regression matrix is accounted for with exact execution evidence and honest limits.
@@ -93,7 +93,7 @@ Cross-task decisions and delivery gates belong here; tactical proof remains in t
   CLAIM: Merge epic S1-S3 into one protocol/repair task because publication and reader lifetime
     must be delivered together; keep S4 qualification separately reviewable.
   EVIDENCE:
-  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:234-252
+  - tickets/epics/completed/2026-09-05_shared_context_rebuild_publication_epic.md:234-252
   IMPACT: No partial runtime fix is presented as completed while reader or dependency safety remains.
   NEXT: Implement controlled proof and finalize the atomic runtime contract in the child task.
   REREAD: REQUIRED

@@ -218,7 +218,7 @@ Use MEASURE only for checks actually executed; record results before another val
   CLAIM: Consumed codex_2 notices from 13:18:03, 13:38:36, and 13:43:00 UTC. Its separate RTD
     qualification and PDF wrapping/maintenance changes remain owned by that lane; it will refresh
     the other corpus after its final prose change. Ordered-disposal runtime source is unchanged.
-  EVIDENCE: tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  EVIDENCE: tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md
   IMPACT: No unrelated RTD or workflow ticket is closed or overwritten by this action.
   NEXT: none for this closed lane.
   REREAD: HELPFUL

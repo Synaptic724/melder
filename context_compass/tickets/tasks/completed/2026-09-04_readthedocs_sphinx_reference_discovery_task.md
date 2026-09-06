@@ -1,16 +1,23 @@
 # Task: Understand ThreadFactory's Sphinx and Read the Docs pipeline
 
+## Closure Acceptance
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-04-readthedocs-sphinx-reference-discovery
 - Epic: EPIC-2026-09-04-readthedocs-documentation
-- Epic Path: ../epics/2026-09-04_readthedocs_documentation_epic.md
+- Epic Path: ../../epics/completed/2026-09-04_readthedocs_documentation_epic.md
 - Story: none; epic-level discovery task
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_2
 - Priority: p2
 - Created: 2026-09-04T20:56:31Z
-- Updated: 2026-09-04T21:11:55Z
+- Updated: 2026-09-06T09:52:54Z
+- Completed: 2026-09-06T09:52:54Z
+- Summary: Owner accepted this RTD deliverable and requested closure of the complete codex_2 program.
 
 ## Objective
 Explain how ThreadFactory authors, builds, publishes, and updates its Sphinx documentation.
@@ -44,10 +51,9 @@ Preserve existing authored documentation and avoid a publishing setup that needs
 - Out of scope: codex_1's ordered Spell disposal work and other existing assignments.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Reference configuration, authored API/navigation pages, and published output
-  have been inspected; findings and the update workflow are recorded in the parent epic.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested all codex_2 tickets turned in.
 
 ## Steps / Checklist
 - [x] Inspect the reference Sphinx configuration, source structure, dependencies, and hosting flow.
@@ -244,7 +250,7 @@ Preserve existing authored documentation and avoid a publishing setup that needs
     Created that epic, linked this task, and retained the earlier observations without deleting them.
   EVIDENCE:
   - Owner clarification and epic request on 2026-09-04.
-  - tickets/epics/2026-09-04_readthedocs_documentation_epic.md
+  - tickets/epics/completed/2026-09-04_readthedocs_documentation_epic.md
   IMPACT: Earlier proposal/probe NEXT fields are superseded by this scope correction.
   NEXT: Finish and deliver the reference explanation, then await the Melder strategy discussion.
   REREAD: REQUIRED
@@ -276,7 +282,7 @@ Preserve existing authored documentation and avoid a publishing setup that needs
   - ../ThreadFactory/docs/conf.py:17-22
   - ../ThreadFactory/docs/Makefile:7-20
   - ../ThreadFactory/docs/make.bat:7-15
-  - tickets/epics/2026-09-04_readthedocs_documentation_epic.md
+  - tickets/epics/completed/2026-09-04_readthedocs_documentation_epic.md
   - https://docs.readthedocs.com/platform/stable/versions.html
   - Scoped git ls-files and rg inventory of reference docs/config/workflows.
   IMPACT: Reference discovery is ready for review. The next stage is a Melder-specific strategy
@@ -285,7 +291,25 @@ Preserve existing authored documentation and avoid a publishing setup that needs
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-06T09:52:54Z
+  TYPE: DECISION
+  CLAIM: Owner selected all codex_2 tickets for closure after accepting the delivered documentation.
+    Historical findings and validation limits remain intact. The later hosted diagnosis supersedes
+    the original 404 blocker; the owner also confirmed current-version updates work.
+  EVIDENCE:
+  - Owner instruction: turn in all your tickets and call it; continue.
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  IMPACT: This ticket is closed under owner acceptance; no further work is routed here.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+
+Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+validation limits below are retained; closure does not claim that unperformed checks passed.
+
+The previous handoff is preserved below as historical context.
 Reference files and public API output have been inspected. This task belongs to the Read the Docs
 epic and is in review. The reference explanation is ready; the owner will develop Melder's own
 strategy afterwards. Prior Melder observations are retained above. No Sphinx build, product edits,
