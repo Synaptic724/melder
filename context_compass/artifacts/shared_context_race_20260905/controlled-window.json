@@ -1,0 +1,53 @@
+{
+  "reason": "original exception observed before test teardown; diagnostic child stopped",
+  "exit_status": 42,
+  "gil_enabled": false,
+  "observations": [
+    {
+      "event": "owner_paused_before_context_read",
+      "thread": 20172,
+      "spell_id": "69b21589aa31ea8b4f8a9edb87d434bd2efa843abc75a0cf3b6005bc2a16b674",
+      "spell_cleaned": false,
+      "artifact_cleaned": false,
+      "codegen_missing": true,
+      "context_missing": false,
+      "switch_cleaned": false,
+      "switch_state": 2,
+      "switch_fast_state": 2
+    },
+    {
+      "event": "peer_phase5_completed_before_phase11",
+      "thread": 25444,
+      "spell_id": "69b21589aa31ea8b4f8a9edb87d434bd2efa843abc75a0cf3b6005bc2a16b674",
+      "spell_cleaned": false,
+      "artifact_cleaned": false,
+      "codegen_missing": true,
+      "context_missing": true,
+      "switch_cleaned": false,
+      "switch_state": 0,
+      "switch_fast_state": 0
+    },
+    {
+      "event": "original_builder_exception",
+      "thread": 20172,
+      "error": "Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.",
+      "captured_codegen_was_none": true,
+      "spell_id": "69b21589aa31ea8b4f8a9edb87d434bd2efa843abc75a0cf3b6005bc2a16b674",
+      "spell_cleaned": false,
+      "artifact_cleaned": false,
+      "codegen_missing": true,
+      "context_missing": true,
+      "switch_cleaned": false,
+      "switch_state": 1,
+      "switch_fast_state": 1
+    }
+  ],
+  "extra": {
+    "conduit_cleaned_flags": {
+      "cluster_a_owner": false,
+      "cluster_a_peer": false,
+      "cluster_b_owner": false,
+      "cluster_b_peer": false
+    }
+  }
+}
