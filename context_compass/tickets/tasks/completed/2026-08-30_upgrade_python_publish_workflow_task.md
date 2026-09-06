@@ -1,14 +1,27 @@
 # Task: Upgrade the Python package publication workflow
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Publication/token workflow and portable asset work delivered. Later CI policy supersedes the old matrix; the rejected cold-lock repair is NOT a current runtime guarantee.
+
+## Owner-Approved Closure
+- Disposition: delivered_with_superseded_scope
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+- Archived patch directory: system_docs/patches/completed/release_matrix_concurrency_repair_2026_08_30/
+
 ## Metadata
 - Task ID: TASK-2026-08-30-upgrade-python-publish-workflow
 - Story: none
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T15:55:48Z
-- Updated: 2026-08-31T01:01:03Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Deliver a release-gated Melder pipeline that tests supported Python 3.14
@@ -829,6 +842,18 @@ only from current `prod` HEAD.
   NEXT: Review and commit the workflow change, promote it to `prod`, then trigger
     the release workflow from current `prod` HEAD.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered_with_superseded_scope.
+    Publication/token workflow and portable asset work delivered. Later CI policy supersedes the old matrix; the rejected cold-lock repair is NOT a current runtime guarantee.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

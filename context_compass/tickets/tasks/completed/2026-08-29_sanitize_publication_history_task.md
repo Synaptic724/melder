@@ -1,14 +1,26 @@
 # Task: Sanitize Melder publication history locally
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Local sanitation and recorded integrity/security/package checks turned in. No fresh audit or Git mutation occurred during closure.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Task ID: TASK-2026-08-29-sanitize-publication-history
 - Story: none
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-29T22:22:13Z
-- Updated: 2026-08-30T00:13:00Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Rewrite the local `melder_private` Git history to remove the owner-approved
@@ -1324,6 +1336,18 @@ tickets, authorship, chronology, and current uncommitted work.
   NEXT: Create a full Git bundle, binary worktree patch, and untracked-file archive
     outside the repository, then verify each.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Local sanitation and recorded integrity/security/package checks turned in. No fresh audit or Git mutation occurred during closure.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

@@ -1,13 +1,26 @@
 # Epic: Make shared context rebuilding and publication safe under concurrent melds
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Closed by owner with runtime repair unimplemented/unqualified. Investigation evidence and explicitly skipped reproductions are retained.
+
+## Owner-Approved Closure
+- Disposition: cancelled_deferred
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+- Archived patch directory: system_docs/patches/completed/shared_context_rebuild_2026_09_05/
+
 ## Metadata
 - Epic ID: EPIC-2026-09-05-shared-context-rebuild-publication
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Assigned By: project owner, through workflows_1
 - Created: 2026-09-05T20:15:07Z
-- Updated: 2026-09-05T21:17:10Z
+- Updated: 2026-09-06T01:56:48Z
 - Priority: p1
 - Target Window: Before the affected release candidate is promoted to prod
 - Related Program: Release candidate qualification and shared runtime concurrency correctness
@@ -503,6 +516,18 @@ lane. They are historical/reference inputs; this epic must select the final curr
     rejected design. Remain in owner review; code/test changes require a new explicit decision.
   NEXT: Discuss peer-specific validation versus shared-context invalidation with the owner.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition cancelled_deferred.
+    Closed by owner with runtime repair unimplemented/unqualified. Investigation evidence and explicitly skipped reproductions are retained.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Closure Confirmation

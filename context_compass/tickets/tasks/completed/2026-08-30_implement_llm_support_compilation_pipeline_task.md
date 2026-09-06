@@ -1,14 +1,26 @@
 # Task: Implement the LLM support compilation pipeline
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Indexed three-corpus LLM builder, manifest, selective regeneration, tests and asset workflows delivered.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Task ID: TASK-2026-08-30-implement-llm-support-compilation-pipeline
 - Story: STORY-2026-08-30-llm-support-compilation-pipeline
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T22:07:25Z
-- Updated: 2026-08-30T22:32:04Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Implement, generate, and validate the accepted three-corpus LLM support system
@@ -464,6 +476,18 @@ and its source/repository asset workflows.
   IMPACT: Large generated outputs are produced only after the generator contract is tested.
   NEXT: Implement the builder core and focused unit tests.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Indexed three-corpus LLM builder, manifest, selective regeneration, tests and asset workflows delivered.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

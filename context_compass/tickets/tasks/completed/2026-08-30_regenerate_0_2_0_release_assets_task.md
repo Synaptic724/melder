@@ -1,14 +1,26 @@
 # Task: Regenerate release assets for version 0.2.0
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Version 0.2.0 asset refresh and exact freshness checks completed at the recorded revision.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Task ID: TASK-2026-08-30-regenerate-0-2-0-release-assets
 - Story: none
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T22:44:27Z
-- Updated: 2026-08-30T22:47:20Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Regenerate every committed source and repository asset invalidated by the
@@ -166,6 +178,18 @@ owner's version 0.2.0 change and prove both exact GitHub checks pass.
   IMPACT: Regeneration follows the same entrypoints CI instructs without manual edits.
   NEXT: Read the version and current status before writing generated files.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Version 0.2.0 asset refresh and exact freshness checks completed at the recorded revision.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

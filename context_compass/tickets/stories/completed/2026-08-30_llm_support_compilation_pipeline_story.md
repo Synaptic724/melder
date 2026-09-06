@@ -1,14 +1,26 @@
 # Story: Deliver indexed whole-repository LLM support assets
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Three indexed corpora and separated source/repository asset workflows delivered and turned in.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Story ID: STORY-2026-08-30-llm-support-compilation-pipeline
 - Epic: none
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T22:07:25Z
-- Updated: 2026-08-30T22:32:04Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## User Narrative
 As a repository user or external agent, I want deterministic indexed source,
@@ -124,6 +136,18 @@ staleness, encoding, exclusion, and incremental rebuild contracts.
   IMPACT: Implementation has one accepted file/behavior boundary.
   NEXT: Execute the linked task from builder core through generated outputs and workflows.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Three indexed corpora and separated source/repository asset workflows delivered and turned in.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Closure Confirmation

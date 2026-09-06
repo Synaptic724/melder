@@ -1,14 +1,27 @@
 # Story: Preserve shared context publication and active-reader lifetime
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Runtime safety delivery and qualification were not completed; owner rejected the implementation and selected test deferral.
+
+## Owner-Approved Closure
+- Disposition: cancelled_deferred
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+- Archived patch directory: system_docs/patches/completed/shared_context_rebuild_2026_09_05/
+
 ## Metadata
 - Story ID: STORY-2026-09-05-shared-context-safety
 - Epic: EPIC-2026-09-05-shared-context-rebuild-publication
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-05T21:17:10Z
-- Updated: 2026-09-05T21:17:10Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## User Narrative
 As a Melder user, I want concurrent shared-spell melds to see usable runtime contexts throughout
@@ -84,6 +97,18 @@ Cross-task decisions and delivery gates belong here; tactical proof remains in t
   IMPACT: No partial runtime fix is presented as completed while reader or dependency safety remains.
   NEXT: Implement controlled proof and finalize the atomic runtime contract in the child task.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition cancelled_deferred.
+    Runtime safety delivery and qualification were not completed; owner rejected the implementation and selected test deferral.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Closure Confirmation

@@ -1,16 +1,29 @@
 # Task: Prove the shared-spell context publication and cleanup contract
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Investigation and two owner-directed test skips delivered, with affected test assets refreshed. Underlying runtime repair remains deferred.
+
+## Owner-Approved Closure
+- Disposition: delivered_with_runtime_deferred
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+- Archived patch directory: system_docs/patches/completed/shared_context_rebuild_2026_09_05/
+
 ## Metadata
 - Task ID: TASK-2026-09-05-shared-context-rebuild-race
 - Epic: EPIC-2026-09-05-shared-context-rebuild-publication
 - Story: none (runtime regression found during release-candidate qualification)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Investigation By: workflows_1
 - Priority: p1
 - Created: 2026-09-05T19:09:39Z
-- Updated: 2026-09-06T00:46:06Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Understand CounterSwitch's deque-ticket election, publication/reset ordering, and the failing test's
@@ -586,6 +599,18 @@ cleanup sequence. Prove the cause of the missing spell_codegen_creation failure 
     The original skipped cluster case remains unchanged. Existing scratch deletion was preserved.
   NEXT: Owner reviews the exact skip and generated test-asset changes before committing.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered_with_runtime_deferred.
+    Investigation and two owner-directed test skips delivered, with affected test assets refreshed. Underlying runtime repair remains deferred.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

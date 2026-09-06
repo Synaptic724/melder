@@ -1,14 +1,26 @@
 # Task: Draft release notes for ordered disposal, documentation and GitHub Actions
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Ordered-disposal, Read the Docs and Actions release copy delivered; the Markdown draft is retained.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Task ID: TASK-2026-09-05-draft-ordered-disposal-docs-actions-release
 - Story: none (owner-requested release copy)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p2
 - Created: 2026-09-05T23:42:39Z
-- Updated: 2026-09-05T23:42:39Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Produce user-facing Markdown release text summarizing today's ordered-disposal delivery,
@@ -78,6 +90,18 @@ Keep release claims grounded in completed work and distinguish feature delivery 
   IMPACT: Draft the three requested pillars without version, publication or universal-test claims.
   NEXT: Write and display the public-facing release copy.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Ordered-disposal, Read the Docs and Actions release copy delivered; the Markdown draft is retained.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

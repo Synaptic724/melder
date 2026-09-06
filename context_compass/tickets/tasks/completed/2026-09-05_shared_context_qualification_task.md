@@ -1,14 +1,26 @@
 # Task: Qualify shared-context safety, performance and generated documentation
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Qualification was not executed because the runtime repair was rejected/deferred. No safety or performance success is claimed.
+
+## Owner-Approved Closure
+- Disposition: cancelled_deferred
+- from_state: ready
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Task ID: TASK-2026-09-05-shared-context-qualification
 - Story: STORY-2026-09-05-shared-context-safety
-- Status: ready
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-05T21:17:10Z
-- Updated: 2026-09-05T21:17:10Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Qualify the accepted protocol repair against the parent epic, measure its actual fast/cold cost,
@@ -81,6 +93,18 @@ Every measured claim includes the exact command, environment, output and next ac
   NEXT: Consume the protocol-repair result once its controlled tests pass.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition cancelled_deferred.
+    Qualification was not executed because the runtime repair was rejected/deferred. No safety or performance success is claimed.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
 This task is ready but not running. It owns evidence, performance and source docs/assets, not the

@@ -1,14 +1,27 @@
 # Task: Implement human-first meld identity ergonomics
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Human SpellNames, explicit spell_id and public override migration delivered with recorded validation.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+- Archived patch directory: system_docs/patches/completed/human_meld_identity_api_2026_08_30/
+
 ## Metadata
 - Task ID: TASK-2026-08-30-meld-spell-reference-ergonomics
 - Story: STORY-2026-08-30-human-meld-identity-api
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-08-30T19:08:29Z
-- Updated: 2026-08-30T21:31:49Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Implement and validate the human-first public Meld identity contract discovered
@@ -1244,6 +1257,18 @@ concise public `override=` keyword.
   IMPACT: The conclusion will reflect the API that runs rather than names or examples alone.
   NEXT: Read the root README and enumerate the exact example files that call `meld`.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Human SpellNames, explicit spell_id and public override migration delivered with recorded validation.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

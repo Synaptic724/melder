@@ -1,14 +1,26 @@
 # Task: Rebuild current release source and repository assets
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Version 0.2.36 source/repository assets rebuilt; recorded final checks pass and unchanged corpora were preserved.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Task ID: TASK-2026-09-05-rebuild-current-release-assets
 - Story: none (owner-requested regeneration)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p1
 - Created: 2026-09-06T00:11:17Z
-- Updated: 2026-09-06T00:13:12Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Regenerate the current release's derived source and LLM assets through the existing builders,
@@ -152,6 +164,18 @@ Record actual builder results and changed paths, with one concrete next step per
   IMPACT: Requested asset regeneration is complete and ready for owner review; no publication ran.
   NEXT: Owner reviews the generated changes before committing through the normal branch workflow.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Version 0.2.36 source/repository assets rebuilt; recorded final checks pass and unchanged corpora were preserved.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

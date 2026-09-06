@@ -1,14 +1,26 @@
 # Task: Craft Melder's first public release notes
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: First release copy and PyPI-portable README routes delivered with recorded validation.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+
 ## Metadata
 - Task ID: TASK-2026-08-30-craft-first-public-release-notes
 - Story: none
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T22:50:02Z
-- Updated: 2026-09-01T00:56:59Z
+- Updated: 2026-09-06T01:56:48Z
 
 ## Objective
 Create a truthful, compelling, user-facing Markdown release draft for Melder
@@ -299,6 +311,18 @@ v0.2.0, suitable for the first GitHub release and adaptable to PyPI.
     repository-local paths, and generated repository assets are commit-ready.
   NEXT: Review and commit the README plus selective `llm_support` output changes.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    First release copy and PyPI-portable README routes delivered with recorded validation.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary

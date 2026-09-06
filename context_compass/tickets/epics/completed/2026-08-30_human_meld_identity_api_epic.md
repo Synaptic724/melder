@@ -1,13 +1,26 @@
 # Epic: Restore the human-first meld identity contract
 
+- Completed: 2026-09-06T01:56:48Z
+- Summary: Human SpellName, machine-ID and concise override program delivered; child story/task turned in.
+
+## Owner-Approved Closure
+- Disposition: delivered
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly requested turning in all codex_1 tickets.
+- Acceptance: Current closure is approved; it does not convert deferred work into implemented work.
+- Historical plans, checklists and NEXT statements below are retained as history, not active authority.
+- Closeout record: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+- Archived patch directory: system_docs/patches/completed/human_meld_identity_api_2026_08_30/
+
 ## Metadata
 - Epic ID: EPIC-2026-08-30-human-meld-identity-api
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: codex_1
 - Priority: p0
 - Created: 2026-08-30T19:42:00Z
-- Updated: 2026-08-30T21:31:49Z
+- Updated: 2026-09-06T01:56:48Z
 - Target Window: 2026-Q3
 - Related Program/Initiative: Melder public API and UX/AIX curriculum
 
@@ -181,6 +194,18 @@ supported-suite proof.
   IMPACT: The breaking migration is atomic and cannot leave docs or tests on mixed semantics.
   NEXT: Create the implementation story and required patch artifacts.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T01:56:48Z
+  TYPE: DECISION
+  CLAIM: Owner turns in this ticket with disposition delivered.
+    Human SpellName, machine-ID and concise override program delivered; child story/task turned in.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - Recorded delivery, validation and owner decisions in this ticket.
+  IMPACT: Work item is closed; no source, test, remote or publication action is implied.
+  NEXT: none; future implementation requires a new owner-approved lane.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
 ## Closure Confirmation
