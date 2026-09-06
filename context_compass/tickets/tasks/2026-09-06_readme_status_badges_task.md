@@ -227,6 +227,19 @@ Record measured reporting support, badge sources, the owner's coverage decision,
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-06T16:48:36Z
+  TYPE: FACT
+  CLAIM: Consumed two notices from workflows_1: the owner approved stable Python minors >=3.14,
+    and workflows_1 reports discovery-based no-GIL matrices, Python-version-keyed coverage artifacts,
+    dynamic completeness checks and 382 passing workflow tests. This supersedes the fixed-3.14
+    coverage matrix recorded here. They report all assets current for the owner's 0.2.37 bump.
+  EVIDENCE:
+  - tickets/tasks/2026-09-06_ci_validation_stage_design_task.md
+  IMPACT: Preserve that subsequent work. This is a received report, not a new validation claim.
+  NEXT: Follow the CI lane for future coverage/matrix changes; current work switches to conduit discovery.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 The tagline now reads: Build, inspect, and control your Python application's dependency graph.
 Its generated other-corpus copy is current; all corpus checks pass.

@@ -36,3 +36,9 @@ build/upload; existing package-ready dependencies stay strict. build-distributio
 Python range from pyproject.toml and explicitly requests free threading. Three-platform tests run
 once per selected stable minor at the existing stages. Coverage remains a separate nonblocking
 upload with CODECOV_TOKEN only; completeness follows the discovered OS/version combinations.
+
+## Checkout identity correction
+ci_qualification.py owns dirty-source verification for record/select/verify. Replace blanket
+porcelain refusal with unchanged-index verification and raw delta inspection. Accept only byte-
+identical regular files with unchanged Git modes; staged and actual working-tree changes refuse.
+The error must include changed path names. Existing profile flags, jobs and proof schema stay intact.

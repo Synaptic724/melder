@@ -155,6 +155,13 @@ A successful full CI run retains `source-qualification-<run-id>-<attempt>` for
 the actual tested checkout and Git tree. A PR run's head SHA is not assumed to
 be its tested merge SHA.
 
+Checkout verification requires an unchanged Git index and rejects actual tracked content or mode
+changes. Git can report older committed CRLF files as modified under a newer LF attribute policy
+even when their bytes are identical. Only matching unfiltered blob identity and unchanged regular-file
+mode clear that false positive. This does not ignore whitespace or exclude documentation directories;
+real changes fail with affected path names. A skipped source-qualification job is expected for
+dev-to-preprod full CI: that run creates fresh evidence instead of reusing an earlier run.
+
 `verify-source-qualification.yml` finds the full run behind the actual preprod
 promotion, downloads one immutable artifact ID with read-only credentials, and
 checks its record against the current tree. It refreshes the selection after

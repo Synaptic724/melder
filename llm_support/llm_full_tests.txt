@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 02cbb5bad69d976b6490dc683a8be312a7330975ef9ac0d7e3fa1c04d9668a47
-FILE COUNT: 809
+SOURCE FINGERPRINT: 2b7ef966984d6b6006cff5fa3f778deadefd5826cd00ab9cd56d2c820b8e22e2
+FILE COUNT: 810
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -132578,6 +132578,144 @@ def test_altered_download_is_refused_even_if_pip_reports_success(candidate: Modu
 END FILE: tests/unit/github_workflows/test_candidate_publication.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_checkout_identity.py
+CONTENT SHA256: 8b9af7ec562fdae68636f4db261b4559e87d4e7546fb063b19b8bb1852f625b0
+SOURCE ENCODING: utf-8
+================================================================================
+"""Prove checkout identity using real Git EOL behavior and explicit mutation boundaries."""
+
+import os
+import pathlib
+import subprocess
+from collections.abc import Sequence
+from types import ModuleType
+from typing import Optional
+
+import pytest
+
+
+def fixture_git(repository: pathlib.Path, *arguments: str, data: Optional[bytes] = None) -> str:
+    """Run Git only in a disposable test repository, without signing or using the owner's identity."""
+    result = subprocess.run(
+        ["git", "-c", "core.longpaths=true", "-c", "commit.gpgSign=false",
+         "-c", "user.name=CI-test", "-c", "user.email=ci-test@example.invalid",
+         "-C", str(repository), *arguments],
+        input=data, capture_output=True, check=True,
+    )
+    return result.stdout.decode("utf-8").strip()
+
+
+@pytest.fixture
+def legacy_checkout(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path:
+    """Commit a raw CRLF fixture beneath a later LF policy, reproducing the hosted false-dirty state.
+
+    Git plumbing creates test objects only in tmp_path. No real repository ref,
+    user commit, signature or network operation is involved. Touching mtime
+    forces Git to inspect bytes instead of accepting its fresh checkout stat cache.
+    """
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    fixture_git(repository, "init", "--quiet")
+    fixture_git(repository, "config", "core.autocrlf", "false")
+    fixture_git(repository, "config", "core.safecrlf", "false")
+    for name, content in ((".gitattributes", b"legacy.md text eol=lf\n"), ("legacy.md", b"unchanged\r\n")):
+        blob = fixture_git(repository, "hash-object", "-w", "--stdin", data=content)
+        fixture_git(repository, "update-index", "--add", "--cacheinfo", f"100644,{blob},{name}")
+    tree = fixture_git(repository, "write-tree")
+    commit = fixture_git(repository, "commit-tree", tree, data=b"Disposable qualification fixture\n")
+    fixture_git(repository, "update-ref", "HEAD", commit)
+    fixture_git(repository, "checkout-index", "--all", "--force")
+    legacy = repository / "legacy.md"
+    current = legacy.stat()
+    os.utime(legacy, ns=(current.st_atime_ns, current.st_mtime_ns + 10_000_000_000))
+    monkeypatch.chdir(repository)
+    monkeypatch.setenv("GITHUB_SHA", commit)
+    return repository
+
+
+def test_identical_crlf_blob_qualifies_despite_git_dirty_flag(source_qualification: ModuleType,
+                                                           legacy_checkout: pathlib.Path) -> None:
+    """A Git normalization discrepancy must not reject byte-identical committed source."""
+    assert "M legacy.md" in fixture_git(legacy_checkout, "status", "--porcelain", "--untracked-files=no")
+    assert (legacy_checkout / "legacy.md").read_bytes() == b"unchanged\r\n"
+    (legacy_checkout / "untracked-report.json").write_text("{}", encoding="utf-8")
+    assert source_qualification.checkout_identity() == (
+        fixture_git(legacy_checkout, "rev-parse", "HEAD"),
+        fixture_git(legacy_checkout, "rev-parse", "HEAD^{tree}"),
+    )
+
+
+@pytest.mark.parametrize("change", ["content", "trailing-space", "line-endings", "deleted", "staged", "renamed"])
+def test_real_changes_still_refuse_and_identify_the_path(source_qualification: ModuleType,
+                                                       legacy_checkout: pathlib.Path, change: str) -> None:
+    """The EOL correction cannot waive real bytes, index changes, removal or renaming."""
+    legacy = legacy_checkout / "legacy.md"
+    if change == "deleted":
+        legacy.unlink()
+    elif change == "staged":
+        fixture_git(legacy_checkout, "add", "--", "legacy.md")
+    elif change == "renamed":
+        fixture_git(legacy_checkout, "mv", "legacy.md", "renamed.md")
+    else:
+        legacy.write_bytes({"content": b"different\r\n", "trailing-space": b"unchanged \r\n",
+                            "line-endings": b"unchanged\n"}[change])
+    with pytest.raises(ValueError, match="legacy.md"):
+        source_qualification.checkout_identity()
+
+
+@pytest.mark.parametrize(("before", "after", "status"), [
+    ("100644", "100755", "M"), ("100755", "100644", "M"),
+    ("100644", "120000", "T"), ("120000", "120000", "M"),
+    ("160000", "160000", "M"), ("100644", "000000", "D"),
+    ("000000", "100644", "A"),
+])
+def test_mode_type_and_structural_changes_cannot_pass_by_hash(source_qualification: ModuleType,
+                                                            monkeypatch: pytest.MonkeyPatch,
+                                                            before: str, after: str, status: str) -> None:
+    """Matching file bytes cannot authorize changed executable mode, symlinks, submodules or structure."""
+    def git(arguments: Sequence[str]) -> str:
+        """Expose raw Git metadata and forbid content hashing of an already invalid mode/type."""
+        if "--cached" in arguments:
+            return ""
+        assert arguments[0] == "diff"
+        return f":{before} {after} {'a' * 40} {'0' * 40} {status}\0changed.py\0"
+
+    monkeypatch.setattr(source_qualification, "git_output", git)
+    with pytest.raises(ValueError, match="changed.py"):
+        source_qualification.require_clean_tracked_checkout()
+
+
+@pytest.mark.parametrize("length", [40, 64])
+def test_raw_hash_comparison_preserves_unusual_paths(source_qualification: ModuleType,
+                                                    monkeypatch: pytest.MonkeyPatch, length: int) -> None:
+    """NUL records and explicit argument vectors preserve spaces/newlines without shell interpolation."""
+    path = "directory/name with space\nand newline.md"
+
+    def git(arguments: Sequence[str]) -> str:
+        """Supply matching native Git object IDs for either supported object format."""
+        if "--cached" in arguments:
+            return ""
+        if arguments[0] == "diff":
+            return f":100644 100644 {'a' * length} {'0' * length} M\0{path}\0"
+        assert arguments == ("hash-object", "--no-filters", "--", path)
+        return "a" * length
+
+    monkeypatch.setattr(source_qualification, "git_output", git)
+    source_qualification.require_clean_tracked_checkout()
+
+
+@pytest.mark.parametrize("raw", ["incomplete", "header\0", "header\0path\0", "bad\0path\0extra\0",
+                                  f":100644 100644 {'a' * 40} {'0' * 40} M\0\0"])
+def test_malformed_raw_diff_never_becomes_clean(source_qualification: ModuleType,
+                                               monkeypatch: pytest.MonkeyPatch, raw: str) -> None:
+    """Incomplete Git output must fail closed, including absent metadata/path boundaries."""
+    monkeypatch.setattr(source_qualification, "git_output", lambda arguments: "" if "--cached" in arguments else raw)
+    with pytest.raises(ValueError, match="Malformed"):
+        source_qualification.require_clean_tracked_checkout()
+================================================================================
+END FILE: tests/unit/github_workflows/test_checkout_identity.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
 CONTENT SHA256: 22fc761d5094931044eba1b5f92a73c18ffe97b8decbb2e603cb61a89aa9efeb
 SOURCE ENCODING: utf-8
@@ -133584,7 +133722,7 @@ END FILE: tests/unit/github_workflows/test_sdist_normalization.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_source_qualification.py
-CONTENT SHA256: b2bf8736224ca9766e3055acc7dd36cf33c95dcbe65721a93527e57d16570816
+CONTENT SHA256: 8e39140cd47b043c5c45dd53579588592cdd124eb9a763f6b771c0213f58f5a0
 SOURCE ENCODING: utf-8
 ================================================================================
 """Exercise full-CI evidence across distinct merge SHAs, source changes, and stale GitHub state."""
@@ -133695,8 +133833,8 @@ def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
 
     def git(arguments: Sequence[str]) -> str:
         """Model the process boundary without masking a wrong event SHA or merge parents."""
-        if arguments[0] == "status":
-            return state["dirty"]
+        if arguments[0] == "diff":
+            return state["dirty"] if "--cached" in arguments else ""
         if arguments[0] == "rev-list":
             return " ".join(state["parents"])
         if arguments == ("rev-parse", "HEAD^{commit}"):
@@ -133854,7 +133992,7 @@ def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, r
     if mode == "sha":
         monkeypatch.setenv("GITHUB_SHA", "f" * 40)
     elif mode == "dirty":
-        record_environment["dirty"] = " M src/melder/example.py"
+        record_environment["dirty"] = "src/melder/example.py\0"
     elif mode == "parents":
         record_environment["parents"][-1] = "f" * 40
     else:
