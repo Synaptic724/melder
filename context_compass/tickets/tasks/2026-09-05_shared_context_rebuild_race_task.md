@@ -10,18 +10,20 @@
 - Investigation By: workflows_1
 - Priority: p1
 - Created: 2026-09-05T19:09:39Z
-- Updated: 2026-09-05T22:42:08Z
+- Updated: 2026-09-06T00:46:06Z
 
 ## Objective
 Understand CounterSwitch's deque-ticket election, publication/reset ordering, and the failing test's
 cleanup sequence. Prove the cause of the missing spell_codegen_creation failure before selecting a fix.
 
 ## Ticket Contract
-- ENTRY_GATE: Existing certification, active route, and owner's explicit single-test skip instruction.
+- ENTRY_GATE: Existing certification, active route, and owner's explicit skip instruction for
+  test_owner_meld_waits_for_peer_rebuild_before_using_context_inputs.
 - EXECUTION_BOUNDARY: Spell cold context retrieval, its factory/compiler publication dependencies,
   directly relevant unit/component/integration regressions, affected generated source/test assets,
-  and this task's notes/artifacts. Owner now permits only a skip marker on the original two-cluster
-  test, preserving its body. No runtime implementation or other test changes are authorized.
+  and this task's notes/artifacts. Owner additionally permits a skip marker on the controlled
+  component reproduction, preserving its body, with affected generated test-bundle refresh.
+  No runtime implementation or other test changes are authorized.
 - DEPENDENCIES: Runtime successor epic 2026-09-05_shared_context_rebuild_publication_epic.md and
   release candidate task 2026-09-05_release_candidate_testpypi_workflow_task.md. The old
   release_matrix_concurrency_repair_2026_08_30 patch is historical input, not a selected repair.
@@ -38,8 +40,8 @@ cleanup sequence. Prove the cause of the missing spell_codegen_creation failure 
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Controlled scheduling reproduced the exact original exception with all owner
-  objects still live. The ticket/reset/publication boundary is evidenced; no code or repair was added.
+- transition_reason: Requested component case reports one skipped; test bundle refreshed and
+  both asset freshness checks pass. Runtime source is unchanged.
 
 ## Steps / Checklist
 - [x] Trace the original exception and distinguish teardown rendering from its cause.
@@ -52,6 +54,10 @@ cleanup sequence. Prove the cause of the missing spell_codegen_creation failure 
 - Protocol and failure analysis with reproducible evidence; no source/test modifications in this phase.
 
 ## Validation
+- Current follow-up (2026-09-06): exact controlled component node reports 1 skipped in 0.32s.
+- Selective tests-bundle regeneration succeeded; both source/repository --check commands exit 0.
+- git diff --check passes. Full runtime suite: Not run for this skip-only follow-up.
+- Earlier investigation evidence follows:
 - 32 existing switch/factory checks pass; 20 no-GIL and 20 GIL-enabled independent cluster runs pass.
 - 10 passive observer-traced runs pass. Controlled debugger pauses reproduce the original exception
   before terminal cleanup; all four conduits, Spell, artifact container, and switch have _cleaned=False.
@@ -477,7 +483,123 @@ cleanup sequence. Prove the cause of the missing spell_codegen_creation failure 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T00:42:41Z
+  TYPE: FACT
+  CLAIM: Owner now supplied the separate active component reproduction and asks why it fails.
+    The test warms the owner, pauses the peer after real Phase5.run_local, starts the owner,
+    then requires both calls to succeed. Phase 5 clears shared codegen inputs and the Spell
+    context; Spell cleanup resets CounterSwitch to 0. The selector elects a builder from 0,
+    while CreationContextBuilder refuses a constructed Spell whose codegen payload is None.
+    Phase 11 later publishes that payload. Per-conduit validity and shared-context readiness
+    are different: a valid owner returns before the revalidation lock; cold context retrieval
+    currently delegates to the factory without taking the spell lock. The pasted failure alone
+    does not identify which caller raised because the test appends bare exceptions to one list.
+  EVIDENCE:
+  - tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py:26-159
+  - src/melder/aether/conduit/meld/meld.py:833-893
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:600-693
+  - src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:365-396
+  - src/melder/aether/spellbook/spell.py:659-687
+  - src/melder/aether/spellbook/spell.py:750-792
+  - src/melder/utilities/synchronization/counter_switch.py:298-342
+  - src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:294-339
+  - src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:69-153
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_system.py:60-126
+  IMPACT: This is deliberate overlap, not terminal fixture cleanup or a failure-rate measurement.
+    The test asserts waiting/success rather than permitting an unavailable-input refusal. That
+    contract must not be treated as implicit authorization to redesign the compiler. The Spell
+    retrieval docstring and src_components still describe a cold-path lock absent from source.
+    No source/test change or new experiment has been made; no new tests were run.
+  NEXT: Explain the current readiness gap and the test's stronger expectation to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T00:43:44Z
+  TYPE: FACT
+  CLAIM: The active component reproduction is a new codex_1 regression from the rejected repair
+    attempt. Its originating task records a known-red run at 2026-09-05T21:40:09Z. Git history
+    shows the test first committed in bf8f05986 at 2026-09-05T16:42:51-06:00. It is separate
+    from the original cluster test that was explicitly skipped. Owner reports all three builds
+    now fail this added reproduction; no new local run or source/test disposition is made here.
+  EVIDENCE:
+  - tickets/tasks/2026-09-05_shared_context_protocol_repair_task.md:106-121
+  - git log --follow -- tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py
+  - tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py:68-159
+  IMPACT: Explain this as a leftover known-red reproduction, not three newly diagnosed platform
+    faults. Recommend opt-in experimental placement while repair is deferred; do not silently
+    alter the test or implement the rejected runtime changes.
+  NEXT: Owner selects disposition of this exact added component test.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T00:45:09Z
+  TYPE: DECISION
+  CLAIM: Owner says "yeah put skip on this one too", authorizing only a pytest skip on
+    test_owner_meld_waits_for_peer_rebuild_before_using_context_inputs. Preserve the full fixture
+    and test body. Verify the exact case is skipped and refresh its generated test corpus.
+  EVIDENCE:
+  - Owner instruction in current conversation.
+  - tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py:68-159
+  IMPACT: This is explicit deferral, not a concurrency fix or an experiment implementation.
+  NEXT: Add the single skip decorator and run the exact pytest node.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T00:45:42Z
+  TYPE: MEASURE
+  CLAIM: Added exactly three decorator lines to the controlled component test; its body and
+    fixture are unchanged. Running the exact node on .venv_new Python reports one skipped,
+    with the owner-deferral reason, in 0.32 seconds (exit 0).
+  EVIDENCE:
+  - tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py:68-70
+  - git diff -- tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py
+  - .venv_new/Scripts/python.exe -m pytest tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py::test_owner_meld_waits_for_peer_rebuild_before_using_context_inputs -q -rs -p no:cacheprovider
+  IMPACT: Exact requested case is deferred; no runtime repair or unrelated skip was added.
+  NEXT: Refresh only the LLM tests corpus and verify repository/source freshness.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T00:45:55Z
+  TYPE: MEASURE
+  CLAIM: Selective repository regeneration rewrote the tests corpus (807 files) and its proofs.
+    The builder was invoked with --corpus tests; no source/other corpus regeneration was requested.
+  EVIDENCE:
+  - .venv_new/Scripts/python.exe llm_support/_builder.py --corpus tests (exit 0)
+  IMPACT: The skip edit is represented in the committed-test bundle expected by CI.
+  NEXT: Check both asset families and final diff hygiene.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T00:46:06Z
+  TYPE: MEASURE
+  CLAIM: Exact requested test is skipped, with body and fixture intact. Both source and repository
+    freshness checks pass at 0.2.36, and diff hygiene passes. Product diff is four files:
+    three skip-decorator lines plus the generated tests bundle, tests index, and shared manifest.
+    No runtime source, workflow, version, or other test was edited. No commits or pushes occurred.
+  EVIDENCE:
+  - tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py:68-70
+  - .venv_new/Scripts/python.exe llm_support/_builder.py --check (exit 0)
+  - .venv_new/Scripts/python.exe src/melder/_build_assets/_build_asset_runner.py --check (exit 0)
+  - git -c core.whitespace=cr-at-eol diff --check (exit 0)
+  - git diff --stat -- tests llm_support src
+  IMPACT: Owner-directed deferral is implemented without reintroducing the rejected runtime repair.
+    The original skipped cluster case remains unchanged. Existing scratch deletion was preserved.
+  NEXT: Owner reviews the exact skip and generated test-asset changes before committing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+Latest owner instruction implemented (2026-09-06T00:46:06Z): the added controlled component
+reproduction also has an explicit pytest skip. Exact node verification: 1 skipped; body unchanged.
+The three affected LLM tests files were regenerated and both asset checks pass. No runtime fix,
+experiment, commit, or push. Previous explanation and investigation history follows.
+
+2026-09-06 explanation-only follow-up: current CI failure is the separate component reproduction,
+not the original skipped cluster case. It forces overlapping peer validation and owner context
+retrieval, then asserts wait-and-succeed. Current source has no cold Spell lock despite stale
+docstrings. Owner is considering an opt-in experiment; neither an experiment nor runtime repair
+has been implemented or run in this follow-up. See the newest note before historical material.
+
 Latest owner decision: original cluster test is retained with a pytest skip marker. Its module
 passes 18 tests and explicitly skips this one. Runtime repair remains rejected/deferred. No further
 test changes or source changes are authorized by this disposition.

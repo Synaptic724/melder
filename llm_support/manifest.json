@@ -5664,13 +5664,13 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 10722642,
-        "lines": 308371,
+        "bytes": 10722754,
+        "lines": 308374,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "f5e82d28da77b30d8305cf0e76c6b957f302c9e215d3afe13470bf47acd89663"
+        "sha256": "f8695c581e36db0829103a7388f18c9cd786fd641f83a86f1c2a2ab480b01639"
       },
-      "content_bytes": 10237917,
-      "content_lines": 301909,
+      "content_bytes": 10238029,
+      "content_lines": 301912,
       "file_count": 807,
       "files": {
         "tests/_codegen_system_support.py": {
@@ -5830,9 +5830,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py": {
-          "content_bytes": 6927,
-          "content_lines": 159,
-          "content_sha256": "338081df8831001189f8773aaaaf963c7f2dd8f1144b34959b9116f5a65ab004",
+          "content_bytes": 7039,
+          "content_lines": 162,
+          "content_sha256": "10e902f1a7fb041a892cd3f0e262be51126c5e5a7774f6aecc46c28718ed3d13",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/dev_ops/change_control_manager/test_change_control_manager_component.py": {
@@ -10520,9 +10520,9 @@
         "bytes": 155769,
         "lines": 829,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "ffa2228e7252fdc0a647cbd043cf9c9c8851daf9e2d409fd25172828f1ced91f"
+        "sha256": "14ebdd4eef266a42dcc3b2d41a47faa231280ec5842c3c71e99e520159f28770"
       },
-      "source_fingerprint": "76cb7502f59ee42d7aa23d58d169fa85f239596fd960c5c525f606446904598a"
+      "source_fingerprint": "092901f40f2c47ee7da235f83f730692ed9e6d184f747a3424a43982a8d9f327"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

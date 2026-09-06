@@ -65,6 +65,9 @@ def shared_runtime() -> Iterator[tuple[Conduit, Conduit, Spell]]:
         Conduit._aether = aether
 
 
+@pytest.mark.skip(
+    reason="Deferred by project owner; shared-context rebuild investigation remains open."
+)
 def test_owner_meld_waits_for_peer_rebuild_before_using_context_inputs(
         monkeypatch: pytest.MonkeyPatch,
         shared_runtime: tuple[Conduit, Conduit, Spell],

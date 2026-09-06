@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 76cb7502f59ee42d7aa23d58d169fa85f239596fd960c5c525f606446904598a
+SOURCE FINGERPRINT: 092901f40f2c47ee7da235f83f730692ed9e6d184f747a3424a43982a8d9f327
 FILE COUNT: 807
 
 ================================================================================
@@ -13260,7 +13260,7 @@ END FILE: tests/component/melder/aether/conduit/test_mutation_research_accessor_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py
-CONTENT SHA256: 338081df8831001189f8773aaaaf963c7f2dd8f1144b34959b9116f5a65ab004
+CONTENT SHA256: 10e902f1a7fb041a892cd3f0e262be51126c5e5a7774f6aecc46c28718ed3d13
 SOURCE ENCODING: utf-8
 ================================================================================
 """Controlled real-meld regressions for shared context rebuild publication."""
@@ -13330,6 +13330,9 @@ def shared_runtime() -> Iterator[tuple[Conduit, Conduit, Spell]]:
         Conduit._aether = aether
 
 
+@pytest.mark.skip(
+    reason="Deferred by project owner; shared-context rebuild investigation remains open."
+)
 def test_owner_meld_waits_for_peer_rebuild_before_using_context_inputs(
         monkeypatch: pytest.MonkeyPatch,
         shared_runtime: tuple[Conduit, Conduit, Spell],
