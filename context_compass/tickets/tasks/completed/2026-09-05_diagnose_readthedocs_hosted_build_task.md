@@ -3,12 +3,15 @@
 ## Metadata
 - Task ID: TASK-2026-09-05-diagnose-readthedocs-hosted-build
 - Story: none (owner-requested diagnosis of the existing documentation deployment)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T23:16:25Z
-- Updated: 2026-09-05T23:28:57Z
+- Updated: 2026-09-05T23:53:38Z
+- Completed: 2026-09-05T23:53:38Z
+- Summary: Verified the healthy latest deployment and traced stable's failure to old tag 0.2.3,
+  which lacks .readthedocs.yaml. Owner accepted the diagnosis and requested ticket closure.
 
 ## Objective
 Identify why the owner's Read the Docs deployment is not working and determine the concrete
@@ -30,10 +33,10 @@ correction from the actual hosted build, selected Git revision and repository co
 - Out of scope: runtime repair, documentation redesign, domains/account changes and other agents' work.
 
 ## State Transition Event
-- from_state: draft
-- to_state: review
-- transition_reason: Owner confirms the latest site works. Public metadata verifies its successful
-  current-prod build; the separate stable failure is traced to a configuration-less historical tag.
+- from_state: review
+- to_state: done
+- transition_reason: Owner confirmed latest works and explicitly requested turning in this diagnosis.
+  The stable tag/configuration distinction is recorded; no RTD source correction was required.
 
 ## Steps / Checklist
 - [x] Resolve the failing project/build URL and actual symptom.
@@ -180,8 +183,22 @@ correction from the actual hosted build, selected Git revision and repository co
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T23:53:38Z
+  TYPE: DECISION
+  CLAIM: Owner accepted the working site and explicitly requested ticket turn-in. Diagnosis is
+    complete: latest is healthy, stable's historical tag lacks configuration, and no account or
+    source change was made. This task owns no disposable artifacts.
+  EVIDENCE:
+  - https://app.readthedocs.org/projects/melder/builds/34412255/
+  - https://app.readthedocs.org/projects/melder/builds/34412311/
+  - Owner instruction: "turn in your tickets please we did it".
+  IMPACT: Archive the accepted diagnosis without closing codex_2's broader documentation program.
+  NEXT: No further diagnosis unless the owner reports a new build or version failure.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Diagnosis complete and in review; owner confirms latest works. Project is connected to the correct
+Diagnosis closed at the owner's request; owner confirms latest works. Project is connected to the correct
 repository, latest targets prod and its actual RTD build succeeded. Stable alone failed because it
 selects old tag 0.2.3 without .readthedocs.yaml. No RTD source/config change or account write was made.
 The next release used by stable must include the docs configuration. Do not rewrite the historical tag.

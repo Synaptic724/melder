@@ -256,8 +256,10 @@ No nonexistent child-ticket links are implied. Merge scopes if that produces a s
 - S4 qualification: `tickets/tasks/2026-09-05_shared_context_qualification_task.md`.
 - Existing investigation input: `tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md`.
 - codex_1 owns further decomposition, implementation and validation tasks under this epic.
-- workflows_1 owns `tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md` and remains
-  blocked on a qualified runtime revision; communicate through the mailbox instead of overlapping edits.
+- Workflow delivery was closed at the owner's request in
+  `tickets/tasks/completed/2026-09-05_release_candidate_testpypi_workflow_task.md`.
+  Its validation and rollout limits remain recorded there; workflow acceptance does not claim this
+  deferred runtime repair was implemented.
 
 ## Acceptance Criteria / Success Metrics
 - The original controlled interleaving is captured in a permanent, schedule-controlled regression

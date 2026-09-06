@@ -3,12 +3,16 @@
 ## Metadata
 - Task ID: TASK-2026-09-05-release-candidate-testpypi-workflow
 - Story: none (successor to accepted branch CI foundation)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: workflows_1
 - Priority: p1
 - Created: 2026-09-05T10:25:12Z
-- Updated: 2026-09-05T23:21:34Z
+- Updated: 2026-09-05T23:53:38Z
+- Completed: 2026-09-05T23:53:38Z
+- Summary: Delivered TestPyPI candidate qualification, three-platform checks, exact-source production
+  safeguards and final-stage CI candidate proof. Owner accepted closure; validation and rollout limits
+  are retained below. Current implementation and generated assets are committed locally.
 
 ## Objective
 Extend the promotion route to dev -> preprod -> release_candidate -> prod. Keep preprod as full
@@ -39,10 +43,10 @@ commit, version, workflow run, and distribution hashes before final production p
 - Preserve other agents' source, documentation, tests, and generated outputs.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Late candidate check, focused regressions, workflow lint and regenerated
-  tests/other assets are verified locally; owner retains commit/push and hosted execution.
+- from_state: review
+- to_state: done
+- transition_reason: Owner explicitly accepted the delivered work and requested ticket turn-in.
+  Validation is recorded, patch contracts are archived and task-owned scratch has been removed.
 
 ## Steps / Checklist
 - [x] Inspect existing shared CI, branch policy, packaging, and publication contracts.
@@ -58,6 +62,14 @@ commit, version, workflow run, and distribution hashes before final production p
 - Durable operator instructions including TestPyPI project and GitHub environment configuration.
 
 ## Validation
+- Final correction: 237 workflow tests pass; actionlint, scoped Ruff, regenerated tests/other
+  corpus proofs and whitespace checks pass. The new placement regression failed before the change.
+- Hosted RC run 33997179636 completed successfully for candidate 361a974973316c0ab6e9ed24b0c33b22b29ab4b6,
+  including the publication job and all three installed-package probes.
+- At final closure verification, local HEAD 298b8dfc1 contains the implementation and generated
+  assets with no uncommitted diff. No additional hosted run of the last relocation or final PyPI
+  publication was checked during ticket closure.
+- Earlier validation tranches follow as historical evidence.
 - 2026-09-05T18:37:46Z UnitOfWork repair: all 279 synchronization unit tests pass with PYTHON_GIL=0.
   The worker holds for 1 second, startup waits up to 5 seconds with an asserted result, and the
   existing test structure remains. Scoped Ruff, whitespace, and regenerated test-corpus proofs pass.
@@ -89,8 +101,8 @@ commit, version, workflow run, and distribution hashes before final production p
 - Repository tests/other bundles were regenerated and their exact fingerprint/output checks pass.
 - Source assets were stale during the initial workflow pass; read-only checks on 2026-09-05T13:41:13Z
   now report all three current after the other lane's work. This repair did not rewrite source assets.
-- The owner's RC run 33977732545 failed OIDC publishing before consumer tests. No hosted run or
-  upload was dispatched by this agent. Hosted token authentication and Mac compatibility are unverified.
+- Initial RC run 33977732545 failed OIDC publishing before consumer tests; the later successful
+  candidate run is recorded above. No hosted run or upload was dispatched by this agent.
 - GitHub environment pypitest and its sole release_candidate branch policy are GET-verified.
 
 ## Risks / Rollback Notes
@@ -112,21 +124,20 @@ commit, version, workflow run, and distribution hashes before final production p
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - artifacts/release_candidate_20260905/validation.md
-  - artifacts/release_candidate_20260905/test_mediator_overlap_controls.py
-  - artifacts/release_candidate_20260905/mediator-overlap.xml
-  - artifacts/release_candidate_20260905/uow-timing.xml
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/architecture_patch.md
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_candidate.md
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_publication.md
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/code_description_patch_identity.md
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/architecture_patch_index.md
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_candidate_index.md
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/component_patch_publication_index.md
-  - system_docs/patches/active/release_candidate_testpypi_2026_09_05/code_description_patch_identity_index.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/architecture_patch.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/component_patch_candidate.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/component_patch_publication.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/code_description_patch_identity.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/architecture_patch_index.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/component_patch_candidate_index.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/component_patch_publication_index.md
+  - system_docs/patches/completed/release_candidate_testpypi_2026_09_05/code_description_patch_identity_index.md
 - DISPOSITION: promote_to_documentation
-- CLEANUP_TRIGGER: Owner-accepted closure after promotion into .github/BRANCH_WORKFLOW.md;
-  preserve original patch records under patches/completed.
+- CLEANUP_TRIGGER: Owner-accepted closure; durable behavior is in .github/BRANCH_WORKFLOW.md.
+  All eight original patch records/indexes were archived unchanged under patches/completed.
+- CLEARED_SCRATCH: artifacts/release_candidate_20260905/ was deleted under its delete_on_close policy.
+  Its reports, tools, package snapshot and temporary environments are historical references in Notes;
+  results are preserved here. Shared-context evidence remains owned by codex_1's separate epic.
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -1102,7 +1113,7 @@ commit, version, workflow run, and distribution hashes before final production p
     3.14t/GIL off. The updated ordering contract failed on the old early placement. Scoped Ruff
     and actionlint pass; final publication and source-provenance helper code are unchanged.
   EVIDENCE:
-  - .github/workflows/ci.yml:76-110
+  - .github/workflows/ci.yml:76-103
   - tests/unit/github_workflows/test_workflow_contracts.py:206-236
   - artifacts/release_candidate_20260905/late-candidate-proof.xml
   IMPACT: The reported early race is avoided while source tests/builds run. A genuinely pending
@@ -1126,7 +1137,68 @@ commit, version, workflow run, and distribution hashes before final production p
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-05T23:48:30Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly accepted the work and requested turning in workflows_1's tickets, then
+    asked for the tickets to be read. Re-read this entire 1208-line ticket, the 187-line hosted
+    diagnosis and codex_1's new release-note task. The selected closure set is these two workflows_1
+    tasks only; release copy and the deferred runtime investigation retain their existing owners.
+  EVIDENCE:
+  - Owner instructions: "turn in your tickets please we did it"; "read the tickets in context compass".
+  - tickets/tasks/2026-09-05_diagnose_readthedocs_hosted_build_task.md:1-187
+  - tickets/tasks/2026-09-05_draft_ordered_disposal_docs_actions_release_task.md:1-87
+  - .github/BRANCH_WORKFLOW.md:6-38
+  IMPACT: Preserve validation in completed tickets, archive the eight patch records/indexes under
+    patches/completed, and delete only this task's disposable release_candidate_20260905 workspace.
+    Keep shared-context proof under codex_1's epic. Source/test/workflow/assets remain uncommitted
+    for the owner's signing workflow; closure does not claim that final local changes were deployed.
+  NEXT: Perform the contained file moves/cleanup, then synchronize boards and dependent ticket links.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:53:38Z
+  TYPE: FACT
+  CLAIM: Owner-approved turn-in completed for the candidate workflow and hosted RTD diagnosis.
+    Both task files moved to tasks/completed. All eight candidate patch records/indexes moved to
+    patches/completed with unchanged SHA256 hashes. The workflow scratch directory was removed
+    after containment and zero-reparse-point checks. Eight implementation/derived files retained
+    their pre-cleanup hashes; no source, workflow, test or generated-asset changes were lost.
+  EVIDENCE:
+  - .github/workflows/ci.yml:76-103
+  - .github/BRANCH_WORKFLOW.md:6-38
+  - tickets/tasks/completed/2026-09-05_diagnose_readthedocs_hosted_build_task.md
+  IMPACT: Completed tickets retain the validation record. Source commits/signing remain the owner's
+    responsibility. The deferred runtime investigation and its retained proof are outside this closure.
+  NEXT: No remaining execution in this ticket; owner retains normal commit/promotion control.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-05T23:58:10Z
+  TYPE: MEASURE
+  CLAIM: Closure verification passes: all nine remaining active routes resolve, closed anchors stay
+    capped at twelve, no workflows_1 lane or closed-workflow artifact remains active, and codex_1's
+    shared-context proof remains present. Release-draft and runtime-epic links now target the
+    completed workflow/diagnosis files. Whitespace checks pass. Owner advanced local HEAD to
+    298b8dfc1; .github, the workflow-contract tests and generated LLM assets have no uncommitted diff.
+  EVIDENCE:
+  - attention_board.md
+  - artifact_board.md
+  - tickets/tasks/2026-09-05_draft_ordered_disposal_docs_actions_release_task.md:73-77
+  - tickets/epics/2026-09-05_shared_context_rebuild_publication_epic.md:257-262
+  IMPACT: The two accepted tickets are fully turned in, with implementation preserved and shared
+    evidence outside this closure untouched. workflows_1 is marked departed in the mailbox.
+  NEXT: None for this closed lane.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+Closed at the owner's explicit request after local delivery and validation. The final candidate proof
+runs after the other required CI checks; 237 focused tests and all stated local checks pass. Hosted
+RC qualification was independently verified. Current local HEAD 298b8dfc1 includes the implementation
+and generated assets with no uncommitted diff in those files. Patch records are archived; scratch is cleared.
+The runtime deferral remains with codex_1. No new publication or hosted execution is claimed.
+
+### Historical handoff record
 Late-check correction is complete locally and in review: 237 workflow tests, actionlint, Ruff,
 generated tests/other proofs and whitespace checks pass. Candidate proof runs last in merge-ready,
 after all required checks. Owner commits/pushes; no hosted retry or publication was dispatched here.
