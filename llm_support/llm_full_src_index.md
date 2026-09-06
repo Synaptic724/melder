@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_src.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | db976427a4396a5d90f89ba3cb2eeb0e188e2a29d535681254ae844f3891ebe6 |
-| bundle_sha256 | df9e8cdde75e3a55c6361fc22c71fb63ebf54c1c2262da0a425cba52a228ba81 |
+| source_fingerprint | c90bbf3526ef09a45170413a837fb79e2071565431287f32294f6fb64f2f97f5 |
+| bundle_sha256 | a4f3f41ed6805ebd1d7d088a3c0a16fc0cf30fff7017c6750208ea38770644d1 |
 | bundle_line_count | 275720 |
 | bundle_line_ending | lf |
 | files | 585 |
@@ -29,7 +29,7 @@ Line numbers are 1-based and inclusive.
 | 271-547 | 276-544 | 10171 | utf-8 | b46fa4757756e52f54424b4927e4ca2baa120ffb0e52143d2aa5634c7931b431 | src/melder/__init__.py |
 | 548-584 | 553-581 | 1254 | utf-8 | 9a0c67a1b8391ab86af1c4242de72b21d3c78abd513f9a5c36bae809bf39a314 | src/melder/__license__.py |
 | 585-597 | 590-594 | 241 | utf-8 | 805e6faacff6b558d223cb1773145cecce81a000d6f401baade5583d35e3fae5 | src/melder/__melder_cache__/__melder_cache__.py |
-| 598-617 | 603-614 | 314 | utf-8 | c747534a0b8f3793d03dd33b4a211d4ae8df45939efb40e18188af71e8f592f3 | src/melder/__version__.py |
+| 598-617 | 603-614 | 314 | utf-8 | 6b1c16fa8da27da184bf16d92bab39ffb1cde2b7365d83897e253bf758048316 | src/melder/__version__.py |
 | 618-1329 | 623-1326 | 26236 | utf-8 | 1e610b6944779ebc963db6ea6b0f39a1cd8d6a717d6b54f63eb4e9191f89b6a1 | src/melder/_build_assets/_agent_documentation/_builder.py |
 | 1330-1466 | 1335-1463 | 4854 | utf-8 | adf2c02898b3154bd06e4f9b52ae69bec8c7eba59d7c890aeccc7238c260c618 | src/melder/_build_assets/_agent_documentation/agent_documentation.py |
 | 1467-1861 | 1472-1858 | 13734 | utf-8 | df23ba91d82b2f3c0ec8ffb7fc16ac1c4f4f22ea34f62824e5d06cf5622f0148 | src/melder/_build_assets/_bind_guard/_builder.py |

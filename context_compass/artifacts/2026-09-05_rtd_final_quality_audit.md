@@ -1,5 +1,12 @@
 # Final documentation quality audit
 
+- Closure: owner accepted the program and requested all codex_2 tickets turned in on 2026-09-06.
+- Current record: [ticket closure](2026-09-06_codex_2_ticket_closure.md).
+- Later hosted evidence supersedes the old 404 below: latest on prod was verified by workflows_1,
+  and the owner confirmed current-version updates work. Unperformed checks remain recorded limits.
+
+## Historical local qualification
+
 - Task: TASK-2026-09-04-rtd-quality-audit
 - Agent: codex_2
 - Started: 2026-09-05T12:06:59Z

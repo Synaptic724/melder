@@ -60,7 +60,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     if args.expected_version is not None and melder.__version__ != args.expected_version:
         raise RuntimeError("Installed Melder version differs from the selected candidate.")
     if sysconfig.get_config_var("Py_GIL_DISABLED") != 1 or sys._is_gil_enabled():
-        raise RuntimeError("Package probe requires Python 3.14t with the GIL disabled.")
+        raise RuntimeError("Package probe requires a supported free-threaded Python build with the GIL disabled.")
     documents = (melder.__architecture__, melder.__components__,
                  melder.__graph_network__, melder.__graph_details__)
     if not all(document.verify() for document in documents):

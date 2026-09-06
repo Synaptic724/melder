@@ -32,6 +32,7 @@
 .rst-content .level-expert { border-top: 4px solid var(--melder-blue); }
 .rst-content pre { font-size: .86rem; line-height: 1.65; }
 .rst-content img { max-width: 100%; height: auto; }
+.rst-content .melder-banner { display: block; width: 100%; height: auto; margin: 0 0 1.75rem; border-radius: 10px; }
 .rst-content a:focus-visible, .wy-menu a:focus-visible, button:focus-visible,
 input:focus-visible, select:focus-visible, summary:focus-visible {
   outline: 3px solid #3267c8; outline-offset: 3px;
