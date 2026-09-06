@@ -8,14 +8,14 @@
 - Agent Name: codex_1
 - Priority: p2
 - Created: 2026-09-06T14:28:14Z
-- Updated: 2026-09-06T14:55:32Z
+- Updated: 2026-09-06T15:38:07Z
 
 ## Objective
 Add useful README badges and establish an honest source for the requested coverage badge.
 
 ## Ticket Contract
 - ENTRY_GATE: Owner requested coverage and other appropriate README badges.
-- EXECUTION_BOUNDARY: README badges, runtime-test reporting helper/workflow and its CI/publish callers,
+- EXECUTION_BOUNDARY: README badges/approved tagline, runtime reporting helper/workflow and CI/publish callers,
   Codecov configuration, focused workflow tests, branch guide, derived corpora and coordination.
 - DEPENDENCIES: Existing public workflows; workflows_1's CI lane must remain undisturbed.
 - EXIT_GATE: Added badges resolve to real evidence; no invented coverage percentage; corpus is current.
@@ -29,7 +29,7 @@ Add useful README badges and establish an honest source for the requested covera
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Badges/reporting are implemented and locally validated; rollout is owner-controlled.
+- transition_reason: Approved tagline is applied; generated corpus proofs and diff checks pass.
 
 ## Steps / Checklist
 - [x] Inspect actual workflow invocation, report outputs, and package metadata.
@@ -202,7 +202,34 @@ Record measured reporting support, badge sources, the owner's coverage decision,
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T15:37:12Z
+  TYPE: DECISION
+  CLAIM: Owner approved replacing the awkward intelligence/inhabit tagline with:
+    Build, inspect, and control your Python application's dependency graph.
+    This follow-up changes only the opening sentence and its generated other-corpus copy.
+  EVIDENCE:
+  - README.md:14-14
+  - Owner message: "sure update it" after the proposed wording.
+  IMPACT: Capability-first copy without repeating runtime terminology. No CI or artwork changes.
+  NEXT: Apply the sentence and verify the refreshed other corpus.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T15:38:07Z
+  TYPE: MEASURE
+  CLAIM: README now contains the approved capability-first tagline. Regenerated only the other
+    corpus; src, tests and other verification all pass, as does git diff --check.
+  EVIDENCE:
+  - README.md:14-14
+  - llm_support/_builder.py --corpus other; --check (exit 0)
+  IMPACT: Copy-only follow-up is complete. Runtime tests were not rerun for this sentence change.
+  NEXT: Owner reviews or promotes the completed README work.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
+The tagline now reads: Build, inspect, and control your Python application's dependency graph.
+Its generated other-corpus copy is current; all corpus checks pass.
 Added CI, coverage, typed and lifetime-download badges; monthly downloads remains. Zero dependencies
 stays prose only. Existing tests emit XML; a separate nonblocking job uses repository CODECOV_TOKEN.
 Owner reports the secret saved. All 339 focused tests, lint, Codecov YAML and generated checks pass.

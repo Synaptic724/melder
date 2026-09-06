@@ -83,7 +83,7 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| readme_status_badges | review | handoff | codex | codex_1 | none | Owner promotes and observes first coverage upload. | Badges and token-only reporting locally validated. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T14:55:32Z | REQUIRED |
+| readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
 | ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner reviews and promotes the workflow change. | Three full checkpoints with safe lightweight promotions. | Owner accepts implementation and hosted rollout. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T10:45:04Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->

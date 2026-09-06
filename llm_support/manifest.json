@@ -2,12 +2,12 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2650566,
+        "bytes": 2650548,
         "lines": 65610,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "39e4ace78b5a308a2176f937f472272564d8c2927ffc4787d6a4c33e4316b778"
+        "sha256": "69b9343bec7a36902c8283491a8157e9a81025d84217a935c18f1e080430e3a6"
       },
-      "content_bytes": 2452167,
+      "content_bytes": 2452149,
       "content_lines": 62764,
       "file_count": 355,
       "files": {
@@ -174,9 +174,9 @@
           "source_encoding": "utf-8"
         },
         "README.md": {
-          "content_bytes": 48601,
+          "content_bytes": 48583,
           "content_lines": 1111,
-          "content_sha256": "96251453359fa9bebadd80d5fbc0748e902e692c2e75e5908ba6825599bd5e21",
+          "content_sha256": "e06ac20f8c7fffcf7739e1b5aeee6a2922a8e6162bd83b479d63e437c60bc7aa",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/01_beginner/01_hello_meld.py": {
@@ -2146,9 +2146,9 @@
         "bytes": 59902,
         "lines": 377,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "de0e34bf5eb3417de99223e6d51b1e38d5893190cd9f8484b1f1136f1bd66a49"
+        "sha256": "1d42c9fee2ce8f2cc814811995b85e98bb96701158226dd602d2760388b5d9d9"
       },
-      "source_fingerprint": "b0bf8e2f83d5154dd7f797048fa727ace1974730d0eeae5f6a0acb09f7a4aff6"
+      "source_fingerprint": "78cbef71894dedec7743b26eedad165111128a64f3c5a3949780b82b743dd1a8"
     },
     "src": {
       "bundle": {

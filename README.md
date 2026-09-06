@@ -11,7 +11,7 @@
 
 ### The AI-Native Dependency Graph Runtime
 
-**A runtime that an intelligence can read, inhabit, and safely change — while it's running.**
+**Build, inspect, and control your Python application’s dependency graph.**
 
 [![PyPI version](https://badge.fury.io/py/melder.svg)](https://badge.fury.io/py/melder)
 [![Python Version](https://img.shields.io/pypi/pyversions/melder)](https://pypi.org/project/melder)

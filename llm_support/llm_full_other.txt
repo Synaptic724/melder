@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: b0bf8e2f83d5154dd7f797048fa727ace1974730d0eeae5f6a0acb09f7a4aff6
+SOURCE FINGERPRINT: 78cbef71894dedec7743b26eedad165111128a64f3c5a3949780b82b743dd1a8
 FILE COUNT: 355
 
 ================================================================================
@@ -3829,7 +3829,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 96251453359fa9bebadd80d5fbc0748e902e692c2e75e5908ba6825599bd5e21
+CONTENT SHA256: e06ac20f8c7fffcf7739e1b5aeee6a2922a8e6162bd83b479d63e437c60bc7aa
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -3845,7 +3845,7 @@ SOURCE ENCODING: utf-8
 
 ### The AI-Native Dependency Graph Runtime
 
-**A runtime that an intelligence can read, inhabit, and safely change — while it's running.**
+**Build, inspect, and control your Python application’s dependency graph.**
 
 [![PyPI version](https://badge.fury.io/py/melder.svg)](https://badge.fury.io/py/melder)
 [![Python Version](https://img.shields.io/pypi/pyversions/melder)](https://pypi.org/project/melder)

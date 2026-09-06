@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | b0bf8e2f83d5154dd7f797048fa727ace1974730d0eeae5f6a0acb09f7a4aff6 |
-| bundle_sha256 | 39e4ace78b5a308a2176f937f472272564d8c2927ffc4787d6a4c33e4316b778 |
+| source_fingerprint | 78cbef71894dedec7743b26eedad165111128a64f3c5a3949780b82b743dd1a8 |
+| bundle_sha256 | 69b9343bec7a36902c8283491a8157e9a81025d84217a935c18f1e080430e3a6 |
 | bundle_line_count | 65610 |
 | bundle_line_ending | lf |
 | files | 355 |
@@ -47,7 +47,7 @@ Line numbers are 1-based and inclusive.
 | 3025-3076 | 3030-3073 | 1081 | utf-8 | 12b470217ab933f372ad67fd95f897d8c82f70e06d19c83f49d492f952c3e478 | .readthedocs.yaml |
 | 3077-3745 | 3082-3742 | 34522 | utf-8 | b54857356e43422ea6a6f5fe84f58e8b105ab27af45ba7dbf792bf6c20ac1827 | LICENSE |
 | 3746-3829 | 3751-3826 | 3039 | utf-8 | f52bb06e0d0c9ff56c8d83387b1577a6221063ea8d5da0160407c1dac45718e2 | NOTICE |
-| 3830-4948 | 3835-4945 | 48601 | utf-8 | 96251453359fa9bebadd80d5fbc0748e902e692c2e75e5908ba6825599bd5e21 | README.md |
+| 3830-4948 | 3835-4945 | 48583 | utf-8 | e06ac20f8c7fffcf7739e1b5aeee6a2922a8e6162bd83b479d63e437c60bc7aa | README.md |
 | 4949-4991 | 4954-4988 | 988 | utf-8 | c1e68d2c38d81d41b78a594e268afe8e40426392c68801a0fb38512b2bc9f067 | UX_and_AIX_experiences/01_beginner/01_hello_meld.py |
 | 4992-5036 | 4997-5033 | 993 | utf-8 | 644a5e7dfd11eb5cca967e5c180bf49284d3ff3135b078c305bf3eeea49e27a5 | UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py |
 | 5037-5085 | 5042-5082 | 1196 | utf-8 | 6fa36e0178f4a26de1b270d5b5ff5e4c6278d0b88b0ed2f911a1fad99b1978c7 | UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py |
