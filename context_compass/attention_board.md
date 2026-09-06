@@ -74,9 +74,8 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-06T14:55:32Z)
-- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-06T14:33:23Z)
-- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-06T13:37:41Z)
+- NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T16:16:50Z)
+- NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T15:59:57Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -85,7 +84,7 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
-| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner reviews and promotes the workflow change. | Three full checkpoints with safe lightweight promotions. | Owner accepts implementation and hosted rollout. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T10:45:04Z | REQUIRED |
+| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner commits and verifies hosted stable no-GIL matrix. | Complete OS/version qualification at existing stages. | Owner accepts implementation and hosted rollout. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T16:16:50Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors

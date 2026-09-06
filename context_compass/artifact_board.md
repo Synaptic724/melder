@@ -64,6 +64,8 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/python-matrix-tests.xml | validation_report | active | delete_on_close | 382 workflow tests pass for the stable no-GIL matrix. | 2026-09-06T16:13:00Z | HELPFUL |
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/live-python-matrix.json | validation_report | active | delete_on_close | Live catalog selects 3.14.7 on all three platforms. | 2026-09-06T16:13:00Z | HELPFUL |
 | tickets/tasks/2026-09-06_readme_status_badges_task.md | artifacts/readme_badges_validation_20260906/ | validation_workspace | review | delete_on_close | 339 tests, lint, badge/config and asset validation passed. | 2026-09-06T14:55:32Z | HELPFUL |
 | tickets/tasks/2026-09-06_readme_status_badges_task.md | system_docs/patches/active/readme_coverage_badges_2026_09_06/ | patch_docs | review | promote_to_documentation | Implemented token reporting; guide carries durable setup. | 2026-09-06T14:55:32Z | REQUIRED |
 | tickets/tasks/2026-09-06_embed_melder_banner_task.md | artifacts/melder_banner_20260906/ | validation_screenshots | review | delete_on_close | Desktop/mobile layouts passed; owner review. | 2026-09-06T14:16:51Z | HELPFUL |

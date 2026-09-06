@@ -12,7 +12,7 @@ def require_free_threading(version: Sequence[int], supported: object, gil_enable
     if tuple(version[:2]) < (3, 14) or supported != 1 or gil_enabled:
         raise RuntimeError(
             "Melder runtime CI requires Python 3.14+ free-threaded with the GIL disabled. "
-            "Select Python 3.14t and set PYTHON_GIL=0 for the test process."
+            "Select a supported free-threaded Python build and set PYTHON_GIL=0 for the test process."
         )
 
 

@@ -27,3 +27,12 @@ RC build/publication depend on successful source-qualification as well as head a
 ## Publication
 The existing Python publisher remains full and repeats its final candidate/tag/prod checks.
 No write token or publishing environment is available to source-proof jobs.
+
+## Python matrix and reporting extension
+python_runtime_matrix.py owns stable-version discovery and coverage-matrix verification. It has
+no runtime imports, credentials or mutable global clients. test-runtime.yml adds mandatory discovery
+before its test matrix. release-candidate.yml exposes the same matrix from authorization before
+build/upload; existing package-ready dependencies stay strict. build-distributions.yml reads its
+Python range from pyproject.toml and explicitly requests free threading. Three-platform tests run
+once per selected stable minor at the existing stages. Coverage remains a separate nonblocking
+upload with CODECOV_TOKEN only; completeness follows the discovered OS/version combinations.

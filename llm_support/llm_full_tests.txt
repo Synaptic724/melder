@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: b9b2ef667a0eb679acd9bfe6ad40c28dd913ce8147a9a248dd3a4666d8ad62a7
-FILE COUNT: 808
+SOURCE FINGERPRINT: 02cbb5bad69d976b6490dc683a8be312a7330975ef9ac0d7e3fa1c04d9668a47
+FILE COUNT: 809
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -132133,7 +132133,7 @@ END FILE: tests/unit/architecture_and_design/test_architecture_docs_tool.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/conftest.py
-CONTENT SHA256: ba0fa7a69c9987045a459577d2a7803cf2fa3b181d7ee54645e28a68635f27a1
+CONTENT SHA256: c996810bcdd41bf0eae57737717a5636203697a45f4f0cb33e16fa9cf10824ec
 SOURCE ENCODING: utf-8
 ================================================================================
 """Load standalone CI scripts without creating a runtime package or booting Melder."""
@@ -132203,6 +132203,12 @@ def normalizer() -> ModuleType:
 def source_qualification() -> ModuleType:
     """Provide source-proof logic without GitHub requests or repository changes."""
     return load_script("ci_qualification")
+
+
+@pytest.fixture
+def runtime_matrix() -> ModuleType:
+    """Provide stable-version discovery with HTTP and filesystem boundaries available to mock."""
+    return load_script("python_runtime_matrix")
 ================================================================================
 END FILE: tests/unit/github_workflows/conftest.py
 ================================================================================
@@ -133284,6 +133290,205 @@ def test_version_assignment_is_literal_and_never_executed(distributions: ModuleT
 END FILE: tests/unit/github_workflows/test_distributions.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_python_runtime_matrix.py
+CONTENT SHA256: 931780f3a5df435f6a08058ddb2e8c0192b01f76e674860624951375a6936bd3
+SOURCE ENCODING: utf-8
+================================================================================
+"""Prove stable no-GIL discovery and complete version-aware report handling at external boundaries."""
+
+import io
+import json
+import pathlib
+import urllib.error
+from types import ModuleType
+
+import pytest
+
+
+def release(version: str, stable: bool = True) -> dict[str, object]:
+    """Model the official manifest's three required free-threaded platform assets."""
+    return {"version": version, "stable": stable, "files": [
+        {"platform": "linux", "arch": "x64-freethreaded"},
+        {"platform": "win32", "arch": "x64-freethreaded"},
+        {"platform": "darwin", "arch": "arm64-freethreaded"},
+    ]}
+
+
+def test_discovers_latest_patch_for_every_stable_minor(runtime_matrix: ModuleType) -> None:
+    """Future stable minors enter automatically; numeric patch ordering excludes RCs and older Python."""
+    payload = [release("3.14.9"), release("3.13.12"), release("3.16.0-rc.2", False),
+               release("3.15.0"), release("3.14.10"), release("4.0.0"), release("3.15.1-beta.1", False)]
+    matrix = runtime_matrix.discover_matrix(payload, (3, 14, 0))
+    assert matrix == {"include": [
+        {"os": runner, "python": version, "architecture": architecture}
+        for version in ("3.14.10", "3.15.0", "4.0.0")
+        for runner, architecture in (("ubuntu-latest", "x64"), ("windows-latest", "x64"), ("macos-latest", "arm64"))
+    ]}
+
+
+@pytest.mark.parametrize("position", [0, 1, 2])
+def test_missing_free_threaded_platform_cannot_fall_back(runtime_matrix: ModuleType, position: int) -> None:
+    """An older working patch or standard-Python archive cannot hide absent newest-patch support."""
+    newest = release("3.14.2")
+    newest["files"][position]["arch"] = "x64"
+    with pytest.raises(ValueError, match="lacks free-threaded assets"):
+        runtime_matrix.discover_matrix([release("3.14.1"), newest], (3, 14, 0))
+
+
+@pytest.mark.parametrize("payload", [
+    {}, [], [release("3.15.0")], [release("3.14.0-rc.1", False)],
+    [release("3.14.0-rc.1")], [{"version": "3.14.1", "stable": "true"}],
+    [{"version": "3.14.1", "stable": True}],
+    [{"version": "3.14.1", "stable": True, "files": [None]}],
+    [{"version": "3.14.1", "stable": True, "files": [{"arch": "x64-freethreaded"}]}],
+], ids=["not-list", "empty", "missing-floor", "only-prerelease", "false-stable-claim", "bad-stable-flag",
+        "no-files", "bad-asset", "missing-platform"])
+def test_incomplete_or_malformed_discovery_refuses(runtime_matrix: ModuleType, payload: object) -> None:
+    """Discovery cannot quietly yield a smaller or imaginary compatibility guarantee."""
+    with pytest.raises(ValueError):
+        runtime_matrix.discover_matrix(payload, (3, 14, 0))
+
+
+def test_raised_support_floor_and_duplicate_build_records(runtime_matrix: ModuleType) -> None:
+    """Project metadata selects the floor; duplicate build records do not duplicate test cells."""
+    matrix = runtime_matrix.discover_matrix(
+        [release("3.14.10"), release("3.15.0"), release("3.15.1"), release("3.15.1")], (3, 15, 1),
+    )
+    assert len(matrix["include"]) == 3
+    assert {row["python"] for row in matrix["include"]} == {"3.15.1"}
+
+
+@pytest.mark.parametrize(("constraint", "expected"), [(">=3.14", (3, 14, 0)), (">=3.15.1", (3, 15, 1))])
+def test_floor_comes_from_package_metadata(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                          constraint: str, expected: tuple[int, int, int]) -> None:
+    """Read metadata as TOML without importing runtime code or relying on the current directory."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text(f'[project]\nrequires-python = "{constraint}"\n', encoding="utf-8")
+    assert runtime_matrix.supported_floor(project) == expected
+
+
+@pytest.mark.parametrize("constraint", ["", ">=3.14,<4", "~=3.14", ">=3.14rc1", "3.14t"])
+def test_new_constraint_forms_require_deliberate_policy(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                       constraint: str) -> None:
+    """Refuse unsupported constraint syntax instead of broadening the declared version range."""
+    project = tmp_path / "pyproject.toml"
+    project.write_text(f'[project]\nrequires-python = "{constraint}"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="floor"):
+        runtime_matrix.supported_floor(project)
+
+
+@pytest.mark.parametrize("versions", [[], ["3.13.9"], ["3.14.1", "3.14.2"], ["3.14t"], ["../escape"]])
+def test_matrix_refuses_empty_duplicate_or_unsafe_versions(runtime_matrix: ModuleType, versions: list[str]) -> None:
+    """The canonical OS product cannot be empty, repeat a minor or introduce unsafe path labels."""
+    with pytest.raises(ValueError):
+        runtime_matrix.version_matrix(versions, (3, 14, 0))
+
+
+def test_job_limit_is_not_silent_truncation(runtime_matrix: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A matrix too large for its configured bound must fail visibly."""
+    monkeypatch.setattr(runtime_matrix.RuntimeMatrixPolicy, "MAX_JOBS", 5)
+    with pytest.raises(ValueError, match="job limit"):
+        runtime_matrix.version_matrix(["3.14.1", "3.15.1"], (3, 14, 0))
+
+
+@pytest.mark.parametrize("oversized", [False, True])
+def test_manifest_fetch_is_bounded_public_and_closes_stream(runtime_matrix: ModuleType,
+                                                          monkeypatch: pytest.MonkeyPatch, oversized: bool) -> None:
+    """Only public metadata is fetched; credentials, interpreter downloads and unbounded reads are absent."""
+    response = io.BytesIO(b"x" * 33 if oversized else b"[]")
+    monkeypatch.setattr(runtime_matrix.RuntimeMatrixPolicy, "MAX_MANIFEST_BYTES", 32)
+
+    def open_manifest(request: object, timeout: int) -> io.BytesIO:
+        """Observe the real HTTP boundary without contacting the service."""
+        assert request.full_url == "https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json"
+        assert request.get_header("Authorization") is None
+        assert timeout == 30
+        return response
+
+    monkeypatch.setattr(runtime_matrix.urllib.request, "urlopen", open_manifest)
+    if oversized:
+        with pytest.raises(ValueError, match="size"):
+            runtime_matrix.fetch_manifest()
+    else:
+        assert runtime_matrix.fetch_manifest() == []
+    assert response.closed
+
+
+@pytest.mark.parametrize("defect", ["missing-os", "duplicate", "architecture", "extra-field", "unsafe-version"])
+def test_report_matrix_must_match_the_whole_product(runtime_matrix: ModuleType, defect: str) -> None:
+    """An incomplete or forged matrix cannot make a partial coverage upload appear complete."""
+    matrix = runtime_matrix.version_matrix(["3.14.1", "3.15.0"], (3, 14, 0))
+    if defect == "missing-os":
+        matrix["include"].pop()
+    elif defect == "duplicate":
+        matrix["include"].append(matrix["include"][0])
+    elif defect == "architecture":
+        matrix["include"][0]["architecture"] = "arm64"
+    elif defect == "extra-field":
+        matrix["unexpected"] = []
+    else:
+        matrix["include"][0]["python"] = "../../escape"
+    with pytest.raises(ValueError):
+        runtime_matrix.validate_matrix(matrix, (3, 14, 0))
+
+
+@pytest.mark.parametrize("defect", ["none", "missing-directory", "empty", "missing-file", "unexpected", "old-attempt"])
+def test_discovery_to_coverage_cli_checks_every_version(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                       monkeypatch: pytest.MonkeyPatch, defect: str) -> None:
+    """Exercise discovery outputs, retained JSON and coverage verification through real filesystem boundaries."""
+    monkeypatch.setattr(runtime_matrix, "fetch_manifest", lambda: [release("3.14.7"), release("3.15.0")])
+    monkeypatch.setattr(runtime_matrix, "supported_floor", lambda: (3, 14, 0))
+    outputs = tmp_path / "outputs"
+    report = tmp_path / "reports/python-matrix.json"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+    assert runtime_matrix.main(["discover", "--report", str(report)]) == 0
+    matrix = json.loads(report.read_text(encoding="utf-8"))
+    assert json.loads(outputs.read_text(encoding="utf-8").removeprefix("matrix=")) == matrix
+    monkeypatch.setenv("CI_PYTHON_MATRIX", json.dumps(matrix))
+    monkeypatch.setenv("GITHUB_RUN_ID", "70")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    root = tmp_path / "coverage"
+    for row in matrix["include"]:
+        directory = root / f"coverage-{row['os']}-python-{row['python']}-70-2"
+        directory.mkdir(parents=True)
+        (directory / "coverage.xml").write_text("<coverage />", encoding="utf-8")
+    last_report = directory / "coverage.xml"
+    if defect in ("missing-directory", "missing-file"):
+        last_report.unlink()
+        if defect == "missing-directory":
+            directory.rmdir()
+    elif defect == "empty":
+        last_report.write_text("", encoding="utf-8")
+    elif defect == "unexpected":
+        (root / "unrelated").mkdir()
+    elif defect == "old-attempt":
+        monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "3")
+    args = ["coverage", "--directory", str(root)]
+    if defect == "none":
+        assert runtime_matrix.main(args) == 0
+    else:
+        with pytest.raises(ValueError):
+            runtime_matrix.main(args)
+
+
+def test_network_failure_never_issues_fallback_matrix(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed discovery must block downstream tests/publication, not issue an old static version."""
+    def unavailable() -> object:
+        """Fail at the HTTP boundary."""
+        raise urllib.error.URLError("unavailable")
+
+    monkeypatch.setattr(runtime_matrix, "fetch_manifest", unavailable)
+    output = tmp_path / "outputs"
+    report = tmp_path / "matrix.json"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    with pytest.raises(urllib.error.URLError):
+        runtime_matrix.main(["discover", "--report", str(report)])
+    assert not output.exists() and not report.exists()
+================================================================================
+END FILE: tests/unit/github_workflows/test_python_runtime_matrix.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_sdist_normalization.py
 CONTENT SHA256: 5f27e2cf64b79df9f7d84aa40719791474ada64814fa253d2c29b99b8e2aafe7
 SOURCE ENCODING: utf-8
@@ -133795,7 +134000,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 74c1ef7e146891152d55fa3f019c62d8359c12f0b67bb168e2037c608169f2af
+CONTENT SHA256: 2792b03879c27b91fbaa7698289556edd80158b50c0520eb3a9de4829eef2b4f
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -133888,23 +134093,54 @@ def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name:
 
 
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
-    """All three supported OSes use 3.14t with the GIL off and retain failing-test evidence."""
-    job = workflow("test-runtime.yml")["jobs"]["test"]
-    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
+    """Every discovered OS/version uses free threading and retains independent failing-test evidence."""
+    jobs = workflow("test-runtime.yml")["jobs"]
+    job = jobs["test"]
+    assert job["needs"] == "discover"
+    assert job["strategy"]["matrix"] == "${{ fromJSON(needs.discover.outputs.matrix) }}"
     assert job["strategy"]["fail-fast"] == "false"
     setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
-    assert setup["with"]["python-version"] == "3.14t"
+    assert setup["with"]["python-version"] == "${{ matrix.python }}"
+    assert setup["with"]["architecture"] == "${{ matrix.architecture }}"
+    assert setup["with"]["freethreaded"] == "true"
+    assert setup["with"]["allow-prereleases"] == "false"
     runner = next(step for step in job["steps"] if "run_runtime_tests.py" in step.get("run", ""))
     assert runner["env"]["PYTHON_GIL"] == "0"
     report = job["steps"][-1]
     assert report["if"] == "always()"
     assert report["uses"].startswith("actions/upload-artifact@")
+    assert report["with"]["name"] == (
+        "runtime-results-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
+
+
+@pytest.mark.parametrize(("name", "job_name", "artifact"), [
+    ("test-runtime.yml", "discover", "runtime-python-matrix"),
+    ("release-candidate.yml", "authorize", "candidate-python-matrix"),
+])
+def test_discovery_is_required_and_retains_the_selected_matrix(name: str, job_name: str, artifact: str) -> None:
+    """Runtime and RC consumers share discovery policy and retain evidence before downstream execution."""
+    job = workflow(name)["jobs"][job_name]
+    assert "if" not in job and "continue-on-error" not in job
+    assert job["outputs"]["matrix"] == "${{ steps.runtimes.outputs.matrix }}"
+    selection = next(step for step in job["steps"] if step.get("id") == "runtimes")
+    assert selection["run"] == "python .github/scripts/python_runtime_matrix.py discover"
+    assert "continue-on-error" not in selection and "if" not in selection
+    retained = job["steps"][-1]
+    assert retained["uses"].startswith("actions/upload-artifact@")
+    assert retained["with"]["name"] == artifact + "-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["path"] == "reports/python-matrix.json"
+    assert retained["with"]["if-no-files-found"] == "error"
+    if name == "test-runtime.yml":
+        setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+        assert setup["with"]["python-version-file"] == "pyproject.toml"
+        assert setup["with"]["allow-prereleases"] == "false"
 
 
 def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> None:
-    """Measure in the one runtime invocation and keep each OS report separate from JUnit."""
+    """Measure in the one runtime invocation and keep each OS/version report separate from JUnit."""
     document = workflow("test-runtime.yml")
-    assert set(document["jobs"]) == {"test", "coverage"}
+    assert set(document["jobs"]) == {"discover", "test", "coverage"}
     test = document["jobs"]["test"]
     runners = [step for step in test["steps"] if "run_runtime_tests.py" in step.get("run", "")]
     assert len(runners) == 1
@@ -133916,7 +134152,9 @@ def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> No
     retained = next(step for step in test["steps"] if step.get("name") == "Retain coverage report")
     assert retained["if"] == "always()"
     assert retained["continue-on-error"] == "true"
-    assert retained["with"]["name"] == "coverage-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["name"] == (
+        "coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
     assert retained["with"]["path"] == "reports/coverage.xml"
     reporting = document["jobs"]["coverage"]
     download = next(step for step in reporting["steps"]
@@ -133926,10 +134164,8 @@ def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> No
         "path": "coverage-reports", "merge-multiple": "false",
     }
     complete = next(step for step in reporting["steps"] if step.get("name") == "Require the complete coverage matrix")
-    for os in test["strategy"]["matrix"]["os"]:
-        assert os in complete["run"]
-    assert 'coverage-$os-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/coverage.xml' in complete["run"]
-    assert 'exit 1' in complete["run"]
+    assert complete["run"] == "python .github/scripts/python_runtime_matrix.py coverage"
+    assert complete["env"] == {"CI_PYTHON_MATRIX": "${{ needs.discover.outputs.matrix }}"}
     assert reporting["steps"].index(download) < reporting["steps"].index(complete) < len(reporting["steps"]) - 1
 
 
@@ -133938,7 +134174,7 @@ def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
     document = workflow("test-runtime.yml")
     assert document["on"]["workflow_call"]["secrets"]["CODECOV_TOKEN"]["required"] == "false"
     job = document["jobs"]["coverage"]
-    assert job["needs"] == "test"
+    assert set(job["needs"]) == {"discover", "test"}
     assert job["continue-on-error"] == "true"
     assert job["if"] == (
         "github.event_name != 'pull_request' || "
@@ -134016,6 +134252,11 @@ def test_package_verification_precedes_artifact_upload() -> None:
     assert " -I " in commands[smoke]
     assert steps[smoke]["env"]["PYTHON_GIL"] == "0"
     assert steps[-1]["uses"].startswith("actions/upload-artifact@")
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version-file"] == "pyproject.toml"
+    assert setup["with"]["freethreaded"] == "true"
+    assert setup["with"]["allow-prereleases"] == "false"
+    assert "python-version" not in setup["with"]
 
 
 @pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])
@@ -134075,7 +134316,16 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
             assert "environment" not in job
             assert job.get("permissions", {}).get("id-token") != "write"
     install = jobs["install"]
-    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
+    assert set(install["needs"]) == {"authorize", "build", "publish"}
+    assert install["strategy"]["matrix"] == "${{ fromJSON(needs.authorize.outputs.matrix) }}"
+    setup = next(step for step in install["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "${{ matrix.python }}"
+    assert setup["with"]["architecture"] == "${{ matrix.architecture }}"
+    assert setup["with"]["freethreaded"] == "true"
+    assert setup["with"]["allow-prereleases"] == "false"
+    assert install["steps"][-1]["with"]["name"] == (
+        "candidate-install-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
     probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
     assert probe["env"]["PYTHON_GIL"] == "0"
     artifact = jobs["build"]["with"]["artifact-name"]

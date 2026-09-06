@@ -19,12 +19,24 @@ jobs:
     name: RC / authorize
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: python .github/scripts/ci_policy.py candidate-head
+      - name: Discover every supported stable no-GIL minor
+        id: runtimes
+        run: python .github/scripts/python_runtime_matrix.py discover
+      - name: Retain the selected candidate runtime matrix
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-python-matrix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/python-matrix.json
+          if-no-files-found: error
+          retention-days: 90
 
   source-qualification:
     needs: authorize
@@ -92,19 +104,21 @@ jobs:
           retention-days: 90
 
   install:
-    name: RC / installed-package / ${{ matrix.os }}
-    needs: [build, publish]
+    name: RC / installed-package / ${{ matrix.os }} / Python ${{ matrix.python }} no-GIL
+    needs: [authorize, build, publish]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+      matrix: ${{ fromJSON(needs.authorize.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version: ${{ matrix.python }}
+          architecture: ${{ matrix.architecture }}
+          freethreaded: true
+          allow-prereleases: false
       - uses: actions/download-artifact@v8
         with:
           name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
@@ -116,7 +130,7 @@ jobs:
       - name: Retain installed-package evidence
         uses: actions/upload-artifact@v7
         with:
-          name: candidate-install-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: candidate-install-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/installed.json
           if-no-files-found: error
           retention-days: 90

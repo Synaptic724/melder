@@ -31,7 +31,8 @@ The checks enforce these contracts:
 - Repository hygiene: tracked filenames must not collide case-insensitively.
 - Documentation in full CI: the shared documentation validation workflow must succeed.
 - Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
-  using Python 3.14t with the GIL disabled in the actual pytest process.
+  using the latest stable patch of every supported Python minor, with the GIL disabled
+  in the actual pytest process.
   The macOS job uses `macos-latest` on native Apple Silicon (arm64).
 - Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
@@ -52,12 +53,38 @@ set it for the whole job: macOS Python setup runs a standard-Python certificate
 installer that cannot start with the GIL disabled. The test driver and wheel probe
 still reject an unsupported interpreter or an enabled GIL during qualification.
 
+## Supported Python versions
+
+Runtime discovery reads the Python floor from `project.requires-python` in `pyproject.toml`
+(currently `>=3.14`) and GitHub's official `actions/python-versions` release manifest.
+It selects the latest stable patch of every matching minor: 3.14, then 3.15 once stable,
+and subsequent stable versions automatically. Alpha, beta and release-candidate Python builds
+are excluded. Historical patch releases are not separate matrix entries.
+
+Every selected version runs on Linux x64, Windows x64 and macOS arm64. Runtime tests and
+RC installation probes use `freethreaded: true` with the discovered exact Python version.
+The test driver verifies free-threading support and GIL-off state before and after pytest;
+the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
+may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
+
+The discovery helper refuses empty/malformed catalog data, missing support for the declared
+floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
+on the actual runner also fail the matrix. No missing version/platform silently disappears.
+Each runtime/RC run retains its selected OS/version matrix as a JSON artifact for 90 days.
+Tests, coverage and installed-package reports include OS, exact Python version and run/attempt.
+
+Distribution building still produces one wheel/sdist pair. Its Python selection comes from
+`pyproject.toml` with free threading enabled; the full compatibility matrix belongs to runtime
+tests and RC installed-package checks. Existing full-test stages stay unchanged. Historical
+source proof refers to its recorded full-CI run, while final publication discovers and tests
+the currently available stable matrix afresh.
+
 ## Coverage reporting and README badges
 
-The existing three-platform runtime runs also produce line/branch coverage XML for Melder.
-They do not run the suite a second time. Each OS retains a separate coverage artifact for 14 days;
+The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
+They do not run the suite a second time. Each matrix cell retains a coverage artifact for 14 days;
 one reporting job uploads those reports to Codecov after the full matrix succeeds.
-It requires all three XML files from the same run/attempt before uploading; missing artifacts
+It requires an XML file for every discovered OS/version from the same run/attempt; missing artifacts
 leave a reporting warning/failure rather than publishing an incomplete matrix as the current result.
 Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
 and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
@@ -176,7 +203,7 @@ errors still refuse. If the wait expires, finish/fix RC and rerun the failed CI
 jobs. Elapsed time never substitutes for successful exact-source qualification.
 
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
-fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
+fresh installation across the discovered stable no-GIL OS/version matrix. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
@@ -234,7 +261,7 @@ for fresh same-run/attempt artifacts. Download retries are bounded for index
 propagation; failed consumer tests are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, source proof, build,
-upload, and all three platform probes succeeded. Prod's existing required CI gate
+upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
 source commit/tree, version, run/attempt, and both distribution hashes.

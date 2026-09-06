@@ -39,3 +39,16 @@ Rollback profile flags, required-result aggregation and proof callers together.
 ## Validation
 Exercise each stage, failed/cancelled/skipped required jobs, identity/tree/attempt mismatch,
 old artifacts, unrelated PRs, release-fix qualification, pending wait timeout and final publisher wiring.
+
+## Stable no-GIL compatibility matrix (owner-approved extension)
+Read the supported >= major.minor floor from pyproject.toml. Discover released stable versions in
+GitHub's official python-versions manifest, choose the latest patch for each qualifying minor and
+require free-threaded distributions for Linux x64, Windows x64 and macOS arm64. Refuse missing,
+malformed, empty or incomplete discovery. No static fallback and no prerelease qualification.
+
+The shared runtime workflow and RC admission call one discovery helper. Every test/install matrix
+job explicitly selects a free-threaded interpreter; runtime checks continue proving GIL-off state.
+Build the universal distribution once on a supported free-threaded interpreter selected from
+pyproject.toml. Test/coverage/consumer artifacts include the selected Python version to avoid clashes.
+Persist each discovery result with the run. Final publication discovers fresh supported runtimes;
+historical source-tree qualification remains evidence from its recorded full-CI run.

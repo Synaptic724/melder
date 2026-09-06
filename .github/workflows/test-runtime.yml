@@ -12,19 +12,45 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Runtime / ${{ matrix.os }} / Python 3.14t
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  discover:
+    name: Runtime / discover stable no-GIL versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version-file: pyproject.toml
+          allow-prereleases: false
+      - name: Discover every supported stable minor
+        id: runtimes
+        run: python .github/scripts/python_runtime_matrix.py discover
+      - name: Retain the selected runtime matrix
+        uses: actions/upload-artifact@v7
+        with:
+          name: runtime-python-matrix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/python-matrix.json
+          if-no-files-found: error
+          retention-days: 90
+
+  test:
+    name: Runtime / ${{ matrix.os }} / Python ${{ matrix.python }} no-GIL
+    needs: discover
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          architecture: ${{ matrix.architecture }}
+          freethreaded: true
+          allow-prereleases: false
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install Melder and test dependencies
@@ -42,7 +68,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/coverage.xml
           if-no-files-found: warn
           retention-days: 14
@@ -50,14 +76,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: runtime-results-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: runtime-results-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/runtime.xml
           if-no-files-found: warn
           retention-days: 14
 
   coverage:
     name: Coverage / Codecov
-    needs: test
+    needs: [discover, test]
     # Forks still run tests and retain XML, but never receive upload credentials.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -78,6 +104,11 @@ jobs:
           fi
       - uses: actions/checkout@v7
         if: steps.credentials.outputs.enabled == 'true'
+      - uses: actions/setup-python@v7
+        if: steps.credentials.outputs.enabled == 'true'
+        with:
+          python-version-file: pyproject.toml
+          allow-prereleases: false
       - name: Download this run's coverage reports
         if: steps.credentials.outputs.enabled == 'true'
         uses: actions/download-artifact@v8
@@ -87,13 +118,9 @@ jobs:
           merge-multiple: false
       - name: Require the complete coverage matrix
         if: steps.credentials.outputs.enabled == 'true'
-        run: |
-          for os in ubuntu-latest windows-latest macos-latest; do
-            if [ ! -s "coverage-reports/coverage-$os-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/coverage.xml" ]; then
-              echo "::error::Missing coverage XML for $os in this run; refusing a partial upload."
-              exit 1
-            fi
-          done
+        env:
+          CI_PYTHON_MATRIX: ${{ needs.discover.outputs.matrix }}
+        run: python .github/scripts/python_runtime_matrix.py coverage
       - name: Upload coverage to Codecov
         if: steps.credentials.outputs.enabled == 'true'
         uses: codecov/codecov-action@v7

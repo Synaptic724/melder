@@ -22,3 +22,19 @@ This directory holds task-owned temporary tests and tooling; delete on accepted 
 - Final source/workflow diff review: complete; final publisher still requires its full runtime matrix.
 - Status: ready for owner review and hosted rollout. No additional full runtime suite was run locally.
 - No hosted workflow, commit, push or package publication was dispatched by this task.
+
+## Stable no-GIL matrix extension
+
+- 382 focused workflow tests passed in 1.38s; report: python-matrix-tests.xml.
+- Actionlint and scoped correctness Ruff passed after the runtime matrix changes.
+- Live manifest discovery selected Python 3.14.7 across Linux x64, Windows x64 and macOS arm64;
+  report: live-python-matrix.json. Python 3.15 prereleases were excluded.
+- The first live request was refused by the network sandbox; the same helper succeeded outside it.
+- Source assets regenerated for the owner's 0.2.37 version: 452 documentation entries,
+  629 bind-guard entries, four system documents. No runtime source/version edits were made.
+- All repository corpora regenerated: src 585 inputs, tests 809, other 356.
+- New discovery helper/test marked intent-to-add for the default builder's tracked-file discovery;
+  their contents are not staged and no commit was created.
+- All three extended patch indexes regenerated; final source-asset, corpus, index and diff checks pass.
+- Final source/workflow review is complete. The extended task is ready for owner review/hosted rollout.
+- No hosted test matrix or publication has been dispatched for this extension.

@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `architecture_patch.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-06T10:43:11Z |
-| line_count | 41 |
+| generated_at | 2026-09-06T16:16:15Z |
+| line_count | 54 |
 | line_ending | lf |
-| content_sha256 | `fbf091eda55cb4ddb7533f946d2c84cdd7d9afb4a47d02391dcd423fcd3f72fc` |
-| sections | 7 |
+| content_sha256 | `49cf0b835f3fa095d79f39de481eaff82f949e7983301de3452657874f87fcea` |
+| sections | 8 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -33,4 +33,5 @@ which you did.
 | 24-28 | 2 | Changed contents and bootstrap |
 | 29-33 | 2 | Ordering and timing |
 | 34-38 | 2 | Rollout and rollback |
-| 39-41 | 2 | Validation |
+| 39-42 | 2 | Validation |
+| 43-54 | 2 | Stable no-GIL compatibility matrix (owner-approved extension) |

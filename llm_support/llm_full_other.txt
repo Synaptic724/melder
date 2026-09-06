@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 78cbef71894dedec7743b26eedad165111128a64f3c5a3949780b82b743dd1a8
-FILE COUNT: 355
+SOURCE FINGERPRINT: b82bcc34579785de66551dbd3f4bf095e450ea2c36a586a28f2742a621653f56
+FILE COUNT: 356
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: 10e6f2ee996221c37198ee576ca389eec471c521b1ec46a6bd636fb53ef5fe14
+CONTENT SHA256: 83f794e6a20164fbc47739997afb0c462c205d89ae2ef383f180b07da901d4aa
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -100,7 +100,8 @@ The checks enforce these contracts:
 - Repository hygiene: tracked filenames must not collide case-insensitively.
 - Documentation in full CI: the shared documentation validation workflow must succeed.
 - Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
-  using Python 3.14t with the GIL disabled in the actual pytest process.
+  using the latest stable patch of every supported Python minor, with the GIL disabled
+  in the actual pytest process.
   The macOS job uses `macos-latest` on native Apple Silicon (arm64).
 - Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
@@ -121,12 +122,38 @@ set it for the whole job: macOS Python setup runs a standard-Python certificate
 installer that cannot start with the GIL disabled. The test driver and wheel probe
 still reject an unsupported interpreter or an enabled GIL during qualification.
 
+## Supported Python versions
+
+Runtime discovery reads the Python floor from `project.requires-python` in `pyproject.toml`
+(currently `>=3.14`) and GitHub's official `actions/python-versions` release manifest.
+It selects the latest stable patch of every matching minor: 3.14, then 3.15 once stable,
+and subsequent stable versions automatically. Alpha, beta and release-candidate Python builds
+are excluded. Historical patch releases are not separate matrix entries.
+
+Every selected version runs on Linux x64, Windows x64 and macOS arm64. Runtime tests and
+RC installation probes use `freethreaded: true` with the discovered exact Python version.
+The test driver verifies free-threading support and GIL-off state before and after pytest;
+the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
+may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
+
+The discovery helper refuses empty/malformed catalog data, missing support for the declared
+floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
+on the actual runner also fail the matrix. No missing version/platform silently disappears.
+Each runtime/RC run retains its selected OS/version matrix as a JSON artifact for 90 days.
+Tests, coverage and installed-package reports include OS, exact Python version and run/attempt.
+
+Distribution building still produces one wheel/sdist pair. Its Python selection comes from
+`pyproject.toml` with free threading enabled; the full compatibility matrix belongs to runtime
+tests and RC installed-package checks. Existing full-test stages stay unchanged. Historical
+source proof refers to its recorded full-CI run, while final publication discovers and tests
+the currently available stable matrix afresh.
+
 ## Coverage reporting and README badges
 
-The existing three-platform runtime runs also produce line/branch coverage XML for Melder.
-They do not run the suite a second time. Each OS retains a separate coverage artifact for 14 days;
+The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
+They do not run the suite a second time. Each matrix cell retains a coverage artifact for 14 days;
 one reporting job uploads those reports to Codecov after the full matrix succeeds.
-It requires all three XML files from the same run/attempt before uploading; missing artifacts
+It requires an XML file for every discovered OS/version from the same run/attempt; missing artifacts
 leave a reporting warning/failure rather than publishing an incomplete matrix as the current result.
 Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
 and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
@@ -245,7 +272,7 @@ errors still refuse. If the wait expires, finish/fix RC and rerun the failed CI
 jobs. Elapsed time never substitutes for successful exact-source qualification.
 
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
-fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
+fresh installation across the discovered stable no-GIL OS/version matrix. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
@@ -303,7 +330,7 @@ for fresh same-run/attempt artifacts. Download retries are bounded for index
 propagation; failed consumer tests are not retried or ignored.
 
 `RC / package-ready` reports explicit success only when authorization, source proof, build,
-upload, and all three platform probes succeeded. Prod's existing required CI gate
+upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
 source commit/tree, version, run/attempt, and both distribution hashes.
@@ -1416,8 +1443,203 @@ if __name__ == "__main__":
 END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
+BEGIN FILE: .github/scripts/python_runtime_matrix.py
+CONTENT SHA256: 5f94b0b333954326246f5e982d376d595991b167baa5325ef138e82199808c4e
+SOURCE ENCODING: utf-8
+================================================================================
+"""Discover stable supported no-GIL runtimes and verify their coverage report inventory."""
+
+import argparse
+import json
+import os
+import pathlib
+import re
+import tomllib
+import urllib.request
+from collections.abc import Mapping, Sequence
+from typing import Optional
+
+from ci_policy import object_value
+
+
+class RuntimeMatrixPolicy:
+    """Keep discovery bounds and the supported runner architectures in one place."""
+
+    MANIFEST_URL = "https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json"
+    MAX_MANIFEST_BYTES = 8 * 1024 * 1024
+    MAX_JOBS = 256
+    TARGETS = (
+        ("ubuntu-latest", "linux", "x64"),
+        ("windows-latest", "win32", "x64"),
+        ("macos-latest", "darwin", "arm64"),
+    )
+
+
+def supported_floor(project: Optional[pathlib.Path] = None) -> tuple[int, int, int]:
+    """Read the declared Python floor without importing Melder or guessing complex constraints.
+
+    Accept one >=major.minor[.patch] requirement, matching this repository's
+    supported-version policy. Refuse other constraint forms so a metadata change
+    cannot silently produce a matrix outside the package's declared support.
+    """
+    path = project if project is not None else pathlib.Path(__file__).resolve().parents[2] / "pyproject.toml"
+    with path.open("rb") as stream:
+        document = tomllib.load(stream)
+    requirement = object_value(document.get("project"), "project").get("requires-python")
+    match = re.fullmatch(r">=([1-9]\d*)\.(0|[1-9]\d*)(?:\.(0|[1-9]\d*))?", str(requirement))
+    if match is None:
+        raise ValueError("Python matrix needs one >=major.minor[.patch] floor in project.requires-python.")
+    return int(match[1]), int(match[2]), int(match[3] or 0)
+
+
+def stable_version(value: object) -> tuple[int, int, int]:
+    """Parse one exact final Python release; reject prereleases, ranges and unsafe artifact labels."""
+    if not isinstance(value, str) or re.fullmatch(r"[1-9]\d*\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", value) is None:
+        raise ValueError(f"Expected an exact stable Python release, received {value!r}.")
+    major, minor, patch = value.split(".")
+    return int(major), int(minor), int(patch)
+
+
+def version_matrix(versions: Sequence[str], floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
+    """Build the complete OS/version product, refusing empty, duplicate, or below-floor versions.
+
+    One patch per minor is intentional. Every selected minor gets all three
+    runner architectures; an excessive matrix fails instead of truncating tests.
+    """
+    parsed = [stable_version(version) for version in versions]
+    minors = [version[:2] for version in parsed]
+    if (not parsed or len(set(minors)) != len(minors) or floor[:2] not in minors
+            or any(version < floor for version in parsed)
+            or len(parsed) * len(RuntimeMatrixPolicy.TARGETS) > RuntimeMatrixPolicy.MAX_JOBS):
+        raise ValueError("Runtime matrix must cover the supported floor and one patch per minor within the job limit.")
+    return {"include": [
+        {"os": runner, "python": ".".join(map(str, version)), "architecture": architecture}
+        for version in sorted(parsed)
+        for runner, _, architecture in RuntimeMatrixPolicy.TARGETS
+    ]}
+
+
+def discover_matrix(payload: object, floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
+    """Select the latest stable patch per supported minor from the official release manifest.
+
+    Stable false entries are excluded, including prereleases. Every chosen
+    release must advertise free-threaded assets for all supported platforms.
+    Missing assets fail rather than substituting normal Python or an older patch.
+    Asset URLs are never followed here; setup-python owns interpreter installation.
+    """
+    if not isinstance(payload, list):
+        raise ValueError("Python release manifest must be a list.")
+    releases: dict[tuple[int, int, int], set[tuple[str, str]]] = {}
+    for value in payload:
+        release = object_value(value, "Python release")
+        if type(release.get("stable")) is not bool:
+            raise ValueError("Python release is missing its explicit stable flag.")
+        if not release["stable"]:
+            continue
+        version = stable_version(release.get("version"))
+        if version < floor:
+            continue
+        files = release.get("files")
+        if not isinstance(files, list):
+            raise ValueError("Stable Python release is missing its asset list.")
+        available = releases.setdefault(version, set())
+        for item in files:
+            asset = object_value(item, "Python asset")
+            platform, architecture = asset.get("platform"), asset.get("arch")
+            if not isinstance(platform, str) or not isinstance(architecture, str):
+                raise ValueError("Python asset must identify its platform and architecture.")
+            available.add((platform, architecture))
+    latest: dict[tuple[int, int], tuple[int, int, int]] = {}
+    for version in sorted(releases):
+        latest[version[:2]] = version
+    versions = [".".join(map(str, version)) for version in sorted(latest.values())]
+    matrix = version_matrix(versions, floor)
+    for version in latest.values():
+        missing = [runner for runner, platform, architecture in RuntimeMatrixPolicy.TARGETS
+                   if (platform, architecture + "-freethreaded") not in releases[version]]
+        if missing:
+            label = ".".join(map(str, version))
+            raise ValueError(f"Python {label} lacks free-threaded assets for {missing}; cannot qualify every platform.")
+    return matrix
+
+
+def fetch_manifest() -> object:
+    """Read bounded public release metadata with a timeout and no authentication or executable content."""
+    request = urllib.request.Request(RuntimeMatrixPolicy.MANIFEST_URL,
+                                     headers={"User-Agent": "melder-runtime-ci", "Accept": "application/json"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        raw = response.read(RuntimeMatrixPolicy.MAX_MANIFEST_BYTES + 1)
+    if len(raw) > RuntimeMatrixPolicy.MAX_MANIFEST_BYTES:
+        raise ValueError("Python release manifest exceeds the permitted size.")
+    return json.loads(raw)
+
+
+def validate_matrix(value: object, floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
+    """Require the exact complete matrix shape before using its labels in report paths."""
+    document = object_value(value, "runtime matrix")
+    entries = document.get("include")
+    if set(document) != {"include"} or not isinstance(entries, list):
+        raise ValueError("Runtime matrix must contain an include list only.")
+    versions: set[str] = set()
+    for entry in entries:
+        version = object_value(entry, "matrix entry").get("python")
+        stable_version(version)
+        versions.add(str(version))
+    expected = version_matrix(sorted(versions, key=stable_version), floor)
+    if document != expected:
+        raise ValueError("Runtime matrix has missing, duplicate or unexpected OS/version entries.")
+    return expected
+
+
+def require_coverage(directory: pathlib.Path, matrix: Mapping[str, list[dict[str, str]]],
+                     run_id: str, attempt: str) -> None:
+    """Require a nonempty coverage report for every discovered OS/version from this run attempt.
+
+    Reject missing and unexpected report directories before Codecov receives a
+    partial matrix. Inputs must already have passed validate_matrix.
+    """
+    if re.fullmatch(r"[1-9]\d*", run_id) is None or re.fullmatch(r"[1-9]\d*", attempt) is None:
+        raise ValueError("Coverage reports require positive run and attempt identifiers.")
+    names = {f"coverage-{entry['os']}-python-{entry['python']}-{run_id}-{attempt}" for entry in matrix["include"]}
+    observed = {path.name for path in directory.iterdir()}
+    if observed != names:
+        raise ValueError(f"Coverage matrix differs: missing={sorted(names - observed)}, unexpected={sorted(observed - names)}.")
+    for name in sorted(names):
+        report = directory / name / "coverage.xml"
+        if not report.is_file() or report.stat().st_size == 0:
+            raise ValueError(f"Missing or empty coverage report: {name}/coverage.xml")
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Discover/record a matrix or verify reports; propagate discovery and completeness failures."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("operation", choices=("discover", "coverage"))
+    parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("reports/python-matrix.json"))
+    parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("coverage-reports"))
+    args = parser.parse_args(argv)
+    floor = supported_floor()
+    if args.operation == "discover":
+        matrix = discover_matrix(fetch_manifest(), floor)
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
+        with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+            output.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
+        print(f"Selected {len(matrix['include'])} stable no-GIL OS/version combinations.")
+    else:
+        matrix = validate_matrix(json.loads(os.environ["CI_PYTHON_MATRIX"]), floor)
+        require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
+        print("OK: coverage reports cover the complete discovered no-GIL matrix.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/python_runtime_matrix.py
+================================================================================
+================================================================================
 BEGIN FILE: .github/scripts/run_runtime_tests.py
-CONTENT SHA256: 58d68d738b457234408fd71dcb946c0ba238597d4ebd6e2e1ae696428881f403
+CONTENT SHA256: 1312362d1a86700865b4ebea57f7b766a530dd23d47dfe5674e24189d536658c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Execute the supported pytest tiers in a verified free-threaded Python process."""
@@ -1434,7 +1656,7 @@ def require_free_threading(version: Sequence[int], supported: object, gil_enable
     if tuple(version[:2]) < (3, 14) or supported != 1 or gil_enabled:
         raise RuntimeError(
             "Melder runtime CI requires Python 3.14+ free-threaded with the GIL disabled. "
-            "Select Python 3.14t and set PYTHON_GIL=0 for the test process."
+            "Select a supported free-threaded Python build and set PYTHON_GIL=0 for the test process."
         )
 
 
@@ -1479,7 +1701,7 @@ END FILE: .github/scripts/run_runtime_tests.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/smoke_wheel.py
-CONTENT SHA256: 34a27accf1d6cfd77f5f9fe6ac00f689ec451bcd11b92195d147052798e1adde
+CONTENT SHA256: ff33e01745f79d4bf4940c32bb61ae1caa734809bc7972921ca6d2f2f641be66
 SOURCE ENCODING: utf-8
 ================================================================================
 """Exercise installed package identity, data, and a small public runtime contract in isolation."""
@@ -1544,7 +1766,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     if args.expected_version is not None and melder.__version__ != args.expected_version:
         raise RuntimeError("Installed Melder version differs from the selected candidate.")
     if sysconfig.get_config_var("Py_GIL_DISABLED") != 1 or sys._is_gil_enabled():
-        raise RuntimeError("Package probe requires Python 3.14t with the GIL disabled.")
+        raise RuntimeError("Package probe requires a supported free-threaded Python build with the GIL disabled.")
     documents = (melder.__architecture__, melder.__components__,
                  melder.__graph_network__, melder.__graph_details__)
     if not all(document.verify() for document in documents):
@@ -1995,7 +2217,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: 227dbc111d3b44bcd5cebfba27dd24af0c8eb1da76df6adc6e14a9208362d281
+CONTENT SHA256: cefce537f69b23a397d62ee4d23c12a79112133d73f051d49b97cff9c9fe8ce2
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -2032,7 +2254,9 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version-file: pyproject.toml
+          freethreaded: true
+          allow-prereleases: false
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install build tools
@@ -2484,7 +2708,7 @@ END FILE: .github/workflows/python-publish.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
-CONTENT SHA256: c9baa4114da2ac2ed68a1a80ee9ca4707a433dcc0e3634300b0ea93db66a30dc
+CONTENT SHA256: 3071377a9acefeccda8d3d7f03edddeb8feaa5e038454d276d2b6149eb5b6c6b
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Release candidate
@@ -2508,12 +2732,24 @@ jobs:
     name: RC / authorize
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: python .github/scripts/ci_policy.py candidate-head
+      - name: Discover every supported stable no-GIL minor
+        id: runtimes
+        run: python .github/scripts/python_runtime_matrix.py discover
+      - name: Retain the selected candidate runtime matrix
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-python-matrix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/python-matrix.json
+          if-no-files-found: error
+          retention-days: 90
 
   source-qualification:
     needs: authorize
@@ -2581,19 +2817,21 @@ jobs:
           retention-days: 90
 
   install:
-    name: RC / installed-package / ${{ matrix.os }}
-    needs: [build, publish]
+    name: RC / installed-package / ${{ matrix.os }} / Python ${{ matrix.python }} no-GIL
+    needs: [authorize, build, publish]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+      matrix: ${{ fromJSON(needs.authorize.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version: ${{ matrix.python }}
+          architecture: ${{ matrix.architecture }}
+          freethreaded: true
+          allow-prereleases: false
       - uses: actions/download-artifact@v8
         with:
           name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
@@ -2605,7 +2843,7 @@ jobs:
       - name: Retain installed-package evidence
         uses: actions/upload-artifact@v7
         with:
-          name: candidate-install-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: candidate-install-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/installed.json
           if-no-files-found: error
           retention-days: 90
@@ -2632,7 +2870,7 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: b73dd726bb1bca7f1c214101bffc833110ad605c0f2fa7b769f07ee10a097a64
+CONTENT SHA256: e2c44e32a49f4a473382ce078c40d2ec679391e0a4d1eea91747d51da2f00b6f
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
@@ -2649,19 +2887,45 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Runtime / ${{ matrix.os }} / Python 3.14t
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  discover:
+    name: Runtime / discover stable no-GIL versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version-file: pyproject.toml
+          allow-prereleases: false
+      - name: Discover every supported stable minor
+        id: runtimes
+        run: python .github/scripts/python_runtime_matrix.py discover
+      - name: Retain the selected runtime matrix
+        uses: actions/upload-artifact@v7
+        with:
+          name: runtime-python-matrix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/python-matrix.json
+          if-no-files-found: error
+          retention-days: 90
+
+  test:
+    name: Runtime / ${{ matrix.os }} / Python ${{ matrix.python }} no-GIL
+    needs: discover
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          architecture: ${{ matrix.architecture }}
+          freethreaded: true
+          allow-prereleases: false
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install Melder and test dependencies
@@ -2679,7 +2943,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/coverage.xml
           if-no-files-found: warn
           retention-days: 14
@@ -2687,14 +2951,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: runtime-results-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: runtime-results-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/runtime.xml
           if-no-files-found: warn
           retention-days: 14
 
   coverage:
     name: Coverage / Codecov
-    needs: test
+    needs: [discover, test]
     # Forks still run tests and retain XML, but never receive upload credentials.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -2715,6 +2979,11 @@ jobs:
           fi
       - uses: actions/checkout@v7
         if: steps.credentials.outputs.enabled == 'true'
+      - uses: actions/setup-python@v7
+        if: steps.credentials.outputs.enabled == 'true'
+        with:
+          python-version-file: pyproject.toml
+          allow-prereleases: false
       - name: Download this run's coverage reports
         if: steps.credentials.outputs.enabled == 'true'
         uses: actions/download-artifact@v8
@@ -2724,13 +2993,9 @@ jobs:
           merge-multiple: false
       - name: Require the complete coverage matrix
         if: steps.credentials.outputs.enabled == 'true'
-        run: |
-          for os in ubuntu-latest windows-latest macos-latest; do
-            if [ ! -s "coverage-reports/coverage-$os-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/coverage.xml" ]; then
-              echo "::error::Missing coverage XML for $os in this run; refusing a partial upload."
-              exit 1
-            fi
-          done
+        env:
+          CI_PYTHON_MATRIX: ${{ needs.discover.outputs.matrix }}
+        run: python .github/scripts/python_runtime_matrix.py coverage
       - name: Upload coverage to Codecov
         if: steps.credentials.outputs.enabled == 'true'
         uses: codecov/codecov-action@v7

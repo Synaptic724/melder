@@ -88,23 +88,54 @@ def test_python_setup_does_not_force_gil_off_in_standard_bootstrap_helpers(name:
 
 
 def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
-    """All three supported OSes use 3.14t with the GIL off and retain failing-test evidence."""
-    job = workflow("test-runtime.yml")["jobs"]["test"]
-    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
+    """Every discovered OS/version uses free threading and retains independent failing-test evidence."""
+    jobs = workflow("test-runtime.yml")["jobs"]
+    job = jobs["test"]
+    assert job["needs"] == "discover"
+    assert job["strategy"]["matrix"] == "${{ fromJSON(needs.discover.outputs.matrix) }}"
     assert job["strategy"]["fail-fast"] == "false"
     setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
-    assert setup["with"]["python-version"] == "3.14t"
+    assert setup["with"]["python-version"] == "${{ matrix.python }}"
+    assert setup["with"]["architecture"] == "${{ matrix.architecture }}"
+    assert setup["with"]["freethreaded"] == "true"
+    assert setup["with"]["allow-prereleases"] == "false"
     runner = next(step for step in job["steps"] if "run_runtime_tests.py" in step.get("run", ""))
     assert runner["env"]["PYTHON_GIL"] == "0"
     report = job["steps"][-1]
     assert report["if"] == "always()"
     assert report["uses"].startswith("actions/upload-artifact@")
+    assert report["with"]["name"] == (
+        "runtime-results-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
+
+
+@pytest.mark.parametrize(("name", "job_name", "artifact"), [
+    ("test-runtime.yml", "discover", "runtime-python-matrix"),
+    ("release-candidate.yml", "authorize", "candidate-python-matrix"),
+])
+def test_discovery_is_required_and_retains_the_selected_matrix(name: str, job_name: str, artifact: str) -> None:
+    """Runtime and RC consumers share discovery policy and retain evidence before downstream execution."""
+    job = workflow(name)["jobs"][job_name]
+    assert "if" not in job and "continue-on-error" not in job
+    assert job["outputs"]["matrix"] == "${{ steps.runtimes.outputs.matrix }}"
+    selection = next(step for step in job["steps"] if step.get("id") == "runtimes")
+    assert selection["run"] == "python .github/scripts/python_runtime_matrix.py discover"
+    assert "continue-on-error" not in selection and "if" not in selection
+    retained = job["steps"][-1]
+    assert retained["uses"].startswith("actions/upload-artifact@")
+    assert retained["with"]["name"] == artifact + "-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["path"] == "reports/python-matrix.json"
+    assert retained["with"]["if-no-files-found"] == "error"
+    if name == "test-runtime.yml":
+        setup = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+        assert setup["with"]["python-version-file"] == "pyproject.toml"
+        assert setup["with"]["allow-prereleases"] == "false"
 
 
 def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> None:
-    """Measure in the one runtime invocation and keep each OS report separate from JUnit."""
+    """Measure in the one runtime invocation and keep each OS/version report separate from JUnit."""
     document = workflow("test-runtime.yml")
-    assert set(document["jobs"]) == {"test", "coverage"}
+    assert set(document["jobs"]) == {"discover", "test", "coverage"}
     test = document["jobs"]["test"]
     runners = [step for step in test["steps"] if "run_runtime_tests.py" in step.get("run", "")]
     assert len(runners) == 1
@@ -116,7 +147,9 @@ def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> No
     retained = next(step for step in test["steps"] if step.get("name") == "Retain coverage report")
     assert retained["if"] == "always()"
     assert retained["continue-on-error"] == "true"
-    assert retained["with"]["name"] == "coverage-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["name"] == (
+        "coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
     assert retained["with"]["path"] == "reports/coverage.xml"
     reporting = document["jobs"]["coverage"]
     download = next(step for step in reporting["steps"]
@@ -126,10 +159,8 @@ def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> No
         "path": "coverage-reports", "merge-multiple": "false",
     }
     complete = next(step for step in reporting["steps"] if step.get("name") == "Require the complete coverage matrix")
-    for os in test["strategy"]["matrix"]["os"]:
-        assert os in complete["run"]
-    assert 'coverage-$os-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/coverage.xml' in complete["run"]
-    assert 'exit 1' in complete["run"]
+    assert complete["run"] == "python .github/scripts/python_runtime_matrix.py coverage"
+    assert complete["env"] == {"CI_PYTHON_MATRIX": "${{ needs.discover.outputs.matrix }}"}
     assert reporting["steps"].index(download) < reporting["steps"].index(complete) < len(reporting["steps"]) - 1
 
 
@@ -138,7 +169,7 @@ def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
     document = workflow("test-runtime.yml")
     assert document["on"]["workflow_call"]["secrets"]["CODECOV_TOKEN"]["required"] == "false"
     job = document["jobs"]["coverage"]
-    assert job["needs"] == "test"
+    assert set(job["needs"]) == {"discover", "test"}
     assert job["continue-on-error"] == "true"
     assert job["if"] == (
         "github.event_name != 'pull_request' || "
@@ -216,6 +247,11 @@ def test_package_verification_precedes_artifact_upload() -> None:
     assert " -I " in commands[smoke]
     assert steps[smoke]["env"]["PYTHON_GIL"] == "0"
     assert steps[-1]["uses"].startswith("actions/upload-artifact@")
+    setup = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version-file"] == "pyproject.toml"
+    assert setup["with"]["freethreaded"] == "true"
+    assert setup["with"]["allow-prereleases"] == "false"
+    assert "python-version" not in setup["with"]
 
 
 @pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])
@@ -275,7 +311,16 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
             assert "environment" not in job
             assert job.get("permissions", {}).get("id-token") != "write"
     install = jobs["install"]
-    assert set(install["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest", "macos-latest"}
+    assert set(install["needs"]) == {"authorize", "build", "publish"}
+    assert install["strategy"]["matrix"] == "${{ fromJSON(needs.authorize.outputs.matrix) }}"
+    setup = next(step for step in install["steps"] if step.get("uses", "").startswith("actions/setup-python@"))
+    assert setup["with"]["python-version"] == "${{ matrix.python }}"
+    assert setup["with"]["architecture"] == "${{ matrix.architecture }}"
+    assert setup["with"]["freethreaded"] == "true"
+    assert setup["with"]["allow-prereleases"] == "false"
+    assert install["steps"][-1]["with"]["name"] == (
+        "candidate-install-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
     probe = next(step for step in install["steps"] if "probe-install" in step.get("run", ""))
     assert probe["env"]["PYTHON_GIL"] == "0"
     artifact = jobs["build"]["with"]["artifact-name"]

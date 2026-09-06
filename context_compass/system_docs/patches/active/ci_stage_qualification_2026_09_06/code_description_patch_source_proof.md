@@ -34,3 +34,12 @@ Keep zero-wait defaults at final publication; no automatic upload or consumer-te
 ## Failure behavior
 Missing or expired proof requires new full CI on the intended branch. Changed merge contents require
 qualification of those contents. No artifact presence alone or successful light run is sufficient.
+
+## Runtime matrix discovery and report verification
+Read the official manifest through a bounded, timed, unauthenticated HTTPS request. Parse records
+as data, require stable numeric releases and select the latest patch for each supported minor.
+Validate free-threaded platform/architecture assets before emitting the matrix. Missing floor,
+malformed metadata, excessive job count or missing platform coverage fails before testing/upload.
+The selected matrix is written once per run and reused through job outputs, never redownloaded by
+individual test cells. Artifact names bind OS, exact Python version and run/attempt. Coverage checks
+the expected matrix against downloaded report directories before the nonblocking upload.
