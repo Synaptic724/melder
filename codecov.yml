@@ -1,0 +1,6 @@
+# Coverage is informational; existing CI and release gates remain authoritative.
+coverage:
+  status:
+    project: false
+    patch: false
+comment: false

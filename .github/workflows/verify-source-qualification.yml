@@ -1,0 +1,37 @@
+name: Verify source qualification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  verify:
+    name: Source / full qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Select exact successful full CI evidence
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/ci_qualification.py select
+      - name: Download the selected immutable qualification artifact
+        uses: actions/download-artifact@v8
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run-id }}
+          artifact-ids: ${{ steps.source.outputs.artifact-id }}
+          path: source-proof/
+      - name: Verify the tested tree and refreshed run identity
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/ci_qualification.py verify --record source-proof/qualification.json

@@ -62,6 +62,8 @@ jobs:
   tests:
     needs: release-gate
     uses: ./.github/workflows/test-runtime.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   release-build:
     needs: [release-gate, hygiene, source-assets, repo-assets, tests]

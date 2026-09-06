@@ -22,7 +22,7 @@ correction from the actual hosted build, selected Git revision and repository co
 - EXECUTION_BOUNDARY: Read the Docs public project/build state and relevant GitHub statuses;
   .readthedocs.yaml, docs configuration/dependencies/build helpers, related documentation tickets.
   Record the failure before any scoped correction; preserve unrelated runtime and workflow work.
-- DEPENDENCIES: tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md and the owner's project/build URL.
+- DEPENDENCIES: tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md and the owner's project/build URL.
 - EXIT_GATE: Verified cause and concrete correction or a specific missing-access/build-data blocker;
   any local correction is validated without claiming an unexecuted hosted deployment.
 - FAILURE_ESCALATION: Do not infer a green hosted build from green GitHub docs CI. Do not publish,
@@ -104,7 +104,7 @@ correction from the actual hosted build, selected Git revision and repository co
     the already-authorized CI gate move. An existing RTD ticket and root YAML are available locally.
   EVIDENCE:
   - Owner's Read the Docs diagnosis request in the active conversation.
-  - tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md
+  - tickets/tasks/completed/2026-09-04_rtd_ci_and_offline_task.md
   - .readthedocs.yaml
   IMPACT: Inspect the configured target and historical deployment evidence before selecting a fix.
   NEXT: Read the existing RTD handoff and current hosted build configuration.
@@ -121,7 +121,7 @@ correction from the actual hosted build, selected Git revision and repository co
   EVIDENCE:
   - README.md:12-18
   - .readthedocs.yaml:1-38
-  - tickets/tasks/2026-09-04_rtd_hosted_project_task.md:88-109
+  - tickets/tasks/completed/2026-09-04_rtd_hosted_project_task.md:88-109
   - https://docs.readthedocs.com/platform/stable/config-file/v2.html#build-jobs-build
   IMPACT: No specific build/configuration failure is established. The owner's current diagnosis
     request authorizes relevant reads; first inspect public HTTP results and GitHub-linked build

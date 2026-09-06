@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 78521923c25bdd58190fb44e078c4c5f26b3d953e8787186e3c8682d115d0683
-FILE COUNT: 352
+SOURCE FINGERPRINT: 9f5cfd838d578f1194f0367dd7878ea003df28b86570e05167475e2d3820cef6
+FILE COUNT: 356
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: eb06e9b70f05a32a3abb418151d62c3dec879259267b1bbae8d91bc835087918
+CONTENT SHA256: dd585a964bf94febf5fa060ee1d423ca2202ee6da7bf3b14fe8f465270d7b08a
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -74,35 +74,112 @@ Contributions enter `dev` through a pull request. Promotion proceeds through
 
 ## Required checks
 
-`CI / merge-ready` is the stable status to require in GitHub. It depends on:
+`CI / merge-ready` remains the stable required status. The branch route selects
+which checks must run; the final gate independently verifies that selection.
+
+| Event | Full runtime matrix | Other required work |
+| --- | --- | --- |
+| Feature PR into `dev` | Yes | Hygiene, source/repository assets and documentation |
+| `dev` PR into `preprod` | Yes | The same checks plus distribution verification |
+| `preprod` PR into `release_candidate` | No | Hygiene and exact-tree full preprod proof |
+| `release-fix/*` PR into `release_candidate` | Yes | Full checks and distribution verification for changed contents |
+| `release_candidate` PR into `prod` | No | Hygiene and exact-source successful TestPyPI qualification |
+| Manual `CI` on a permanent branch | Yes | Full checks; distributions on every branch except dev |
+| Ordinary branch push | No source CI | RC pushes retain their dedicated package workflow |
+| Final publication | Yes | Fresh package validation and final tag/prod checks |
+
+The checks enforce these contracts:
 
 - Branch policy: contributions target dev; preprod accepts this repository's dev,
   release_candidate accepts preprod, and prod accepts release_candidate. Forks
   cannot impersonate promotion branches. Permanent-branch synchronization PRs
   may return to dev. Same-repository `release-fix/*` PRs can prepare or fix the
   frozen candidate; keep their scope narrow and carry fixes back to dev.
-- Source assets: the existing build-asset runner verifies committed manifests.
-- Repository assets: the LLM builder verifies committed bundles and indexes.
+- Source assets in full CI: the existing build-asset runner verifies committed manifests.
+- Repository assets in full CI: the LLM builder verifies committed bundles and indexes.
 - Repository hygiene: tracked filenames must not collide case-insensitively.
-- Documentation: the shared documentation validation workflow must succeed.
-- Runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
-  using Python 3.14t with the GIL disabled in the actual pytest process.
+- Documentation in full CI: the shared documentation validation workflow must succeed.
+- Full runtime tests: unit, component, and integration tiers on Linux, Windows, and macOS,
+  using the latest stable patch of every supported Python minor, with the GIL disabled
+  in the actual pytest process.
   The macOS job uses `macos-latest` on native Apple Silicon (arm64).
-- Distribution verification for preprod/release_candidate/prod: wheel and sdist boundaries,
+- Distribution verification in full CI outside dev: wheel and sdist boundaries,
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
   qualification, a final package version, and the same tree as the merge result.
   This runs last inside `CI / merge-ready`, after the other required checks succeed.
+- Source qualification: unchanged preprod promotions must prove that their entire
+  merge tree passed full CI before the source suite may be skipped.
 
 The final status fails for missing evidence, failure, cancellation, or an
-unexpected skipped job. Only dev intentionally skips distribution building.
-Repository variables cannot disable mandatory asset checks. Helpers remain
+unexpected skipped job. Optional jobs may succeed or be explicitly skipped, never
+fail or disappear from the result map. Profile flags are derived from the event;
+repository variables cannot waive a required check. Helpers remain
 manually runnable. `ci.yml` owns source CI; `release-candidate.yml` owns candidate pushes.
 
 Scope `PYTHON_GIL=0` to the runtime-test and installed-package probe steps. Do not
 set it for the whole job: macOS Python setup runs a standard-Python certificate
 installer that cannot start with the GIL disabled. The test driver and wheel probe
 still reject an unsupported interpreter or an enabled GIL during qualification.
+
+## Supported Python versions
+
+Runtime discovery reads the Python floor from `project.requires-python` in `pyproject.toml`
+(currently `>=3.14`) and GitHub's official `actions/python-versions` release manifest.
+It selects the latest stable patch of every matching minor: 3.14, then 3.15 once stable,
+and subsequent stable versions automatically. Alpha, beta and release-candidate Python builds
+are excluded. Historical patch releases are not separate matrix entries.
+
+Every selected version runs on Linux x64, Windows x64 and macOS arm64. Runtime tests and
+RC installation probes use `freethreaded: true` with the discovered exact Python version.
+The test driver verifies free-threading support and GIL-off state before and after pytest;
+the installed-package probe also verifies GIL-off state. Discovery, asset and policy tooling
+may use ordinary Python because those jobs do not qualify Melder's runtime behavior.
+
+The discovery helper refuses empty/malformed catalog data, missing support for the declared
+floor, and a selected release lacking free-threaded assets on a required platform. Setup errors
+on the actual runner also fail the matrix. No missing version/platform silently disappears.
+Each runtime/RC run retains its selected OS/version matrix as a JSON artifact for 90 days.
+Tests, coverage and installed-package reports include OS, exact Python version and run/attempt.
+
+Distribution building still produces one wheel/sdist pair. Its Python selection comes from
+`pyproject.toml` with free threading enabled; the full compatibility matrix belongs to runtime
+tests and RC installed-package checks. Existing full-test stages stay unchanged. Historical
+source proof refers to its recorded full-CI run, while final publication discovers and tests
+the currently available stable matrix afresh.
+
+## Coverage reporting and README badges
+
+The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
+They do not run the suite a second time. Each matrix cell retains a coverage artifact for 14 days;
+one reporting job uploads those reports to Codecov after the full matrix succeeds.
+It requires an XML file for every discovered OS/version from the same run/attempt; missing artifacts
+leave a reporting warning/failure rather than publishing an incomplete matrix as the current result.
+Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
+and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
+
+One-time setup:
+
+1. Sign into Codecov with GitHub and enable the public Synaptic724/melder repository.
+2. Copy that repository's Codecov upload token.
+3. In GitHub, open Settings -> Secrets and variables -> Actions -> New repository secret.
+4. Use the name CODECOV_TOKEN and paste the Codecov token as its value.
+
+This is a repository Actions secret, not an environment secret or variable. No new GitHub
+environment or id-token permission is needed. Do not reuse either PyPI token or store the token
+in the checkout. CI and final publication explicitly pass only CODECOV_TOKEN to the reusable
+workflow; only its credential check and Codecov upload steps receive it.
+If the token is absent, a setup warning is emitted and reporting is skipped. Fork PRs retain
+their test/coverage artifacts but skip credentialed uploads.
+
+The README coverage badge tracks prod. It shows no percentage until the first prod report is
+processed. Normal final-release tests populate it; the release tag is attributed to prod only
+after the existing release gate verifies that tag against current prod HEAD. To seed the badge
+without publishing a package, run Actions -> Runtime tests -> Run workflow on prod after these
+files reach that branch. Do not run Publish Python Package merely to refresh coverage.
+
+The CI badge uses GitHub's default-branch/latest-run behavior, not a hardcoded passing label.
+Reference: https://github.com/codecov/codecov-action#usage
 
 ## Working on a feature
 
@@ -120,9 +197,9 @@ added input files before running the repository builder so its tracked-file
 inventory includes them. Never hand-merge generated bundles. After updating a
 feature from dev, regenerate again when the combined source changed.
 
-CI runs on PR updates, including a changed PR base, and on dev/preprod/prod
-pushes. Candidate pushes run the slim package workflow below. Heavy CI does not
-also run on every feature push before its PR. New PR
+CI runs on PR updates, including a changed PR base, and explicit manual dispatch.
+It does not repeat source CI after pushes to dev/preprod/prod. Candidate pushes
+run the slim package workflow below. New PR
 commits supersede old CI runs. Reusable helpers have no concurrency group that
 could accidentally cancel their caller or a final release.
 
@@ -140,31 +217,69 @@ merge commit, which otherwise creates a perpetual merge-back requirement.
 Resolve conflicts on the source branch and rerun CI; carry release/hotfix changes
 back into dev through a reviewed synchronization PR.
 
+## Reusing full qualification
+
+A successful full CI run retains `source-qualification-<run-id>-<attempt>` for
+90 days. Its JSON record binds the repository, run/attempt, event/PR identity and
+the actual tested checkout and Git tree. A PR run's head SHA is not assumed to
+be its tested merge SHA.
+
+Checkout verification requires an unchanged Git index and rejects actual tracked content or mode
+changes. Git can report older committed CRLF files as modified under a newer LF attribute policy
+even when their bytes are identical. Only matching unfiltered blob identity and unchanged regular-file
+mode clear that false positive. This does not ignore whitespace or exclude documentation directories;
+real changes fail with affected path names. A skipped source-qualification job is expected for
+dev-to-preprod full CI: that run creates fresh evidence instead of reusing an earlier run.
+
+`verify-source-qualification.yml` finds the full run behind the actual preprod
+promotion, downloads one immutable artifact ID with read-only credentials, and
+checks its record against the current tree. It refreshes the selection after
+download so a changed attempt cannot reuse an old record. Light CI does not issue
+full-runtime evidence. Historical GitHub run records may omit their PR association;
+the downloaded record must still prove the correct PR, head and base.
+
+Any difference in the Git tree—including source, dependencies, tests, workflow
+configuration or generated assets—requires qualification of those contents.
+Release-fix PRs therefore run full CI. An exact-commit manual CI run on the
+expected branch provides explicit fresh evidence and takes precedence over
+historical PR evidence; its latest failed or pending run cannot be bypassed.
+
+For rollout, commit the new workflows, helpers, tests and regenerated bundles
+together and promote through dev and preprod. Older green runs without the new
+record do not qualify. If proof is absent, expired, or no longer matches the
+historical merge, run **CI → Run workflow** with the updated workflow installed.
+Choose `preprod` for its promotion PR, or `release_candidate` for the frozen
+candidate's package workflow. Wait for full CI to pass, then retry the blocked step.
+This manual CI builds/tests only; it does not upload to PyPI or TestPyPI.
+
+A tree mismatch requires resolving the differing contents in preprod or a reviewed
+release-fix PR. Repeating qualification of the old source cannot approve a different merge.
+
 ## Release candidate and TestPyPI
 
 Select a green preprod revision through a PR into `release_candidate`. Keep
 this branch on one candidate while preprod continues receiving new work.
-The PR runs required source/package CI before merge. Merging it pushes the chosen
+The PR verifies full preprod qualification and identical merge contents. Merging it pushes the chosen
 revision onto release_candidate and starts `release-candidate.yml`; no GitHub Release
 or tag is required. Manual dispatch must select the same branch.
 
 | Boundary | Work performed |
 | --- | --- |
-| `preprod -> release_candidate` PR | Full source CI and local package verification. |
-| Merge lands on `release_candidate` | Build, TestPyPI upload, and installed-package probes. |
-| `release_candidate -> prod` PR | Run required CI, then verify exact-source RC success in the final merge-ready check. |
+| `preprod -> release_candidate` PR | Verify the previously qualified preprod tree. |
+| Merge lands on `release_candidate` | Recheck source proof, build, upload to TestPyPI, and run installed-package probes. |
+| `release_candidate -> prod` PR | Verify exact-source RC success in the final merge-ready check. |
 
 TestPyPI publication belongs to the RC stage. The prod promotion check does not
 upload to TestPyPI; it blocks promotion until the earlier RC qualification succeeds.
 
-Branch-route validation stays at the start. Candidate proof runs after runtime tests,
-documentation, assets, hygiene and the required distribution build. This lets RC
-qualification finish alongside those checks. If RC is still pending at that final
-step, the check fails with its run link; rerun the failed CI jobs after RC succeeds.
-Elapsed time never substitutes for a successful exact-source candidate result.
+Branch-route validation stays at the start. The lighter prod PR can finish before
+RC upload/probes, so its final candidate check waits up to ten minutes for an
+authentic pending run. Completed failure, wrong identity, missing evidence and API
+errors still refuse. If the wait expires, finish/fix RC and rerun the failed CI
+jobs. Elapsed time never substitutes for successful exact-source qualification.
 
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
-fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
+fresh installation across the discovered stable no-GIL OS/version matrix. It does not run the whole
 source suite again after upload. The probe requires the expected package version,
 metadata, import origin in site-packages, packaged assets, and a small public
 bind/conjure/resolve/cleanup scenario. The exact downloaded wheel SHA256 must
@@ -208,8 +323,9 @@ The build uses the commit timestamp and normalizes sdist timestamp/ownership
 headers so unchanged package contents do not acquire different hashes on retry.
 
 When finalizing, use a reviewed `release-fix/*` PR from the frozen candidate to
-set the final version, for example `0.2.4`, and regenerate assets. That push runs
-TestPyPI qualification again. Only the final-version candidate may enter prod.
+set the final version, for example `0.2.4`, and regenerate assets. The release-fix
+PR runs full CI; its merge triggers TestPyPI qualification again.
+Only the final-version candidate may enter prod.
 The final Git tag, for example `v0.2.4`, must match the package version; a tag
 cannot turn an rc1 wheel into a final wheel.
 
@@ -220,8 +336,8 @@ bytes fail rather than being hidden by `skip-existing`. Use **Re-run all jobs**
 for fresh same-run/attempt artifacts. Download retries are bounded for index
 propagation; failed consumer tests are not retried or ignored.
 
-`RC / package-ready` reports explicit success only when authorization, build,
-upload, and all three platform probes succeeded. Prod's existing required CI gate
+`RC / package-ready` reports explicit success only when authorization, source proof, build,
+upload, and every selected OS/version probe succeeded. Prod's existing required CI gate
 queries that exact candidate workflow revision; it never substitutes an older
 green run for a newer failed or pending one. The upload/install reports include
 source commit/tree, version, run/attempt, and both distribution hashes.
@@ -420,21 +536,36 @@ END FILE: .github/rulesets/release_candidate.json
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/check_candidate_run.py
-CONTENT SHA256: 1f0faee691502d934a019f24f43c3753cd3ebc74881d83ec0909f4c2367ae7ae
+CONTENT SHA256: daf6a0a8430d72e53c72dbb7307c8f7279fa5b75c4c7ddbd7e0d8dc61916451b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Require exact-source TestPyPI qualification before prod promotion or publication."""
 
+import argparse
 import json
 import os
 import pathlib
 import re
+import time
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping, Sequence
+from typing import Optional
 
 from ci_policy import git_output, object_value, read_event, text_value, validate_route
 from verify_distributions import assignment
+
+
+class CandidateWaitPolicy:
+    """Bound waiting for a valid candidate run without retrying failed package qualification."""
+
+    MAX_SECONDS = 600
+    POLL_SECONDS = 15
+    PENDING_STATES = ("queued", "in_progress", "waiting", "pending", "requested")
+
+
+class CandidatePending(ValueError):
+    """Identify an authentic candidate that has not finished, retaining the normal gate diagnostic."""
 
 
 def commit_id(value: object) -> str:
@@ -503,11 +634,18 @@ def require_qualified_run(payload: Mapping[str, object], repository: str, sha: s
     differences = [f"{key}={latest.get(key)!r} (expected {value!r})"
                    for key, value in expected.items() if latest.get(key) != value]
     if differences:
-        raise ValueError(
+        message = (
             f"Candidate qualification has not passed for {sha}: {'; '.join(differences)}. "
             f"Inspect https://github.com/{repository}/actions/runs/{run_id} (attempt {attempt}). "
             "Complete or fix that RC workflow, then rerun this prod check."
         )
+        identity_matches = all(latest.get(key) == value for key, value in expected.items()
+                               if key not in ("status", "conclusion"))
+        if (identity_matches and latest.get("event") in ("push", "workflow_dispatch")
+                and latest.get("status") in CandidateWaitPolicy.PENDING_STATES
+                and latest.get("conclusion") is None):
+            raise CandidatePending(message)
+        raise ValueError(message)
     if latest.get("event") not in ("push", "workflow_dispatch"):
         raise ValueError("Candidate qualification must originate from its branch push/manual workflow.")
     return latest
@@ -529,8 +667,34 @@ def github_runs(repository: str, sha: str) -> Mapping[str, object]:
         return object_value(json.load(response), "GitHub workflow runs")
 
 
-def main() -> int:
-    """Check candidate source/tree, final package version, and hosted qualification; write nothing."""
+def await_qualification(repository: str, sha: str, wait_seconds: int = 0) -> Mapping[str, object]:
+    """Wait only for authentic pending runs, bounded by a monotonic deadline.
+
+    Every query still chooses the latest exact-source run. Completed failures,
+    wrong identity, missing evidence and API errors propagate immediately.
+    Publication defaults to no wait; fast promotion CI may request up to ten minutes.
+    """
+    if type(wait_seconds) is not int or not 0 <= wait_seconds <= CandidateWaitPolicy.MAX_SECONDS:
+        raise ValueError("Candidate wait must be an integer from 0 through 600 seconds.")
+    deadline = time.monotonic() + wait_seconds
+    while True:
+        try:
+            return require_qualified_run(github_runs(repository, sha), repository, sha)
+        except CandidatePending as error:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CandidatePending(f"{error} Pending wait expired after {wait_seconds} seconds.") from error
+            print(f"Candidate is still running; checking again within {remaining:.0f}s.", flush=True)
+            time.sleep(min(CandidateWaitPolicy.POLL_SECONDS, remaining))
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Check source/tree/version and exact hosted qualification, optionally waiting for pending work."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--wait-seconds", type=int, default=0)
+    args = parser.parse_args(argv)
+    if not 0 <= args.wait_seconds <= CandidateWaitPolicy.MAX_SECONDS:
+        parser.error("--wait-seconds must be between 0 and 600")
     repository = text_value(os.environ.get("GITHUB_REPOSITORY"), "GITHUB_REPOSITORY")
     sha = candidate_source(os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), repository,
                            git_output(("rev-list", "--parents", "-n", "1", "HEAD")).split())
@@ -539,7 +703,7 @@ def main() -> int:
     version = assignment(pathlib.Path("src/melder/__version__.py").read_text(encoding="utf-8"), "__version__")
     if re.fullmatch(r"(?:\d+!)?\d+(?:\.\d+)*(?:\.post\d+)?", version) is None:
         raise ValueError("Prod requires a final package version; finalize and requalify the RC first.")
-    run = require_qualified_run(github_runs(repository, sha), repository, sha)
+    run = await_qualification(repository, sha, args.wait_seconds)
     print(f"OK: candidate {sha}, version {version}, run {run['id']}, attempt {run['run_attempt']}.")
     return 0
 
@@ -551,7 +715,7 @@ END FILE: .github/scripts/check_candidate_run.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/ci_policy.py
-CONTENT SHA256: 27a4a6709f2bfaf3551c4481f61e448d54e5f8258408728caec50858a9b83ff2
+CONTENT SHA256: 07d3e58422ff14f3eca8ccb34ad7278be9d75266d944b83b213ce9ad4140a5be
 SOURCE ENCODING: utf-8
 ================================================================================
 """Read-only branch, merge-result, repository, and publication gates for CI."""
@@ -574,9 +738,10 @@ class CIPolicy:
     PROMOTIONS: Mapping[str, str] = {
         "preprod": "dev", "release_candidate": "preprod", "prod": "release_candidate",
     }
-    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "build", "publish", "install")
+    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
+    FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
     REQUIRED_JOBS: tuple[str, ...] = (
-        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
+        "branch-policy", "hygiene", *FULL_JOBS, "source-qualification",
     )
 
 
@@ -653,12 +818,36 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
     return ref != "refs/heads/dev"
 
 
-def require_success(results: Mapping[str, object], require_package: bool) -> None:
-    """Fail closed unless the complete expected dependency set actually succeeded.
+def validation_requirements(event_name: str, event: Mapping[str, object], ref: str,
+                            repository: str) -> tuple[bool, bool, bool]:
+    """Return full-runtime, package, and source-proof requirements for a validated CI event.
 
-    The packages job may be skipped only for dev. Unknown/missing jobs and every
-    other non-success conclusion raise ValueError, including a skipped test matrix.
-    This function never treats the absence of a failing job as successful evidence.
+    Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
+    Unchanged preprod promotions reuse source evidence; prod promotions consume
+    the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
+    """
+    packages = package_required(event_name, event, ref, repository)
+    if event_name == "workflow_dispatch":
+        return True, packages, False
+    if event_name != "pull_request":
+        raise ValueError("Source CI runs on pull requests or explicit manual qualification, not pushes.")
+    pr = object_value(event["pull_request"], "pull_request")
+    base = object_value(pr["base"], "base")["ref"]
+    head = object_value(pr["head"], "head")["ref"]
+    if base == "prod":
+        return False, False, False
+    if base == "release_candidate" and head == "preprod":
+        return False, False, True
+    return True, packages, False
+
+
+def require_success(results: Mapping[str, object], require_package: bool,
+                    require_runtime: bool = True, require_source: bool = False) -> None:
+    """Require complete dependency evidence and success for the selected validation profile.
+
+    Optional jobs may succeed or be explicitly skipped; failure/cancellation
+    never becomes success. Missing or unknown slots always fail, even when a
+    profile legitimately omits the full suite.
     """
     expected = set(CIPolicy.REQUIRED_JOBS) | {"packages"}
     if set(results) != expected:
@@ -669,11 +858,34 @@ def require_success(results: Mapping[str, object], require_package: bool) -> Non
     failures: list[str] = []
     for name in sorted(expected):
         result = object_value(results[name], f"needs.{name}").get("result")
-        allowed = ("success", "skipped") if name == "packages" and not require_package else ("success",)
+        required = (name in ("branch-policy", "hygiene")
+                    or name in CIPolicy.FULL_JOBS and require_runtime
+                    or name == "packages" and require_package
+                    or name == "source-qualification" and require_source)
+        allowed = ("success",) if required else ("success", "skipped")
         if result not in allowed:
             failures.append(f"{name}={result!r}")
     if failures:
         raise ValueError("Required CI did not succeed: " + ", ".join(failures))
+
+
+def require_ci_results() -> tuple[bool, bool, bool]:
+    """Recompute requirements from event identity and verify both flags and job results.
+
+    The branch job's outputs control scheduling, but cannot silently waive a
+    requirement by emitting an empty or incorrect flag. Return the verified
+    profile for consumers such as the full-qualification record writer.
+    """
+    requirements = validation_requirements(
+        os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
+        os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
+    )
+    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE"), requirements, strict=True):
+        if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
+            raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
+    require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
+                    requirements[1], requirements[0], requirements[2])
+    return requirements
 
 
 def case_collisions(paths: Sequence[str]) -> list[list[str]]:
@@ -687,7 +899,7 @@ def case_collisions(paths: Sequence[str]) -> list[list[str]]:
 def require_candidate_success(results: Mapping[str, object]) -> None:
     """Require every candidate stage to succeed, including the complete install matrix."""
     if set(results) != set(CIPolicy.CANDIDATE_JOBS):
-        raise ValueError("Incomplete candidate dependency evidence; all four stages are required.")
+        raise ValueError("Incomplete candidate dependency evidence; all five stages are required.")
     failures = [name for name in CIPolicy.CANDIDATE_JOBS
                 if object_value(results[name], f"needs.{name}").get("result") != "success"]
     if failures:
@@ -807,17 +1019,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.gate == "branch":
-            required = package_required(os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
-                                        os.environ.get("GITHUB_REF", ""),
-                                        os.environ.get("GITHUB_REPOSITORY", ""))
+            requirements = validation_requirements(
+                os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), os.environ.get("GITHUB_REF", ""),
+                os.environ.get("GITHUB_REPOSITORY", ""),
+            )
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-                output.write(f"package-required={str(required).lower()}\n")
+                for name, required in zip(("runtime", "package", "source"), requirements, strict=True):
+                    output.write(f"{name}-required={str(required).lower()}\n")
         elif args.gate == "merge-ready":
-            required_text = os.environ.get("CI_PACKAGE_REQUIRED", "")
-            if required_text not in ("true", "false"):
-                raise ValueError("Missing/invalid package requirement from branch-policy.")
-            results = object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs")
-            require_success(results, required_text == "true")
+            require_ci_results()
         elif args.gate == "hygiene":
             collisions = case_collisions(git_output(("ls-files", "-z")).split("\0")[:-1])
             if collisions:
@@ -855,6 +1065,337 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ================================================================================
 END FILE: .github/scripts/ci_policy.py
+================================================================================
+================================================================================
+BEGIN FILE: .github/scripts/ci_qualification.py
+CONTENT SHA256: 3e955bbad047805ccda9fb2a603ff74d6ef025c22149e5aeb1ac56d9f49aa35a
+SOURCE ENCODING: utf-8
+================================================================================
+"""Record full CI evidence and verify it before reusing an unchanged source tree."""
+
+import argparse
+import json
+import os
+import pathlib
+import re
+import urllib.parse
+import urllib.request
+from collections.abc import Mapping, Sequence
+from typing import Optional
+
+from check_candidate_run import commit_id, positive_integer
+from ci_policy import (git_output, object_value, read_event, require_ci_results, text_value,
+                       validate_route, validation_requirements)
+
+
+class SourceQualificationPolicy:
+    """Define the versioned, bounded source-proof format and trusted producer workflow."""
+
+    SCHEMA = 1
+    WORKFLOW = ".github/workflows/ci.yml"
+    PAGE_SIZE = 100
+    MAX_PAGES = 10
+    MAX_RECORD_BYTES = 65536
+
+
+def mappings(value: object, label: str) -> list[Mapping[str, object]]:
+    """Require an API list of objects; malformed evidence cannot become an empty result."""
+    if not isinstance(value, list):
+        raise ValueError(f"{label} must be a list.")
+    return [object_value(item, label) for item in value]
+
+
+def github_json(repository: str, endpoint: str, query: Mapping[str, object]) -> object:
+    """Read JSON from the fixed GitHub API without logging or forwarding its credential to artifacts."""
+    if re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) is None:
+        raise ValueError("Invalid GitHub repository identity.")
+    if endpoint.startswith(("/", "http:", "https:")):
+        raise ValueError("An API endpoint must be repository-relative.")
+    suffix = "?" + urllib.parse.urlencode(query) if query else ""
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repository}/{endpoint}{suffix}",
+        headers={"Accept": "application/vnd.github+json",
+                 "Authorization": f"Bearer {text_value(os.environ.get('GITHUB_TOKEN'), 'GITHUB_TOKEN')}",
+                 "User-Agent": "melder-source-qualification"},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+
+def github_items(repository: str, endpoint: str, key: Optional[str] = None,
+                 **query: object) -> list[Mapping[str, object]]:
+    """Read all bounded API pages, refusing truncation instead of choosing incomplete evidence."""
+    result: list[Mapping[str, object]] = []
+    for page in range(1, SourceQualificationPolicy.MAX_PAGES + 1):
+        payload = github_json(repository, endpoint, {
+            **query, "per_page": SourceQualificationPolicy.PAGE_SIZE, "page": page,
+        })
+        values = object_value(payload, endpoint).get(key) if key is not None else payload
+        rows = mappings(values, endpoint)
+        result.extend(rows)
+        if len(rows) < SourceQualificationPolicy.PAGE_SIZE:
+            return result
+    raise ValueError("Source qualification history exceeds the pagination bound; establish fresh evidence.")
+
+
+def latest_run(runs: Sequence[Mapping[str, object]]) -> Mapping[str, object]:
+    """Select the newest applicable CI run without falling back past a failed or pending run."""
+    if not runs:
+        raise ValueError("No full CI qualification found. Run CI manually on the intended preprod/RC branch.")
+    numbers = [positive_integer(run.get("run_number")) for run in runs]
+    if len(numbers) != len(set(numbers)):
+        raise ValueError("Ambiguous source CI run evidence.")
+    return runs[numbers.index(max(numbers))]
+
+
+def assert_fields(actual: Mapping[str, object], expected: Mapping[str, object], label: str) -> None:
+    """Require exact values and types, so booleans and string coercions cannot impersonate IDs."""
+    differences = [key for key, value in expected.items()
+                   if type(actual.get(key)) is not type(value) or actual.get(key) != value]
+    if differences:
+        raise ValueError(f"{label} differs in {', '.join(differences)}.")
+
+
+def select_run(repository: str, source_sha: str, tree: str, run: Mapping[str, object],
+               event: str, branch: str, head_sha: str, head_branch: str,
+               pr_number: int = 0, base_sha: str = "") -> dict[str, object]:
+    """Bind a complete successful CI run to one non-expired run/attempt-specific artifact.
+
+    The API owns run provenance; the downloaded JSON must later prove the actual
+    tested merge tree. Artifact presence alone is never sufficient.
+    """
+    run_id = positive_integer(run.get("id"))
+    attempt = positive_integer(run.get("run_attempt"))
+    for field in ("repository", "head_repository"):
+        if object_value(run.get(field), field).get("full_name") != repository:
+            raise ValueError("Source CI repository identity does not match.")
+    assert_fields(run, {"path": SourceQualificationPolicy.WORKFLOW, "event": event,
+                        "head_sha": head_sha, "head_branch": head_branch,
+                        "status": "completed", "conclusion": "success"},
+                  f"Source CI https://github.com/{repository}/actions/runs/{run_id}")
+    name = f"source-qualification-{run_id}-{attempt}"
+    artifacts = [artifact for artifact in github_items(repository, f"actions/runs/{run_id}/artifacts", "artifacts")
+                 if artifact.get("name") == name]
+    if len(artifacts) != 1 or artifacts[0].get("expired") is not False:
+        raise ValueError(f"Missing, expired or ambiguous {name}. Run full CI again on {branch}.")
+    expected = {
+        "schema": SourceQualificationPolicy.SCHEMA, "repository": repository,
+        "run_id": run_id, "run_attempt": attempt, "event": event,
+        "target_branch": branch, "head_sha": head_sha, "base_sha": base_sha,
+        "pull_request": pr_number, "tree_sha": tree, "full_runtime": True, "package_required": True,
+    }
+    return {"source_sha": source_sha, "artifact_id": positive_integer(artifacts[0].get("id")),
+            "artifact_name": name, "expected": expected}
+
+
+def merged_pull_request(repository: str, sha: str, branch: str) -> Mapping[str, object]:
+    """Resolve the PR that actually produced this commit, never merely one containing it."""
+    candidates = [
+        pr for pr in github_items(repository, f"commits/{sha}/pulls")
+        if pr.get("merge_commit_sha") == sha and isinstance(pr.get("merged_at"), str)
+        and pr["merged_at"] and object_value(pr.get("base"), "base").get("ref") == branch
+    ]
+    if len(candidates) != 1:
+        raise ValueError(f"No unique merged PR proves {branch}:{sha}. Run full CI manually on {branch}.")
+    pr = candidates[0]
+    base = object_value(pr["base"], "base")
+    head = object_value(pr.get("head"), "head")
+    if object_value(base.get("repo"), "base.repo").get("full_name") != repository:
+        raise ValueError("Source PR base repository does not match.")
+    validate_route(branch, text_value(head.get("ref"), "head.ref"),
+                   text_value(object_value(head.get("repo"), "head.repo").get("full_name"), "head.repo"),
+                   repository)
+    return pr
+
+
+def select_for_commit(repository: str, sha: str, branch: str, tree: str) -> dict[str, object]:
+    """Resolve full preprod or release-fix qualification for the exact promoted tree.
+
+    Exact-commit manual CI takes precedence when present. Otherwise a preprod
+    merge resolves to its full PR run; an RC preprod promotion follows that
+    preprod commit once. A release-fix merge resolves to its own full PR run.
+    """
+    if branch not in ("preprod", "release_candidate"):
+        raise ValueError("Release source requires full preprod or candidate-fix qualification.")
+    commit = object_value(github_json(repository, f"git/commits/{commit_id(sha)}", {}), "commit")
+    assert_fields(commit, {"sha": sha}, "Source commit")
+    if commit_id(object_value(commit.get("tree"), "tree").get("sha")) != tree:
+        raise ValueError("Promotion tree differs from its source; qualify the changed contents first.")
+    manual = github_items(repository, "actions/workflows/ci.yml/runs", "workflow_runs",
+                          head_sha=sha, branch=branch, event="workflow_dispatch")
+    if manual:
+        return select_run(repository, sha, tree, latest_run(manual), "workflow_dispatch", branch, sha, branch)
+    pr = merged_pull_request(repository, sha, branch)
+    head = object_value(pr["head"], "head")
+    head_sha = commit_id(head.get("sha"))
+    parents = mappings(commit.get("parents"), "commit.parents")
+    if len(parents) != 2 or commit_id(parents[1].get("sha")) != head_sha:
+        raise ValueError("Promotion must preserve its PR head as a normal merge parent; requalify manually.")
+    base_sha = commit_id(parents[0].get("sha"))
+    if branch == "release_candidate" and head["ref"] == "preprod":
+        return select_for_commit(repository, head_sha, "preprod", tree)
+    number = positive_integer(pr.get("number"))
+    runs = github_items(repository, "actions/workflows/ci.yml/runs", "workflow_runs",
+                        head_sha=head_sha, branch=head["ref"], event="pull_request")
+    # GitHub may erase run.pull_requests after merge. The downloaded full-run
+    # record, not that mutable association list, must prove the PR identity.
+    return select_run(repository, sha, tree, latest_run(runs), "pull_request", branch,
+                      head_sha, text_value(head["ref"], "head.ref"), number, base_sha)
+
+
+def require_clean_tracked_checkout() -> None:
+    """Reject real index/content/mode changes without mistaking checkout EOL policy for mutation.
+
+    A legacy CRLF blob under text/eol=lf can be reported dirty even when its
+    checked-out bytes match HEAD exactly. Only unchanged regular-file modes and
+    identical unfiltered blob IDs clear that false positive. Never normalize or
+    restore files, ignore whitespace, or waive an entire directory. Untracked
+    reports/caches remain outside this tracked-source contract.
+    """
+    staged = git_output(("diff", "--cached", "--name-only", "--no-renames", "--no-ext-diff", "-z", "HEAD", "--"))
+    if staged:
+        paths = staged.rstrip("\0").split("\0")
+        raise ValueError(f"Tracked staged modifications cannot be qualified: {paths[:10]!r}. Commit intended changes first.")
+    raw = git_output(("diff", "--raw", "--no-abbrev", "--no-renames", "--no-ext-diff", "-z", "HEAD", "--"))
+    if not raw:
+        return
+    records = raw.split("\0")
+    if records[-1] != "" or len(records) % 2 != 1:
+        raise ValueError("Malformed tracked-checkout diff; refusing incomplete source evidence.")
+    changed: list[str] = []
+    for offset in range(0, len(records) - 1, 2):
+        metadata, path = records[offset], records[offset + 1]
+        fields = metadata.split()
+        if not metadata.startswith(":") or len(fields) != 5 or not path:
+            raise ValueError("Malformed tracked-checkout diff entry; refusing source qualification.")
+        before, after, blob, _, status = fields
+        if status != "M" or before[1:] != after or after not in ("100644", "100755"):
+            changed.append(path)
+        elif git_output(("hash-object", "--no-filters", "--", path)) != commit_id(blob):
+            changed.append(path)
+    if changed:
+        raise ValueError(
+            f"Tracked checkout modifications cannot be qualified: {changed[:10]!r} "
+            f"({len(changed)} paths). Commit intended edits or restore the selected revision, then rerun CI."
+        )
+
+
+def checkout_identity() -> tuple[str, str]:
+    """Require the exact event commit and unchanged tracked bytes/modes; return its commit/tree IDs."""
+    sha = commit_id(git_output(("rev-parse", "HEAD^{commit}")))
+    if sha != commit_id(os.environ.get("GITHUB_SHA")):
+        raise ValueError("Checkout differs from GITHUB_SHA; source evidence cannot be reused.")
+    require_clean_tracked_checkout()
+    return sha, commit_id(git_output(("rev-parse", "HEAD^{tree}")))
+
+
+def select_source() -> dict[str, object]:
+    """Select evidence for an unchanged preprod-to-RC PR or the current RC publication checkout."""
+    repository = text_value(os.environ.get("GITHUB_REPOSITORY"), "GITHUB_REPOSITORY")
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    event = read_event()
+    ref = os.environ.get("GITHUB_REF", "")
+    sha, tree = checkout_identity()
+    if event_name == "pull_request":
+        if validation_requirements(event_name, event, ref, repository) != (False, False, True):
+            raise ValueError("This PR does not use preprod source qualification.")
+        head = object_value(object_value(event["pull_request"], "pull_request")["head"], "head")
+        return select_for_commit(repository, commit_id(head.get("sha")), "preprod", tree)
+    if event_name in ("push", "workflow_dispatch") and ref == "refs/heads/release_candidate":
+        return select_for_commit(repository, sha, "release_candidate", tree)
+    raise ValueError("Source proof consumption requires a preprod promotion PR or an RC checkout.")
+
+
+def full_record() -> dict[str, object]:
+    """Create evidence only after a complete full-profile CI dependency set succeeded.
+
+    A PR record identifies its tested merge parents and tree, rather than
+    confusing the run API's head SHA with the actual merge checkout.
+    Light profiles cannot emit this record, even if their other jobs are green.
+    """
+    runtime, package, _ = require_ci_results()
+    if not runtime:
+        raise ValueError("A light CI run cannot issue full runtime qualification.")
+    sha, tree = checkout_identity()
+    event_name = os.environ["GITHUB_EVENT_NAME"]
+    event = read_event()
+    branch = os.environ.get("GITHUB_REF", "").removeprefix("refs/heads/")
+    head_sha, base_sha, number = sha, "", 0
+    if event_name == "pull_request":
+        pr = object_value(event["pull_request"], "pull_request")
+        head = object_value(pr["head"], "head")
+        base = object_value(pr["base"], "base")
+        branch = text_value(base["ref"], "base.ref")
+        head_sha, base_sha = commit_id(head.get("sha")), commit_id(base.get("sha"))
+        number = positive_integer(pr.get("number"))
+        parents = git_output(("rev-list", "--parents", "-n", "1", "HEAD")).split()
+        if parents != [sha, base_sha, head_sha]:
+            raise ValueError("PR checkout parents differ from the event; rerun current merge qualification.")
+    return {
+        "schema": SourceQualificationPolicy.SCHEMA,
+        "repository": text_value(os.environ.get("GITHUB_REPOSITORY"), "GITHUB_REPOSITORY"),
+        "run_id": positive_integer(int(os.environ["GITHUB_RUN_ID"])),
+        "run_attempt": positive_integer(int(os.environ["GITHUB_RUN_ATTEMPT"])),
+        "event": event_name, "target_branch": branch, "head_sha": head_sha, "base_sha": base_sha,
+        "pull_request": number, "checkout_sha": sha, "tree_sha": tree,
+        "full_runtime": True, "package_required": package,
+    }
+
+
+def validate_proof(proof: Mapping[str, object], expected: Mapping[str, object]) -> None:
+    """Require the exact versioned full-runtime record and tested tree, not just an artifact name."""
+    if set(proof) != set(expected) | {"checkout_sha"}:
+        raise ValueError("Source qualification record has unexpected or missing fields.")
+    commit_id(proof.get("checkout_sha"))
+    assert_fields(proof, expected, "Full CI qualification")
+    if expected["event"] == "workflow_dispatch" and proof["checkout_sha"] != expected["head_sha"]:
+        raise ValueError("Manual qualification checkout differs from its run head.")
+
+
+def read_record(path: pathlib.Path) -> Mapping[str, object]:
+    """Read a bounded JSON proof as data; never import or execute downloaded artifacts."""
+    with path.open("rb") as stream:
+        raw = stream.read(SourceQualificationPolicy.MAX_RECORD_BYTES + 1)
+    if len(raw) > SourceQualificationPolicy.MAX_RECORD_BYTES:
+        raise ValueError("Source qualification record is too large.")
+    return object_value(json.loads(raw), "qualification record")
+
+
+def write_record(path: pathlib.Path, record: Mapping[str, object]) -> None:
+    """Write one job-owned JSON report after its evidence has been validated."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Record, select, or verify source evidence; all GitHub access is read-only."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("operation", choices=("record", "select", "verify"))
+    parser.add_argument("--record", type=pathlib.Path, default=pathlib.Path("reports/qualification.json"))
+    parser.add_argument("--selection", type=pathlib.Path, default=pathlib.Path("reports/source-selection.json"))
+    args = parser.parse_args(argv)
+    if args.operation == "record":
+        write_record(args.record, full_record())
+    elif args.operation == "select":
+        selection = select_source()
+        write_record(args.selection, selection)
+        expected = object_value(selection["expected"], "expected")
+        with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+            output.write(f"run-id={expected['run_id']}\nartifact-id={selection['artifact_id']}\n")
+    else:
+        saved = read_record(args.selection)
+        current = select_source()
+        if saved != current:
+            raise ValueError("Source qualification changed while downloading; rerun the proof check.")
+        validate_proof(read_record(args.record), object_value(current["expected"], "expected"))
+        print(f"OK: full CI qualifies tree {object_value(current['expected'], 'expected')['tree_sha']}.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/ci_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/normalize_sdist.py
@@ -945,8 +1486,203 @@ if __name__ == "__main__":
 END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
+BEGIN FILE: .github/scripts/python_runtime_matrix.py
+CONTENT SHA256: 5f94b0b333954326246f5e982d376d595991b167baa5325ef138e82199808c4e
+SOURCE ENCODING: utf-8
+================================================================================
+"""Discover stable supported no-GIL runtimes and verify their coverage report inventory."""
+
+import argparse
+import json
+import os
+import pathlib
+import re
+import tomllib
+import urllib.request
+from collections.abc import Mapping, Sequence
+from typing import Optional
+
+from ci_policy import object_value
+
+
+class RuntimeMatrixPolicy:
+    """Keep discovery bounds and the supported runner architectures in one place."""
+
+    MANIFEST_URL = "https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json"
+    MAX_MANIFEST_BYTES = 8 * 1024 * 1024
+    MAX_JOBS = 256
+    TARGETS = (
+        ("ubuntu-latest", "linux", "x64"),
+        ("windows-latest", "win32", "x64"),
+        ("macos-latest", "darwin", "arm64"),
+    )
+
+
+def supported_floor(project: Optional[pathlib.Path] = None) -> tuple[int, int, int]:
+    """Read the declared Python floor without importing Melder or guessing complex constraints.
+
+    Accept one >=major.minor[.patch] requirement, matching this repository's
+    supported-version policy. Refuse other constraint forms so a metadata change
+    cannot silently produce a matrix outside the package's declared support.
+    """
+    path = project if project is not None else pathlib.Path(__file__).resolve().parents[2] / "pyproject.toml"
+    with path.open("rb") as stream:
+        document = tomllib.load(stream)
+    requirement = object_value(document.get("project"), "project").get("requires-python")
+    match = re.fullmatch(r">=([1-9]\d*)\.(0|[1-9]\d*)(?:\.(0|[1-9]\d*))?", str(requirement))
+    if match is None:
+        raise ValueError("Python matrix needs one >=major.minor[.patch] floor in project.requires-python.")
+    return int(match[1]), int(match[2]), int(match[3] or 0)
+
+
+def stable_version(value: object) -> tuple[int, int, int]:
+    """Parse one exact final Python release; reject prereleases, ranges and unsafe artifact labels."""
+    if not isinstance(value, str) or re.fullmatch(r"[1-9]\d*\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", value) is None:
+        raise ValueError(f"Expected an exact stable Python release, received {value!r}.")
+    major, minor, patch = value.split(".")
+    return int(major), int(minor), int(patch)
+
+
+def version_matrix(versions: Sequence[str], floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
+    """Build the complete OS/version product, refusing empty, duplicate, or below-floor versions.
+
+    One patch per minor is intentional. Every selected minor gets all three
+    runner architectures; an excessive matrix fails instead of truncating tests.
+    """
+    parsed = [stable_version(version) for version in versions]
+    minors = [version[:2] for version in parsed]
+    if (not parsed or len(set(minors)) != len(minors) or floor[:2] not in minors
+            or any(version < floor for version in parsed)
+            or len(parsed) * len(RuntimeMatrixPolicy.TARGETS) > RuntimeMatrixPolicy.MAX_JOBS):
+        raise ValueError("Runtime matrix must cover the supported floor and one patch per minor within the job limit.")
+    return {"include": [
+        {"os": runner, "python": ".".join(map(str, version)), "architecture": architecture}
+        for version in sorted(parsed)
+        for runner, _, architecture in RuntimeMatrixPolicy.TARGETS
+    ]}
+
+
+def discover_matrix(payload: object, floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
+    """Select the latest stable patch per supported minor from the official release manifest.
+
+    Stable false entries are excluded, including prereleases. Every chosen
+    release must advertise free-threaded assets for all supported platforms.
+    Missing assets fail rather than substituting normal Python or an older patch.
+    Asset URLs are never followed here; setup-python owns interpreter installation.
+    """
+    if not isinstance(payload, list):
+        raise ValueError("Python release manifest must be a list.")
+    releases: dict[tuple[int, int, int], set[tuple[str, str]]] = {}
+    for value in payload:
+        release = object_value(value, "Python release")
+        if type(release.get("stable")) is not bool:
+            raise ValueError("Python release is missing its explicit stable flag.")
+        if not release["stable"]:
+            continue
+        version = stable_version(release.get("version"))
+        if version < floor:
+            continue
+        files = release.get("files")
+        if not isinstance(files, list):
+            raise ValueError("Stable Python release is missing its asset list.")
+        available = releases.setdefault(version, set())
+        for item in files:
+            asset = object_value(item, "Python asset")
+            platform, architecture = asset.get("platform"), asset.get("arch")
+            if not isinstance(platform, str) or not isinstance(architecture, str):
+                raise ValueError("Python asset must identify its platform and architecture.")
+            available.add((platform, architecture))
+    latest: dict[tuple[int, int], tuple[int, int, int]] = {}
+    for version in sorted(releases):
+        latest[version[:2]] = version
+    versions = [".".join(map(str, version)) for version in sorted(latest.values())]
+    matrix = version_matrix(versions, floor)
+    for version in latest.values():
+        missing = [runner for runner, platform, architecture in RuntimeMatrixPolicy.TARGETS
+                   if (platform, architecture + "-freethreaded") not in releases[version]]
+        if missing:
+            label = ".".join(map(str, version))
+            raise ValueError(f"Python {label} lacks free-threaded assets for {missing}; cannot qualify every platform.")
+    return matrix
+
+
+def fetch_manifest() -> object:
+    """Read bounded public release metadata with a timeout and no authentication or executable content."""
+    request = urllib.request.Request(RuntimeMatrixPolicy.MANIFEST_URL,
+                                     headers={"User-Agent": "melder-runtime-ci", "Accept": "application/json"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        raw = response.read(RuntimeMatrixPolicy.MAX_MANIFEST_BYTES + 1)
+    if len(raw) > RuntimeMatrixPolicy.MAX_MANIFEST_BYTES:
+        raise ValueError("Python release manifest exceeds the permitted size.")
+    return json.loads(raw)
+
+
+def validate_matrix(value: object, floor: tuple[int, int, int]) -> dict[str, list[dict[str, str]]]:
+    """Require the exact complete matrix shape before using its labels in report paths."""
+    document = object_value(value, "runtime matrix")
+    entries = document.get("include")
+    if set(document) != {"include"} or not isinstance(entries, list):
+        raise ValueError("Runtime matrix must contain an include list only.")
+    versions: set[str] = set()
+    for entry in entries:
+        version = object_value(entry, "matrix entry").get("python")
+        stable_version(version)
+        versions.add(str(version))
+    expected = version_matrix(sorted(versions, key=stable_version), floor)
+    if document != expected:
+        raise ValueError("Runtime matrix has missing, duplicate or unexpected OS/version entries.")
+    return expected
+
+
+def require_coverage(directory: pathlib.Path, matrix: Mapping[str, list[dict[str, str]]],
+                     run_id: str, attempt: str) -> None:
+    """Require a nonempty coverage report for every discovered OS/version from this run attempt.
+
+    Reject missing and unexpected report directories before Codecov receives a
+    partial matrix. Inputs must already have passed validate_matrix.
+    """
+    if re.fullmatch(r"[1-9]\d*", run_id) is None or re.fullmatch(r"[1-9]\d*", attempt) is None:
+        raise ValueError("Coverage reports require positive run and attempt identifiers.")
+    names = {f"coverage-{entry['os']}-python-{entry['python']}-{run_id}-{attempt}" for entry in matrix["include"]}
+    observed = {path.name for path in directory.iterdir()}
+    if observed != names:
+        raise ValueError(f"Coverage matrix differs: missing={sorted(names - observed)}, unexpected={sorted(observed - names)}.")
+    for name in sorted(names):
+        report = directory / name / "coverage.xml"
+        if not report.is_file() or report.stat().st_size == 0:
+            raise ValueError(f"Missing or empty coverage report: {name}/coverage.xml")
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Discover/record a matrix or verify reports; propagate discovery and completeness failures."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("operation", choices=("discover", "coverage"))
+    parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("reports/python-matrix.json"))
+    parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("coverage-reports"))
+    args = parser.parse_args(argv)
+    floor = supported_floor()
+    if args.operation == "discover":
+        matrix = discover_matrix(fetch_manifest(), floor)
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
+        with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+            output.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
+        print(f"Selected {len(matrix['include'])} stable no-GIL OS/version combinations.")
+    else:
+        matrix = validate_matrix(json.loads(os.environ["CI_PYTHON_MATRIX"]), floor)
+        require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
+        print("OK: coverage reports cover the complete discovered no-GIL matrix.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+================================================================================
+END FILE: .github/scripts/python_runtime_matrix.py
+================================================================================
+================================================================================
 BEGIN FILE: .github/scripts/run_runtime_tests.py
-CONTENT SHA256: edd07f676c9bac52a321e7d0ec26d998bf378fdc74ce9ad60b29db19f4f727f6
+CONTENT SHA256: 1312362d1a86700865b4ebea57f7b766a530dd23d47dfe5674e24189d536658c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Execute the supported pytest tiers in a verified free-threaded Python process."""
@@ -963,29 +1699,39 @@ def require_free_threading(version: Sequence[int], supported: object, gil_enable
     if tuple(version[:2]) < (3, 14) or supported != 1 or gil_enabled:
         raise RuntimeError(
             "Melder runtime CI requires Python 3.14+ free-threaded with the GIL disabled. "
-            "Select Python 3.14t and set PYTHON_GIL=0 for the test process."
+            "Select a supported free-threaded Python build and set PYTHON_GIL=0 for the test process."
         )
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    """Run the three supported tiers and write JUnit evidence even when pytest fails.
+    """Run the three supported tiers with JUnit and optional Melder coverage XML.
 
     Verify the actual process before and after pytest, rather than checking a
     separate interpreter invocation. The workflow explicitly fixes PYTHON_GIL=0.
     The return value is pytest's exit code; unsupported runtime state raises.
+    --coverage-report enables line/branch measurement in that same pytest run;
+    it does not add a second run or a minimum-coverage threshold. Report parent
+    directories are created before execution; pytest-cov owns XML generation.
     """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=pathlib.Path, required=True)
+    parser.add_argument("--coverage-report", type=pathlib.Path)
     args = parser.parse_args(argv)
     import pytest
 
     require_free_threading(sys.version_info, sysconfig.get_config_var("Py_GIL_DISABLED"),
                            sys._is_gil_enabled())
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    result = pytest.main([
+    test_arguments = [
         "-q", "tests/unit", "tests/component", "tests/integration",
         f"--junitxml={args.report}",
-    ])
+    ]
+    if args.coverage_report is not None:
+        args.coverage_report.parent.mkdir(parents=True, exist_ok=True)
+        test_arguments.extend([
+            "--cov=melder", "--cov-branch", f"--cov-report=xml:{args.coverage_report}",
+        ])
+    result = pytest.main(test_arguments)
     require_free_threading(sys.version_info, sysconfig.get_config_var("Py_GIL_DISABLED"),
                            sys._is_gil_enabled())
     return int(result)
@@ -998,7 +1744,7 @@ END FILE: .github/scripts/run_runtime_tests.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/smoke_wheel.py
-CONTENT SHA256: 34a27accf1d6cfd77f5f9fe6ac00f689ec451bcd11b92195d147052798e1adde
+CONTENT SHA256: ff33e01745f79d4bf4940c32bb61ae1caa734809bc7972921ca6d2f2f641be66
 SOURCE ENCODING: utf-8
 ================================================================================
 """Exercise installed package identity, data, and a small public runtime contract in isolation."""
@@ -1063,7 +1809,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     if args.expected_version is not None and melder.__version__ != args.expected_version:
         raise RuntimeError("Installed Melder version differs from the selected candidate.")
     if sysconfig.get_config_var("Py_GIL_DISABLED") != 1 or sys._is_gil_enabled():
-        raise RuntimeError("Package probe requires Python 3.14t with the GIL disabled.")
+        raise RuntimeError("Package probe requires a supported free-threaded Python build with the GIL disabled.")
     documents = (melder.__architecture__, melder.__components__,
                  melder.__graph_network__, melder.__graph_details__)
     if not all(document.verify() for document in documents):
@@ -1514,7 +2260,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: 227dbc111d3b44bcd5cebfba27dd24af0c8eb1da76df6adc6e14a9208362d281
+CONTENT SHA256: cefce537f69b23a397d62ee4d23c12a79112133d73f051d49b97cff9c9fe8ce2
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -1551,7 +2297,9 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version-file: pyproject.toml
+          freethreaded: true
+          allow-prereleases: false
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install build tools
@@ -1674,20 +2422,18 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: 54668c879f6d6c5db4234708785aaec6605abb1961ca0d316d0d5fc00fdf7088
+CONTENT SHA256: 2b3a7a503d90147b7ed9bf954e83503abe58b33afac043982770f1e082ca0146
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
 
 # A required check must be reported for every PR, including docs-only changes.
-# Feature pushes are covered by their PR; permanent-branch pushes validate the
-# resulting revision. No path filters or repository-variable kill switches.
+# PRs qualify changes; later promotions verify that qualification. Ordinary
+# pushes do not repeat the source suite. Manual CI performs full qualification.
 on:
   pull_request:
     branches: [dev, preprod, release_candidate, prod]
     types: [opened, synchronize, reopened, ready_for_review, edited]
-  push:
-    branches: [dev, preprod, prod]
   workflow_dispatch:
 
 permissions:
@@ -1705,7 +2451,9 @@ jobs:
     permissions:
       contents: read
     outputs:
+      runtime-required: ${{ steps.route.outputs.runtime-required }}
       package-required: ${{ steps.route.outputs.package-required }}
+      source-required: ${{ steps.route.outputs.source-required }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1729,16 +2477,35 @@ jobs:
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/build-src-assets.yml
 
   repo-assets:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/build-repo-assets.yml
 
   tests:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/test-runtime.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   documentation:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/docs.yml
+
+  source-qualification:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.source-required == 'true'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    uses: ./.github/workflows/verify-source-qualification.yml
 
   packages:
     needs: branch-policy
@@ -1749,12 +2516,12 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages, source-qualification]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       contents: read
       actions: read
@@ -1768,15 +2535,33 @@ jobs:
       - name: Require every mandatory check to succeed
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
+          CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
         run: python .github/scripts/ci_policy.py merge-ready
+      - name: Record the exact full CI qualification
+        if: needs.branch-policy.outputs.runtime-required == 'true'
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
+          CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
+          CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
+        run: python .github/scripts/ci_qualification.py record
+      - name: Retain full CI source evidence
+        if: needs.branch-policy.outputs.runtime-required == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: source-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/qualification.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Require the exact candidate before prod promotion
-        # RC qualification can finish while the source tests and package build run.
-        # Keep this proof last so a pending RC does not fail early branch routing.
+        # Light promotion CI may finish before RC upload/probes. Wait only for
+        # authentic pending evidence; a completed failure still refuses at once.
         if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python .github/scripts/check_candidate_run.py
+        run: python .github/scripts/check_candidate_run.py --wait-seconds 600
 ================================================================================
 END FILE: .github/workflows/ci.yml
 ================================================================================
@@ -1840,7 +2625,7 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: 0bfe02532be2228fd8b503e04d4e6e3b0596d5c8b73c69ab34a7dc0995ada541
+CONTENT SHA256: 476b8f0c0118960358894c3124dd3368bedfce0d2dd7dea61f5c4d6362503777
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -1907,6 +2692,8 @@ jobs:
   tests:
     needs: release-gate
     uses: ./.github/workflows/test-runtime.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   release-build:
     needs: [release-gate, hygiene, source-assets, repo-assets, tests]
@@ -1964,7 +2751,7 @@ END FILE: .github/workflows/python-publish.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/release-candidate.yml
-CONTENT SHA256: 442250134b328c8c8609c676ad2480fe5b370c6c0a89bfd283c189723e258c8e
+CONTENT SHA256: 3071377a9acefeccda8d3d7f03edddeb8feaa5e038454d276d2b6149eb5b6c6b
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Release candidate
@@ -1988,22 +2775,42 @@ jobs:
     name: RC / authorize
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: python .github/scripts/ci_policy.py candidate-head
+      - name: Discover every supported stable no-GIL minor
+        id: runtimes
+        run: python .github/scripts/python_runtime_matrix.py discover
+      - name: Retain the selected candidate runtime matrix
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-python-matrix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/python-matrix.json
+          if-no-files-found: error
+          retention-days: 90
+
+  source-qualification:
+    needs: authorize
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    uses: ./.github/workflows/verify-source-qualification.yml
 
   build:
-    needs: authorize
+    needs: [authorize, source-qualification]
     uses: ./.github/workflows/build-distributions.yml
     with:
       artifact-name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
 
   publish:
     name: RC / publish-to-TestPyPI
-    needs: [authorize, build]
+    needs: [authorize, source-qualification, build]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -2053,19 +2860,21 @@ jobs:
           retention-days: 90
 
   install:
-    name: RC / installed-package / ${{ matrix.os }}
-    needs: [build, publish]
+    name: RC / installed-package / ${{ matrix.os }} / Python ${{ matrix.python }} no-GIL
+    needs: [authorize, build, publish]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+      matrix: ${{ fromJSON(needs.authorize.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version: ${{ matrix.python }}
+          architecture: ${{ matrix.architecture }}
+          freethreaded: true
+          allow-prereleases: false
       - uses: actions/download-artifact@v8
         with:
           name: candidate-dists-${{ github.run_id }}-${{ github.run_attempt }}
@@ -2077,14 +2886,14 @@ jobs:
       - name: Retain installed-package evidence
         uses: actions/upload-artifact@v7
         with:
-          name: candidate-install-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: candidate-install-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/installed.json
           if-no-files-found: error
           retention-days: 90
 
   package-ready:
     name: RC / package-ready
-    needs: [authorize, build, publish, install]
+    needs: [authorize, source-qualification, build, publish, install]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -2104,32 +2913,62 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: fb3e1729990cc61d92d0606167a9f084c11f91e772188931808933af69db2e70
+CONTENT SHA256: e2c44e32a49f4a473382ce078c40d2ec679391e0a4d1eea91747d51da2f00b6f
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
 
 on:
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        description: Optional repository upload token; reporting is skipped when absent.
+        required: false
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  test:
-    name: Runtime / ${{ matrix.os }} / Python 3.14t
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  discover:
+    name: Runtime / discover stable no-GIL versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version-file: pyproject.toml
+          allow-prereleases: false
+      - name: Discover every supported stable minor
+        id: runtimes
+        run: python .github/scripts/python_runtime_matrix.py discover
+      - name: Retain the selected runtime matrix
+        uses: actions/upload-artifact@v7
+        with:
+          name: runtime-python-matrix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/python-matrix.json
+          if-no-files-found: error
+          retention-days: 90
+
+  test:
+    name: Runtime / ${{ matrix.os }} / Python ${{ matrix.python }} no-GIL
+    needs: discover
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          architecture: ${{ matrix.architecture }}
+          freethreaded: true
+          allow-prereleases: false
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install Melder and test dependencies
@@ -2141,17 +2980,121 @@ jobs:
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
           PYTHON_GIL: "0"
-        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml --coverage-report reports/coverage.xml
+      - name: Retain coverage report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/coverage.xml
+          if-no-files-found: warn
+          retention-days: 14
       - name: Retain test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: runtime-results-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: runtime-results-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: reports/runtime.xml
           if-no-files-found: warn
           retention-days: 14
+
+  coverage:
+    name: Coverage / Codecov
+    needs: [discover, test]
+    # Forks still run tests and retain XML, but never receive upload credentials.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Reporting availability must not turn passing tests into a release failure.
+    continue-on-error: true
+    steps:
+      - name: Check Codecov token
+        id: credentials
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [ -n "$CODECOV_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Add repository Actions secret CODECOV_TOKEN to enable coverage uploads."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.credentials.outputs.enabled == 'true'
+      - uses: actions/setup-python@v7
+        if: steps.credentials.outputs.enabled == 'true'
+        with:
+          python-version-file: pyproject.toml
+          allow-prereleases: false
+      - name: Download this run's coverage reports
+        if: steps.credentials.outputs.enabled == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: coverage-reports
+          merge-multiple: false
+      - name: Require the complete coverage matrix
+        if: steps.credentials.outputs.enabled == 'true'
+        env:
+          CI_PYTHON_MATRIX: ${{ needs.discover.outputs.matrix }}
+        run: python .github/scripts/python_runtime_matrix.py coverage
+      - name: Upload coverage to Codecov
+        if: steps.credentials.outputs.enabled == 'true'
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: coverage-reports
+          fail_ci_if_error: true
+          # Final-release tags have already been verified against current prod.
+          override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}
 ================================================================================
 END FILE: .github/workflows/test-runtime.yml
+================================================================================
+================================================================================
+BEGIN FILE: .github/workflows/verify-source-qualification.yml
+CONTENT SHA256: d36cc5a8e7e123ad4007e732cfa51c123e12d4bec92880d1a66002dd08959998
+SOURCE ENCODING: utf-8
+================================================================================
+name: Verify source qualification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  verify:
+    name: Source / full qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Select exact successful full CI evidence
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/ci_qualification.py select
+      - name: Download the selected immutable qualification artifact
+        uses: actions/download-artifact@v8
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run-id }}
+          artifact-ids: ${{ steps.source.outputs.artifact-id }}
+          path: source-proof/
+      - name: Verify the tested tree and refreshed run identity
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/ci_qualification.py verify --record source-proof/qualification.json
+================================================================================
+END FILE: .github/workflows/verify-source-qualification.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .gitignore
@@ -3194,22 +4137,34 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 86876ff167f1b5a074a00b14a3a7df3b7f06a9d81c2bf20b92d74eebaf6e2ce5
+CONTENT SHA256: e06ac20f8c7fffcf7739e1b5aeee6a2922a8e6162bd83b479d63e437c60bc7aa
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
 
-# 🧙 Melder™
+<!-- Local previews and GitHub use the repository asset; PyPI keeps the public img fallback. -->
+<a href="https://melder.readthedocs.io/en/latest/">
+  <picture>
+    <source srcset="docs/_static/branding/melder-banner.jpg">
+    <img src="https://raw.githubusercontent.com/Synaptic724/melder/prod/docs/_static/branding/melder-banner.jpg"
+         alt="Melder — two mages channeling aether in a modern city">
+  </picture>
+</a>
 
 ### The AI-Native Dependency Graph Runtime
 
-**A runtime that an intelligence can read, inhabit, and safely change — while it's running.**
+**Build, inspect, and control your Python application’s dependency graph.**
 
 [![PyPI version](https://badge.fury.io/py/melder.svg)](https://badge.fury.io/py/melder)
 [![Python Version](https://img.shields.io/pypi/pyversions/melder)](https://pypi.org/project/melder)
 [![License](https://img.shields.io/github/license/Synaptic724/melder)](https://github.com/Synaptic724/melder/blob/prod/LICENSE)
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
-[![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
+[![Monthly downloads](https://api.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
+[![Lifetime downloads](https://api.pepy.tech/badge/melder)](https://pepy.tech/projects/melder)
+
+[![CI](https://github.com/Synaptic724/melder/actions/workflows/ci.yml/badge.svg)](https://github.com/Synaptic724/melder/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/Synaptic724/melder/branch/prod/graph/badge.svg)](https://codecov.io/gh/Synaptic724/melder)
+[![Typing: typed](https://img.shields.io/badge/typing-typed-blue)](https://github.com/Synaptic724/melder/blob/prod/src/melder/py.typed)
 
 ### 📚 [Read the Documentation](https://melder.readthedocs.io/en/latest/)
 
@@ -59147,6 +60102,20 @@ def test_lane_routing_diagnostic(shape: str) -> None:
 END FILE: benchmarks/testing_other_di/test_unroll_path_diagnostic.py
 ================================================================================
 ================================================================================
+BEGIN FILE: codecov.yml
+CONTENT SHA256: 30cc1a9ea0d0d685304c649e8f00219402c3f8cb355c88a7c6cc4db0bc1b9c91
+SOURCE ENCODING: utf-8
+================================================================================
+# Coverage is informational; existing CI and release gates remain authoritative.
+coverage:
+  status:
+    project: false
+    patch: false
+comment: false
+================================================================================
+END FILE: codecov.yml
+================================================================================
+================================================================================
 BEGIN FILE: docs/advanced/checkpoints.md
 CONTENT SHA256: 8583142ae796edc8b024ee04d054914ecd9771bb1b80749e9d486767291f183c
 SOURCE ENCODING: utf-8
@@ -62195,7 +63164,7 @@ END FILE: docs/requirements.txt
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/tests/test_build_docs.py
-CONTENT SHA256: 2864ebd71236ff1d68fa291bc31b03b15f1f9899d4254b8200c226f91982bac7
+CONTENT SHA256: 7e2f41a419965899a1af28083177609d2e5ffd0fd8b821f9cef121d12b545e24
 SOURCE ENCODING: utf-8
 ================================================================================
 """Regression checks for source containment, navigation integrity, and docstring presentation."""
@@ -62206,6 +63175,8 @@ import shutil
 import unittest
 import uuid
 from pathlib import Path
+
+from jinja2 import DictLoader, Environment
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
@@ -62338,6 +63309,48 @@ class BuildContractTests(unittest.TestCase):
             self.assertIsNotNone(destination)
             page = HtmlDocument(destination.read_text(encoding="utf-8"))
             self.assertIn(fragment, page.identifiers, url)
+
+
+class HomepageBrandingTests(unittest.TestCase):
+    """Keep the banner on the landing page while preserving lesson content and navigation."""
+
+    @staticmethod
+    def _asset_path(name: str, resource: bool = False) -> str:
+        """Supply a stable stand-in for Sphinx's local static-asset URL builder."""
+        return name
+
+    def _render(self, pagename: str, root_doc: str = "index") -> str:
+        """Render the real page override against a minimal parent body and Sphinx context."""
+        template = (Path(__file__).resolve().parents[1] / "_templates" / "page.html").read_text(encoding="utf-8")
+        environment = Environment(loader=DictLoader({
+            "page.html": template,
+            "!page.html": "{% block body %}<h1>Document content</h1>{% endblock %}",
+        }), autoescape=True)
+        return environment.get_template("page.html").render(
+            pagename=pagename, root_doc=root_doc, toc="Lesson navigation", pathto=self._asset_path,
+        )
+
+    def test_homepage_banner_precedes_content_without_leading_toc(self) -> None:
+        """The branded landing page exposes a described local image before its unchanged body."""
+        rendered = self._render("index")
+        self.assertEqual(rendered.count('class="melder-banner"'), 1)
+        self.assertIn('src="_static/branding/melder-banner.jpg"', rendered)
+        self.assertIn('alt="Melder — two mages channeling aether in a modern city"', rendered)
+        self.assertLess(rendered.index('class="melder-banner"'), rendered.index("<h1>Document content</h1>"))
+        self.assertNotIn("On this page", rendered)
+
+    def test_lesson_retains_toc_without_banner(self) -> None:
+        """Ordinary lesson pages retain the existing navigation and do not repeat the masthead."""
+        rendered = self._render("beginner/first-application")
+        self.assertNotIn('class="melder-banner"', rendered)
+        self.assertIn("On this page", rendered)
+        self.assertIn("Lesson navigation", rendered)
+        self.assertIn("<h1>Document content</h1>", rendered)
+
+    def test_banner_follows_configured_root_document(self) -> None:
+        """Homepage detection respects Sphinx's root document instead of a hardcoded page name."""
+        self.assertIn('class="melder-banner"', self._render("landing", root_doc="landing"))
+        self.assertNotIn('class="melder-banner"', self._render("index", root_doc="landing"))
 
 
 class DocstringPresentationTests(unittest.TestCase):

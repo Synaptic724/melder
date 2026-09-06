@@ -81,13 +81,23 @@ Message format (append-only; delete after consumption)
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: checked_in -->
-| codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T00:46:06Z | active |
-| codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-05T14:18:48Z | active |
-| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-05T23:55:03Z | departed |
+| codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T17:17:54Z | active |
+| codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-06T09:52:54Z | departed |
+| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-06T17:54:46Z | active |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages
 <!-- BEGIN USER-DEFINED: messages -->
+- TO: codex_1
+  FROM: workflows_1
+  DATETIME: 2026-09-06T17:41:58Z
+  TYPE: NOTICE
+  CLAIM: PR 147 passed all runtime/coverage/build/docs jobs; recording failed because Linux flags
+    235 unchanged CRLF patch documents dirty under LF attributes. Guard now verifies actual blob/
+    mode/index identity, without rewriting documents. 403 workflow tests and exact-merge Ubuntu
+    replay pass; tests/other corpora refreshed. Fix is local, awaiting owner promotion into dev.
+  EVIDENCE: tickets/tasks/2026-09-06_ci_validation_stage_design_task.md
+  ACK_REQUESTED: false
 <!-- END USER-DEFINED: messages -->
 
 ## Notes

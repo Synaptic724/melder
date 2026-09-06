@@ -18,9 +18,10 @@ class CIPolicy:
     PROMOTIONS: Mapping[str, str] = {
         "preprod": "dev", "release_candidate": "preprod", "prod": "release_candidate",
     }
-    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "build", "publish", "install")
+    CANDIDATE_JOBS: tuple[str, ...] = ("authorize", "source-qualification", "build", "publish", "install")
+    FULL_JOBS: tuple[str, ...] = ("source-assets", "repo-assets", "tests", "documentation")
     REQUIRED_JOBS: tuple[str, ...] = (
-        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
+        "branch-policy", "hygiene", *FULL_JOBS, "source-qualification",
     )
 
 
@@ -97,12 +98,36 @@ def package_required(event_name: str, event: Mapping[str, object], ref: str,
     return ref != "refs/heads/dev"
 
 
-def require_success(results: Mapping[str, object], require_package: bool) -> None:
-    """Fail closed unless the complete expected dependency set actually succeeded.
+def validation_requirements(event_name: str, event: Mapping[str, object], ref: str,
+                            repository: str) -> tuple[bool, bool, bool]:
+    """Return full-runtime, package, and source-proof requirements for a validated CI event.
 
-    The packages job may be skipped only for dev. Unknown/missing jobs and every
-    other non-success conclusion raise ValueError, including a skipped test matrix.
-    This function never treats the absence of a failing job as successful evidence.
+    Dev/preprod PRs, release-fix PRs and manual CI run full qualification.
+    Unchanged preprod promotions reuse source evidence; prod promotions consume
+    the separate exact-candidate gate. Ordinary pushes have no source-CI profile.
+    """
+    packages = package_required(event_name, event, ref, repository)
+    if event_name == "workflow_dispatch":
+        return True, packages, False
+    if event_name != "pull_request":
+        raise ValueError("Source CI runs on pull requests or explicit manual qualification, not pushes.")
+    pr = object_value(event["pull_request"], "pull_request")
+    base = object_value(pr["base"], "base")["ref"]
+    head = object_value(pr["head"], "head")["ref"]
+    if base == "prod":
+        return False, False, False
+    if base == "release_candidate" and head == "preprod":
+        return False, False, True
+    return True, packages, False
+
+
+def require_success(results: Mapping[str, object], require_package: bool,
+                    require_runtime: bool = True, require_source: bool = False) -> None:
+    """Require complete dependency evidence and success for the selected validation profile.
+
+    Optional jobs may succeed or be explicitly skipped; failure/cancellation
+    never becomes success. Missing or unknown slots always fail, even when a
+    profile legitimately omits the full suite.
     """
     expected = set(CIPolicy.REQUIRED_JOBS) | {"packages"}
     if set(results) != expected:
@@ -113,11 +138,34 @@ def require_success(results: Mapping[str, object], require_package: bool) -> Non
     failures: list[str] = []
     for name in sorted(expected):
         result = object_value(results[name], f"needs.{name}").get("result")
-        allowed = ("success", "skipped") if name == "packages" and not require_package else ("success",)
+        required = (name in ("branch-policy", "hygiene")
+                    or name in CIPolicy.FULL_JOBS and require_runtime
+                    or name == "packages" and require_package
+                    or name == "source-qualification" and require_source)
+        allowed = ("success",) if required else ("success", "skipped")
         if result not in allowed:
             failures.append(f"{name}={result!r}")
     if failures:
         raise ValueError("Required CI did not succeed: " + ", ".join(failures))
+
+
+def require_ci_results() -> tuple[bool, bool, bool]:
+    """Recompute requirements from event identity and verify both flags and job results.
+
+    The branch job's outputs control scheduling, but cannot silently waive a
+    requirement by emitting an empty or incorrect flag. Return the verified
+    profile for consumers such as the full-qualification record writer.
+    """
+    requirements = validation_requirements(
+        os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
+        os.environ.get("GITHUB_REF", ""), os.environ.get("GITHUB_REPOSITORY", ""),
+    )
+    for name, required in zip(("RUNTIME", "PACKAGE", "SOURCE"), requirements, strict=True):
+        if os.environ.get(f"CI_{name}_REQUIRED") != str(required).lower():
+            raise ValueError(f"Missing/invalid {name.lower()} requirement from branch-policy.")
+    require_success(object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs"),
+                    requirements[1], requirements[0], requirements[2])
+    return requirements
 
 
 def case_collisions(paths: Sequence[str]) -> list[list[str]]:
@@ -131,7 +179,7 @@ def case_collisions(paths: Sequence[str]) -> list[list[str]]:
 def require_candidate_success(results: Mapping[str, object]) -> None:
     """Require every candidate stage to succeed, including the complete install matrix."""
     if set(results) != set(CIPolicy.CANDIDATE_JOBS):
-        raise ValueError("Incomplete candidate dependency evidence; all four stages are required.")
+        raise ValueError("Incomplete candidate dependency evidence; all five stages are required.")
     failures = [name for name in CIPolicy.CANDIDATE_JOBS
                 if object_value(results[name], f"needs.{name}").get("result") != "success"]
     if failures:
@@ -251,17 +299,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.gate == "branch":
-            required = package_required(os.environ.get("GITHUB_EVENT_NAME", ""), read_event(),
-                                        os.environ.get("GITHUB_REF", ""),
-                                        os.environ.get("GITHUB_REPOSITORY", ""))
+            requirements = validation_requirements(
+                os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), os.environ.get("GITHUB_REF", ""),
+                os.environ.get("GITHUB_REPOSITORY", ""),
+            )
             with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-                output.write(f"package-required={str(required).lower()}\n")
+                for name, required in zip(("runtime", "package", "source"), requirements, strict=True):
+                    output.write(f"{name}-required={str(required).lower()}\n")
         elif args.gate == "merge-ready":
-            required_text = os.environ.get("CI_PACKAGE_REQUIRED", "")
-            if required_text not in ("true", "false"):
-                raise ValueError("Missing/invalid package requirement from branch-policy.")
-            results = object_value(json.loads(os.environ["CI_JOB_RESULTS"]), "needs")
-            require_success(results, required_text == "true")
+            require_ci_results()
         elif args.gate == "hygiene":
             collisions = case_collisions(git_output(("ls-files", "-z")).split("\0")[:-1])
             if collisions:
