@@ -34,7 +34,11 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert final["name"] == "CI / merge-ready"
     assert final["if"] == "always()"
     assert set(final["needs"]) == set(policy.CIPolicy.REQUIRED_JOBS) | {"packages"}
-    assert "merge-ready" in final["steps"][-1]["run"]
+    aggregate = next(step for step in final["steps"]
+                     if step.get("run") == "python .github/scripts/ci_policy.py merge-ready")
+    assert "if" not in aggregate
+    assert aggregate["env"]["CI_JOB_RESULTS"] == "${{ toJSON(needs) }}"
+    assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
     for name in policy.CIPolicy.REQUIRED_JOBS:
         assert "if" not in jobs[name]
@@ -201,12 +205,30 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
 
 
 def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
-    """The existing required merge check and both publication boundaries must enforce candidate provenance."""
-    branch = workflow("ci.yml")["jobs"]["branch-policy"]
-    assert branch["permissions"]["actions"] == "read"
-    proof = branch["steps"][-1]
+    """Qualify the exact candidate after normal CI finishes, without weakening final publication.
+
+    An early lookup can reject an RC still publishing while the longer test
+    matrix runs. The required final job must retain API access, candidate Git
+    history and the same prod-only proof after its dependency-success check.
+    """
+    jobs = workflow("ci.yml")["jobs"]
+    command = "python .github/scripts/check_candidate_run.py"
+    assert all(step.get("run") != command for step in jobs["branch-policy"]["steps"])
+    final = jobs["merge-ready"]
+    assert final["permissions"] == {"contents": "read", "actions": "read"}
+    assert final.get("continue-on-error", "false") == "false"
+    steps = final["steps"]
+    checkout = next(step for step in steps if step.get("uses", "").startswith("actions/checkout@"))
+    depth = int(checkout["with"]["fetch-depth"])
+    assert depth == 0 or depth >= 2
+    aggregate = next(index for index, step in enumerate(steps)
+                     if step.get("run") == "python .github/scripts/ci_policy.py merge-ready")
+    proof = steps[-1]
+    assert aggregate < len(steps) - 1
     assert proof["run"] == "python .github/scripts/check_candidate_run.py"
     assert proof["if"] == "github.base_ref == 'prod' || github.ref == 'refs/heads/prod'"
+    assert proof["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
+    assert proof.get("continue-on-error", "false") == "false"
     release = workflow("python-publish.yml")["jobs"]["release-gate"]
     assert release["steps"][-1]["run"] == "python .github/scripts/check_candidate_run.py"
     assert release["permissions"]["actions"] == "read"

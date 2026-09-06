@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.3"
-SOURCE_SHA256 = "f4421e18a9afb060c72c6a3d959607767f15ebd68b6a74d08656ebf0013bd054"
-ENTRY_COUNT = 628
+BUILT_FOR_VERSION = "0.2.36"
+SOURCE_SHA256 = "a7d5d0cb1961d96b53cf8e5bf1dcae56f8eec4d8a9486d4d5c4cf6407f5ac309"
+ENTRY_COUNT = 629
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -140,6 +140,7 @@ ENTRIES = (
     ('melder.aether.conduit.meld.creation_context.creation_context', 'CreationContext'),
     ('melder.aether.conduit.meld.creation_context.creation_context_builder', 'CreationContextBuilder'),
     ('melder.aether.conduit.meld.creation_context.creation_context_factory', 'CreationContextFactory'),
+    ('melder.aether.conduit.meld.creation_context.creation_context_rebuild', 'CreationContextRebuild'),
     ('melder.aether.conduit.meld.meld', 'Meld'),
     ('melder.aether.conduit.meld.overrides.spell_overrider', 'SpellOverrider'),
     ('melder.aether.conduit.meld.overrides.spell_overrider', '_Specificity'),

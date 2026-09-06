@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: e703141c265a29e7281422915430a3e1213b69a75eaccf387b10155e04ffdda6
+SOURCE FINGERPRINT: 78521923c25bdd58190fb44e078c4c5f26b3d953e8787186e3c8682d115d0683
 FILE COUNT: 352
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: a9a098eebcaa216cdd592c433bd7d9392397ca5e03d01432e402dc48f9a6a3bc
+CONTENT SHA256: eb06e9b70f05a32a3abb418151d62c3dec879259267b1bbae8d91bc835087918
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -92,6 +92,7 @@ Contributions enter `dev` through a pull request. Promotion proceeds through
   source/metadata/asset versions, and an isolated installed-wheel smoke test.
 - Prod candidate proof: the exact source head must have successful TestPyPI
   qualification, a final package version, and the same tree as the merge result.
+  This runs last inside `CI / merge-ready`, after the other required checks succeed.
 
 The final status fails for missing evidence, failure, cancellation, or an
 unexpected skipped job. Only dev intentionally skips distribution building.
@@ -151,10 +152,16 @@ or tag is required. Manual dispatch must select the same branch.
 | --- | --- |
 | `preprod -> release_candidate` PR | Full source CI and local package verification. |
 | Merge lands on `release_candidate` | Build, TestPyPI upload, and installed-package probes. |
-| `release_candidate -> prod` PR | Verify the earlier RC run succeeded for this exact source; run required CI. |
+| `release_candidate -> prod` PR | Run required CI, then verify exact-source RC success in the final merge-ready check. |
 
 TestPyPI publication belongs to the RC stage. The prod promotion check does not
 upload to TestPyPI; it blocks promotion until the earlier RC qualification succeeds.
+
+Branch-route validation stays at the start. Candidate proof runs after runtime tests,
+documentation, assets, hygiene and the required distribution build. This lets RC
+qualification finish alongside those checks. If RC is still pending at that final
+step, the check fails with its run link; rerun the failed CI jobs after RC succeeds.
+Elapsed time never substitutes for a successful exact-source candidate result.
 
 The workflow reuses the package builder, uploads to TestPyPI, then checks a
 fresh installation on Linux, Windows, and macOS Python 3.14t. It does not run the whole
@@ -1667,7 +1674,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: 4642402e7926dd4aa984b81693b2ee9df638dec4ffbce86eec9e6f2cbbdc2ab9
+CONTENT SHA256: 54668c879f6d6c5db4234708785aaec6605abb1961ca0d316d0d5fc00fdf7088
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -1697,7 +1704,6 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: read
     outputs:
       package-required: ${{ steps.route.outputs.package-required }}
     steps:
@@ -1710,11 +1716,6 @@ jobs:
       - name: Validate the branch route
         id: route
         run: python .github/scripts/ci_policy.py branch
-      - name: Require the exact candidate before prod promotion
-        if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python .github/scripts/check_candidate_run.py
 
   hygiene:
     name: CI / repository-hygiene
@@ -1754,8 +1755,13 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
@@ -1764,6 +1770,13 @@ jobs:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
         run: python .github/scripts/ci_policy.py merge-ready
+      - name: Require the exact candidate before prod promotion
+        # RC qualification can finish while the source tests and package build run.
+        # Keep this proof last so a pending RC does not fail early branch routing.
+        if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py
 ================================================================================
 END FILE: .github/workflows/ci.yml
 ================================================================================

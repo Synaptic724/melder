@@ -23,6 +23,9 @@ advancement is an owner-selected promotion, never automatic mirroring of preprod
 - Scope PYTHON_GIL=0 to test/probe steps. Interpreter setup must permit standard-Python bootstrap
   helpers, including macOS certificate installation, without weakening runtime GIL-state verification.
 - Prod PR checks require successful candidate qualification of the exact source head and matching tree.
+- Source CI validates the branch route early. Its existing merge-ready job checks candidate proof
+  last, after tests/assets/docs/package dependencies succeed, so RC can finish during those checks.
+  A failed or still-pending RC remains a refusal; moving the check does not create an automatic retry.
 - Final publication verifies that its prod merge came from that qualified candidate tree, then retains
   the existing fresh tests/build and live tag/prod guards. It publishes its own freshly verified files;
   no claim is made that changing rcN to final or rebuilding a package preserves candidate bytes.
