@@ -38,3 +38,19 @@ This directory holds task-owned temporary tests and tooling; delete on accepted 
 - All three extended patch indexes regenerated; final source-asset, corpus, index and diff checks pass.
 - Final source/workflow review is complete. The extended task is ready for owner review/hosted rollout.
 - No hosted test matrix or publication has been dispatched for this extension.
+
+## PR 147 checkout identity correction
+
+- PR 147 (dev -> preprod), run 34047253419: full runtime/platform, docs, asset and package checks
+  passed. Only the record step in job 101526277478 failed. Skipped source-qualification is expected.
+- Exact merge 0d82c24da7630d0b54990a26560085adad551781 was reproduced in a disposable checkout.
+- Windows Git reported clean; Ubuntu Git reported 235 unchanged historical CRLF documents dirty.
+- pr147-byte-identity.json proves all 235 have identical committed blob bytes and modes.
+- Corrected guard verifies the index and raw blob/mode identity; real changes still fail with paths.
+- 403 focused workflow tests passed in 4.76s; checkout-identity-tests.xml retains the evidence.
+- Scoped correctness Ruff passed. Workflow YAML did not change in this correction.
+- Ubuntu replay passes on the exact untouched merge; see pr147-fixed-identity.json.
+- Disposable checkout/probe/reports are task-owned temporary evidence; no user commits or refs changed.
+- Final corpus/source-asset/index and diff checks pass. Hosted rollout requires owner commit/promotion.
+- Owner-requested builder rerun at 2026-09-06T17:54:46Z: source assets rebuilt for 0.2.37,
+  repository corpora unchanged, and both source/repository --check commands passed.

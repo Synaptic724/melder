@@ -52,3 +52,10 @@ Build the universal distribution once on a supported free-threaded interpreter s
 pyproject.toml. Test/coverage/consumer artifacts include the selected Python version to avoid clashes.
 Persist each discovery result with the run. Final publication discovers fresh supported runtimes;
 historical source-tree qualification remains evidence from its recorded full-CI run.
+
+## Checkout identity correction (PR 147)
+Git can report committed CRLF blobs as modified under later text/eol=lf attributes even when
+the checkout bytes and mode are identical. A porcelain flag alone is not source mutation proof.
+Require the index to match HEAD and inspect raw working-tree deltas. Only unchanged regular-file
+mode plus an exact unfiltered blob hash may clear an M delta; real edits and structural changes
+remain failures. Do not normalize files, ignore directories or ignore whitespace differences.

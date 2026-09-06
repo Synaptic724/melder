@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p2
 - Created: 2026-09-06T01:04:31Z
-- Updated: 2026-09-06T16:16:50Z
+- Updated: 2026-09-06T17:41:58Z
 
 ## Objective
 Implement the agreed test policy without repeating the full runtime matrix for unchanged promotions while
@@ -34,8 +34,9 @@ preserving useful dev feedback, preprod qualification and the owner's careful fi
 - from_state: in_progress
 - to_state: review
 - transition_reason: Implementation, focused workflow tests, actionlint, scoped correctness lint,
-  live stable-version discovery, generated-asset freshness and patch-index checks are complete.
-  The owner-approved stable no-GIL matrix extension is ready; hosted rollout remains pending.
+  live stable-version discovery and generated-asset checks are complete. Hosted PR 147 proved the
+  full matrix; its false-dirty qualification failure is now reproduced and corrected locally.
+  The corrected guard passed exact-commit Ubuntu replay; owner promotion remains pending.
 
 ## Previous Behavior (before this change)
 - CI handles PRs to dev, preprod, release_candidate and prod, plus pushes to dev/preprod/prod.
@@ -69,22 +70,24 @@ PR checks, RC push qualification and final publication remain the authoritative 
 - [x] Discover each stable supported Python minor and test its latest patch with the GIL off.
 - [x] Expand RC probes and per-version coverage evidence without adding test stages.
 - [x] Validate discovery failures, workflow wiring and refreshed generated corpora.
+- [x] Reproduce and correct PR 147's false-dirty checkout qualification failure.
 
 ## Deliverables
 - Implemented stage-to-check mapping, exact-tree proof and operator guidance for fresh qualification.
 
 ## Validation
-- Final focused workflow suite including the no-GIL matrix: 382 passed, no failures/errors/skips.
+- Final focused workflow suite including checkout-identity regressions: 403 passed in 4.76s.
 - Live catalog discovery selected 3.14.7 on Linux/Windows/macOS and excluded Python prereleases.
 - All nine workflows pass actionlint; scoped correctness Ruff (E9,F63,F7,F82) passes.
 - All repository corpora, source asset groups, three patch indexes and git diff --check pass.
 - Prior default Ruff reported 17 style/typing findings; this extension used scoped correctness rules.
-- Hosted Actions and publication have not been dispatched; the owner handles rollout and signing.
+- Owner-run PR 147 passed all full validation jobs; only the original identity recorder failed.
+- Corrected guard passes exact PR merge replay on Ubuntu; no hosted rerun/publication was dispatched.
 
 ## Risks / Open Questions
 - First rollout must establish a full-CI qualification artifact before lightweight promotion.
 - Exact-tree reuse intentionally refuses changed contents, expired evidence or unsuccessful qualification.
-- Hosted rollout remains unverified locally. The final full-suite publication check remains required.
+- The identity correction must reach dev before PR 147 can use it. The final publication check remains required.
 
 ## Artifact Links
 - ARTIFACTS_REQUIRED: true
@@ -93,6 +96,11 @@ PR checks, RC push qualification and final publication remain the authoritative 
   - artifacts/ci_stage_qualification_20260906/workflow-tests.xml
   - artifacts/ci_stage_qualification_20260906/python-matrix-tests.xml
   - artifacts/ci_stage_qualification_20260906/live-python-matrix.json
+  - artifacts/ci_stage_qualification_20260906/checkout-identity-tests.xml
+  - artifacts/ci_stage_qualification_20260906/pr147-byte-identity.json
+  - artifacts/ci_stage_qualification_20260906/pr147-fixed-identity.json
+  - artifacts/ci_stage_qualification_20260906/probe_checkout_identity.py
+  - artifacts/ci_stage_qualification_20260906/pr147-checkout/
   - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch.md
   - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch_index.md
   - system_docs/patches/active/ci_stage_qualification_2026_09_06/component_patch_ci_profiles.md
@@ -451,12 +459,149 @@ PR checks, RC push qualification and final publication remain the authoritative 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T17:14:58Z
+  TYPE: FACT
+  CLAIM: Owner reports qualification recording failure on latest PR 147, dev into preprod.
+    GitHub run 34047253419 shows successful branch/hygiene/assets/docs/packages, all three no-GIL
+    runtime cells and Codecov. Only merge-ready's record step fails; source-qualification is
+    intentionally skipped because this profile performs fresh full validation.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/pull/147
+  - https://github.com/Synaptic724/melder/actions/runs/34047253419/job/101526277478
+  - .github/scripts/ci_qualification.py:173-180
+  IMPACT: The stable runtime matrix is now evidenced on hosted runners. Investigate dirty checkout
+    detection without weakening successful-job or exact-source requirements.
+  NEXT: Inspect failed job logs and reproduce checkout status from its exact merge revision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T17:14:58Z
+  TYPE: HYPOTHESIS
+  CLAIM: The failed job checks out exact merge 0d82c24da7630d0b54990a26560085adad551781 and runs
+    only setup-python plus read-only policy before recording. There are no tracked bytecode files
+    locally. Many historical patch documents are committed CRLF despite text/eol=lf attributes;
+    checkout normalization is a plausible false-dirty cause, not yet proven on the failing tree.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/actions/runs/34047253419/job/101526277478
+  - .gitattributes:1-49
+  - .github/scripts/ci_qualification.py:173-180
+  IMPACT: Do not relax the source guard or rewrite historical documents based on this hypothesis.
+  NEXT: Reproduce the exact commit in a disposable checkout using CI-style Git settings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-06T17:20:29Z
+  TYPE: FACT
+  CLAIM: The exact PR merge is clean and passes checkout_identity under Windows Git 2.45.1.
+    Reading that untouched checkout with Ubuntu Git 2.43 reports 235 modified historical patch
+    documents, beginning with the same CRLF blobs covered by text/eol=lf attributes. This is a
+    reproduced platform difference; verify byte/mode identity before choosing the correction.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/pr147-initial-status.txt
+  - artifacts/ci_stage_qualification_20260906/pr147-linux-status.txt
+  - .gitattributes:46-49
+  IMPACT: Do not attribute the failure to skipped source proof or failed runtime tests.
+  NEXT: Compare all reported paths against committed blobs and modes in the disposable checkout.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T17:30:18Z
+  TYPE: DECISION
+  CLAIM: All 235 Ubuntu-reported differences in the exact PR checkout have identical committed
+    blob bytes and modes; all contain CRLF. The qualification guard's blanket porcelain test is
+    therefore too coarse. Keep the index equal to HEAD, then inspect raw working-tree differences:
+    only regular-file M entries with unchanged mode and matching unfiltered Git blob hash pass.
+    Real content/index/mode/type/add/delete changes still refuse and name the affected paths.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/pr147-byte-identity.json:1-8
+  - .github/scripts/ci_qualification.py:173-180
+  - https://git-scm.com/docs/gitattributes#_text
+  IMPACT: Correct the identity check without blanket whitespace exclusions, directory exclusions,
+    historical-document rewrites, normalization or source-tree/PR provenance changes. Patch identity
+    extension maps to one helper and real-Git plus boundary regressions; qualification schema stays 1.
+  NEXT: Implement the identity correction and validate it against the exact failing checkout.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T17:30:18Z
+  TYPE: FACT
+  CLAIM: Implemented unchanged-index plus raw blob/mode verification in ci_qualification.py.
+    The same checkout_identity guard protects record/select/verify; profile and proof schema
+    remain unchanged. Added real-Git CRLF/EOL reproduction and negative tests for actual bytes,
+    whitespace, staged changes, deletion/rename, mode/type changes and malformed output.
+  EVIDENCE:
+  - .github/scripts/ci_qualification.py
+  - tests/unit/github_workflows/test_checkout_identity.py
+  - tests/unit/github_workflows/test_source_qualification.py
+  IMPACT: The fix is implemented but needs focused validation and an exact-checkout Linux replay.
+  NEXT: Run workflow tests and replay the new guard against PR 147's untouched checkout.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-06T17:30:18Z
+  TYPE: MEASURE
+  CLAIM: All 403 workflow tests pass in 4.76s, including the real-Git false-dirty regression and
+    real-change refusals. Scoped correctness Ruff passes. Ubuntu replay of the corrected guard
+    passes against exact PR 147 merge 0d82c24 with tree 7ccb88e; the checkout remains untouched.
+    This is local replay evidence, not a rerun or successful hosted qualification record.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/checkout-identity-tests.xml:1-1
+  - artifacts/ci_stage_qualification_20260906/pr147-fixed-identity.json:1-6
+  - artifacts/ci_stage_qualification_20260906/pr147-byte-identity.json:1-8
+  IMPACT: The identity correction resolves the reproduced failure without waiving source changes.
+  NEXT: Regenerate affected corpora/patch indexes and return the correction for owner promotion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T17:41:58Z
+  TYPE: DECISION
+  CLAIM: PR 147 correction is ready for owner promotion. Final corpus/source-asset/index and diff
+    checks pass. The source job's skip remains correct for dev-to-preprod full CI. The recorded
+    failure came from 235 byte/mode-identical legacy CRLF files; the new guard accepts only
+    exact identity and continues refusing real index/content/mode/structure changes.
+  EVIDENCE:
+  - .github/scripts/ci_qualification.py:173-216
+  - .github/BRANCH_WORKFLOW.md:158-164
+  - artifacts/ci_stage_qualification_20260906/checkout-identity-tests.xml:1-1
+  - artifacts/ci_stage_qualification_20260906/pr147-fixed-identity.json:1-6
+  IMPACT: No historical documents or workflow trigger/qualification schema were rewritten. New
+    regression test is intent-to-add for corpus discovery; owner retains committing and publishing.
+  NEXT: Owner commits/promotes the fix into dev, updating PR 147 and triggering fresh qualification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T17:54:46Z
+  TYPE: PLAN
+  CLAIM: Owner explicitly requested rerunning the repository asset builder. Run both canonical
+    source-asset and repository-corpus builders, then their read-only freshness checks.
+  EVIDENCE:
+  - Owner request: "rerun the asset builder in the repo please".
+  - .github/BRANCH_WORKFLOW.md:124-130
+  IMPACT: Refresh only derived assets for current tracked inputs; preserve all other work.
+  NEXT: Execute both builders and verify their outputs.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-06T17:54:46Z
+  TYPE: MEASURE
+  CLAIM: Both requested builders completed successfully. Source assets were rewritten for 0.2.37:
+    452 documentation entries, 629 bind-guard entries and four system documents. Repository src,
+    tests, other and manifest outputs were unchanged. Both subsequent --check invocations passed.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/validation.md
+  - llm_support/manifest.json
+  IMPACT: All source assets and repository corpora are current for the working checkout.
+  NEXT: Owner commits/promotes the pending workflow correction when ready.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Stage-specific CI and the stable no-GIL matrix extension are ready for owner review. Runtime/RC
-checks discover the latest patch of every stable minor from the pyproject floor (>=3.14), require
-all three platforms, explicitly select free-threaded builds and verify GIL-off runtime state.
-Reports include Python version; Codecov completeness follows the matrix and remains nonblocking.
-All 382 focused tests, actionlint, scoped Ruff, live discovery and generated-asset/index checks pass.
-Source/corpus assets reflect the owner's 0.2.37 version. The two new files have intent-to-add entries,
-but no contents were staged by that operation. No commits, pushes, hosted tests or publication ran.
-Owner signs/commits/promotes and observes hosted execution. Close only after owner acceptance.
+Stable no-GIL stage policy is implemented and owner-run PR 147 proved its full test/build/docs jobs.
+PR 147's record step exposed a false-dirty guard: Linux reports 235 unchanged legacy CRLF documents
+under LF attributes as modified. Exact byte/mode identity is proven in the linked reports. The fix
+requires an unchanged index and exact unfiltered blob/mode identity for otherwise-dirty regular
+files; real edits still fail with path names. No normalization or directory/whitespace waiver exists.
+403 workflow tests pass; corrected guard passes Ubuntu replay of exact merge 0d82c24. Corpora,
+source assets and indexes are current. Owner must commit/promote the correction into dev so PR 147
+uses it; rerunning the old revision does not install the fix. No user commits/pushes/hosted reruns
+or publication were dispatched. Close only after owner acceptance and clean up task-owned artifacts.

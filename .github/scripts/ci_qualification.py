@@ -170,13 +170,49 @@ def select_for_commit(repository: str, sha: str, branch: str, tree: str) -> dict
                       head_sha, text_value(head["ref"], "head.ref"), number, base_sha)
 
 
+def require_clean_tracked_checkout() -> None:
+    """Reject real index/content/mode changes without mistaking checkout EOL policy for mutation.
+
+    A legacy CRLF blob under text/eol=lf can be reported dirty even when its
+    checked-out bytes match HEAD exactly. Only unchanged regular-file modes and
+    identical unfiltered blob IDs clear that false positive. Never normalize or
+    restore files, ignore whitespace, or waive an entire directory. Untracked
+    reports/caches remain outside this tracked-source contract.
+    """
+    staged = git_output(("diff", "--cached", "--name-only", "--no-renames", "--no-ext-diff", "-z", "HEAD", "--"))
+    if staged:
+        paths = staged.rstrip("\0").split("\0")
+        raise ValueError(f"Tracked staged modifications cannot be qualified: {paths[:10]!r}. Commit intended changes first.")
+    raw = git_output(("diff", "--raw", "--no-abbrev", "--no-renames", "--no-ext-diff", "-z", "HEAD", "--"))
+    if not raw:
+        return
+    records = raw.split("\0")
+    if records[-1] != "" or len(records) % 2 != 1:
+        raise ValueError("Malformed tracked-checkout diff; refusing incomplete source evidence.")
+    changed: list[str] = []
+    for offset in range(0, len(records) - 1, 2):
+        metadata, path = records[offset], records[offset + 1]
+        fields = metadata.split()
+        if not metadata.startswith(":") or len(fields) != 5 or not path:
+            raise ValueError("Malformed tracked-checkout diff entry; refusing source qualification.")
+        before, after, blob, _, status = fields
+        if status != "M" or before[1:] != after or after not in ("100644", "100755"):
+            changed.append(path)
+        elif git_output(("hash-object", "--no-filters", "--", path)) != commit_id(blob):
+            changed.append(path)
+    if changed:
+        raise ValueError(
+            f"Tracked checkout modifications cannot be qualified: {changed[:10]!r} "
+            f"({len(changed)} paths). Commit intended edits or restore the selected revision, then rerun CI."
+        )
+
+
 def checkout_identity() -> tuple[str, str]:
-    """Require the event's exact clean tracked checkout and return its commit and tree IDs."""
+    """Require the exact event commit and unchanged tracked bytes/modes; return its commit/tree IDs."""
     sha = commit_id(git_output(("rev-parse", "HEAD^{commit}")))
     if sha != commit_id(os.environ.get("GITHUB_SHA")):
         raise ValueError("Checkout differs from GITHUB_SHA; source evidence cannot be reused.")
-    if git_output(("status", "--porcelain", "--untracked-files=no")):
-        raise ValueError("Tracked checkout modifications cannot be qualified.")
+    require_clean_tracked_checkout()
     return sha, commit_id(git_output(("rev-parse", "HEAD^{tree}")))
 
 

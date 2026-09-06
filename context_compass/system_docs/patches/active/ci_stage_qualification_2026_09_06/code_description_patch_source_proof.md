@@ -43,3 +43,12 @@ malformed metadata, excessive job count or missing platform coverage fails befor
 The selected matrix is written once per run and reused through job outputs, never redownloaded by
 individual test cells. Artifact names bind OS, exact Python version and run/attempt. Coverage checks
 the expected matrix against downloaded report directories before the nonblocking upload.
+
+## Byte-exact clean-checkout verification
+First reject index changes against HEAD. Read NUL-delimited raw diff records with full object IDs
+and renames/external diff disabled. Require complete metadata/path pairs. For each difference, only
+M status with identical 100644/100755 modes is eligible; compare git hash-object --no-filters output
+against its committed blob ID. Hash mismatch, unsupported change or malformed data refuses. Empty
+raw diffs pass. Preserve paths with spaces/newlines and quote bounded path names in diagnostics.
+Regression validation includes real Git with a CRLF blob committed before eol=lf enforcement,
+true content/whitespace edits, staged changes, deletion, mode/type changes and malformed records.

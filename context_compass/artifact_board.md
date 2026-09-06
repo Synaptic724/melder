@@ -64,6 +64,11 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/pr147-checkout/ | validation_workspace | review | delete_on_close | Disposable exact-merge checkout for the Linux identity reproduction. | 2026-09-06T17:41:58Z | HELPFUL |
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/checkout-identity-tests.xml | validation_report | active | delete_on_close | 403 workflow tests pass including real-Git EOL regression. | 2026-09-06T17:30:18Z | HELPFUL |
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/pr147-byte-identity.json | validation_report | active | delete_on_close | All 235 reported changes have identical bytes/modes. | 2026-09-06T17:30:18Z | HELPFUL |
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/pr147-fixed-identity.json | validation_report | active | delete_on_close | Corrected guard passes exact PR merge on Ubuntu. | 2026-09-06T17:30:18Z | HELPFUL |
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/probe_checkout_identity.py | validation_probe | active | delete_on_close | Reproduce raw byte/mode comparison in the task-owned PR checkout. | 2026-09-06T17:30:18Z | HELPFUL |
 | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/python-matrix-tests.xml | validation_report | active | delete_on_close | 382 workflow tests pass for the stable no-GIL matrix. | 2026-09-06T16:13:00Z | HELPFUL |
 | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/live-python-matrix.json | validation_report | active | delete_on_close | Live catalog selects 3.14.7 on all three platforms. | 2026-09-06T16:13:00Z | HELPFUL |
 | tickets/tasks/2026-09-06_readme_status_badges_task.md | artifacts/readme_badges_validation_20260906/ | validation_workspace | review | delete_on_close | 339 tests, lint, badge/config and asset validation passed. | 2026-09-06T14:55:32Z | HELPFUL |

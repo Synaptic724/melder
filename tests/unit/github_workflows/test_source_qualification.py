@@ -106,8 +106,8 @@ def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
 
     def git(arguments: Sequence[str]) -> str:
         """Model the process boundary without masking a wrong event SHA or merge parents."""
-        if arguments[0] == "status":
-            return state["dirty"]
+        if arguments[0] == "diff":
+            return state["dirty"] if "--cached" in arguments else ""
         if arguments[0] == "rev-list":
             return " ".join(state["parents"])
         if arguments == ("rev-parse", "HEAD^{commit}"):
@@ -265,7 +265,7 @@ def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, r
     if mode == "sha":
         monkeypatch.setenv("GITHUB_SHA", "f" * 40)
     elif mode == "dirty":
-        record_environment["dirty"] = " M src/melder/example.py"
+        record_environment["dirty"] = "src/melder/example.py\0"
     elif mode == "parents":
         record_environment["parents"][-1] = "f" * 40
     else:
