@@ -294,11 +294,13 @@ def test_light_run_cannot_record_full_evidence(source_qualification: ModuleType,
         source_qualification.full_record()
 
 
+@pytest.mark.parametrize("change", ["attempt", "failed-run"])
 def test_record_select_verify_roundtrip_rejects_changed_attempt(source_qualification: ModuleType,
                                                                source_api: SourceApiData,
                                                                record_environment: GitState,
                                                                tmp_path: pathlib.Path,
-                                                               monkeypatch: pytest.MonkeyPatch) -> None:
+                                                               monkeypatch: pytest.MonkeyPatch,
+                                                               change: str) -> None:
     """Exercise real JSON I/O and CLI phases, then invalidate a selected record by rerunning its producer."""
     proof = tmp_path / "proof.json"
     selection = tmp_path / "selection.json"
@@ -315,10 +317,46 @@ def test_record_select_verify_roundtrip_rejects_changed_attempt(source_qualifica
     assert outputs.read_text(encoding="utf-8") == "run-id=70\nartifact-id=900\n"
     arguments = ["verify", "--selection", str(selection), "--record", str(proof)]
     assert source_qualification.main(arguments) == 0
-    source_api["runs"][0]["run_attempt"] = 2
-    source_api["artifacts"][0]["name"] = "source-qualification-70-2"
-    with pytest.raises(ValueError, match="changed while downloading"):
+    if change == "attempt":
+        source_api["runs"][0]["run_attempt"] = 2
+        source_api["artifacts"][0]["name"] = "source-qualification-70-2"
+    else:
+        source_api["runs"].append(ci_run(id=71, run_number=11, conclusion="failure"))
+    with pytest.raises(ValueError, match="changed while downloading|conclusion"):
         source_qualification.main(arguments)
+
+
+@pytest.mark.parametrize("wrong_checkout", [False, True])
+def test_manual_record_binds_the_exact_run_head(source_qualification: ModuleType,
+                                               source_api: SourceApiData,
+                                               record_environment: GitState,
+                                               monkeypatch: pytest.MonkeyPatch,
+                                               wrong_checkout: bool) -> None:
+    """A manual full run qualifies its own commit; a different checkout cannot impersonate it."""
+    record_environment["sha"] = "a" * 40
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/preprod")
+    pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).write_text("{}", encoding="utf-8")
+    proof = source_qualification.full_record()
+    source_api["manual"]["a" * 40] = [
+        ci_run(event="workflow_dispatch", head_branch="preprod", head_sha="a" * 40),
+    ]
+    selected = source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+    if wrong_checkout:
+        proof["checkout_sha"] = "e" * 40
+        with pytest.raises(ValueError, match="Manual qualification checkout"):
+            source_qualification.validate_proof(proof, selected["expected"])
+    else:
+        source_qualification.validate_proof(proof, selected["expected"])
+
+
+@pytest.mark.parametrize("runs", [[], [ci_run(), ci_run()]], ids=["absent", "ambiguous"])
+def test_source_run_history_cannot_be_missing_or_ambiguous(source_qualification: ModuleType,
+                                                          runs: list[dict[str, object]]) -> None:
+    """No incomplete or duplicate run history can authorize a selected source."""
+    with pytest.raises(ValueError):
+        source_qualification.latest_run(runs)
 
 
 def test_api_pagination_is_complete_and_bounded(source_qualification: ModuleType,
@@ -359,7 +397,8 @@ def test_api_reader_uses_fixed_host_and_closes_response(source_qualification: Mo
         source_qualification.github_json("owner/repo/escape", "actions/runs", {})
 
 
-@pytest.mark.parametrize("payload", [b"[]", b"{", b"x" * 65537])
+@pytest.mark.parametrize("payload", [b"[]", b"{", b"x" * 65537],
+                         ids=["non-object", "malformed", "oversized"])
 def test_downloaded_record_is_bounded_json_data(source_qualification: ModuleType, tmp_path: pathlib.Path,
                                                payload: bytes) -> None:
     """Invalid, non-object, and oversized downloads never become executable or accepted proof."""

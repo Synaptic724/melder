@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-06-ci-validation-stage-design
 - Story: none (owner-approved CI stage implementation)
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: workflows_1
 - Priority: p2
 - Created: 2026-09-06T01:04:31Z
-- Updated: 2026-09-06T09:52:00Z
+- Updated: 2026-09-06T10:45:04Z
 
 ## Objective
 Implement the agreed test policy without repeating the full runtime matrix for unchanged promotions while
@@ -30,12 +30,12 @@ preserving useful dev feedback, preprod qualification and the owner's careful fi
 - Owner clarified that feature pushes are not the concern; discussion concerns full suites at each stage.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: Owner approved implementing the proposed policy in the workflows and asked to
-  continue after interrupting the initial analysis. No implementation was made in that interrupted turn.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Implementation, focused workflow tests, actionlint, scoped correctness lint,
+  generated-asset freshness and patch-index checks are complete. Owner rollout remains pending.
 
-## Current Behavior
+## Previous Behavior (before this change)
 - CI handles PRs to dev, preprod, release_candidate and prod, plus pushes to dev/preprod/prod.
 - Each such CI run calls the complete unit/component/integration matrix on Linux, Windows and macOS.
 - RC branch pushes already use package build, TestPyPI upload and isolated consumer probes only.
@@ -61,29 +61,36 @@ PR checks, RC push qualification and final publication remain the authoritative 
 - [x] Read the current CI/runtime/candidate/publisher wiring.
 - [x] Separate PR triggers from the repetition of full test execution.
 - [x] Agree the stage policy and the exact evidence needed for promotion.
-- [ ] Implement stage flags, strict aggregation and full-run source qualification records.
-- [ ] Verify provenance before RC admission and retain exact-source checks before prod/publication.
-- [ ] Validate negative paths, regenerate assets and document rollout.
+- [x] Implement stage flags, strict aggregation and full-run source qualification records.
+- [x] Verify provenance before RC admission and retain exact-source checks before prod/publication.
+- [x] Validate negative paths, regenerate assets and document rollout.
 
 ## Deliverables
 - Implemented stage-to-check mapping, exact-tree proof and operator guidance for fresh qualification.
 
 ## Validation
-- Workflow/source inspection only. No tests or hosted runs executed for this discussion.
-- No source/workflow implementation changes made.
+- Final focused workflow suite: 330 passed, no failures/errors/skips; JUnit evidence linked below.
+- All nine workflows pass actionlint; scoped correctness Ruff (E9,F63,F7,F82) passes.
+- All repository corpora, source asset groups, three patch indexes and git diff --check pass.
+- Default Ruff has 17 style/typing findings; details and policy conflicts are recorded in validation.md.
+- Hosted Actions and publication have not been dispatched; the owner handles rollout and signing.
 
 ## Risks / Open Questions
-- How will later promotions prove their contents were covered by the full preprod run?
-- Existing aggregation rejects skipped required tests; a future change must update that contract explicitly.
-- The final full-suite run is retained in this proposal because the owner previously requested a careful
-  final check. Any different final-release policy needs an explicit design decision.
+- First rollout must establish a full-CI qualification artifact before lightweight promotion.
+- Exact-tree reuse intentionally refuses changed contents, expired evidence or unsuccessful qualification.
+- Hosted rollout remains unverified locally. The final full-suite publication check remains required.
 
 ## Artifact Links
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
+  - artifacts/ci_stage_qualification_20260906/validation.md
+  - artifacts/ci_stage_qualification_20260906/workflow-tests.xml
   - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch.md
+  - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch_index.md
   - system_docs/patches/active/ci_stage_qualification_2026_09_06/component_patch_ci_profiles.md
+  - system_docs/patches/active/ci_stage_qualification_2026_09_06/component_patch_ci_profiles_index.md
   - system_docs/patches/active/ci_stage_qualification_2026_09_06/code_description_patch_source_proof.md
+  - system_docs/patches/active/ci_stage_qualification_2026_09_06/code_description_patch_source_proof_index.md
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: Promote durable behavior to .github/BRANCH_WORKFLOW.md at accepted closure.
 
@@ -93,7 +100,7 @@ PR checks, RC push qualification and final publication remain the authoritative 
 - IF_UNKNOWN: none
 
 ## Noting Behavior
-- Record agreed policy and unresolved decisions without prematurely editing the running workflows.
+- Record implementation and validation against the agreed stage policy, with one concrete next step.
 
 ## Notes
 - DATETIME: 2026-09-06T01:04:31Z
@@ -169,8 +176,123 @@ PR checks, RC push qualification and final publication remain the authoritative 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-06T10:16:55Z
+  TYPE: MEASURE
+  CLAIM: All 19 parsed workflow checks and scoped correctness Ruff pass. The first broader run
+    reports 260 passed and 66 setup errors because the sandbox cannot access pytest-of-Mark under
+    the Windows user temp directory. This is not a full pass. Oversized-input test IDs were named
+    explicitly to prevent pytest from expanding a 64 KiB fixture into failure-report names.
+  EVIDENCE:
+  - tests/unit/github_workflows/test_workflow_contracts.py
+  - tests/unit/github_workflows/test_source_qualification.py
+  IMPACT: Rerun unchanged test scope outside the sandbox with a fresh task-owned temporary directory.
+  NEXT: Execute all workflow unit tests with isolated temp storage and retain the result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-06T10:22:31Z
+  TYPE: MEASURE
+  CLAIM: All 325 workflow-unit tests pass outside the Windows sandbox with isolated task temp
+    storage. This includes profile/skip requirements, full-record roundtrip across different merge
+    SHAs, closed-PR association handling, manual/release-fix paths, bad/expired/changed evidence,
+    pending-RC deadlines and preserved final publisher checks.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/workflow-tests.xml
+  - tests/unit/github_workflows/test_source_qualification.py
+  - tests/unit/github_workflows/test_candidate_publication.py
+  IMPACT: Functional unit validation passes. Complete workflow lint, operator guidance and derived
+    assets; verify the current artifact action's single-file download contract before finalizing.
+  NEXT: Check artifact transfer semantics and update the branch guide for the new stage policy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T10:35:43Z
+  TYPE: FACT
+  CLAIM: Consumed closure notices from codex_1 and codex_2. They report their owned tickets closed
+    with no competing CI edits or asset regeneration. The runtime cases remain explicitly deferred,
+    not repaired. Artifact action v7 defaults to ZIP archive mode, preserving the run/attempt name
+    and qualification.json path; v8 downloads the selected ID with digest mismatch treated as failure.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  - artifacts/2026-09-06_codex_2_ticket_closure.md
+  - https://raw.githubusercontent.com/actions/upload-artifact/v7/action.yml
+  - https://raw.githubusercontent.com/actions/download-artifact/v8/README.md
+  IMPACT: Qualification transfer semantics are verified against official action definitions.
+    Actionlint passes all nine workflows; guide and added boundary regressions are ready for final
+    validation. A task-local ignore file keeps temporary test/tool files out of commits and discovery.
+  NEXT: Run final workflow tests and regenerate the affected repository corpora and patch indexes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T10:41:01Z
+  TYPE: MEASURE
+  CLAIM: The final focused JUnit report contains 330 tests, zero failures/errors/skips and 1.119s
+    suite time. Current HEAD is 9ab23f6f6; the owner has committed the workflow/helper implementation.
+    Remaining working edits include the guide and added source-proof/workflow regressions. RC is a
+    deliberate preprod-to-RC promotion: the RC branch push triggers TestPyPI, not a preprod push.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/workflow-tests.xml:1-1
+  - .github/workflows/release-candidate.yml:1-40
+  - .github/workflows/ci.yml:1-12
+  IMPACT: Focused behavior validation is complete. Preserve owner commits and unrelated cleanup;
+    finish the derived corpus/index updates before handing over the change.
+  NEXT: Regenerate the tests/other corpora and all three patch indexes, then verify freshness.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T10:41:01Z
+  TYPE: FACT
+  CLAIM: Rebuilt the affected repository corpora: tests contains 808 inputs, other contains 354;
+    the shared manifest was refreshed. All three patch indexes were generated with their 17
+    section ranges checked against the source headings.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/validation.md:11-14
+  - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch_index.md:10-37
+  - system_docs/patches/active/ci_stage_qualification_2026_09_06/component_patch_ci_profiles_index.md:10-35
+  - system_docs/patches/active/ci_stage_qualification_2026_09_06/code_description_patch_source_proof_index.md:10-35
+  IMPACT: Derived outputs now include the final workflow tests and operator guidance.
+  NEXT: Verify all corpus/source-asset and patch-index checks, then prepare owner review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-06T10:44:00Z
+  TYPE: MEASURE
+  CLAIM: All repository corpora, source assets and three patch indexes pass freshness checks.
+    An additional default Ruff invocation reports 17 style/typing findings, including Optional
+    syntax required by the role and intentional ValueError boundary contracts. This is distinct
+    from the earlier passing scoped correctness lint; no default-Ruff-clean claim is made.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/validation.md:13-21
+  - .github/scripts/ci_qualification.py:27-32
+  - .github/scripts/ci_policy.py:28-32
+  IMPACT: Derived-output gates pass. Retain the established boundary contracts and avoid unrelated
+    formatting or typing-policy changes while closing out this workflow task.
+  NEXT: Complete scoped correctness lint and inspect the final diff for implementation gaps.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-06T10:45:04Z
+  TYPE: DECISION
+  CLAIM: The workflow task is ready for owner review. Final source/workflow review confirms full
+    checks at dev/preprod and final publication, exact-tree evidence for unchanged promotions,
+    full release-fix/manual paths and dedicated TestPyPI qualification after an RC branch push.
+    Scoped Ruff E9,F63,F7,F82 and git diff --check pass. Generated assets/indexes are current.
+  EVIDENCE:
+  - .github/BRANCH_WORKFLOW.md:5-141
+  - .github/workflows/ci.yml:1-135
+  - .github/workflows/python-publish.yml:60-116
+  - artifacts/ci_stage_qualification_20260906/validation.md:1-24
+  IMPACT: No remaining implementation step is identified. Owner must commit remaining guide/tests/
+    generated files, promote through dev/preprod and observe the first hosted proof/artifact run.
+  NEXT: Owner reviews and rolls out the qualified workflow change; ticket closure awaits acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Implementation approved. Current checkout f10b63f61 has no new implementation diff from the interrupted
-turn; the old scratch .gitignore deletion is existing cleanup. Implement profiles plus trusted full-CI
-tree records, lightweight RC/prod gates and no duplicate push CI, with release-fix/manual full checks.
-Use official artifact download across runs; retain final publication tests and bounded pending-RC wait.
+Stage-specific CI, strict result aggregation, full-CI source records, lightweight RC/prod proof and
+bounded pending-RC waiting are implemented. Final publication still runs full validation. All 330
+focused tests, actionlint, scoped correctness Ruff, generated-asset and patch-index checks pass.
+Default Ruff style/typing findings are recorded separately; no blanket lint-clean claim is made.
+The guide documents initial qualification, exact-tree refusal, release fixes and bounded RC waiting.
+The task is in review. The owner signs/commits/pushes and validates hosted rollout. No hosted workflow
+or publication was dispatched. Close and apply artifact dispositions only after owner acceptance.

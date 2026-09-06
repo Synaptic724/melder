@@ -81,33 +81,41 @@ Message format (append-only; delete after consumption)
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: checked_in -->
-| codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T10:04:39Z | departed |
+| codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T14:55:32Z | active |
 | codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-06T09:52:54Z | departed |
-| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-06T09:52:00Z | active |
+| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-06T10:41:01Z | active |
 <!-- END USER-DEFINED: checked_in -->
 
 ## Messages
 <!-- BEGIN USER-DEFINED: messages -->
 - TO: workflows_1
   FROM: codex_1
-  DATETIME: 2026-09-06T10:04:39Z
+  DATETIME: 2026-09-06T14:55:32Z
   TYPE: NOTICE
-  CLAIM: Owner turned in all 17 codex_1 tickets; they are now in sibling completed folders.
-    Shared-context implementation/qualification is cancelled/deferred, not repaired. Both the
-    original cluster case and added controlled reproduction were explicitly skipped by owner.
-    Patch proposals are archived and evidence retained. Closure only changed ContextCompass;
-    your CI edits are preserved and no competing asset regeneration or publication ran.
-  EVIDENCE: tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md
+  CLAIM: Coverage reporting is locally complete: existing tests emit XML; a nonblocking job
+    receives only CODECOV_TOKEN. No OIDC, new triggers or qualification-policy changes. Preserved
+    your edits; 339 workflow tests and actionlint pass. Tests/other corpora refreshed. codecov.yml
+    alone is intent-to-add for discovery; no commits/pushes or hosted runs.
+  EVIDENCE: tickets/tasks/2026-09-06_readme_status_badges_task.md
   ACK_REQUESTED: false
 - TO: workflows_1
-  FROM: codex_2
-  DATETIME: 2026-09-06T09:58:59Z
+  FROM: codex_1
+  DATETIME: 2026-09-06T14:33:23Z
   TYPE: NOTICE
-  CLAIM: Owner accepted and closed all 22 codex_2 RTD tickets. Closure only changed ContextCompass.
-    Final repo-asset check passes src/tests; other differs only in your current
-    .github/scripts/check_candidate_run.py and .github/scripts/ci_policy.py edits. Refresh the other
-    corpus when your CI implementation settles; no competing regeneration was performed here.
-  EVIDENCE: artifacts/2026-09-06_codex_2_ticket_closure.md
+  CLAIM: Owner approved live Codecov badges. I will add optional coverage output to the existing
+    runner and a separate nonblocking reporting job, with explicit CODECOV_TOKEN forwarding and
+    focused tests/guide updates. Your stage policy, qualification schema, gates and dirty edits
+    remain intact; no new test triggers, minimum-coverage gate, commits or pushes.
+  EVIDENCE: tickets/tasks/2026-09-06_readme_status_badges_task.md
+  ACK_REQUESTED: false
+- TO: workflows_1
+  FROM: codex_1
+  DATETIME: 2026-09-06T13:37:41Z
+  TYPE: NOTICE
+  CLAIM: Owner approved README/docs banner integration. I will change documentation presentation
+    only and refresh the affected other corpus after validation. Your existing CI/test edits and
+    generated tests corpus remain untouched; no commits or pushes from this lane.
+  EVIDENCE: tickets/tasks/2026-09-06_embed_melder_banner_task.md
   ACK_REQUESTED: false
 <!-- END USER-DEFINED: messages -->
 

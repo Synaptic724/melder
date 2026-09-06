@@ -59,7 +59,10 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
     assert document["permissions"] == {"contents": "read"}
     assert "concurrency" not in document
-    for job in document["jobs"].values():
+    for job_name, job in document["jobs"].items():
+        if name == "test-runtime.yml" and job_name == "coverage":
+            # Report delivery is not a mandatory test or publication gate.
+            continue
         assert "if" not in job
         assert "continue-on-error" not in job
         assert "environment" not in job
@@ -96,6 +99,80 @@ def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
     report = job["steps"][-1]
     assert report["if"] == "always()"
     assert report["uses"].startswith("actions/upload-artifact@")
+
+
+def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> None:
+    """Measure in the one runtime invocation and keep each OS report separate from JUnit."""
+    document = workflow("test-runtime.yml")
+    assert set(document["jobs"]) == {"test", "coverage"}
+    test = document["jobs"]["test"]
+    runners = [step for step in test["steps"] if "run_runtime_tests.py" in step.get("run", "")]
+    assert len(runners) == 1
+    assert runners[0]["run"] == (
+        "python .github/scripts/run_runtime_tests.py --report reports/runtime.xml "
+        "--coverage-report reports/coverage.xml"
+    )
+    assert runners[0].get("continue-on-error", "false") == "false"
+    retained = next(step for step in test["steps"] if step.get("name") == "Retain coverage report")
+    assert retained["if"] == "always()"
+    assert retained["continue-on-error"] == "true"
+    assert retained["with"]["name"] == "coverage-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["path"] == "reports/coverage.xml"
+    reporting = document["jobs"]["coverage"]
+    download = next(step for step in reporting["steps"]
+                    if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert download["with"] == {
+        "pattern": "coverage-*-${{ github.run_id }}-${{ github.run_attempt }}",
+        "path": "coverage-reports", "merge-multiple": "false",
+    }
+    complete = next(step for step in reporting["steps"] if step.get("name") == "Require the complete coverage matrix")
+    for os in test["strategy"]["matrix"]["os"]:
+        assert os in complete["run"]
+    assert 'coverage-$os-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/coverage.xml' in complete["run"]
+    assert 'exit 1' in complete["run"]
+    assert reporting["steps"].index(download) < reporting["steps"].index(complete) < len(reporting["steps"]) - 1
+
+
+def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
+    """Coverage cannot grant publication rights, run after failed tests, or expose tokens to forks."""
+    document = workflow("test-runtime.yml")
+    assert document["on"]["workflow_call"]["secrets"]["CODECOV_TOKEN"]["required"] == "false"
+    job = document["jobs"]["coverage"]
+    assert job["needs"] == "test"
+    assert job["continue-on-error"] == "true"
+    assert job["if"] == (
+        "github.event_name != 'pull_request' || "
+        "github.event.pull_request.head.repo.full_name == github.repository"
+    )
+    assert document["permissions"] == {"contents": "read"}
+    assert "permissions" not in job and "environment" not in job and "env" not in job
+    credential_check = job["steps"][0]
+    assert credential_check["id"] == "credentials"
+    assert credential_check["env"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
+    assert 'enabled=false' in credential_check["run"] and '::warning::' in credential_check["run"]
+    assert all(step["if"] == "steps.credentials.outputs.enabled == 'true'" for step in job["steps"][1:])
+    upload = job["steps"][-1]
+    assert upload["uses"] == "codecov/codecov-action@v7"
+    assert upload["with"]["token"] == "${{ secrets.CODECOV_TOKEN }}"
+    assert upload["with"]["directory"] == "coverage-reports"
+    assert upload["with"]["fail_ci_if_error"] == "true"
+    assert upload["with"].get("use_oidc", "false") == "false"
+    assert upload["with"]["override_branch"] == "${{ github.event_name == 'release' && 'prod' || '' }}"
+
+
+@pytest.mark.parametrize("name", ["ci.yml", "python-publish.yml"])
+def test_runtime_callers_forward_only_the_coverage_secret(name: str) -> None:
+    """Nested reporting receives its own token without inheriting package upload credentials."""
+    caller = workflow(name)["jobs"]["tests"]
+    assert caller["secrets"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
+    assert caller.get("permissions", {}).get("id-token") != "write"
+
+
+def test_codecov_does_not_create_extra_required_coverage_statuses() -> None:
+    """Reporting configuration must not impose a new numerical gate or spam PR comments."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    configuration = yaml.safe_load((root / "codecov.yml").read_text(encoding="utf-8"))
+    assert configuration == {"coverage": {"status": {"project": False, "patch": False}}, "comment": False}
 
 
 def test_publication_repeats_validation_and_checks_prod_last() -> None:
@@ -260,6 +337,7 @@ def test_only_full_ci_records_qualification_after_successful_aggregation() -> No
     assert steps[record]["env"] == steps[aggregate]["env"]
     assert steps[upload]["with"]["name"] == "source-qualification-${{ github.run_id }}-${{ github.run_attempt }}"
     assert steps[upload]["with"]["if-no-files-found"] == "error"
+    assert steps[upload]["with"].get("archive", "true") == "true"
 
 
 def test_source_proof_download_is_pinned_and_has_only_read_permissions() -> None:

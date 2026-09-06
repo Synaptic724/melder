@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 092901f40f2c47ee7da235f83f730692ed9e6d184f747a3424a43982a8d9f327
-FILE COUNT: 807
+SOURCE FINGERPRINT: b9b2ef667a0eb679acd9bfe6ad40c28dd913ce8147a9a248dd3a4666d8ad62a7
+FILE COUNT: 808
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -132133,7 +132133,7 @@ END FILE: tests/unit/architecture_and_design/test_architecture_docs_tool.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/conftest.py
-CONTENT SHA256: 0829457d7b311cd784bf2119204f61e5a1fb97e2e711f90ce16f6eb2453b5748
+CONTENT SHA256: ba0fa7a69c9987045a459577d2a7803cf2fa3b181d7ee54645e28a68635f27a1
 SOURCE ENCODING: utf-8
 ================================================================================
 """Load standalone CI scripts without creating a runtime package or booting Melder."""
@@ -132197,12 +132197,18 @@ def candidate_proof() -> ModuleType:
 def normalizer() -> ModuleType:
     """Provide archive normalization without rewriting any artifact at import."""
     return load_script("normalize_sdist")
+
+
+@pytest.fixture
+def source_qualification() -> ModuleType:
+    """Provide source-proof logic without GitHub requests or repository changes."""
+    return load_script("ci_qualification")
 ================================================================================
 END FILE: tests/unit/github_workflows/conftest.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_candidate_publication.py
-CONTENT SHA256: bae6ca64b65d993035f1b23082dc244e1732ac7a362fe10c2f2385eb534c24d8
+CONTENT SHA256: ad7b7cd06d69f9b2e1fc6a94fb1bd0c6a8705a6e883c0af6dc4e09b05d1d4097
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove exact-source qualification, immutable uploads, and isolated TestPyPI installation."""
@@ -132345,7 +132351,77 @@ def test_prod_rejects_different_tree_or_prerelease_before_querying_runs(candidat
     monkeypatch.setattr(candidate_proof, "git_output", git_read)
     monkeypatch.setattr(candidate_proof, "github_runs", unexpected_query)
     with pytest.raises(ValueError, match="tree differs|final package version"):
-        candidate_proof.main()
+        candidate_proof.main([])
+
+
+def test_pending_candidate_waits_then_accepts_current_success(candidate_proof: ModuleType,
+                                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fast prod CI waits for real queued work, then evaluates the newly returned run record."""
+    pending = qualified_run(status="in_progress", conclusion=None)
+    ready = qualified_run(run_attempt=2)
+    responses = iter([{"workflow_runs": [pending]}, {"workflow_runs": [ready]}])
+    elapsed = [0.0]
+    monkeypatch.setattr(candidate_proof, "github_runs", lambda *args: next(responses))
+    monkeypatch.setattr(candidate_proof.time, "monotonic", lambda: elapsed[0])
+    monkeypatch.setattr(candidate_proof.time, "sleep", lambda delay: elapsed.__setitem__(0, elapsed[0] + delay))
+    assert candidate_proof.await_qualification("owner/repo", "a" * 40, 30) == ready
+    assert elapsed[0] == 15
+
+
+def test_candidate_wait_has_a_deadline(candidate_proof: ModuleType,
+                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """A candidate that never finishes cannot keep the merge gate running indefinitely."""
+    elapsed = [0.0]
+    pauses: list[float] = []
+
+    def sleep(delay: float) -> None:
+        """Advance the external clock deterministically."""
+        pauses.append(delay)
+        elapsed[0] += delay
+
+    monkeypatch.setattr(candidate_proof, "github_runs", lambda *args: {
+        "workflow_runs": [qualified_run(status="queued", conclusion=None)],
+    })
+    monkeypatch.setattr(candidate_proof.time, "monotonic", lambda: elapsed[0])
+    monkeypatch.setattr(candidate_proof.time, "sleep", sleep)
+    with pytest.raises(ValueError, match="expired after 20 seconds"):
+        candidate_proof.await_qualification("owner/repo", "a" * 40, 20)
+    assert pauses == [15, 5]
+
+
+@pytest.mark.parametrize("change", [
+    {"conclusion": "failure"}, {"head_sha": "b" * 40, "status": "queued", "conclusion": None},
+    {"event": "pull_request", "status": "in_progress", "conclusion": None},
+    {"path": ".github/workflows/ci.yml", "status": "queued", "conclusion": None},
+    {"status": "unknown", "conclusion": None},
+])
+def test_wait_never_retries_invalid_or_failed_qualification(candidate_proof: ModuleType,
+                                                           monkeypatch: pytest.MonkeyPatch,
+                                                           change: dict[str, object]) -> None:
+    """Only genuine pending work may wait; completed failures and forged provenance refuse immediately."""
+    def unexpected_sleep(delay: float) -> None:
+        """Expose any attempt to conceal failure by retrying."""
+        raise AssertionError("Invalid evidence must not wait.")
+
+    monkeypatch.setattr(candidate_proof, "github_runs", lambda *args: {
+        "workflow_runs": [qualified_run(**change)],
+    })
+    monkeypatch.setattr(candidate_proof.time, "sleep", unexpected_sleep)
+    with pytest.raises(ValueError):
+        candidate_proof.await_qualification("owner/repo", "a" * 40, 30)
+
+
+@pytest.mark.parametrize("wait", [-1, 601, True, 1.5])
+def test_invalid_wait_bounds_refuse_before_network(candidate_proof: ModuleType, wait: object,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """The API cannot be entered with an unbounded or coercive wait parameter."""
+    def unexpected_query(*args: object) -> None:
+        """Expose unexpected external work."""
+        raise AssertionError("No API call is allowed.")
+
+    monkeypatch.setattr(candidate_proof, "github_runs", unexpected_query)
+    with pytest.raises(ValueError, match="integer"):
+        candidate_proof.await_qualification("owner/repo", "a" * 40, wait)
 
 
 def test_identical_and_partial_index_uploads_are_safe(candidate: ModuleType) -> None:
@@ -132497,7 +132573,7 @@ END FILE: tests/unit/github_workflows/test_candidate_publication.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_ci_policy.py
-CONTENT SHA256: bbe331366ce6393a09b3861c6197190237d2b337c931a79f81b065f3592bbcf1
+CONTENT SHA256: 22fc761d5094931044eba1b5f92a73c18ffe97b8decbb2e603cb61a89aa9efeb
 SOURCE ENCODING: utf-8
 ================================================================================
 """Behavioral regression tests for branch routes, required results, and release authorization."""
@@ -132514,7 +132590,8 @@ import pytest
 def result_map() -> dict[str, object]:
     """Build the complete, successful dependency report emitted by the CI workflow."""
     return {name: {"result": "success"} for name in
-            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages")}
+            ("branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation",
+             "source-qualification", "packages")}
 
 
 def pr_event(base: str = "dev", head: str = "feature/example",
@@ -132634,7 +132711,7 @@ def test_package_skip_is_allowed_only_for_dev(policy: ModuleType) -> None:
         policy.require_success(results, False)
 
 
-@pytest.mark.parametrize("job", ["authorize", "build", "publish", "install"])
+@pytest.mark.parametrize("job", ["authorize", "source-qualification", "build", "publish", "install"])
 @pytest.mark.parametrize("result", ["failure", "cancelled", "skipped", "neutral", None])
 def test_candidate_requires_all_upload_and_install_stages(policy: ModuleType, job: str, result: object) -> None:
     """Neither a skipped publisher nor one failing platform can yield package-ready success."""
@@ -132678,7 +132755,8 @@ def test_stale_or_wrong_context_candidate_cannot_publish(policy: ModuleType, eve
         policy.validate_candidate_head(event, ref, "a" * 40, checkout, advertisement)
 
 
-@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages"])
+@pytest.mark.parametrize("job", ["branch-policy", "hygiene", "source-assets", "repo-assets", "tests",
+                                "documentation", "source-qualification", "packages"])
 def test_missing_dependency_evidence_never_passes(policy: ModuleType, job: str) -> None:
     """Deleting a failed job from the report must not conceal its absence."""
     results = result_map()
@@ -132848,6 +132926,11 @@ def test_merge_cli_propagates_failure_and_missing_stage(policy: ModuleType,
     """Return a failing process result for skipped tests or missing branch-policy outputs."""
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
     monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
+    monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
+    monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setattr(policy, "read_event", pr_event)
     assert policy.main(["merge-ready"]) == 0
     failed = result_map()
     failed["tests"] = {"result": "skipped"}
@@ -132870,7 +132953,72 @@ def test_branch_cli_writes_the_actual_package_requirement(policy: ModuleType,
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_REF", "refs/pull/1/merge")
     assert policy.main(["branch"]) == 0
-    assert output.read_text(encoding="utf-8") == "package-required=true\n"
+    assert output.read_text(encoding="utf-8") == (
+        "runtime-required=true\npackage-required=true\nsource-required=false\n"
+    )
+
+
+@pytest.mark.parametrize(("base", "head", "expected"), [
+    ("dev", "feature/work", (True, False, False)),
+    ("preprod", "dev", (True, True, False)),
+    ("release_candidate", "preprod", (False, False, True)),
+    ("release_candidate", "release-fix/correction", (True, True, False)),
+    ("prod", "release_candidate", (False, False, False)),
+])
+def test_pr_stages_select_full_or_proven_promotion(policy: ModuleType, base: str, head: str,
+                                                   expected: tuple[bool, bool, bool]) -> None:
+    """Only dev/preprod and changed candidate PRs run full CI; unchanged promotions require evidence."""
+    assert policy.validation_requirements(
+        "pull_request", pr_event(base, head), "refs/pull/1/merge", "owner/repo",
+    ) == expected
+
+
+@pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])
+def test_manual_ci_always_requalifies_the_selected_branch(policy: ModuleType, branch: str) -> None:
+    """Manual CI can establish fresh full evidence, including historical/expired candidate proof."""
+    assert policy.validation_requirements(
+        "workflow_dispatch", {}, f"refs/heads/{branch}", "owner/repo",
+    ) == (True, branch != "dev", False)
+    with pytest.raises(ValueError, match="not pushes"):
+        policy.validation_requirements("push", {}, f"refs/heads/{branch}", "owner/repo")
+
+
+@pytest.mark.parametrize("source_required", [False, True])
+def test_light_ci_accepts_only_intentional_skips_and_required_proof(policy: ModuleType,
+                                                                 source_required: bool) -> None:
+    """Skipping runtime never waives source proof when that is the promotion's mandatory evidence."""
+    results = result_map()
+    for name in policy.CIPolicy.FULL_JOBS:
+        results[name] = {"result": "skipped"}
+    results["packages"] = {"result": "skipped"}
+    results["source-qualification"] = {"result": "success" if source_required else "skipped"}
+    policy.require_success(results, False, False, source_required)
+    if source_required:
+        results["source-qualification"] = {"result": "skipped"}
+        with pytest.raises(ValueError, match="source-qualification"):
+            policy.require_success(results, False, False, True)
+    results["tests"] = {"result": "failure"}
+    with pytest.raises(ValueError, match="tests"):
+        policy.require_success(results, False, False, source_required)
+
+
+@pytest.mark.parametrize(("flag", "value"), [
+    ("RUNTIME", "false"), ("PACKAGE", "false"), ("SOURCE", "true"), ("RUNTIME", ""),
+])
+def test_reported_flags_cannot_waive_event_requirements(policy: ModuleType,
+                                                       monkeypatch: pytest.MonkeyPatch,
+                                                       flag: str, value: str) -> None:
+    """The final gate derives policy independently of branch-job output strings."""
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setattr(policy, "read_event", lambda: pr_event("preprod", "dev"))
+    monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
+    monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
+    monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
+    monkeypatch.setenv(f"CI_{flag}_REQUIRED", value)
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(result_map()))
+    with pytest.raises(ValueError, match="Missing/invalid"):
+        policy.require_ci_results()
 
 
 @pytest.mark.parametrize(("version", "supported", "gil", "valid"), [
@@ -132910,6 +133058,35 @@ def test_test_driver_preserves_tiers_failure_code_and_runtime_checks(runtime: Mo
     assert calls == ["runtime-check", [
         "-q", "tests/unit", "tests/component", "tests/integration", f"--junitxml={report}",
     ], "runtime-check"]
+
+
+@pytest.mark.parametrize("exit_code", [0, 1, 2, 5])
+def test_coverage_driver_preserves_runtime_contract_and_pytest_exit(runtime: ModuleType,
+                                                                 tmp_path: pathlib.Path,
+                                                                 monkeypatch: pytest.MonkeyPatch,
+                                                                 exit_code: int) -> None:
+    """Optional coverage adds one XML report without rerunning tests or masking pytest outcomes."""
+    calls: list[object] = []
+
+    def fake_pytest(arguments: list[str]) -> int:
+        """Capture pytest's invocation boundary without starting a nested test session."""
+        calls.append(arguments)
+        return exit_code
+
+    def runtime_check(*arguments: object) -> None:
+        """Observe both runtime checks; the guard predicate is validated independently."""
+        calls.append("runtime-check")
+
+    monkeypatch.setattr(pytest, "main", fake_pytest)
+    monkeypatch.setattr(runtime, "require_free_threading", runtime_check)
+    junit = tmp_path / "junit/runtime.xml"
+    coverage = tmp_path / "coverage reports/coverage.xml"
+    assert runtime.main(["--report", str(junit), "--coverage-report", str(coverage)]) == exit_code
+    assert calls == ["runtime-check", [
+        "-q", "tests/unit", "tests/component", "tests/integration", f"--junitxml={junit}",
+        "--cov=melder", "--cov-branch", f"--cov-report=xml:{coverage}",
+    ], "runtime-check"]
+    assert junit.parent.is_dir() and coverage.parent.is_dir()
 ================================================================================
 END FILE: tests/unit/github_workflows/test_ci_policy.py
 ================================================================================
@@ -133201,8 +133378,424 @@ def test_invalid_timestamp_refuses_before_rewriting(normalizer: ModuleType, tmp_
 END FILE: tests/unit/github_workflows/test_sdist_normalization.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/github_workflows/test_source_qualification.py
+CONTENT SHA256: b2bf8736224ca9766e3055acc7dd36cf33c95dcbe65721a93527e57d16570816
+SOURCE ENCODING: utf-8
+================================================================================
+"""Exercise full-CI evidence across distinct merge SHAs, source changes, and stale GitHub state."""
+
+import io
+import json
+import os
+import pathlib
+import urllib.request
+from collections.abc import Mapping, Sequence
+from types import ModuleType
+from typing import TypedDict
+
+import pytest
+
+
+class SourceApiData(TypedDict):
+    """Hold per-test JSON responses and the observed external request sequence."""
+
+    commits: dict[str, dict[str, object]]
+    pulls: dict[str, list[dict[str, object]]]
+    manual: dict[str, list[dict[str, object]]]
+    runs: list[dict[str, object]]
+    artifacts: list[dict[str, object]]
+    calls: list[str]
+
+
+class GitState(TypedDict):
+    """Describe the independent Git-process answers used by a record-producing CI job."""
+
+    sha: str
+    tree: str
+    dirty: str
+    parents: list[str]
+
+
+def pull_request(base: str = "preprod", head: str = "dev", head_sha: str = "c" * 40,
+                 merged_sha: str = "a" * 40, number: int = 12) -> dict[str, object]:
+    """Build one authentic same-repository merged PR with explicit source/base identity."""
+    return {"number": number, "merge_commit_sha": merged_sha, "merged_at": "2026-09-06T00:00:00Z",
+            "base": {"ref": base, "sha": "d" * 40, "repo": {"full_name": "owner/repo"}},
+            "head": {"ref": head, "sha": head_sha, "repo": {"full_name": "owner/repo"}}}
+
+
+def ci_run(**changes: object) -> dict[str, object]:
+    """Describe full PR CI; an empty association list models GitHub's actual post-merge response."""
+    return {"id": 70, "run_number": 10, "run_attempt": 1,
+            "repository": {"full_name": "owner/repo"}, "head_repository": {"full_name": "owner/repo"},
+            "path": ".github/workflows/ci.yml", "head_sha": "c" * 40, "head_branch": "dev",
+            "event": "pull_request", "pull_requests": [], "status": "completed",
+            "conclusion": "success", **changes}
+
+
+@pytest.fixture
+def source_api(source_qualification: ModuleType, monkeypatch: pytest.MonkeyPatch) -> SourceApiData:
+    """Model only GitHub's network boundary while exercising the real selection algorithm."""
+    data: SourceApiData = {
+        "commits": {"a" * 40: {"sha": "a" * 40, "tree": {"sha": "b" * 40},
+                               "parents": [{"sha": "d" * 40}, {"sha": "c" * 40}]}},
+        "pulls": {"a" * 40: [pull_request()]}, "manual": {}, "runs": [ci_run()],
+        "artifacts": [{"id": 900, "name": "source-qualification-70-1", "expired": False}],
+        "calls": [],
+    }
+
+    def request(repository: str, endpoint: str, query: Mapping[str, object]) -> object:
+        """Return mutable external state without replacing policy or proof validation."""
+        assert repository == "owner/repo"
+        data["calls"].append(endpoint)
+        if endpoint.startswith("git/commits/"):
+            return data["commits"][endpoint.rsplit("/", 1)[1]]
+        if endpoint.startswith("commits/"):
+            return data["pulls"][endpoint.split("/")[1]]
+        if endpoint == "actions/workflows/ci.yml/runs":
+            if query["event"] == "workflow_dispatch":
+                return {"workflow_runs": data["manual"].get(str(query["head_sha"]), [])}
+            return {"workflow_runs": data["runs"]}
+        if endpoint.endswith("/artifacts"):
+            return {"artifacts": data["artifacts"]}
+        raise AssertionError(f"Unexpected API endpoint: {endpoint}")
+
+    monkeypatch.setattr(source_qualification, "github_json", request)
+    return data
+
+
+@pytest.fixture
+def record_environment(source_qualification: ModuleType, tmp_path: pathlib.Path,
+                       monkeypatch: pytest.MonkeyPatch) -> GitState:
+    """Provide a real event file and independently controlled Git answers for full CI."""
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps({"pull_request": pull_request()}), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_REF", "refs/pull/12/merge")
+    monkeypatch.setenv("GITHUB_SHA", "e" * 40)
+    monkeypatch.setenv("GITHUB_RUN_ID", "70")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "1")
+    monkeypatch.setenv("CI_RUNTIME_REQUIRED", "true")
+    monkeypatch.setenv("CI_PACKAGE_REQUIRED", "true")
+    monkeypatch.setenv("CI_SOURCE_REQUIRED", "false")
+    results = {name: {"result": "success"} for name in (
+        "branch-policy", "hygiene", "source-assets", "repo-assets", "tests", "documentation", "packages",
+    )}
+    results["source-qualification"] = {"result": "skipped"}
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
+    state: GitState = {"sha": "e" * 40, "tree": "b" * 40, "dirty": "",
+                       "parents": ["e" * 40, "d" * 40, "c" * 40]}
+
+    def git(arguments: Sequence[str]) -> str:
+        """Model the process boundary without masking a wrong event SHA or merge parents."""
+        if arguments[0] == "status":
+            return state["dirty"]
+        if arguments[0] == "rev-list":
+            return " ".join(state["parents"])
+        if arguments == ("rev-parse", "HEAD^{commit}"):
+            return state["sha"]
+        if arguments == ("rev-parse", "HEAD^{tree}"):
+            return state["tree"]
+        raise AssertionError(f"Unexpected Git request: {arguments}")
+
+    monkeypatch.setattr(source_qualification, "git_output", git)
+    return state
+
+
+def test_full_record_qualifies_identical_tree_across_merge_shas(source_qualification: ModuleType,
+                                                              source_api: SourceApiData,
+                                                              record_environment: GitState) -> None:
+    """The tested PR merge and real preprod merge may differ in SHA while carrying identical contents."""
+    proof = source_qualification.full_record()
+    selected = source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+    assert proof["checkout_sha"] == "e" * 40
+    assert selected["source_sha"] == "a" * 40
+    assert selected["artifact_id"] == 900
+    source_qualification.validate_proof(proof, selected["expected"])
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("tree_sha", "f" * 40), ("repository", "fork/repo"), ("run_id", 71), ("run_attempt", 2),
+    ("run_attempt", True), ("pull_request", 99), ("target_branch", "dev"),
+    ("head_sha", "f" * 40), ("base_sha", "f" * 40), ("event", "workflow_dispatch"),
+    ("schema", True), ("schema", 2), ("full_runtime", False), ("full_runtime", 1),
+    ("package_required", False),
+])
+def test_altered_full_record_is_refused(source_qualification: ModuleType, source_api: SourceApiData,
+                                       record_environment: GitState, field: str, value: object) -> None:
+    """A familiar artifact name cannot qualify another run, PR, profile, version, or tree."""
+    proof = source_qualification.full_record()
+    proof[field] = value
+    selected = source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+    with pytest.raises(ValueError, match="differs"):
+        source_qualification.validate_proof(proof, selected["expected"])
+
+
+@pytest.mark.parametrize("change", [
+    {"conclusion": "failure"}, {"status": "in_progress", "conclusion": None},
+    {"conclusion": "cancelled"}, {"conclusion": "skipped"}, {"run_attempt": True},
+    {"id": "70"}, {"path": ".github/workflows/release-candidate.yml"},
+    {"head_sha": "f" * 40}, {"head_branch": "preprod"}, {"event": "push"},
+    {"repository": {"full_name": "fork/repo"}}, {"head_repository": {"full_name": "fork/repo"}},
+])
+def test_newest_bad_run_never_falls_back_to_old_green(source_qualification: ModuleType,
+                                                     source_api: SourceApiData,
+                                                     change: dict[str, object]) -> None:
+    """Newer failed, pending or mismatched full-CI evidence invalidates reuse instead of falling back."""
+    source_api["runs"].append(ci_run(id=71, run_number=11, **{key: value for key, value in change.items()
+                                                            if key != "id"}))
+    if "id" in change:
+        source_api["runs"][-1]["id"] = change["id"]
+    with pytest.raises(ValueError):
+        source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+    assert not any(endpoint.endswith("/artifacts") for endpoint in source_api["calls"])
+
+
+@pytest.mark.parametrize("mode", ["missing", "expired", "duplicate", "old-attempt", "invalid-id"])
+def test_missing_or_stale_artifact_is_not_qualification(source_qualification: ModuleType,
+                                                       source_api: SourceApiData, mode: str) -> None:
+    """Require exactly one non-expired artifact belonging to the current attempt."""
+    if mode == "missing":
+        source_api["artifacts"].clear()
+    elif mode == "expired":
+        source_api["artifacts"][0]["expired"] = True
+    elif mode == "duplicate":
+        source_api["artifacts"].append(dict(source_api["artifacts"][0]))
+    elif mode == "old-attempt":
+        source_api["runs"][0]["run_attempt"] = 2
+    else:
+        source_api["artifacts"][0]["id"] = False
+    with pytest.raises(ValueError):
+        source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+
+
+def test_different_promotion_tree_refuses_before_querying_runs(source_qualification: ModuleType,
+                                                             source_api: SourceApiData) -> None:
+    """A merge introducing different contents must earn fresh full qualification."""
+    with pytest.raises(ValueError, match="tree differs"):
+        source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "f" * 40)
+    assert source_api["calls"] == ["git/commits/" + "a" * 40]
+
+
+@pytest.mark.parametrize("mode", ["missing", "duplicate", "unrelated", "fork", "squashed"])
+def test_source_must_be_the_authentic_merged_pr(source_qualification: ModuleType,
+                                               source_api: SourceApiData, mode: str) -> None:
+    """Containing a commit, an unrelated PR, or a forged route cannot establish promotion provenance."""
+    if mode == "missing":
+        source_api["pulls"]["a" * 40] = []
+    elif mode == "duplicate":
+        source_api["pulls"]["a" * 40].append(pull_request(number=13))
+    elif mode == "unrelated":
+        source_api["pulls"]["a" * 40][0]["merge_commit_sha"] = "f" * 40
+    elif mode == "fork":
+        source_api["pulls"]["a" * 40][0]["head"] = {
+            "ref": "dev", "sha": "c" * 40, "repo": {"full_name": "fork/repo"},
+        }
+    else:
+        source_api["commits"]["a" * 40]["parents"] = [{"sha": "d" * 40}]
+    with pytest.raises(ValueError):
+        source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_exact_manual_ci_takes_precedence(source_qualification: ModuleType, source_api: SourceApiData,
+                                        failed: bool) -> None:
+    """Manual requalification is explicit, and a failed manual rerun cannot reuse older PR success."""
+    source_api["manual"]["a" * 40] = [
+        ci_run(event="workflow_dispatch", head_branch="preprod", head_sha="a" * 40,
+               conclusion="failure" if failed else "success"),
+    ]
+    if failed:
+        with pytest.raises(ValueError):
+            source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+    else:
+        result = source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+        assert result["expected"]["pull_request"] == 0
+        assert result["expected"]["head_sha"] == "a" * 40
+    assert not any(endpoint.endswith("/pulls") for endpoint in source_api["calls"])
+
+
+def test_rc_promotion_follows_qualified_preprod_tree(source_qualification: ModuleType,
+                                                   source_api: SourceApiData) -> None:
+    """The slim RC push can prove full preprod validation through its actual promotion parent."""
+    source_api["commits"]["f" * 40] = {
+        "sha": "f" * 40, "tree": {"sha": "b" * 40},
+        "parents": [{"sha": "d" * 40}, {"sha": "a" * 40}],
+    }
+    source_api["pulls"]["f" * 40] = [
+        pull_request("release_candidate", "preprod", "a" * 40, "f" * 40, 14),
+    ]
+    result = source_qualification.select_for_commit("owner/repo", "f" * 40, "release_candidate", "b" * 40)
+    assert result["source_sha"] == "a" * 40
+    assert result["expected"]["target_branch"] == "preprod"
+
+
+def test_rc_fix_uses_its_own_full_pr_qualification(source_qualification: ModuleType,
+                                                 source_api: SourceApiData) -> None:
+    """Changed candidate contents require the release-fix PR's full run rather than old preprod proof."""
+    source_api["pulls"]["a" * 40] = [pull_request("release_candidate", "release-fix/code")]
+    source_api["runs"][0]["head_branch"] = "release-fix/code"
+    result = source_qualification.select_for_commit("owner/repo", "a" * 40, "release_candidate", "b" * 40)
+    assert result["expected"]["target_branch"] == "release_candidate"
+    assert result["expected"]["pull_request"] == 12
+
+
+@pytest.mark.parametrize("mode", ["sha", "dirty", "parents", "failed-tests"])
+def test_record_refuses_unqualified_checkout(source_qualification: ModuleType, record_environment: GitState,
+                                            monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+    """Only the exact clean tested checkout and genuinely successful required jobs can issue a record."""
+    if mode == "sha":
+        monkeypatch.setenv("GITHUB_SHA", "f" * 40)
+    elif mode == "dirty":
+        record_environment["dirty"] = " M src/melder/example.py"
+    elif mode == "parents":
+        record_environment["parents"][-1] = "f" * 40
+    else:
+        results = json.loads(os.environ["CI_JOB_RESULTS"])
+        results["tests"]["result"] = "failure"
+        monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
+    with pytest.raises(ValueError):
+        source_qualification.full_record()
+
+
+def test_light_run_cannot_record_full_evidence(source_qualification: ModuleType, record_environment: GitState,
+                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    """Even a successful light promotion is not a full-test producer."""
+    pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).write_text(json.dumps({
+        "pull_request": pull_request("release_candidate", "preprod", "a" * 40),
+    }), encoding="utf-8")
+    monkeypatch.setenv("CI_RUNTIME_REQUIRED", "false")
+    monkeypatch.setenv("CI_PACKAGE_REQUIRED", "false")
+    monkeypatch.setenv("CI_SOURCE_REQUIRED", "true")
+    results = json.loads(os.environ["CI_JOB_RESULTS"])
+    for name in ("source-assets", "repo-assets", "tests", "documentation", "packages"):
+        results[name]["result"] = "skipped"
+    results["source-qualification"]["result"] = "success"
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
+    with pytest.raises(ValueError, match="light CI"):
+        source_qualification.full_record()
+
+
+@pytest.mark.parametrize("change", ["attempt", "failed-run"])
+def test_record_select_verify_roundtrip_rejects_changed_attempt(source_qualification: ModuleType,
+                                                               source_api: SourceApiData,
+                                                               record_environment: GitState,
+                                                               tmp_path: pathlib.Path,
+                                                               monkeypatch: pytest.MonkeyPatch,
+                                                               change: str) -> None:
+    """Exercise real JSON I/O and CLI phases, then invalidate a selected record by rerunning its producer."""
+    proof = tmp_path / "proof.json"
+    selection = tmp_path / "selection.json"
+    outputs = tmp_path / "outputs.txt"
+    assert source_qualification.main(["record", "--record", str(proof)]) == 0
+    record_environment["sha"] = "f" * 40
+    monkeypatch.setenv("GITHUB_SHA", "f" * 40)
+    monkeypatch.setenv("GITHUB_RUN_ID", "80")
+    monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+    pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).write_text(json.dumps({
+        "pull_request": pull_request("release_candidate", "preprod", "a" * 40, number=14),
+    }), encoding="utf-8")
+    assert source_qualification.main(["select", "--selection", str(selection)]) == 0
+    assert outputs.read_text(encoding="utf-8") == "run-id=70\nartifact-id=900\n"
+    arguments = ["verify", "--selection", str(selection), "--record", str(proof)]
+    assert source_qualification.main(arguments) == 0
+    if change == "attempt":
+        source_api["runs"][0]["run_attempt"] = 2
+        source_api["artifacts"][0]["name"] = "source-qualification-70-2"
+    else:
+        source_api["runs"].append(ci_run(id=71, run_number=11, conclusion="failure"))
+    with pytest.raises(ValueError, match="changed while downloading|conclusion"):
+        source_qualification.main(arguments)
+
+
+@pytest.mark.parametrize("wrong_checkout", [False, True])
+def test_manual_record_binds_the_exact_run_head(source_qualification: ModuleType,
+                                               source_api: SourceApiData,
+                                               record_environment: GitState,
+                                               monkeypatch: pytest.MonkeyPatch,
+                                               wrong_checkout: bool) -> None:
+    """A manual full run qualifies its own commit; a different checkout cannot impersonate it."""
+    record_environment["sha"] = "a" * 40
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/preprod")
+    pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).write_text("{}", encoding="utf-8")
+    proof = source_qualification.full_record()
+    source_api["manual"]["a" * 40] = [
+        ci_run(event="workflow_dispatch", head_branch="preprod", head_sha="a" * 40),
+    ]
+    selected = source_qualification.select_for_commit("owner/repo", "a" * 40, "preprod", "b" * 40)
+    if wrong_checkout:
+        proof["checkout_sha"] = "e" * 40
+        with pytest.raises(ValueError, match="Manual qualification checkout"):
+            source_qualification.validate_proof(proof, selected["expected"])
+    else:
+        source_qualification.validate_proof(proof, selected["expected"])
+
+
+@pytest.mark.parametrize("runs", [[], [ci_run(), ci_run()]], ids=["absent", "ambiguous"])
+def test_source_run_history_cannot_be_missing_or_ambiguous(source_qualification: ModuleType,
+                                                          runs: list[dict[str, object]]) -> None:
+    """No incomplete or duplicate run history can authorize a selected source."""
+    with pytest.raises(ValueError):
+        source_qualification.latest_run(runs)
+
+
+def test_api_pagination_is_complete_and_bounded(source_qualification: ModuleType,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """Later pages cannot disappear from the evidence search and unbounded histories refuse."""
+    pages: list[object] = []
+
+    def response(repository: str, endpoint: str, query: Mapping[str, object]) -> object:
+        """Return a full first page followed by a short final page."""
+        pages.append(query["page"])
+        return [{"id": index} for index in range(100 if query["page"] == 1 else 1)]
+
+    monkeypatch.setattr(source_qualification, "github_json", response)
+    assert len(source_qualification.github_items("owner/repo", "commits/a/pulls")) == 101
+    assert pages == [1, 2]
+    monkeypatch.setattr(source_qualification, "github_json", lambda *args: [{"id": 1}] * 100)
+    with pytest.raises(ValueError, match="pagination bound"):
+        source_qualification.github_items("owner/repo", "commits/a/pulls")
+
+
+def test_api_reader_uses_fixed_host_and_closes_response(source_qualification: ModuleType,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """GitHub JSON requests carry only the job's read token and close their stream."""
+    stream = io.BytesIO(b'{"workflow_runs":[]}')
+
+    def response(request: urllib.request.Request, timeout: int) -> io.BytesIO:
+        """Inspect the external request without contacting GitHub."""
+        assert request.full_url == "https://api.github.com/repos/owner/repo/actions/runs?page=1"
+        assert request.get_header("Authorization") == "Bearer fixture-credential"
+        assert timeout == 30
+        return stream
+
+    monkeypatch.setenv("GITHUB_TOKEN", "fixture-credential")
+    monkeypatch.setattr(source_qualification.urllib.request, "urlopen", response)
+    assert source_qualification.github_json("owner/repo", "actions/runs", {"page": 1}) == {"workflow_runs": []}
+    assert stream.closed
+    with pytest.raises(ValueError, match="repository identity"):
+        source_qualification.github_json("owner/repo/escape", "actions/runs", {})
+
+
+@pytest.mark.parametrize("payload", [b"[]", b"{", b"x" * 65537],
+                         ids=["non-object", "malformed", "oversized"])
+def test_downloaded_record_is_bounded_json_data(source_qualification: ModuleType, tmp_path: pathlib.Path,
+                                               payload: bytes) -> None:
+    """Invalid, non-object, and oversized downloads never become executable or accepted proof."""
+    path = tmp_path / "qualification.json"
+    path.write_bytes(payload)
+    with pytest.raises(ValueError):
+        source_qualification.read_record(path)
+================================================================================
+END FILE: tests/unit/github_workflows/test_source_qualification.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 17c462cb59f983d0648b4640248e62cb9603667cd5ee2544c6e9a42dcd935116
+CONTENT SHA256: 74c1ef7e146891152d55fa3f019c62d8359c12f0b67bb168e2037c608169f2af
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -133235,7 +133828,7 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert "edited" in events["pull_request"]["types"]
     assert "paths" not in events["pull_request"]
     assert "paths-ignore" not in events["pull_request"]
-    assert set(events["push"]["branches"]) == {"dev", "preprod", "prod"}
+    assert set(events) == {"pull_request", "workflow_dispatch"}
     jobs = document["jobs"]
     final = jobs["merge-ready"]
     assert final["name"] == "CI / merge-ready"
@@ -133246,10 +133839,17 @@ def test_every_pr_reports_a_fail_closed_required_status(policy: ModuleType) -> N
     assert "if" not in aggregate
     assert aggregate["env"]["CI_JOB_RESULTS"] == "${{ toJSON(needs) }}"
     assert aggregate["env"]["CI_PACKAGE_REQUIRED"] == "${{ needs.branch-policy.outputs.package-required }}"
+    assert aggregate["env"]["CI_RUNTIME_REQUIRED"] == "${{ needs.branch-policy.outputs.runtime-required }}"
+    assert aggregate["env"]["CI_SOURCE_REQUIRED"] == "${{ needs.branch-policy.outputs.source-required }}"
     assert jobs["packages"]["if"] == "needs.branch-policy.outputs.package-required == 'true'"
-    for name in policy.CIPolicy.REQUIRED_JOBS:
+    for name in policy.CIPolicy.FULL_JOBS:
+        assert jobs[name]["needs"] == "branch-policy"
+        assert jobs[name]["if"] == "needs.branch-policy.outputs.runtime-required == 'true'"
+    for name in ("branch-policy", "hygiene"):
         assert "if" not in jobs[name]
+    for name in policy.CIPolicy.REQUIRED_JOBS:
         assert "continue-on-error" not in jobs[name]
+    assert jobs["source-qualification"]["if"] == "needs.branch-policy.outputs.source-required == 'true'"
 
 
 @pytest.mark.parametrize("name", ["build-src-assets.yml", "build-repo-assets.yml", "test-runtime.yml", "docs.yml"])
@@ -133259,7 +133859,10 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
     assert set(document["on"]) == {"workflow_call", "workflow_dispatch"}
     assert document["permissions"] == {"contents": "read"}
     assert "concurrency" not in document
-    for job in document["jobs"].values():
+    for job_name, job in document["jobs"].items():
+        if name == "test-runtime.yml" and job_name == "coverage":
+            # Report delivery is not a mandatory test or publication gate.
+            continue
         assert "if" not in job
         assert "continue-on-error" not in job
         assert "environment" not in job
@@ -133296,6 +133899,80 @@ def test_supported_runtime_matrix_and_test_driver_are_shared() -> None:
     report = job["steps"][-1]
     assert report["if"] == "always()"
     assert report["uses"].startswith("actions/upload-artifact@")
+
+
+def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> None:
+    """Measure in the one runtime invocation and keep each OS report separate from JUnit."""
+    document = workflow("test-runtime.yml")
+    assert set(document["jobs"]) == {"test", "coverage"}
+    test = document["jobs"]["test"]
+    runners = [step for step in test["steps"] if "run_runtime_tests.py" in step.get("run", "")]
+    assert len(runners) == 1
+    assert runners[0]["run"] == (
+        "python .github/scripts/run_runtime_tests.py --report reports/runtime.xml "
+        "--coverage-report reports/coverage.xml"
+    )
+    assert runners[0].get("continue-on-error", "false") == "false"
+    retained = next(step for step in test["steps"] if step.get("name") == "Retain coverage report")
+    assert retained["if"] == "always()"
+    assert retained["continue-on-error"] == "true"
+    assert retained["with"]["name"] == "coverage-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert retained["with"]["path"] == "reports/coverage.xml"
+    reporting = document["jobs"]["coverage"]
+    download = next(step for step in reporting["steps"]
+                    if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert download["with"] == {
+        "pattern": "coverage-*-${{ github.run_id }}-${{ github.run_attempt }}",
+        "path": "coverage-reports", "merge-multiple": "false",
+    }
+    complete = next(step for step in reporting["steps"] if step.get("name") == "Require the complete coverage matrix")
+    for os in test["strategy"]["matrix"]["os"]:
+        assert os in complete["run"]
+    assert 'coverage-$os-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/coverage.xml' in complete["run"]
+    assert 'exit 1' in complete["run"]
+    assert reporting["steps"].index(download) < reporting["steps"].index(complete) < len(reporting["steps"]) - 1
+
+
+def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
+    """Coverage cannot grant publication rights, run after failed tests, or expose tokens to forks."""
+    document = workflow("test-runtime.yml")
+    assert document["on"]["workflow_call"]["secrets"]["CODECOV_TOKEN"]["required"] == "false"
+    job = document["jobs"]["coverage"]
+    assert job["needs"] == "test"
+    assert job["continue-on-error"] == "true"
+    assert job["if"] == (
+        "github.event_name != 'pull_request' || "
+        "github.event.pull_request.head.repo.full_name == github.repository"
+    )
+    assert document["permissions"] == {"contents": "read"}
+    assert "permissions" not in job and "environment" not in job and "env" not in job
+    credential_check = job["steps"][0]
+    assert credential_check["id"] == "credentials"
+    assert credential_check["env"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
+    assert 'enabled=false' in credential_check["run"] and '::warning::' in credential_check["run"]
+    assert all(step["if"] == "steps.credentials.outputs.enabled == 'true'" for step in job["steps"][1:])
+    upload = job["steps"][-1]
+    assert upload["uses"] == "codecov/codecov-action@v7"
+    assert upload["with"]["token"] == "${{ secrets.CODECOV_TOKEN }}"
+    assert upload["with"]["directory"] == "coverage-reports"
+    assert upload["with"]["fail_ci_if_error"] == "true"
+    assert upload["with"].get("use_oidc", "false") == "false"
+    assert upload["with"]["override_branch"] == "${{ github.event_name == 'release' && 'prod' || '' }}"
+
+
+@pytest.mark.parametrize("name", ["ci.yml", "python-publish.yml"])
+def test_runtime_callers_forward_only_the_coverage_secret(name: str) -> None:
+    """Nested reporting receives its own token without inheriting package upload credentials."""
+    caller = workflow(name)["jobs"]["tests"]
+    assert caller["secrets"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
+    assert caller.get("permissions", {}).get("id-token") != "write"
+
+
+def test_codecov_does_not_create_extra_required_coverage_statuses() -> None:
+    """Reporting configuration must not impose a new numerical gate or spam PR comments."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    configuration = yaml.safe_load((root / "codecov.yml").read_text(encoding="utf-8"))
+    assert configuration == {"coverage": {"status": {"project": False, "patch": False}}, "comment": False}
 
 
 def test_publication_repeats_validation_and_checks_prod_last() -> None:
@@ -133371,7 +134048,10 @@ def test_candidate_workflow_is_slim_and_publishing_authority_is_isolated(policy:
     assert jobs["build"]["uses"] == "./.github/workflows/build-distributions.yml"
     assert all(job.get("uses") != "./.github/workflows/test-runtime.yml" for job in jobs.values())
     publisher = jobs["publish"]
-    assert set(publisher["needs"]) == {"authorize", "build"}
+    assert set(publisher["needs"]) == {"authorize", "source-qualification", "build"}
+    assert set(jobs["build"]["needs"]) == {"authorize", "source-qualification"}
+    assert jobs["source-qualification"]["needs"] == "authorize"
+    assert jobs["source-qualification"]["uses"] == "./.github/workflows/verify-source-qualification.yml"
     assert publisher["environment"]["name"] == "pypitest"
     assert publisher["permissions"] == {"contents": "read"}
     upload = next(step for step in publisher["steps"]
@@ -133432,13 +134112,59 @@ def test_prod_promotion_and_publication_consume_candidate_proof() -> None:
                      if step.get("run") == "python .github/scripts/ci_policy.py merge-ready")
     proof = steps[-1]
     assert aggregate < len(steps) - 1
-    assert proof["run"] == "python .github/scripts/check_candidate_run.py"
+    assert proof["run"] == "python .github/scripts/check_candidate_run.py --wait-seconds 600"
+    assert int(final["timeout-minutes"]) * 60 > 600
     assert proof["if"] == "github.base_ref == 'prod' || github.ref == 'refs/heads/prod'"
     assert proof["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
     assert proof.get("continue-on-error", "false") == "false"
     release = workflow("python-publish.yml")["jobs"]["release-gate"]
     assert release["steps"][-1]["run"] == "python .github/scripts/check_candidate_run.py"
     assert release["permissions"]["actions"] == "read"
+
+
+def test_only_full_ci_records_qualification_after_successful_aggregation() -> None:
+    """Light promotions cannot issue a substitute full-test record."""
+    final = workflow("ci.yml")["jobs"]["merge-ready"]
+    steps = final["steps"]
+    aggregate = next(index for index, step in enumerate(steps)
+                     if step.get("run") == "python .github/scripts/ci_policy.py merge-ready")
+    record = next(index for index, step in enumerate(steps)
+                  if step.get("run") == "python .github/scripts/ci_qualification.py record")
+    upload = next(index for index, step in enumerate(steps)
+                  if step.get("uses", "").startswith("actions/upload-artifact@"))
+    assert aggregate < record < upload
+    assert steps[record]["if"] == steps[upload]["if"] == "needs.branch-policy.outputs.runtime-required == 'true'"
+    assert steps[record]["env"] == steps[aggregate]["env"]
+    assert steps[upload]["with"]["name"] == "source-qualification-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert steps[upload]["with"]["if-no-files-found"] == "error"
+    assert steps[upload]["with"].get("archive", "true") == "true"
+
+
+def test_source_proof_download_is_pinned_and_has_only_read_permissions() -> None:
+    """A reusable verifier downloads one immutable artifact and checks it without publication authority."""
+    document = workflow("verify-source-qualification.yml")
+    assert set(document["on"]) == {"workflow_call"}
+    assert document["permissions"] == {"contents": "read", "actions": "read", "pull-requests": "read"}
+    job = document["jobs"]["verify"]
+    assert "environment" not in job and "continue-on-error" not in job
+    steps = job["steps"]
+    select = next(index for index, step in enumerate(steps)
+                  if step.get("run") == "python .github/scripts/ci_qualification.py select")
+    download = next(index for index, step in enumerate(steps)
+                    if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert select < download < len(steps) - 1
+    inputs = steps[download]["with"]
+    assert inputs["artifact-ids"] == "${{ steps.source.outputs.artifact-id }}"
+    assert inputs["run-id"] == "${{ steps.source.outputs.run-id }}"
+    assert inputs["repository"] == "${{ github.repository }}"
+    assert inputs["github-token"] == "${{ github.token }}"
+    assert inputs.get("digest-mismatch", "error") == "error"
+    assert steps[-1]["run"] == (
+        "python .github/scripts/ci_qualification.py verify --record source-proof/qualification.json"
+    )
+    for name in ("ci.yml", "release-candidate.yml"):
+        caller = workflow(name)["jobs"]["source-qualification"]
+        assert caller["permissions"] == document["permissions"]
 ================================================================================
 END FILE: tests/unit/github_workflows/test_workflow_contracts.py
 ================================================================================

@@ -63,6 +63,8 @@ jobs:
     needs: branch-policy
     if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/test-runtime.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   documentation:
     needs: branch-policy

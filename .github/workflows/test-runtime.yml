@@ -2,6 +2,10 @@ name: Runtime tests
 
 on:
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        description: Optional repository upload token; reporting is skipped when absent.
+        required: false
   workflow_dispatch:
 
 permissions:
@@ -32,7 +36,16 @@ jobs:
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
           PYTHON_GIL: "0"
-        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml --coverage-report reports/coverage.xml
+      - name: Retain coverage report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/coverage.xml
+          if-no-files-found: warn
+          retention-days: 14
       - name: Retain test results
         if: always()
         uses: actions/upload-artifact@v7
@@ -41,3 +54,52 @@ jobs:
           path: reports/runtime.xml
           if-no-files-found: warn
           retention-days: 14
+
+  coverage:
+    name: Coverage / Codecov
+    needs: test
+    # Forks still run tests and retain XML, but never receive upload credentials.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Reporting availability must not turn passing tests into a release failure.
+    continue-on-error: true
+    steps:
+      - name: Check Codecov token
+        id: credentials
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [ -n "$CODECOV_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Add repository Actions secret CODECOV_TOKEN to enable coverage uploads."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.credentials.outputs.enabled == 'true'
+      - name: Download this run's coverage reports
+        if: steps.credentials.outputs.enabled == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: coverage-reports
+          merge-multiple: false
+      - name: Require the complete coverage matrix
+        if: steps.credentials.outputs.enabled == 'true'
+        run: |
+          for os in ubuntu-latest windows-latest macos-latest; do
+            if [ ! -s "coverage-reports/coverage-$os-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/coverage.xml" ]; then
+              echo "::error::Missing coverage XML for $os in this run; refusing a partial upload."
+              exit 1
+            fi
+          done
+      - name: Upload coverage to Codecov
+        if: steps.credentials.outputs.enabled == 'true'
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: coverage-reports
+          fail_ci_if_error: true
+          # Final-release tags have already been verified against current prod.
+          override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}

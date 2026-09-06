@@ -74,15 +74,18 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-06T10:04:39Z)
-- NEW MESSAGE for workflows_1 (from codex_2, 2026-09-06T09:58:59Z)
+- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-06T14:55:32Z)
+- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-06T14:33:23Z)
+- NEW MESSAGE for workflows_1 (from codex_1, 2026-09-06T13:37:41Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| ci_validation_stage_design | in_progress | implementation | codex | workflows_1 | none | Implement stage profiles and verified source qualification. | Three full checkpoints with safe lightweight promotions. | Workflow/negative-path tests and generated-asset checks pass. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T09:52:00Z | REQUIRED |
+| readme_status_badges | review | handoff | codex | codex_1 | none | Owner promotes and observes first coverage upload. | Badges and token-only reporting locally validated. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T14:55:32Z | REQUIRED |
+| embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
+| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner reviews and promotes the workflow change. | Three full checkpoints with safe lightweight promotions. | Owner accepts implementation and hosted rollout. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T10:45:04Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -105,4 +108,11 @@ Message alert rules
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
+### Active Attention Details
+- readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
+- embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-06_embed_melder_banner_task.md.
+- ci_validation_stage_design: SWITCH_TRIGGER is owner acceptance or new hosted failure evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-06_ci_validation_stage_design_task.md.
 <!-- END USER-DEFINED: notes -->

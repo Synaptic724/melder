@@ -1,6 +1,13 @@
 <div align="center">
 
-# 🧙 Melder™
+<!-- Local previews and GitHub use the repository asset; PyPI keeps the public img fallback. -->
+<a href="https://melder.readthedocs.io/en/latest/">
+  <picture>
+    <source srcset="docs/_static/branding/melder-banner.jpg">
+    <img src="https://raw.githubusercontent.com/Synaptic724/melder/prod/docs/_static/branding/melder-banner.jpg"
+         alt="Melder — two mages channeling aether in a modern city">
+  </picture>
+</a>
 
 ### The AI-Native Dependency Graph Runtime
 
@@ -10,7 +17,12 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/melder)](https://pypi.org/project/melder)
 [![License](https://img.shields.io/github/license/Synaptic724/melder)](https://github.com/Synaptic724/melder/blob/prod/LICENSE)
 [![Docs](https://readthedocs.org/projects/melder/badge/?version=latest)](https://melder.readthedocs.io/en/latest/)
-[![Downloads](https://static.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
+[![Monthly downloads](https://api.pepy.tech/badge/melder/month)](https://pepy.tech/projects/melder)
+[![Lifetime downloads](https://api.pepy.tech/badge/melder)](https://pepy.tech/projects/melder)
+
+[![CI](https://github.com/Synaptic724/melder/actions/workflows/ci.yml/badge.svg)](https://github.com/Synaptic724/melder/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/Synaptic724/melder/branch/prod/graph/badge.svg)](https://codecov.io/gh/Synaptic724/melder)
+[![Typing: typed](https://img.shields.io/badge/typing-typed-blue)](https://github.com/Synaptic724/melder/blob/prod/src/melder/py.typed)
 
 ### 📚 [Read the Documentation](https://melder.readthedocs.io/en/latest/)
 

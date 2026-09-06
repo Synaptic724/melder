@@ -480,3 +480,32 @@ def test_test_driver_preserves_tiers_failure_code_and_runtime_checks(runtime: Mo
     assert calls == ["runtime-check", [
         "-q", "tests/unit", "tests/component", "tests/integration", f"--junitxml={report}",
     ], "runtime-check"]
+
+
+@pytest.mark.parametrize("exit_code", [0, 1, 2, 5])
+def test_coverage_driver_preserves_runtime_contract_and_pytest_exit(runtime: ModuleType,
+                                                                 tmp_path: pathlib.Path,
+                                                                 monkeypatch: pytest.MonkeyPatch,
+                                                                 exit_code: int) -> None:
+    """Optional coverage adds one XML report without rerunning tests or masking pytest outcomes."""
+    calls: list[object] = []
+
+    def fake_pytest(arguments: list[str]) -> int:
+        """Capture pytest's invocation boundary without starting a nested test session."""
+        calls.append(arguments)
+        return exit_code
+
+    def runtime_check(*arguments: object) -> None:
+        """Observe both runtime checks; the guard predicate is validated independently."""
+        calls.append("runtime-check")
+
+    monkeypatch.setattr(pytest, "main", fake_pytest)
+    monkeypatch.setattr(runtime, "require_free_threading", runtime_check)
+    junit = tmp_path / "junit/runtime.xml"
+    coverage = tmp_path / "coverage reports/coverage.xml"
+    assert runtime.main(["--report", str(junit), "--coverage-report", str(coverage)]) == exit_code
+    assert calls == ["runtime-check", [
+        "-q", "tests/unit", "tests/component", "tests/integration", f"--junitxml={junit}",
+        "--cov=melder", "--cov-branch", f"--cov-report=xml:{coverage}",
+    ], "runtime-check"]
+    assert junit.parent.is_dir() and coverage.parent.is_dir()
