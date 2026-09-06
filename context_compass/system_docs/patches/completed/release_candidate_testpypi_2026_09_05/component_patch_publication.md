@@ -12,6 +12,11 @@ to equal the checkout tree and the latest candidate workflow run for that SHA to
 Verify repository, workflow path, branch, event, and full commit identity in the API response.
 Prod PRs/release also require a final package version, never an rcN package mislabeled with a final tag.
 
+In source CI, branch-policy only validates the route and publishes the package requirement.
+The existing merge-ready job first checks every dependency result, then performs candidate proof
+as its final step for prod. It owns actions:read and fetch-depth:2 so the API and candidate parent
+remain available. The required status name and aggregate dependency set stay unchanged.
+
 ## Failure semantics
 No matching candidate run, failed/pending qualification, mismatched tree, a direct prod commit, or
 invalid API evidence blocks promotion/publication. The final publisher repeats this candidate check
@@ -20,3 +25,5 @@ before its existing live tag/prod check, which remains last. No package upload i
 ## Validation
 Boundary tests cover valid merge/source identity, failed/pending/forged runs, and changed candidate
 trees. Parsed workflow tests preserve fresh final runtime/build dependencies and environment isolation.
+They also require candidate proof after dependency aggregation, sufficient final checkout history,
+and absence of the candidate lookup in early branch-policy.

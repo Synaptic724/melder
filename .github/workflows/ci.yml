@@ -25,7 +25,6 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: read
     outputs:
       package-required: ${{ steps.route.outputs.package-required }}
     steps:
@@ -38,11 +37,6 @@ jobs:
       - name: Validate the branch route
         id: route
         run: python .github/scripts/ci_policy.py branch
-      - name: Require the exact candidate before prod promotion
-        if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python .github/scripts/check_candidate_run.py
 
   hygiene:
     name: CI / repository-hygiene
@@ -82,8 +76,13 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
@@ -92,3 +91,10 @@ jobs:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
         run: python .github/scripts/ci_policy.py merge-ready
+      - name: Require the exact candidate before prod promotion
+        # RC qualification can finish while the source tests and package build run.
+        # Keep this proof last so a pending RC does not fail early branch routing.
+        if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python .github/scripts/check_candidate_run.py

@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `architecture_patch.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T17:30:47Z |
-| line_count | 53 |
+| generated_at | 2026-09-05T23:16:27Z |
+| line_count | 56 |
 | line_ending | lf |
-| content_sha256 | `e04c59441bf6de1cc5066cd9dddcc5208b8c7cd7557eac4d2f9d31465b01d0d6` |
+| content_sha256 | `71ef186c58c5957b82fb77718bb004c0743c81726361cc382b9d318188ce6d7b` |
 | sections | 6 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -28,8 +28,8 @@ which you did.
 | lines | lvl | name |
 | --- | --- | --- |
 | 6-10 | 2 | Scope |
-| 11-29 | 2 | Boundaries and invariants |
-| 30-37 | 2 | Version contract |
-| 38-44 | 2 | Rollout and rollback |
-| 45-50 | 2 | Non-goals and unknowns |
-| 51-53 | 2 | Coverage |
+| 11-32 | 2 | Boundaries and invariants |
+| 33-40 | 2 | Version contract |
+| 41-47 | 2 | Rollout and rollback |
+| 48-53 | 2 | Non-goals and unknowns |
+| 54-56 | 2 | Coverage |

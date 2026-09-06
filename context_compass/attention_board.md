@@ -74,14 +74,15 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for codex_1 (from codex_2, 2026-09-05T14:18:48Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| release_candidate_testpypi | review | handoff | codex | workflows_1 | none | Owner commits the UnitOfWork timing adjustment and regenerated test corpus. | The existing lock test has the owner-selected 1s hold and 5s startup margin. | Hosted CI confirms the revised test and owner accepts delivery. | tickets/tasks/2026-09-05_release_candidate_testpypi_workflow_task.md | 2026-09-05T18:37:46Z | REQUIRED |
+| rebuild_current_release_assets | review | handoff | codex | codex_1 | none | Owner reviews eight regenerated asset files. | Both freshness checks pass at 0.2.36; repeated repo build unchanged. | Owner accepts regenerated assets. | tickets/tasks/2026-09-05_rebuild_current_release_assets_task.md | 2026-09-06T00:13:12Z | REQUIRED |
+| draft_today_release_notes | review | handoff | codex | codex_1 | none | Owner reviews release copy queued in the file panel. | Public-facing summary of disposal ordering, RTD and Actions. | Owner accepts the Markdown draft. | tickets/tasks/2026-09-05_draft_ordered_disposal_docs_actions_release_task.md | 2026-09-05T23:42:39Z | REQUIRED |
+| shared_context_rebuild_publication | review | handoff | codex | codex_1 | Runtime repair deferred by owner. | Owner reviews component skip and refreshed test bundle. | Exact case reports 1 skipped; both asset checks pass. | Owner accepts explicit deferral. | tickets/tasks/2026-09-05_shared_context_rebuild_race_task.md | 2026-09-06T00:46:06Z | REQUIRED |
 | readthedocs_documentation | review | handoff | codex | codex_2 | none | Owner commits and pushes the three regenerated other-corpus files. | Both branch and exact CI merge inputs match the rebuilt manifest. | New hosted CI run passes the repository-asset check. | tickets/tasks/2026-09-04_rtd_ci_and_offline_task.md | 2026-09-05T15:54:53Z | REQUIRED |
 | first_public_release_notes | review | handoff | cowork | codex_1 | none | Review and commit the PyPI-portable README links plus selective LLM other-corpus regeneration. | All README repository routes use absolute GitHub prod links and generated proofs pass. | Owner confirms the public routes and accepts the release-documentation change. | tickets/tasks/2026-08-30_craft_first_public_release_notes_task.md | 2026-09-01T00:56:59Z | REQUIRED |
 | regenerate_0_2_0_release_assets | review | handoff | cowork | codex_1 | none | Review the eight-file generated diff, then commit and push through the normal branch lane. | Version 0.2.0 generated assets pass both exact CI checks. | Owner confirms acceptance for ticket closure. | tickets/tasks/2026-08-30_regenerate_0_2_0_release_assets_task.md | 2026-08-30T22:47:20Z | REQUIRED |
@@ -95,6 +96,8 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| diagnose_readthedocs_hosted_build | done | workflows_1 | tickets/tasks/completed/2026-09-05_diagnose_readthedocs_hosted_build_task.md | Owner accepted; healthy latest and old-tag stable failure verified. | 2026-09-05T23:53:38Z |
+| release_candidate_testpypi | done | workflows_1 | tickets/tasks/completed/2026-09-05_release_candidate_testpypi_workflow_task.md | Owner accepted; candidate workflow and late CI proof delivered; scratch cleared and patches archived. | 2026-09-05T23:53:38Z |
 | 2026-09-02_ordered_live_spell_disposal_epic | done | codex_1 | tickets/epics/completed/2026-09-02_ordered_live_spell_disposal_epic.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
 | 2026-09-04_ordered_disposal_persistence_story | done | codex_1 | tickets/stories/completed/2026-09-04_ordered_disposal_persistence_story.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
 | 2026-09-04_ordered_disposal_runtime_story | done | codex_1 | tickets/stories/completed/2026-09-04_ordered_disposal_runtime_story.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
@@ -105,8 +108,6 @@ Message alert rules
 | 2026-09-04_ordered_disposal_creations_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_creations_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
 | 2026-09-04_ordered_disposal_compiler_propagation_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_compiler_propagation_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
 | 2026-09-04_disposal_configuration_roundtrip_task | done | codex_1 | tickets/tasks/completed/2026-09-04_disposal_configuration_roundtrip_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
-| 2026-09-04_ordered_disposal_bind_and_spell_task | done | codex_1 | tickets/tasks/completed/2026-09-04_ordered_disposal_bind_and_spell_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
-| 2026-09-04_disposal_priority_configuration_task | done | codex_1 | tickets/tasks/completed/2026-09-04_disposal_priority_configuration_task.md | Owner accepted; ordered-disposal program completed. | 2026-09-05T14:22:02Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
