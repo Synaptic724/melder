@@ -81,7 +81,7 @@ Message format (append-only; delete after consumption)
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: checked_in -->
-| codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-05T23:42:39Z | active |
+| codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T00:13:12Z | active |
 | codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-05T14:18:48Z | active |
 | workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-05T23:55:03Z | departed |
 <!-- END USER-DEFINED: checked_in -->

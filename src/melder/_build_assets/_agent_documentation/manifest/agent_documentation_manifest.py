@@ -19,11 +19,11 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.3"
-SOURCE_SHA256 = "f4421e18a9afb060c72c6a3d959607767f15ebd68b6a74d08656ebf0013bd054"
+BUILT_FOR_VERSION = "0.2.36"
+SOURCE_SHA256 = "a7d5d0cb1961d96b53cf8e5bf1dcae56f8eec4d8a9486d4d5c4cf6407f5ac309"
 MARKED_COUNT = 452
 EXEMPT_COUNT = 163
-PENDING_COUNT = 13
+PENDING_COUNT = 14
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -647,6 +647,7 @@ EXEMPT = (
 )
 
 PENDING = (
+    ('melder.aether.conduit.meld.creation_context.creation_context_rebuild', 'CreationContextRebuild'),
     ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
@@ -767,6 +768,7 @@ CLASS_BASES = {
     ('melder.aether.conduit.meld.contracts.spell_map', 'SpellMap'): ('Cleanable',),
     ('melder.aether.conduit.meld.creation_context.creation_context', 'CreationContext'): ('Cleanable',),
     ('melder.aether.conduit.meld.creation_context.creation_context_factory', 'CreationContextFactory'): ('Cleanable',),
+    ('melder.aether.conduit.meld.creation_context.creation_context_rebuild', 'CreationContextRebuild'): ('Cleanable',),
     ('melder.aether.conduit.meld.meld', 'Meld'): ('Cleanable', 'ABC'),
     ('melder.aether.conduit.meld.overrides.spell_overrider', 'SpellOverrider'): ('Cleanable',),
     ('melder.aether.conduit.meld.overrides.spell_overrider', '_Specificity'): ('IntEnum',),

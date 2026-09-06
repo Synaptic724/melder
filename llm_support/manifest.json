@@ -2134,14 +2134,14 @@
     },
     "src": {
       "bundle": {
-        "bytes": 10768035,
-        "lines": 275568,
+        "bytes": 10774452,
+        "lines": 275720,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "53e6275aaa5a525b33bc0e86e2463d2912c659e6a845cf1ecdce83b752b5862c"
+        "sha256": "df9e8cdde75e3a55c6361fc22c71fb63ebf54c1c2262da0a425cba52a228ba81"
       },
-      "content_bytes": 10412005,
-      "content_lines": 270890,
-      "file_count": 584,
+      "content_bytes": 10417820,
+      "content_lines": 271034,
+      "file_count": 585,
       "files": {
         "src/melder/__architecture__.py": {
           "content_bytes": 1904,
@@ -2198,9 +2198,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/__version__.py": {
-          "content_bytes": 313,
+          "content_bytes": 314,
           "content_lines": 12,
-          "content_sha256": "508c0d84cc5bb3a72699a1dc62993bc9095708042d6b7d046df07659dbb8125e",
+          "content_sha256": "c747534a0b8f3793d03dd33b4a211d4ae8df45939efb40e18188af71e8f592f3",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -2855,6 +2855,12 @@
           "content_bytes": 14618,
           "content_lines": 379,
           "content_sha256": "8dd187e85c341ce4a63809120a84749f7aee3aa40934d5fd723c3b6e05d8ec07",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py": {
+          "content_bytes": 5814,
+          "content_lines": 144,
+          "content_sha256": "e3b8fbd0dbbe6f900f90f9a0bd403015cd1af04fab4a5ed9796025a3c853855c",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/meld/meld.py": {
@@ -5649,12 +5655,12 @@
         }
       },
       "index": {
-        "bytes": 115331,
-        "lines": 606,
+        "bytes": 115521,
+        "lines": 607,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "6a9ec3737e18ff79a0e1cb156555e1a353fcff7bd92121986757be92e423a1b9"
+        "sha256": "0c917a8a61a517ea86112bae034b3401745e960c137267e2383606102a969c45"
       },
-      "source_fingerprint": "9bde848bca74e3a3d85fc297c955335640f528cc32e510f4fca99b95c4e0ca90"
+      "source_fingerprint": "db976427a4396a5d90f89ba3cb2eeb0e188e2a29d535681254ae844f3891ebe6"
     },
     "tests": {
       "bundle": {
