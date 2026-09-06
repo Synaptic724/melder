@@ -1,14 +1,12 @@
 name: CI
 
 # A required check must be reported for every PR, including docs-only changes.
-# Feature pushes are covered by their PR; permanent-branch pushes validate the
-# resulting revision. No path filters or repository-variable kill switches.
+# PRs qualify changes; later promotions verify that qualification. Ordinary
+# pushes do not repeat the source suite. Manual CI performs full qualification.
 on:
   pull_request:
     branches: [dev, preprod, release_candidate, prod]
     types: [opened, synchronize, reopened, ready_for_review, edited]
-  push:
-    branches: [dev, preprod, prod]
   workflow_dispatch:
 
 permissions:
@@ -26,7 +24,9 @@ jobs:
     permissions:
       contents: read
     outputs:
+      runtime-required: ${{ steps.route.outputs.runtime-required }}
       package-required: ${{ steps.route.outputs.package-required }}
+      source-required: ${{ steps.route.outputs.source-required }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,16 +50,35 @@ jobs:
       - run: python .github/scripts/ci_policy.py hygiene
 
   source-assets:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/build-src-assets.yml
 
   repo-assets:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/build-repo-assets.yml
 
   tests:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/test-runtime.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   documentation:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.runtime-required == 'true'
     uses: ./.github/workflows/docs.yml
+
+  source-qualification:
+    needs: branch-policy
+    if: needs.branch-policy.outputs.source-required == 'true'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    uses: ./.github/workflows/verify-source-qualification.yml
 
   packages:
     needs: branch-policy
@@ -70,12 +89,12 @@ jobs:
 
   merge-ready:
     name: CI / merge-ready
-    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages]
+    needs: [branch-policy, hygiene, source-assets, repo-assets, tests, documentation, packages, source-qualification]
     # Without always(), a failed dependency skips the very check required to
     # block merging. The script accepts only explicitly successful evidence.
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       contents: read
       actions: read
@@ -89,12 +108,30 @@ jobs:
       - name: Require every mandatory check to succeed
         env:
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
           CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
+          CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
         run: python .github/scripts/ci_policy.py merge-ready
+      - name: Record the exact full CI qualification
+        if: needs.branch-policy.outputs.runtime-required == 'true'
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_RUNTIME_REQUIRED: ${{ needs.branch-policy.outputs.runtime-required }}
+          CI_PACKAGE_REQUIRED: ${{ needs.branch-policy.outputs.package-required }}
+          CI_SOURCE_REQUIRED: ${{ needs.branch-policy.outputs.source-required }}
+        run: python .github/scripts/ci_qualification.py record
+      - name: Retain full CI source evidence
+        if: needs.branch-policy.outputs.runtime-required == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: source-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/qualification.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Require the exact candidate before prod promotion
-        # RC qualification can finish while the source tests and package build run.
-        # Keep this proof last so a pending RC does not fail early branch routing.
+        # Light promotion CI may finish before RC upload/probes. Wait only for
+        # authentic pending evidence; a completed failure still refuses at once.
         if: github.base_ref == 'prod' || github.ref == 'refs/heads/prod'
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python .github/scripts/check_candidate_run.py
+        run: python .github/scripts/check_candidate_run.py --wait-seconds 600

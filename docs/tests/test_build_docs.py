@@ -7,6 +7,8 @@ import unittest
 import uuid
 from pathlib import Path
 
+from jinja2 import DictLoader, Environment
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
 from build_docs import DocumentationBuilder
@@ -138,6 +140,48 @@ class BuildContractTests(unittest.TestCase):
             self.assertIsNotNone(destination)
             page = HtmlDocument(destination.read_text(encoding="utf-8"))
             self.assertIn(fragment, page.identifiers, url)
+
+
+class HomepageBrandingTests(unittest.TestCase):
+    """Keep the banner on the landing page while preserving lesson content and navigation."""
+
+    @staticmethod
+    def _asset_path(name: str, resource: bool = False) -> str:
+        """Supply a stable stand-in for Sphinx's local static-asset URL builder."""
+        return name
+
+    def _render(self, pagename: str, root_doc: str = "index") -> str:
+        """Render the real page override against a minimal parent body and Sphinx context."""
+        template = (Path(__file__).resolve().parents[1] / "_templates" / "page.html").read_text(encoding="utf-8")
+        environment = Environment(loader=DictLoader({
+            "page.html": template,
+            "!page.html": "{% block body %}<h1>Document content</h1>{% endblock %}",
+        }), autoescape=True)
+        return environment.get_template("page.html").render(
+            pagename=pagename, root_doc=root_doc, toc="Lesson navigation", pathto=self._asset_path,
+        )
+
+    def test_homepage_banner_precedes_content_without_leading_toc(self) -> None:
+        """The branded landing page exposes a described local image before its unchanged body."""
+        rendered = self._render("index")
+        self.assertEqual(rendered.count('class="melder-banner"'), 1)
+        self.assertIn('src="_static/branding/melder-banner.jpg"', rendered)
+        self.assertIn('alt="Melder — two mages channeling aether in a modern city"', rendered)
+        self.assertLess(rendered.index('class="melder-banner"'), rendered.index("<h1>Document content</h1>"))
+        self.assertNotIn("On this page", rendered)
+
+    def test_lesson_retains_toc_without_banner(self) -> None:
+        """Ordinary lesson pages retain the existing navigation and do not repeat the masthead."""
+        rendered = self._render("beginner/first-application")
+        self.assertNotIn('class="melder-banner"', rendered)
+        self.assertIn("On this page", rendered)
+        self.assertIn("Lesson navigation", rendered)
+        self.assertIn("<h1>Document content</h1>", rendered)
+
+    def test_banner_follows_configured_root_document(self) -> None:
+        """Homepage detection respects Sphinx's root document instead of a hardcoded page name."""
+        self.assertIn('class="melder-banner"', self._render("landing", root_doc="landing"))
+        self.assertNotIn('class="melder-banner"', self._render("index", root_doc="landing"))
 
 
 class DocstringPresentationTests(unittest.TestCase):

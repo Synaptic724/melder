@@ -1,15 +1,30 @@
 """Require exact-source TestPyPI qualification before prod promotion or publication."""
 
+import argparse
 import json
 import os
 import pathlib
 import re
+import time
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping, Sequence
+from typing import Optional
 
 from ci_policy import git_output, object_value, read_event, text_value, validate_route
 from verify_distributions import assignment
+
+
+class CandidateWaitPolicy:
+    """Bound waiting for a valid candidate run without retrying failed package qualification."""
+
+    MAX_SECONDS = 600
+    POLL_SECONDS = 15
+    PENDING_STATES = ("queued", "in_progress", "waiting", "pending", "requested")
+
+
+class CandidatePending(ValueError):
+    """Identify an authentic candidate that has not finished, retaining the normal gate diagnostic."""
 
 
 def commit_id(value: object) -> str:
@@ -78,11 +93,18 @@ def require_qualified_run(payload: Mapping[str, object], repository: str, sha: s
     differences = [f"{key}={latest.get(key)!r} (expected {value!r})"
                    for key, value in expected.items() if latest.get(key) != value]
     if differences:
-        raise ValueError(
+        message = (
             f"Candidate qualification has not passed for {sha}: {'; '.join(differences)}. "
             f"Inspect https://github.com/{repository}/actions/runs/{run_id} (attempt {attempt}). "
             "Complete or fix that RC workflow, then rerun this prod check."
         )
+        identity_matches = all(latest.get(key) == value for key, value in expected.items()
+                               if key not in ("status", "conclusion"))
+        if (identity_matches and latest.get("event") in ("push", "workflow_dispatch")
+                and latest.get("status") in CandidateWaitPolicy.PENDING_STATES
+                and latest.get("conclusion") is None):
+            raise CandidatePending(message)
+        raise ValueError(message)
     if latest.get("event") not in ("push", "workflow_dispatch"):
         raise ValueError("Candidate qualification must originate from its branch push/manual workflow.")
     return latest
@@ -104,8 +126,34 @@ def github_runs(repository: str, sha: str) -> Mapping[str, object]:
         return object_value(json.load(response), "GitHub workflow runs")
 
 
-def main() -> int:
-    """Check candidate source/tree, final package version, and hosted qualification; write nothing."""
+def await_qualification(repository: str, sha: str, wait_seconds: int = 0) -> Mapping[str, object]:
+    """Wait only for authentic pending runs, bounded by a monotonic deadline.
+
+    Every query still chooses the latest exact-source run. Completed failures,
+    wrong identity, missing evidence and API errors propagate immediately.
+    Publication defaults to no wait; fast promotion CI may request up to ten minutes.
+    """
+    if type(wait_seconds) is not int or not 0 <= wait_seconds <= CandidateWaitPolicy.MAX_SECONDS:
+        raise ValueError("Candidate wait must be an integer from 0 through 600 seconds.")
+    deadline = time.monotonic() + wait_seconds
+    while True:
+        try:
+            return require_qualified_run(github_runs(repository, sha), repository, sha)
+        except CandidatePending as error:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CandidatePending(f"{error} Pending wait expired after {wait_seconds} seconds.") from error
+            print(f"Candidate is still running; checking again within {remaining:.0f}s.", flush=True)
+            time.sleep(min(CandidateWaitPolicy.POLL_SECONDS, remaining))
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Check source/tree/version and exact hosted qualification, optionally waiting for pending work."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--wait-seconds", type=int, default=0)
+    args = parser.parse_args(argv)
+    if not 0 <= args.wait_seconds <= CandidateWaitPolicy.MAX_SECONDS:
+        parser.error("--wait-seconds must be between 0 and 600")
     repository = text_value(os.environ.get("GITHUB_REPOSITORY"), "GITHUB_REPOSITORY")
     sha = candidate_source(os.environ.get("GITHUB_EVENT_NAME", ""), read_event(), repository,
                            git_output(("rev-list", "--parents", "-n", "1", "HEAD")).split())
@@ -114,7 +162,7 @@ def main() -> int:
     version = assignment(pathlib.Path("src/melder/__version__.py").read_text(encoding="utf-8"), "__version__")
     if re.fullmatch(r"(?:\d+!)?\d+(?:\.\d+)*(?:\.post\d+)?", version) is None:
         raise ValueError("Prod requires a final package version; finalize and requalify the RC first.")
-    run = require_qualified_run(github_runs(repository, sha), repository, sha)
+    run = await_qualification(repository, sha, args.wait_seconds)
     print(f"OK: candidate {sha}, version {version}, run {run['id']}, attempt {run['run_attempt']}.")
     return 0
 

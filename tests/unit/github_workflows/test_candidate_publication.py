@@ -138,7 +138,77 @@ def test_prod_rejects_different_tree_or_prerelease_before_querying_runs(candidat
     monkeypatch.setattr(candidate_proof, "git_output", git_read)
     monkeypatch.setattr(candidate_proof, "github_runs", unexpected_query)
     with pytest.raises(ValueError, match="tree differs|final package version"):
-        candidate_proof.main()
+        candidate_proof.main([])
+
+
+def test_pending_candidate_waits_then_accepts_current_success(candidate_proof: ModuleType,
+                                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fast prod CI waits for real queued work, then evaluates the newly returned run record."""
+    pending = qualified_run(status="in_progress", conclusion=None)
+    ready = qualified_run(run_attempt=2)
+    responses = iter([{"workflow_runs": [pending]}, {"workflow_runs": [ready]}])
+    elapsed = [0.0]
+    monkeypatch.setattr(candidate_proof, "github_runs", lambda *args: next(responses))
+    monkeypatch.setattr(candidate_proof.time, "monotonic", lambda: elapsed[0])
+    monkeypatch.setattr(candidate_proof.time, "sleep", lambda delay: elapsed.__setitem__(0, elapsed[0] + delay))
+    assert candidate_proof.await_qualification("owner/repo", "a" * 40, 30) == ready
+    assert elapsed[0] == 15
+
+
+def test_candidate_wait_has_a_deadline(candidate_proof: ModuleType,
+                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """A candidate that never finishes cannot keep the merge gate running indefinitely."""
+    elapsed = [0.0]
+    pauses: list[float] = []
+
+    def sleep(delay: float) -> None:
+        """Advance the external clock deterministically."""
+        pauses.append(delay)
+        elapsed[0] += delay
+
+    monkeypatch.setattr(candidate_proof, "github_runs", lambda *args: {
+        "workflow_runs": [qualified_run(status="queued", conclusion=None)],
+    })
+    monkeypatch.setattr(candidate_proof.time, "monotonic", lambda: elapsed[0])
+    monkeypatch.setattr(candidate_proof.time, "sleep", sleep)
+    with pytest.raises(ValueError, match="expired after 20 seconds"):
+        candidate_proof.await_qualification("owner/repo", "a" * 40, 20)
+    assert pauses == [15, 5]
+
+
+@pytest.mark.parametrize("change", [
+    {"conclusion": "failure"}, {"head_sha": "b" * 40, "status": "queued", "conclusion": None},
+    {"event": "pull_request", "status": "in_progress", "conclusion": None},
+    {"path": ".github/workflows/ci.yml", "status": "queued", "conclusion": None},
+    {"status": "unknown", "conclusion": None},
+])
+def test_wait_never_retries_invalid_or_failed_qualification(candidate_proof: ModuleType,
+                                                           monkeypatch: pytest.MonkeyPatch,
+                                                           change: dict[str, object]) -> None:
+    """Only genuine pending work may wait; completed failures and forged provenance refuse immediately."""
+    def unexpected_sleep(delay: float) -> None:
+        """Expose any attempt to conceal failure by retrying."""
+        raise AssertionError("Invalid evidence must not wait.")
+
+    monkeypatch.setattr(candidate_proof, "github_runs", lambda *args: {
+        "workflow_runs": [qualified_run(**change)],
+    })
+    monkeypatch.setattr(candidate_proof.time, "sleep", unexpected_sleep)
+    with pytest.raises(ValueError):
+        candidate_proof.await_qualification("owner/repo", "a" * 40, 30)
+
+
+@pytest.mark.parametrize("wait", [-1, 601, True, 1.5])
+def test_invalid_wait_bounds_refuse_before_network(candidate_proof: ModuleType, wait: object,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """The API cannot be entered with an unbounded or coercive wait parameter."""
+    def unexpected_query(*args: object) -> None:
+        """Expose unexpected external work."""
+        raise AssertionError("No API call is allowed.")
+
+    monkeypatch.setattr(candidate_proof, "github_runs", unexpected_query)
+    with pytest.raises(ValueError, match="integer"):
+        candidate_proof.await_qualification("owner/repo", "a" * 40, wait)
 
 
 def test_identical_and_partial_index_uploads_are_safe(candidate: ModuleType) -> None:

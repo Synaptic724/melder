@@ -1,7 +1,7 @@
 # Read the Docs / Sphinx compatibility probe
 
 Owner: codex_2.
-Ticket: ../../tickets/tasks/2026-09-04_readthedocs_sphinx_reference_discovery_task.md.
+Ticket: ../../tickets/tasks/completed/2026-09-04_readthedocs_sphinx_reference_discovery_task.md.
 
 This directory holds a disposable documentation-only probe. Its virtual environment and rendered
 output are ignored; authored probe inputs and measured findings are retained with the ticket.
