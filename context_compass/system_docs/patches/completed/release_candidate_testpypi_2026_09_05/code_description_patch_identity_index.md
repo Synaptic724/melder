@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `code_description_patch_identity.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-05T17:30:48Z |
-| line_count | 31 |
+| generated_at | 2026-09-05T23:16:27Z |
+| line_count | 38 |
 | line_ending | lf |
-| content_sha256 | `1ce54cac2127c5347ae638dae5d7761cc9d7170d9073c8dad362b2505984e569` |
-| sections | 4 |
+| content_sha256 | `c3083acfe0afe5e0f5f6e095c3c9666ec3a6fd152945c319ae1a22d717beeb27` |
+| sections | 5 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -28,6 +28,7 @@ which you did.
 | lines | lvl | name |
 | --- | --- | --- |
 | 3-15 | 2 | Candidate path |
-| 16-23 | 2 | Production path |
-| 24-29 | 2 | Failure and rollback semantics |
-| 30-31 | 2 | Non-goals |
+| 16-22 | 2 | Prod promotion CI path |
+| 23-30 | 2 | Production publication path |
+| 31-36 | 2 | Failure and rollback semantics |
+| 37-38 | 2 | Non-goals |

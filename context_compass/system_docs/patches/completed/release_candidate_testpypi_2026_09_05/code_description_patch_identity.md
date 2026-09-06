@@ -13,7 +13,14 @@ running runtime tests or installed-package probes after setup, including the sha
    install into a fresh environment, and probe imports/assets/runtime lifecycle outside the checkout.
 6. Only after all three probes succeed, retain the reports and report candidate-ready.
 
-## Production path
+## Prod promotion CI path
+1. Validate the branch route early and determine whether package verification is required.
+2. Run source/runtime/docs/assets/hygiene and required package verification.
+3. In the always-running merge-ready job, reject any missing or unsuccessful required dependency.
+4. For prod only, check exact-source candidate qualification last. Success completes the existing
+   required merge-ready status. A pending/failed candidate still fails with its run link; no upload.
+
+## Production publication path
 1. Run existing final-release event/checkout/tag/prod authorization.
 2. Verify the prod promotion merge's source/tree has successful exact-SHA candidate qualification.
 3. Run the existing fresh final source/runtime/package checks and local wheel probe.

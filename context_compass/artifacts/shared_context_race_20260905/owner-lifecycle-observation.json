@@ -1,0 +1,665 @@
+{
+  "pytest_exit_code": 1,
+  "original_exception_observed": true,
+  "diagnostic_control_failed": false,
+  "python": "3.14.0 free-threading build (tags/v3.14.0:ebf955d, Oct  7 2025, 10:13:09) [MSC v.1944 64 bit (AMD64)]",
+  "gil_enabled": false,
+  "events": [
+    {
+      "sequence": 0,
+      "event": "workers_about_to_start",
+      "thread": 40724,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874189328
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "event": "owner_before_context_read",
+      "thread": 46844,
+      "spell": {
+        "spell_id": "69b21589aa31ea8b4f8a9edb87d434bd2efa843abc75a0cf3b6005bc2a16b674",
+        "spell_cleaned": false,
+        "spellbook_cleanup_requested": false,
+        "owning_book_identity": 2418874187792,
+        "owning_book_cleaned": false,
+        "owning_book_still_registers_spell": true,
+        "context_missing": false,
+        "codegen_missing": true,
+        "artifact_cleaned": false,
+        "switch_state": 2
+      }
+    },
+    {
+      "sequence": 2,
+      "event": "resolution_branch",
+      "thread": 53576,
+      "conduit_id": "01M1STNET5WA2M00TX4ZTDYAMC",
+      "validity": "unknown",
+      "change_reason": null,
+      "spell": {
+        "spell_id": "9a4e312e725a77f38879b2f1e61f049d6fd07813fbddb523a6cc5dad51a5b264",
+        "spell_cleaned": false,
+        "spellbook_cleanup_requested": false,
+        "owning_book_identity": 2418874188560,
+        "owning_book_cleaned": false,
+        "owning_book_still_registers_spell": true,
+        "context_missing": false,
+        "codegen_missing": true,
+        "artifact_cleaned": false,
+        "switch_state": 2
+      }
+    },
+    {
+      "sequence": 3,
+      "event": "resolution_branch",
+      "thread": 22920,
+      "conduit_id": "01M1STNESYXNFYMW3PVP2JATJY",
+      "validity": "unknown",
+      "change_reason": null,
+      "spell": {
+        "spell_id": "69b21589aa31ea8b4f8a9edb87d434bd2efa843abc75a0cf3b6005bc2a16b674",
+        "spell_cleaned": false,
+        "spellbook_cleanup_requested": false,
+        "owning_book_identity": 2418874187792,
+        "owning_book_cleaned": false,
+        "owning_book_still_registers_spell": true,
+        "context_missing": false,
+        "codegen_missing": true,
+        "artifact_cleaned": false,
+        "switch_state": 2
+      }
+    },
+    {
+      "sequence": 4,
+      "event": "cleanup_entered",
+      "thread": 32168,
+      "target_type": "CreationContext",
+      "target_identity": 2418830584592,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874189328
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/meld/creation_context/creation_context.py:169 CreationContext.cleanup",
+        "src/melder/aether/spellbook/spell.py:679 Spell._cleanup_creation_context",
+        "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:213 CompilerPhase5._set_spell_system_index_phase5",
+        "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:347 CompilerPhase5._attach_phase5_artifacts_for_snapshot",
+        "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:676 CompilerPhase5.run_local",
+        "src/melder/aether/spellbook/spell_compiler/spell_compiler.py:395 SpellCompiler.run_phase_root_blueprints_local",
+        "src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:326 SpellCompilerSystem.run_phase_root_blueprints_local"
+      ]
+    },
+    {
+      "sequence": 5,
+      "event": "cleanup_entered",
+      "thread": 53268,
+      "target_type": "CreationContext",
+      "target_identity": 2418830580336,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874189328
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/meld/creation_context/creation_context.py:169 CreationContext.cleanup",
+        "src/melder/aether/spellbook/spell.py:679 Spell._cleanup_creation_context",
+        "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:213 CompilerPhase5._set_spell_system_index_phase5",
+        "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:347 CompilerPhase5._attach_phase5_artifacts_for_snapshot",
+        "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:676 CompilerPhase5.run_local",
+        "src/melder/aether/spellbook/spell_compiler/spell_compiler.py:395 SpellCompiler.run_phase_root_blueprints_local",
+        "src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:326 SpellCompilerSystem.run_phase_root_blueprints_local"
+      ]
+    },
+    {
+      "sequence": 6,
+      "event": "peer_after_phase5",
+      "thread": 53268,
+      "spell": {
+        "spell_id": "69b21589aa31ea8b4f8a9edb87d434bd2efa843abc75a0cf3b6005bc2a16b674",
+        "spell_cleaned": false,
+        "spellbook_cleanup_requested": false,
+        "owning_book_identity": 2418874187792,
+        "owning_book_cleaned": false,
+        "owning_book_still_registers_spell": true,
+        "context_missing": true,
+        "codegen_missing": true,
+        "artifact_cleaned": false,
+        "switch_state": 0
+      }
+    },
+    {
+      "sequence": 7,
+      "event": "original_builder_exception",
+      "thread": 46844,
+      "error": "Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.",
+      "spell": {
+        "spell_id": "69b21589aa31ea8b4f8a9edb87d434bd2efa843abc75a0cf3b6005bc2a16b674",
+        "spell_cleaned": false,
+        "spellbook_cleanup_requested": false,
+        "owning_book_identity": 2418874187792,
+        "owning_book_cleaned": false,
+        "owning_book_still_registers_spell": true,
+        "context_missing": true,
+        "codegen_missing": true,
+        "artifact_cleaned": false,
+        "switch_state": 1
+      },
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874189328
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:121 CreationContextBuilder.build",
+        "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:324 CreationContextFactory.get_or_build_for_spell",
+        "src/melder/aether/spellbook/spell.py:791 Spell._get_or_build_creation_context",
+        "src/melder/aether/conduit/meld/conduit_meld.py:374 ConduitMeld.meld",
+        "src/melder/aether/conduit/conduit.py:4086 Conduit.meld",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:331 _run_concurrent_melds.<locals>.worker",
+        "C:/Program Files/Python314/Lib/threading.py:1023 Thread.run"
+      ]
+    },
+    {
+      "sequence": 8,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Conduit",
+      "target_identity": 2418876498176,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874189328
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/conduit.py:533 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1012 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_callers.py:121 _multicall",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_manager.py:120 PluginManager._hookexec",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_hooks.py:512 HookCaller.__call__",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:1707 Function.runtest"
+      ]
+    },
+    {
+      "sequence": 9,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Spellbook",
+      "target_identity": 2418874189328,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "conduit_cleaned": true,
+          "book_cleaned": false,
+          "book_identity": 2418874189328
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/spellbook/spellbook.py:358 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit",
+        "src/melder/aether/conduit/conduit.py:678 Conduit._permanent_cleanup",
+        "src/melder/aether/conduit/conduit.py:576 Conduit._prepare_for_pool",
+        "src/melder/aether/conduit/conduit.py:562 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1012 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call"
+      ]
+    },
+    {
+      "sequence": 10,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Conduit",
+      "target_identity": 2418875950912,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/conduit.py:533 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1013 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_callers.py:121 _multicall",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_manager.py:120 PluginManager._hookexec",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_hooks.py:512 HookCaller.__call__",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:1707 Function.runtest"
+      ]
+    },
+    {
+      "sequence": 11,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Spellbook",
+      "target_identity": 2418874187792,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": true,
+          "book_cleaned": false,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/spellbook/spellbook.py:358 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit",
+        "src/melder/aether/conduit/conduit.py:678 Conduit._permanent_cleanup",
+        "src/melder/aether/conduit/conduit.py:576 Conduit._prepare_for_pool",
+        "src/melder/aether/conduit/conduit.py:562 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1013 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call"
+      ]
+    },
+    {
+      "sequence": 12,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Spell",
+      "target_identity": 2418835280448,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": true,
+          "book_cleaned": true,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/spellbook/spell.py:505 Spell.cleanup",
+        "src/melder/aether/spellbook/spellbook.py:565 Spellbook._cleanup_spells",
+        "src/melder/aether/spellbook/spellbook.py:431 Spellbook._cleanup_components",
+        "src/melder/aether/spellbook/spellbook.py:384 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit",
+        "src/melder/aether/conduit/conduit.py:678 Conduit._permanent_cleanup",
+        "src/melder/aether/conduit/conduit.py:576 Conduit._prepare_for_pool"
+      ]
+    },
+    {
+      "sequence": 13,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "CreationContext",
+      "target_identity": 2419210060672,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "conduit_cleaned": true,
+          "book_cleaned": true,
+          "book_identity": 2418874187792
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/meld/creation_context/creation_context.py:169 CreationContext.cleanup",
+        "src/melder/aether/spellbook/spell.py:679 Spell._cleanup_creation_context",
+        "src/melder/aether/spellbook/spell.py:562 Spell.cleanup",
+        "src/melder/aether/spellbook/spellbook.py:565 Spellbook._cleanup_spells",
+        "src/melder/aether/spellbook/spellbook.py:431 Spellbook._cleanup_components",
+        "src/melder/aether/spellbook/spellbook.py:384 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit"
+      ]
+    },
+    {
+      "sequence": 14,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Conduit",
+      "target_identity": 2418876501056,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/conduit.py:533 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1014 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_callers.py:121 _multicall",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_manager.py:120 PluginManager._hookexec",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_hooks.py:512 HookCaller.__call__",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:1707 Function.runtest"
+      ]
+    },
+    {
+      "sequence": 15,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Spellbook",
+      "target_identity": 2418874190096,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "conduit_cleaned": true,
+          "book_cleaned": false,
+          "book_identity": 2418874190096
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/spellbook/spellbook.py:358 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit",
+        "src/melder/aether/conduit/conduit.py:678 Conduit._permanent_cleanup",
+        "src/melder/aether/conduit/conduit.py:576 Conduit._prepare_for_pool",
+        "src/melder/aether/conduit/conduit.py:562 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1014 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call"
+      ]
+    },
+    {
+      "sequence": 16,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Conduit",
+      "target_identity": 2418876504256,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": false,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "owner_reference_already_deleted": true
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/conduit.py:533 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1015 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_callers.py:121 _multicall",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_manager.py:120 PluginManager._hookexec",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/pluggy/_hooks.py:512 HookCaller.__call__",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:1707 Function.runtest"
+      ]
+    },
+    {
+      "sequence": 17,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Spellbook",
+      "target_identity": 2418874188560,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": true,
+          "book_cleaned": false,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "owner_reference_already_deleted": true
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/spellbook/spellbook.py:358 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit",
+        "src/melder/aether/conduit/conduit.py:678 Conduit._permanent_cleanup",
+        "src/melder/aether/conduit/conduit.py:576 Conduit._prepare_for_pool",
+        "src/melder/aether/conduit/conduit.py:562 Conduit.cleanup",
+        "tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1015 test_conduit_cluster_concurrent_meld_two_clusters_isolated",
+        "C:/Users/Mark/PycharmProjects/melder_private/.venv_new/Lib/site-packages/_pytest/python.py:167 pytest_pyfunc_call"
+      ]
+    },
+    {
+      "sequence": 18,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "Spell",
+      "target_identity": 2418835282240,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": true,
+          "book_cleaned": true,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "owner_reference_already_deleted": true
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/spellbook/spell.py:505 Spell.cleanup",
+        "src/melder/aether/spellbook/spellbook.py:565 Spellbook._cleanup_spells",
+        "src/melder/aether/spellbook/spellbook.py:431 Spellbook._cleanup_components",
+        "src/melder/aether/spellbook/spellbook.py:384 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit",
+        "src/melder/aether/conduit/conduit.py:678 Conduit._permanent_cleanup",
+        "src/melder/aether/conduit/conduit.py:576 Conduit._prepare_for_pool"
+      ]
+    },
+    {
+      "sequence": 19,
+      "event": "cleanup_entered",
+      "thread": 40724,
+      "target_type": "CreationContext",
+      "target_identity": 2419277104000,
+      "already_cleaned": false,
+      "books": {
+        "cluster-a-owner": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-a-peer": {
+          "owner_reference_already_deleted": true
+        },
+        "cluster-b-owner": {
+          "conduit_cleaned": true,
+          "book_cleaned": true,
+          "book_identity": 2418874188560
+        },
+        "cluster-b-peer": {
+          "owner_reference_already_deleted": true
+        }
+      },
+      "caller_stack": [
+        "src/melder/aether/conduit/meld/creation_context/creation_context.py:169 CreationContext.cleanup",
+        "src/melder/aether/spellbook/spell.py:679 Spell._cleanup_creation_context",
+        "src/melder/aether/spellbook/spell.py:562 Spell.cleanup",
+        "src/melder/aether/spellbook/spellbook.py:565 Spellbook._cleanup_spells",
+        "src/melder/aether/spellbook/spellbook.py:431 Spellbook._cleanup_components",
+        "src/melder/aether/spellbook/spellbook.py:384 Spellbook.cleanup",
+        "src/melder/aether/conduit/conduit.py:845 Conduit._cleanup_normal_conduit"
+      ]
+    }
+  ]
+}
