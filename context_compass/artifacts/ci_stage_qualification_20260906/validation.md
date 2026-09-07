@@ -54,3 +54,16 @@ This directory holds task-owned temporary tests and tooling; delete on accepted 
 - Final corpus/source-asset/index and diff checks pass. Hosted rollout requires owner commit/promotion.
 - Owner-requested builder rerun at 2026-09-06T17:54:46Z: source assets rebuilt for 0.2.37,
   repository corpora unchanged, and both source/repository --check commands passed.
+
+## Coverage partial-rerun correction
+
+- Run 34051331302 attempt 2, coverage job 101537598083: Ubuntu report at attempt 2;
+  Windows/macOS reports at attempt 1. The old pattern selected only Ubuntu and v8 flattened it.
+- Required merge-ready job 101537627363 and source qualification recording passed.
+- Report payloads now encode complete identity, download through the explicit same-run API,
+  and select newest-per-cell coverage into a dedicated upload directory. Only successful tests
+  publish coverage artifacts; JUnit still survives failures. Coverage remains nonblocking.
+- 411 workflow tests passed in 4.66s; coverage-rerun-tests.xml contains the results.
+- Actionlint and scoped correctness Ruff pass. No hosted run/upload was dispatched.
+- Corpus and patch-index regeneration is complete. All source/corpus/index and final diff checks pass.
+- Reporting correction is ready locally; owner commit/promotion and fresh hosted verification remain.

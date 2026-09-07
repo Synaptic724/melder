@@ -74,6 +74,7 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
+- NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T18:41:11Z)
 - NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T17:41:58Z)
 <!-- END USER-DEFINED: alerts -->
 
@@ -81,10 +82,10 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| named_conduit_scope_design | review | handoff | codex | codex_1 | none | Owner selects naming/discovery semantics. | Epic, four draft stories and source-backed impact map. | Contract decisions are approved before implementation. | tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md | 2026-09-06T17:44:52Z | REQUIRED |
+| named_conduit_scope_design | review | handoff | codex | updater_0 | none | Review the twelve-phase map and remaining contract choices. | Source-backed implementation plan and difficulty assessment. | Owner selects contracts and authorizes implementation separately. | tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md | 2026-09-07T17:22:45Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
-| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes checkout-identity fix into dev for PR 147. | Exact-source recording after successful full CI. | Owner accepts corrected hosted qualification. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T17:41:58Z | REQUIRED |
+| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes partial-rerun coverage correction. | Complete same-run coverage without repeated tests. | Owner accepts corrected reporting in a fresh run. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T18:58:09Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -108,8 +109,8 @@ Message alert rules
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- named_conduit_scope_design: SWITCH_TRIGGER is the completed impact map and owner contract decisions.
-  RESUME_HIERARCHY: tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md -> tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md.
+- named_conduit_scope_design: SWITCH_TRIGGER is the completed implementation map and owner contract decisions.
+  RESUME_HIERARCHY: tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md -> tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
 - embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.

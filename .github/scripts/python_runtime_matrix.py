@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import tomllib
 import urllib.request
 from collections.abc import Mapping, Sequence
@@ -143,22 +144,57 @@ def validate_matrix(value: object, floor: tuple[int, int, int]) -> dict[str, lis
 
 
 def require_coverage(directory: pathlib.Path, matrix: Mapping[str, list[dict[str, str]]],
-                     run_id: str, attempt: str) -> None:
-    """Require a nonempty coverage report for every discovered OS/version from this run attempt.
+                     run_id: str, attempt: str) -> list[pathlib.Path]:
+    """Select the newest report for every required OS/version within this immutable workflow run.
 
-    Reject missing and unexpected report directories before Codecov receives a
-    partial matrix. Inputs must already have passed validate_matrix.
+    Partial reruns retain successful cells from earlier attempts. Payload names
+    preserve OS/version/run/attempt even when the download action flattens one
+    artifact. Reject missing cells, foreign/future evidence and an empty newest
+    report; never fall back past that invalid report. Valid obsolete version
+    cells are excluded from the upload. Inputs must pass validate_matrix first.
     """
     if re.fullmatch(r"[1-9]\d*", run_id) is None or re.fullmatch(r"[1-9]\d*", attempt) is None:
         raise ValueError("Coverage reports require positive run and attempt identifiers.")
-    names = {f"coverage-{entry['os']}-python-{entry['python']}-{run_id}-{attempt}" for entry in matrix["include"]}
-    observed = {path.name for path in directory.iterdir()}
-    if observed != names:
-        raise ValueError(f"Coverage matrix differs: missing={sorted(names - observed)}, unexpected={sorted(observed - names)}.")
-    for name in sorted(names):
-        report = directory / name / "coverage.xml"
-        if not report.is_file() or report.stat().st_size == 0:
-            raise ValueError(f"Missing or empty coverage report: {name}/coverage.xml")
+    if not directory.is_dir():
+        raise ValueError("No coverage reports were downloaded for this workflow run.")
+    required = {(entry["os"], entry["python"]) for entry in matrix["include"]}
+    selected: dict[tuple[str, str], tuple[int, pathlib.Path]] = {}
+    for report in sorted(directory.iterdir()):
+        identity = re.fullmatch(r"coverage-(.+)-python-(\d+\.\d+\.\d+)-([1-9]\d*)-([1-9]\d*)\.xml", report.name)
+        if identity is None or report.is_symlink() or not report.is_file():
+            raise ValueError(f"Coverage report lacks a regular identity-bearing XML payload: {report.name!r}.")
+        runner, version, source_run, source_attempt = identity.groups()
+        stable_version(version)
+        if runner not in {target[0] for target in RuntimeMatrixPolicy.TARGETS}:
+            raise ValueError(f"Unknown coverage platform in {report.name!r}.")
+        if source_run != run_id or int(source_attempt) > int(attempt):
+            raise ValueError(f"Coverage report belongs to another run or a future attempt: {report.name!r}.")
+        cell = runner, version
+        if cell in required and (cell not in selected or int(source_attempt) > selected[cell][0]):
+            selected[cell] = int(source_attempt), report
+    missing = required - set(selected)
+    if missing:
+        raise ValueError(f"Coverage matrix is incomplete; missing OS/Python cells: {sorted(missing)}.")
+    reports = [selected[cell][1] for cell in sorted(required)]
+    for report in reports:
+        if report.stat().st_size == 0:
+            raise ValueError(f"Newest coverage report is empty: {report.name!r}; regenerate that cell's report.")
+    return reports
+
+
+def stage_coverage(reports: Sequence[pathlib.Path], directory: pathlib.Path, record: pathlib.Path) -> None:
+    """Copy only the verified selection to an empty upload directory and record its original identities.
+
+    Never delete or overwrite an existing output set. Validation must finish
+    before this function is called; a copy failure prevents the upload step.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    if any(directory.iterdir()):
+        raise ValueError("Selected coverage output must be empty; choose a fresh upload directory.")
+    for report in reports:
+        shutil.copyfile(report, directory / report.name)
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(json.dumps({"reports": [report.name for report in reports]}, indent=2) + "\n", encoding="utf-8")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -167,6 +203,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("operation", choices=("discover", "coverage"))
     parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("reports/python-matrix.json"))
     parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("coverage-reports"))
+    parser.add_argument("--selected-directory", type=pathlib.Path, default=pathlib.Path("selected-coverage"))
+    parser.add_argument("--selection-report", type=pathlib.Path, default=pathlib.Path("reports/coverage-selection.json"))
     args = parser.parse_args(argv)
     floor = supported_floor()
     if args.operation == "discover":
@@ -178,8 +216,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"Selected {len(matrix['include'])} stable no-GIL OS/version combinations.")
     else:
         matrix = validate_matrix(json.loads(os.environ["CI_PYTHON_MATRIX"]), floor)
-        require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
-        print("OK: coverage reports cover the complete discovered no-GIL matrix.")
+        reports = require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
+        stage_coverage(reports, args.selected_directory, args.selection_report)
+        print(f"OK: selected {len(reports)} same-run reports covering the complete no-GIL matrix.")
     return 0
 
 

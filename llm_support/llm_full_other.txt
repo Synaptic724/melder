@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 9f5cfd838d578f1194f0367dd7878ea003df28b86570e05167475e2d3820cef6
+SOURCE FINGERPRINT: 98aed4c64d62ab18f3840f63958c2eeb9e31f879b265ee6f18e76413f59b3382
 FILE COUNT: 356
 
 ================================================================================
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: dd585a964bf94febf5fa060ee1d423ca2202ee6da7bf3b14fe8f465270d7b08a
+CONTENT SHA256: ecb424d98272e2b8558bb50af2b8231db40b72f1215fd8e1e55a1e3b45b89a19
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -151,10 +151,22 @@ the currently available stable matrix afresh.
 ## Coverage reporting and README badges
 
 The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
-They do not run the suite a second time. Each matrix cell retains a coverage artifact for 14 days;
-one reporting job uploads those reports to Codecov after the full matrix succeeds.
-It requires an XML file for every discovered OS/version from the same run/attempt; missing artifacts
-leave a reporting warning/failure rather than publishing an incomplete matrix as the current result.
+They do not run the suite a second time. Successful cells retain coverage artifacts for 14 days;
+JUnit results remain available even when tests fail. One reporting job uploads coverage after
+the full matrix succeeds. It selects the newest available report for every current OS/Python cell
+within the same workflow run. Partial reruns may therefore use Ubuntu attempt 2 with Windows and
+macOS attempt 1: GitHub preserves the original event commit/ref across attempts of that run.
+
+The XML filename itself carries OS, Python version, run ID and attempt. Downloads explicitly select
+the current repository/run through the read-only Actions API, merge those unique filenames, and
+copy only the verified selection into `selected-coverage/` for Codecov. This works with singleton
+downloads as well as multiple artifacts. Superseded attempts and obsolete Python-version reports
+are excluded from upload; missing cells, foreign runs, future attempts and empty newest reports fail.
+The `selected-coverage-<run>-<attempt>` artifact records which original filenames were selected.
+
+Older workflow revisions using plain `coverage.xml` payloads still need **Re-run all jobs** to create
+a complete same-attempt set. The corrected layout takes effect in a new run after this change is
+committed and promoted. This reporting reuse does not relax publication artifacts or source proof.
 Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
 and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
 
@@ -1487,7 +1499,7 @@ END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/python_runtime_matrix.py
-CONTENT SHA256: 5f94b0b333954326246f5e982d376d595991b167baa5325ef138e82199808c4e
+CONTENT SHA256: 208d579c3def6e7323fe9bceed76ebd9d22bd4861c826d64c7f1d27ff5d9b1aa
 SOURCE ENCODING: utf-8
 ================================================================================
 """Discover stable supported no-GIL runtimes and verify their coverage report inventory."""
@@ -1497,6 +1509,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import tomllib
 import urllib.request
 from collections.abc import Mapping, Sequence
@@ -1635,22 +1648,57 @@ def validate_matrix(value: object, floor: tuple[int, int, int]) -> dict[str, lis
 
 
 def require_coverage(directory: pathlib.Path, matrix: Mapping[str, list[dict[str, str]]],
-                     run_id: str, attempt: str) -> None:
-    """Require a nonempty coverage report for every discovered OS/version from this run attempt.
+                     run_id: str, attempt: str) -> list[pathlib.Path]:
+    """Select the newest report for every required OS/version within this immutable workflow run.
 
-    Reject missing and unexpected report directories before Codecov receives a
-    partial matrix. Inputs must already have passed validate_matrix.
+    Partial reruns retain successful cells from earlier attempts. Payload names
+    preserve OS/version/run/attempt even when the download action flattens one
+    artifact. Reject missing cells, foreign/future evidence and an empty newest
+    report; never fall back past that invalid report. Valid obsolete version
+    cells are excluded from the upload. Inputs must pass validate_matrix first.
     """
     if re.fullmatch(r"[1-9]\d*", run_id) is None or re.fullmatch(r"[1-9]\d*", attempt) is None:
         raise ValueError("Coverage reports require positive run and attempt identifiers.")
-    names = {f"coverage-{entry['os']}-python-{entry['python']}-{run_id}-{attempt}" for entry in matrix["include"]}
-    observed = {path.name for path in directory.iterdir()}
-    if observed != names:
-        raise ValueError(f"Coverage matrix differs: missing={sorted(names - observed)}, unexpected={sorted(observed - names)}.")
-    for name in sorted(names):
-        report = directory / name / "coverage.xml"
-        if not report.is_file() or report.stat().st_size == 0:
-            raise ValueError(f"Missing or empty coverage report: {name}/coverage.xml")
+    if not directory.is_dir():
+        raise ValueError("No coverage reports were downloaded for this workflow run.")
+    required = {(entry["os"], entry["python"]) for entry in matrix["include"]}
+    selected: dict[tuple[str, str], tuple[int, pathlib.Path]] = {}
+    for report in sorted(directory.iterdir()):
+        identity = re.fullmatch(r"coverage-(.+)-python-(\d+\.\d+\.\d+)-([1-9]\d*)-([1-9]\d*)\.xml", report.name)
+        if identity is None or report.is_symlink() or not report.is_file():
+            raise ValueError(f"Coverage report lacks a regular identity-bearing XML payload: {report.name!r}.")
+        runner, version, source_run, source_attempt = identity.groups()
+        stable_version(version)
+        if runner not in {target[0] for target in RuntimeMatrixPolicy.TARGETS}:
+            raise ValueError(f"Unknown coverage platform in {report.name!r}.")
+        if source_run != run_id or int(source_attempt) > int(attempt):
+            raise ValueError(f"Coverage report belongs to another run or a future attempt: {report.name!r}.")
+        cell = runner, version
+        if cell in required and (cell not in selected or int(source_attempt) > selected[cell][0]):
+            selected[cell] = int(source_attempt), report
+    missing = required - set(selected)
+    if missing:
+        raise ValueError(f"Coverage matrix is incomplete; missing OS/Python cells: {sorted(missing)}.")
+    reports = [selected[cell][1] for cell in sorted(required)]
+    for report in reports:
+        if report.stat().st_size == 0:
+            raise ValueError(f"Newest coverage report is empty: {report.name!r}; regenerate that cell's report.")
+    return reports
+
+
+def stage_coverage(reports: Sequence[pathlib.Path], directory: pathlib.Path, record: pathlib.Path) -> None:
+    """Copy only the verified selection to an empty upload directory and record its original identities.
+
+    Never delete or overwrite an existing output set. Validation must finish
+    before this function is called; a copy failure prevents the upload step.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    if any(directory.iterdir()):
+        raise ValueError("Selected coverage output must be empty; choose a fresh upload directory.")
+    for report in reports:
+        shutil.copyfile(report, directory / report.name)
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(json.dumps({"reports": [report.name for report in reports]}, indent=2) + "\n", encoding="utf-8")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -1659,6 +1707,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("operation", choices=("discover", "coverage"))
     parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("reports/python-matrix.json"))
     parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("coverage-reports"))
+    parser.add_argument("--selected-directory", type=pathlib.Path, default=pathlib.Path("selected-coverage"))
+    parser.add_argument("--selection-report", type=pathlib.Path, default=pathlib.Path("reports/coverage-selection.json"))
     args = parser.parse_args(argv)
     floor = supported_floor()
     if args.operation == "discover":
@@ -1670,8 +1720,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"Selected {len(matrix['include'])} stable no-GIL OS/version combinations.")
     else:
         matrix = validate_matrix(json.loads(os.environ["CI_PYTHON_MATRIX"]), floor)
-        require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
-        print("OK: coverage reports cover the complete discovered no-GIL matrix.")
+        reports = require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
+        stage_coverage(reports, args.selected_directory, args.selection_report)
+        print(f"OK: selected {len(reports)} same-run reports covering the complete no-GIL matrix.")
     return 0
 
 
@@ -2422,7 +2473,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: 2b3a7a503d90147b7ed9bf954e83503abe58b33afac043982770f1e082ca0146
+CONTENT SHA256: 787ae9bb78db01978d03ba326fc3a36d71848e24fb0207c0a5e120ef396b6652
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -2489,6 +2540,9 @@ jobs:
   tests:
     needs: branch-policy
     if: needs.branch-policy.outputs.runtime-required == 'true'
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/test-runtime.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -2625,7 +2679,7 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: 476b8f0c0118960358894c3124dd3368bedfce0d2dd7dea61f5c4d6362503777
+CONTENT SHA256: 193f9c846b4e978c621490c6520f9da356b2261440f98190b25e95a027e85b41
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -2691,6 +2745,9 @@ jobs:
 
   tests:
     needs: release-gate
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/test-runtime.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -2913,7 +2970,7 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: e2c44e32a49f4a473382ce078c40d2ec679391e0a4d1eea91747d51da2f00b6f
+CONTENT SHA256: 5dde5ae0dc6d5732792bd59114ef87df2195efdeb91340a0089c23fe846d45c4
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
@@ -2961,6 +3018,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    env:
+      COVERAGE_ARTIFACT: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -2980,14 +3039,18 @@ jobs:
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
           PYTHON_GIL: "0"
-        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml --coverage-report reports/coverage.xml
+        run: >-
+          python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+          --coverage-report reports/${{ env.COVERAGE_ARTIFACT }}.xml
       - name: Retain coverage report
-        if: always()
+        # Only successful runtime executions may supply reusable coverage reports.
+        if: success()
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: reports/coverage.xml
+          name: ${{ env.COVERAGE_ARTIFACT }}
+          path: reports/${{ env.COVERAGE_ARTIFACT }}.xml
+          archive: true
           if-no-files-found: warn
           retention-days: 14
       - name: Retain test results
@@ -3002,6 +3065,9 @@ jobs:
   coverage:
     name: Coverage / Codecov
     needs: [discover, test]
+    permissions:
+      contents: read
+      actions: read
     # Forks still run tests and retain XML, but never receive upload credentials.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -3031,20 +3097,33 @@ jobs:
         if: steps.credentials.outputs.enabled == 'true'
         uses: actions/download-artifact@v8
         with:
-          pattern: coverage-*-${{ github.run_id }}-${{ github.run_attempt }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+          # Partial reruns reuse successful cells from earlier attempts of this run.
+          pattern: coverage-*-${{ github.run_id }}-*
           path: coverage-reports
-          merge-multiple: false
+          # XML payload names already carry OS/version/run/attempt, so merging is lossless.
+          merge-multiple: true
       - name: Require the complete coverage matrix
         if: steps.credentials.outputs.enabled == 'true'
         env:
           CI_PYTHON_MATRIX: ${{ needs.discover.outputs.matrix }}
         run: python .github/scripts/python_runtime_matrix.py coverage
+      - name: Retain coverage selection provenance
+        if: steps.credentials.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: selected-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/coverage-selection.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload coverage to Codecov
         if: steps.credentials.outputs.enabled == 'true'
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: coverage-reports
+          directory: selected-coverage
           fail_ci_if_error: true
           # Final-release tags have already been verified against current prod.
           override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}

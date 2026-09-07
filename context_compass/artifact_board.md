@@ -64,6 +64,7 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/coverage-rerun-tests.xml | validation_report | active | delete_on_close | 411 workflow tests pass including partial-rerun archive selection. | 2026-09-06T18:54:58Z | HELPFUL |
 | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/pr147-checkout/ | validation_workspace | review | delete_on_close | Disposable exact-merge checkout for the Linux identity reproduction. | 2026-09-06T17:41:58Z | HELPFUL |
 | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/checkout-identity-tests.xml | validation_report | active | delete_on_close | 403 workflow tests pass including real-Git EOL regression. | 2026-09-06T17:30:18Z | HELPFUL |
 | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | artifacts/ci_stage_qualification_20260906/pr147-byte-identity.json | validation_report | active | delete_on_close | All 235 reported changes have identical bytes/modes. | 2026-09-06T17:30:18Z | HELPFUL |

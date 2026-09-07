@@ -82,10 +82,22 @@ the currently available stable matrix afresh.
 ## Coverage reporting and README badges
 
 The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
-They do not run the suite a second time. Each matrix cell retains a coverage artifact for 14 days;
-one reporting job uploads those reports to Codecov after the full matrix succeeds.
-It requires an XML file for every discovered OS/version from the same run/attempt; missing artifacts
-leave a reporting warning/failure rather than publishing an incomplete matrix as the current result.
+They do not run the suite a second time. Successful cells retain coverage artifacts for 14 days;
+JUnit results remain available even when tests fail. One reporting job uploads coverage after
+the full matrix succeeds. It selects the newest available report for every current OS/Python cell
+within the same workflow run. Partial reruns may therefore use Ubuntu attempt 2 with Windows and
+macOS attempt 1: GitHub preserves the original event commit/ref across attempts of that run.
+
+The XML filename itself carries OS, Python version, run ID and attempt. Downloads explicitly select
+the current repository/run through the read-only Actions API, merge those unique filenames, and
+copy only the verified selection into `selected-coverage/` for Codecov. This works with singleton
+downloads as well as multiple artifacts. Superseded attempts and obsolete Python-version reports
+are excluded from upload; missing cells, foreign runs, future attempts and empty newest reports fail.
+The `selected-coverage-<run>-<attempt>` artifact records which original filenames were selected.
+
+Older workflow revisions using plain `coverage.xml` payloads still need **Re-run all jobs** to create
+a complete same-attempt set. The corrected layout takes effect in a new run after this change is
+committed and promoted. This reporting reuse does not relax publication artifacts or source proof.
 Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
 and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
 

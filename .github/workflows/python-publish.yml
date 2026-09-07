@@ -61,6 +61,9 @@ jobs:
 
   tests:
     needs: release-gate
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/test-runtime.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

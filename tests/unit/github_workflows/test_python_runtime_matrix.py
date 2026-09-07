@@ -4,6 +4,7 @@ import io
 import json
 import pathlib
 import urllib.error
+import zipfile
 from types import ModuleType
 
 import pytest
@@ -136,7 +137,7 @@ def test_report_matrix_must_match_the_whole_product(runtime_matrix: ModuleType, 
         runtime_matrix.validate_matrix(matrix, (3, 14, 0))
 
 
-@pytest.mark.parametrize("defect", ["none", "missing-directory", "empty", "missing-file", "unexpected", "old-attempt"])
+@pytest.mark.parametrize("defect", ["none", "missing", "empty", "unexpected", "reporting-rerun", "future-attempt"])
 def test_discovery_to_coverage_cli_checks_every_version(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
                                                        monkeypatch: pytest.MonkeyPatch, defect: str) -> None:
     """Exercise discovery outputs, retained JSON and coverage verification through real filesystem boundaries."""
@@ -152,27 +153,102 @@ def test_discovery_to_coverage_cli_checks_every_version(runtime_matrix: ModuleTy
     monkeypatch.setenv("GITHUB_RUN_ID", "70")
     monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
     root = tmp_path / "coverage"
+    root.mkdir()
     for row in matrix["include"]:
-        directory = root / f"coverage-{row['os']}-python-{row['python']}-70-2"
-        directory.mkdir(parents=True)
-        (directory / "coverage.xml").write_text("<coverage />", encoding="utf-8")
-    last_report = directory / "coverage.xml"
-    if defect in ("missing-directory", "missing-file"):
+        last_report = root / f"coverage-{row['os']}-python-{row['python']}-70-2.xml"
+        last_report.write_text("<coverage />", encoding="utf-8")
+    if defect == "missing":
         last_report.unlink()
-        if defect == "missing-directory":
-            directory.rmdir()
     elif defect == "empty":
         last_report.write_text("", encoding="utf-8")
     elif defect == "unexpected":
         (root / "unrelated").mkdir()
-    elif defect == "old-attempt":
+    elif defect == "reporting-rerun":
         monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "3")
-    args = ["coverage", "--directory", str(root)]
-    if defect == "none":
+    elif defect == "future-attempt":
+        monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "1")
+    selected = tmp_path / "selected"
+    provenance = tmp_path / "selection.json"
+    args = ["coverage", "--directory", str(root), "--selected-directory", str(selected),
+            "--selection-report", str(provenance)]
+    if defect in ("none", "reporting-rerun"):
         assert runtime_matrix.main(args) == 0
+        assert {path.name for path in selected.iterdir()} == {path.name for path in root.iterdir()}
+        assert set(json.loads(provenance.read_text(encoding="utf-8"))["reports"]) == {
+            path.name for path in root.iterdir()
+        }
     else:
         with pytest.raises(ValueError):
             runtime_matrix.main(args)
+        assert not selected.exists()
+
+
+def test_partial_rerun_archive_merge_preserves_each_platform(runtime_matrix: ModuleType,
+                                                           tmp_path: pathlib.Path) -> None:
+    """Unique XML payloads survive merged extraction and choose Ubuntu 2 with Windows/macOS 1."""
+    root = tmp_path / "downloads"
+    root.mkdir()
+    entries = [("ubuntu-latest", "3.14.7", 1), ("ubuntu-latest", "3.14.7", 2),
+               ("windows-latest", "3.14.7", 1), ("macos-latest", "3.14.7", 1),
+               ("ubuntu-latest", "3.14.6", 1)]
+    for runner, version, attempt in entries:
+        filename = f"coverage-{runner}-python-{version}-70-{attempt}.xml"
+        archive = tmp_path / (filename + ".zip")
+        with zipfile.ZipFile(archive, "w") as writer:
+            writer.writestr(filename, f'<coverage platform="{runner}" attempt="{attempt}"/>')
+        with zipfile.ZipFile(archive) as reader:
+            reader.extractall(root)
+    matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
+    reports = runtime_matrix.require_coverage(root, matrix, "70", "2")
+    expected = {"coverage-ubuntu-latest-python-3.14.7-70-2.xml",
+                "coverage-windows-latest-python-3.14.7-70-1.xml",
+                "coverage-macos-latest-python-3.14.7-70-1.xml"}
+    assert {path.name for path in reports} == expected
+    selected = tmp_path / "selected"
+    runtime_matrix.stage_coverage(reports, selected, tmp_path / "selection.json")
+    assert {path.name for path in selected.iterdir()} == expected
+    assert 'attempt="2"' in (selected / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").read_text()
+
+
+@pytest.mark.parametrize("filename", [
+    "coverage.xml", "coverage-ubuntu-latest-python-3.14.7-71-1.xml",
+    "coverage-ubuntu-latest-python-3.14.7-70-3.xml", "coverage-other-python-3.14.7-70-1.xml",
+])
+def test_ambiguous_foreign_and_future_payloads_refuse(runtime_matrix: ModuleType, tmp_path: pathlib.Path,
+                                                    filename: str) -> None:
+    """Neither a flattened anonymous file nor another run/attempt can replace missing platforms."""
+    (tmp_path / filename).write_text("<coverage/>", encoding="utf-8")
+    matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
+    with pytest.raises(ValueError):
+        runtime_matrix.require_coverage(tmp_path, matrix, "70", "2")
+
+
+def test_invalid_newest_report_cannot_fall_back_to_older_success(runtime_matrix: ModuleType,
+                                                               tmp_path: pathlib.Path) -> None:
+    """A failed newest upload must be visible even when an earlier complete set exists."""
+    matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
+    for row in matrix["include"]:
+        (tmp_path / f"coverage-{row['os']}-python-3.14.7-70-1.xml").write_text("<coverage/>", encoding="utf-8")
+    (tmp_path / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").write_text("", encoding="utf-8")
+    with pytest.raises(ValueError, match="Newest coverage report is empty"):
+        runtime_matrix.require_coverage(tmp_path, matrix, "70", "2")
+
+
+def test_one_flat_report_cannot_claim_a_complete_matrix(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """The exact singleton-download symptom still refuses if the other platforms truly have no evidence."""
+    (tmp_path / "coverage-ubuntu-latest-python-3.14.7-70-2.xml").write_text("<coverage/>", encoding="utf-8")
+    matrix = runtime_matrix.version_matrix(["3.14.7"], (3, 14, 0))
+    with pytest.raises(ValueError, match="missing OS/Python cells"):
+        runtime_matrix.require_coverage(tmp_path, matrix, "70", "2")
+
+
+def test_staging_preserves_existing_output(runtime_matrix: ModuleType, tmp_path: pathlib.Path) -> None:
+    """A rerun cannot silently upload stale files left in a nonempty staging directory."""
+    existing = tmp_path / "existing.xml"
+    existing.write_text("preserve", encoding="utf-8")
+    with pytest.raises(ValueError, match="must be empty"):
+        runtime_matrix.stage_coverage([], tmp_path, tmp_path / "selection.json")
+    assert existing.read_text(encoding="utf-8") == "preserve"
 
 
 def test_network_failure_never_issues_fallback_matrix(runtime_matrix: ModuleType, tmp_path: pathlib.Path,

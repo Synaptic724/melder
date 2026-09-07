@@ -43,6 +43,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    env:
+      COVERAGE_ARTIFACT: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -62,14 +64,18 @@ jobs:
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
           PYTHON_GIL: "0"
-        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml --coverage-report reports/coverage.xml
+        run: >-
+          python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+          --coverage-report reports/${{ env.COVERAGE_ARTIFACT }}.xml
       - name: Retain coverage report
-        if: always()
+        # Only successful runtime executions may supply reusable coverage reports.
+        if: success()
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: reports/coverage.xml
+          name: ${{ env.COVERAGE_ARTIFACT }}
+          path: reports/${{ env.COVERAGE_ARTIFACT }}.xml
+          archive: true
           if-no-files-found: warn
           retention-days: 14
       - name: Retain test results
@@ -84,6 +90,9 @@ jobs:
   coverage:
     name: Coverage / Codecov
     needs: [discover, test]
+    permissions:
+      contents: read
+      actions: read
     # Forks still run tests and retain XML, but never receive upload credentials.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -113,20 +122,33 @@ jobs:
         if: steps.credentials.outputs.enabled == 'true'
         uses: actions/download-artifact@v8
         with:
-          pattern: coverage-*-${{ github.run_id }}-${{ github.run_attempt }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+          # Partial reruns reuse successful cells from earlier attempts of this run.
+          pattern: coverage-*-${{ github.run_id }}-*
           path: coverage-reports
-          merge-multiple: false
+          # XML payload names already carry OS/version/run/attempt, so merging is lossless.
+          merge-multiple: true
       - name: Require the complete coverage matrix
         if: steps.credentials.outputs.enabled == 'true'
         env:
           CI_PYTHON_MATRIX: ${{ needs.discover.outputs.matrix }}
         run: python .github/scripts/python_runtime_matrix.py coverage
+      - name: Retain coverage selection provenance
+        if: steps.credentials.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: selected-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/coverage-selection.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload coverage to Codecov
         if: steps.credentials.outputs.enabled == 'true'
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: coverage-reports
+          directory: selected-coverage
           fail_ci_if_error: true
           # Final-release tags have already been verified against current prod.
           override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}

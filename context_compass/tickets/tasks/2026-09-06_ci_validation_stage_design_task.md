@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p2
 - Created: 2026-09-06T01:04:31Z
-- Updated: 2026-09-06T17:41:58Z
+- Updated: 2026-09-06T18:58:09Z
 
 ## Objective
 Implement the agreed test policy without repeating the full runtime matrix for unchanged promotions while
@@ -34,9 +34,9 @@ preserving useful dev feedback, preprod qualification and the owner's careful fi
 - from_state: in_progress
 - to_state: review
 - transition_reason: Implementation, focused workflow tests, actionlint, scoped correctness lint,
-  live stable-version discovery and generated-asset checks are complete. Hosted PR 147 proved the
-  full matrix; its false-dirty qualification failure is now reproduced and corrected locally.
-  The corrected guard passed exact-commit Ubuntu replay; owner promotion remains pending.
+  live discovery and generated-asset checks are complete. The identity correction passed hosted
+  qualification. The subsequent partial-rerun coverage defect is now corrected and locally tested;
+  owner promotion of that reporting correction remains pending.
 
 ## Previous Behavior (before this change)
 - CI handles PRs to dev, preprod, release_candidate and prod, plus pushes to dev/preprod/prod.
@@ -71,23 +71,26 @@ PR checks, RC push qualification and final publication remain the authoritative 
 - [x] Expand RC probes and per-version coverage evidence without adding test stages.
 - [x] Validate discovery failures, workflow wiring and refreshed generated corpora.
 - [x] Reproduce and correct PR 147's false-dirty checkout qualification failure.
+- [x] Correct singleton downloads and same-run coverage selection across partial reruns.
 
 ## Deliverables
 - Implemented stage-to-check mapping, exact-tree proof and operator guidance for fresh qualification.
 
 ## Validation
-- Final focused workflow suite including checkout-identity regressions: 403 passed in 4.76s.
+- Final focused workflow suite including partial-rerun coverage: 411 passed in 4.66s.
 - Live catalog discovery selected 3.14.7 on Linux/Windows/macOS and excluded Python prereleases.
 - All nine workflows pass actionlint; scoped correctness Ruff (E9,F63,F7,F82) passes.
 - All repository corpora, source asset groups, three patch indexes and git diff --check pass.
 - Prior default Ruff reported 17 style/typing findings; this extension used scoped correctness rules.
-- Owner-run PR 147 passed all full validation jobs; only the original identity recorder failed.
-- Corrected guard passes exact PR merge replay on Ubuntu; no hosted rerun/publication was dispatched.
+- Owner-run 34051331302 passed required tests, merge-ready and corrected source recording.
+- Its optional coverage step exposed mixed attempts/singleton layout; the correction is locally tested.
+- No hosted rerun, coverage upload or package publication was dispatched by this task.
 
 ## Risks / Open Questions
 - First rollout must establish a full-CI qualification artifact before lightweight promotion.
 - Exact-tree reuse intentionally refuses changed contents, expired evidence or unsuccessful qualification.
-- The identity correction must reach dev before PR 147 can use it. The final publication check remains required.
+- Coverage correction needs a new run after commit/promotion; older runs retain their original workflow.
+- The final publication check remains required; coverage reuse is limited to reporting within one run.
 
 ## Artifact Links
 - ARTIFACTS_REQUIRED: true
@@ -97,6 +100,7 @@ PR checks, RC push qualification and final publication remain the authoritative 
   - artifacts/ci_stage_qualification_20260906/python-matrix-tests.xml
   - artifacts/ci_stage_qualification_20260906/live-python-matrix.json
   - artifacts/ci_stage_qualification_20260906/checkout-identity-tests.xml
+  - artifacts/ci_stage_qualification_20260906/coverage-rerun-tests.xml
   - artifacts/ci_stage_qualification_20260906/pr147-byte-identity.json
   - artifacts/ci_stage_qualification_20260906/pr147-fixed-identity.json
   - artifacts/ci_stage_qualification_20260906/probe_checkout_identity.py
@@ -595,13 +599,96 @@ PR checks, RC push qualification and final publication remain the authoritative 
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-06T18:41:11Z
+  TYPE: DECISION
+  CLAIM: Owner identified coverage failure in dev-to-preprod run 34051331302 attempt 2. Artifact
+    inventory proves Ubuntu was rerun while Windows/macOS retained attempt-1 reports for the same
+    head SHA. The attempt-2 pattern selected only Ubuntu; download-artifact v8 flattens a singleton
+    even with merge-multiple=false. merge-ready and fresh source recording passed on this run.
+  EVIDENCE:
+  - https://github.com/Synaptic724/melder/actions/runs/34051331302/job/101537598083
+  - https://github.com/Synaptic724/melder/actions/runs/34051331302/job/101537627363
+  - https://raw.githubusercontent.com/actions/download-artifact/v8/src/download-artifact.ts
+  - https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs
+  IMPACT: Correct only coverage transport/selection: identity-bearing XML filenames inside artifacts,
+    same-run download across attempts, newest report per exact current OS/Python cell, isolated
+    selected upload directory. Upload reports only after successful tests; retain JUnit on failure.
+    Missing cells, foreign/future attempts and invalid newest reports refuse. PyPI/source proof stays strict.
+  NEXT: Update the coverage helper/workflow and regress partial reruns, singleton layout and stale reports.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T18:41:11Z
+  TYPE: FACT
+  CLAIM: Coverage now has identity-bearing XML payload names and success-only report retention.
+    Its downloader explicitly uses the current repo/run API with actions:read, retrieves all
+    attempts and merges unique filenames. The selector stages only the newest report for each
+    required cell and retains a provenance list. Older versions are excluded; missing, foreign,
+    future and empty-newest evidence refuse. User confirms the earlier run was rerun and merged.
+  EVIDENCE:
+  - .github/workflows/test-runtime.yml
+  - .github/scripts/python_runtime_matrix.py
+  - tests/unit/github_workflows/test_python_runtime_matrix.py
+  - tests/unit/github_workflows/test_workflow_contracts.py
+  IMPACT: Required CI was already green in run 34051331302; this corrects nonblocking reporting.
+    CI and final publication callers grant only the extra read permission needed for same-run history.
+  NEXT: Run focused workflow tests and actionlint before regenerating the affected assets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-06T18:54:58Z
+  TYPE: MEASURE
+  CLAIM: All 411 workflow tests pass in 4.66s; actionlint and scoped correctness Ruff pass. The
+    archive/selection regression exercises Ubuntu attempt 2 with Windows/macOS attempt 1, keeps
+    unique payloads after merged extraction and excludes stale attempts/versions. Negative cases
+    refuse single-cell evidence, foreign/future artifacts, an empty newest report and stale output.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/coverage-rerun-tests.xml:1-1
+  - tests/unit/github_workflows/test_python_runtime_matrix.py
+  - tests/unit/github_workflows/test_workflow_contracts.py
+  IMPACT: Coverage transport and rerun selection are locally validated. Owner says the earlier
+    promotion was merged; required gates had passed and this was nonblocking coverage only.
+  NEXT: Regenerate affected corpus/patch indexes and finish the correction for owner rollout.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T18:58:09Z
+  TYPE: DECISION
+  CLAIM: Partial-rerun coverage correction is ready for owner review. All 411 workflow tests,
+    actionlint, scoped Ruff, corpus/source-asset/index and diff checks pass. The source guard fix
+    already passed hosted run 34051331302; only nonblocking coverage needed this later correction.
+    No full-test stages, publication guards or qualification schema were relaxed.
+  EVIDENCE:
+  - artifacts/ci_stage_qualification_20260906/coverage-rerun-tests.xml:1-1
+  - .github/scripts/python_runtime_matrix.py:146-226
+  - .github/BRANCH_WORKFLOW.md:82-102
+  IMPACT: Successful earlier cells can supply coverage for a partial rerun of the same commit/run,
+    while missing or invalid current-matrix evidence still refuses. Package artifacts remain separate.
+  NEXT: Owner commits/promotes the reporting correction and observes a fresh hosted workflow run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-06T18:58:09Z
+  TYPE: FACT
+  CLAIM: Owner reports the promotion subsequently completed through prod and coverage appeared
+    on the Codecov site. This confirms the ordinary full-run path worked according to the owner;
+    the observed failure was localized to the earlier partial rerun, not general Codecov setup.
+  EVIDENCE:
+  - Owner: "ran it all the way to prod and the codecov did show up in the site".
+  - https://github.com/Synaptic724/melder/actions/runs/34051331302/job/101537598083
+  IMPACT: Keep the tested local partial-rerun correction as an edge-case fix. No Codecov account,
+    credential or production workflow rerun is needed to diagnose the original event.
+  NEXT: Owner reviews/commits the local reporting edge-case correction when ready.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Stable no-GIL stage policy is implemented and owner-run PR 147 proved its full test/build/docs jobs.
-PR 147's record step exposed a false-dirty guard: Linux reports 235 unchanged legacy CRLF documents
-under LF attributes as modified. Exact byte/mode identity is proven in the linked reports. The fix
-requires an unchanged index and exact unfiltered blob/mode identity for otherwise-dirty regular
-files; real edits still fail with path names. No normalization or directory/whitespace waiver exists.
-403 workflow tests pass; corrected guard passes Ubuntu replay of exact merge 0d82c24. Corpora,
-source assets and indexes are current. Owner must commit/promote the correction into dev so PR 147
-uses it; rerunning the old revision does not install the fix. No user commits/pushes/hosted reruns
-or publication were dispatched. Close only after owner acceptance and clean up task-owned artifacts.
+Stage policy, stable no-GIL matrix and byte-exact checkout guard are implemented. Hosted run
+34051331302 passed required CI and source recording; owner reports merging that promotion.
+Coverage failed after Ubuntu-only rerun because Windows/macOS reports remained at attempt 1 and
+the attempt-2 filter yielded a singleton coverage.xml. The local correction encodes identity in
+XML payload names, downloads same-run attempts explicitly and stages newest-per-cell reports only.
+Success-only coverage retention, complete-matrix checks, Codecov isolation and nonblocking status
+are preserved. 411 tests, actionlint, scoped Ruff and generated-asset/index checks pass. Owner must
+commit/promote the reporting change; older runs retain old YAML. No commits, hosted runs, coverage
+uploads or publication were dispatched. Ticket remains review pending owner acceptance.

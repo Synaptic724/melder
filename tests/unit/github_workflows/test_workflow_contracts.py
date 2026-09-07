@@ -141,22 +141,25 @@ def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> No
     assert len(runners) == 1
     assert runners[0]["run"] == (
         "python .github/scripts/run_runtime_tests.py --report reports/runtime.xml "
-        "--coverage-report reports/coverage.xml"
+        "--coverage-report reports/${{ env.COVERAGE_ARTIFACT }}.xml"
     )
     assert runners[0].get("continue-on-error", "false") == "false"
     retained = next(step for step in test["steps"] if step.get("name") == "Retain coverage report")
-    assert retained["if"] == "always()"
+    assert retained["if"] == "success()"
     assert retained["continue-on-error"] == "true"
-    assert retained["with"]["name"] == (
+    assert test["env"]["COVERAGE_ARTIFACT"] == (
         "coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}"
     )
-    assert retained["with"]["path"] == "reports/coverage.xml"
+    assert retained["with"]["name"] == "${{ env.COVERAGE_ARTIFACT }}"
+    assert retained["with"]["path"] == "reports/${{ env.COVERAGE_ARTIFACT }}.xml"
+    assert retained["with"]["archive"] == "true"
     reporting = document["jobs"]["coverage"]
     download = next(step for step in reporting["steps"]
                     if step.get("uses", "").startswith("actions/download-artifact@"))
     assert download["with"] == {
-        "pattern": "coverage-*-${{ github.run_id }}-${{ github.run_attempt }}",
-        "path": "coverage-reports", "merge-multiple": "false",
+        "github-token": "${{ github.token }}", "repository": "${{ github.repository }}",
+        "run-id": "${{ github.run_id }}", "pattern": "coverage-*-${{ github.run_id }}-*",
+        "path": "coverage-reports", "merge-multiple": "true",
     }
     complete = next(step for step in reporting["steps"] if step.get("name") == "Require the complete coverage matrix")
     assert complete["run"] == "python .github/scripts/python_runtime_matrix.py coverage"
@@ -176,7 +179,8 @@ def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
         "github.event.pull_request.head.repo.full_name == github.repository"
     )
     assert document["permissions"] == {"contents": "read"}
-    assert "permissions" not in job and "environment" not in job and "env" not in job
+    assert job["permissions"] == {"contents": "read", "actions": "read"}
+    assert "environment" not in job and "env" not in job
     credential_check = job["steps"][0]
     assert credential_check["id"] == "credentials"
     assert credential_check["env"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
@@ -185,10 +189,15 @@ def test_coverage_upload_is_nonblocking_token_only_and_skips_fork_prs() -> None:
     upload = job["steps"][-1]
     assert upload["uses"] == "codecov/codecov-action@v7"
     assert upload["with"]["token"] == "${{ secrets.CODECOV_TOKEN }}"
-    assert upload["with"]["directory"] == "coverage-reports"
+    assert upload["with"]["directory"] == "selected-coverage"
     assert upload["with"]["fail_ci_if_error"] == "true"
     assert upload["with"].get("use_oidc", "false") == "false"
     assert upload["with"]["override_branch"] == "${{ github.event_name == 'release' && 'prod' || '' }}"
+    selection = job["steps"][-2]
+    assert selection["uses"].startswith("actions/upload-artifact@")
+    assert selection["with"]["name"] == "selected-coverage-${{ github.run_id }}-${{ github.run_attempt }}"
+    assert selection["with"]["path"] == "reports/coverage-selection.json"
+    assert selection["with"]["if-no-files-found"] == "error"
 
 
 @pytest.mark.parametrize("name", ["ci.yml", "python-publish.yml"])
@@ -196,6 +205,7 @@ def test_runtime_callers_forward_only_the_coverage_secret(name: str) -> None:
     """Nested reporting receives its own token without inheriting package upload credentials."""
     caller = workflow(name)["jobs"]["tests"]
     assert caller["secrets"] == {"CODECOV_TOKEN": "${{ secrets.CODECOV_TOKEN }}"}
+    assert caller["permissions"] == {"contents": "read", "actions": "read"}
     assert caller.get("permissions", {}).get("id-token") != "write"
 
 

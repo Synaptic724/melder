@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `code_description_patch_source_proof.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-06T17:40:25Z |
-| line_count | 54 |
+| generated_at | 2026-09-06T18:56:48Z |
+| line_count | 62 |
 | line_ending | lf |
-| content_sha256 | `e3af3d9fadc9058fc1de5abfad4975e142d7e98f83edd4aabedc52d85d03dfc2` |
-| sections | 7 |
+| content_sha256 | `6c642f118b08003f13925b9da53fd0d0c282be7623f795a5a364f0f7564d177d` |
+| sections | 8 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -33,4 +33,5 @@ which you did.
 | 29-33 | 2 | Pending candidate |
 | 34-37 | 2 | Failure behavior |
 | 38-46 | 2 | Runtime matrix discovery and report verification |
-| 47-54 | 2 | Byte-exact clean-checkout verification |
+| 47-55 | 2 | Byte-exact clean-checkout verification |
+| 56-62 | 2 | Coverage selection after partial reruns |

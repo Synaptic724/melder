@@ -59,3 +59,10 @@ the checkout bytes and mode are identical. A porcelain flag alone is not source 
 Require the index to match HEAD and inspect raw working-tree deltas. Only unchanged regular-file
 mode plus an exact unfiltered blob hash may clear an M delta; real edits and structural changes
 remain failures. Do not normalize files, ignore directories or ignore whitespace differences.
+
+## Coverage reporting across partial reruns
+GitHub preserves the event SHA/ref across attempts of one run. Coverage may reuse a successful
+cell's earlier report within that same run when only another cell is rerun. Select the newest
+available report for each exact current OS/Python cell, never another run. Coverage artifacts
+are emitted only after successful tests; JUnit remains available for failed tests. This reporting
+exception does not relax package/publication artifacts or full-CI proof identity.
