@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 98aed4c64d62ab18f3840f63958c2eeb9e31f879b265ee6f18e76413f59b3382
-FILE COUNT: 356
+SOURCE FINGERPRINT: 6f5f11ae395be3bee7130bf937d6ad17d1163a37f3a0ad5fcd6562fd21798da7
+FILE COUNT: 357
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: ecb424d98272e2b8558bb50af2b8231db40b72f1215fd8e1e55a1e3b45b89a19
+CONTENT SHA256: ec8cb8ee9e7c4abe2307d501c8931f7cebc77b00ceaf1b28810dfe19500f5b33
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -199,10 +199,18 @@ Create a short-lived branch from current dev and explicitly target dev when
 opening the PR; prod remains the repository's default branch. Run:
 
 ```bash
-python -m pytest -q tests/unit tests/component tests/integration
-python src/melder/_build_assets/_build_asset_runner.py --check
-python llm_support/_builder.py --check
+uv sync --locked --python 3.14t
+uv run --locked python -X gil=0 .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+uv run --locked python src/melder/_build_assets/_build_asset_runner.py --check
+uv run --locked python llm_support/_builder.py --check
 ```
+
+`uv.lock` pins the development dependency resolution shared with CI. Runtime jobs preserve the
+dynamic OS/no-GIL Python matrix and sync the test group with each selected interpreter. Distribution
+jobs sync only the build group and build without isolation, using those locked tools. Their wheel
+probe still installs only the exact built wheel in a separate environment. Cache keys include the
+lockfile and runtime/build context. The documentation toolchain retains `docs/requirements.lock`.
+See [contributor setup](../CONTRIBUTING.md) for optional groups and deliberate lock updates.
 
 If generated assets are stale, regenerate locally and commit them. Stage newly
 added input files before running the repository builder so its tracked-file
@@ -2311,7 +2319,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: cefce537f69b23a397d62ee4d23c12a79112133d73f051d49b97cff9c9fe8ce2
+CONTENT SHA256: 3ba0199266bf477a2c211a83af6a73c86ced78435da819746fca9303f40fe915
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -2347,34 +2355,39 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
+        id: python
         with:
           python-version-file: pyproject.toml
           freethreaded: true
           allow-prereleases: false
-          cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group build
+      - name: Set up uv for locked build tools
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+          resolution-strategy: lowest
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-suffix: build-${{ steps.python.outputs.python-version }}-${{ runner.arch }}
+      - name: Install locked build tools
+        run: uv sync --locked --only-group build --python "${{ steps.python.outputs.python-path }}"
       - name: Verify durable source assets
-        run: python src/melder/_build_assets/_build_asset_runner.py --check
+        run: uv run --no-sync python src/melder/_build_assets/_build_asset_runner.py --check
       - name: Set deterministic source timestamps for same-commit retries
         run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
       - name: Build wheel and source distribution
-        run: python -m build --sdist --wheel
+        run: uv run --no-sync python -m build --no-isolation --sdist --wheel
       - name: Normalize source archive metadata for identical retries
-        run: python .github/scripts/normalize_sdist.py
+        run: uv run --no-sync python .github/scripts/normalize_sdist.py
       - name: Verify archive boundaries and versions
         env:
           RELEASE_TAG: ${{ inputs.release-tag }}
-        run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+        run: uv run --no-sync python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
       - name: Install and verify the wheel in isolation
         env:
           PYTHON_GIL: "0"
         run: |
-          python -m venv "$RUNNER_TEMP/melder-wheel-probe"
-          "$RUNNER_TEMP/melder-wheel-probe/bin/python" -m pip install --quiet --no-deps dist/*.whl
+          uv venv --python "${{ steps.python.outputs.python-path }}" "$RUNNER_TEMP/melder-wheel-probe"
+          uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps dist/*.whl
           "$RUNNER_TEMP/melder-wheel-probe/bin/python" -I .github/scripts/smoke_wheel.py
       - name: Retain verified distributions
         uses: actions/upload-artifact@v7
@@ -2970,7 +2983,7 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: 5dde5ae0dc6d5732792bd59114ef87df2195efdeb91340a0089c23fe846d45c4
+CONTENT SHA256: d6488923d27dfc67924182579b6a3dacff4b7cdc560a025d81c20976b210ec12
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
@@ -3023,24 +3036,28 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
+        id: python
         with:
           python-version: ${{ matrix.python }}
           architecture: ${{ matrix.architecture }}
           freethreaded: true
           allow-prereleases: false
-          cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Install Melder and test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group test
-          python -m pip install --no-deps --editable .
+      - name: Set up uv for locked dependencies
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+          resolution-strategy: lowest
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-suffix: runtime-${{ matrix.python }}t-${{ matrix.architecture }}
+      - name: Install locked Melder and test dependencies
+        run: uv sync --locked --no-default-groups --group test --python "${{ steps.python.outputs.python-path }}"
       - name: Run supported test tiers with runtime verification
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
           PYTHON_GIL: "0"
         run: >-
-          python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+          uv run --no-sync python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
           --coverage-report reports/${{ env.COVERAGE_ARTIFACT }}.xml
       - name: Retain coverage report
         # Only successful runtime executions may supply reusable coverage reports.
@@ -3460,6 +3477,94 @@ search:
     - _sources/*
 ================================================================================
 END FILE: .readthedocs.yaml
+================================================================================
+================================================================================
+BEGIN FILE: CONTRIBUTING.md
+CONTENT SHA256: 565b5e38fd55562bbe223f5f4edf13de77f00a12059aa7f2c6c7f1815ffaa0ae
+SOURCE ENCODING: utf-8
+================================================================================
+# Working on Melder
+
+The repository includes `uv.lock` so contributors can install the same resolved development
+dependencies across supported platforms. Melder itself has no runtime package dependencies.
+Applications installing Melder maintain their own lockfiles; this lock describes the checkout.
+
+## Create the development environment
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) version 0.11.23 or newer.
+From a clone of this repository, run:
+
+```bash
+uv sync --locked --python 3.14t
+uv run --locked python -X gil=0 -c "import sys, sysconfig; print(sys.version); assert sysconfig.get_config_var('Py_GIL_DISABLED') == 1; assert not sys._is_gil_enabled()"
+```
+
+The `t` requests free-threaded Python. Select the exact version shown in a CI report when
+reproducing a version-specific failure, for example `--python 3.14.7t`. The lock supports the
+Python range declared in `pyproject.toml`; it does not pin the interpreter to one minor version.
+
+`uv sync` creates `.venv`, installs Melder in editable mode and includes the default `dev` group:
+test, lint and build tools. Use a dedicated checkout/environment: syncing removes packages that
+are outside the selected groups. To choose a different environment location, set
+`UV_PROJECT_ENVIRONMENT` before running the commands.
+
+`--locked` refuses a stale lock instead of changing it during installation. Commit dependency
+declarations and the regenerated lock together when intentionally changing requirements.
+
+## Run checks
+
+```bash
+uv run --locked python -X gil=0 .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+uv run --locked python src/melder/_build_assets/_build_asset_runner.py --check
+uv run --locked python llm_support/_builder.py --check
+```
+
+The test driver runs unit, component and integration tests and verifies the GIL remains disabled.
+To focus on one test file, use `uv run --locked python -X gil=0 -m pytest <path>`.
+
+CI uses this same lock. Its dynamic OS/Python matrix first selects a free-threaded interpreter,
+then passes that interpreter to `uv sync --locked --no-default-groups --group test`.
+The lock chooses dependencies for each matrix environment; it does not collapse the Python matrix.
+Distribution jobs install only the locked `build` group. CI uses the minimum supported uv version
+declared in `pyproject.toml`, and a stale lock fails the install step.
+
+Extra development groups are opt-in:
+
+```bash
+uv sync --locked --python 3.14t --group typecheck
+uv run --locked --group typecheck mypy
+```
+
+The other optional groups are `parallel`, `codemod` and `benchmark`. Use `--all-groups` when you
+need all of them. Documentation uses its separate locked environment; see
+[documentation maintenance](docs/maintaining.md).
+
+## Build and inspect the package
+
+The default development environment includes the locked build backend and build tools:
+
+```bash
+uv run --locked python -m build --no-isolation --sdist --wheel
+uv run --locked python .github/scripts/verify_distributions.py
+```
+
+Build isolation is disabled here so the build uses the installed locked toolchain. The resulting
+wheel and source archive still pass the repository's distribution checks. No publishing occurs.
+
+## Update dependencies deliberately
+
+```bash
+uv lock --check
+uv lock --upgrade-package pytest
+uv sync --locked --python 3.14t
+```
+
+Use `uv lock` after editing dependency declarations, and `uv lock --upgrade` only for an intentional
+refresh of the entire resolution. Review the diff and validate the affected checks before committing
+`pyproject.toml` and `uv.lock`. Keep private indexes, credentials and machine-local dependency paths
+out of the shared lock. `pip install melder` remains the normal package-consumer installation path.
+================================================================================
+END FILE: CONTRIBUTING.md
 ================================================================================
 ================================================================================
 BEGIN FILE: LICENSE
@@ -4216,7 +4321,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: e06ac20f8c7fffcf7739e1b5aeee6a2922a8e6162bd83b479d63e437c60bc7aa
+CONTENT SHA256: 7fb7c607315d42b8491d7a1f155c80fb3cc4605ef992bb043a68abe845c20e56
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -4261,6 +4366,9 @@ pip install melder
 ```
 
 **Zero dependencies.** Nothing else comes with it. Requires Python 3.14+.
+
+Working from a clone? Use the repository's `uv.lock` and
+[locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).
 
 ---
 
@@ -65651,7 +65759,7 @@ END FILE: docs/tools/site_model.py
 ================================================================================
 ================================================================================
 BEGIN FILE: pyproject.toml
-CONTENT SHA256: 04de772dd9338062edfcba0f8d06c4f5851bee11c6ec7652e9a8f967f573b8a1
+CONTENT SHA256: de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232
 SOURCE ENCODING: utf-8
 ================================================================================
 [build-system]
@@ -65736,9 +65844,8 @@ LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
 
 # PEP 735 dependency groups: development-only requirements that are NEVER
 # published in any built distribution. Install with `pip install --group dev`
-# (pip >= 25.1). Transitive pins (pluggy, iniconfig, execnet, mypy_extensions,
-# typing_extensions, packaging, ...) are deliberately omitted - the resolver
-# owns those.
+# (pip >= 25.1). Direct requirements stay broad here; uv.lock records the exact
+# transitive resolution for reproducible repository environments. See CONTRIBUTING.md.
 [dependency-groups]
 # Only pytest built-in markers are used suite-wide (parametrize, xfail, skip);
 # test tiers are split by directory, not marker. pytest-mock/-timeout/
@@ -65785,6 +65892,10 @@ dev = [
     { include-group = "lint" },
     { include-group = "build" },
 ]
+
+[tool.uv]
+# The generated lock and contributor setup are validated with this uv release.
+required-version = ">=0.11.23"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

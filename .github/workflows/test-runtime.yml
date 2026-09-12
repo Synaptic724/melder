@@ -48,24 +48,28 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
+        id: python
         with:
           python-version: ${{ matrix.python }}
           architecture: ${{ matrix.architecture }}
           freethreaded: true
           allow-prereleases: false
-          cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Install Melder and test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group test
-          python -m pip install --no-deps --editable .
+      - name: Set up uv for locked dependencies
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+          resolution-strategy: lowest
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-suffix: runtime-${{ matrix.python }}t-${{ matrix.architecture }}
+      - name: Install locked Melder and test dependencies
+        run: uv sync --locked --no-default-groups --group test --python "${{ steps.python.outputs.python-path }}"
       - name: Run supported test tiers with runtime verification
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
           PYTHON_GIL: "0"
         run: >-
-          python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+          uv run --no-sync python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
           --coverage-report reports/${{ env.COVERAGE_ARTIFACT }}.xml
       - name: Retain coverage report
         # Only successful runtime executions may supply reusable coverage reports.

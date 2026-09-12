@@ -130,10 +130,18 @@ Create a short-lived branch from current dev and explicitly target dev when
 opening the PR; prod remains the repository's default branch. Run:
 
 ```bash
-python -m pytest -q tests/unit tests/component tests/integration
-python src/melder/_build_assets/_build_asset_runner.py --check
-python llm_support/_builder.py --check
+uv sync --locked --python 3.14t
+uv run --locked python -X gil=0 .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+uv run --locked python src/melder/_build_assets/_build_asset_runner.py --check
+uv run --locked python llm_support/_builder.py --check
 ```
+
+`uv.lock` pins the development dependency resolution shared with CI. Runtime jobs preserve the
+dynamic OS/no-GIL Python matrix and sync the test group with each selected interpreter. Distribution
+jobs sync only the build group and build without isolation, using those locked tools. Their wheel
+probe still installs only the exact built wheel in a separate environment. Cache keys include the
+lockfile and runtime/build context. The documentation toolchain retains `docs/requirements.lock`.
+See [contributor setup](../CONTRIBUTING.md) for optional groups and deliberate lock updates.
 
 If generated assets are stale, regenerate locally and commit them. Stage newly
 added input files before running the repository builder so its tracked-file

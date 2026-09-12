@@ -2,14 +2,14 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2671576,
-        "lines": 65997,
+        "bytes": 2677500,
+        "lines": 66108,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "7681109490834b64108653efeb083db05b0b6e9e8543ab19401c051c8973822e"
+        "sha256": "4d6d77921c292222df2e4c78792fcd0c0f64241c53a31c846b4f54bff4d15f56"
       },
-      "content_bytes": 2472645,
-      "content_lines": 63143,
-      "file_count": 356,
+      "content_bytes": 2478087,
+      "content_lines": 63246,
+      "file_count": 357,
       "files": {
         ".gitattributes": {
           "content_bytes": 2466,
@@ -18,9 +18,9 @@
           "source_encoding": "utf-8"
         },
         ".github/BRANCH_WORKFLOW.md": {
-          "content_bytes": 21512,
-          "content_lines": 348,
-          "content_sha256": "ecb424d98272e2b8558bb50af2b8231db40b72f1215fd8e1e55a1e3b45b89a19",
+          "content_bytes": 22193,
+          "content_lines": 356,
+          "content_sha256": "ec8cb8ee9e7c4abe2307d501c8931f7cebc77b00ceaf1b28810dfe19500f5b33",
           "source_encoding": "utf-8"
         },
         ".github/rulesets/dev.json": {
@@ -102,9 +102,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/build-distributions.yml": {
-          "content_bytes": 2336,
-          "content_lines": 69,
-          "content_sha256": "cefce537f69b23a397d62ee4d23c12a79112133d73f051d49b97cff9c9fe8ce2",
+          "content_bytes": 2798,
+          "content_lines": 74,
+          "content_sha256": "3ba0199266bf477a2c211a83af6a73c86ced78435da819746fca9303f40fe915",
           "source_encoding": "utf-8"
         },
         ".github/workflows/build-repo-assets.yml": {
@@ -144,9 +144,9 @@
           "source_encoding": "utf-8"
         },
         ".github/workflows/test-runtime.yml": {
-          "content_bytes": 5907,
-          "content_lines": 154,
-          "content_sha256": "5dde5ae0dc6d5732792bd59114ef87df2195efdeb91340a0089c23fe846d45c4",
+          "content_bytes": 6208,
+          "content_lines": 158,
+          "content_sha256": "d6488923d27dfc67924182579b6a3dacff4b7cdc560a025d81c20976b210ec12",
           "source_encoding": "utf-8"
         },
         ".github/workflows/verify-source-qualification.yml": {
@@ -167,6 +167,12 @@
           "content_sha256": "12b470217ab933f372ad67fd95f897d8c82f70e06d19c83f49d492f952c3e478",
           "source_encoding": "utf-8"
         },
+        "CONTRIBUTING.md": {
+          "content_bytes": 3729,
+          "content_lines": 80,
+          "content_sha256": "565b5e38fd55562bbe223f5f4edf13de77f00a12059aa7f2c6c7f1815ffaa0ae",
+          "source_encoding": "utf-8"
+        },
         "LICENSE": {
           "content_bytes": 34522,
           "content_lines": 661,
@@ -180,9 +186,9 @@
           "source_encoding": "utf-8"
         },
         "README.md": {
-          "content_bytes": 48583,
-          "content_lines": 1111,
-          "content_sha256": "e06ac20f8c7fffcf7739e1b5aeee6a2922a8e6162bd83b479d63e437c60bc7aa",
+          "content_bytes": 48734,
+          "content_lines": 1114,
+          "content_sha256": "7fb7c607315d42b8491d7a1f155c80fb3cc4605ef992bb043a68abe845c20e56",
           "source_encoding": "utf-8"
         },
         "UX_and_AIX_experiences/01_beginner/01_hello_meld.py": {
@@ -2130,9 +2136,9 @@
           "source_encoding": "utf-8"
         },
         "pyproject.toml": {
-          "content_bytes": 7655,
-          "content_lines": 242,
-          "content_sha256": "04de772dd9338062edfcba0f8d06c4f5851bee11c6ec7652e9a8f967f573b8a1",
+          "content_bytes": 7773,
+          "content_lines": 245,
+          "content_sha256": "de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2149,12 +2155,12 @@
         }
       },
       "index": {
-        "bytes": 60070,
-        "lines": 378,
+        "bytes": 60204,
+        "lines": 379,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "8a080c333d86a828775fef7708712ca4fb2a430d5a4e66592616f0725827be32"
+        "sha256": "198182a687c477431c3fe9b3699845d276749eadb73c0acf77a7dddbbb94d387"
       },
-      "source_fingerprint": "98aed4c64d62ab18f3840f63958c2eeb9e31f879b265ee6f18e76413f59b3382"
+      "source_fingerprint": "6f5f11ae395be3bee7130bf937d6ad17d1163a37f3a0ad5fcd6562fd21798da7"
     },
     "src": {
       "bundle": {
@@ -5688,13 +5694,13 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 10788860,
-        "lines": 309574,
+        "bytes": 10790980,
+        "lines": 309606,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "38de32a6bfa51be63ace380216e97009eabeb94fea147cf20bec1661195b73c0"
+        "sha256": "0a277ecb6de0704e7ce52d57e706d968e98c98f8dcac74d6f42891cf263615f1"
       },
-      "content_bytes": 10302447,
-      "content_lines": 303088,
+      "content_bytes": 10304567,
+      "content_lines": 303120,
       "file_count": 810,
       "files": {
         "tests/_codegen_system_support.py": {
@@ -7858,9 +7864,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/github_workflows/test_workflow_contracts.py": {
-          "content_bytes": 24791,
-          "content_lines": 422,
-          "content_sha256": "9483c1eadc981ef460e80ef0bf600db43d236a9650ed35924d861f1da91c6165",
+          "content_bytes": 26911,
+          "content_lines": 454,
+          "content_sha256": "29159c5dc418680f9032216153637857f70449650623050eec3d1745655fff56",
           "source_encoding": "utf-8"
         },
         "tests/unit/llm_support/test_builder.py": {
@@ -10562,9 +10568,9 @@
         "bytes": 156294,
         "lines": 832,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "31263f2a1820605c481ef6d304a030623732fac0bb91ccaa32c70603276f4a4d"
+        "sha256": "227cd2828770de4223b2a715087ef85be8a0f704079bac6e4a0173a3b065a4ad"
       },
-      "source_fingerprint": "7d386c06f4529c36eb0dbf1b3f0b0eaec17c621441c21d8f542998f29676b57d"
+      "source_fingerprint": "3781324ab77c441074009049cb3665c3badb815558707fc46a7f029e573c020b"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

@@ -140,7 +140,7 @@ def test_coverage_uses_existing_tests_and_separate_current_run_artifacts() -> No
     runners = [step for step in test["steps"] if "run_runtime_tests.py" in step.get("run", "")]
     assert len(runners) == 1
     assert runners[0]["run"] == (
-        "python .github/scripts/run_runtime_tests.py --report reports/runtime.xml "
+        "uv run --no-sync python .github/scripts/run_runtime_tests.py --report reports/runtime.xml "
         "--coverage-report reports/${{ env.COVERAGE_ARTIFACT }}.xml"
     )
     assert runners[0].get("continue-on-error", "false") == "false"
@@ -262,6 +262,38 @@ def test_package_verification_precedes_artifact_upload() -> None:
     assert setup["with"]["freethreaded"] == "true"
     assert setup["with"]["allow-prereleases"] == "false"
     assert "python-version" not in setup["with"]
+    assert "uv run --no-sync python -m build --no-isolation --sdist --wheel" in commands
+    assert 'uv venv --python "${{ steps.python.outputs.python-path }}"' in commands[smoke]
+    assert 'uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps dist/*.whl' in commands[smoke]
+
+
+@pytest.mark.parametrize(("name", "job_name", "groups"), [
+    ("test-runtime.yml", "test", "--no-default-groups --group test"),
+    ("build-distributions.yml", "build", "--only-group build"),
+])
+def test_locked_ci_uses_the_selected_matrix_interpreter(name: str, job_name: str, groups: str) -> None:
+    """Dependency locking must preserve the chosen no-GIL interpreter and refuse stale-lock installs."""
+    job = workflow(name)["jobs"][job_name]
+    steps = job["steps"]
+    python = next(step for step in steps if step.get("uses", "").startswith("actions/setup-python@"))
+    uv = next(step for step in steps if step.get("uses", "").startswith("astral-sh/setup-uv@"))
+    sync = next(step for step in steps if step.get("run", "").startswith("uv sync "))
+    assert python["id"] == "python" and python["with"]["freethreaded"] == "true"
+    assert "cache" not in python["with"]
+    assert uv["with"]["version-file"] == "pyproject.toml"
+    assert uv["with"]["resolution-strategy"] == "lowest"
+    assert "python-version" not in uv["with"]
+    assert uv["with"]["enable-cache"] == "true"
+    assert uv["with"]["cache-dependency-glob"] == "uv.lock"
+    assert sync["run"] == f'uv sync --locked {groups} --python "${{{{ steps.python.outputs.python-path }}}}"'
+    assert "if" not in sync and "continue-on-error" not in sync
+    assert steps.index(python) < steps.index(uv) < steps.index(sync)
+    if job_name == "test":
+        assert python["with"]["python-version"] == "${{ matrix.python }}"
+        assert python["with"]["architecture"] == "${{ matrix.architecture }}"
+        assert uv["with"]["cache-suffix"] == "runtime-${{ matrix.python }}t-${{ matrix.architecture }}"
+    else:
+        assert uv["with"]["cache-suffix"] == "build-${{ steps.python.outputs.python-version }}-${{ runner.arch }}"
 
 
 @pytest.mark.parametrize("branch", ["dev", "preprod", "release_candidate", "prod"])

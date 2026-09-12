@@ -41,6 +41,9 @@ pip install melder
 
 **Zero dependencies.** Nothing else comes with it. Requires Python 3.14+.
 
+Working from a clone? Use the repository's `uv.lock` and
+[locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).
+
 ---
 
 ## What Melder Is

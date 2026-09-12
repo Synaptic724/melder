@@ -82,10 +82,12 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
 | named_conduit_scope_design | review | handoff | codex | updater_0 | none | Review the twelve-phase map and remaining contract choices. | Source-backed implementation plan and difficulty assessment. | Owner selects contracts and authorizes implementation separately. | tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md | 2026-09-07T17:22:45Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
 | ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes partial-rerun coverage correction. | Complete same-run coverage without repeated tests. | Owner accepts corrected reporting in a fresh run. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T18:58:09Z | REQUIRED |
+| stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -109,6 +111,8 @@ Message alert rules
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
+- reproducible_uv_environment: SWITCH_TRIGGER is owner acceptance or new hosted matrix failure evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-08_reproducible_uv_environment_task.md.
 - named_conduit_scope_design: SWITCH_TRIGGER is the completed implementation map and owner contract decisions.
   RESUME_HIERARCHY: tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md -> tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
@@ -117,4 +121,6 @@ Message alert rules
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_embed_melder_banner_task.md.
 - ci_validation_stage_design: SWITCH_TRIGGER is owner acceptance or new hosted failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_ci_validation_stage_design_task.md.
+- stateful_application_recovery: SWITCH_TRIGGER is owner selection of a concrete stateful recovery scenario.
+  RESUME_HIERARCHY: tickets/epics/2026-09-07_stateful_application_recovery_epic.md -> linked source investigation and related scope/identity work.
 <!-- END USER-DEFINED: notes -->
