@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from annotationlib import Format
 import inspect
 from threading import RLock
 from typing import (
@@ -971,6 +972,8 @@ class Meld(Cleanable, ABC):
             - Returns an empty list when the signature cannot be inspected.
             - Skips self/cls and var-arg parameters.
             - Only parameters with SpellContract defaults are returned.
+            - Preserves unresolved Python 3.14 annotation names as ForwardRefs;
+              checking defaults must not evaluate TYPE_CHECKING-only imports.
 
         Args:
             spell: Spell whose callable signature is inspected.
@@ -984,7 +987,7 @@ class Meld(Cleanable, ABC):
             return []
 
         try:
-            signature = inspect.signature(call_target)
+            signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return []
 

@@ -20,6 +20,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
     ParameterDIShape,
 )
 from melder.utilities.helpers.general_helpers import EnumHelpers
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
@@ -74,8 +75,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
           - cheap graph-side metrics
         - Does not compute execution order, instance/sharedness, or contract
           payload analysis artifacts. Later strategies own those outputs.
-        - Existing-creation spells no-op because they do not participate in
-          occurrence expansion.
+        - Existing-creation roots no-op. Existing providers remain leaf
+          occurrences in consumer graphs, with no constructor-contract scan.
 
     Threading:
         - Runs inside compiler-thread orchestration only.
@@ -101,7 +102,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted
         blueprint + live topology into a path-aware occurrence graph, publishing
         _occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact.
-        Existing-creation spells no-op.
+        Existing-creation roots no-op; existing dependencies remain leaf occurrences.
     """
 
 
@@ -987,27 +988,16 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's callable surface.
+
+        Existing creations are already supplied values and have no constructor
+        contracts to discover. Returning no contracts leaves the consumer's
+        incoming dependency edge intact; class/factory discovery is unchanged.
         """
         contracts: List[Tuple[str, SpellContract]] = []
-        requirements = spell._compiler_artifact._requirements
-
         if spell.is_existing_creation:
-            signature = inspect.signature(spell.spell)
-            for param_name, parameter in signature.parameters.items():
-                if param_name in ("self", "cls"):
-                    continue
-                if parameter.kind in (
-                        inspect.Parameter.VAR_POSITIONAL,
-                        inspect.Parameter.VAR_KEYWORD,
-                ):
-                    continue
-                if parameter.default is inspect.Parameter.empty:
-                    continue
-                default_value = parameter.default
-                if isinstance(default_value, SpellContract):
-                    contracts.append((param_name, default_value))
             return contracts
 
+        requirements = spell._compiler_artifact._requirements
         if requirements is not None:
             for param in requirements.parameters:
                 if param.di_shape is ParameterDIShape.SPELL_CONTRACT:

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 3f649d79d0b6a7b19e09d6c2317de1f36011a11fda588cf6ffe27779cf241643
+SOURCE FINGERPRINT: c94eee458355b648b309521a2af751e17d91e091a7a0cae5d28fa03bce660a24
 FILE COUNT: 585
 
 ================================================================================
@@ -60685,10 +60685,11 @@ END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebui
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/meld.py
-CONTENT SHA256: 33f1f95e5fbc0b5c39a92438178eee1ed87167f99f2ef6ae9d4b2d58e90d889f
+CONTENT SHA256: e80aefb3ab002dd30b714fd6f0f3e3a77034ac2e7abc1664f2e167dea07c61bf
 SOURCE ENCODING: utf-8
 ================================================================================
 from abc import ABC, abstractmethod
+from annotationlib import Format
 import inspect
 from threading import RLock
 from typing import (
@@ -61661,6 +61662,8 @@ class Meld(Cleanable, ABC):
             - Returns an empty list when the signature cannot be inspected.
             - Skips self/cls and var-arg parameters.
             - Only parameters with SpellContract defaults are returned.
+            - Preserves unresolved Python 3.14 annotation names as ForwardRefs;
+              checking defaults must not evaluate TYPE_CHECKING-only imports.
 
         Args:
             spell: Spell whose callable signature is inspected.
@@ -61674,7 +61677,7 @@ class Meld(Cleanable, ABC):
             return []
 
         try:
-            signature = inspect.signature(call_target)
+            signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return []
 
@@ -71870,7 +71873,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
-CONTENT SHA256: 543cd01bf20b4b8444ee37d73df52e9ecd7d2087b60e64ca3e5477dbe2152e85
+CONTENT SHA256: 7aa34e8a3d3369142f4730c590568bc38b7fe60d4218c5b0c113f8d3960b675e
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -72095,22 +72098,13 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's callable surface.
+
+        Existing provider occurrences have no constructor contracts or nested
+        contract override payloads. Preserve their incoming consumer edges and
+        leave ordinary class/factory contract discovery unchanged.
         """
         contracts: List[Tuple[str, SpellContract]] = []
         if spell.is_existing_creation:
-            signature = inspect.signature(spell.spell)
-            for param_name, parameter in signature.parameters.items():
-                if param_name in ("self", "cls"):
-                    continue
-                if parameter.kind in (
-                        inspect.Parameter.VAR_POSITIONAL,
-                        inspect.Parameter.VAR_KEYWORD,
-                ):
-                    continue
-                if parameter.default is inspect.Parameter.empty:
-                    continue
-                if isinstance(parameter.default, SpellContract):
-                    contracts.append((param_name, parameter.default))
             return contracts
 
         if spell._compiler_artifact._requirements is not None:
@@ -112444,7 +112438,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyz
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
-CONTENT SHA256: 7ed300d7047e16f9215b3b3570209ce4ef60c90dfe13a3b26effb4e616335937
+CONTENT SHA256: 2c85ff6d28416bc076ea260bd15ee0fd4eb5910e76a6a2869088d73b724132c8
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -112469,6 +112463,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
     ParameterDIShape,
 )
 from melder.utilities.helpers.general_helpers import EnumHelpers
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
@@ -112523,8 +112518,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
           - cheap graph-side metrics
         - Does not compute execution order, instance/sharedness, or contract
           payload analysis artifacts. Later strategies own those outputs.
-        - Existing-creation spells no-op because they do not participate in
-          occurrence expansion.
+        - Existing-creation roots no-op. Existing providers remain leaf
+          occurrences in consumer graphs, with no constructor-contract scan.
 
     Threading:
         - Runs inside compiler-thread orchestration only.
@@ -112550,7 +112545,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted
         blueprint + live topology into a path-aware occurrence graph, publishing
         _occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact.
-        Existing-creation spells no-op.
+        Existing-creation roots no-op; existing dependencies remain leaf occurrences.
     """
 
 
@@ -113436,27 +113431,16 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's callable surface.
+
+        Existing creations are already supplied values and have no constructor
+        contracts to discover. Returning no contracts leaves the consumer's
+        incoming dependency edge intact; class/factory discovery is unchanged.
         """
         contracts: List[Tuple[str, SpellContract]] = []
-        requirements = spell._compiler_artifact._requirements
-
         if spell.is_existing_creation:
-            signature = inspect.signature(spell.spell)
-            for param_name, parameter in signature.parameters.items():
-                if param_name in ("self", "cls"):
-                    continue
-                if parameter.kind in (
-                        inspect.Parameter.VAR_POSITIONAL,
-                        inspect.Parameter.VAR_KEYWORD,
-                ):
-                    continue
-                if parameter.default is inspect.Parameter.empty:
-                    continue
-                default_value = parameter.default
-                if isinstance(default_value, SpellContract):
-                    contracts.append((param_name, default_value))
             return contracts
 
+        requirements = spell._compiler_artifact._requirements
         if requirements is not None:
             for param in requirements.parameters:
                 if param.di_shape is ParameterDIShape.SPELL_CONTRACT:
@@ -118659,10 +118643,11 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examin
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
-CONTENT SHA256: 6d4e87ebf0a11f1dd4b06109c1a74c9e85899e5b50386d19429d472977be9633
+CONTENT SHA256: 164114ee5db49d7abdc4f2c3f95dc83b20c02cc4ccaad03b757dcdba2af414bc
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
+from annotationlib import Format
 from typing import TYPE_CHECKING, Any, List, ClassVar, Optional
 
 
@@ -118731,6 +118716,10 @@ class BindingProfileStrategy:
     def _build_class_profile(self, cls: type) -> ClassBindingProfile:
         """
         Build the shallow binding-time profile for one class candidate.
+
+        Constructor signatures preserve unresolved annotation names as Python
+        3.14 ForwardRefs. TYPE_CHECKING-only imports must not erase the cached
+        signature; known annotation objects and default values remain intact.
         """
         module = inspect.getmodule(cls)
 
@@ -118757,7 +118746,7 @@ class BindingProfileStrategy:
 
         init_signature_object: Optional[Any] = None
         try:
-            init_signature_object = inspect.signature(cls)
+            init_signature_object = inspect.signature(cls, annotation_format=Format.FORWARDREF)
             init_signature: Optional[str] = str(init_signature_object)
         except Exception:
             init_signature_object = None
@@ -118798,6 +118787,9 @@ class BindingProfileStrategy:
     def _build_callable_profile(self, fn: Any) -> CallableBindingProfile:
         """
         Build the shallow binding-time profile for one callable candidate.
+
+        Partial annotation evaluation retains TYPE_CHECKING-only names in the
+        signature without invoking the callable or dropping its parameters.
         """
         effective = InspectorUtility.unwrap_callable(fn)
         module = inspect.getmodule(effective)
@@ -118809,7 +118801,7 @@ class BindingProfileStrategy:
         extension_module = InspectorUtility.is_extension_module(module)
 
         try:
-            signature = inspect.signature(effective)
+            signature = inspect.signature(effective, annotation_format=Format.FORWARDREF)
             signature_str = str(signature)
             parameter_summaries: List[CallableParameterBindingSummary] = []
             for parameter in signature.parameters.values():
@@ -119691,7 +119683,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py
-CONTENT SHA256: e4f9e6dc2f468981f82f10085f22c201582e9dd11b6eb2bdb1bb110369ebfeb4
+CONTENT SHA256: d000aa2e635f574185bc738fb72b63218967676f2f3b4eeb8e57e937b4389742
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
@@ -119700,6 +119692,7 @@ import inspect
 import threading
 import typing
 import types
+from annotationlib import Format, get_annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin, ClassVar
 
 
@@ -120134,10 +120127,13 @@ class SpellRequirementsFinder(Cleanable):
         Resolution strategy:
             * For class targets, inspect "__init__" annotations because that
               is the callable surface DI will satisfy.
+            * Acquire raw annotations with Python 3.14 FORWARDREF format so
+              unavailable TYPE_CHECKING-only imports remain reference values.
             * Prefer "inspect.get_annotations(..., eval_str=True)" so string
               annotations and forward refs resolve through the target's module
               and local namespace.
-            * Fall back to non-evaluated annotations when full evaluation fails.
+            * Fall back to partially evaluated annotations when full evaluation
+              fails, preserving unresolved names for existing DI normalization.
             * Run a final normalization pass so nested string or generic
               fragments can still be simplified when partial resolution
               succeeded.
@@ -120167,9 +120163,11 @@ class SpellRequirementsFinder(Cleanable):
         else:
             annotation_target = call_target
 
-        raw_annotations: dict[str, Any] | None
+        raw_annotations: Optional[dict[str, Any]]
         try:
-            raw_annotations = dict(annotation_target.__annotations__)
+            # Direct __annotations__ access evaluates deferred annotations and
+            # raises before the normalizer can handle a TYPE_CHECKING-only name.
+            raw_annotations = get_annotations(annotation_target, format=Format.FORWARDREF)
         except AttributeError:
             raw_annotations = None
 
@@ -120226,6 +120224,7 @@ class SpellRequirementsFinder(Cleanable):
                     eval_str=False,
                     globals=globalns,
                     locals=localns,
+                    format=Format.FORWARDREF,
                 )
             except Exception:
                 annotations = {}
@@ -120690,6 +120689,11 @@ class SpellRequirementsFinder(Cleanable):
         original callable shape without trying to satisfy those parameters from
         DI.
 
+        Fresh signatures use Python 3.14 FORWARDREF format, matching the
+        bind-time signature cache. An unavailable annotation name remains a
+        dependency candidate; it never becomes an empty parameter list merely
+        because its import was guarded by TYPE_CHECKING.
+
         Args:
             call_target:
                 The callable or class surface selected for signature inspection.
@@ -120709,7 +120713,7 @@ class SpellRequirementsFinder(Cleanable):
         signature = self._borrow_bind_time_signature(call_target)
         if signature is None:
             try:
-                signature = inspect.signature(call_target)
+                signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
             except (TypeError, ValueError):
                 # Some exotic / builtin callables may not expose a usable signature.
                 # In that case, we treat them as having no DI-visible parameters.

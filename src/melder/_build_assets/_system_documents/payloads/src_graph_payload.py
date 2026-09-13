@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27701
-CONTENT_SHA256 = 'e3f06fafe7e51bed524a3d314e501d03de5e83dfd2e1721f06e65e2264300064'
+LINE_COUNT = 27706
+CONTENT_SHA256 = '9b2e57071e56665abfe4961a9df07dfe877a19c794e584582425fff6ceb82cf8'
 
 TEXT = """# src_graph
 
@@ -5438,7 +5438,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `3aa9021b9d23b6f1385e3aaa83eb433f869252db710c2c98c466bc88c8aef8a6`
+- source_sha256: `4efca280d0c84e3c7c95e4039ed3f3cf477cac23611f7514818edeb08f217f2e`
 - nodes: 2
 
 ### Nodes
@@ -5457,7 +5457,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Meld` (abstract)
 
 - id: `melder.aether.conduit.meld.meld.Meld`
-- defined at: `src/melder/aether/conduit/meld/meld.py:41`
+- defined at: `src/melder/aether/conduit/meld/meld.py:42`
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Resolution runtime orchestrator.
@@ -5466,7 +5466,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - enforces validity and dirty-root gates
   - chooses reuse versus construction
   - dispatches execution into CreationContext
-- owns_state: `_spellbook`, `_conduit`, `_creation_contexts_by_spell_id`
+  - reads contract-default signatures without forcing evaluation of unavailable annotation names
+- owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `meld`, `meld_existing_spell`, `set_meld_hooks`
 
@@ -6798,7 +6799,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
 
-- source_sha256: `543cd01bf20b4b8444ee37d73df52e9ecd7d2087b60e64ca3e5477dbe2152e85`
+- source_sha256: `b126f098b2a3fb44d43d91c915eb5b3148662bdbc2b8c07e3f6df2d1693a26f3`
 - nodes: 2
 
 ### Nodes
@@ -6819,6 +6820,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - compiles SpellContract override payload maps from analyzer-owned occurrence graph truth
   - publishes SpellOccurrenceContractAnalysis onto SpellCodegenModel
   - tracks contract payload counts and completeness for later planning
+  - skips constructor-contract discovery for already-supplied existing provider occurrences
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -12362,7 +12364,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
 
-- source_sha256: `5b6de6157a1f8bbd963da56491c0ed7570217c0032c62b7ce456948ff40b6cdb`
+- source_sha256: `e09dad4d1bf53a44712abb59993e6e3cd2cdb05e0572759c9e15aeee587a24a6`
 - nodes: 2
 
 ### Nodes
@@ -12376,13 +12378,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellOccurrenceGraphAnalyzerStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:48`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:49`
 - extends: `SpellAnalyzerStrategy`
 - role: Occurrence-graph analyzer strategy for phase-8 analysis.
 - responsibilities:
   - expands rooted blueprint truth plus topology and contract context into an occurrence graph
   - publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact
   - owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion
+  - retains existing providers as consumer dependency leaves without inspecting constructor contracts
 - phases: `runtime`
 - public methods: `analyze`, `strategy_id`
 
@@ -13069,7 +13072,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
 
-- source_sha256: `6d4e87ebf0a11f1dd4b06109c1a74c9e85899e5b50386d19429d472977be9633`
+- source_sha256: `b16044350c96c3b4bb5eaffebc0319b2c56223eb039a82d8ae940167f5ba9ec5`
 - nodes: 2
 
 ### Nodes
@@ -13083,10 +13086,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `BindingProfileStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:16`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:17`
 - role: Strategy building binding profiles from raw candidates.
 - responsibilities:
   - builds the correct binding-profile variant from a raw candidate surface
+  - captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs
 - phases: `validation`, `runtime`
 - public methods: `build_profile`
 
@@ -13276,7 +13280,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py
 
-- source_sha256: `c0052d74f8fe53720630bc677e9076fe93e76457e9854452b50b242fff50fb9e`
+- source_sha256: `e42b02c55242666696e5d0d02047ea612b700276a30ada399263a34b9c5b3557`
 - nodes: 2
 
 ### Nodes
@@ -13290,11 +13294,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellRequirementsFinder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:30`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:31`
 - extends: `Cleanable`
 - role: Builder for the Phase 1 spell requirements artifact.
 - responsibilities:
   - inspects one spell call target and classifies its parameters into DI requirement objects
+  - acquires deferred Python 3.14 annotations as partial values before existing namespace normalization
   - preserves ordinary explicit Python defaults as PLAIN while retaining explicit descriptor and no-default DI precedence
   - builds and caches one SpellRequirements artifact for a spell version
 - owns_state: `_spell`, `_requirements`

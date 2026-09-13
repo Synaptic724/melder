@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
-  "source_sha256": "c0052d74f8fe53720630bc677e9076fe93e76457e9854452b50b242fff50fb9e",
+  "source_sha256": "e42b02c55242666696e5d0d02047ea612b700276a30ada399263a34b9c5b3557",
   "generator": "tools/system_documents/python/extract_graph.py",
   "nodes": {
     "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder": {
@@ -19,7 +19,7 @@
       "label": "SpellRequirementsFinder",
       "kind": "class",
       "file": "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
-      "lineno": 30,
+      "lineno": 31,
       "bases": [
         "Cleanable"
       ],
@@ -34,10 +34,11 @@
         "has_bases": true,
         "trivial": false
       },
-      "span_sha256": "45597b6aaf6126f5529d26e031635e8aa2b05446f843fdf71e9d085dcd33c6bb",
+      "span_sha256": "c4ada2a89ad409c92e79b77f9ed77254df5bab49a04bb959a5186faf8c4acf83",
       "role": "Builder for the Phase 1 spell requirements artifact.",
       "responsibilities": [
         "inspects one spell call target and classifies its parameters into DI requirement objects",
+        "acquires deferred Python 3.14 annotations as partial values before existing namespace normalization",
         "preserves ordinary explicit Python defaults as PLAIN while retaining explicit descriptor and no-default DI precedence",
         "builds and caches one SpellRequirements artifact for a spell version"
       ],
@@ -50,7 +51,7 @@
         "runtime",
         "cleanup"
       ],
-      "semantics_authored_against": "45597b6aaf6126f5529d26e031635e8aa2b05446f843fdf71e9d085dcd33c6bb"
+      "semantics_authored_against": "c4ada2a89ad409c92e79b77f9ed77254df5bab49a04bb959a5186faf8c4acf83"
     }
   },
   "edges_out": [
@@ -95,6 +96,8 @@
   ],
   "published_aliases": [],
   "imports": {
+    "Format": "annotationlib.Format",
+    "get_annotations": "annotationlib.get_annotations",
     "TYPE_CHECKING": "typing.TYPE_CHECKING",
     "Any": "typing.Any",
     "Dict": "typing.Dict",

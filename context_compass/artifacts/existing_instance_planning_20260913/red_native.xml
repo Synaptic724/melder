@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="1.041" timestamp="2026-09-13T12:20:51.330045-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceGraphAnalyzerStrategy-ExistingValue]" time="0.006"><failure message="TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x00000427AE509490&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:105: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert tuple(planner_type._iter_spell_contract_defaults(spell)) == ()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_analyzer\strategies\spell_occurrence_graph_analyzer_strategy.py:995: in _iter_spell_contract_defaults
+    signature = inspect.signature(spell.spell)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2441: in _signature_from_callable
+    raise TypeError('{!r} is not a callable object'.format(obj))
+E   TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x00000427AE509490&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceGraphAnalyzerStrategy-CallableExistingValue]" time="0.005"><failure message="assert False&#10; +  where False = Spell(name=CallableExistingValue, binding=__default__, frame=CallableExistingValue, SHA256=c357ca1774fcc1b01799cf4a22f94c1dce7d18195139016290b5e0315b8042db).is_existing_creation">tests\integration\melder\spellbook\test_existing_instance_planning.py:104: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert spell.is_existing_creation
+E   assert False
+E    +  where False = Spell(name=CallableExistingValue, binding=__default__, frame=CallableExistingValue, SHA256=c357ca1774fcc1b01799cf4a22f94c1dce7d18195139016290b5e0315b8042db).is_existing_creation</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceContractProcessorStrategy-ExistingValue]" time="0.004"><failure message="TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x00000427AF904B10&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:105: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert tuple(planner_type._iter_spell_contract_defaults(spell)) == ()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\artifact_processor\strategies\spell_occurrence_contract_processor_strategy.py:226: in _iter_spell_contract_defaults
+    signature = inspect.signature(spell.spell)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2441: in _signature_from_callable
+    raise TypeError('{!r} is not a callable object'.format(obj))
+E   TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x00000427AF904B10&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceContractProcessorStrategy-CallableExistingValue]" time="0.005"><failure message="assert False&#10; +  where False = Spell(name=CallableExistingValue, binding=__default__, frame=CallableExistingValue, SHA256=56c843181acb64b83d21bf54bdab4cc5c2f3b9863ddd494eac56c6d831e2823d).is_existing_creation">tests\integration\melder\spellbook\test_existing_instance_planning.py:104: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert spell.is_existing_creation
+E   assert False
+E    +  where False = Spell(name=CallableExistingValue, binding=__default__, frame=CallableExistingValue, SHA256=56c843181acb64b83d21bf54bdab4cc5c2f3b9863ddd494eac56c6d831e2823d).is_existing_creation</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[ExistingValue]" time="0.008" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[CallableExistingValue]" time="0.049"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: CallableExistingValue (id=7a3a2d12699204a4891df5467214af7b18ca9a68f7aac6ef377da980a935cd1d, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'CallableExistingValue' (id=7a3a2d12699204a4891df5467214af7b18ca9a68f7aac6ef377da980a935cd1d, frame=None):&#10;    - [warning] SPELL_CONTRACT_MISSING_PROVIDER (source=ContractProviderPresenceStrategy): Spell 'CallableExistingValue' parameter 'ignored' has no provider for contract key ('unrelated-call-input', '__default__').&#10;      details: {'parameter_name': 'ignored', 'contract_key': ('unrelated-call-input', '__default__')}&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\integration\melder\spellbook\test_existing_instance_planning.py:117: in test_existing_value_root_returns_original_without_factory_execution
+    assert root.meld(spell_id=spell_id) is supplied
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:636: in _ensure_lineage_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: CallableExistingValue (id=7a3a2d12699204a4891df5467214af7b18ca9a68f7aac6ef377da980a935cd1d, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'CallableExistingValue' (id=7a3a2d12699204a4891df5467214af7b18ca9a68f7aac6ef377da980a935cd1d, frame=None):
+E       - [warning] SPELL_CONTRACT_MISSING_PROVIDER (source=ContractProviderPresenceStrategy): Spell 'CallableExistingValue' parameter 'ignored' has no provider for contract key ('unrelated-call-input', '__default__').
+E         details: {'parameter_name': 'ignored', 'contract_key': ('unrelated-call-input', '__default__')}
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_dependency_retains_identity_without_contract_inspection[ExistingValue-ValueConsumer]" time="0.006"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'ValueConsumer' (annotation=&lt;class 'test_existing_instance_planning.ExistingValue'&gt;).">tests\integration\melder\spellbook\test_existing_instance_planning.py:132: in test_existing_value_dependency_retains_identity_without_contract_inspection
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'ValueConsumer' (annotation=&lt;class 'test_existing_instance_planning.ExistingValue'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_dependency_retains_identity_without_contract_inspection[CallableExistingValue-CallableValueConsumer]" time="0.008"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'CallableValueConsumer' (annotation=&lt;class 'test_existing_instance_planning.CallableExistingValue'&gt;).">tests\integration\melder\spellbook\test_existing_instance_planning.py:132: in test_existing_value_dependency_retains_identity_without_contract_inspection
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'CallableValueConsumer' (annotation=&lt;class 'test_existing_instance_planning.CallableExistingValue'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_transitive_dependency_retains_identity" time="0.006"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'ValueConsumer' (annotation=&lt;class 'test_existing_instance_planning.ExistingValue'&gt;).">tests\integration\melder\spellbook\test_existing_instance_planning.py:142: in test_existing_value_transitive_dependency_retains_identity
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'ValueConsumer' (annotation=&lt;class 'test_existing_instance_planning.ExistingValue'&gt;).</failure></testcase></testsuite></testsuites>

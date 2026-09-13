@@ -4,6 +4,7 @@ import inspect
 import threading
 import typing
 import types
+from annotationlib import Format, get_annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin, ClassVar
 
 
@@ -438,10 +439,13 @@ class SpellRequirementsFinder(Cleanable):
         Resolution strategy:
             * For class targets, inspect "__init__" annotations because that
               is the callable surface DI will satisfy.
+            * Acquire raw annotations with Python 3.14 FORWARDREF format so
+              unavailable TYPE_CHECKING-only imports remain reference values.
             * Prefer "inspect.get_annotations(..., eval_str=True)" so string
               annotations and forward refs resolve through the target's module
               and local namespace.
-            * Fall back to non-evaluated annotations when full evaluation fails.
+            * Fall back to partially evaluated annotations when full evaluation
+              fails, preserving unresolved names for existing DI normalization.
             * Run a final normalization pass so nested string or generic
               fragments can still be simplified when partial resolution
               succeeded.
@@ -471,9 +475,11 @@ class SpellRequirementsFinder(Cleanable):
         else:
             annotation_target = call_target
 
-        raw_annotations: dict[str, Any] | None
+        raw_annotations: Optional[dict[str, Any]]
         try:
-            raw_annotations = dict(annotation_target.__annotations__)
+            # Direct __annotations__ access evaluates deferred annotations and
+            # raises before the normalizer can handle a TYPE_CHECKING-only name.
+            raw_annotations = get_annotations(annotation_target, format=Format.FORWARDREF)
         except AttributeError:
             raw_annotations = None
 
@@ -530,6 +536,7 @@ class SpellRequirementsFinder(Cleanable):
                     eval_str=False,
                     globals=globalns,
                     locals=localns,
+                    format=Format.FORWARDREF,
                 )
             except Exception:
                 annotations = {}
@@ -994,6 +1001,11 @@ class SpellRequirementsFinder(Cleanable):
         original callable shape without trying to satisfy those parameters from
         DI.
 
+        Fresh signatures use Python 3.14 FORWARDREF format, matching the
+        bind-time signature cache. An unavailable annotation name remains a
+        dependency candidate; it never becomes an empty parameter list merely
+        because its import was guarded by TYPE_CHECKING.
+
         Args:
             call_target:
                 The callable or class surface selected for signature inspection.
@@ -1013,7 +1025,7 @@ class SpellRequirementsFinder(Cleanable):
         signature = self._borrow_bind_time_signature(call_target)
         if signature is None:
             try:
-                signature = inspect.signature(call_target)
+                signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
             except (TypeError, ValueError):
                 # Some exotic / builtin callables may not expose a usable signature.
                 # In that case, we treat them as having no DI-visible parameters.

@@ -20,7 +20,7 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.2.40"
-SOURCE_SHA256 = "2e4aea877c2c0fbf28b07e522fd4645d4539c180bb9fbc26184b8f6a7d9f9c90"
+SOURCE_SHA256 = "42952c64297a6c8b809d4839e069ded9686297feddecff2261cc23521efff44e"
 MARKED_COUNT = 452
 EXEMPT_COUNT = 163
 PENDING_COUNT = 14
@@ -195,7 +195,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer', 'SpellAnalyzer'): ('internal', 'access: internal. Phase-8 analyzer orchestrator: runs registered analyzer strategies (resolved from its owned SpellAnalyzerStrategyBuilder) over a Spell + SpellCompilerArtifact via analyze_occurrence. Enriches the artifact; does not choose the codegen plan.'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy', 'SpellAnalyzerStrategy'): ('internal', 'access: internal. ABC contract for analyzer strategies: strategy_id + analyze(spell, artifact, analysis_pass_cache). Reads Spell + SpellCompilerArtifact and writes its own analysis-artifact family back; never chooses the codegen plan.'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder', 'SpellAnalyzerStrategyBuilder'): ('internal', 'access: internal. Registry of analyzer strategies keyed by strategy_id: load_defaults / get_strategy / get_strategies / registered_strategy_names. Owned by SpellAnalyzer; holds no spells or artifacts.'),
-    ('melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy', 'SpellOccurrenceGraphAnalyzerStrategy'): ('internal', 'access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted blueprint + live topology into a path-aware occurrence graph, publishing _occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact. Existing-creation spells no-op.'),
+    ('melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy', 'SpellOccurrenceGraphAnalyzerStrategy'): ('internal', 'access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted blueprint + live topology into a path-aware occurrence graph, publishing _occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact. Existing-creation roots no-op; existing dependencies remain leaf occurrences.'),
     ('melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape', 'ParameterDIShape'): ('internal', 'access: internal. Phase-1 enum classifying how one parameter wants to be satisfied: IGNORE / PLAIN / SINGLE_BY_ANNOTATION / COLLECTION_BY_ANNOTATION / SPELLMAP_DEFAULT / SPELL_CONTRACT. Describes intent only - it performs no lookups.'),
     ('melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements', 'SpellParameterRequirement'): ('internal', 'access: internal. Phase-1 descriptor for ONE constructor parameter: name, position, kind, annotation, default, plus its ParameterDIShape and any collection-element or SpellMap detail. Read-only capture - it resolves nothing.'),
     ('melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements', 'SpellRequirements'): ('internal', 'access: internal. Phase-1 per-spell requirements artifact: identity (spell_id, type, existence, spellframe, binding_name) plus the ordered SpellParameterRequirement list. iter_di_parameters / iter_plain_parameters / iter_required_holes classify without resolving.'),

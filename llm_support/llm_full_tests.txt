@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 940fe766238b9644183135285d7888891ecc26d8ee8626ffda2725c542d3c449
-FILE COUNT: 814
+SOURCE FINGERPRINT: 83aa81f63e4ed9f82aa94a35d2aab35adb08a84e80343855672583a1c625a1fe
+FILE COUNT: 822
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -54851,6 +54851,81 @@ def test_locking_or_counter_primitive_restores_correct_totals() -> None:
 END FILE: tests/experimentation/test_atomic_counter_experiment.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/experimentation/test_borrower_provider_validation_experiment.py
+CONTENT SHA256: e061b9c9aab69665393a88405292cff2e1e2f86b1989236d9ecc07cfae58a504
+SOURCE ENCODING: utf-8
+================================================================================
+"""Observe provider data, compiled plans and injection across borrower operations.
+
+The integration regressions assert corrected behavior. This experiment records
+the present behavior without weakening the original independent-prefix proofs.
+"""
+
+import json
+
+import pytest
+
+from tests.integration.melder.spellbook.test_provider_artifact_ownership import (
+    ProviderRuntime,
+    provider_runtime as provider_runtime,
+)
+
+
+@pytest.mark.parametrize("mode", ("no_validation", "resolution_only", "structural_refresh", "meld_only"))
+@pytest.mark.parametrize("borrower_count", (1, 2))
+def test_characterize_provider_validation_boundary(
+        provider_runtime: ProviderRuntime,
+        mode: str,
+        borrower_count: int,
+) -> None:
+    """Observe repeated validation and direct meld without intermediate provider lookups.
+
+    Reading artifact slots is passive. The final provider meld is performed
+    once, after borrower cleanup, so it cannot repair earlier observations.
+    Successful consumer injection must retain the original provider identity.
+    """
+    runtime = provider_runtime
+    assert runtime.provider_spell._compiler_artifact._spell_codegen_creation is not None
+    borrowers = [
+        (f"consumer-{index}", runtime.create_borrower(f"consumer-{index}"))
+        for index in range(borrower_count)
+    ]
+    injected = 0
+    if mode in ("resolution_only", "structural_refresh"):
+        for _ in range(2):
+            for _name, borrower in borrowers:
+                borrower.validate_resolution(refresh_structural=mode == "structural_refresh")
+    if mode != "no_validation":
+        for name, borrower in borrowers:
+            consumer = borrower.meld(spellframe="consumers", binding_name=name)
+            assert consumer.provider is runtime.original
+            injected += 1
+    report: dict[str, object] = {
+        "mode": mode,
+        "borrowers": borrower_count,
+        "consumer_injections_same_instance": injected,
+        "provider_plan_present": runtime.provider_spell._compiler_artifact._spell_codegen_creation is not None,
+        "provider_resolution_complete": runtime.provider_spell.resolution_complete,
+    }
+    for _name, borrower in reversed(borrowers):
+        borrower.cleanup()
+    assert runtime.original.entries == ["provider-owned"]
+    report["provider_data_retained"] = True
+    try:
+        runtime.assert_provider_usable()
+    except RuntimeError as error:
+        if "Cannot build CreationContext before spell_codegen_creation exists" not in str(error):
+            raise
+        report["provider_meld"] = "missing_codegen"
+    else:
+        report["provider_meld"] = "same_instance"
+    if mode == "no_validation":
+        assert report["provider_meld"] == "same_instance"
+    print(json.dumps(report, sort_keys=True))
+================================================================================
+END FILE: tests/experimentation/test_borrower_provider_validation_experiment.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/experimentation/test_cache_warm_meld_parity_probe.py
 CONTENT SHA256: add78fbec7c8b213a6add600370f88464a50fea818064a36d4c95db1b021f389
 SOURCE ENCODING: utf-8
@@ -57838,6 +57913,641 @@ def test_empty_clear_guard_experiment() -> None:
     assert all(len(container) == 0 for container in direct_lists)
 ================================================================================
 END FILE: tests/experimentation/test_empty_clear_guard_experiment.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/experimentation/test_existing_instance_gap_experiment.py
+CONTENT SHA256: 857798b10f9788f862b6b39d5b7216c30289f08c38fe4fe090015a38b3b04a4b
+SOURCE ENCODING: utf-8
+================================================================================
+"""Observe existing-object gaps with stock planning and an isolated leaf hypothesis.
+
+The leaf_probe fixture changes only two contract-default scanners in memory.
+It never disables validation, changes production files or constitutes repair
+acceptance. GAP JSON rows distinguish that diagnostic from the stock runtime.
+"""
+
+import json
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Optional, Protocol
+
+import pytest
+
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy import (
+    SpellOccurrenceContractProcessorStrategy,
+)
+from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy import (
+    SpellOccurrenceGraphAnalyzerStrategy,
+)
+from melder.aether.spellbook.spellbook import Spellbook
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    CollectionValueConsumer,
+    MappedValueConsumer,
+    NestedValueConsumer,
+    ValueConsumer,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    ExistingValue as SuppliedValue,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    instance_book as instance_book,
+)
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from tests.integration.melder.spellbook.test_existing_instance_planning import (
+        ExistingValue,
+    )
+
+
+class AlternateValue(SuppliedValue):
+    """A second existing provider with a distinct spell name and shared frame."""
+
+
+class DisposableValue:
+    """Resource-free object exposing observable use and disposal operations."""
+
+    def __init__(self, marker: str = "created") -> None:
+        """Own a marker and disposal counter without allocating external resources."""
+        self.marker = marker
+        self.disposals = 0
+
+    def dispose(self) -> None:
+        """Count actual disposal invocations without relying on metadata inspection."""
+        self.disposals += 1
+
+    def read(self) -> str:
+        """Return the marker so protocol satisfaction has an observable operation."""
+        return self.marker
+
+
+class ReadableValue(Protocol):
+    """A real behavioral frame, including a method an incompatible object lacks."""
+
+    def read(self) -> str:
+        """Return the provider's diagnostic marker."""
+        ...
+
+
+class WrongValue:
+    """Deliberately lacks the advertised concrete type and protocol operation."""
+
+
+class PairConsumer:
+    """Request the same existing provider through two independent parameters."""
+
+    def __init__(self, left: SuppliedValue, right: SuppliedValue) -> None:
+        """Retain both injected references to check aliasing and identity."""
+        self.values = (left, right)
+
+
+class NameTokenConsumer:
+    """Exercise a genuine TYPE_CHECKING-only annotation instead of a runtime type."""
+
+    def __init__(self, value: ExistingValue) -> None:
+        """Retain the provider resolved from the unresolved annotation name."""
+        self.value = value
+
+
+class StringTokenConsumer:
+    """Control for a literal forward name versus Python 3.14 deferred evaluation."""
+
+    def __init__(self, value: "ExistingValue") -> None:
+        """Deliberately keep a string annotation to compare the two supported input forms."""
+        self.value = value
+
+
+class DefaultConsumer:
+    """Keep a selected default independent of an existing registered provider."""
+
+    selected = SuppliedValue("selected-default")
+
+    def __init__(self, value: SuppliedValue = selected) -> None:
+        """Retain the default or explicit override exactly as supplied."""
+        self.value = value
+
+
+class NullableConsumer:
+    """Keep a None default while an existing provider is registered."""
+
+    def __init__(self, value: Optional[SuppliedValue] = None) -> None:
+        """Retain the default without creating an inferred dependency."""
+        self.value = value
+
+
+class ContractConsumer:
+    """Request an existing provider through a real linked contract."""
+
+    def __init__(
+            self,
+            value: SuppliedValue = SpellContract(spellframe=SuppliedValue, binding_name="shared"),
+    ) -> None:
+        """Retain the contract-provided object for identity and post-unlink checks."""
+        self.value = value
+
+
+class ProtocolConsumer:
+    """Use the method advertised by a protocol frame after injection."""
+
+    def __init__(self, value: ReadableValue) -> None:
+        """Retain the advertised provider; calling read tests its usable contract."""
+        self.value = value
+
+
+def factory_consumer(value: SuppliedValue) -> ValueConsumer:
+    """Exercise a function's required existing dependency without wrapping the provider."""
+    return ValueConsumer(value)
+
+
+@pytest.fixture
+def gap_book(instance_book: Spellbook) -> Spellbook:
+    """Reuse the isolated book with its already-frozen production configuration."""
+    return instance_book
+
+
+@pytest.fixture(params=("stock", "leaf_probe"))
+def planning_mode(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
+    """Compare stock behavior against only the two known existing-leaf corrections.
+
+    Class/factory inspection, provider resolution, validation and execution
+    remain unchanged. Pytest restores both static methods after every case.
+    """
+    mode: str = request.param
+    if mode == "leaf_probe":
+        analyze_original = SpellOccurrenceGraphAnalyzerStrategy._iter_spell_contract_defaults
+        process_original = SpellOccurrenceContractProcessorStrategy._iter_spell_contract_defaults
+
+        def analyze(spell: Spell) -> Iterable[tuple[str, SpellContract]]:
+            """Treat the existing provider as a leaf; preserve ordinary analyzer behavior."""
+            return () if spell.is_existing_creation else analyze_original(spell)
+
+        def process(spell: Spell) -> Iterable[tuple[str, SpellContract]]:
+            """Apply the identical leaf hypothesis at the independent processor boundary."""
+            return () if spell.is_existing_creation else process_original(spell)
+
+        monkeypatch.setattr(SpellOccurrenceGraphAnalyzerStrategy, "_iter_spell_contract_defaults", staticmethod(analyze))
+        monkeypatch.setattr(SpellOccurrenceContractProcessorStrategy, "_iter_spell_contract_defaults", staticmethod(process))
+    return mode
+
+
+def observe(report: dict[str, object], action: Callable[[], None]) -> None:
+    """Print outcomes while keeping incorrect identity assertions as hard test failures.
+
+    Runtime refusals are observations, not successful injection. Their stage
+    and full error are retained for analysis; no production exception is hidden
+    from the resulting GAP record. AssertionError is deliberately not caught.
+    """
+    try:
+        action()
+    except (RuntimeError, TypeError, ValueError, KeyError, AttributeError, NameError) as error:
+        report.update(outcome="refused", error_type=type(error).__name__, error=str(error))
+    else:
+        report["outcome"] = "completed"
+    print("GAP " + json.dumps(report, sort_keys=True))
+
+
+@pytest.mark.parametrize("scenario", (
+    "direct", "nested", "collection", "pair", "function", "name_token", "string_token", "map",
+    "override", "missing_provider_override", "default", "default_override", "none_default",
+))
+def test_existing_injection_paths(gap_book: Spellbook, planning_mode: str, scenario: str) -> None:
+    """Compare actual consumer identity across required, explicit, default and override paths."""
+    supplied = SuppliedValue("supplied")
+    alternate = AlternateValue("alternate")
+    replacement = SuppliedValue("replacement")
+    report: dict[str, object] = {"case": scenario, "planning": planning_mode, "stage": "bind"}
+
+    def action() -> None:
+        """Build one consumer graph and assert its exact supplied references when it succeeds."""
+        if scenario != "missing_provider_override":
+            gap_book.bind(
+                spell=supplied, existence="unique",
+                spellframe="named-values" if scenario == "map" else None if scenario in ("name_token", "string_token") else SuppliedValue,
+                binding_name="chosen" if scenario == "map" else None,
+            )
+        consumer: object = ValueConsumer
+        if scenario == "nested":
+            gap_book.bind(spell=ValueConsumer, existence="many")
+            consumer = NestedValueConsumer
+        elif scenario == "collection":
+            gap_book.bind(spell=alternate, existence="unique", spellframe=SuppliedValue, binding_name="alternate")
+            consumer = CollectionValueConsumer
+        elif scenario == "pair":
+            consumer = PairConsumer
+        elif scenario == "function":
+            consumer = factory_consumer
+        elif scenario == "name_token":
+            consumer = NameTokenConsumer
+        elif scenario == "string_token":
+            consumer = StringTokenConsumer
+        elif scenario == "map":
+            consumer = MappedValueConsumer
+        elif scenario in ("default", "default_override"):
+            consumer = DefaultConsumer
+        elif scenario == "none_default":
+            consumer = NullableConsumer
+        target = gap_book.bind(spell=consumer, existence="unique" if scenario == "function" else "many")
+        report["stage"] = "conjure"
+        root = gap_book.conjure(dynamic=True)
+        report["stage"] = "meld"
+        overrides = {"value": replacement} if "override" in scenario else None
+        result = root.meld(spell_id=target, override=overrides)
+        if scenario == "nested":
+            assert result.child.value is supplied
+        elif scenario == "collection":
+            assert len(result.values) == 2
+            assert result.values[0] is supplied and result.values[1] is alternate
+        elif scenario == "pair":
+            assert result.values[0] is supplied and result.values[1] is supplied
+        else:
+            expected = replacement if overrides else DefaultConsumer.selected if scenario == "default" else None if scenario == "none_default" else supplied
+            assert result.value is expected
+        report["identity_preserved"] = True
+
+    observe(report, action)
+
+
+def test_deferred_annotation_with_class_provider(gap_book: Spellbook) -> None:
+    """Determine whether the annotation failure also occurs without an existing-instance provider."""
+    gap_book.bind(spell=SuppliedValue, existence="unique")
+    report: dict[str, object] = {"case": "deferred_class_provider", "planning": "stock", "stage": "bind_consumer"}
+
+    def action() -> None:
+        """Stop at consumer registration, before any class construction could be requested."""
+        gap_book.bind(spell=NameTokenConsumer, existence="many")
+
+    observe(report, action)
+
+
+@pytest.mark.parametrize("scope,existence", (
+    ("root", "many"), ("root", "unique"),
+    ("lesser", "unique_per_conduit"), ("spellspace", "unique_per_spell_space"),
+))
+def test_existing_consumer_scope_reuse(
+        gap_book: Spellbook, planning_mode: str, scope: str, existence: str,
+) -> None:
+    """Prove consumer lifetime and supplied-provider identity independently across real scopes."""
+    supplied = SuppliedValue("shared")
+    report: dict[str, object] = {"case": "consumer_scope_" + scope + "_" + existence, "planning": planning_mode, "stage": "bind"}
+
+    def action() -> None:
+        """Meld twice, release the selected scope and verify owner access afterward."""
+        provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+        consumer_id = gap_book.bind(spell=ValueConsumer, existence=existence)
+        report["stage"] = "conjure"
+        root = gap_book.conjure(dynamic=True)
+        door = root.create_lesser_conduit() if scope == "lesser" else root.create_spellspace() if scope == "spellspace" else root
+        report["stage"] = "meld"
+        try:
+            first = door.meld(spell_id=consumer_id)
+            second = door.meld(spell_id=consumer_id)
+            assert first.value is supplied and second.value is supplied
+            assert (first is second) == (existence != "many")
+            report.update(identity_preserved=True, consumer_reused=first is second)
+        finally:
+            if scope != "root":
+                door.cleanup()
+        assert root.meld(spell_id=provider_id) is supplied
+
+    observe(report, action)
+
+
+@pytest.mark.parametrize("valid", (False, True))
+def test_class_protocol_admission_control(gap_book: Spellbook, valid: bool) -> None:
+    """Compare existing-object frame admission with the real class-profile validation gate."""
+    report: dict[str, object] = {"case": "class_protocol_valid" if valid else "class_protocol_invalid", "planning": "stock", "stage": "bind"}
+
+    def action() -> None:
+        """Register only the class, isolating frame validation from planning and construction."""
+        gap_book.bind(spell=DisposableValue if valid else WrongValue, existence="unique", spellframe=ReadableValue)
+
+    observe(report, action)
+
+
+@pytest.mark.parametrize("lookup", ("id", "instance", "class", "name", "frame", "named"))
+def test_existing_root_lookup_forms(gap_book: Spellbook, lookup: str) -> None:
+    """Characterize actual public lookup forms rather than reusing spell_id for every case."""
+    supplied = SuppliedValue("lookup")
+    report: dict[str, object] = {"case": "lookup_" + lookup, "planning": "stock", "stage": "bind"}
+
+    def action() -> None:
+        """Bind the metadata needed by this lookup and verify stable repeated identity."""
+        target = gap_book.bind(
+            spell=supplied, existence="unique",
+            spellframe=SuppliedValue if lookup == "frame" else None,
+            binding_name="chosen" if lookup == "named" else None,
+        )
+        root = gap_book.conjure(dynamic=True)
+        report["stage"] = "meld"
+        if lookup == "id":
+            value = root.meld(spell_id=target)
+        elif lookup == "instance":
+            value = root.meld(spell=supplied)
+        elif lookup == "class":
+            value = root.meld(spell=SuppliedValue)
+        elif lookup == "name":
+            value = root.meld("ExistingValue")
+        elif lookup == "frame":
+            value = root.meld(spellframe=SuppliedValue)
+        else:
+            value = root.meld(spell=SuppliedValue, binding_name="chosen")
+        assert value is supplied
+        assert root.meld(spell_id=target) is supplied
+        assert root.meld_existing_spell(spell=target) is supplied
+        report["identity_preserved"] = True
+
+    observe(report, action)
+
+
+@pytest.mark.parametrize("scope", ("root", "lesser", "spellspace"))
+@pytest.mark.parametrize("late_bind", (False, True))
+def test_existing_scope_identity(gap_book: Spellbook, scope: str, late_bind: bool) -> None:
+    """Check eager/late registration, scope release and subsequent owner use."""
+    supplied = DisposableValue("survives-scope")
+    report: dict[str, object] = {"case": "scope_" + scope, "late_bind": late_bind, "planning": "stock", "stage": "bind"}
+
+    def action() -> None:
+        """Resolve through one scope and prove releasing it preserves the original object."""
+        root = gap_book.conjure(dynamic=True) if late_bind else None
+        target = gap_book.bind(spell=supplied, existence="unique", spellframe=DisposableValue)
+        if root is None:
+            root = gap_book.conjure(dynamic=True)
+        door = root.create_lesser_conduit() if scope == "lesser" else root.create_spellspace() if scope == "spellspace" else root
+        report["stage"] = "meld"
+        try:
+            assert door.meld(spell_id=target) is supplied
+            assert door.meld(spell_id=target) is supplied
+        finally:
+            if scope != "root":
+                door.cleanup()
+        assert root.meld(spell_id=target) is supplied
+        assert supplied.read() == "survives-scope" and supplied.disposals == 0
+        report.update(identity_preserved=True, disposals_after_scope=supplied.disposals)
+
+    observe(report, action)
+
+
+@pytest.mark.parametrize("payload", ("none", "empty", "replacement"))
+def test_existing_root_overrides(gap_book: Spellbook, payload: str) -> None:
+    """Observe whether an override is meaningful or rejected for an already-created root."""
+    supplied = SuppliedValue("original")
+    target = gap_book.bind(spell=supplied, existence="unique")
+    root = gap_book.conjure(dynamic=True)
+    report: dict[str, object] = {"case": "root_override_" + payload, "planning": "stock", "stage": "meld"}
+
+    def action() -> None:
+        """Keep the original object unchanged even when its override request is refused."""
+        override = None if payload == "none" else {} if payload == "empty" else {"marker": "replacement"}
+        assert root.meld(spell_id=target, override=override) is supplied
+        assert supplied.marker == "original"
+        report["identity_preserved"] = True
+
+    observe(report, action)
+    assert supplied.marker == "original"
+
+
+@pytest.mark.parametrize("kind", ("instance", "class"))
+def test_existing_disposal_policy(gap_book: Spellbook, kind: str) -> None:
+    """Compare requested disposal names with actual cleanup calls, using a class control."""
+    supplied = DisposableValue("external")
+    target = gap_book.bind(
+        spell=supplied if kind == "instance" else DisposableValue,
+        existence="unique", disposal_method_names=["dispose"],
+    )
+    spell = gap_book.find_spell_by_id(target)
+    assert spell is not None
+    methods = list(spell.disposal_method_names)
+    root = gap_book.conjure(dynamic=True)
+    value = root.meld(spell_id=target)
+    if kind == "instance":
+        assert value is supplied
+    root.cleanup()
+    assert value.disposals == (0 if kind == "instance" else 1)
+    print("GAP " + json.dumps({
+        "case": "disposal_" + kind, "planning": "stock", "outcome": "completed",
+        "requested": ["dispose"], "retained_methods": methods, "disposals": value.disposals,
+    }, sort_keys=True))
+
+
+@pytest.mark.parametrize("frame_kind", ("concrete", "protocol"))
+def test_existing_mismatched_frame(gap_book: Spellbook, planning_mode: str, frame_kind: str) -> None:
+    """Observe whether the runtime rejects a supplied object that cannot satisfy its advertised frame."""
+    supplied = WrongValue()
+    report: dict[str, object] = {"case": "wrong_frame_" + frame_kind, "planning": planning_mode, "stage": "bind"}
+
+    def action() -> None:
+        """Record admission and injection separately from usable type/behavior satisfaction."""
+        gap_book.bind(spell=supplied, existence="unique", spellframe=ReadableValue if frame_kind == "protocol" else SuppliedValue)
+        report["binding_accepted"] = True
+        target = gap_book.bind(spell=ProtocolConsumer if frame_kind == "protocol" else ValueConsumer, existence="many")
+        report["stage"] = "conjure"
+        root = gap_book.conjure(dynamic=True)
+        report["stage"] = "meld"
+        value = root.meld(spell_id=target).value
+        assert value is supplied
+        report.update(injected_incompatible_instance=True, identity_preserved=True)
+        if frame_kind == "protocol":
+            report["stage"] = "consumer_use"
+            value.read()
+
+    observe(report, action)
+
+
+@pytest.mark.parametrize("contract", (False, True), ids=("annotation", "spell_contract"))
+def test_existing_linked_injection(gap_book: Spellbook, planning_mode: str, contract: bool) -> None:
+    """Import a real existing provider through read permission and resolve it from a borrower."""
+    supplied = SuppliedValue("owner-value")
+    provider_id = gap_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue, binding_name="shared")
+    owner = gap_book.conjure(dynamic=True, name="owner")
+    borrower_book = Spellbook(aetheric_frame="existing-instance-planning-regression")
+    report: dict[str, object] = {"case": "linked_contract" if contract else "linked_annotation", "planning": planning_mode, "stage": "link"}
+
+    def action() -> None:
+        """Keep real contract validation and prove the borrower receives the owner's object."""
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
+        assert borrower.link(owner)
+        assert borrower.add_spell_to_contract(spell_id=provider_id, conduit=owner, permissions="read")
+        report["stage"] = "bind_consumer"
+        target = borrower.bind(spell=ContractConsumer if contract else ValueConsumer, existence="many")
+        report["stage"] = "meld"
+        value = borrower.meld(spell_id=target).value
+        assert value is supplied
+        report["identity_preserved"] = True
+
+    try:
+        observe(report, action)
+    finally:
+        if not borrower_book.cleaned:
+            if borrower_book.conduit is None:
+                borrower_book.cleanup()
+            else:
+                borrower_book.conduit.cleanup()
+    assert owner.meld(spell_id=provider_id) is supplied
+
+
+@pytest.mark.parametrize("kind", ("false", "zero", "empty_list", "empty_dict"))
+def test_existing_falsey_values(gap_book: Spellbook, kind: str) -> None:
+    """Resolve falsey non-None supplied values by ID without confusing presence with truthiness."""
+    supplied = False if kind == "false" else 0 if kind == "zero" else [] if kind == "empty_list" else {}
+    report: dict[str, object] = {"case": "falsey_" + kind, "planning": "stock", "stage": "bind"}
+
+    def action() -> None:
+        """Verify the exact falsey object survives eager registration and repeated lookup."""
+        target = gap_book.bind(spell=supplied, existence="unique", binding_name="falsey")
+        root = gap_book.conjure(dynamic=True)
+        report["stage"] = "meld"
+        assert root.meld(spell_id=target) is supplied
+        assert root.meld_existing_spell(spell=target) is supplied
+        report["identity_preserved"] = True
+
+    observe(report, action)
+================================================================================
+END FILE: tests/experimentation/test_existing_instance_gap_experiment.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/experimentation/test_existing_instance_injection_experiment.py
+CONTENT SHA256: e4a83c4f796d0782b5adbb3519976349a7c6736ac6555ecb50a6b92b3fc5896a
+SOURCE ENCODING: utf-8
+================================================================================
+"""Characterize existing-object injection before selecting a production repair.
+
+Known lookup/planning failures are printed as observations. Corrected-contract
+regressions live in the integration tier and remain red until a repair lands.
+"""
+
+import json
+from typing import Union
+
+import pytest
+
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.spellbook.spellbook import Spellbook
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    CollectionValueConsumer,
+    ExistingValue,
+    MappedValueConsumer,
+    NestedValueConsumer,
+    ValueConsumer,
+    instance_book as instance_book,
+)
+
+
+class CallableFactory:
+    """Characterize the current public callable-binding path separately from existing values."""
+
+    def __init__(self) -> None:
+        """Own one resource-free product and count actual factory calls."""
+        self.product = ExistingValue("factory-product")
+        self.calls = 0
+
+    def __call__(self) -> ExistingValue:
+        """Return the product and record execution, which must occur only during meld."""
+        self.calls += 1
+        return self.product
+
+
+class FactoryConsumer:
+    """Request a callable factory result through the existing explicit SpellMap contract."""
+
+    def __init__(
+            self,
+            value: Union[ExistingValue, SpellMap] = SpellMap(
+                spellframe="callable-providers", binding_name="factory",
+            ),
+    ) -> None:
+        """Retain the factory-produced object for identity checks."""
+        self.value = value
+
+
+@pytest.mark.parametrize("mode", (
+    "root", "root_typed", "root_named", "direct_unqualified", "direct_typed",
+    "nested_typed", "collection_typed", "explicit_map", "late_bound_typed",
+))
+def test_characterize_existing_instance_injection(instance_book: Spellbook, mode: str) -> None:
+    """Compare lookup metadata, real dependency planning and post-conjure binding.
+
+    This is an observation test, not acceptance of the known failure. Successful
+    outcomes must preserve object identity; only the two established failure
+    categories are captured. Other exceptions still fail the experiment.
+    """
+    supplied = ExistingValue("supplied-before-bind")
+    named = mode in ("root_named", "explicit_map")
+    typed = mode.endswith("typed")
+    spell_id = instance_book.bind(
+        spell=supplied, existence="unique",
+        spellframe="named-values" if named else ExistingValue if typed else None,
+        binding_name="chosen" if named else None,
+    )
+    spell = instance_book._spell_id_pool[spell_id]
+    assert spell.is_existing_creation
+    assert not spell.profile.resolution_profile.requirements.parameters
+    report: dict[str, object] = {"mode": mode, "existing_creation": True, "constructor_requirements": 0}
+    stage = "conjure"
+    try:
+        root = instance_book.conjure(dynamic=True) if mode == "late_bound_typed" else None
+        target_id = spell_id
+        if not mode.startswith("root"):
+            stage = "bind_consumer"
+            consumer_type = ValueConsumer
+            if mode == "nested_typed":
+                instance_book.bind(spell=ValueConsumer, existence="many")
+                consumer_type = NestedValueConsumer
+            elif mode == "collection_typed":
+                consumer_type = CollectionValueConsumer
+            elif mode == "explicit_map":
+                consumer_type = MappedValueConsumer
+            target_id = instance_book.bind(spell=consumer_type, existence="many")
+        stage = "conjure"
+        if root is None:
+            root = instance_book.conjure(dynamic=True)
+        stage = "meld"
+        result = root.meld(spell_id=target_id)
+        if mode == "nested_typed":
+            received = result.child.value
+        elif mode == "collection_typed":
+            assert len(result.values) == 1
+            received = result.values[0]
+        elif mode.startswith("root"):
+            received = result
+        else:
+            received = result.value
+        assert received is supplied
+        report.update(outcome="same_instance", stage=stage)
+    except (RuntimeError, TypeError) as error:
+        message = str(error)
+        if "not a callable object" in message:
+            failure = "existing_instance_signature_inspection"
+        elif "no DI candidate found" in message:
+            failure = "no_matching_type_frame"
+        else:
+            raise
+        report.update(outcome=failure, stage=stage, error_type=type(error).__name__)
+    print(json.dumps(report, sort_keys=True))
+
+
+@pytest.mark.parametrize("inject", (False, True), ids=("root", "explicit_map_injection"))
+def test_characterize_callable_object_factory_binding(instance_book: Spellbook, inject: bool) -> None:
+    """Prove callable binding currently produces a factory, preserving its normal behavior."""
+    factory = CallableFactory()
+    factory_id = instance_book.bind(
+        spell=factory, existence="unique", spellframe="callable-providers", binding_name="factory",
+    )
+    spell = instance_book._spell_id_pool[factory_id]
+    assert not spell.is_existing_creation
+    target_id = instance_book.bind(spell=FactoryConsumer, existence="many") if inject else factory_id
+    root = instance_book.conjure(dynamic=True)
+    assert factory.calls == 0
+    result = root.meld(spell_id=target_id)
+    received = result.value if inject else result
+    assert received is factory.product
+    assert received is not factory
+    assert factory.calls == 1
+    print(json.dumps({
+        "mode": "callable_map_injection" if inject else "callable_root",
+        "existing_creation": False, "factory_calls": factory.calls, "outcome": "factory_product",
+    }, sort_keys=True))
+================================================================================
+END FILE: tests/experimentation/test_existing_instance_injection_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_forced_phase10_phase11_creation_context_comparison_harness.py
@@ -106198,6 +106908,731 @@ def test_cache_schema_version_history_accepts_only_current_bundle(
 END FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_deferred_annotations.py
+CONTENT SHA256: 456fa8a039dd2eeebeb022aef6c7bf3b038b9e993a9730125ef13eef78c47d9b
+SOURCE ENCODING: utf-8
+================================================================================
+"""Python 3.14 deferred annotations preserve normal DI and selected defaults.
+
+The dependency import exists only for static checking. Tests deliberately use
+native deferred evaluation, without a future import or runtime fallback alias.
+"""
+
+import inspect
+from typing import TYPE_CHECKING, Optional
+
+import pytest
+
+from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy import (
+    BindingProfileStrategy,
+)
+from melder.aether.spellbook.spellbook import Spellbook
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    instance_book as instance_book,
+)
+from tests.mocks.spellbook.core_classes import BasicService as RuntimeService
+
+if TYPE_CHECKING:
+    from tests.mocks.spellbook.core_classes import BasicService
+
+
+class DeferredConsumer:
+    """Request a required provider through a TYPE_CHECKING-only annotation."""
+
+    def __init__(self, service: BasicService) -> None:
+        """Retain the exact injected provider for identity assertions."""
+        self.service = service
+
+
+class DeferredCollectionConsumer:
+    """Request a collection containing an unresolved annotation name."""
+
+    def __init__(self, services: list[BasicService]) -> None:
+        """Retain all resolved providers in constructor order."""
+        self.services = services
+
+
+class DeferredNoneDefault:
+    """An unresolved type name must not prevent honoring an ordinary None default."""
+
+    def __init__(self, service: Optional[BasicService] = None) -> None:
+        """Retain the selected default without inferring a provider dependency."""
+        self.service = service
+
+
+class DeferredChosenDefault:
+    """Keep an existing selected default distinct from a registered class provider."""
+
+    selected = RuntimeService()
+
+    def __init__(self, service: BasicService = selected) -> None:
+        """Retain the exact chosen default object."""
+        self.service = service
+
+
+class LiteralNameConsumer:
+    """Control for the already-supported literal forward-name form."""
+
+    def __init__(self, service: "BasicService") -> None:
+        """Deliberately retain a literal string annotation as the compatibility control."""
+        self.service = service
+
+
+def deferred_consumer_factory(service: BasicService) -> DeferredConsumer:
+    """A function binding must preserve deferred parameter annotations too."""
+    return DeferredConsumer(service)
+
+
+@pytest.mark.parametrize("kind", ("class", "function", "collection"))
+@pytest.mark.parametrize("late_bind", (False, True))
+def test_typechecking_dependency_resolves_before_and_after_conjure(
+        instance_book: Spellbook, kind: str, late_bind: bool,
+) -> None:
+    """Exercise real bind/conjure/meld with unresolved scalar and nested type names."""
+    provider_id = instance_book.bind(spell=RuntimeService, existence="unique")
+    root = instance_book.conjure(dynamic=True) if late_bind else None
+    consumer_type = {"class": DeferredConsumer, "function": deferred_consumer_factory,
+                     "collection": DeferredCollectionConsumer}[kind]
+    target = instance_book.bind(spell=consumer_type, existence="unique")
+    if root is None:
+        root = instance_book.conjure(dynamic=True)
+    result = root.meld(spell_id=target)
+    # Query the instance created by consumer DI without starting a second
+    # compilation path; provider-remeld invalidation has its own regression lane.
+    provider = root.meld_existing_spell(spell=provider_id)
+    if kind == "collection":
+        assert len(result.services) == 1
+        assert result.services[0] is provider
+    else:
+        assert result.service is provider
+
+
+@pytest.mark.parametrize("selected", (False, True), ids=("none", "chosen_instance"))
+def test_typechecking_annotation_preserves_default(instance_book: Spellbook, selected: bool) -> None:
+    """A matching provider must not replace an ordinary default with a deferred annotation."""
+    provider_id = instance_book.bind(spell=RuntimeService, existence="unique")
+    target = instance_book.bind(spell=DeferredChosenDefault if selected else DeferredNoneDefault, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    result = root.meld(spell_id=target)
+    assert result.service is (DeferredChosenDefault.selected if selected else None)
+    assert not root.has_live_creation(spell=provider_id)
+
+
+def test_typechecking_dependency_without_provider_still_fails_validation(instance_book: Spellbook) -> None:
+    """An unresolved name remains required DI and cannot silently become an empty requirement."""
+    instance_book.bind(spell=DeferredConsumer, existence="many")
+    with pytest.raises(RuntimeError, match="no DI candidate found"):
+        instance_book.conjure(dynamic=True)
+
+
+@pytest.mark.parametrize("late_bind", (False, True))
+@pytest.mark.parametrize("defaulted", (False, True))
+def test_typechecking_annotation_accepts_explicit_override(
+        instance_book: Spellbook, late_bind: bool, defaulted: bool,
+) -> None:
+    """Runtime override specialization preserves caller identity for deferred annotations."""
+    provider_id = instance_book.bind(spell=RuntimeService, existence="unique")
+    root = instance_book.conjure(dynamic=True) if late_bind else None
+    target = instance_book.bind(spell=DeferredNoneDefault if defaulted else DeferredConsumer, existence="many")
+    if root is None:
+        root = instance_book.conjure(dynamic=True)
+    replacement = RuntimeService("replacement")
+    result = root.meld(spell_id=target, override={"service": replacement})
+    assert result.service is replacement
+    if defaulted:
+        assert not root.has_live_creation(spell=provider_id)
+
+
+def test_literal_forward_annotation_still_resolves(instance_book: Spellbook) -> None:
+    """Preserve the existing literal-string annotation path alongside native deferred evaluation."""
+    provider_id = instance_book.bind(spell=RuntimeService, existence="unique")
+    target = instance_book.bind(spell=LiteralNameConsumer, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=target).service is root.meld(spell_id=provider_id)
+
+
+def test_resolved_signature_keeps_binding_fingerprint_text() -> None:
+    """Normal resolved signatures retain the text used by existing bind fingerprints."""
+    profile = BindingProfileStrategy().build_profile(RuntimeService)
+    try:
+        assert profile.init_signature_object == inspect.signature(RuntimeService)
+        assert profile.init_signature == str(inspect.signature(RuntimeService))
+    finally:
+        profile.cleanup()
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_deferred_annotations.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py
+CONTENT SHA256: b3cca409325e98fa50b27fb09f7b564c3ae4d3afd99fa207e10a955d80b53d40
+SOURCE ENCODING: utf-8
+================================================================================
+"""Stock-runtime regressions for gaps confirmed by the existing-instance experiment.
+
+These assertions require the corrected public behavior. They never install the
+experiment's in-memory scanner changes. Annotation, sharing and scope failures
+remain independently visible until their native repairs are implemented.
+"""
+
+from typing import TYPE_CHECKING
+
+import pytest
+
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.spellbook.spellbook import Spellbook
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    ExistingValue as SuppliedValue,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    ValueConsumer,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    instance_book as instance_book,
+)
+
+if TYPE_CHECKING:
+    from tests.integration.melder.spellbook.test_existing_instance_planning import (
+        ExistingValue,
+    )
+
+
+class RepeatedValueConsumer:
+    """Two required parameters must retain the same registered instance."""
+
+    def __init__(self, left: SuppliedValue, right: SuppliedValue) -> None:
+        """Retain both references without constructing or taking ownership of the value."""
+        self.left = left
+        self.right = right
+
+
+class DeferredValueConsumer:
+    """Python 3.14 deferred annotation imports must remain valid consumer declarations."""
+
+    def __init__(self, value: ExistingValue) -> None:
+        """Retain a required dependency whose type exists only in TYPE_CHECKING imports."""
+        self.value = value
+
+
+class LinkedValueConsumer:
+    """Declare a named contract that a real existing provider can satisfy."""
+
+    def __init__(
+            self,
+            value: SuppliedValue = SpellContract(spellframe=SuppliedValue, binding_name="shared"),
+    ) -> None:
+        """Retain the provider's object without acquiring its cleanup responsibility."""
+        self.value = value
+
+
+def build_value_consumer(value: SuppliedValue) -> ValueConsumer:
+    """A function provider may itself require an existing object as a dependency."""
+    return ValueConsumer(value)
+
+
+def test_existing_provider_satisfies_repeated_parameters(instance_book: Spellbook) -> None:
+    """A repeated dependency must share the original object through both parameters."""
+    supplied = SuppliedValue("shared")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    target = instance_book.bind(spell=RepeatedValueConsumer, existence="many")
+    consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
+    assert consumer.left is supplied and consumer.right is supplied
+
+
+def test_existing_provider_can_be_injected_into_function(instance_book: Spellbook) -> None:
+    """Function dependency planning must preserve the existing value without making it callable."""
+    supplied = SuppliedValue("function-input")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    target = instance_book.bind(spell=build_value_consumer, existence="unique")
+    consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
+    assert consumer.value is supplied
+
+
+def test_existing_provider_typechecking_annotation_does_not_raise_nameerror(instance_book: Spellbook) -> None:
+    """Resolve a real required TYPE_CHECKING-only annotation without eager evaluation failure."""
+    supplied = SuppliedValue("deferred-input")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    target = instance_book.bind(spell=DeferredValueConsumer, existence="many")
+    consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
+    assert consumer.value is supplied
+
+
+@pytest.mark.parametrize("scope,existence", (
+    ("lesser", "unique_per_conduit"), ("spellspace", "unique_per_spell_space"),
+))
+def test_existing_provider_survives_consumer_scope_release(
+        instance_book: Spellbook, scope: str, existence: str,
+) -> None:
+    """Scoped consumer reuse and teardown must preserve the root-owned existing value."""
+    supplied = SuppliedValue("scope-input")
+    provider_id = instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    target = instance_book.bind(spell=ValueConsumer, existence=existence)
+    root = instance_book.conjure(dynamic=True)
+    door = root.create_lesser_conduit() if scope == "lesser" else root.create_spellspace()
+    try:
+        first = door.meld(spell_id=target)
+        assert door.meld(spell_id=target) is first
+        assert first.value is supplied
+    finally:
+        door.cleanup()
+    assert root.meld(spell_id=provider_id) is supplied
+
+
+@pytest.mark.parametrize("contract", (False, True), ids=("annotation", "spell_contract"))
+def test_existing_provider_is_injected_across_read_contract(
+        instance_book: Spellbook, contract: bool,
+) -> None:
+    """Borrower construction and cleanup must retain the existing provider's exact identity."""
+    supplied = SuppliedValue("linked-input")
+    provider_id = instance_book.bind(
+        spell=supplied, existence="unique", spellframe=SuppliedValue, binding_name="shared",
+    )
+    owner = instance_book.conjure(dynamic=True, name="owner")
+    borrower_book = Spellbook(aetheric_frame="existing-instance-planning-regression")
+    try:
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
+        assert borrower.link(owner)
+        assert borrower.add_spell_to_contract(spell_id=provider_id, conduit=owner, permissions="read")
+        target = borrower.bind(spell=LinkedValueConsumer if contract else ValueConsumer, existence="many")
+        assert borrower.meld(spell_id=target).value is supplied
+    finally:
+        if not borrower_book.cleaned:
+            if borrower_book.conduit is None:
+                borrower_book.cleanup()
+            else:
+                borrower_book.conduit.cleanup()
+    assert owner.meld(spell_id=provider_id) is supplied
+
+
+@pytest.mark.parametrize("lookup", ("instance", "frame"))
+def test_existing_root_public_lookup_preserves_identity(instance_book: Spellbook, lookup: str) -> None:
+    """Keep actual object/frame lookup covered independently of the machine-ID controls."""
+    supplied = SuppliedValue("lookup-input")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=SuppliedValue)
+    root = instance_book.conjure(dynamic=True)
+    found = root.meld(spell=supplied) if lookup == "instance" else root.meld(spellframe=SuppliedValue)
+    assert found is supplied
+
+
+@pytest.mark.parametrize("container", (list, dict))
+def test_empty_existing_container_is_present(instance_book: Spellbook, container: type) -> None:
+    """Existing falsey containers remain values; presence must not depend on truthiness."""
+    supplied = container()
+    target = instance_book.bind(spell=supplied, existence="unique", binding_name="empty")
+    root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=target) is supplied
+    assert root.meld_existing_spell(spell=target) is supplied
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_existing_instance_additional_regressions.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_planning.py
+CONTENT SHA256: cd0fe75a6d09ed8ddbbe75ccd4c0cbf9f990843470c859bd408bbc05414a1cf9
+SOURCE ENCODING: utf-8
+================================================================================
+"""Existing values stay opaque through both contract planners and dependency walks.
+
+Native minimal cases complement the unchanged real Iris/ActivityBootstrap
+acceptance test; no factory wrappers are used to make existing values callable.
+"""
+
+from collections.abc import Iterator
+from typing import Union
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy import (
+    SpellOccurrenceGraphAnalyzerStrategy,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy import (
+    SpellOccurrenceContractProcessorStrategy,
+)
+
+
+class ExistingValue:
+    """A deliberately non-callable supplied object, not a constructor request."""
+
+    def __init__(self, marker: str) -> None:
+        """Receive required constructor input before the object is bound to Melder."""
+        self.marker = marker
+
+
+class ValueConsumer:
+    """Borrow an existing non-callable object through ordinary type-hint DI."""
+
+    def __init__(self, value: ExistingValue) -> None:
+        """Retain the exact supplied value without acquiring its lifecycle."""
+        self.value = value
+
+
+class NestedValueConsumer:
+    """Place the non-callable existing value at a transitive dependency position."""
+
+    def __init__(self, child: ValueConsumer) -> None:
+        """Retain the constructed child and its borrowed existing value."""
+        self.child = child
+
+
+class CollectionValueConsumer:
+    """Request registered existing values as a collection."""
+
+    def __init__(self, values: list[ExistingValue]) -> None:
+        """Retain the injected collection and its original element identities."""
+        self.values = values
+
+
+class MappedValueConsumer:
+    """Select an existing object through explicit frame and binding names."""
+
+    def __init__(
+            self,
+            value: Union[ExistingValue, SpellMap] = SpellMap(
+                spellframe="named-values", binding_name="chosen",
+            ),
+    ) -> None:
+        """Retain the exact explicitly selected object."""
+        self.value = value
+
+
+@pytest.fixture
+def instance_book() -> Iterator[Spellbook]:
+    """Own an isolated dynamic book, disable disk cache and clean every runtime allocation."""
+    Aether._reset_singleton_for_tests()
+    world = Aether()
+    Spellbook._aether = world
+    Conduit._aether = world
+    book = Spellbook(aetheric_frame="existing-instance-planning-regression")
+    try:
+        book.configure_aether_frame(
+            system_state="dynamic", system_caching_enabled=False,
+            disposal=None, disposal_method_names=None,
+        )
+        yield book
+    finally:
+        try:
+            if not book.cleaned:
+                if book.conduit is None:
+                    book.cleanup()
+                else:
+                    book.conduit.cleanup()
+        finally:
+            Aether._reset_singleton_for_tests()
+            world = Aether()
+            Spellbook._aether = world
+            Conduit._aether = world
+
+
+@pytest.mark.parametrize("planner_type", (
+    SpellOccurrenceGraphAnalyzerStrategy, SpellOccurrenceContractProcessorStrategy,
+))
+def test_existing_values_expose_no_constructor_contracts_to_either_planner(
+        instance_book: Spellbook,
+        planner_type: type,
+) -> None:
+    """Use real bound Spell inputs to guard both otherwise-identical planner defects."""
+    supplied = ExistingValue("supplied-before-bind")
+    spell_id = instance_book.bind(spell=supplied, existence="unique")
+    spell = instance_book._spell_id_pool[spell_id]
+    assert spell.is_existing_creation
+    assert tuple(planner_type._iter_spell_contract_defaults(spell)) == ()
+
+
+@pytest.mark.parametrize("registration", ("unqualified", "typed", "named"))
+def test_existing_value_root_returns_original_without_factory_execution(
+        instance_book: Spellbook,
+        registration: str,
+) -> None:
+    """Guard the already-supported direct existing-object root path."""
+    supplied = ExistingValue("supplied-before-bind")
+    spell_id = instance_book.bind(
+        spell=supplied, existence="unique",
+        spellframe=ExistingValue if registration == "typed" else "named-values" if registration == "named" else None,
+        binding_name="chosen" if registration == "named" else None,
+    )
+    root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=spell_id) is supplied
+
+
+def test_existing_value_dependency_retains_identity_without_contract_inspection(
+        instance_book: Spellbook,
+) -> None:
+    """Construct a real dependent root without inspecting the supplied dependency as callable."""
+    supplied = ExistingValue("supplied-before-bind")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    consumer_id = instance_book.bind(spell=ValueConsumer, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=consumer_id).value is supplied
+
+
+def test_existing_value_transitive_dependency_retains_identity(instance_book: Spellbook) -> None:
+    """A second dependency level must still end at the exact supplied object."""
+    supplied = ExistingValue("supplied-before-bind")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    instance_book.bind(spell=ValueConsumer, existence="many")
+    root_id = instance_book.bind(spell=NestedValueConsumer, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=root_id).child.value is supplied
+
+
+def test_existing_values_in_collection_retain_identity(instance_book: Spellbook) -> None:
+    """Collection planning must not discover constructors on existing elements."""
+    supplied = ExistingValue("supplied-before-bind")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    consumer_id = instance_book.bind(spell=CollectionValueConsumer, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    values = root.meld(spell_id=consumer_id).values
+    assert len(values) == 1 and values[0] is supplied
+
+
+def test_explicit_map_injects_existing_value(instance_book: Spellbook) -> None:
+    """An explicit named lookup must inject the registered object without signature inspection."""
+    supplied = ExistingValue("supplied-before-bind")
+    instance_book.bind(
+        spell=supplied, existence="unique", spellframe="named-values", binding_name="chosen",
+    )
+    consumer_id = instance_book.bind(spell=MappedValueConsumer, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=consumer_id).value is supplied
+
+
+def test_late_bound_consumer_injects_existing_value(instance_book: Spellbook) -> None:
+    """An existing provider remains a value when its dependent is bound after conjure."""
+    supplied = ExistingValue("supplied-before-bind")
+    instance_book.bind(spell=supplied, existence="unique", spellframe=ExistingValue)
+    root = instance_book.conjure(dynamic=True)
+    consumer_id = instance_book.bind(spell=ValueConsumer, existence="many")
+    assert root.meld(spell_id=consumer_id).value is supplied
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_existing_instance_planning.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_provider_artifact_ownership.py
+CONTENT SHA256: 526f830a4259537e7a70e6d9b8a9f428c8c47ebd604aa2b00a3ce56599036ce9
+SOURCE ENCODING: utf-8
+================================================================================
+"""Native provider ownership regressions for borrower validation and teardown.
+
+These minimal runtime contracts complement the unchanged CommandOps GraphCache
+acceptance tests. Each prefix receives a fresh world and one final provider
+lookup, so an earlier diagnostic lookup cannot repair a later failing prefix.
+"""
+
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Optional
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spellbook import Spellbook
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+
+
+class RetainedProvider:
+    """Own a resource-free list whose identity and contents survive borrower work."""
+
+    def __init__(self) -> None:
+        """Initialize state once per provider-owned unique creation."""
+        self.entries: list[str] = []
+
+
+class ProviderConsumer:
+    """Borrow a required provider instance without acquiring its lifecycle."""
+
+    def __init__(self, provider: RetainedProvider) -> None:
+        """Retain the injected provider for identity and state assertions."""
+        self.provider = provider
+
+
+class ProviderRuntime:
+    """Own all books in one isolated runtime and clean them in reverse order.
+
+    The provider is melded once during setup. Subsequent provider lookups belong
+    exclusively to each test's final assertion boundary.
+    """
+
+    def __init__(self) -> None:
+        """Initialize ownership fields before any runtime allocation can fail."""
+        self.books: list[Spellbook] = []
+        self.frame_name = "provider-artifact-ownership-regression"
+        self.provider: Optional[Conduit] = None
+        self.original: Optional[RetainedProvider] = None
+        self.provider_spell: Optional[Spell] = None
+        self.provider_id: Optional[str] = None
+
+    def cleanup(self) -> None:
+        """Retire borrowers before the provider, including failed setup paths."""
+        for book in reversed(self.books):
+            if not book.cleaned:
+                if book.conduit is None:
+                    book.cleanup()
+                else:
+                    book.conduit.cleanup()
+        self.books.clear()
+        self.provider = None
+        self.original = None
+        self.provider_spell = None
+
+    def new_book(self) -> Spellbook:
+        """Retain each new book before any later configuration or binding step."""
+        book = Spellbook(aetheric_frame=self.frame_name)
+        self.books.append(book)
+        return book
+
+    def start(self) -> None:
+        """Construct the original unique provider with caching disabled."""
+        book = self.new_book()
+        book.configure_aether_frame(
+            system_state="dynamic", system_caching_enabled=False,
+            disposal=None, disposal_method_names=None,
+        )
+        book.get_configuration().freeze()
+        self.provider_id = book.bind(
+            spell=RetainedProvider, existence="unique",
+            spellframe="providers", binding_name="retained",
+        )
+        self.provider = book.conjure(dynamic=True, name="provider")
+        self.original = self.provider.meld(spellframe="providers", binding_name="retained")
+        self.original.entries.append("provider-owned")
+        self.provider_spell = self.provider.get_spell_by_id(self.provider_id, self.frame_name)
+
+    def create_borrower(self, name: str) -> Conduit:
+        """Link and import read access, then bind the required consumer locally."""
+        book = self.new_book()
+        book.get_configuration().freeze()
+        borrower = book.conjure(dynamic=True, name=name)
+        assert borrower.link(self.provider)
+        assert borrower.add_spell_to_contract(
+            spell_id=self.provider_id, conduit=self.provider,
+            aetheric_frame=self.frame_name, permissions="read",
+        )
+        assert borrower.find_contracted_spell(self.provider_id) is self.provider_spell
+        borrower.bind(
+            spell=ProviderConsumer, existence="many",
+            spellframe="consumers", binding_name=name,
+        )
+        return borrower
+
+    def assert_provider_usable(self) -> None:
+        """Perform the final provider meld and verify original definition and data."""
+        assert self.provider.get_spell_by_id(self.provider_id, self.frame_name) is self.provider_spell
+        assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+        assert self.original.entries == ["provider-owned"]
+
+
+@pytest.fixture
+def provider_runtime() -> Iterator[ProviderRuntime]:
+    """Isolate the singleton host and release the complete owned runtime after each case."""
+    Aether._reset_singleton_for_tests()
+    world = Aether()
+    Spellbook._aether = world
+    Conduit._aether = world
+    runtime = ProviderRuntime()
+    try:
+        runtime.start()
+        yield runtime
+    finally:
+        try:
+            runtime.cleanup()
+        finally:
+            Aether._reset_singleton_for_tests()
+            world = Aether()
+            Spellbook._aether = world
+            Conduit._aether = world
+
+
+@pytest.mark.parametrize("stop_after", (
+    "consumer-book", "consumer-configuration-freeze", "empty-conjure", "link",
+    "contract", "late-bind", "validate-resolution", "consumer-meld",
+))
+def test_provider_survives_independent_borrower_operation_prefix(
+        provider_runtime: ProviderRuntime,
+        stop_after: str,
+) -> None:
+    """Keep provider artifacts usable after precisely one independent public prefix."""
+    runtime = provider_runtime
+    book = runtime.new_book()
+    if stop_after == "consumer-book":
+        runtime.assert_provider_usable()
+        return
+    book.get_configuration().freeze()
+    if stop_after == "consumer-configuration-freeze":
+        runtime.assert_provider_usable()
+        return
+    borrower = book.conjure(dynamic=True, name="consumer")
+    if stop_after == "empty-conjure":
+        runtime.assert_provider_usable()
+        return
+    assert borrower.link(runtime.provider)
+    if stop_after == "link":
+        runtime.assert_provider_usable()
+        return
+    assert borrower.add_spell_to_contract(
+        spell_id=runtime.provider_id, conduit=runtime.provider,
+        aetheric_frame=runtime.frame_name, permissions="read",
+    )
+    if stop_after == "contract":
+        runtime.assert_provider_usable()
+        return
+    borrower.bind(
+        spell=ProviderConsumer, existence="many",
+        spellframe="consumers", binding_name="consumer",
+    )
+    if stop_after == "late-bind":
+        runtime.assert_provider_usable()
+        return
+    assert borrower.validate_resolution(refresh_structural=True) is not None
+    if stop_after == "consumer-meld":
+        consumer = borrower.meld(spellframe="consumers", binding_name="consumer")
+        assert consumer.provider is runtime.original
+    runtime.assert_provider_usable()
+
+
+@pytest.mark.parametrize("borrower_count,validation_count", ((1, 1), (1, 3), (2, 2)))
+def test_provider_survives_repeated_borrower_validation_and_cleanup(
+        provider_runtime: ProviderRuntime,
+        borrower_count: int,
+        validation_count: int,
+) -> None:
+    """Preserve provider identity/state through repeated and independent borrower lifecycles."""
+    runtime = provider_runtime
+    borrowers = [
+        (f"consumer-{index}", runtime.create_borrower(f"consumer-{index}"))
+        for index in range(borrower_count)
+    ]
+    for _ in range(validation_count):
+        for name, borrower in borrowers:
+            assert borrower.validate_resolution(refresh_structural=True) is not None
+            consumer = borrower.meld(spellframe="consumers", binding_name=name)
+            assert consumer.provider is runtime.original
+    for _name, borrower in reversed(borrowers):
+        borrower.cleanup()
+    runtime.assert_provider_usable()
+
+
+@pytest.mark.parametrize("validate_explicitly", (True, False), ids=("resolution_only", "implicit_meld"))
+def test_provider_survives_resolution_only_and_implicit_local_compilation(
+        provider_runtime: ProviderRuntime,
+        validate_explicitly: bool,
+) -> None:
+    """Preserve provider ownership through both explicit and lazy local compilation paths."""
+    runtime = provider_runtime
+    borrower = runtime.create_borrower("consumer-boundary")
+    if validate_explicitly:
+        borrower.validate_resolution(refresh_structural=False)
+    consumer = borrower.meld(spellframe="consumers", binding_name="consumer-boundary")
+    assert consumer.provider is runtime.original
+    borrower.cleanup()
+    runtime.assert_provider_usable()
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_provider_artifact_ownership.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spell_compiler_system_integration.py
 CONTENT SHA256: 7ac3e187d3c22b95679629a19a277e26c3169b0a9cd7fc21b9e6efc4c3e50070
 SOURCE ENCODING: utf-8
@@ -117839,7 +119274,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py
-CONTENT SHA256: 1a61e19252e60176ae8a6065a6060f34502fc18bbed5252802bc63971f525de5
+CONTENT SHA256: 29c8cf0f4371bd8bdb822b22ff0a1ae19d9427895159098101bb32826f2f251c
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -119393,8 +120828,8 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
     Purpose:
         Validate SpellMap defaults honor explicit spellframe + binding_name.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when SpellMap defaults target an existing-instance binding.
+        - Existing-instance providers remain leaves during occurrence planning.
+        - SpellMap injects the exact instance selected by frame and binding name.
     Returns:
         None.
     Raises:
@@ -119483,8 +120918,9 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
         spellframe=IConfig,
         binding_name="secondary",
     )
+    primary_config = _PrimaryConfig("primary")
     spellbook.bind(
-        spell=_PrimaryConfig("primary"),
+        spell=primary_config,
         existence=Existence.unique,
         permissions="create",
         spellframe=IConfig,
@@ -119496,8 +120932,13 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is primary_config
+        assert instance.cfg.label == "primary"
+    finally:
+        conduit.cleanup()
 
 
 def test_collection_di_by_list_frame_injects_all() -> None:
@@ -119613,8 +121054,8 @@ def test_existing_instance_frame_type_hint_injects_existing() -> None:
     Purpose:
         Validate existing instance spells are injected by frame type-hint.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when a type-hint targets an existing-instance binding.
+        - Existing-instance providers declare no constructor contracts.
+        - Type-hint DI injects the exact registered instance.
     Returns:
         None.
     Raises:
@@ -119686,8 +121127,13 @@ def test_existing_instance_frame_type_hint_injects_existing() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is config_instance
+        assert instance.cfg.label == "existing"
+    finally:
+        conduit.cleanup()
 
 
 def test_type_hint_di_ambiguous_frame_raises() -> None:
@@ -121143,7 +122589,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_more.py
-CONTENT SHA256: e41a894f22e711fe4c0388d29d15e62d9e12798bcbc60c6c61bb56b47fb0e27d
+CONTENT SHA256: a8d4f404d5e86afc87f0b7604d9607b892616a35e4d90be942c0064181d9daca
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -121541,8 +122987,8 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
     Purpose:
         Validate SpellMap defaults resolve string frame + binding_name.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when SpellMap defaults target an existing-instance binding.
+        - Existing-instance providers remain leaves during occurrence planning.
+        - String frame and binding name select the exact registered instance.
     Returns:
         None.
     Raises:
@@ -121622,8 +123068,9 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
         spellframe="config",
         binding_name="secondary",
     )
+    primary_config = _PrimaryConfig("primary")
     spellbook.bind(
-        spell=_PrimaryConfig("primary"),
+        spell=primary_config,
         existence=Existence.unique,
         permissions="create",
         spellframe="config",
@@ -121635,8 +123082,13 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is primary_config
+        assert instance.cfg.label == "primary"
+    finally:
+        conduit.cleanup()
 
 
 def test_spellmap_default_with_function_spell_resolves() -> None:
@@ -121822,8 +123274,8 @@ def test_spellmap_default_frame_resolves_existing_instance() -> None:
     Purpose:
         Validate SpellMap defaults resolve existing instance spells.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when SpellMap defaults target an existing-instance binding.
+        - Existing-instance providers declare no constructor contracts.
+        - Frame-only SpellMap injects the exact registered instance.
     Returns:
         None.
     Raises:
@@ -121895,8 +123347,13 @@ def test_spellmap_default_frame_resolves_existing_instance() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is config_instance
+        assert instance.cfg.label == "existing"
+    finally:
+        conduit.cleanup()
 
 
 def test_meld_by_protocol_default_binding_resolves_existing_instance() -> None:
@@ -123700,8 +125157,8 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
     Purpose:
         Validate collection DI includes existing instance spells.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when a collection includes existing-instance bindings.
+        - Collections include existing and constructed providers in registration order.
+        - Existing elements preserve identity while many-scoped elements are rebuilt.
     Returns:
         None.
     Raises:
@@ -123796,14 +125253,24 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
         spellframe=IConfig,
         binding_name="class",
     )
-    spellbook.bind(
+    service_id = spellbook.bind(
         spell=_Service,
         existence=Existence.many,
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell_id=service_id)
+        second = conduit.meld(spell_id=service_id)
+        assert len(first.configs) == len(second.configs) == 2
+        assert first.configs[0] is second.configs[0] is existing_config
+        assert isinstance(first.configs[1], _Config)
+        assert isinstance(second.configs[1], _Config)
+        assert first.configs[1] is not second.configs[1]
+        assert [item.label for item in first.configs] == ["existing", "class"]
+    finally:
+        conduit.cleanup()
 
 
 def test_spellmap_explicit_class_with_wrong_frame_raises() -> None:
@@ -255555,6 +257022,49 @@ def test_codegen_plan_discovery_system_cleanup_cleans_builder() -> None:
     assert not hasattr(system, "_strategy_builder")
 ================================================================================
 END FILE: tests/unit/melder/spellbook/spell_compiler/test_codegen_plan_discovery_core.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_contract_scanner_failure_types.py
+CONTENT SHA256: d74431fff85e1d5bdde718b00fd73a8e11681a2ed6fa6772a44e760cead8124e
+SOURCE ENCODING: utf-8
+================================================================================
+"""Both contract scanners must preserve their documented missing-provider error."""
+
+from types import SimpleNamespace
+
+import pytest
+
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy import (
+    SpellOccurrenceContractProcessorStrategy,
+)
+from melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy import (
+    SpellOccurrenceGraphAnalyzerStrategy,
+)
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+
+
+@pytest.mark.parametrize("scanner_type", (
+    SpellOccurrenceGraphAnalyzerStrategy, SpellOccurrenceContractProcessorStrategy,
+))
+def test_missing_provider_raises_contract_error(scanner_type: type) -> None:
+    """A missing provider must produce MeldExecutionError, never an undefined-exception NameError."""
+    consumer = SimpleNamespace(
+        spell_index=SimpleNamespace(selected_spell_id="consumer"),
+        spell_id="consumer", spell_name="Consumer",
+    )
+    book = SimpleNamespace(_lookup_contracted_spells={}, _contracted_spells={})
+    contract = SpellContract(spellframe="missing-provider")
+    try:
+        with pytest.raises(MeldExecutionError, match="No contracted spell matched"):
+            scanner_type()._resolve_spell_contract_spell_id(
+                contract=contract, consumer_spell=consumer, param_name="dependency",
+                spellbook=book, allow_missing=False,
+            )
+    finally:
+        contract.cleanup()
+================================================================================
+END FILE: tests/unit/melder/spellbook/spell_compiler/test_contract_scanner_failure_types.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_creation_context_core.py

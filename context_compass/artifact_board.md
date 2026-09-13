@@ -64,6 +64,9 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | artifacts/uv_environment_sync_20260913/ | environment_evidence | review | retain_as_reference | Locked sync, package preservation and no-GIL import verified. | 2026-09-13T20:48:32Z | HELPFUL |
+| tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md | artifacts/provider_artifact_ownership_20260913/ | repair_evidence | review | retain_as_reference | Eight observations and seven red ownership cases; discuss before changes. | 2026-09-13T18:14:07Z | REQUIRED |
+| tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md | artifacts/existing_instance_planning_20260913/ | repair_evidence | review | retain_as_reference | Injection patch: 140 native checks/assets pass; original Iris cleanup fails. | 2026-09-13T21:11:38Z | REQUIRED |
 | tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md | artifacts/commandops_local_wheel_20260913/ | local_build_evidence | review | retain_as_reference | Wheel metadata/SHA and isolated install smoke verified; probe removed. | 2026-09-13T16:38:44Z | REQUIRED |
 | tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md | system_docs/patches/active/default_precedence_2026_09_13/ | patch_contract | review | promote_to_documentation | Default-precedence contract implemented; durable deltas in authored docs. | 2026-09-13T15:29:05Z | REQUIRED |
 | tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md | artifacts/optional_dependency_resolution_20260913/ | test_evidence | review | retain_as_reference | 160 focused checks green, red baseline retained, overrides/defaults verified. | 2026-09-13T15:29:05Z | REQUIRED |
@@ -113,6 +116,7 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-13_repair_deferred_annotation_acquisition_task.md | artifacts/existing_instance_planning_20260913/annotation_patch_result.md | retain_as_reference | Owner accepted annotation repair; associated logs and build proofs retained in the shared continuing-task folder. | 2026-09-13T20:42:12Z |
 | tickets/tasks/completed/2026-09-05_draft_ordered_disposal_docs_actions_release_task.md | artifacts/2026-09-05_ordered_disposal_docs_actions_release.md | retain_as_reference | Owner closed ticket; retained evidence, no publication action. | 2026-09-06T09:58:12Z |
 | tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md | artifacts/shared_context_race_20260905/owner_lifecycle_probe.py | retain_as_reference | Owner closed/deferred runtime repair; historical proof/proposal retained, not a shipped fix. | 2026-09-06T09:58:12Z |
 | tickets/tasks/completed/2026-09-05_shared_context_rebuild_race_task.md | artifacts/shared_context_race_20260905/owner-lifecycle-observation.json | retain_as_reference | Owner closed/deferred runtime repair; historical proof/proposal retained, not a shipped fix. | 2026-09-06T09:58:12Z |
