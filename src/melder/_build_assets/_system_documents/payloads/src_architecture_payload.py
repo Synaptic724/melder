@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 2329
-CONTENT_SHA256 = 'e2c4c56457cfdcfe9e2a04466a80851b65db8150ecfb364c62f1ea26996ae21b'
+LINE_COUNT = 2336
+CONTENT_SHA256 = 'e0441e16a4194ed8f84c16609a7190e543edd68fc4baced49a55b2db2e09e04d'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-05
+- Updated: 2026-09-13
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -818,6 +818,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Ordinary Python parameter defaults suppress inferred DI: the constructor retains its chosen
+  value even when a matching provider is registered. Phase 1 classifies these parameters as PLAIN.
+  Explicit SpellMap/SpellContract defaults retain their descriptor semantics; annotations without
+  defaults retain existing DI inference. The compiled-cache semantic version advances to 8 so the
+  existing mismatch check automatically rejects plans using the former precedence.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:SpellRequirementsFinder._classify_parameter`.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
 - Aether is a process singleton enforced in `__new__` under a double-checked
   class-level guard on `_instance`, so concurrent first construction on a
   free-threaded interpreter yields one object rather than a race. Teardown is

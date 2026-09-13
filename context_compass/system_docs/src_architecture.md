@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-05
+- Updated: 2026-09-13
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -799,6 +799,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Ordinary Python parameter defaults suppress inferred DI: the constructor retains its chosen
+  value even when a matching provider is registered. Phase 1 classifies these parameters as PLAIN.
+  Explicit SpellMap/SpellContract defaults retain their descriptor semantics; annotations without
+  defaults retain existing DI inference. The compiled-cache semantic version advances to 8 so the
+  existing mismatch check automatically rejects plans using the former precedence.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:SpellRequirementsFinder._classify_parameter`.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
 - Aether is a process singleton enforced in `__new__` under a double-checked
   class-level guard on `_instance`, so concurrent first construction on a
   free-threaded interpreter yields one object rather than a race. Teardown is

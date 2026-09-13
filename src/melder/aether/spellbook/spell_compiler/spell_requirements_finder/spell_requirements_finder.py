@@ -52,6 +52,8 @@ class SpellRequirementsFinder(Cleanable):
       providers.
     * Copies spell identity and routing metadata into the result, but does not
       interpret resolution policy beyond parameter classification.
+    * Ordinary explicit Python defaults classify as PLAIN and create no inferred
+      DI edge. SpellMap and SpellContract defaults remain explicit DI requests.
 
     Lifecycle
     ---------
@@ -1106,13 +1108,20 @@ class SpellRequirementsFinder(Cleanable):
                parameter is explicitly asking for a spell contract object.
             2. "SpellMap" defaults win over annotations because an explicit
                map is a stronger statement than an inferred type-based lookup.
-            3. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
-            4. Optional wrappers are removed only far enough to inspect the
+            3. Any other explicit Python default makes the parameter PLAIN,
+               preserving the selected value even when a provider is registered.
+               Presence, not truthiness, decides this: None, False and 0 count.
+            4. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
+            5. Optional wrappers are removed only far enough to inspect the
                underlying dependency shape.
-            5. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
+            6. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
                looks like a DI candidate.
-            6. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
-            7. Everything else stays: data:`ParameterDIShape.PLAIN`.
+            7. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
+            8. Everything else stays: data:`ParameterDIShape.PLAIN`.
+
+        Ordinary defaults retain their annotation and value in the requirement
+        record; PLAIN only prevents automatic provider selection. Parameters
+        without defaults keep the existing annotation-based inference rules.
 
         The returned "is_optional" flag answers a Melder-specific question:
         can Phase 1 treat failure to supply this dependency as acceptable
@@ -1155,6 +1164,12 @@ class SpellRequirementsFinder(Cleanable):
                 None,
                 default_value,
             )
+
+        # The caller already selected an ordinary Python default. Preserve it
+        # instead of creating an inferred dependency that overrides it or fails
+        # when no provider exists. Explicit DI descriptors were handled above.
+        if has_default:
+            return ParameterDIShape.PLAIN, True, None, None
 
         # If there is no annotation at all, we can't infer DI.
         if not has_annotation or annotation is None:

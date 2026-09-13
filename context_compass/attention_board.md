@@ -82,6 +82,10 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| commandops_local_wheel | review | handoff | codex | updater_0 | none | Owner transfers verified 0.2.40 wheel into CommandOps. | Archive and isolated install smoke passed. | Owner accepts wheel; named lesser work later. | tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md | 2026-09-13T16:42:22Z | REQUIRED |
+| optional_dependency_resolution | review | handoff | codex | updater_0 | none | Owner reruns broader suite; capture thread traceback if it recurs. | Three fixtures corrected; 18 tests pass; thread failure unreproduced. | Owner accepts fixes or supplies another failure. | tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md | 2026-09-13T16:25:07Z | REQUIRED |
+| named_binding_meld_lookup | review | handoff | codex | updater_0 | none | Owner reviews named and framed binding lookup results. | 25 tests pass across three lifecycle modes. | Owner accepts observed behavior or requests changes. | tickets/tasks/2026-09-13_named_binding_meld_lookup_test_task.md | 2026-09-13T12:09:53Z | REQUIRED |
+| bind_conjure_order_speedtest | review | handoff | codex | updater_0 | none | Owner reviews cache results and completed Python upgrade. | Cache behavior measured on 3.14.7; profiler stall diagnosed. | Owner accepts evidence or selects another workload. | tickets/tasks/2026-09-12_bind_conjure_order_benchmark_task.md | 2026-09-12T21:18:31Z | REQUIRED |
 | reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
 | named_conduit_scope_design | review | handoff | codex | updater_0 | none | Review the twelve-phase map and remaining contract choices. | Source-backed implementation plan and difficulty assessment. | Owner selects contracts and authorizes implementation separately. | tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md | 2026-09-07T17:22:45Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
@@ -111,6 +115,14 @@ Message alert rules
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
+- commandops_local_wheel: SWITCH_TRIGGER is a verified wheel delivered to the owner.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md.
+- optional_dependency_resolution: SWITCH_TRIGGER is owner acceptance of the verified default-precedence patch.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md.
+- named_binding_meld_lookup: SWITCH_TRIGGER is executed lookup/identity evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-13_named_binding_meld_lookup_test_task.md.
+- bind_conjure_order_speedtest: SWITCH_TRIGGER is completed repeated timing and correctness evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-12_bind_conjure_order_benchmark_task.md.
 - reproducible_uv_environment: SWITCH_TRIGGER is owner acceptance or new hosted matrix failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-08_reproducible_uv_environment_task.md.
 - named_conduit_scope_design: SWITCH_TRIGGER is the completed implementation map and owner contract decisions.

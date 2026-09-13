@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 3781324ab77c441074009049cb3665c3badb815558707fc46a7f029e573c020b
-FILE COUNT: 810
+SOURCE FINGERPRINT: 940fe766238b9644183135285d7888891ecc26d8ee8626ffda2725c542d3c449
+FILE COUNT: 814
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -11089,7 +11089,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_singleton
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_spell_contracts.py
-CONTENT SHA256: 4b97d49f4b7024d2030c7b0fb5a41579593edba9a883c7706a474a35b8a30610
+CONTENT SHA256: 860d51a907779503d6b1ae58941f21fdda442db7931544d09c933bb7ca7b5281
 SOURCE ENCODING: utf-8
 ================================================================================
 import contextlib
@@ -11573,15 +11573,15 @@ def test_component_spell_contract_broadcast_override_targets_dual_dependencies()
             Provide a consumer with multiple SpellContract "service" sockets.
         Contract:
             - Declares a SpellContract service socket.
-            - Declares a child dependency that also declares a service contract.
+            - Requires an injected child that also declares a service contract.
         """
         def __init__(
             self,
+            child: ContractConsumerPrimary,
             service: IService = SpellContract(
                 spellframe=IService,
                 binding_name="primary",
             ),
-            child: ContractConsumerPrimary = None,
         ) -> None:
             """
             Purpose:
@@ -11590,7 +11590,7 @@ def test_component_spell_contract_broadcast_override_targets_dual_dependencies()
                 Stores the service and child for assertions.
             Args:
                 service: Resolved service instance.
-                child: Child dependency with its own contract socket.
+                child: Required child dependency with its own contract socket.
             Returns:
                 None.
             """
@@ -35054,7 +35054,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/system/validation/test_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/spell_crafter/topology/test_spellbook_component_spell_local_topology.py
-CONTENT SHA256: 1b5b8fc2db902681eb18c9eb37fb3a4f8d6e521b53d49bdc1066a8cfda6fe9b4
+CONTENT SHA256: 9b50d5b8c5762a808bcf63c56cf57e0f32b2f664737f9afb8d81239eb3c31768
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -35133,7 +35133,7 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
     Contract:
         - Positions match constructor order.
         - Optional parameters are marked as optional.
-        - Target spell ids include resolved dependencies.
+        - Target spell ids include required DI dependencies, not ordinary defaults.
     Returns:
         None.
     """
@@ -35142,12 +35142,12 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
     class Consumer:
         """
         Purpose:
-            Provide a spell with required and optional dependencies.
+            Provide a spell with a required dependency and a plain default.
         Contract:
             - Declares a required service and an optional config.
         Args:
             service: Injected BasicService dependency.
-            config: BasicConfig dependency with a default fallback.
+            config: Plain None default; registering BasicConfig must not create an edge.
         """
 
         def __init__(
@@ -35162,7 +35162,7 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
                 - Stores the service and config on the instance.
             Args:
                 service: Injected BasicService dependency.
-                config: BasicConfig dependency with a default fallback.
+                config: Plain None default; registering BasicConfig must not create an edge.
             Returns:
                 None.
             """
@@ -35206,7 +35206,8 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
         assert service_socket.socket_kind is SocketKind.NORMAL
         assert config_socket.socket_kind is SocketKind.NORMAL
         assert set(service_socket.target_spell_ids) == {service_id}
-        assert set(config_socket.target_spell_ids) == {config_id}
+        assert not config_socket.target_spell_ids
+        assert config_id not in spell.dependencies
     finally:
         spellbook.cleanup()
 
@@ -41995,7 +41996,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_signature_re
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_spell.py
-CONTENT SHA256: 85c4ce0fe29810573fd5b619d6c924b8bd4195c0b500037964b3f4d4ac30e7a4
+CONTENT SHA256: a7afa9fc8d61632857ed8853aaaaec905338323fc94aefd79e58e466d4c2f19a
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -42084,6 +42085,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
     Contract:
         - Parameters are classified into expected DI shapes.
         - Optional and collection flags match the parameter signatures.
+        - Ordinary defaults stay PLAIN while preserving annotation metadata.
     Returns:
         None.
     Raises:
@@ -42099,7 +42101,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
             - Declares required, optional, collection, and plain parameters.
         Args:
             service: Required BasicService dependency.
-            optional_service: Optional BasicService dependency.
+            optional_service: Plain None default with a nullable BasicService annotation.
             services: Collection of IService implementations.
             count: Plain parameter with a default.
         """
@@ -42117,7 +42119,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
                 - Stores constructor inputs for diagnostics.
             Args:
                 service: Required BasicService dependency.
-                optional_service: Optional BasicService dependency.
+                optional_service: Plain None default with a nullable BasicService annotation.
                 services: Collection of IService implementations.
                 count: Plain parameter with a default.
             Returns:
@@ -42157,7 +42159,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
         assert service_dep.target_annotation is BasicService
 
         optional_dep = deps_by_name["optional_service"]
-        assert optional_dep.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+        assert optional_dep.di_shape is ParameterDIShape.PLAIN
         assert optional_dep.is_optional is True
         assert optional_dep.is_collection is False
         assert optional_dep.target_annotation == Optional[BasicService]
@@ -56751,6 +56753,691 @@ def test_deque_vs_list_append_popleft_experiment() -> None:
 END FILE: tests/experimentation/test_deque_vs_list_append_popleft_experiment.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/experimentation/test_dynamic_bind_conjure_order_cache_speed_experiment.py
+CONTENT SHA256: 25274a6192734c514b17ba64538c7cbe31d861449cc9b91cdf7120ad38b0899c
+SOURCE ENCODING: utf-8
+================================================================================
+"""Opt-in cold/warm disk-cache extension of the five-object order speed test.
+
+Run alone with MELDER_BIND_ORDER_CACHE_SPEEDTEST=1. Timed samples use real,
+unpatched runtime APIs. A separate call-through spy pass records cache
+loads, writes and target compilation; its timings are discarded.
+"""
+
+import gc
+import json
+import os
+import platform
+import re
+import shutil
+import statistics
+import subprocess
+import sys
+import sysconfig
+from dataclasses import asdict
+from contextlib import ExitStack
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import ClassVar, Optional
+from uuid import uuid4
+from unittest.mock import patch
+
+import pytest
+
+import melder
+from melder.__version__ import __version__
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.utilities.caching_system.caching_system import CachingSystem
+from test_dynamic_bind_conjure_order_speed_experiment import OrderBenchmark, Sample
+
+
+class CacheOrderBenchmark(OrderBenchmark):
+    """Run the original workload against two isolated, task-owned cache files.
+
+    Each order receives its own cache folder, with identical frame and conduit
+    names. Cold means no bundle before each cycle; warm means a previous cycle
+    for that same order produced all five payloads. Books and frames remain
+    fresh in every case. The caller owns the temporary filesystem directory.
+    """
+
+    CACHE_MODES: ClassVar[tuple[str, ...]] = ("disabled", "cold", "warm")
+
+    def __init__(self, warm_sweeps: int, cache_mode: str, cache_root: Path) -> None:
+        """Borrow the process host and validate the requested cache treatment."""
+        super().__init__(warm_sweeps)
+        if cache_mode not in self.CACHE_MODES:
+            raise ValueError(f"Unknown cache mode: {cache_mode}")
+        self._cache_mode = cache_mode
+        self._cache_root = cache_root.resolve()
+        self._case_sequence = self.SEQUENCES[0]
+        self._seeded = False
+
+    def cleanup(self) -> None:
+        """Release configuration after base cleanup verifies frame detachment."""
+        super().cleanup()
+        del self._cache_mode
+        del self._cache_root
+        del self._case_sequence
+        del self._seeded
+
+    def _bundle_path(self, sequence: str) -> Path:
+        """Resolve the one cache file owned by an order; reject path escape."""
+        if sequence not in self.SEQUENCES:
+            raise ValueError(f"Unknown benchmark sequence: {sequence}")
+        path = (
+            self._cache_root / sequence / "__conjure_cache__" / self.FRAME_NAME / "root.melc"
+        ).resolve()
+        assert path.is_relative_to(self._cache_root)
+        return path
+
+    def _make_book(self) -> Spellbook:
+        """Match the original configuration except for isolated cache posture.
+
+        The configuration accepts a package-relative fragment. Compute that
+        fragment from the task-owned absolute directory, and verify the public
+        resolver returns the intended path before any cache I/O occurs.
+        """
+        book = Spellbook(aetheric_frame=self.FRAME_NAME)
+        expected_root = self._cache_root / self._case_sequence
+        fragment = Path(os.path.relpath(expected_root, Path(melder.__file__).resolve().parent))
+        book.configure_aether_frame(
+            system_state="dynamic",
+            disposal=None,
+            disposal_method_names=None,
+            system_caching_enabled=self._cache_mode != "disabled",
+            system_cache_root_path=fragment,
+            ai_native=False,
+            rift_enabled=False,
+        )
+        assert book.get_configuration().get_property("phase_scheduler_workers_per_spellbook") == 5
+        posture = book._aetheric_frame.frame_configuration
+        assert posture.system_state.name == "dynamic"
+        assert posture.system_caching_enabled == (self._cache_mode != "disabled")
+        assert posture.resolve_system_cache_root_path() == expected_root
+        assert not book._crystallizer.activated
+        return book
+
+    def run_case(self, sequence: str, pair: int, position: int) -> Sample:
+        """Prepare cache outside timing, then run the unchanged base workflow.
+
+        Only this experiment's individual bundle may be unlinked. No user cache
+        is read or removed. Warm file identity is checked after the cycle to
+        detect accidental writes; cold cycles must create their bundle.
+        """
+        self._case_sequence = sequence
+        bundle = self._bundle_path(sequence)
+        if self._cache_mode == "cold":
+            bundle.unlink(missing_ok=True)
+        previous_stat: Optional[tuple[int, int]] = None
+        if self._cache_mode == "warm" and self._seeded:
+            previous_stat = (bundle.stat().st_size, bundle.stat().st_mtime_ns)
+        result = super().run_case(sequence, pair, position)
+        if self._cache_mode == "disabled":
+            assert not bundle.exists()
+        else:
+            assert bundle.is_file() and bundle.stat().st_size > 0
+        if previous_stat is not None:
+            assert (bundle.stat().st_size, bundle.stat().st_mtime_ns) == previous_stat
+        return result
+
+    def seed(self) -> None:
+        """Populate both warm bundles with this order's own full untimed cycle."""
+        if self._cache_mode == "warm":
+            for position, sequence in enumerate(self.SEQUENCES):
+                assert not self._bundle_path(sequence).exists()
+                self.run_case(sequence, -1, position)
+        self._seeded = True
+
+    def probe_calls(self) -> dict[str, dict[str, int]]:
+        """Count cache/control-path calls in separate untimed cycles.
+
+        Autospecced spies call through to the real implementations. Their call
+        counts verify the route; their overhead is never part of timing data.
+        """
+        targets = {
+            "payload_reads": (CachingSystem, "get_spell_payload"),
+            "payload_upserts": (CachingSystem, "upsert_spell_payload"),
+            "bundle_writes": (CachingSystem, "_write_current_cache_to_disk_locked"),
+            "conjure_cache_loads": (
+                SpellbookCreationSystem, "_load_cached_spell_payloads_for_conjure"
+            ),
+            "cached_context_publications": (
+                SpellbookCreationSystem, "_publish_cached_creation_context_for_spell"
+            ),
+            "target_plan_compilations": (
+                SpellbookCreationSystem, "_run_target_plan_resolution_phases"
+            ),
+            "deferred_plan_compilations": (
+                SpellbookCreationSystem, "run_deferred_resolution_phases_for_target_spell"
+            ),
+        }
+        reports: dict[str, dict[str, int]] = {}
+        for position, sequence in enumerate(self.SEQUENCES):
+            with ExitStack() as stack:
+                # Attribute names are deliberately dynamic in this diagnostic map.
+                spies = {
+                    name: stack.enter_context(patch.object(
+                        owner, method, autospec=True, side_effect=getattr(owner, method)
+                    ))
+                    for name, (owner, method) in targets.items()
+                }
+                self.run_case(sequence, -2, position)
+                counts = {name: spy.call_count for name, spy in spies.items()}
+            expected_loads = 5 if self._cache_mode == "warm" and position == 0 else 0
+            assert counts["payload_reads"] == expected_loads
+            assert counts["cached_context_publications"] == expected_loads
+            assert counts["target_plan_compilations"] == (5 if position == 1 else 0)
+            assert counts["deferred_plan_compilations"] == 0
+            assert counts["bundle_writes"] == (
+                (1 if position == 0 else 5) if self._cache_mode == "cold" else 0
+            )
+            reports[sequence] = counts
+        return reports
+
+
+@pytest.mark.skipif(
+    os.environ.get("MELDER_BIND_ORDER_CACHE_SPEEDTEST") != "1",
+    reason="Opt-in cache timing: set MELDER_BIND_ORDER_CACHE_SPEEDTEST=1 and run alone.",
+)
+def test_dynamic_bind_conjure_order_cache_speed() -> None:
+    """Measure one cache treatment in a fresh process and preserve raw evidence.
+
+    Correctness and reuse checks are inherited from the original workload.
+    Call-through diagnostics run after measured samples and are reported separately.
+    No performance thresholds are asserted.
+    """
+    cache_mode = os.environ.get("MELDER_BIND_ORDER_CACHE_MODE", "warm")
+    samples = int(os.environ.get("MELDER_BIND_ORDER_SAMPLES", "200"))
+    warmups = int(os.environ.get("MELDER_BIND_ORDER_WARMUPS", "20"))
+    run_id = os.environ.get("MELDER_BIND_ORDER_RUN_ID", f"cache_{cache_mode}_manual")
+    assert cache_mode in CacheOrderBenchmark.CACHE_MODES
+    assert samples >= 2 and warmups >= 0
+    assert re.fullmatch(r"[A-Za-z0-9_-]{1,40}", run_id)
+    assert sysconfig.get_config_var("Py_GIL_DISABLED") == 1 and not sys._is_gil_enabled()
+    assert sys.gettrace() is None and sys.getprofile() is None and gc.isenabled()
+    root = Path(__file__).resolve().parents[2]
+    assert Path(melder.__file__).resolve().is_relative_to(root / "src")
+    output_dir = root / "context_compass" / "artifacts" / "bind_conjure_order_20260912"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    # Normal mkdir inherits workspace permissions; Windows mode-0700 temp
+    # directories can exclude the restricted process token from their own ACL.
+    cache_root = (output_dir / f"{run_id}_{uuid4().hex[:8]}").resolve()
+    assert cache_root.is_relative_to(output_dir.resolve())
+    cache_root.mkdir()
+    runner = CacheOrderBenchmark(10, cache_mode, cache_root)
+    try:
+        runner.seed()
+        rows = runner.measure(warmups, samples)
+        summary = runner.summarize(rows)
+        probes = runner.probe_calls()
+    finally:
+        try:
+            runner.cleanup()
+        finally:
+            # Recursive deletion is limited to this newly created task directory.
+            assert cache_root.is_relative_to(output_dir.resolve())
+            assert cache_root.name.startswith(f"{run_id}_")
+            shutil.rmtree(cache_root)
+    metadata = {
+        "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+        "run_id": run_id,
+        "cache_mode": cache_mode,
+        "python": sys.version,
+        "executable": sys.executable,
+        "gil_enabled": sys._is_gil_enabled(),
+        "platform": platform.platform(),
+        "processor": platform.processor(),
+        "melder_version": __version__,
+        "melder_source": melder.__file__,
+        "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip(),
+        "src_status": subprocess.check_output(
+            ["git", "status", "--porcelain", "--", "src/melder"], cwd=root, text=True
+        ),
+        "warmup_pairs": warmups,
+        "measured_pairs": samples,
+        "workers": 5,
+        "existence": "unique",
+        "dynamic": True,
+        "cache_isolation": "separate temporary directory per order; removed after run",
+        "warm_seed": "one same-order full cycle before warm-ups" if cache_mode == "warm" else None,
+        "cold_definition": "no Melder bundle at cycle start; OS/filesystem caches are uncontrolled",
+        "timing_instrumentation": "none; call-through spies only in subsequent discarded diagnostic cycles",
+        "total_excludes": ["import", "cache setup/removal", "book/frame setup", "assertions", "reuse", "cleanup"],
+    }
+    output = output_dir / f"{run_id}.json"
+    output.write_text(json.dumps({
+        "metadata": metadata,
+        "summary": summary,
+        "call_probes": probes,
+        "samples": [asdict(row) for row in rows],
+    }, indent=2) + "\n", encoding="utf-8")
+    print(f"cache={cache_mode}, run={run_id}, samples={samples} per order; median milliseconds")
+    for sequence in OrderBenchmark.SEQUENCES:
+        chosen = [row for row in rows if row.sequence == sequence]
+        print(
+            f"{sequence}: bind5={statistics.median(row.bind_ns for row in chosen) / 1e6:.4f}, "
+            f"conjure={statistics.median(row.conjure_ns for row in chosen) / 1e6:.4f}, "
+            f"first_meld5={statistics.median(row.first_meld_ns for row in chosen) / 1e6:.4f}, "
+            f"total={statistics.median(row.total_ns for row in chosen) / 1e6:.4f}"
+        )
+        print(f"Untimed call probe: {probes[sequence]}")
+    print(f"Raw results: {output}")
+
+
+@pytest.mark.skipif(
+    os.environ.get("MELDER_BIND_ORDER_PROFILE_REPRO") != "1",
+    reason="Separate opt-in reproduction of the old interpreter profiling stall.",
+)
+def test_profile_stall_reproduction() -> None:
+    """Run the original profiler trigger with a bounded hard-exit watchdog.
+
+    Invoke this test alone in a disposable subprocess. If it stalls, the
+    watchdog writes every thread stack and exits the process after ten seconds.
+    This is diagnostic only and produces no performance measurements.
+    """
+    import cProfile
+    import faulthandler
+
+    root = Path(__file__).resolve().parents[2]
+    output_dir = root / "context_compass" / "artifacts" / "bind_conjure_order_20260912"
+    cache_root = (output_dir / f"profile_repro_{uuid4().hex[:8]}").resolve()
+    assert cache_root.is_relative_to(output_dir.resolve())
+    cache_root.mkdir()
+    runner = CacheOrderBenchmark(10, "warm", cache_root)
+    try:
+        runner.seed()
+        runner.measure(2, 4)
+        print(f"PROFILE REPRO START: {sys.version}; gil={sys._is_gil_enabled()}", flush=True)
+        faulthandler.dump_traceback_later(10, exit=True)
+        try:
+            for position, sequence in enumerate(runner.SEQUENCES):
+                profiler = cProfile.Profile()
+                profiler.enable()
+                try:
+                    runner.run_case(sequence, -2, position)
+                finally:
+                    profiler.disable()
+            print("PROFILE REPRO COMPLETED", flush=True)
+        finally:
+            faulthandler.cancel_dump_traceback_later()
+    finally:
+        runner.cleanup()
+        assert cache_root.is_relative_to(output_dir.resolve())
+        assert cache_root.name.startswith("profile_repro_")
+        shutil.rmtree(cache_root)
+================================================================================
+END FILE: tests/experimentation/test_dynamic_bind_conjure_order_cache_speed_experiment.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/experimentation/test_dynamic_bind_conjure_order_speed_experiment.py
+CONTENT SHA256: 1d224c7b6448690d47dcea35c331b02ba4ec254a91a248f338f88c663211d65a
+SOURCE ENCODING: utf-8
+================================================================================
+"""Opt-in timing of five binds, dynamic conjure, and five first melds.
+
+Run this file alone with MELDER_BIND_ORDER_SPEEDTEST=1. Each sample owns a fresh
+frame/book/root. Setup, correctness assertions, warmed reads and cleanup are
+outside the requested workflow total. Production runtime code is not modified.
+"""
+
+import gc
+import json
+import os
+import platform
+import re
+import statistics
+import subprocess
+import sys
+import sysconfig
+import time
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar, Optional, Sequence, Union, cast
+
+import pytest
+
+import melder
+from melder.__version__ import __version__
+from melder.aether.aether import Aether
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+    from melder.aether.conduit.conduit import Conduit
+
+
+class PayloadOne:
+    """Independent allocation with a deterministic public value and no resources."""
+
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        """Initialize this fresh instance with the value one."""
+        self.value: int = 1
+
+
+class PayloadTwo:
+    """Second independent class; no dependencies or external work."""
+
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        """Initialize this fresh instance with the value two."""
+        self.value: int = 2
+
+
+class PayloadThree:
+    """Third independent class; no dependencies or external work."""
+
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        """Initialize this fresh instance with the value three."""
+        self.value: int = 3
+
+
+class PayloadFour:
+    """Fourth independent class; no dependencies or external work."""
+
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        """Initialize this fresh instance with the value four."""
+        self.value: int = 4
+
+
+class PayloadFive:
+    """Fifth independent class; no dependencies or external work."""
+
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        """Initialize this fresh instance with the value five."""
+        self.value: int = 5
+
+
+Payload = Union[PayloadOne, PayloadTwo, PayloadThree, PayloadFour, PayloadFive]
+
+
+@dataclass(frozen=True)
+class Sample:
+    """Value-only timing record; durations are nanoseconds and retain no objects."""
+
+    sequence: str
+    pair: int
+    position: int
+    setup_ns: int
+    bind_ns: int
+    conjure_ns: int
+    first_meld_ns: int
+    total_ns: int
+    per_bind_ns: list[int]
+    per_first_meld_ns: list[int]
+    warm_five_meld_ns: float
+    cleanup_ns: int
+
+
+class OrderBenchmark:
+    """Measure real public APIs while owning each sample's runtime lifecycle.
+
+    Aether is borrowed for the process. Each sample owns its book, frame and
+    conduit and cleans them after timing. The same frame name is reused only
+    after verifying its previous frame has been detached. No runtime methods
+    are patched. Compilation uses the default five workers; caches and passive
+    recording/publication are disabled to isolate operation ordering.
+    """
+
+    TARGETS: ClassVar[tuple[type, ...]] = (
+        PayloadOne, PayloadTwo, PayloadThree, PayloadFour, PayloadFive,
+    )
+    SEQUENCES: ClassVar[tuple[str, str]] = ("bind_conjure_meld", "conjure_bind_meld")
+    FRAME_NAME: ClassVar[str] = "dynamic_bind_conjure_order_speed"
+
+    def __init__(self, warm_sweeps: int) -> None:
+        """Borrow the fresh process host and retain the untimed reuse-sweep count."""
+        self._aether: Aether = Aether()
+        self._warm_sweeps: int = warm_sweeps
+        if self._aether._aetheric_frames:
+            raise RuntimeError("Run this experiment alone in a fresh pytest process.")
+
+    def cleanup(self) -> None:
+        """Release benchmark references; sample cleanup already released all frames."""
+        if self._aether._aetheric_frames:
+            raise AssertionError("Benchmark left a frame in the process host.")
+        del self._aether
+        del self._warm_sweeps
+
+    @staticmethod
+    def distribution(values: Sequence[float]) -> dict[str, float]:
+        """Summarize at least two nanosecond observations as microseconds."""
+        scaled = [value / 1000.0 for value in values]
+        deciles = statistics.quantiles(scaled, n=10, method="inclusive")
+        return {
+            "median_us": statistics.median(scaled),
+            "p10_us": deciles[0],
+            "p90_us": deciles[8],
+            "minimum_us": min(scaled),
+            "mean_us": statistics.mean(scaled),
+        }
+
+    def _make_book(self) -> Spellbook:
+        """Create fresh, identically configured runtime state outside the timer."""
+        book = Spellbook(aetheric_frame=self.FRAME_NAME)
+        assert book.get_configuration().get_property("phase_scheduler_workers_per_spellbook") == 5
+        book.configure_aether_frame(
+            system_state="dynamic",
+            disposal=None,
+            disposal_method_names=None,
+            system_caching_enabled=False,
+            ai_native=False,
+            rift_enabled=False,
+        )
+        assert not book._crystallizer.activated
+        assert book._aetheric_frame.frame_configuration.system_state.name == "dynamic"
+        assert not book._aetheric_frame.frame_configuration.system_caching_enabled
+        return book
+
+    def _bind_five(self, book: Spellbook) -> tuple[list[str], list[int], int]:
+        """Time five individual binds with identical existence and permissions."""
+        spell_ids: list[str] = []
+        times: list[int] = []
+        batch_start = time.perf_counter_ns()
+        for target in self.TARGETS:
+            started = time.perf_counter_ns()
+            spell_id = book.bind(spell=target, existence=Existence.unique, permissions="create")
+            elapsed = time.perf_counter_ns() - started
+            spell_ids.append(spell_id)
+            times.append(elapsed)
+        return spell_ids, times, time.perf_counter_ns() - batch_start
+
+    @staticmethod
+    def _meld_five(conduit: Conduit, spell_ids: list[str]) -> tuple[list[object], list[int], int]:
+        """Time one meld of each returned id, preserving order and returned objects."""
+        objects: list[object] = []
+        times: list[int] = []
+        batch_start = time.perf_counter_ns()
+        for spell_id in spell_ids:
+            started = time.perf_counter_ns()
+            instance = conduit.meld(spell_id=spell_id)
+            elapsed = time.perf_counter_ns() - started
+            objects.append(instance)
+            times.append(elapsed)
+        return objects, times, time.perf_counter_ns() - batch_start
+
+    def _verify_created(self, conduit: Conduit, objects: list[object]) -> None:
+        """Check actual construction and dynamic mode after the primary timing."""
+        assert conduit.__dynamic_environment__ is True
+        assert len(objects) == 5
+        for index, (instance, expected_type) in enumerate(zip(objects, self.TARGETS, strict=True)):
+            assert type(instance) is expected_type
+            assert cast(Payload, instance).value == index + 1
+
+    @staticmethod
+    def _release(conduit: Optional[Conduit], book: Spellbook, frame: AethericFrame) -> None:
+        """Always attempt owned root, book and frame cleanup, outside timing."""
+        try:
+            if conduit is not None:
+                conduit.permanent_cleanup()
+        finally:
+            try:
+                if not book.cleaned:
+                    book.cleanup()
+            finally:
+                if not frame.cleaned:
+                    frame.cleanup()
+
+    def run_case(self, sequence: str, pair: int, position: int) -> Sample:
+        """Measure a fresh workflow; no correctness checks run inside its timer."""
+        setup_start = time.perf_counter_ns()
+        book = self._make_book()
+        # This borrowed handle must survive book/root teardown for frame cleanup.
+        frame = book._aetheric_frame
+        setup_ns = time.perf_counter_ns() - setup_start
+        conduit: Optional[Conduit] = None
+        try:
+            started = time.perf_counter_ns()
+            if sequence == "bind_conjure_meld":
+                spell_ids, per_bind_ns, bind_ns = self._bind_five(book)
+                conjure_start = time.perf_counter_ns()
+                conduit = book.conjure(dynamic=True, name="root")
+                conjure_ns = time.perf_counter_ns() - conjure_start
+            elif sequence == "conjure_bind_meld":
+                conjure_start = time.perf_counter_ns()
+                conduit = book.conjure(dynamic=True, name="root")
+                conjure_ns = time.perf_counter_ns() - conjure_start
+                spell_ids, per_bind_ns, bind_ns = self._bind_five(book)
+            else:
+                raise ValueError(f"Unknown benchmark sequence: {sequence}")
+            objects, per_first_meld_ns, first_meld_ns = self._meld_five(conduit, spell_ids)
+            total_ns = time.perf_counter_ns() - started
+            self._verify_created(conduit, objects)
+            warm_times: list[int] = []
+            for _ in range(self._warm_sweeps):
+                reused, _, elapsed = self._meld_five(conduit, spell_ids)
+                assert all(a is b for a, b in zip(objects, reused, strict=True))
+                warm_times.append(elapsed)
+        finally:
+            cleanup_start = time.perf_counter_ns()
+            self._release(conduit, book, frame)
+            cleanup_ns = time.perf_counter_ns() - cleanup_start
+        assert self.FRAME_NAME not in self._aether._aetheric_frames
+        return Sample(
+            sequence, pair, position, setup_ns, bind_ns, conjure_ns, first_meld_ns,
+            total_ns, per_bind_ns, per_first_meld_ns, statistics.mean(warm_times), cleanup_ns,
+        )
+
+    def measure(self, warmups: int, samples: int) -> list[Sample]:
+        """Warm both cases, then collect balanced paired samples with GC enabled."""
+        rows: list[Sample] = []
+        for pair in range(warmups + samples):
+            gc.collect()
+            sequence_order = self.SEQUENCES if pair % 2 == 0 else tuple(reversed(self.SEQUENCES))
+            for position, sequence in enumerate(sequence_order):
+                row = self.run_case(sequence, pair - warmups, position)
+                if pair >= warmups:
+                    rows.append(row)
+        return rows
+
+    def summarize(self, rows: list[Sample]) -> dict[str, object]:
+        """Build phase and per-object distributions without discarding slow samples."""
+        summary: dict[str, object] = {}
+        for sequence in self.SEQUENCES:
+            chosen = [row for row in rows if row.sequence == sequence]
+            phases = {
+                "setup": [float(row.setup_ns) for row in chosen],
+                "bind_five": [float(row.bind_ns) for row in chosen],
+                "conjure": [float(row.conjure_ns) for row in chosen],
+                "first_meld_five": [float(row.first_meld_ns) for row in chosen],
+                "total": [float(row.total_ns) for row in chosen],
+                "warm_meld_five": [row.warm_five_meld_ns for row in chosen],
+                "cleanup": [float(row.cleanup_ns) for row in chosen],
+            }
+            summary[sequence] = {
+                "samples": len(chosen),
+                "phases": {name: self.distribution(values) for name, values in phases.items()},
+                "per_first_meld": {
+                    target.__name__: self.distribution([float(row.per_first_meld_ns[i]) for row in chosen])
+                    for i, target in enumerate(self.TARGETS)
+                },
+            }
+        return summary
+
+
+@pytest.mark.skipif(
+    os.environ.get("MELDER_BIND_ORDER_SPEEDTEST") != "1",
+    reason="Opt-in timing experiment: set MELDER_BIND_ORDER_SPEEDTEST=1 and run this file alone.",
+)
+def test_dynamic_bind_conjure_order_speed() -> None:
+    """Validate both real workflows and save repeated phase/per-object timings.
+
+    No performance assertion is made. A timing comparison is meaningful only
+    after both sequences construct all five expected instances successfully.
+    """
+    samples = int(os.environ.get("MELDER_BIND_ORDER_SAMPLES", "200"))
+    warmups = int(os.environ.get("MELDER_BIND_ORDER_WARMUPS", "20"))
+    warm_sweeps = int(os.environ.get("MELDER_BIND_ORDER_WARM_SWEEPS", "10"))
+    run_id = os.environ.get("MELDER_BIND_ORDER_RUN_ID", "manual")
+    assert samples >= 2 and warmups >= 0 and warm_sweeps >= 1
+    assert re.fullmatch(r"[A-Za-z0-9_-]{1,32}", run_id)
+    assert sysconfig.get_config_var("Py_GIL_DISABLED") == 1
+    assert not sys._is_gil_enabled()
+    assert sys.gettrace() is None and sys.getprofile() is None
+    assert gc.isenabled()
+    root = Path(__file__).resolve().parents[2]
+    assert Path(melder.__file__).resolve().is_relative_to(root / "src")
+    runner = OrderBenchmark(warm_sweeps)
+    try:
+        rows = runner.measure(warmups, samples)
+        summary = runner.summarize(rows)
+    finally:
+        runner.cleanup()
+    metadata = {
+        "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+        "run_id": run_id,
+        "python": sys.version,
+        "executable": sys.executable,
+        "gil_enabled": sys._is_gil_enabled(),
+        "platform": platform.platform(),
+        "processor": platform.processor(),
+        "melder_version": __version__,
+        "melder_source": melder.__file__,
+        "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip(),
+        "src_status": subprocess.check_output(["git", "status", "--porcelain", "--", "src/melder"], cwd=root, text=True),
+        "warmup_pairs": warmups,
+        "measured_pairs": samples,
+        "warm_sweeps_per_sample": warm_sweeps,
+        "workers": 5,
+        "existence": "unique",
+        "bind_api": "five individual Spellbook.bind calls; no outer transaction",
+        "meld_api": "Conduit.meld(spell_id=returned_id)",
+        "dynamic_posture_before_timing": True,
+        "system_caching_enabled": False,
+        "crystallizer_recording": False,
+        "nexus_publication": False,
+        "gc_enabled": gc.isenabled(),
+        "total_excludes": ["import", "fresh book/frame setup", "assertions", "warm melds", "cleanup"],
+    }
+    output_dir = root / "context_compass" / "artifacts" / "bind_conjure_order_20260912"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{run_id}.json"
+    output_file.write_text(json.dumps({"metadata": metadata, "summary": summary, "samples": [asdict(row) for row in rows]}, indent=2) + "\n", encoding="utf-8")
+    print(f"run={run_id}, samples={samples} per order; median milliseconds")
+    for sequence in OrderBenchmark.SEQUENCES:
+        selected = [row for row in rows if row.sequence == sequence]
+        print(
+            f"{sequence}: bind5={statistics.median(row.bind_ns for row in selected) / 1e6:.4f}, "
+            f"conjure={statistics.median(row.conjure_ns for row in selected) / 1e6:.4f}, "
+            f"first_meld5={statistics.median(row.first_meld_ns for row in selected) / 1e6:.4f}, "
+            f"total={statistics.median(row.total_ns for row in selected) / 1e6:.4f}"
+        )
+    print(f"Raw results: {output_file}")
+================================================================================
+END FILE: tests/experimentation/test_dynamic_bind_conjure_order_speed_experiment.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/experimentation/test_dynamic_post_conjure_bind_dependency_revalidation_experiment.py
 CONTENT SHA256: 0fc3a3aa3010d5283bb17f994b92efa54769d9e280af7076f30307dec07c3318
 SOURCE ENCODING: utf-8
@@ -59868,16 +60555,28 @@ END FILE: tests/experimentation/test_lineage_upgrade_to_normal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_meld_human_spell_name_string_experiment.py
-CONTENT SHA256: 3f21e19bf374fb195d79dee8e3a20253e92a235562ec05bcf619e963b1e0b7bb
+CONTENT SHA256: 70aeed4745dc32ad65c791a3179ca4dc5650334ba410206eb2ac51f8a50035b4
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove human SpellName and explicit machine-ID public meld behavior."""
 
 import melder as md
+import pytest
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Optional
+
+from melder.aether.spellbook.spellbook import Spellbook
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
 
 
 class MyService:
     """Minimal service whose class name is the human lookup value under test."""
+
+
+class ServiceFrame:
+    """Concrete logical frame type with a name distinct from the bound service."""
 
 
 def test_positional_human_spell_name_and_explicit_id_behavior() -> None:
@@ -59904,8 +60603,217 @@ def test_positional_human_spell_name_and_explicit_id_behavior() -> None:
     finally:
         conduit.cleanup()
         book.cleanup()
+
+
+@pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+    """Yield a real root containing only MyService's named binding.
+
+    Each case owns a fresh frame/book/root and releases them deterministically.
+    Caching and recording are excluded from this identifier-resolution test.
+    Unique existence makes identity comparisons meaningful across call forms.
+    A tuple parameter supplies (mode, spellframe); a plain mode leaves the
+    spellframe unspecified for the original named-only tests.
+    """
+    if isinstance(request.param, tuple):
+        mode, spellframe = request.param
+    else:
+        mode, spellframe = str(request.param), None
+    dynamic = mode != "automatic_prebind"
+    book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+    frame = book._aetheric_frame
+    conduit: Optional[Conduit] = None
+    try:
+        book.configure_aether_frame(
+            system_state="dynamic" if dynamic else "automatic",
+            disposal=None,
+            disposal_method_names=None,
+            system_caching_enabled=False,
+            ai_native=False,
+            rift_enabled=False,
+        )
+        if mode == "dynamic_postbind":
+            conduit = book.conjure(dynamic=True)
+        spell_id = book.bind(
+            spell=MyService, existence="unique", binding_name="test", spellframe=spellframe,
+        )
+        if conduit is None:
+            conduit = book.conjure(dynamic=dynamic)
+        yield conduit, spell_id
+    finally:
+        try:
+            if conduit is not None:
+                conduit.permanent_cleanup()
+        finally:
+            try:
+                if not book.cleaned:
+                    book.cleanup()
+            finally:
+                if not frame.cleaned:
+                    frame.cleanup()
+
+
+def test_omitted_binding_does_not_fall_back_before_or_after_named_meld(
+        named_binding_runtime: tuple[Conduit, str],
+) -> None:
+    """Prove an omitted qualifier refuses before and after a named lookup succeeds.
+
+    A successful named lookup must not make its instance accessible through
+    the absent default binding by warming the input-resolution cache.
+    """
+    conduit, spell_id = named_binding_runtime
+    with pytest.raises(KeyError, match="binding='__default__'") as before:
+        conduit.meld("MyService")
+    named = conduit.meld("MyService", binding_name="test")
+    assert isinstance(named, MyService)
+    assert named is conduit.meld(spell_id=spell_id)
+    with pytest.raises(KeyError, match="binding='__default__'") as after:
+        conduit.meld("MyService")
+    with pytest.raises(KeyError, match="binding='__default__'"):
+        conduit.meld(MyService)
+    assert before.value.args == after.value.args
+    print(f"meld('MyService') before/after explicit success: {before.value}")
+
+
+def test_explicit_binding_call_forms_return_the_same_unique_instance(
+        named_binding_runtime: tuple[Conduit, str],
+) -> None:
+    """Prove string, concrete-class and machine-ID forms select one named instance."""
+    conduit, spell_id = named_binding_runtime
+    positional = conduit.meld("MyService", binding_name="test")
+    keyword = conduit.meld(spell="MyService", binding_name="test")
+    concrete = conduit.meld(MyService, binding_name="test")
+    machine = conduit.meld(spell_id=spell_id)
+    assert isinstance(positional, MyService)
+    assert positional is keyword is concrete is machine
+    print("Explicit string/class binding and spell_id: same MyService instance")
+
+
+def test_binding_keyword_alone_requires_a_spell_identity(
+        named_binding_runtime: tuple[Conduit, str],
+) -> None:
+    """Prove binding_name alone is a qualifier, not a complete meld address."""
+    conduit, _ = named_binding_runtime
+    with pytest.raises(ValueError) as failure:
+        conduit.meld(binding_name="test")
+    print(f"meld(binding_name='test'): {failure.value}")
+
+
+@pytest.mark.parametrize("positional_text", ("test", 'binding_name="test"'))
+def test_binding_value_or_assignment_text_is_not_a_spell_name(
+        named_binding_runtime: tuple[Conduit, str],
+        positional_text: str,
+) -> None:
+    """Prove positional text is interpreted as a spell name, without keyword parsing."""
+    conduit, _ = named_binding_runtime
+    with pytest.raises(KeyError) as failure:
+        conduit.meld(positional_text)
+    assert failure.value.args == (
+        f"[MELD] No spell found for frame='{positional_text.lower()}', binding='__default__'.",
+    )
+    print(f"meld({positional_text!r}): {failure.value}")
+
+
+@pytest.mark.parametrize(
+    "named_binding_runtime",
+    (
+        pytest.param(("automatic_prebind", "ServiceFrame"), id="automatic-string-frame"),
+        pytest.param(("dynamic_prebind", "ServiceFrame"), id="dynamic-string-frame"),
+        pytest.param(("dynamic_postbind", "ServiceFrame"), id="late-bind-string-frame"),
+        pytest.param(("automatic_prebind", ServiceFrame), id="automatic-type-frame"),
+        pytest.param(("dynamic_prebind", ServiceFrame), id="dynamic-type-frame"),
+        pytest.param(("dynamic_postbind", ServiceFrame), id="late-bind-type-frame"),
+    ),
+    indirect=True,
+)
+def test_explicit_frame_changes_the_address_and_does_not_create_a_class_name_alias(
+        named_binding_runtime: tuple[Conduit, str],
+) -> None:
+    """Prove distinct spellframe identity remains necessary after named resolution.
+
+    Both string and type frames normalize to the same logical frame name.
+    Omitting the keyword works only when the positional value supplies that
+    frame identity; the bound class name alone is a different address.
+    """
+    conduit, spell_id = named_binding_runtime
+    with pytest.raises(KeyError, match="frame='myservice', binding='test'") as before:
+        conduit.meld("MyService", binding_name="test")
+    with pytest.raises(KeyError, match="frame='serviceframe', binding='__default__'"):
+        conduit.meld(spellframe="ServiceFrame")
+    with pytest.raises(ValueError):
+        conduit.meld(binding_name="test")
+
+    qualified = conduit.meld(spellframe="ServiceFrame", binding_name="test")
+    assert isinstance(qualified, MyService)
+    assert qualified is conduit.meld("MyService", spellframe="ServiceFrame", binding_name="test")
+    assert qualified is conduit.meld(MyService, spellframe=ServiceFrame, binding_name="test")
+    assert qualified is conduit.meld(spellframe=ServiceFrame, binding_name="test")
+    assert qualified is conduit.meld("ServiceFrame", binding_name="test")
+    assert qualified is conduit.meld(ServiceFrame, binding_name="test")
+    assert qualified is conduit.meld(spell_id=spell_id)
+
+    with pytest.raises(KeyError, match="frame='myservice', binding='test'") as after:
+        conduit.meld("MyService", binding_name="test")
+    with pytest.raises(KeyError, match="frame='myservice', binding='test'"):
+        conduit.meld(MyService, binding_name="test")
+    with pytest.raises(KeyError, match="frame='serviceframe', binding='__default__'"):
+        conduit.meld(spellframe="ServiceFrame")
+    assert before.value.args == after.value.args
+    print(f"Explicit ServiceFrame, omitted frame before/after success: {before.value}")
+    print("Explicit frame, positional frame name/type and SHA: same MyService instance")
+
+
+@pytest.mark.parametrize(
+    "named_binding_runtime",
+    (
+        pytest.param(("automatic_prebind", "MyService"), id="automatic-same-name-frame"),
+        pytest.param(("dynamic_prebind", "MyService"), id="dynamic-same-name-frame"),
+        pytest.param(("dynamic_postbind", "MyService"), id="late-bind-same-name-frame"),
+    ),
+    indirect=True,
+)
+def test_omitted_frame_works_when_it_normalizes_to_the_class_name(
+        named_binding_runtime: tuple[Conduit, str],
+) -> None:
+    """Prove equal normalized names share an address without any fallback search."""
+    conduit, spell_id = named_binding_runtime
+    unqualified = conduit.meld("MyService", binding_name="test")
+    qualified = conduit.meld(spellframe="MyService", binding_name="test")
+    assert isinstance(unqualified, MyService)
+    assert unqualified is qualified is conduit.meld(spell_id=spell_id)
+    print("Frame name equals class name: omitted frame resolves the same address and instance")
 ================================================================================
 END FILE: tests/experimentation/test_meld_human_spell_name_string_experiment.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/experimentation/test_optional_dependency_default_resolution_experiment.py
+CONTENT SHA256: 676fd03b1556905c26d1f475c839ebd23e736140f41ac5f44b729ff63ad46414
+SOURCE ENCODING: utf-8
+================================================================================
+"""Run the canonical default-precedence regressions from the original experiment path.
+
+The desired-contract tests now live in the integration tier so runtime CI runs
+all of them. The prior characterization source and outputs remain under
+context_compass/artifacts/optional_dependency_resolution_20260913/.
+"""
+
+from tests.integration.melder.spellbook.test_spellbook_integration_default_precedence import (
+    optional_runtime as optional_runtime,
+    test_annotation_without_default_still_requests_injection as test_annotation_without_default_still_requests_injection,
+    test_collection_defaults_preserve_identity_without_inferred_providers as test_collection_defaults_preserve_identity_without_inferred_providers,
+    test_default_precedence_is_classified_before_graph_construction as test_default_precedence_is_classified_before_graph_construction,
+    test_explicit_spellmap_default_requests_injection as test_explicit_spellmap_default_requests_injection,
+    test_explicit_override_replaces_plain_default_without_creating_provider as test_explicit_override_replaces_plain_default_without_creating_provider,
+    test_none_default_is_preserved_with_registered_provider as test_none_default_is_preserved_with_registered_provider,
+    test_none_default_needs_no_registered_provider as test_none_default_needs_no_registered_provider,
+    test_numeric_falsy_and_other_plain_defaults_are_preserved as test_numeric_falsy_and_other_plain_defaults_are_preserved,
+    test_plain_optional_object_default_stays_none_with_provider_registered as test_plain_optional_object_default_stays_none_with_provider_registered,
+    test_required_dependency_without_provider_still_refuses as test_required_dependency_without_provider_still_refuses,
+    test_selected_instance_default_is_preserved_with_registered_provider as test_selected_instance_default_is_preserved_with_registered_provider,
+    test_selected_instance_default_needs_no_registered_provider as test_selected_instance_default_needs_no_registered_provider,
+)
+================================================================================
+END FILE: tests/experimentation/test_optional_dependency_default_resolution_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_repro_nested_spellspace_cross_clear.py
@@ -61003,7 +61911,7 @@ END FILE: tests/experimentation/test_singleton_specialization_efficacy_probe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_spellspace_cross_thread_scope_experiment.py
-CONTENT SHA256: 51d7ee7f9856191ed3616386f0c3bf7e5a670cf291ab6f9ab8f763a77e06818e
+CONTENT SHA256: 8d7baab67b1df0273a7ef651aa56a92944f83438f77901b815af3a36c5169d8a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -61018,6 +61926,7 @@ This file is an experiment surface, not production runtime code.
 """
 
 import threading
+import traceback
 from queue import Queue
 from typing import Any, Optional, Tuple
 
@@ -61111,7 +62020,7 @@ def _run_workers(
         list[Tuple[str, str, Optional[int]]]:
             One tuple per worker:
             - `"ok"` or `"err"`
-            - payload string (type name or error type)
+            - payload string (type name or complete error traceback)
             - object identity when successful
     """
     results: Queue[Tuple[str, str, Optional[int]]] = Queue()
@@ -61154,15 +62063,15 @@ def test_spellspace_direct_use_without_any_active_scope_reuses_across_threads() 
             """Attempt a direct meld from the worker without any active scope."""
             try:
                 obj = shared_space.meld(spell_id=spell_id)
-            except Exception as exc:
-                results.put(("err", type(exc).__name__, None))
+            except Exception:
+                results.put(("err", traceback.format_exc(), None))
             else:
                 results.put(("ok", type(obj).__name__, id(obj)))
 
         outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes), outcomes
         object_ids = {
             obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
         }
@@ -61191,15 +62100,15 @@ def test_spellspace_active_context_is_not_required_for_spawned_threads() -> None
                 """Attempt a meld from a spawned worker while the active scope exists."""
                 try:
                     obj = shared_space.meld(spell_id=spell_id)
-                except Exception as exc:
-                    results.put(("err", type(exc).__name__, None))
+                except Exception:
+                    results.put(("err", traceback.format_exc(), None))
                 else:
                     results.put(("ok", type(obj).__name__, id(obj)))
 
             outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes), outcomes
         object_ids = {
             obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
         }
@@ -61228,8 +62137,8 @@ def test_spellspace_can_be_forced_active_in_multiple_threads() -> None:
             conduit._spellspace_stack.set([shared_space])
             try:
                 obj = shared_space.meld(spell_id=spell_id)
-            except Exception as exc:
-                results.put(("err", type(exc).__name__, None))
+            except Exception:
+                results.put(("err", traceback.format_exc(), None))
             else:
                 results.put(("ok", type(obj).__name__, id(obj)))
             finally:
@@ -61238,7 +62147,7 @@ def test_spellspace_can_be_forced_active_in_multiple_threads() -> None:
         outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes), outcomes
         object_ids = {
             obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
         }
@@ -105207,7 +106116,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: f78dc7a3eb78ab93a50d6d341290ecebe734153d3b352d3fa96836a5411990b9
+CONTENT SHA256: 6938b75c5800239d5afa2bfb5a38ea9b8af08f517b21ca884e6197c008394df0
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -105228,6 +106137,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     5: "many_only_collection_param_names",
     6: "zero_provider_required_collections",
     7: "root_visible_family_selection",
+    8: "ordinary_defaults_are_plain",
 }
 
 
@@ -108931,8 +109841,420 @@ def test_meld_deep_graph_depth_9_branches_unique_reuse() -> None:
 END FILE: tests/integration/melder/spellbook/test_spellbook_integration_deep_graph.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_default_precedence.py
+CONTENT SHA256: 56d5c79a52b94222a0c312a2719f9f058f2a5a5d11e1d3d4eba89ceeef1bc9a5
+SOURCE ENCODING: utf-8
+================================================================================
+"""Regress ordinary constructor defaults taking precedence over inferred DI.
+
+These assert the owner-selected contract established by the red baseline.
+Ordinary defaults are PLAIN; explicit descriptors still request DI.
+No skip/xfail markers hide the bug, and production methods are not patched.
+"""
+
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, ClassVar, Optional, Union
+
+import pytest
+
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+    from melder.aether.conduit.conduit import Conduit
+
+
+class Something:
+    """A constructible provider whose identity can be checked after injection."""
+
+    def __init__(self, marker: str = "injected-provider") -> None:
+        """Mark the provider as a real constructed object without external work."""
+        self.marker: str = marker
+
+
+class NeedsOptionalSomething:
+    """Consumer with the exact Optional user-class annotation and None default."""
+
+    def __init__(self, dependency: Optional[Something] = None) -> None:
+        """Retain the actual constructor argument for public behavior assertions."""
+        self.dependency: Optional[Something] = dependency
+
+
+class PlainOptionalDefault:
+    """Control: a builtin object annotation is plain data rather than class DI."""
+
+    def __init__(self, dependency: Optional[object] = None) -> None:
+        """Retain the argument so the original None default remains observable."""
+        self.dependency: Optional[object] = dependency
+
+
+class ScalarDefaults:
+    """Control for ordinary and falsy Python defaults that do not request class DI."""
+
+    def __init__(
+            self,
+            count: int = 42,
+            zero: int = 0,
+            ratio: float = 1.5,
+            enabled: bool = False,
+            label: str = "selected",
+            empty: str = "",
+            items: tuple[int, ...] = (1, 2),
+            maybe: Optional[int] = None,
+    ) -> None:
+        """Expose exactly what the constructor received without altering any values."""
+        self.values = (count, zero, ratio, enabled, label, empty, items, maybe)
+
+
+class SelectedInstanceDefault:
+    """Consumer with an explicit, valid user-owned instance as its Python default.
+
+    The class owns the resource-free marker instance. Tests borrow it without
+    mutation; the runtime must not confuse it with a Melder-created provider.
+    """
+
+    DEFAULT_DEPENDENCY: ClassVar[Something] = Something("selected-default")
+
+    def __init__(self, dependency: Something = DEFAULT_DEPENDENCY) -> None:
+        """Retain the selected argument for comparison with the declared default."""
+        self.dependency = dependency
+
+
+class ExplicitMapDefault:
+    """Control for an explicit DI request expressed through a SpellMap default."""
+
+    def __init__(self, dependency: Union[Something, SpellMap] = SpellMap(Something)) -> None:
+        """Retain the injected provider or unresolved descriptor for the test to inspect."""
+        self.dependency = dependency
+
+
+class CollectionDefaults:
+    """Resource-free collection defaults borrowed intact by each consumer.
+
+    Tests never mutate the class-owned lists. Their contents must neither be
+    replaced with registered providers nor become inferred collection sockets.
+    """
+
+    SELECTED: ClassVar[list[Something]] = [Something("selected-list")]
+    EMPTY: ClassVar[list[Something]] = []
+
+    def __init__(
+            self,
+            selected: list[Something] = SELECTED,
+            empty: list[Something] = EMPTY,
+            nullable: Optional[list[Something]] = None,
+    ) -> None:
+        """Borrow the supplied lists and nullable value without copying or mutating them."""
+        self.selected = selected
+        self.empty = empty
+        self.nullable = nullable
+
+
+class ExplicitContractDefault:
+    """An explicit contract descriptor must retain its contract DI classification."""
+
+    def __init__(
+            self,
+            dependency: Union[Something, SpellContract] = SpellContract(spellframe=Something),
+    ) -> None:
+        """Retain the provider or contract supplied through the explicit descriptor."""
+        self.dependency = dependency
+
+
+class RequiresSomething:
+    """No default: the constructor still requires inferred class DI."""
+
+    def __init__(self, dependency: Something) -> None:
+        """Retain the required injected argument for identity assertions."""
+        self.dependency = dependency
+
+
+class RequiresNullableSomething:
+    """Nullable type without a default still requires a supplied constructor argument."""
+
+    def __init__(self, dependency: Optional[Something]) -> None:
+        """Retain the argument; Optional alone must not disable inferred DI."""
+        self.dependency = dependency
+
+
+class OptionalResolutionRuntime:
+    """Own one isolated book/frame/root and report the current public-call stage.
+
+    The fixture cleans the root, book and frame even when binding or conjure
+    fails. Each test receives fresh state and disables disk caching, recording
+    and Nexus publication. No production methods are patched.
+    """
+
+    def __init__(self, mode: str) -> None:
+        """Initialize runtime ownership and configure the selected lifecycle mode."""
+        self.mode = mode
+        self.stage = "setup"
+        self._cleaned = False
+        self.book = Spellbook(aetheric_frame=f"optional_none_experiment_{mode}")
+        self.frame: AethericFrame = self.book._aetheric_frame
+        self.conduit: Optional[Conduit] = None
+        self.book.configure_aether_frame(
+            system_state="automatic" if mode == "automatic_prebind" else "dynamic",
+            disposal=None,
+            disposal_method_names=None,
+            system_caching_enabled=False,
+            ai_native=False,
+            rift_enabled=False,
+        )
+        assert not self.book._crystallizer.activated
+        if mode == "dynamic_postbind":
+            self.ensure_conduit()
+
+    def cleanup(self) -> None:
+        """Release owned runtime surfaces in order, including failed-setup state."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        try:
+            if self.conduit is not None:
+                self.conduit.permanent_cleanup()
+        finally:
+            try:
+                if not self.book.cleaned:
+                    self.book.cleanup()
+            finally:
+                if not self.frame.cleaned:
+                    self.frame.cleanup()
+        del self.conduit
+        del self.book
+        del self.frame
+
+    def bind_provider(self, registration: str) -> str:
+        """Register exactly one Something, optionally with lookup qualifiers."""
+        self.stage = "bind_provider"
+        return self.book.bind(
+            spell=Something,
+            existence="unique",
+            binding_name="test" if registration != "default" else None,
+            spellframe="ProviderFrame" if registration == "named_and_framed" else None,
+        )
+
+    def bind_consumer(self, consumer_type: type) -> str:
+        """Register the consumer and retain the stage if bind-time validation fails."""
+        self.stage = "bind_consumer"
+        return self.book.bind(spell=consumer_type, existence="unique")
+
+    def ensure_conduit(self) -> Conduit:
+        """Conjure once, recording that stage if structural validation refuses."""
+        if self.conduit is None:
+            self.stage = "conjure"
+            self.conduit = self.book.conjure(dynamic=self.mode != "automatic_prebind")
+        return self.conduit
+
+
+@pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+def optional_runtime(request: pytest.FixtureRequest) -> Iterator[OptionalResolutionRuntime]:
+    """Give each case an isolated, explicitly cleaned runtime with the requested mode."""
+    runtime = OptionalResolutionRuntime(str(request.param))
+    try:
+        yield runtime
+    finally:
+        runtime.cleanup()
+
+
+@pytest.mark.parametrize("registration", ("default", "named", "named_and_framed"))
+def test_none_default_is_preserved_with_registered_provider(
+        optional_runtime: OptionalResolutionRuntime,
+        registration: str,
+) -> None:
+    """An ordinary None default must survive regardless of provider registration.
+
+    The provider must remain uncreated: retaining None must also eliminate
+    the inferred dependency edge, not merely replace the constructor argument
+    after unnecessarily creating a provider.
+    """
+    provider_id = optional_runtime.bind_provider(registration)
+    consumer_id = optional_runtime.bind_consumer(NeedsOptionalSomething)
+    conduit = optional_runtime.ensure_conduit()
+    assert not conduit.has_live_creation(spell=provider_id)
+    optional_runtime.stage = "meld"
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, NeedsOptionalSomething)
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+    assert not conduit.has_live_creation(spell=provider_id)
+
+
+def test_none_default_needs_no_registered_provider(
+        optional_runtime: OptionalResolutionRuntime,
+) -> None:
+    """Binding/conjure/meld must succeed using None without an inferred provider edge."""
+    consumer_id = optional_runtime.bind_consumer(NeedsOptionalSomething)
+    conduit = optional_runtime.ensure_conduit()
+    optional_runtime.stage = "meld"
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, NeedsOptionalSomething)
+    assert consumer.dependency is None
+
+
+def test_plain_optional_object_default_stays_none_with_provider_registered(
+        optional_runtime: OptionalResolutionRuntime,
+) -> None:
+    """Prove a plain-value optional annotation preserves None without creating Something."""
+    provider_id = optional_runtime.bind_provider("default")
+    consumer_id = optional_runtime.bind_consumer(PlainOptionalDefault)
+    conduit = optional_runtime.ensure_conduit()
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, PlainOptionalDefault)
+    assert consumer.dependency is None
+    assert not conduit.has_live_creation(spell=provider_id)
+    print(f"{optional_runtime.mode}/plain Optional[object] = None: None retained, Something not created")
+
+
+def test_numeric_falsy_and_other_plain_defaults_are_preserved(
+        optional_runtime: OptionalResolutionRuntime,
+) -> None:
+    """Prove concrete scalar defaults survive even with an unrelated provider registered."""
+    provider_id = optional_runtime.bind_provider("default")
+    consumer_id = optional_runtime.bind_consumer(ScalarDefaults)
+    conduit = optional_runtime.ensure_conduit()
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, ScalarDefaults)
+    assert consumer.values == (42, 0, 1.5, False, "selected", "", (1, 2), None)
+    assert not conduit.has_live_creation(spell=provider_id)
+    print(f"{optional_runtime.mode}/scalar defaults: {consumer.values!r}")
+
+
+def test_selected_instance_default_is_preserved_with_registered_provider(
+        optional_runtime: OptionalResolutionRuntime,
+) -> None:
+    """Use the exact user-selected object and leave the unrelated provider uncreated."""
+    provider_id = optional_runtime.bind_provider("default")
+    consumer_id = optional_runtime.bind_consumer(SelectedInstanceDefault)
+    conduit = optional_runtime.ensure_conduit()
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, SelectedInstanceDefault)
+    assert consumer.dependency is SelectedInstanceDefault.DEFAULT_DEPENDENCY
+    assert consumer.dependency.marker == "selected-default"
+    assert not conduit.has_live_creation(spell=provider_id)
+
+
+def test_selected_instance_default_needs_no_registered_provider(
+        optional_runtime: OptionalResolutionRuntime,
+) -> None:
+    """A valid instance default must work even when its class has no registered provider."""
+    consumer_id = optional_runtime.bind_consumer(SelectedInstanceDefault)
+    conduit = optional_runtime.ensure_conduit()
+    optional_runtime.stage = "meld"
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, SelectedInstanceDefault)
+    assert consumer.dependency is SelectedInstanceDefault.DEFAULT_DEPENDENCY
+
+
+@pytest.mark.parametrize("register_provider", (False, True))
+def test_collection_defaults_preserve_identity_without_inferred_providers(
+        optional_runtime: OptionalResolutionRuntime,
+        register_provider: bool,
+) -> None:
+    """Preserve selected, empty and nullable list defaults with or without a provider."""
+    provider_id = optional_runtime.bind_provider("default") if register_provider else None
+    consumer_id = optional_runtime.bind_consumer(CollectionDefaults)
+    conduit = optional_runtime.ensure_conduit()
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, CollectionDefaults)
+    assert consumer.selected is CollectionDefaults.SELECTED
+    assert consumer.empty is CollectionDefaults.EMPTY
+    assert consumer.nullable is None
+    if provider_id is not None:
+        assert not conduit.has_live_creation(spell=provider_id)
+
+
+@pytest.mark.parametrize("consumer_type", (NeedsOptionalSomething, SelectedInstanceDefault))
+def test_explicit_override_replaces_plain_default_without_creating_provider(
+        optional_runtime: OptionalResolutionRuntime,
+        consumer_type: type,
+) -> None:
+    """An explicit meld override wins over a PLAIN default without restoring inferred DI."""
+    provider_id = optional_runtime.bind_provider("default")
+    consumer_id = optional_runtime.bind_consumer(consumer_type)
+    selected_override = Something("explicit-override")
+    conduit = optional_runtime.ensure_conduit()
+    consumer = conduit.meld(spell_id=consumer_id, override={"dependency": selected_override})
+    assert consumer.dependency is selected_override
+    assert not conduit.has_live_creation(spell=provider_id)
+
+
+def test_explicit_spellmap_default_requests_injection(
+        optional_runtime: OptionalResolutionRuntime,
+) -> None:
+    """Verify the existing descriptor gives callers an explicit way to request DI."""
+    provider_id = optional_runtime.bind_provider("default")
+    consumer_id = optional_runtime.bind_consumer(ExplicitMapDefault)
+    conduit = optional_runtime.ensure_conduit()
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, ExplicitMapDefault)
+    assert isinstance(consumer.dependency, Something)
+    assert consumer.dependency is conduit.meld_existing_spell(spell=provider_id)
+    print(f"{optional_runtime.mode}/SpellMap default: explicit DI injected Something")
+
+
+@pytest.mark.parametrize("consumer_type", (RequiresSomething, RequiresNullableSomething))
+def test_annotation_without_default_still_requests_injection(
+        optional_runtime: OptionalResolutionRuntime,
+        consumer_type: type,
+) -> None:
+    """Guard ordinary and nullable required parameters against disabling DI too broadly."""
+    provider_id = optional_runtime.bind_provider("default")
+    consumer_id = optional_runtime.bind_consumer(consumer_type)
+    conduit = optional_runtime.ensure_conduit()
+    consumer = conduit.meld(spell_id=consumer_id)
+    assert isinstance(consumer, (RequiresSomething, RequiresNullableSomething))
+    assert isinstance(consumer.dependency, Something)
+    assert consumer.dependency is conduit.meld_existing_spell(spell=provider_id)
+
+
+def test_required_dependency_without_provider_still_refuses(
+        optional_runtime: OptionalResolutionRuntime,
+) -> None:
+    """Guard the existing no-provider failure for a parameter with no Python default."""
+    with pytest.raises(RuntimeError, match="no DI candidate found for parameter 'dependency'"):
+        consumer_id = optional_runtime.bind_consumer(RequiresSomething)
+        conduit = optional_runtime.ensure_conduit()
+        conduit.meld(spell_id=consumer_id)
+
+
+@pytest.mark.parametrize("optional_runtime", ("dynamic_prebind",), indirect=True)
+@pytest.mark.parametrize(
+    "consumer_type, expected_shape",
+    (
+        pytest.param(NeedsOptionalSomething, ParameterDIShape.PLAIN, id="none-default-is-plain"),
+        pytest.param(SelectedInstanceDefault, ParameterDIShape.PLAIN, id="instance-default-is-plain"),
+        pytest.param(ExplicitMapDefault, ParameterDIShape.SPELLMAP_DEFAULT, id="explicit-spellmap"),
+        pytest.param(ExplicitContractDefault, ParameterDIShape.SPELL_CONTRACT, id="explicit-contract"),
+    ),
+)
+def test_default_precedence_is_classified_before_graph_construction(
+        optional_runtime: OptionalResolutionRuntime,
+        consumer_type: type,
+        expected_shape: ParameterDIShape,
+) -> None:
+    """Assert the agreed Phase-1 contract, rather than hiding an unwanted DI edge later.
+
+    Bind's completed profile exposes the requirements artifact before conjure.
+    Provider presence must not make an ordinary default become inferred DI.
+    """
+    optional_runtime.bind_provider("default")
+    consumer_id = optional_runtime.bind_consumer(consumer_type)
+    profile = optional_runtime.book._spell_id_pool[consumer_id].profile
+    requirements = profile.resolution_profile.requirements
+    assert requirements is not None
+    parameter = next(item for item in requirements.parameters if item.name == "dependency")
+    assert parameter.di_shape is expected_shape
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_spellbook_integration_default_precedence.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_di_shape_compiler_matrix.py
-CONTENT SHA256: eef373b2c6ef52a1a8db88f18378e1ff4084d33c03d80012d0e067ca5443a078
+CONTENT SHA256: b988483af45e5103e514a9a3cf38787c702357ecd5ce1abce6fc0429b3f9a722
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -109074,7 +110396,7 @@ class NeedsEngineProtocol:
 
 
 class NeedsOptionalEngine:
-    """SINGLE_BY_ANNOTATION, optional."""
+    """An ordinary None default suppresses inferred annotation DI."""
 
     def __init__(self, engine: Optional[IEngine] = None) -> None:
         self.engine = engine
@@ -109324,15 +110646,17 @@ def test_phase1_self_and_varargs_classify_ignore() -> None:
 
 
 def test_phase1_optional_single_is_marked_optional() -> None:
-    """Optional[IEngine] stays SINGLE but is flagged optional."""
+    """Optional[IEngine] with a None default is PLAIN and retains its default metadata."""
     spellbook = _make_spellbook()
     try:
         spell_id = spellbook.bind(spell=NeedsOptionalEngine, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         ch.run_phase_requirements(spell)
         param = _param(spell, "engine")
-        assert param.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+        assert param.di_shape is ParameterDIShape.PLAIN
         assert param.is_optional is True
+        assert param.has_default is True
+        assert param.default_value is None
     finally:
         spellbook.cleanup()
 
@@ -264861,7 +266185,7 @@ END FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_require
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_requirements_finder.py
-CONTENT SHA256: 598a06ad1cca022cbdb86c8553d69fea3b96a2d781a126f1577035e162f3e2b0
+CONTENT SHA256: 2cee845c90ff35e8824556e75a29eb2317795fcdf088a9aa6c14aefdf0ef3348
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
@@ -265416,7 +266740,8 @@ def test_remaining_helper_edges_for_builtins_sentinels_and_tuple_paths(monkeypat
     assert finder._looks_like_di_target(list) is False
 
 
-def test_parameter_classification_shapes_and_optional_logic():
+def test_parameter_classification_shapes_and_optional_logic() -> None:
+    """Preserve descriptor/no-default DI while ordinary defaults remain plain values."""
     spellmap_default = SpellMap(spellframe="frame-key")
     contract_default = SpellContract(spellframe="frame-key")
 
@@ -265484,8 +266809,10 @@ def test_parameter_classification_shapes_and_optional_logic():
 
     assert shape("contract") is ParameterDIShape.SPELL_CONTRACT
 
-    assert shape("opt_union") is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert shape("opt_union") is ParameterDIShape.PLAIN
     assert optional("opt_union") is True
+    assert by_name["opt_union"].has_default is True
+    assert by_name["opt_union"].default_value is None
 
     # union containing builtin keeps plain
     assert shape("union_multi") is ParameterDIShape.PLAIN

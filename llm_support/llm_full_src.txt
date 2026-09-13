@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: c90bbf3526ef09a45170413a837fb79e2071565431287f32294f6fb64f2f97f5
+SOURCE FINGERPRINT: 3f649d79d0b6a7b19e09d6c2317de1f36011a11fda588cf6ffe27779cf241643
 FILE COUNT: 585
 
 ================================================================================
@@ -597,7 +597,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 6b1c16fa8da27da184bf16d92bab39ffb1cde2b7365d83897e253bf758048316
+CONTENT SHA256: 85f96e594f61954778489e9a3bb2ba6687f477d5b1fd1583b9989b2888b025ed
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -611,7 +611,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.37"
+__version__ = "0.2.40"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -119691,7 +119691,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py
-CONTENT SHA256: 5c1b376fe470b3a739730586b9c281dc42abcb8d5493596696e1116af3c08549
+CONTENT SHA256: e4f9e6dc2f468981f82f10085f22c201582e9dd11b6eb2bdb1bb110369ebfeb4
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
@@ -119748,6 +119748,8 @@ class SpellRequirementsFinder(Cleanable):
       providers.
     * Copies spell identity and routing metadata into the result, but does not
       interpret resolution policy beyond parameter classification.
+    * Ordinary explicit Python defaults classify as PLAIN and create no inferred
+      DI edge. SpellMap and SpellContract defaults remain explicit DI requests.
 
     Lifecycle
     ---------
@@ -120802,13 +120804,20 @@ class SpellRequirementsFinder(Cleanable):
                parameter is explicitly asking for a spell contract object.
             2. "SpellMap" defaults win over annotations because an explicit
                map is a stronger statement than an inferred type-based lookup.
-            3. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
-            4. Optional wrappers are removed only far enough to inspect the
+            3. Any other explicit Python default makes the parameter PLAIN,
+               preserving the selected value even when a provider is registered.
+               Presence, not truthiness, decides this: None, False and 0 count.
+            4. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
+            5. Optional wrappers are removed only far enough to inspect the
                underlying dependency shape.
-            5. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
+            6. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
                looks like a DI candidate.
-            6. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
-            7. Everything else stays: data:`ParameterDIShape.PLAIN`.
+            7. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
+            8. Everything else stays: data:`ParameterDIShape.PLAIN`.
+
+        Ordinary defaults retain their annotation and value in the requirement
+        record; PLAIN only prevents automatic provider selection. Parameters
+        without defaults keep the existing annotation-based inference rules.
 
         The returned "is_optional" flag answers a Melder-specific question:
         can Phase 1 treat failure to supply this dependency as acceptable
@@ -120851,6 +120860,12 @@ class SpellRequirementsFinder(Cleanable):
                 None,
                 default_value,
             )
+
+        # The caller already selected an ordinary Python default. Preserve it
+        # instead of creating an inferred dependency that overrides it or fails
+        # when no provider exists. Explicit DI descriptors were handled above.
+        if has_default:
+            return ParameterDIShape.PLAIN, True, None, None
 
         # If there is no annotation at all, we can't infer DI.
         if not has_annotation or annotation is None:
@@ -256875,7 +256890,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: 72a4fff14cbb619643af53f4d1a8373ae657e086e83e3cbb212d0113c59cb92c
+CONTENT SHA256: fd3dbf222201dbd4a3f0c6ebfb54724f1b372dc5da83caabef4bed1a8fe82734
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -256970,6 +256985,9 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 8: ordinary Python parameter defaults classify as PLAIN. Older
+    # plans may inject providers despite those defaults, even when their bind
+    # SHA still matches, so they must be rebuilt under the new precedence.
     # Version 7: phase-10 family selection is root-visible (the phase-8
     # existence analysis filters the shared pool walk down to the root's
     # occurrence graph) and shared-provider SpellContract payloads resolve by
@@ -257002,6 +257020,7 @@ class CachingSystem(Cleanable):
         5: "many_only_collection_param_names",
         6: "zero_provider_required_collections",
         7: "root_visible_family_selection",
+        8: "ordinary_defaults_are_plain",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

@@ -1,0 +1,119 @@
+automatic_prebind/default: Optional[Something] = None received the registered Something
+.automatic_prebind/named: Optional[Something] = None received the registered Something
+.automatic_prebind/named_and_framed: Optional[Something] = None received the registered Something
+.dynamic_prebind/default: Optional[Something] = None received the registered Something
+.dynamic_prebind/named: Optional[Something] = None received the registered Something
+.dynamic_prebind/named_and_framed: Optional[Something] = None received the registered Something
+.F
+================================== FAILURES ===================================
+_ test_registered_class_is_injected_despite_optional_none_default[dynamic_postbind-default] _
+
+optional_runtime = <test_optional_dependency_default_resolution_experiment.OptionalResolutionRuntime object at 0x0000049647A81910>
+registration = 'default'
+
+    @pytest.mark.parametrize("registration", ("default", "named", "named_and_framed"))
+    def test_registered_class_is_injected_despite_optional_none_default(
+            optional_runtime: OptionalResolutionRuntime,
+            registration: str,
+    ) -> None:
+        """Prove one matching provider is injected instead of leaving the default None.
+    
+        The provider has no live instance before the consumer meld. The injected
+        object must be the exact instance subsequently retrieved by its registered
+        SHA, including named and differently framed registrations.
+        """
+        provider_id = optional_runtime.bind_provider(registration)
+        consumer_id = optional_runtime.bind_consumer(NeedsOptionalSomething)
+        conduit = optional_runtime.ensure_conduit()
+        assert not conduit.has_live_creation(spell=provider_id)
+        optional_runtime.stage = "meld"
+        consumer = conduit.meld(spell_id=consumer_id)
+        assert isinstance(consumer, NeedsOptionalSomething)
+        assert isinstance(consumer.dependency, Something)
+        assert consumer.dependency.marker == "injected-provider"
+>       assert consumer.dependency is conduit.meld(spell_id=provider_id)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\experimentation\test_optional_dependency_default_resolution_experiment.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+spell = Spell(name=Something, binding=__default__, frame=type, SHA256=81af8e584f4ecb4b6fb4d1f4da0fbef275844c0eca4dfb4570b6bf6e3c066ed7)
+dynamic_environment = True
+creation_gate = <melder.utilities.synchronization.creation_gate.CreationGate object at 0x0000049648132160>
+creation_gate_index_id = '01M2DM4P7EVNRG2G5HKDZGB7MB'
+
+    @staticmethod
+    def build(
+            spell: "Spell",
+            *,
+            dynamic_environment: bool = False,
+            creation_gate: Optional["CreationGate"] = None,
+            creation_gate_index_id: Optional[str] = None,
+    ) -> CreationContext:
+        """
+        Build one spell-bound CreationContext.
+    
+        Contract:
+            Two shapes by spell kind: an EXISTING-creation spell synthesizes its
+            three runtime executors locally (no compiler artifact required); a
+            constructed spell pulls its no-overrides, no-overrides-instance, and
+            overrides executors from `spell_codegen_creation` and refuses
+            (raises) when that payload - or any of the three executors - is
+            absent, since that means the analyzer -> processor -> planner ->
+            codegen pipeline was skipped. The resulting context receives only
+            the final tuple-return executors plus the gate wiring.
+    
+        Args:
+            spell:
+                Spell to bind the context to.
+            dynamic_environment:
+                When True, build the context for a dynamic meld environment.
+            creation_gate:
+                Optional creation gate the context coordinates through.
+            creation_gate_index_id:
+                Optional index id scoping the creation gate.
+    
+        Returns:
+            CreationContext: The spell-bound creation context.
+    
+        Raises:
+            RuntimeError: For a constructed spell, if `spell_codegen_creation`
+                or any required executor was not populated.
+        """
+        artifact = spell._compiler_artifact
+        spell_codegen_creation = artifact._spell_codegen_creation
+        if spell.is_existing_creation:
+            no_overrides_executor = CreationContextBuilder._build_existing_creation_no_overrides_executor(
+                spell
+            )
+            no_overrides_instance_executor = (
+                CreationContextBuilder
+                ._build_existing_creation_instance_executor(spell)
+            )
+            overrides_executor = CreationContextBuilder._build_existing_creation_overrides_executor(
+                spell
+            )
+        else:
+            if spell_codegen_creation is None:
+>               raise RuntimeError(
+                    "Cannot build CreationContext before spell_codegen_creation exists. "
+                    "Run analyzer -> processor -> planner -> codegen creation first."
+                )
+E               RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: RuntimeError
+=========================== short test summary info ===========================
+FAILED tests/experimentation/test_optional_dependency_default_resolution_experiment.py::test_registered_class_is_injected_despite_optional_none_default[dynamic_postbind-default]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 6 passed in 0.58s

@@ -1,0 +1,740 @@
+{
+  "metadata": {
+    "recorded_at_utc": "2026-09-12T20:50:20.601154+00:00",
+    "run_id": "pilot",
+    "python": "3.14.0 free-threading build (tags/v3.14.0:ebf955d, Oct  7 2025, 10:13:09) [MSC v.1944 64 bit (AMD64)]",
+    "executable": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\.venv_new\\Scripts\\python.exe",
+    "gil_enabled": false,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "melder_version": "0.2.37",
+    "melder_source": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\__init__.py",
+    "git_head": "ed9f5047d8a7305954ae4d1cc74818323c118c88",
+    "src_status": "",
+    "warmup_pairs": 4,
+    "measured_pairs": 10,
+    "warm_sweeps_per_sample": 10,
+    "workers": 5,
+    "existence": "unique",
+    "bind_api": "five individual Spellbook.bind calls; no outer transaction",
+    "meld_api": "Conduit.meld(spell_id=returned_id)",
+    "dynamic_posture_before_timing": true,
+    "system_caching_enabled": false,
+    "crystallizer_recording": false,
+    "nexus_publication": false,
+    "gc_enabled": true,
+    "total_excludes": [
+      "import",
+      "fresh book/frame setup",
+      "assertions",
+      "warm melds",
+      "cleanup"
+    ]
+  },
+  "summary": {
+    "bind_conjure_meld": {
+      "samples": 10,
+      "phases": {
+        "setup": {
+          "median_us": 292.8,
+          "p10_us": 252.62000000000003,
+          "p90_us": 385.4,
+          "minimum_us": 246.5,
+          "mean_us": 302.74
+        },
+        "bind_five": {
+          "median_us": 1040.55,
+          "p10_us": 967.9100000000001,
+          "p90_us": 1233.3799999999999,
+          "minimum_us": 932.0,
+          "mean_us": 1094.01
+        },
+        "conjure": {
+          "median_us": 2389.05,
+          "p10_us": 2039.1699999999996,
+          "p90_us": 2671.17,
+          "minimum_us": 2017.3,
+          "mean_us": 2390.78
+        },
+        "first_meld_five": {
+          "median_us": 102.55,
+          "p10_us": 94.1,
+          "p90_us": 121.8,
+          "minimum_us": 92.3,
+          "mean_us": 111.13
+        },
+        "total": {
+          "median_us": 3671.5,
+          "p10_us": 3103.79,
+          "p90_us": 3942.41,
+          "minimum_us": 3079.4,
+          "mean_us": 3597.94
+        },
+        "warm_meld_five": {
+          "median_us": 4.445,
+          "p10_us": 4.343,
+          "p90_us": 4.588,
+          "minimum_us": 4.28,
+          "mean_us": 4.466
+        },
+        "cleanup": {
+          "median_us": 1119.1,
+          "p10_us": 984.01,
+          "p90_us": 1350.2199999999998,
+          "minimum_us": 944.5,
+          "mean_us": 1157.0
+        }
+      },
+      "per_first_meld": {
+        "PayloadOne": {
+          "median_us": 42.599999999999994,
+          "p10_us": 34.209999999999994,
+          "p90_us": 43.68,
+          "minimum_us": 32.5,
+          "mean_us": 40.44
+        },
+        "PayloadTwo": {
+          "median_us": 17.55,
+          "p10_us": 17.0,
+          "p90_us": 18.15,
+          "minimum_us": 17.0,
+          "mean_us": 17.75
+        },
+        "PayloadThree": {
+          "median_us": 14.05,
+          "p10_us": 13.579999999999998,
+          "p90_us": 26.070000000000004,
+          "minimum_us": 13.4,
+          "mean_us": 23.76
+        },
+        "PayloadFour": {
+          "median_us": 13.25,
+          "p10_us": 12.67,
+          "p90_us": 15.530000000000001,
+          "minimum_us": 12.4,
+          "mean_us": 13.870000000000001
+        },
+        "PayloadFive": {
+          "median_us": 13.6,
+          "p10_us": 13.190000000000001,
+          "p90_us": 14.540000000000001,
+          "minimum_us": 13.1,
+          "mean_us": 13.94
+        }
+      }
+    },
+    "conjure_bind_meld": {
+      "samples": 10,
+      "phases": {
+        "setup": {
+          "median_us": 301.85,
+          "p10_us": 226.06,
+          "p90_us": 356.63,
+          "minimum_us": 215.8,
+          "mean_us": 287.42
+        },
+        "bind_five": {
+          "median_us": 1675.8000000000002,
+          "p10_us": 1628.49,
+          "p90_us": 1859.7400000000002,
+          "minimum_us": 1614.0,
+          "mean_us": 1715.13
+        },
+        "conjure": {
+          "median_us": 299.29999999999995,
+          "p10_us": 266.63,
+          "p90_us": 383.61,
+          "minimum_us": 257.0,
+          "mean_us": 313.40999999999997
+        },
+        "first_meld_five": {
+          "median_us": 5019.6,
+          "p10_us": 4368.549999999999,
+          "p90_us": 5554.8099999999995,
+          "minimum_us": 4362.7,
+          "mean_us": 4995.58
+        },
+        "total": {
+          "median_us": 7012.3,
+          "p10_us": 6275.3099999999995,
+          "p90_us": 7805.07,
+          "minimum_us": 6270.0,
+          "mean_us": 7026.14
+        },
+        "warm_meld_five": {
+          "median_us": 4.515000000000001,
+          "p10_us": 4.397,
+          "p90_us": 4.593,
+          "minimum_us": 4.28,
+          "mean_us": 4.501
+        },
+        "cleanup": {
+          "median_us": 1116.75,
+          "p10_us": 853.1099999999999,
+          "p90_us": 1314.8600000000001,
+          "minimum_us": 841.5,
+          "mean_us": 1100.22
+        }
+      },
+      "per_first_meld": {
+        "PayloadOne": {
+          "median_us": 1843.1000000000001,
+          "p10_us": 1382.28,
+          "p90_us": 2293.1400000000003,
+          "minimum_us": 1292.1,
+          "mean_us": 1867.96
+        },
+        "PayloadTwo": {
+          "median_us": 902.9000000000001,
+          "p10_us": 804.65,
+          "p90_us": 954.39,
+          "minimum_us": 780.8,
+          "mean_us": 896.58
+        },
+        "PayloadThree": {
+          "median_us": 715.5,
+          "p10_us": 693.17,
+          "p90_us": 857.0200000000001,
+          "minimum_us": 652.4,
+          "mean_us": 751.75
+        },
+        "PayloadFour": {
+          "median_us": 706.05,
+          "p10_us": 667.7500000000001,
+          "p90_us": 813.8900000000001,
+          "minimum_us": 628.6,
+          "mean_us": 733.71
+        },
+        "PayloadFive": {
+          "median_us": 751.6,
+          "p10_us": 666.4,
+          "p90_us": 802.57,
+          "minimum_us": 654.7,
+          "mean_us": 742.86
+        }
+      }
+    }
+  },
+  "samples": [
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 0,
+      "position": 0,
+      "setup_ns": 384600,
+      "bind_ns": 1479800,
+      "conjure_ns": 2646500,
+      "first_meld_ns": 101800,
+      "total_ns": 4230500,
+      "per_bind_ns": [
+        343800,
+        279100,
+        311700,
+        272200,
+        270600
+      ],
+      "per_first_meld_ns": [
+        42000,
+        17900,
+        14200,
+        12700,
+        13700
+      ],
+      "warm_five_meld_ns": 4440,
+      "cleanup_ns": 1498000
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 0,
+      "position": 1,
+      "setup_ns": 292600,
+      "bind_ns": 1638500,
+      "conjure_ns": 281400,
+      "first_meld_ns": 4445500,
+      "total_ns": 6367200,
+      "per_bind_ns": [
+        385300,
+        315600,
+        314400,
+        317300,
+        303900
+      ],
+      "per_first_meld_ns": [
+        1587900,
+        807300,
+        700200,
+        693000,
+        654700
+      ],
+      "warm_five_meld_ns": 4550,
+      "cleanup_ns": 926300
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 1,
+      "position": 0,
+      "setup_ns": 311100,
+      "bind_ns": 1876300,
+      "conjure_ns": 335500,
+      "first_meld_ns": 5913100,
+      "total_ns": 8127000,
+      "per_bind_ns": [
+        532100,
+        396600,
+        318300,
+        313200,
+        314100
+      ],
+      "per_first_meld_ns": [
+        2548200,
+        943800,
+        855300,
+        794600,
+        768100
+      ],
+      "warm_five_meld_ns": 4590,
+      "cleanup_ns": 1305900
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 1,
+      "position": 1,
+      "setup_ns": 268400,
+      "bind_ns": 1073800,
+      "conjure_ns": 2352300,
+      "first_meld_ns": 202800,
+      "total_ns": 3631400,
+      "per_bind_ns": [
+        276600,
+        186600,
+        174900,
+        166400,
+        267200
+      ],
+      "per_first_meld_ns": [
+        42800,
+        17000,
+        109500,
+        17600,
+        14300
+      ],
+      "warm_five_meld_ns": 4570,
+      "cleanup_ns": 1069300
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 2,
+      "position": 0,
+      "setup_ns": 319800,
+      "bind_ns": 1195500,
+      "conjure_ns": 2410400,
+      "first_meld_ns": 103800,
+      "total_ns": 3711600,
+      "per_bind_ns": [
+        307400,
+        185000,
+        171800,
+        330600,
+        198600
+      ],
+      "per_first_meld_ns": [
+        44400,
+        17800,
+        13900,
+        13300,
+        13100
+      ],
+      "warm_five_meld_ns": 4500,
+      "cleanup_ns": 988400
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 2,
+      "position": 1,
+      "setup_ns": 215800,
+      "bind_ns": 1653700,
+      "conjure_ns": 257000,
+      "first_meld_ns": 4597200,
+      "total_ns": 6510000,
+      "per_bind_ns": [
+        376200,
+        317500,
+        352600,
+        303600,
+        301900
+      ],
+      "per_first_meld_ns": [
+        1292100,
+        1049700,
+        834700,
+        689800,
+        728100
+      ],
+      "warm_five_meld_ns": 4620,
+      "cleanup_ns": 1185500
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 3,
+      "position": 0,
+      "setup_ns": 366800,
+      "bind_ns": 1828900,
+      "conjure_ns": 423300,
+      "first_meld_ns": 5515000,
+      "total_ns": 7769300,
+      "per_bind_ns": [
+        503100,
+        323600,
+        318400,
+        301500,
+        380000
+      ],
+      "per_first_meld_ns": [
+        2264400,
+        897700,
+        697700,
+        910100,
+        742200
+      ],
+      "warm_five_meld_ns": 4460,
+      "cleanup_ns": 938800
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 3,
+      "position": 1,
+      "setup_ns": 253300,
+      "bind_ns": 932000,
+      "conjure_ns": 2051400,
+      "first_meld_ns": 94400,
+      "total_ns": 3079400,
+      "per_bind_ns": [
+        265800,
+        182600,
+        166600,
+        159800,
+        155400
+      ],
+      "per_first_meld_ns": [
+        36200,
+        17000,
+        13400,
+        13200,
+        13300
+      ],
+      "warm_five_meld_ns": 4280,
+      "cleanup_ns": 1333800
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 4,
+      "position": 0,
+      "setup_ns": 312000,
+      "bind_ns": 1022300,
+      "conjure_ns": 2781600,
+      "first_meld_ns": 104200,
+      "total_ns": 3910400,
+      "per_bind_ns": [
+        297200,
+        184400,
+        174600,
+        188400,
+        176000
+      ],
+      "per_first_meld_ns": [
+        43600,
+        17900,
+        14400,
+        13500,
+        13500
+      ],
+      "warm_five_meld_ns": 4490,
+      "cleanup_ns": 944500
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 4,
+      "position": 1,
+      "setup_ns": 242000,
+      "bind_ns": 1614000,
+      "conjure_ns": 267700,
+      "first_meld_ns": 4742900,
+      "total_ns": 6626600,
+      "per_bind_ns": [
+        394000,
+        324200,
+        312000,
+        292500,
+        289600
+      ],
+      "per_first_meld_ns": [
+        1541500,
+        912000,
+        720500,
+        803200,
+        763100
+      ],
+      "warm_five_meld_ns": 4500,
+      "cleanup_ns": 841500
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 5,
+      "position": 0,
+      "setup_ns": 318000,
+      "bind_ns": 1857900,
+      "conjure_ns": 336100,
+      "first_meld_ns": 5296300,
+      "total_ns": 7492300,
+      "per_bind_ns": [
+        464400,
+        454100,
+        332200,
+        308100,
+        296700
+      ],
+      "per_first_meld_ns": [
+        2264800,
+        897300,
+        710500,
+        694200,
+        726800
+      ],
+      "warm_five_meld_ns": 4480,
+      "cleanup_ns": 1395500
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 5,
+      "position": 1,
+      "setup_ns": 264600,
+      "bind_ns": 1005200,
+      "conjure_ns": 2367700,
+      "first_meld_ns": 112800,
+      "total_ns": 3487500,
+      "per_bind_ns": [
+        290300,
+        190000,
+        182500,
+        175000,
+        165600
+      ],
+      "per_first_meld_ns": [
+        42400,
+        20400,
+        16800,
+        15300,
+        16700
+      ],
+      "warm_five_meld_ns": 4750,
+      "cleanup_ns": 1060100
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 6,
+      "position": 0,
+      "setup_ns": 307000,
+      "bind_ns": 1206000,
+      "conjure_ns": 2580100,
+      "first_meld_ns": 101600,
+      "total_ns": 3889600,
+      "per_bind_ns": [
+        299600,
+        188900,
+        265500,
+        221100,
+        228800
+      ],
+      "per_first_meld_ns": [
+        42900,
+        17400,
+        13700,
+        13000,
+        13200
+      ],
+      "warm_five_meld_ns": 4450,
+      "cleanup_ns": 1134000
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 6,
+      "position": 1,
+      "setup_ns": 231300,
+      "bind_ns": 1643500,
+      "conjure_ns": 267800,
+      "first_meld_ns": 4362700,
+      "total_ns": 6275900,
+      "per_bind_ns": [
+        385500,
+        328600,
+        321100,
+        293700,
+        312600
+      ],
+      "per_first_meld_ns": [
+        1392300,
+        838100,
+        700100,
+        628600,
+        801100
+      ],
+      "warm_five_meld_ns": 4410,
+      "cleanup_ns": 1261300
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 7,
+      "position": 0,
+      "setup_ns": 313900,
+      "bind_ns": 1697900,
+      "conjure_ns": 317200,
+      "first_meld_ns": 5408100,
+      "total_ns": 7425100,
+      "per_bind_ns": [
+        430700,
+        327800,
+        326300,
+        298300,
+        312800
+      ],
+      "per_first_meld_ns": [
+        2244400,
+        908100,
+        773600,
+        717900,
+        761000
+      ],
+      "warm_five_meld_ns": 4280,
+      "cleanup_ns": 854400
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 7,
+      "position": 1,
+      "setup_ns": 246500,
+      "bind_ns": 971900,
+      "conjure_ns": 2041600,
+      "first_meld_ns": 94300,
+      "total_ns": 3109400,
+      "per_bind_ns": [
+        263000,
+        184800,
+        175200,
+        176100,
+        171100
+      ],
+      "per_first_meld_ns": [
+        32500,
+        17600,
+        14000,
+        14600,
+        14000
+      ],
+      "warm_five_meld_ns": 4350,
+      "cleanup_ns": 1133200
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 8,
+      "position": 0,
+      "setup_ns": 392600,
+      "bind_ns": 1058800,
+      "conjure_ns": 2658900,
+      "first_meld_ns": 103300,
+      "total_ns": 3823100,
+      "per_bind_ns": [
+        328700,
+        199800,
+        188000,
+        175100,
+        165100
+      ],
+      "per_first_meld_ns": [
+        43200,
+        17500,
+        14100,
+        13100,
+        14100
+      ],
+      "warm_five_meld_ns": 4430,
+      "cleanup_ns": 1303700
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 8,
+      "position": 1,
+      "setup_ns": 227200,
+      "bind_ns": 1630100,
+      "conjure_ns": 268900,
+      "first_meld_ns": 4369200,
+      "total_ns": 6270000,
+      "per_bind_ns": [
+        375900,
+        327300,
+        323300,
+        308000,
+        293700
+      ],
+      "per_first_meld_ns": [
+        1445700,
+        780800,
+        652400,
+        672100,
+        815800
+      ],
+      "warm_five_meld_ns": 4590,
+      "cleanup_ns": 1245000
+    },
+    {
+      "sequence": "conjure_bind_meld",
+      "pair": 9,
+      "position": 0,
+      "setup_ns": 355500,
+      "bind_ns": 1710500,
+      "conjure_ns": 379200,
+      "first_meld_ns": 5305800,
+      "total_ns": 7398000,
+      "per_bind_ns": [
+        452600,
+        345300,
+        300300,
+        295000,
+        315100
+      ],
+      "per_first_meld_ns": [
+        2098300,
+        931000,
+        872500,
+        733600,
+        667700
+      ],
+      "warm_five_meld_ns": 4530,
+      "cleanup_ns": 1048000
+    },
+    {
+      "sequence": "bind_conjure_meld",
+      "pair": 9,
+      "position": 1,
+      "setup_ns": 278600,
+      "bind_ns": 994800,
+      "conjure_ns": 2017300,
+      "first_meld_ns": 92300,
+      "total_ns": 3106500,
+      "per_bind_ns": [
+        283600,
+        188000,
+        183900,
+        172800,
+        164600
+      ],
+      "per_first_meld_ns": [
+        34400,
+        17000,
+        13600,
+        12400,
+        13500
+      ],
+      "warm_five_meld_ns": 4400,
+      "cleanup_ns": 1105000
+    }
+  ]
+}

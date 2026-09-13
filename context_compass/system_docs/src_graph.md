@@ -13257,7 +13257,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py
 
-- source_sha256: `5c1b376fe470b3a739730586b9c281dc42abcb8d5493596696e1116af3c08549`
+- source_sha256: `c0052d74f8fe53720630bc677e9076fe93e76457e9854452b50b242fff50fb9e`
 - nodes: 2
 
 ### Nodes
@@ -13276,6 +13276,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Builder for the Phase 1 spell requirements artifact.
 - responsibilities:
   - inspects one spell call target and classifies its parameters into DI requirement objects
+  - preserves ordinary explicit Python defaults as PLAIN while retaining explicit descriptor and no-default DI precedence
   - builds and caches one SpellRequirements artifact for a spell version
 - owns_state: `_spell`, `_requirements`
 - phases: `validation`, `runtime`, `cleanup`
@@ -25775,7 +25776,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `3cc9d1399f9d9a688f79ae47317d74b113bd57005b6a5e12d81cf886d5683a55`
+- source_sha256: `61f69eb55890d9d9e834bff0a84d81b4a5e344e5c673c82a9a20c70d4385d65e`
 - nodes: 2
 
 ### Nodes

@@ -16,6 +16,15 @@ the disposal vocabulary. The client's `base_url` and `timeout` are supplied thro
 `meld(override=...)`. Keeping these channels distinct prevents configuration from
 being attached to a registration while the constructor still receives its defaults.
 
+Ordinary constructor defaults are honored even when a matching provider is registered.
+`dependency: Optional[Service] = None` retains `None`, and `dependency: Service = chosen_service`
+retains that exact instance. A default does not create an inferred dependency edge. This also applies
+to collection defaults, `0`, `False`, and empty values.
+An explicit `meld(override={"dependency": replacement})` still supplies a value in place of the default.
+
+To request injection, omit the default (`dependency: Service`) or use an explicit `SpellMap` or
+`SpellContract` descriptor. `Optional[Service]` without a default still requests inferred DI.
+
 ## Register where the code lives
 
 Use [Declarative binding by module](module-registration.md) for `scan_bind` and

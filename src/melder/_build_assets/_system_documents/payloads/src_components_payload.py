@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8445
-CONTENT_SHA256 = '2829aea0622756d344f6fdf11d8bf79e21da5b82ed0bbf664a57c75b0e90f1c7'
+LINE_COUNT = 8460
+CONTENT_SHA256 = '7af4a98ecf300fd08c9cf9581279f33a5f1436a1f82b1a75aa39dd2767ad6049'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-05
+- Updated: 2026-09-13
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -2715,6 +2715,18 @@ Spec vs implementation notes:
 Purpose:
 - Compile per-spell artifacts and validate correctness before resolution.
 
+Constructor default precedence (2026-09-13):
+- Phase 1 preserves ordinary explicit defaults by classifying them as PLAIN before annotation
+  inference. This includes None, falsey scalars, selected instances and collection defaults.
+- Such parameters contribute no inferred provider edge; providers are neither required nor created
+  for them. Requirement metadata retains the annotation and exact default object.
+- Existing SpellContract and SpellMap branches run first and remain explicit DI requests.
+  Parameters without defaults retain their previous single/collection/nullable inference.
+- Cache version 8 invokes the existing automatic mismatch invalidation. Constructor fingerprints
+  are unchanged by this compiler-policy correction, so previous plans must miss by semantic version.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:SpellRequirementsFinder._classify_parameter`.
+- EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem._normalize_loaded_cache_data`.
+
 Disposal metadata propagation (2026-09-05):
 - Runtime records, generalized/many-only plans, and solo namespaces retain the established
   Spell list. Generalized inline registration follows the same reference rule as Creations.
@@ -4066,6 +4078,9 @@ Purpose:
 - Classify constructor parameters into DI shapes (single, collection, SpellMap, contracts).
 Contract/Interface:
 - `ParameterDIShape` enumeration and Phase 1 requirements capture.
+- `_classify_parameter` handles explicit SpellContract/SpellMap defaults first, ordinary defaults
+  as PLAIN second, then infers DI only for parameters without defaults. Default presence is tested
+  independently of truthiness; Optional without a default does not suppress inferred DI.
 Data Structures:
 - `ParameterDIShape` values attached to SpellRequirements.
 Concurrency/Threading:

@@ -10,6 +10,7 @@ This file is an experiment surface, not production runtime code.
 """
 
 import threading
+import traceback
 from queue import Queue
 from typing import Any, Optional, Tuple
 
@@ -103,7 +104,7 @@ def _run_workers(
         list[Tuple[str, str, Optional[int]]]:
             One tuple per worker:
             - `"ok"` or `"err"`
-            - payload string (type name or error type)
+            - payload string (type name or complete error traceback)
             - object identity when successful
     """
     results: Queue[Tuple[str, str, Optional[int]]] = Queue()
@@ -146,15 +147,15 @@ def test_spellspace_direct_use_without_any_active_scope_reuses_across_threads() 
             """Attempt a direct meld from the worker without any active scope."""
             try:
                 obj = shared_space.meld(spell_id=spell_id)
-            except Exception as exc:
-                results.put(("err", type(exc).__name__, None))
+            except Exception:
+                results.put(("err", traceback.format_exc(), None))
             else:
                 results.put(("ok", type(obj).__name__, id(obj)))
 
         outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes), outcomes
         object_ids = {
             obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
         }
@@ -183,15 +184,15 @@ def test_spellspace_active_context_is_not_required_for_spawned_threads() -> None
                 """Attempt a meld from a spawned worker while the active scope exists."""
                 try:
                     obj = shared_space.meld(spell_id=spell_id)
-                except Exception as exc:
-                    results.put(("err", type(exc).__name__, None))
+                except Exception:
+                    results.put(("err", traceback.format_exc(), None))
                 else:
                     results.put(("ok", type(obj).__name__, id(obj)))
 
             outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes), outcomes
         object_ids = {
             obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
         }
@@ -220,8 +221,8 @@ def test_spellspace_can_be_forced_active_in_multiple_threads() -> None:
             conduit._spellspace_stack.set([shared_space])
             try:
                 obj = shared_space.meld(spell_id=spell_id)
-            except Exception as exc:
-                results.put(("err", type(exc).__name__, None))
+            except Exception:
+                results.put(("err", traceback.format_exc(), None))
             else:
                 results.put(("ok", type(obj).__name__, id(obj)))
             finally:
@@ -230,7 +231,7 @@ def test_spellspace_can_be_forced_active_in_multiple_threads() -> None:
         outcomes = _run_workers(worker_count=5, worker_fn=worker)
 
         assert outcomes
-        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes)
+        assert all(kind == "ok" for kind, _payload, _obj_id in outcomes), outcomes
         object_ids = {
             obj_id for _kind, _payload, obj_id in outcomes if obj_id is not None
         }
