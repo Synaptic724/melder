@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-09-13-repair-provider-artifact-ownership
 - Story: STORY-2026-09-13-provider-artifact-ownership
-- Status: review
+- Status: blocked
 - Owner: codex
 - Agent Name: updater_0
 - Created: 2026-09-13T18:14:07Z
-- Updated: 2026-09-13T18:52:28Z
+- Updated: 2026-09-17T01:07:11Z
 
 ## Objective
 Keep a provider's canonical executable artifacts alive when a borrower validates its visible graph.
@@ -16,25 +16,27 @@ Keep a provider's canonical executable artifacts alive when a borrower validates
 - ENTRY_GATE: linked owner-authorized epic/story, active route and current source trace.
 - EXECUTION_BOUNDARY: experiments, regression tests and source reads only until the owner resumes implementation.
 - DEPENDENCIES: original CommandOps provider-prefix and linked GraphCache/PolicyEngine acceptance tests.
+  Implementation now depends on the contracts and required ownership work selected in
+  tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
 - EXIT_GATE: native repro turns green; original identity/state/cleanup proofs pass through coordinated verification.
 - FAILURE_ESCALATION: do not infer ownership from visibility or repair missing payloads under borrower scope.
 
 ## Scope Boundaries
-- In scope: native regression, minimal ownership repair, focused documentation and verified package handoff.
+- In scope: native regressions, repair under the selected ownership model, documentation and verified package handoff.
 - Out of scope: consumer workarounds, Optional/default policy, releases, named conduits and silent environment edits.
 
 ## Steps
 - [x] Trace current Phase-5 publication and downstream artifact use.
 - [x] Reproduce the original validation boundary without extra diagnostic provider melds.
 - [x] Compare structural/resolution-only refresh, implicit meld, repeated and two-borrower paths.
-- [ ] Write/read the patch contract and implement the minimal owner-scoped correction.
+- [ ] Follow the ownership program's selected contracts, then implement and qualify the dependent correction.
 - [ ] Validate repeated/two-borrower behavior and preserve ordinary resolution.
 - [ ] Coordinate original GraphCache/PolicyEngine acceptance and refresh generated assets.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: owner-requested experiment tranche and red regressions are complete; production changes paused.
+- from_state: review
+- to_state: blocked
+- transition_reason: owner requires the broader existing-object ownership work before this repair proceeds.
 
 ## Validation
 Eight characterization cases pass recording provider data/plan/injection outcomes. Thirteen corrected-
@@ -241,7 +243,23 @@ Experiment questions before choosing a repair:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-17T01:07:11Z
+  TYPE: DECISION
+  CLAIM: Owner places this repair under the broader existing-object ownership program and rejects
+    its presentation as an independent weekend correctness target. Preserve reproductions and
+    qualification criteria, but do not select or implement an isolated ownership patch.
+  EVIDENCE:
+  - Owner's explicit dependency direction in this conversation.
+  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  IMPACT: Implementation waits for the ownership contracts and required model changes from that epic.
+    This records project sequencing, not new source proof that all redesign features are technically necessary.
+  NEXT: Resume through the owned-object design program, then revalidate the artifact failure under its model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
+Owner-directed dependency: remaining implementation follows the existing-object lifecycle/ownership epic.
+Do not treat this as an independently scoped small repair.
 Production changes paused for discussion. The provider failure is reproduced after validation and
 implicit borrower meld. Eight experiment cases show consumer injection identity and retained data
 survive while the provider plan is cleared; resolution-only refresh also fails. Thirteen corrected-

@@ -1,0 +1,6 @@
+REFERENCE {"case": "transfer", "disposals_before_cleanup": 0, "meld_returns_supplied": true, "move_creations": false, "source_store_has_value": false, "target_store_has_value_after_meld": false, "target_store_has_value_before_meld": false}
+.REFERENCE {"case": "transfer", "disposals_before_cleanup": 0, "meld_returns_supplied": true, "move_creations": true, "source_store_has_value": false, "target_store_has_value_after_meld": true, "target_store_has_value_before_meld": true}
+.REFERENCE {"case": "staged", "meld_returns_staged": true, "outcome": "returned_supplied", "stage": "meld", "stage_before_conjure": false, "stored_after_meld": false, "stored_after_notch": false, "stored_before_notch": false}
+.REFERENCE {"case": "staged", "error": "Spell has no configured CreationContextFactory.", "error_type": "RuntimeError", "outcome": "refused", "stage": "meld", "stage_before_conjure": true, "stored_after_notch": false, "stored_before_notch": false}
+.
+4 passed in 0.46s

@@ -2,14 +2,14 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-09-13-provider-artifact-ownership-and-existing-instance-planning
-- Status: in_progress
+- Status: blocked
 - Owner: codex
 - Agent Name: updater_0
 - Author / consulting expert: knowledge_expert_0
 - Priority: p1
 - Created: 2026-09-13T18:03:36Z
-- Updated: 2026-09-13T18:03:36Z
-- Target Window: next native repair lane
+- Updated: 2026-09-17T01:07:11Z
+- Target Window: downstream of the existing-object ownership program
 - Related Program/Initiative: CommandOps native provider and ActivityBootstrap acceptance
 
 ## Problem / Opportunity
@@ -38,9 +38,12 @@ contract throughout planning. Correct these runtime contracts where they are own
 can use ordinary native APIs without compensating wrappers or suppressed validation.
 
 ## Ticket Contract
-- ENTRY_GATE: owner assignment and active epic route exist; the two required stories are defined below.
+- ENTRY_GATE: owner assignment and route exist; remaining provider repair follows ownership contracts
+  and required model work from EPIC-2026-09-13-existing-object-lifecycle-ownership.
 - EXECUTION_BOUNDARY: native reproduction, source repair and focused regression evidence for these two failures.
 - DEPENDENCIES: accepted CommandOps consultation, original tests/logs and current Melder compiler/runtime source.
+  Owner-directed ownership prerequisite:
+  tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
 - EXIT_GATE: both repair stories pass their criteria; original consumer proofs pass; evidence and boards are synced.
 - FAILURE_ESCALATION: record a blocker if current source differs materially or reproductions need unavailable inputs.
   Raise a concrete contract decision if the repair requires changing public ownership or lifetime semantics.
@@ -66,9 +69,9 @@ can use ordinary native APIs without compensating wrappers or suppressed validat
 - knowledge_expert_0 is the consultation contact and drafter, not the implementation owner.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: owner explicitly requests this epic and assigns updater_0 to reproduce and repair the findings.
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: owner places remaining provider repair behind the broader existing-object ownership work.
 
 ## Success Metrics
 - All eight independent provider-prefix cases complete with the original unique GraphCache identity.
@@ -273,12 +276,22 @@ CommandOps lead for original-scenario validation. Do not publish or silently rep
   SCORE_0_TO_10: 10
 
 ## Current Owner Direction
+2026-09-17: the remaining provider-artifact repair is dependent on the existing-object ownership
+program. Do not present it as a standalone small repair or implement an isolated ownership policy.
+Follow tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md for the primary design.
+This is an owner-directed dependency; the update makes no new claim about the only possible technical fix.
+
 Owner selected one issue at a time and approved the annotation-only repair after reviewing its
 explanation. That repair is owner-accepted and turned in under the completed annotation task.
 The owner then authorized existing-instance planning: the two scanners are corrected and native
 checks pass; the original Iris test now reaches construction but fails a separate cleanup assertion.
-Provider-artifact ownership, frame admission and disposal changes remain parked. Use the two tasks'
-catch-up maps. Callable-object binding remains a separate API question.
+Owner parks disposal/transfer/lifecycle in EPIC-2026-09-13-existing-object-lifecycle-ownership, preserving
+the accepted default-disabled flag contract. Protocol admission is now included there too, under separate
+construction, validation and ownership rules. Provider-artifact ownership remains parked separately.
+Callable-object binding is a separate API question. The prior separate parking of provider-artifact
+work is superseded by the ownership-program dependency above.
+Frame admission now has four native rejection regressions failing and fourteen controls passing;
+the proposed correction extends existing bind-time Protocol validation to supplied instances only.
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
@@ -290,6 +303,7 @@ Record program decisions and cross-story implications here. Keep tactical findin
 Preserve append-only history and source-backed claims; unknown behavior stays explicitly unknown.
 
 ## Context / Handoff Summary
-Ready for updater_0 intake. Consultation is accepted, original evidence is preserved, and the owner authorizes
-native reproduction and repair. No implementation or new test execution has been performed by the drafter.
-The next action is recipient acknowledgment followed by linked native reproduction tasks.
+Annotation and existing-instance discovery repairs are implemented; the original provider-artifact
+regressions remain preserved. The owner now requires the remaining repair to follow the broader
+existing-object ownership program. Resume through that program's reference/blueprint/compiler design,
+then use this epic's native and original downstream tests to qualify the dependent artifact repair.

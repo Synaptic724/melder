@@ -3,23 +3,26 @@
 ## Metadata
 - Story ID: STORY-2026-09-13-provider-artifact-ownership
 - Epic: EPIC-2026-09-13-provider-artifact-ownership-and-existing-instance-planning
-- Status: in_progress
+- Status: blocked
 - Owner: codex
 - Agent Name: updater_0
 - Created: 2026-09-13T18:14:07Z
-- Updated: 2026-09-13T18:14:07Z
+- Updated: 2026-09-17T01:07:11Z
 
 ## User Narrative
 As a provider owner, I need a borrower to compile its graph without retiring my executable artifacts,
 so the original provider object remains usable before and after borrower resolution and cleanup.
 
 ## Value / MRP Alignment
-Visibility must not confer lifecycle ownership. Repair native ownership at the publication boundary.
+Visibility must not confer lifecycle ownership. Qualify artifact publication and invalidation against
+the ownership contracts selected by the broader existing-object program.
 
 ## Ticket Contract
 - ENTRY_GATE: owner-assigned epic and linked reproduction task are routed.
 - EXECUTION_BOUNDARY: Phase-5 publication and the artifact/context lifecycle it controls.
 - DEPENDENCIES: accepted CommandOps consultation and original independent provider-prefix tests.
+  Owner-directed prerequisite: contracts and required ownership work from
+  tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
 - EXIT_GATE: native regressions and original GraphCache/PolicyEngine proofs pass with unchanged inputs.
 - FAILURE_ESCALATION: raise any unresolved owner-versus-borrower scope decision before patching.
 
@@ -34,9 +37,9 @@ Visibility must not confer lifecycle ownership. Repair native ownership at the p
 - Out of scope: Optional/default changes, named conduits, publication or downstream environment replacement.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: updater_0 accepted the owner-authorized repair assignment.
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: owner places repair implementation downstream of the broader existing-object ownership program.
 
 ## Tasks
 - [ ] TASK-2026-09-13-repair-provider-artifact-ownership:
@@ -74,4 +77,5 @@ publication and teardown chain before selecting a change.
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Active native ownership repair. Consult the linked task for tactical evidence and original test identities.
+Implementation is blocked by the owner-directed existing-object ownership prerequisite. Preserve
+the linked task's native evidence and original test identities for qualification after the model is settled.

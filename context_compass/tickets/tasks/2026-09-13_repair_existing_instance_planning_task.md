@@ -7,26 +7,34 @@
 - Owner: codex
 - Agent Name: updater_0
 - Created: 2026-09-13T18:14:07Z
-- Updated: 2026-09-13T21:11:38Z
+- Updated: 2026-09-13T23:35:50Z
 
 ## Objective
 Investigate existing-object planning, deferred annotations, type-frame admission and disposal;
 preserve supplied-object injection and distinguish implementation bugs from policy decisions.
 
 ## Current Focus
+Owner-requested fresh direct-dependency test passes: externally created A is registered and supplied
+by exact identity to newly constructed B. Broader reference/blueprint/lifetime ideas remain discussion only.
 Existing-instance injection repair is implemented and verified natively; see instance_repair_result.md.
 Original Iris construction now succeeds, but its subsequent builder-cleanup assertion still fails.
-Annotation work is accepted and closed. Frame/disposal and provider-artifact repairs remain parked.
+Owner parks disposal/lifecycle in EPIC-2026-09-13-existing-object-lifecycle-ownership, including transfer.
+Resume the remaining existing-instance frame-admission error: compare Protocol rejection for class
+and instance providers, preserving ordinary concrete/string frame grouping policy.
+Native Protocol regressions now reproduce four failures with fourteen passing controls; no source fix yet.
+Owner folds Protocol validation into the deferred existing-object epic's construction/validation/ownership model.
+Annotation work is accepted and closed. Provider-artifact repair remains parked separately.
 
 ## Ticket Contract
 - ENTRY_GATE: linked owner-authorized epic/story and routed native task.
-- EXECUTION_BOUNDARY: owner now authorizes the next repair: existing-instance planning, its tests and assets.
+- EXECUTION_BOUNDARY: rerun the existing direct supplied-value dependency test; no new design discovery or runtime edits.
 - DEPENDENCIES: real dedicated Iris ChannelLogger ActivityBootstrap test and accepted consultation.
 - EXIT_GATE: native regressions/control cases and original logger/bootstrap/cleanup assertions pass.
 - FAILURE_ESCALATION: preserve the supplied object/API; no wrapper, fake acceptance logger or validation bypass.
 
 ## Scope Boundaries
-- In scope: supported unique instances at roots and transitive occurrences, both iterators and regression coverage.
+- In scope: existing-instance injection and frame-admission consistency, with focused native regression evidence.
+- Deferred lifecycle epic: tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
 - Out of scope: Optional/default semantics, Iris ownership redesign, release/publication or consumer changes.
 
 ## Steps
@@ -46,7 +54,7 @@ Annotation work is accepted and closed. Frame/disposal and provider-artifact rep
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: native injection repair and assets pass; original downstream cleanup assertion remains open.
+- transition_reason: requested direct existing-object dependency regression passed on the current checkout.
 
 ## Validation
 The expanded 66-case characterization distinguishes stock outcomes from the test-only scanner
@@ -63,6 +71,15 @@ BindingProfileStrategy currently classifies non-class callables as factories. Do
 public binding policy while repairing supported non-callable existing-instance planning.
 
 ## Catch-up Read Map (Required Before Resuming)
+Current Protocol focus:
+- tests/component/melder/spellbook/test_existing_instance_protocol_admission.py: 18 native cases.
+- artifacts/existing_instance_planning_20260913/protocol_admission_red.log/xml: four failures, fourteen controls.
+- artifacts/existing_instance_planning_20260913/frame_admission_characterization.log: original stock behavior.
+- src/melder/aether/spellbook/bind/bind.py: _bind_logic Protocol branch and _structurally_implements_protocol.
+- src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py.
+- tests/unit/melder/spellbook/bind/test_bind.py:1091-1102 currently asserts incompatible-instance acceptance.
+- Disposal/transfer resumption belongs to the separately deferred existing-object lifecycle epic.
+
 Start with this task's latest Notes and the parent epic. Existing-instance planning is now the
 owner-selected active repair. Existing objects MUST remain injectable into
 consumers; opacity means no new constructor discovery on the supplied object, not exclusion from DI.
@@ -156,6 +173,7 @@ Open experiment questions:
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/existing_instance_planning_20260913/
+  - artifacts/existing_instance_planning_20260913/existing_object_disposal_blast_radius.md
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: retain compact reproduction/validation evidence for owner acceptance.
 
@@ -767,12 +785,355 @@ Melder interpretation for discussion, not a selected implementation:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-13T21:24:53Z
+  TYPE: DECISION
+  CLAIM: Owner selects issue #4, cleanup/disposal, and points at creation objects. Re-onboarding
+    is complete under the retained updater_0 identity and earlier CERTIFY: APPROVED authorization.
+    Trace bind-time callback selection and creation cleanup before choosing a production change.
+  EVIDENCE:
+  - Owner instruction: keep moving and hit up 4 in the creations objects.
+  - artifacts/existing_instance_planning_20260913/instance_repair_result.md
+  - This task's 2026-09-13T20:58:50Z original-Iris cleanup result.
+  IMPACT: Do not assume the builder cleanup failure is caused by the prebuilt-instance exclusion.
+    Keep the two cases distinguishable; preserve the accepted annotation and injection repairs.
+  NEXT: Read verified component/graph slices and trace callback selection through Creations teardown.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:29:00Z
+  TYPE: FACT
+  CLAIM: Complete reads of Creations, ConduitCreations, Bind and BindingProfileStrategy establish
+    the disposal path: the store executes received method lists; Bind filters candidates against
+    ClassBindingProfile.method_names only. That profile enumerates cls.__dict__ callables only,
+    excluding inherited-only methods. Prebuilt profiles have no such list and receive no disposal.
+  EVIDENCE:
+  - src/melder/aether/conduit/creations/creations.py:150-300
+  - src/melder/aether/spellbook/bind/bind.py:315-522
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:66-136
+  - tests/component/melder/spellbook/test_ordered_disposal_binding.py:210-220
+  - system_docs/src_components.md:499-615
+  - system_docs/src_components.md:2330-2456
+  IMPACT: The old test explicitly preserves both exclusions; they are recorded behavior, not
+    evidence of a broken cleanup loop. Original Iris fixture disables book disposal and its logger
+    is deliberately borrowed, so inspect the builder's declared methods and bootstrap candidates.
+  NEXT: Trace ActivityBootstrap registration and ActivityBuilder cleanup inheritance, then reproduce natively.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:30:26Z
+  TYPE: FACT
+  CLAIM: The original ActivityBuilder cleanup failure has a separate configuration explanation:
+    ActivityBuilder declares cleanup directly, ActivityBootstrap binds without disposal names,
+    and the original fixture leaves book names at the empty default. Creations receives no
+    disposal entry. The prebuilt logger is deliberately borrowed by the book in that test.
+  EVIDENCE:
+  - ../priv_commandops/tests/component/spectrum/test_area_bootstraps.py:22-64 (repository-relative)
+  - ../priv_commandops/tests/component/spectrum/test_area_bootstraps.py:197-255 (repository-relative)
+  - ../priv_commandops/src/command_ops/command_center/spectrum/bootstraps/activity_bootstrap.py:27-45
+  - ../priv_commandops/src/command_ops/command_center/activity/builder.py:48-110
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:564-594
+  - src/melder/aether/spellbook/spellbook.py:5134-5161
+  - src/melder/aether/conduit/conduit.py:1386-1427
+  IMPACT: Do not claim that enabling prebuilt-instance disposal repairs this downstream test.
+    No new tests or production changes were made during the disposal investigation so far.
+  NEXT: Discuss explicit instance-bind custody separately from configuring downstream class disposal.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:30:26Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Owner asks to discuss the contract and favors explicit prebound disposal names on bind.
+    Recommendation: an existing instance without explicit per-bind names is borrowed; explicit
+    per-bind names opt into cleanup by its owning container. Book-level defaults should not
+    silently transfer cleanup custody for prebuilt objects. This is a proposal, not an applied change.
+  EVIDENCE:
+  - Owner message: association provides reference and maybe management; explicit names in bind seem reasonable.
+  - src/melder/aether/spellbook/bind/bind.py:315-522
+  IMPACT: Discussion supersedes the pending choice question and pauses implementation/testing.
+    Preserve existing class/factory behavior and the accepted annotation/injection fixes.
+  NEXT: Settle the prebuilt-instance explicit-disposal ownership contract with the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:36:13Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Owner proposes the exact configuration key existing_objects_configured_dispose_applied,
+    disabled by default, with a setter. Recommended meaning: False excludes book-level names
+    for prebuilt objects while explicit per-bind names remain effective; True merges both groups
+    under the same order, overlap ownership and priority rules as class bindings. Configure before bind.
+  EVIDENCE:
+  - Owner message proposing the exact setter/key and default-disabled posture, asking for design discussion.
+  - src/melder/aether/spellbook/bind/bind.py:315-522
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:1128-1179
+  IMPACT: This refines the prior explicit-only proposal with a book-wide opt-in. No implementation
+    has begun. Do not broaden factory handling, inherited class-method discovery or ownership scopes.
+  NEXT: Discuss this two-mode contract and its configuration/recording update map with the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:36:13Z
+  TYPE: FACT
+  CLAIM: The recording path already carries arbitrary registered plain configuration values:
+    freeze emits every property, SpellbookCrystal retains/describes the dictionary, and restore
+    reloads it before binding. Property allowlisting/defaults and honest legacy backfill reporting
+    belong to SpellbookConfiguration. No separate Crystallizer boolean field is required by this path.
+  EVIDENCE:
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:112-156
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:265-402
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:440-493
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:567-675
+  - src/melder/crystallizer/crystals/spellbook_crystal.py:92-141
+  - src/melder/crystallizer/crystals/spellbook_crystal.py:244-264
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:1738-1818
+  - tests/component/melder/crystallizer/test_disposal_configuration_transport.py:45-112
+  IMPACT: Proposed implementation must cover eager/default/reset property state, bool validation,
+    fluent setter/freeze, reload/backfill, normal and inactive binding forwarding, instance method
+    matching, ordered metadata, docs and generated assets. Test False/True/legacy checkpoint transport.
+    The existing Creations path needs no new policy lookup; this does not recreate supplied objects.
+  NEXT: Present the bounded implementation scope while preserving discussion-only status.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:44:39Z
+  TYPE: DECISION
+  CLAIM: Owner accepts the proposed default-disabled configuration contract and requests the
+    blast-radius map before implementation. Explicit per-bind names apply in both modes; True
+    additionally applies configured book names under ordinary disposal composition rules.
+  EVIDENCE:
+  - Owner message accepting the contract and requesting a blast-radius map, then implementation later.
+  - This task's 2026-09-13T21:36:13Z proposal and recording-path evidence.
+  IMPACT: This tranche is source inspection and durable design only. Map exact producers, carriers,
+    consumers, legacy records, public documentation, generated assets and regressions.
+  NEXT: Trace remaining configuration/binding adapters and lifecycle/persistence consumers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:48:00Z
+  TYPE: FACT
+  CLAIM: The flag's producer path is concentrated in configuration, Spellbook.bind/bind_inactive,
+    and Bind. SpellBinder forwards kwargs; Nexus frame conversion constructs ordinary defaults.
+    Spell already retains ordered disposal metadata; Phase-11 signatures already include it.
+    Existing-value executors return the supplied object without registering it on each meld.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:4752-4949
+  - src/melder/aether/spellbook/spellbinder.py:641-660
+  - src/melder/aether/spellbook/spellbinder.py:826-870
+  - src/melder/nexus/nexus_frame_configuration.py:334-349
+  - src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1150-1198
+  - src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:155-234
+  IMPACT: Treat direct and staged registration consistently. Verify where staged supplied objects
+    enter cleanup tracking; preserving metadata alone does not prove a registered disposal entry.
+    Existing explicit-name exclusion tests and public configuration prose must change with the feature.
+  NEXT: Trace conjure/staged activation ownership and remaining persistence replay carriers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:51:00Z
+  TYPE: FACT
+  CLAIM: Source trace identifies a staged-existing-object tracking gap. Conjure registers only
+    active _spells. bind_inactive does not register its supplied object, and _reactivate_owned_spell
+    plus _apply_notch only update selection/metadata and validity. Direct existing-object executors
+    return the value without registration. Preserving disposal names alone cannot establish its entry.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1188-1240
+  - src/melder/aether/spellbook/spellbook.py:1507-1565
+  - src/melder/aether/spellbook/spellbook.py:3681-3821
+  - src/melder/aether/spellbook/spellbook.py:4752-4949
+  - src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:155-234
+  IMPACT: This is source evidence, not an executed regression result. Include parked admission,
+    promotion/re-promotion and cleanup tracking in the blast radius. Decide the ownership start
+    point before widening this feature into staging lifecycle repair. Book-before-conjure cleanup
+    and aliasing the same instance also require explicit proof boundaries, not global once-only claims.
+  NEXT: Record the complete map with core edits, conditional lifecycle edits and the necessary regression matrix.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T21:54:05Z
+  TYPE: FACT
+  CLAIM: Published the 238-line source-backed disposal blast-radius map. It identifies three core
+    production files and a fourth creation-system file for the recommended staged-adoption extension;
+    configuration reload/backfill, crystal carriers, adapter behavior, regression updates, public
+    docs and regenerated assets are mapped. All 36 referenced file paths resolve except the one
+    explicitly planned new integration file. Runtime tests were not run during this mapping pass.
+  EVIDENCE:
+  - artifacts/existing_instance_planning_20260913/existing_object_disposal_blast_radius.md:1-238
+  IMPACT: The accepted flag policy is ready to implement after the owner reviews the map. Staged
+    custody is recommended when a root exists, independent of resolution. Do not claim new disposal
+    behavior is present yet, or that this flag repairs the separate CommandOps class-configuration omission.
+  NEXT: Owner reviews staged-value adoption; prepare patch contracts and red regressions before implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T22:00:20Z
+  TYPE: FACT
+  CLAIM: Owner asks where owned/supplied objects are stored. The value is retained on
+    Spell.user_created_object, and active/inactive book maps retain the Spell. Direct existing-value
+    executors and the reuse-only door return that field. Active eager/late admission also places the
+    same object reference in owner Creations; its optional disposal entry is separate metadata.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell.py:412-415
+  - src/melder/aether/spellbook/spellbook.py:1507-1565
+  - src/melder/aether/spellbook/spellbook.py:4881-4930
+  - src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:155-234
+  - src/melder/aether/conduit/meld/conduit_meld.py:541-546
+  - src/melder/aether/conduit/meld/conduit_meld.py:724-735
+  - src/melder/aether/conduit/creations/creations.py:266-300
+  IMPACT: The staged gap is not loss of the supplied object. Cleanup walks a different registry
+    from the Spell reference used by direct resolution. Existing-object live probes also inspect
+    the Spell reference, so a successful live probe is not proof of disposal registration.
+  NEXT: Explain the two storage roles before settling staged cleanup adoption.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T22:04:24Z
+  TYPE: DECISION
+  CLAIM: Owner requests a separate deferred lifecycle epic because disposal admission also affects
+    transfer and related ownership concepts. Created the epic with accepted flag semantics, five
+    story boundaries, unresolved custody questions and full source/doc/test catch-up pointers.
+    Resume gap #3: existing-instance frame admission, starting with Protocol class/instance parity.
+  EVIDENCE:
+  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - Owner instruction to make the epic and move onto the other flagged errors.
+  IMPACT: The narrow disposal implementation estimate is superseded. No disposal or transfer changes
+    are authorized in the next tranche. Distinguish Protocol validation from concrete frame grouping.
+  NEXT: Reopen Protocol admission and existing experiments, then reproduce the class/instance mismatch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T22:08:00Z
+  TYPE: FACT
+  CLAIM: Current Bind source still restricts Protocol structural admission to ClassBindingProfile.
+    ExistingCreationCompatibilityStrategy checks presence, unique existence, profile and zero
+    constructor parameters, but not Protocol conformance. The old unit test explicitly admits a
+    bare object under a foo Protocol-shaped frame, so green legacy tests preserve this hole.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:464-490
+  - src/melder/aether/spellbook/bind/bind.py:865-913
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py:76-162
+  - tests/unit/melder/spellbook/bind/test_bind.py:1091-1102
+  - tests/experimentation/test_existing_instance_gap_experiment.py:295-302
+  - tests/experimentation/test_existing_instance_gap_experiment.py:410-431
+  IMPACT: This is distinct from concrete/string frame grouping and deferred disposal ownership.
+    Reproduce through the current real runtime, then add minimal rejection/identity controls before
+    choosing a Protocol-only source correction. Keep factory grouping and the current shallow check scope.
+  NEXT: Run existing class/instance Protocol characterization without the historical scanner monkeypatch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T22:10:00Z
+  TYPE: MEASURE
+  CLAIM: Fresh stock characterization records four scenarios: incompatible Protocol class is
+    rejected at bind; compatible class binds; mismatched concrete-frame instance is injected;
+    mismatched Protocol instance also injects and then raises AttributeError on its missing read.
+    Four observation tests passed, two historical monkeypatch cases were deselected.
+  EVIDENCE:
+  - artifacts/existing_instance_planning_20260913/frame_admission_characterization.log:1-8
+  - artifacts/existing_instance_planning_20260913/frame_admission_characterization.xml
+  IMPACT: Passing observation tests do not mean Protocol admission is correct. Preserve concrete
+    frame grouping as a separate policy; encode native expected-rejection and valid identity controls.
+    Pytest reported a cache-directory creation warning; disable its optional cache for the next run.
+  NEXT: Add focused Protocol admission regressions for existing values and preserve class/factory/grouping controls.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T22:12:00Z
+  TYPE: MEASURE
+  CLAIM: Added 18 native Protocol admission regressions/controls. Four existing-instance cases
+    fail because bind does not raise for missing/non-callable read, before and after conjure.
+    Four equivalent invalid-class cases pass, alongside valid/inherited instance injection,
+    concrete/string frame grouping and callable-factory controls (14 passing controls total).
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_existing_instance_protocol_admission.py:1-132
+  - artifacts/existing_instance_planning_20260913/protocol_admission_red.log
+  - artifacts/existing_instance_planning_20260913/protocol_admission_red.xml
+  IMPACT: Narrow proposal: run the same existing Protocol member check on a supplied instance
+    at bind, without nominal checks on ordinary frames or a factory-result policy. Existing
+    tests that explicitly expect incompatible-instance acceptance must be updated with that fix.
+    No production source changes have been made in this resumed frame-validation tranche.
+  NEXT: Check new test lint and refresh its corpus, then report the bounded repair proposal.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T22:15:07Z
+  TYPE: FACT
+  CLAIM: Deferred lifecycle epic is complete as a planning record, with five story boundaries and
+    all 29 referenced source/test paths verified. Protocol admission reproduction is ready for
+    review: 18 native cases, four expected failures and fourteen controls; F/I lint passes.
+    Rebuilt the tests corpus (823 files) and its fingerprint/output check passes.
+  EVIDENCE:
+  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md:1-250
+  - tests/component/melder/spellbook/test_existing_instance_protocol_admission.py:1-132
+  - artifacts/existing_instance_planning_20260913/protocol_admission_red.xml
+  - artifacts/existing_instance_planning_20260913/protocol_test_bundle_build.log:1-2
+  - artifacts/existing_instance_planning_20260913/protocol_test_bundle_check.log:1-1
+  IMPACT: Runtime disposal and Protocol source changes remain unapplied. The precise next correction
+    is extending the existing bind-time Protocol check to supplied instances, preserving class,
+    callable and non-Protocol frame policy and the current shallow member-validation contract.
+  NEXT: Review the Protocol-only correction, then apply it with legacy expectation updates and focused checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T22:22:06Z
+  TYPE: DECISION
+  CLAIM: Owner asks to update the deferred epic with Protocol validation as part of existing-object
+    management. Added the separate construction, contract-validation and lifecycle-ownership rules,
+    a Protocol story, source/test catch-up links, regression results and acceptance criteria.
+  EVIDENCE:
+  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - Owner's ticket-update instruction after agreeing that these are parts of the same existing-object model.
+  IMPACT: This task retains the native evidence; future Protocol implementation is coordinated through
+    the deferred epic instead of being treated as an unrelated local exception. No source/test edits or new test runs.
+  NEXT: Resume existing-object implementation only under the epic's agreed registration and ownership contracts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T23:33:43Z
+  TYPE: DECISION
+  CLAIM: Owner asks to test the specific supported flow: a user-created object A is bound, then
+    object B relies on it. Use the existing native direct-dependency regression and assert exact
+    supplied identity. Treat reference-only blueprint/lifetime/compiler ideas as discussion only.
+  EVIDENCE:
+  - Owner's explicit test request and no-discovery boundary for the other concepts.
+  - tests/integration/melder/spellbook/test_existing_instance_planning.py:23-37
+  - tests/integration/melder/spellbook/test_existing_instance_planning.py:127-136
+  IMPACT: This verifies injection into a B that Melder constructs, not retroactive filling of
+    constructor parameters on an already-created B. Do not resume Protocol/disposal/compiler design.
+  NEXT: Run the single existing-instance dependency regression against the current checkout.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-13T23:35:50Z
+  TYPE: MEASURE
+  CLAIM: The requested direct dependency test passes on the current checkout: one passed in
+    0.38 seconds. ExistingValue is instantiated externally, bound unique with its type as spellframe,
+    and supplied to ValueConsumer's required constructor dependency. The assertion uses is identity.
+  EVIDENCE:
+  - tests/integration/melder/spellbook/test_existing_instance_planning.py:127-136
+  - artifacts/existing_instance_planning_20260913/direct_owned_dependency_confirmation.log:1-2
+  - artifacts/existing_instance_planning_20260913/direct_owned_dependency_confirmation.xml
+  IMPACT: Registered user-created A can be injected into a B that Melder constructs. No test/source
+    edits, additional design discovery, runtime changes or build regeneration were needed for this check.
+  NEXT: Report the exact successful scenario; retain broader reference/blueprint concepts as unselected ideas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Annotation work is accepted and turned in under the completed annotation task. The next selected
-existing-instance planning repair is now implemented: both Phase-8/9 scanners treat supplied values
+Annotation work is accepted and turned in under the completed annotation task. The latest
+owner-requested direct A-to-B dependency check passes with exact supplied identity.
+No discovery was performed on the accompanying compiler/reference/lifetime ideas.
+The earlier existing-instance planning repair is implemented: both Phase-8/9 scanners treat supplied values
 as leaves, preserving consumer dependency edges and exact object identity. All 21 instance regressions
 pass within 140 selected native checks; five legacy failure expectations now test successful injection.
 Generated graph/source/test assets are current. Read instance_repair_result.md first. The original
-CommandOps/Iris test now reaches successful construction but fails builder.cleaned after root.cleanup;
-its cleanup cause is not established. The task remains open for review/downstream acceptance.
-Frame/disposal and provider-artifact ownership changes remain parked. No replacement wheel was built.
+CommandOps/Iris test reaches successful construction but fails builder.cleaned after root.cleanup.
+The subsequent source trace identifies omitted disposal configuration for the builder's class;
+the original test has not been changed. The task remains open for review/downstream acceptance.
+Owner now parks disposal in tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
+It preserves the accepted flag but supersedes the narrow implementation estimate with a full ownership,
+transfer/rollback and persistence program. No disposal implementation or new wheel exists.
+Current work: Protocol/frame admission for existing instances. Eighteen native cases are written and
+executed: four expected missing/non-callable-member rejection failures, fourteen passing controls.
+Current stock injection reaches a missing Protocol method and fails at consumer use. Proposal is to
+extend the same bind-time Protocol check to instances; no source fix yet. Test lint and corpus checks pass.
+Owner now includes that validation issue in the deferred epic alongside construction and lifecycle ownership.
+Provider-artifact ownership remains parked separately. The original builder test still lacks class disposal names.

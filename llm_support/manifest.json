@@ -5700,14 +5700,14 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 10918915,
-        "lines": 312443,
+        "bytes": 10924468,
+        "lines": 312583,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "c19482d68ba7f47c991f9ba166dba839e61886acc70f1714ab2583e713d0cad5"
+        "sha256": "3a0064d72e9f6128a6d695c10bc2a4070d2449d16f4052bfdfca2dae0371a874"
       },
-      "content_bytes": 10425320,
-      "content_lines": 305861,
-      "file_count": 822,
+      "content_bytes": 10430267,
+      "content_lines": 305993,
+      "file_count": 823,
       "files": {
         "tests/_codegen_system_support.py": {
           "content_bytes": 7894,
@@ -6277,6 +6277,12 @@
           "content_bytes": 10699,
           "content_lines": 327,
           "content_sha256": "72cda03cbd04a01d215da10a2ba2e6a71821054436d33084b3fefca83e11a9e5",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/spellbook/test_existing_instance_protocol_admission.py": {
+          "content_bytes": 4947,
+          "content_lines": 132,
+          "content_sha256": "7f7cb7ed51340ee37a560c4950eaad73db470b8a2ed913e45f8d3bb3db708a82",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_ordered_disposal_binding.py": {
@@ -10643,12 +10649,12 @@
         }
       },
       "index": {
-        "bytes": 158585,
-        "lines": 844,
+        "bytes": 158777,
+        "lines": 845,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "16efc39b99e2c63664141991a1f7804ce8e92f966b875d4d6f285b31df8ddf08"
+        "sha256": "d30ad976bbe67805b7ccf50f77de696faaf506b011c4e348762d6f68396be335"
       },
-      "source_fingerprint": "83aa81f63e4ed9f82aa94a35d2aab35adb08a84e80343855672583a1c625a1fe"
+      "source_fingerprint": "de8f4e2f84271309944eda53bc8b77322113fed198c8f6524b8f0c83ce08b53c"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",
