@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
- "source_sha256": "c62979c70f87de79e88ec7ccdf6e3cf096bdc2f3186475527653adb6cdd1f8f4",
+ "source_sha256": "561ccdf10639f3a12b9f2426e90e87d9b49fcad272d39acdaeb034e353875e68",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan": {
@@ -19,7 +19,7 @@
    "label": "ManyOnlyCodegenPlanVariant",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 22,
+   "lineno": 23,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -48,7 +48,7 @@
    "label": "ManyOnlyCodegenPlanCallMode",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 36,
+   "lineno": 37,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -85,7 +85,7 @@
    "label": "ManyOnlyCodegenPlanStep",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 58,
+   "lineno": 59,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -99,21 +99,23 @@
     "occurrence",
     "override_match_prefix",
     "override_match_prefix_len",
+    "required_override_params",
     "shared_instance",
     "spell",
     "uses_positional_override"
    ],
    "shape": {
-    "method_count": 13,
+    "method_count": 14,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "2171587a1fa060b2ddedc4b253b93f97c46fab74f23517b86cc4850054b81299",
+   "span_sha256": "20833f91d4c3128c69793a4f93c50cc8a497fd175c2b91c35a4ff12d7ff02520",
    "role": "Reusable planner step object for one many-only execution occurrence.",
    "responsibilities": [
     "stores spell-static instance and occurrence identity for one many-only step",
     "stores dependency resolution order and contract payload facts for emitted execution",
-    "stores override-match prefix metadata for many-only overrides planning"
+    "stores override-match prefix metadata for many-only overrides planning",
+    "retains required_override_params as plain values for either many-only lane"
    ],
    "owns_state": [
     "_instance_key",
@@ -139,7 +141,7 @@
    "label": "ManyOnlyNoOverridesPlan",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 232,
+   "lineno": 244,
    "bases": [
     "Cleanable"
    ],
@@ -228,7 +230,7 @@
    "label": "ManyOnlyOverridesPlan",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 784,
+   "lineno": 796,
    "bases": [
     "Cleanable"
    ],
@@ -271,7 +273,7 @@
    "label": "ManyOnlyCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 882,
+   "lineno": 894,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -282,7 +284,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "2a735d9e1ccead5152a17323e171c5148b772342eb3da12bdfb1b2c780750361",
+   "span_sha256": "e6454367846191c4f0bce6bcc8cdb7d82db866ac8347dd77244c242dc6d9a331",
    "role": "Standalone builder for many-only planner payloads from SpellCodegenModel.",
    "responsibilities": [
     "builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections",
@@ -356,6 +358,7 @@
   "Tuple": "typing.Tuple",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "RequiredOverrideParam": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.RequiredOverrideParam",
   "SpellInjectionInstanceSpec": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec",
   "SpellRuntimeRecord": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeRecord",
   "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel"

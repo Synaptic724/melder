@@ -86,6 +86,8 @@ class Spell(Cleanable):
     - Disposal metadata is established once at bind. The ordered list, presence
       flag, and bind-time SHA describe that same policy. Post-creation mutation
       is unsupported; this class adds no copying or mutation guards.
+    - Resolution capability is fixed per bound version and exposed by the
+      read-only resolvable property, independently of activity and compilation state.
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -258,6 +260,7 @@ class Spell(Cleanable):
         "_owner_creations",
         "_post_hooks",
         "_pre_hooks",
+        "_resolvable",
         "_spellbook_cleanup",
         "_spell_system_states",
         "_spellbook",
@@ -302,6 +305,7 @@ class Spell(Cleanable):
             existing_object: object | None = None,
             disposal_method_names: Optional[list[str]] = None,
             *args: Any,
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> None:
         """
@@ -326,6 +330,8 @@ class Spell(Cleanable):
                 execution order. Retained directly; omitted metadata gets a fresh empty list.
                 Bind owns matching and deduplication, which are not repeated here.
             *args: Optional positional metadata tags, collected into `tags`.
+            resolvable (bool): Validated per-version resolution capability. Stored natively,
+                outside metadata, and independent of active/parked or compiler readiness state.
             **kwargs: Optional keyword metadata map, collected into `metadata`.
 
         Contract:
@@ -379,6 +385,7 @@ class Spell(Cleanable):
         super().__init__()
         self._lock = RLock()
         self._active = True  # active in its index; flipped by notch/disable
+        self._resolvable: bool = resolvable
         self._id: str = new_ulid()  # Unique internal ID for tracking
 
         # Spell Data
@@ -593,6 +600,7 @@ class Spell(Cleanable):
             del self._post_hooks
             del self.tags
             del self.metadata
+            del self._resolvable
             del self._mutation_override
             del self.dependencies
             del self.disposal_method_names
@@ -608,6 +616,25 @@ class Spell(Cleanable):
 
 
     #endregion Disposal
+    @property
+    def resolvable(self) -> bool:
+        """
+        Return this bound version's immutable resolution capability.
+
+        Contract:
+            Default True is established at bind. The value is independent of index
+            selection, permissions, existence, and current compilation validity.
+            No live setter is provided; changing capability requires another binding.
+
+        Returns:
+            bool: Whether this version is declared available for runtime resolution.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._resolvable
+
     def _set_hooks(
             self,
             *,

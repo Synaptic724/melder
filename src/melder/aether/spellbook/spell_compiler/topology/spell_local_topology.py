@@ -34,6 +34,7 @@ class SpellSocketDescriptor:
 
             * NORMAL – standard DI edge or plain parameter socket.
             * SPELL_CONTRACT – cross-conduit spell contract socket.
+            * OVERRIDE_REQUIRED – required supplied input with a descriptive target only.
 
         is_collection:
             True if this socket is a collection DI shape (e.g. list[...]).
@@ -45,11 +46,20 @@ class SpellSocketDescriptor:
             The direct dependency spells version IDs that this socket *actually*
             resolved to during Phase 3, if any.
 
-            For contract / mutation sockets that are not yet resolved, this
-            will typically be an empty tuple.
+            Unresolved contract sockets and OVERRIDE_REQUIRED inputs have no
+            executable target IDs.
+
+        referenced_spell_ids:
+            Selected non-resolvable version IDs retained for graph navigation.
+            These IDs must never be traversed as construction dependencies.
+
+        parameter_kind:
+            The original inspect.Parameter kind name, when Phase-1 metadata is
+            available. Required-input planning uses this with position to distinguish
+            positional-only and keyword-only supply; it must not infer kind from optionality.
 
         dependency_key:
-            Canonical "(frame_key, binding_key)" for NORMAL DI sockets.
+            Canonical "(frame_key, binding_key)" for normal or required-override DI selection.
             This is populated for single/collection/SpellMap sockets that
             participate in DI resolution. For collection sockets, the frame
             key is used for targeted revalidation, while the binding key
@@ -85,6 +95,8 @@ class SpellSocketDescriptor:
     target_spell_ids: Tuple[str, ...]
     dependency_key: Optional[Tuple[str, str]] = None
     contract_key: Optional[Tuple[str, str]] = None
+    referenced_spell_ids: Tuple[str, ...] = ()
+    parameter_kind: Optional[str] = None
 
 
 class SpellLocalTopology(Cleanable):

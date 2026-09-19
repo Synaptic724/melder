@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
- "source_sha256": "56749c337c617279a40e35ea68e0e971aea14af29494229cc1be30c2a4a8fb21",
+ "source_sha256": "52a73a9f90becffc54cdfb60e7c0b859fbbc45cb9bd39713ef7be6c40c2dd8ac",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy": {
@@ -26,7 +26,7 @@
    "label": "RequiredHolesStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
-   "lineno": 11,
+   "lineno": 12,
    "bases": [
     "SpellValidationStrategy"
    ],
@@ -39,12 +39,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0028541421043f90b3c05181c37199f4697706f46d6ea4cac0c9ba05acdc607e",
+   "span_sha256": "e0f75966dd601489d91fa3d221f3ba2d178bd07f091f5b15098b07e915ff0c40",
    "include": true,
    "role": "Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.",
    "responsibilities": [
     "consume the Phase-1 SpellRequirements.iter_required_holes() view",
-    "emit warnings rather than hard errors"
+    "emit warnings rather than hard errors",
+    "reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations"
    ],
    "phases": [
     "compile"
@@ -72,6 +73,7 @@
  "imports": {
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
   "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
   "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
  },

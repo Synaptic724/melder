@@ -339,7 +339,7 @@ do not copy that sequence into this task. Update the checkpoint when the current
     Current supplied-object uniqueness remains. Unimplemented model expansion is withdrawn, not delivered.
   EVIDENCE:
   - Owner's explicit choice in the current conversation.
-  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  - tickets/tasks/completed/2026-09-13_repair_provider_artifact_ownership_task.md
   IMPACT: This lane is retired with its findings retained. No production ownership redesign is shipped.
   NEXT: Follow the provider-artifact repair task under the retained current model.
   REREAD: REQUIRED
@@ -455,14 +455,14 @@ do not copy that sequence into this task. Update the checkpoint when the current
   CLAIM: Owner explicitly selects Protocol investigation through bind and compiler. Its focused task
     now owns active discovery; retain this metadata comparison and architecture corrections as context.
   EVIDENCE:
-  - tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
+  - tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md
   IMPACT: No broader representation decision or implementation is implied by the investigation.
   NEXT: Continue the Protocol bind/compiler trace in the focused task.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-STATUS: review; CONTINUE in tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
+STATUS: review; CONTINUE in tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
 TARGET: user binds an existing instance; reuse normal object machinery with an explicit construction prohibition.
 DEPENDENCY CONTRACT: preserve B -> A, inject eligible supplied A, or refuse the affected resolution with
 consumer/provider/path context. Construction policy and resolution validity are distinct; see the source-backed section.

@@ -443,6 +443,10 @@ class CompilerPhase3:
         Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
         spell.
 
+        Prefer matching resolvable providers. Only when none exist may a single
+        non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
+        Matching and index grouping happen first; capability does not change them.
+
         Args:
             spell:
                 Consuming spell owning the dependency.
@@ -479,6 +483,12 @@ class CompilerPhase3:
                 ):
                     candidates[index] = spell_obj
 
+        resolvable_candidates = {
+            index: candidate for index, candidate in candidates.items() if candidate.resolvable
+        }
+        if resolvable_candidates:
+            candidates = resolvable_candidates
+
         if not candidates:
             raise RuntimeError(
                 f"SpellCrafter Phase 3: no DI candidate found for parameter "
@@ -513,7 +523,8 @@ class CompilerPhase3:
             spells (classes, methods, lambdas) bound under the given frame/type.
             
             This corresponds to list[FrameType]-style DI where the user explicitly
-            asked for "all implementations".
+            asked for "all implementations". Non-resolvable definitions are
+            excluded after the existing matching and ordering decisions.
             
             Returns:
                 Dict[SpellIndex, Spell]: mapping of all candidates. It is valid
@@ -523,24 +534,23 @@ class CompilerPhase3:
         binding_name: Optional[str] = None
 
         if candidate_index is not None:
-            return self._indexed_annotation_candidates(
+            candidates = self._indexed_annotation_candidates(
                 candidate_index,
                 annotation,
                 require_class_spell=False,
             )
+        else:
+            candidates = {}
+            for index, spell_obj in self._iter_all_spells(spellbook):
+                if self._matches_annotation(
+                        annotation,
+                        binding_name,
+                        spell_obj,
+                        require_class_spell=False,
+                ):
+                    candidates[index] = spell_obj
 
-        candidates: Dict[Any, Spell] = {}
-
-        for index, spell_obj in self._iter_all_spells(spellbook):
-            if self._matches_annotation(
-                    annotation,
-                    binding_name,
-                    spell_obj,
-                    require_class_spell=False,
-            ):
-                candidates[index] = spell_obj
-
-        return candidates
+        return {index: candidate for index, candidate in candidates.items() if candidate.resolvable}
 
     def _socket_kind_for_dep(self, dep: SpellSymbolicDependency) -> SocketKind:
         """
@@ -673,7 +683,7 @@ class CompilerPhase3:
             if dep.target_annotation is None:
                 return None
             normalized_key: Tuple[str, str] = SpellInputUtils.normalize_spell_key(
-                spellframe=dep.target_annotation,
+                spellframe=self._normalize_annotation_for_matching(dep.target_annotation),
                 binding_name=None,
             )
             return normalized_key
@@ -685,6 +695,9 @@ class CompilerPhase3:
             spell: Spell,
             graph: SpellSymbolicGraph,
             socket_targets: Dict[tuple[str, int], List[str]],
+            *,
+            requirements: SpellRequirements,
+            socket_references: Dict[tuple[str, int], List[str]],
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -696,7 +709,8 @@ class CompilerPhase3:
                 * the concrete dependency spell ids resolved during Phase 3.
             
             For each: class:`SpellSymbolicDependency`:
-                * Determine "socket_kind" from its: class:`ParameterDIShape`.
+                * Determine declaration kind, then mark selected descriptive targets
+                  OVERRIDE_REQUIRED without altering Phase-1/2 declaration facts.
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -704,6 +718,8 @@ class CompilerPhase3:
                     many targets; contract and plain sockets will
                     typically have none at this phase.
                 * Preserve contract metadata for SpellContract sockets.
+                * Preserve reference IDs separately from executable targets and
+                  copy the real parameter kind from Phase-1 requirements.
                 * Create a: class:`SpellSocketDescriptor` for that parameter.
             
             The resulting: class:`SpellLocalTopology` is a per-spell, constructor-
@@ -713,6 +729,7 @@ class CompilerPhase3:
         """
         spell_id = self._get_required_current_spell_id(spell)
         descriptors: List[SpellSocketDescriptor] = []
+        parameter_kinds = {param.name: param.kind.name for param in requirements.parameters}
 
         for dep in graph.dependencies:
             targets = socket_targets.get((dep.param_name, dep.position))
@@ -722,8 +739,11 @@ class CompilerPhase3:
                 target_spell_ids = ()
 
             socket_kind = self._socket_kind_for_dep(dep)
+            referenced_spell_ids = tuple(socket_references.get((dep.param_name, dep.position), ()))
+            if referenced_spell_ids:
+                socket_kind = SocketKind.OVERRIDE_REQUIRED
             dependency_key = None
-            if socket_kind is SocketKind.NORMAL:
+            if spell.resolvable and socket_kind in (SocketKind.NORMAL, SocketKind.OVERRIDE_REQUIRED):
                 dependency_key = self._dependency_key_for_dep(dep)
 
             descriptor = SpellSocketDescriptor(
@@ -736,6 +756,8 @@ class CompilerPhase3:
                 target_spell_ids=target_spell_ids,
                 dependency_key=dependency_key,
                 contract_key=dep.contract_key,
+                referenced_spell_ids=referenced_spell_ids,
+                parameter_kind=parameter_kinds.get(dep.param_name),
             )
             descriptors.append(descriptor)
 
@@ -787,6 +809,9 @@ class CompilerPhase3:
                 * SpellContract sockets take part in the
                   symbolic graph and topology but do not produce DAG edges or
                   concrete targets at this stage.
+                * Selected non-resolvable definitions produce reference-only
+                  OVERRIDE_REQUIRED inputs. Non-resolvable roots retain their own
+                  declarations/topology without resolving constructor requirements.
         """
         if requirements is None:
             raise ValueError("requirements must not be None.")
@@ -803,9 +828,9 @@ class CompilerPhase3:
 
         # Pass-scoped candidate index (None -> original scan semantics).
         # Built lazily once per resolution pass; eq-risky pools disable it.
-        candidate_index = self._get_candidate_index(
-            spellbook,
-            resolution_pass_cache,
+        candidate_index = (
+            self._get_candidate_index(spellbook, resolution_pass_cache)
+            if spell.resolvable else None
         )
 
         # Register the root node first.
@@ -817,8 +842,9 @@ class CompilerPhase3:
         # Track per-socket resolutions for local topology:
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
+        socket_references: Dict[tuple[str, int], List[str]] = {}
 
-        for dep in graph.dependencies:
+        for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
 
             di_shape = dep.di_shape
@@ -849,12 +875,24 @@ class CompilerPhase3:
                 continue
 
             key = (dep.param_name, dep.position)
-            targets_for_socket = socket_targets.setdefault(key, [])
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
+                if not spell_obj.resolvable:
+                    if (
+                            di_shape is ParameterDIShape.SPELLMAP_DEFAULT
+                            and dep.spellmap_default.spell_override is not None
+                    ):
+                        raise RuntimeError(
+                            f"Parameter {dep.param_name!r} on spell {spell.spell_name!r} selects "
+                            f"non-resolvable definition {spell_obj.spell_name!r} with a spell_override "
+                            "construction payload. Remove that payload and supply the consumer "
+                            "parameter through a meld override."
+                        )
+                    socket_references.setdefault(key, []).append(dep_spell_id)
+                    continue
                 dependency_spell_ids.append(dep_spell_id)
-                targets_for_socket.append(dep_spell_id)
+                socket_targets.setdefault(key, []).append(dep_spell_id)
 
                 dag.add_node(key=dep_spell_id, payload=spell_obj)
                 dag.add_dependency(
@@ -865,7 +903,11 @@ class CompilerPhase3:
                 )
 
         # Snapshot local topology for this spell's constructor.
-        topology = self._build_local_topology(spell, graph, socket_targets)
+        topology = self._build_local_topology(
+            spell, graph, socket_targets,
+            requirements=requirements,
+            socket_references=socket_references,
+        )
 
         # Update spell-system state with dependency IDs and local topology.
         if spell.spell_index is not None:

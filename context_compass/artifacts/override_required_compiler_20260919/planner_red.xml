@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="0.418" timestamp="2026-09-19T14:44:01.041906-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_required_input_rows_survive_both_planner_variants[solo]" time="0.006"><failure message="KeyError: 'value'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:415: in test_required_input_rows_survive_both_planner_variants
+    source = injection.instance_specs_by_instance_key[injection.root_instance_key].param_sources["value"]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'value'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_required_input_rows_survive_both_planner_variants[many_only]" time="0.006"><failure message="KeyError: 'value'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:415: in test_required_input_rows_survive_both_planner_variants
+    source = injection.instance_specs_by_instance_key[injection.root_instance_key].param_sources["value"]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'value'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_required_input_rows_survive_both_planner_variants[generalized]" time="0.005"><failure message="KeyError: 'value'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:415: in test_required_input_rows_survive_both_planner_variants
+    source = injection.instance_specs_by_instance_key[injection.root_instance_key].param_sources["value"]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'value'</failure></testcase></testsuite></testsuites>

@@ -871,6 +871,8 @@ class SharedCompilerExecutions:
                 - Returns only primitive tuple rows.
                 - Expects InjectionSpec/ParamSource contract fields to be present.
                 - Fails fast when malformed/cleaned artifacts violate contract.
+                - override_required rows append signature position/kind and descriptive IDs;
+                  ordinary source kinds retain their existing six-field row layout.
             Args:
                 instance_injections:
                     Mapping from instance key to InjectionSpec-like objects.
@@ -922,16 +924,21 @@ class SharedCompilerExecutions:
                         dependency_keys = tuple(dependency_key_list)
                     override_key = param_source.override_key
                     contract_key = param_source.contract_key
-                    param_rows.append(
-                        (
-                            param_name,
-                            kind,
-                            dependency_keys,
-                            override_key,
-                            contract_key,
-                            bool(param_source.is_collection),
-                        )
+                    param_row: Tuple[Any, ...] = (
+                        param_name,
+                        kind,
+                        dependency_keys,
+                        override_key,
+                        contract_key,
+                        bool(param_source.is_collection),
                     )
+                    if kind == "override_required":
+                        param_row += (
+                            param_source.position,
+                            param_source.parameter_kind,
+                            tuple(param_source.referenced_spell_ids),
+                        )
+                    param_rows.append(param_row)
 
             rows.append(
                 (
@@ -1211,6 +1218,7 @@ class SharedCompilerExecutions:
             Contract:
                 - Includes param source wiring, aggregation flags, and contract payload.
                 - Returns tuple-only deterministic structure.
+                - Required-input position/kind/reference fields survive either metadata mode.
             Args:
                 injection_spec:
                     Phase 9 InjectionSpec-like object.
@@ -1231,16 +1239,21 @@ class SharedCompilerExecutions:
             override_key = None
             if include_override_metadata:
                 override_key = param_source.override_key
-            param_rows.append(
-                (
-                    param_name,
-                    param_source.kind,
-                    dependency_keys,
-                    override_key,
-                    param_source.contract_key,
-                    bool(param_source.is_collection),
-                )
+            param_row: Tuple[Any, ...] = (
+                param_name,
+                param_source.kind,
+                dependency_keys,
+                override_key,
+                param_source.contract_key,
+                bool(param_source.is_collection),
             )
+            if param_source.kind == "override_required":
+                param_row += (
+                    param_source.position,
+                    param_source.parameter_kind,
+                    tuple(param_source.referenced_spell_ids),
+                )
+            param_rows.append(param_row)
 
         contract_payload = injection_spec.contract_payload
         normalized_contract_payload = None

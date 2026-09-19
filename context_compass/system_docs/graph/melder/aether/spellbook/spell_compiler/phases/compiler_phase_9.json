@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py",
- "source_sha256": "3358ee58ae938c94b0bd262f452000cd8b71e1d7bc7d34745486278e30c1850c",
+ "source_sha256": "f7a7bbbca014f588baa3037479bc3b24a27c0f53bb496f94463c1413f0159ee6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9": {
@@ -33,12 +33,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "62b9d6a029f301dacdbed54831ba657627e177b45f1f7805c6f78b1f72922ad3",
+   "span_sha256": "302b477864e614a66975e4f89a215be8a163647f1e8c7e2aa64670787a455f06",
    "role": "Live compiler phase-9 wrapper over SpellArtifactProcessor.",
    "responsibilities": [
     "owns and reuses SpellArtifactProcessor as the live phase-9 collaborator",
     "publishes SpellCodegenModel onto SpellCompilerArtifact",
-    "bridges the current phase scheduler onto the processor seam without reviving old injection-plan code"
+    "bridges the current phase scheduler onto the processor seam without reviving old injection-plan code",
+    "skips non-resolvable definitions before executable model fitting"
    ],
    "owns_state": [
     "_artifact_processor"

@@ -146,7 +146,7 @@ Detailed source ranges, earlier probe results and the deeper 2026-09-07 trace ar
 ## Cross-Cutting Tasks
 - Prior naming evidence: tickets/tasks/2026-09-06_named_conduit_semantics_task.md (review).
 - Initial impact discovery: tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md (review).
-- Implementation map: tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md (review; planning only).
+- Implementation map: tickets/tasks/completed/2026-09-07_named_conduit_implementation_map_task.md (review; planning only).
 
 ## Milestones
 - [x] Capture the existing naming/registration/lifetime findings.
@@ -297,7 +297,7 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
     dependency order, open contracts, validation and rollback. Source review identified an existing
     upgrade book-ownership concern that must be handled as a bounded prerequisite.
   EVIDENCE:
-  - tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md
+  - tickets/tasks/completed/2026-09-07_named_conduit_implementation_map_task.md
   IMPACT: Planning is reviewable without runtime implementation. The map preserves structural
     persistence and creation-only naming and does not treat open choices as owner-approved.
   NEXT: Review the implementation map and remaining contract choices before authoring execution patches/tasks.

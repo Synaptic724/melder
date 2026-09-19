@@ -34,7 +34,7 @@ def test_run_delegates_to_codegen_creation_system() -> None:
     phase = CompilerPhase11()
     creation_system = _CreationSystemStub()
     phase._codegen_creation_system = creation_system
-    spell = SimpleNamespace()
+    spell = SimpleNamespace(resolvable=True)
     artifact = SimpleNamespace()
     spellbook = SimpleNamespace()
 

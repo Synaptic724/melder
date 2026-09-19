@@ -82,63 +82,47 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| existing_instance_protocol_admission | review | handoff | codex | updater_0 | none | Review the completed Bind Protocol repair. | 334 focused checks pass; docs and assets current. | Owner accepts the bounded repair. | tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md | 2026-09-19T11:52:48Z | REQUIRED |
-| existing_object_di_comparison | review | handoff | codex | updater_0 | none | Verify repeat registration and cleanup of the same user-created reference. | Exact prebuilt-instance identity and custody semantics across three frameworks. | Owner reviews the comparative explanation. | tickets/tasks/2026-09-13_compare_existing_object_ownership_di_task.md | 2026-09-13T23:03:24Z | REQUIRED |
+| document_positional_meld_calls | in_progress | implementation | codex | workflows_1 | none | Audit and apply the publication-source codemod. | Consistent positional meld examples in RTD and downloads. | Codemod and documentation checks pass. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-19T21:44:14Z | REQUIRED |
+| discoverable_non_resolvable_registrations | review | handoff | codex | updater_0 | none | Open S4 runtime task from the compiler handoff. | S3 compiler verified; runtime input/refusal work next. | S4 task routed or owner accepts S3. | tickets/tasks/2026-09-19_implement_override_required_compiler_task.md | 2026-09-19T21:38:40Z | REQUIRED |
 | sync_owner_uv_environment | review | handoff | codex | workflows_1 | none | Owner resumes development and restarts editor Ruff. | Melder 0.2.40 and locked tools on existing no-GIL Python. | Owner accepts verified environment sync. | tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | 2026-09-13T20:48:32Z | REQUIRED |
-| provider_artifact_ownership | review | handoff | codex | updater_0 | none | Review repaired artifact behavior and corrected component expectation. | 491 Spellbook component tests pass; original provider proofs retained. | Owner accepts repair or reports another full-suite failure. | tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md | 2026-09-19T13:30:00Z | REQUIRED |
-| existing_instance_planning | review | handoff | codex | updater_0 | none | Discuss reference-model ideas only when owner chooses. | Fresh supplied A-to-B injection test passes by identity. | Owner selects any further work. | tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md | 2026-09-13T23:35:50Z | REQUIRED |
-| commandops_local_wheel | review | handoff | codex | updater_0 | none | Owner transfers verified 0.2.40 wheel into CommandOps. | Archive and isolated install smoke passed. | Owner accepts wheel; named lesser work later. | tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md | 2026-09-13T16:42:22Z | REQUIRED |
-| optional_dependency_resolution | review | handoff | codex | updater_0 | none | Owner reruns broader suite; capture thread traceback if it recurs. | Three fixtures corrected; 18 tests pass; thread failure unreproduced. | Owner accepts fixes or supplies another failure. | tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md | 2026-09-13T16:25:07Z | REQUIRED |
-| named_binding_meld_lookup | review | handoff | codex | updater_0 | none | Owner reviews named and framed binding lookup results. | 25 tests pass across three lifecycle modes. | Owner accepts observed behavior or requests changes. | tickets/tasks/2026-09-13_named_binding_meld_lookup_test_task.md | 2026-09-13T12:09:53Z | REQUIRED |
-| bind_conjure_order_speedtest | review | handoff | codex | updater_0 | none | Owner reviews cache results and completed Python upgrade. | Cache behavior measured on 3.14.7; profiler stall diagnosed. | Owner accepts evidence or selects another workload. | tickets/tasks/2026-09-12_bind_conjure_order_benchmark_task.md | 2026-09-12T21:18:31Z | REQUIRED |
 | reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
-| named_conduit_scope_design | review | handoff | codex | updater_0 | none | Review the twelve-phase map and remaining contract choices. | Source-backed implementation plan and difficulty assessment. | Owner selects contracts and authorizes implementation separately. | tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md | 2026-09-07T17:22:45Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
 | ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes partial-rerun coverage correction. | Complete same-run coverage without repeated tests. | Owner accepts corrected reporting in a fresh run. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T18:58:09Z | REQUIRED |
 | stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
-| provider_artifact_and_existing_instance_repair | review | handoff | codex | updater_0 | none | Review delivered provider and instance repair records. | Provider repair and original downstream proofs pass. | Owner accepts program disposition. | tickets/epics/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md | 2026-09-19T13:08:28Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| retired_existing_object_design | done | updater_0 | tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
-| retired_existing_object_design | done | updater_0 | tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
-| retired_existing_object_design | done | updater_0 | tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
-| retired_existing_object_design | done | updater_0 | tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
-| deferred_annotation_acquisition | done | updater_0 | tickets/tasks/completed/2026-09-13_repair_deferred_annotation_acquisition_task.md | Owner accepted; 271 checks and generated assets pass. | 2026-09-13T20:42:12Z |
-| turn_in_codex_1_tickets | done | codex_1 | tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md | All 17 assigned tickets turned in; rejected repair explicitly deferred; evidence retained. | 2026-09-06T10:04:39Z |
-| 2026-09-04_readthedocs_documentation_epic | done | codex_2 | tickets/epics/completed/2026-09-04_readthedocs_documentation_epic.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_advanced_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_advanced_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_beginner_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_beginner_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_build_and_hosting_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_build_and_hosting_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_example_catalog_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_example_catalog_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_expert_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_expert_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
+| turn_in_updater_0_work | done | updater_0 | tickets/tasks/completed/2026-09-19_turn_in_updater_0_work_task.md | 14 delivered records closed; object proposals backlogged; evidence retained. | 2026-09-19T14:55:42Z |
+| 2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic | done | updater_0 | tickets/epics/completed/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-19_existing_instance_protocol_admission_story | done | updater_0 | tickets/stories/completed/2026-09-19_existing_instance_protocol_admission_story.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-13_provider_artifact_ownership_story | done | updater_0 | tickets/stories/completed/2026-09-13_provider_artifact_ownership_story.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-13_existing_instance_planning_story | done | updater_0 | tickets/stories/completed/2026-09-13_existing_instance_planning_story.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-19_repair_existing_instance_protocol_admission_task | done | updater_0 | tickets/tasks/completed/2026-09-19_repair_existing_instance_protocol_admission_task.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-19_investigate_existing_instance_protocol_validation_task | done | updater_0 | tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-13_repair_provider_artifact_ownership_task | done | updater_0 | tickets/tasks/completed/2026-09-13_repair_provider_artifact_ownership_task.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-13_repair_existing_instance_planning_task | done | updater_0 | tickets/tasks/completed/2026-09-13_repair_existing_instance_planning_task.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-13_compare_existing_object_ownership_di_task | done | updater_0 | tickets/tasks/completed/2026-09-13_compare_existing_object_ownership_di_task.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-13_build_commandops_local_wheel_task | done | updater_0 | tickets/tasks/completed/2026-09-13_build_commandops_local_wheel_task.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
+| 2026-09-13_optional_dependency_default_resolution_test_task | done | updater_0 | tickets/tasks/completed/2026-09-13_optional_dependency_default_resolution_test_task.md | Owner turn-in; delivered scope accepted, deferred object ideas backlogged. | 2026-09-19T14:53:20Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- existing_instance_protocol_admission: SWITCH_TRIGGER is owner acceptance of the verified repair; RESUME_HIERARCHY: tickets/stories/2026-09-19_existing_instance_protocol_admission_story.md -> tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md.
-- existing_object_di_comparison: SWITCH_TRIGGER is a cited three-framework comparison; RESUME_HIERARCHY: tickets/tasks/2026-09-13_compare_existing_object_ownership_di_task.md.
+- document_positional_meld_calls: SWITCH_TRIGGER is verified source replacements and rebuilt docs.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-19_document_positional_meld_calls_task.md.
+- discoverable_non_resolvable_registrations: SWITCH_TRIGGER is S4 runtime-task intake or owner acceptance of S3.
+  RESUME_HIERARCHY: tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md ->
+  tickets/tasks/2026-09-19_implement_override_required_compiler_task.md ->
+  tickets/stories/2026-09-19_discoverable_resolution_runtime_story.md.
 - sync_owner_uv_environment: SWITCH_TRIGGER is owner acceptance or new environment failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md.
-- provider_artifact_ownership: SWITCH_TRIGGER is owner acceptance of the verified repair; RESUME_HIERARCHY: tickets/stories/2026-09-13_provider_artifact_ownership_story.md -> tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md.
-- existing_instance_planning: SWITCH_TRIGGER is owner resumption of coordinated existing-object work; RESUME_HIERARCHY: tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md.
-- commandops_local_wheel: SWITCH_TRIGGER is a verified wheel delivered to the owner.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md.
-- optional_dependency_resolution: SWITCH_TRIGGER is owner acceptance of the verified default-precedence patch.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md.
-- named_binding_meld_lookup: SWITCH_TRIGGER is executed lookup/identity evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-13_named_binding_meld_lookup_test_task.md.
-- bind_conjure_order_speedtest: SWITCH_TRIGGER is completed repeated timing and correctness evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-12_bind_conjure_order_benchmark_task.md.
 - reproducible_uv_environment: SWITCH_TRIGGER is owner acceptance or new hosted matrix failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-08_reproducible_uv_environment_task.md.
-- named_conduit_scope_design: SWITCH_TRIGGER is the completed implementation map and owner contract decisions.
-  RESUME_HIERARCHY: tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md -> tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
 - embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.
@@ -147,6 +131,4 @@ Message alert rules
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_ci_validation_stage_design_task.md.
 - stateful_application_recovery: SWITCH_TRIGGER is owner selection of a concrete stateful recovery scenario.
   RESUME_HIERARCHY: tickets/epics/2026-09-07_stateful_application_recovery_epic.md -> linked source investigation and related scope/identity work.
-- provider_artifact_and_existing_instance_repair: SWITCH_TRIGGER is owner review of the delivered repairs.
-  RESUME_HIERARCHY: tickets/epics/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md.
 <!-- END USER-DEFINED: notes -->

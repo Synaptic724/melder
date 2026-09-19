@@ -1,0 +1,40 @@
+{
+  "src_architecture.md": {
+    "This foundation does not yet enforce runtime non-resolution or persist the flag in crystal replay;": 1,
+    "compiler/runtime, Nexus graph and persistence integration remain unfinished feature work.": 1,
+    "verified_at: 2026-08-02T13:00:45Z": 2,
+    "end_line: 709": 1,
+    "loc: 709": 1,
+    "verified_at: 2026-09-19T13:04:08Z": 1,
+    "end_line: 1560": 1,
+    "loc: 1560": 1,
+    "end_line: 1509": 1,
+    "loc: 1509": 1,
+    "This diagram describes the implemented registration boundary. Execution, graph projection and": 1,
+    "durable replay of the capability require the later non-resolvable feature layers.": 1,
+    "2026-09-19 registration foundation: native resolvable policy, compatible True identities and": 1,
+    "False-only Protocol definition admission are implemented. Runtime/compiler enforcement, Nexus": 1,
+    "projection and crystal transport are still pending; registration tests do not establish those behaviors.": 1
+  },
+  "src_components.md": {
+    "- Compiler/runtime enforcement, Nexus graph projection and crystal replay are still pending.": 1,
+    "- This is registration transport/admission only; downstream non-resolution enforcement is unfinished.": 1,
+    "- `ContractProviderPresenceStrategy.validate` emits exactly four codes:": 1,
+    "multi-provider defaults, and the warning `SPELL_CONTRACT_MISSING_PROVIDER`.": 1,
+    "- Single-annotation DI resolves to exactly one class/creation spell (methods/lambdas excluded).": 1,
+    "- Collection DI (list[FrameType]) can resolve zero or more spells, including methods/lambdas.": 1,
+    "verified_at: 2026-08-02T13:00:45Z": 3,
+    "end_line: 1560": 1,
+    "loc: 1560": 1,
+    "end_line: 709": 1,
+    "loc: 709": 1,
+    "verified_at: 2026-09-19T13:04:08Z": 1,
+    "end_line: 1509": 1,
+    "loc: 1509": 1,
+    "end_line: 223": 1,
+    "loc: 223": 1,
+    "2026-09-19: binding transport, admission and Spell descriptions now carry native resolvable policy.": 1,
+    "The default retains existing fingerprints. Compiler/runtime, Nexus and persistence integration are": 1,
+    "pending; this component delta must not be read as complete non-resolvable execution support.": 1
+  }
+}

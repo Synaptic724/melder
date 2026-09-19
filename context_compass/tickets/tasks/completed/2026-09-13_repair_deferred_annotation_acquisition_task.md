@@ -78,7 +78,7 @@ that accepted slice from the still-open existing-object repair; the original not
   EVIDENCE:
   - Owner instruction to turn in the annotations ticket and continue.
   - artifacts/existing_instance_planning_20260913/annotation_patch_result.md
-  - tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md
+  - tickets/tasks/completed/2026-09-13_repair_existing_instance_planning_task.md
   IMPACT: Annotation work is closed; existing-object planning continues independently.
   NEXT: Continue the existing-instance task at the two contract-default scanners.
   REREAD: HELPFUL

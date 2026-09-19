@@ -34,7 +34,7 @@ def test_run_delegates_to_spell_artifact_processor() -> None:
     phase = CompilerPhase9()
     processor = _ProcessorStub()
     phase._artifact_processor = processor
-    spell = SimpleNamespace()
+    spell = SimpleNamespace(resolvable=True)
     artifact = SimpleNamespace()
 
     phase.run(spell, artifact)

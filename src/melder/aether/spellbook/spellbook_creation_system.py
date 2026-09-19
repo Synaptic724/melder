@@ -429,7 +429,7 @@ class SpellbookCreationSystem(Cleanable):
             - Builds exact-match, mixed, and miss sets from live spell ids and
               cached spell ids.
             - Live spell ids cover payload-eligible spells only:
-              existing-creation spells bypass phases 8-11 by design and never
+              non-resolvable definitions and existing-creation spells bypass phases 8-11 and never
               carry cache payloads, so they must not block the full-hit
               classification.
             - Creates the Spellbook-owned CachingSystem only when caching is
@@ -451,7 +451,7 @@ class SpellbookCreationSystem(Cleanable):
         live_spell_ids = {
             spell_id
             for spell_id, spell in spellbook._spell_id_pool.items()
-            if not spell.is_existing_creation
+            if spell.resolvable and not spell.is_existing_creation
         }
         caching_system: CachingSystem | None = None
         cached_spell_ids: set[str] = set()
@@ -2617,6 +2617,7 @@ class SpellbookCreationSystem(Cleanable):
             plan group.
 
         Contract:
+            - Non-resolvable definitions never enter executable planning.
             - Existing-creation spells are not eligible because they do not
               build occurrence graph truth or downstream model/plan/creation
               outputs.
@@ -2631,6 +2632,8 @@ class SpellbookCreationSystem(Cleanable):
             bool:
                 True when the spell should run live phases 8-11.
         """
+        if not spell.resolvable:
+            return False
         try:
             is_existing_creation = spell.is_existing_creation
         except AttributeError:

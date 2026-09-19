@@ -20,7 +20,7 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.2.40"
-SOURCE_SHA256 = "3b0e5cf18fc39ab033f6a15d267831da2348a97d31564aa979b6e9b994371b3d"
+SOURCE_SHA256 = "431280fab9191aa3468a84c60f72fa531197837b2e0887f187d7488f22e9fab2"
 MARKED_COUNT = 452
 EXEMPT_COUNT = 163
 PENDING_COUNT = 14
@@ -179,7 +179,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.dag.dag_node', 'DagNode'): ('internal', 'access: internal. A node in the resolution DAG: a keyed unit of work with dependency/dependent DagNode sets and param-aware edges (children_by_param / incoming_params). Lightweight - no separate Edge objects.'),
     ('melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph', 'DirectedAcyclicWorkGraph'): ('internal', 'access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ bulk), topological_sort, topological_levels (parallel-execution peeling), collect_dependency_ids, execute. Static build-then-sort; RLock-guarded. Not a general workflow engine.'),
     ('melder.aether.spellbook.spell_compiler.dag.resolution_frame.resolution_frame', 'ResolutionFrame'): ('internal', 'access: internal. Per-meld resolution state: caller overrides, per-node results, and per-node errors keyed by node id. Created once per resolution run, RLock-guarded, cleaned after. Knows no graph structure.'),
-    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket). Two live socket families only.'),
+    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpec'): ('internal', 'access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpecKind'): ('internal', 'access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), BROADCAST (**name). Classifies how an override key targets DAG sockets.'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellResolutionFrame'): ('internal', "access: internal. Phase-3 concrete resolution frame in the profile family: spell_id plus ordered_node_ids (the topological order the resolver walks). Distinct from dag/resolution_frame's ResolutionFrame."),

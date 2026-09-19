@@ -602,6 +602,8 @@ class Meld(Cleanable, ABC):
         responsibilities:
 
         - rerun structural phases when the lineage is unknown or gated
+        - gate the prior conduit-local resolution verdict after a structural
+          rerun so changed dependency selection cannot retain an old executor
         - force contract-driven revalidation when `SpellContract` defaults are
           present and need to invalidate conduit-local resolution state
         - hand off to per-conduit resolution gating when structural validity is
@@ -635,6 +637,9 @@ class Meld(Cleanable, ABC):
                     refreshed_state = spell.system_state
                     if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
                         raise SpellbookValidationError([spell])
+                    self._force_resolution_revalidation(
+                        spell, change_reason=SpellStateChangeReason.structure_changed,
+                    )
 
         self._check_contracts_and_force_revalidation(spell)
 
@@ -1008,7 +1013,12 @@ class Meld(Cleanable, ABC):
 
         return contracts
 
-    def _force_resolution_revalidation(self, spell: Spell) -> None:
+    def _force_resolution_revalidation(
+            self,
+            spell: Spell,
+            *,
+            change_reason: SpellStateChangeReason = SpellStateChangeReason.contract_unvalidated,
+    ) -> None:
         """
         Force resolution validity to gated so revalidation runs in this conduit.
 
@@ -1019,6 +1029,8 @@ class Meld(Cleanable, ABC):
 
         Args:
             spell: Spell to mark for resolution revalidation.
+            change_reason: Why the compiled resolution must be rebuilt. Existing
+                contract callers retain contract_unvalidated by default.
         """
         spell_system_states = spell._spell_system_states
         conduit_id = self._resolution_conduit_id
@@ -1040,13 +1052,13 @@ class Meld(Cleanable, ABC):
             resolution_state.set_root_validity(
                 spell_id,
                 SpellValidity.gated,
-                change_reason=SpellStateChangeReason.contract_unvalidated,
+                change_reason=change_reason,
             )
         else:
             resolution_state.set_spell_validity(
                 spell_id,
                 SpellValidity.gated,
-                change_reason=SpellStateChangeReason.contract_unvalidated,
+                change_reason=change_reason,
             )
 
     def _get_resolution_validity(

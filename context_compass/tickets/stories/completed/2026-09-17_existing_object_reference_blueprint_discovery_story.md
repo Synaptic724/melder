@@ -50,7 +50,7 @@ This clarification takes precedence over the broader candidate options in the in
 - STAGE_STATUS: bounded Protocol repair delivered for review; broader representation design remains open.
 - CURRENT_DISCUSSION: keep the current unique-only Spell model as baseline. The concrete declared-Protocol
   validation gap does not establish a need for external registration or richer instance profiles.
-- CURRENT_TASK: tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md.
+- CURRENT_TASK: tickets/tasks/completed/2026-09-19_repair_existing_instance_protocol_admission_task.md.
 - NEXT_SINGLE_STEP: review the delivered Bind repair and its 334 passing focused checks. Broader checker
   coverage and object representation remain separate decisions.
 - ALREADY_DONE: initial cross-system source map and nine characterization probes. Their evidence lives
@@ -137,10 +137,10 @@ must address compiler, runtime, transfer and persistence together rather than pr
 - transition_reason: owner clarified the supplied-instance end state and requests a durable sequential approach.
 
 ## Dependencies / Related Work
-- tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
-- tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md
-- tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
-- tickets/tasks/2026-09-13_compare_existing_object_ownership_di_task.md
+- tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+- tickets/tasks/completed/2026-09-13_repair_existing_instance_planning_task.md
+- tickets/tasks/completed/2026-09-13_repair_provider_artifact_ownership_task.md
+- tickets/tasks/completed/2026-09-13_compare_existing_object_ownership_di_task.md
 - tickets/epics/2026-08-02_agent_authored_synthetic_modules_epic.md (context requiring fresh verification).
 
 ## Tasks
@@ -148,7 +148,7 @@ must address compiler, runtime, transfer and persistence together rather than pr
   tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md
 - [x] Synthesize findings into a coherent decision document.
 - [ ] Stage 1: tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md.
-- [x] Focused investigation delivered for review: tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
+- [x] Focused investigation delivered for review: tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
 - [ ] Open subsequent stage tasks in the sequence above as the preceding stage resolves.
 
 ## Acceptance Criteria
@@ -202,7 +202,7 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
     Current supplied-object uniqueness remains. Unimplemented model expansion is withdrawn, not delivered.
   EVIDENCE:
   - Owner's explicit choice in the current conversation.
-  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  - tickets/tasks/completed/2026-09-13_repair_provider_artifact_ownership_task.md
   IMPACT: This lane is retired with its findings retained. No production ownership redesign is shipped.
   NEXT: Follow the provider-artifact repair task under the retained current model.
   REREAD: REQUIRED
@@ -214,7 +214,7 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
     Created this story and a tactical trace task; runtime implementation remains outside this phase.
   EVIDENCE:
   - Owner request to make a discovery story and figure out the model.
-  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md:14-95
+  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md:14-95
   IMPACT: The earlier no-discovery discussion boundary is lifted for this story; it is not approval to implement.
   NEXT: Trace the current registration/compiler/value-store boundaries and record the first meaningful finding.
   REREAD: REQUIRED
@@ -284,7 +284,7 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
     integration. Opened a focused task and evidence folder; broader representation proposals remain unselected.
   EVIDENCE:
   - Owner request to investigate the Protocol problem through bind and possibly compiler.
-  - tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
+  - tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md
   IMPACT: One active source/probe scope now owns this question. Preserve the existing unique-instance model.
   NEXT: Follow the focused task's bind/compiler trace, then native regression baseline.
   REREAD: REQUIRED
@@ -298,7 +298,7 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
     itself must be checked. Shared inherited-Protocol/data-field limits are separate.
   EVIDENCE:
   - artifacts/existing_instance_protocol_20260919/findings.md
-  - tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
+  - tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md
   IMPACT: Initial repair can target the existing Bind branch/helper under the current unique-only model.
     This is diagnostic evidence and a recommendation, not a production patch or full Protocol implementation.
   NEXT: Review bounded instance admission first, keeping broader checker semantics explicit.
@@ -322,6 +322,6 @@ Transfer must carry that object and applicable responsibility. Failed dependency
 the consumer/provider/path and use the appropriate validity/error structure; construction policy remains
 separate. The current bind comparison is recorded; reuse it without treating its proposed enrichment as required.
 LATEST CORRECTION: keep unique-only as baseline; broader registration/profile proposals are unselected.
-Current investigation is tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
+Current investigation is tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
 Its findings are ready: bind admission is the proposed repair seam; 39 diagnostic checks pass with
 compiler unchanged. Shared checker limits remain separate. No production implementation.

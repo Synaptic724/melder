@@ -665,6 +665,48 @@ def test_sha256_class_source_preview_no_longer_affects_hash():
     assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)
 
 
+def test_sha256_resolvable_preserves_the_fixed_legacy_fingerprint() -> None:
+    """Omitted and explicit True keep the pre-capability v4 class fingerprint exactly."""
+    profile = class_profile(init_signature="(a: int)")
+    try:
+        expected = "1c8bf684fde3e93aea94e418fff2674cff9bbbb572b3024efebb223633eb4848"
+        assert Bind.sha256_profile(profile, spell_name="C", existence=Existence.unique) == expected
+        assert Bind.sha256_profile(
+            profile, spell_name="C", existence=Existence.unique, resolvable=True,
+        ) == expected
+        assert Bind.sha256_profile(
+            profile, spell_name="C", existence=Existence.unique, resolvable=False,
+        ) != expected
+    finally:
+        profile.cleanup()
+
+
+@pytest.mark.parametrize("invalid", [None, 0, 1, "false"])
+def test_sha256_resolvable_rejects_non_bool_policy(invalid: object) -> None:
+    """Independent fingerprint callers cannot silently coerce a capability value."""
+    profile = class_profile()
+    try:
+        with pytest.raises(TypeError, match="resolvable.*bool"):
+            Bind.sha256_profile(profile, resolvable=invalid)
+    finally:
+        profile.cleanup()
+
+
+def test_sha256_non_resolvable_keeps_existing_shape_version_rules() -> None:
+    """False changes the domain, while constructor shape and source-preview rules stay intact."""
+    first = class_profile(init_signature="(a: int)", source_preview="original body")
+    body_edit = class_profile(init_signature="(a: int)", source_preview="revised body")
+    signature_edit = class_profile(init_signature="(a: int, b: str)")
+    try:
+        baseline = Bind.sha256_profile(first, resolvable=False)
+        assert Bind.sha256_profile(body_edit, resolvable=False) == baseline
+        assert Bind.sha256_profile(signature_edit, resolvable=False) != baseline
+    finally:
+        first.cleanup()
+        body_edit.cleanup()
+        signature_edit.cleanup()
+
+
 def test_sha256_class_annotations_order_irrelevant():
     p1 = class_profile(annotations={"b": int, "a": str})
     p2 = class_profile(annotations={"a": str, "b": int})

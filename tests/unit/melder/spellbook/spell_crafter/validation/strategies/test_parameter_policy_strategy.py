@@ -60,7 +60,9 @@ class _Requirements:
 
 class _Spell:
     def __init__(self, spell_name: str = "spell") -> None:
+        """Represent a resolvable constructor for parameter-policy checks."""
         self.spell_name = spell_name
+        self.resolvable = True
 
 
 class _Context:

@@ -3164,7 +3164,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `05b8c3f9bdd04be5f33ee5759dd76a528db3c8c7da8ccbbfd6a0c81086878794`
+- source_sha256: `e8c32a967e0baf7c6f470bc3d8006d01d0efe2132d9c2cc7a172cf98e9581260`
 - nodes: 2
 
 ### Nodes
@@ -3186,6 +3186,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - tracks dirty lineages and local topologies
   - owns per-conduit resolution state buckets
   - provides targeted dependency and contract invalidation
+  - indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges
 - owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_lineages`, `_local_topologies`, `_resolution_by_conduit_id`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `get_by_index_id`, `get_by_spell_id`, `get_conduit_resolution_state` (+17 more)
@@ -4393,7 +4394,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `2d336a3976655dedd1bc6afdd54d11cb01e104574a9a4be9cde1d02bde461557`
+- source_sha256: `02a9dbbec7e17d0a450cd28ed260a50957d4bfe3f8360e4fb92778666d912e33`
 - nodes: 2
 
 ### Nodes
@@ -4417,12 +4418,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Runtime execution scope for spell resolution.
 - responsibilities:
   - hosts meld execution
+  - forwards per-version resolvable policy through both binding facades without changing conduit state
   - owns concrete conduit-facing runtime helpers and pooled spellspace state
   - creates lesser conduits
   - supports dynamic linking and ownership transfer in dynamic mode
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits`, `cleanup_spell` (+58 more)
+- public methods: `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits`, `cleanup_spell` (+59 more)
 
 ### Edges out
 
@@ -5419,7 +5421,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `4efca280d0c84e3c7c95e4039ed3f3cf477cac23611f7514818edeb08f217f2e`
+- source_sha256: `56a7ed3aa1d7f9290fa4a6deb9e4b282f384843142f6923e5e1dd7c5c6898fe2`
 - nodes: 2
 
 ### Nodes
@@ -5448,6 +5450,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - chooses reuse versus construction
   - dispatches execution into CreationContext
   - reads contract-default signatures without forcing evaluation of unavailable annotation names
+  - gates conduit-local resolution after structural recompilation so changed selection rebuilds its executor
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `meld`, `meld_existing_spell`, `set_meld_hooks`
@@ -5778,7 +5781,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `4a9e0f86a702122841b5a0dcceedbe73fbe4c2b44d61d157514fb3c013232b06`
+- source_sha256: `00d551e6bdc223dc1c96b2de19b0ec129be6fcac2d8f9fd1b3493f0ad95d599f`
 - nodes: 2
 
 ### Nodes
@@ -5798,6 +5801,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - examines binding targets into canonical binding profiles
   - fingerprints binding metadata into structural spell ids
+  - validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids
+  - admits Protocol definitions only with resolvable=False without relaxing other binding rules
   - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
   - validates binding policy and spellframe semantics
   - checks direct public Protocol members on classes and actual supplied objects before Spell creation
@@ -5835,8 +5840,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellExaminer`
 - `melder.aether.spellbook.bind.bind.Bind` creates `SpellIndex`
 - `melder.aether.spellbook.bind.bind.Bind` creates `Spell`
-- `melder.aether.spellbook.bind.bind.Bind` creates `ValueError`
 - `melder.aether.spellbook.bind.bind.Bind` creates `TypeError`
+- `melder.aether.spellbook.bind.bind.Bind` creates `ValueError`
 
 <!-- END FILE: src/melder/aether/spellbook/bind/bind.py -->
 
@@ -6101,7 +6106,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `4b0fe3c2aa973b6e3b58f76647d41e60013c8a555e02c307f33174f7254a873b`
+- source_sha256: `b6f2704ed6b7e97d073fca6a2d325c4ec866aa3b21055912cb4ffe113c5f7e4e`
 - nodes: 2
 
 ### Nodes
@@ -6120,13 +6125,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Canonical bound spell runtime record.
 - responsibilities:
   - wraps one bound target with lineage, lifecycle, and permission policy
+  - retains read-only per-version resolution capability independently of activity and compilation validity
   - retains the bind-resolved ordered disposal list without copying or clearing borrowed contents at cleanup
   - owns spell-local hooks, build artifacts, and execution-plan metadata
   - lazily owns the SpellCompiler and spell-owned creation-context machinery
   - records conduit ownership changes and publishes structural changes into SpellSystemStates
-- owns_state: `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`
+- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`
 - phases: `init`, `validation`, `runtime`, `cleanup`
-- public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+11 more)
+- public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+12 more)
 
 ### Edges out
 
@@ -6181,7 +6187,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py
 
-- source_sha256: `61647d625ff32d9afa740ef037108d792097652542839815986b55c0bffec206`
+- source_sha256: `e1378314a632fcca481811e420ad52fd75c28d075a7f4f5f6e7ec950799f1a3b`
 - nodes: 4
 
 ### Nodes
@@ -6195,30 +6201,32 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellInjectionParamSource` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:9`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:10`
 - role: Says where ONE injected parameter gets its value in the fitted injection section of the codegen model.
 - responsibilities:
   - carry is_collection forward from the phase-3 socket truth so planner and codegen can tell a one-member collection from single DI
   - never let is_collection be inferred from dependency count - a collection socket with one wired provider still injects a list
   - hold the dependency keys plus the override and contract keys for that parameter
+  - carries override_required position, parameter kind and descriptive references without dependency instance keys
 - owns_state: `kind`, `dependency_keys`, `override_key`, `contract_key`, `is_collection`
 - phases: `compile`
 
 #### `SpellInjectionInstanceSpec` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:61`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:76`
 - role: The per-instance-key injection wiring and payload posture in the fitted model.
 - responsibilities:
   - hold the parameter sources for one concrete instance key
   - carry the aggregation and positional-override posture and the contract payload alongside them
+  - freezes required_override_params as name, position, kind and reference-ID value tuples
 - owns_state: `param_sources`, `allow_list_aggregation`, `uses_positional_override`, `contract_payload`, `collection_param_names`
 - phases: `compile`
 
 #### `SpellInjectionAnalysis` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:106`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:153`
 - extends: `Cleanable`
 - role: Processor-owned injection section for one spell model.
 - responsibilities:
@@ -6237,6 +6245,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | one_to_one | runtime,cleanup | authored |
 
 - `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis` -> `melder.utilities.general_base.cleanable.Cleanable`: SpellInjectionAnalysis inherits the explicit cleanup lifecycle from Cleanable.
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec` creates `ValueError`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py -->
 
@@ -6728,7 +6742,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py
 
-- source_sha256: `6b7c9de501b78e87ceeec09bfd029783b79da6816218d3735f0cbc2aaae0e967`
+- source_sha256: `342c2d8a55fce722957141f7b2711e05801d25f9b85b8752b5c351a957d738bb`
 - nodes: 2
 
 ### Nodes
@@ -6742,13 +6756,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellInjectionProcessorStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy.SpellInjectionProcessorStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py:32`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py:33`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting the injection section of the codegen model.
 - responsibilities:
   - builds per-instance injection specs from occurrence and contract truth
   - publishes SpellInjectionAnalysis onto SpellCodegenModel
   - derives root dependency and positional-override summary selectors for planning
+  - emits required supplied-input sources from local topology even without occurrence dependency entries
 - phases: `runtime`
 - public methods: `process`, `strategy_id`
 
@@ -10308,7 +10323,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py
 
-- source_sha256: `c62979c70f87de79e88ec7ccdf6e3cf096bdc2f3186475527653adb6cdd1f8f4`
+- source_sha256: `561ccdf10639f3a12b9f2426e90e87d9b49fcad272d39acdaeb034e353875e68`
 - nodes: 7
 
 ### Nodes
@@ -10322,7 +10337,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanVariant` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanVariant`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:22`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:23`
 - role: Variant labels for many-only planner lanes.
 - responsibilities:
   - labels the many-only no-overrides and overrides planner lanes
@@ -10333,7 +10348,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanCallMode` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:36`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:37`
 - role: Fixed-arity call-mode enum for many-only planner output.
 - responsibilities:
   - labels CALL0 through CALL8 and CALLN for many-only no-overrides execution
@@ -10344,20 +10359,21 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanStep` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:58`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:59`
 - role: Reusable planner step object for one many-only execution occurrence.
 - responsibilities:
   - stores spell-static instance and occurrence identity for one many-only step
   - stores dependency resolution order and contract payload facts for emitted execution
   - stores override-match prefix metadata for many-only overrides planning
+  - retains required_override_params as plain values for either many-only lane
 - owns_state: `_instance_key`, `_occurrence`, `_spell`, `_shared_instance`, `_dependency_resolution_order`, `_uses_positional_override`, `_contract_positional_override`, `_has_contract_payload`, `_contract_payload`, `_override_match_prefix`, `_override_match_prefix_len`
 - phases: `runtime`, `cleanup`
-- public methods: `collection_param_names`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_resolution_order`, `has_contract_payload`, `instance_key`, `occurrence`, `override_match_prefix`, `override_match_prefix_len`, `shared_instance`, `spell` (+1 more)
+- public methods: `collection_param_names`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_resolution_order`, `has_contract_payload`, `instance_key`, `occurrence`, `override_match_prefix`, `override_match_prefix_len`, `required_override_params`, `shared_instance` (+2 more)
 
 #### `ManyOnlyNoOverridesPlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:232`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:244`
 - extends: `Cleanable`
 - role: Planner-owned no-overrides payload for the many-only family.
 - responsibilities:
@@ -10371,7 +10387,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyOverridesPlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:784`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:796`
 - extends: `Cleanable`
 - role: Planner-owned overrides payload for the many-only family.
 - responsibilities:
@@ -10385,7 +10401,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:882`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:894`
 - role: Standalone builder for many-only planner payloads from SpellCodegenModel.
 - responsibilities:
   - builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections
@@ -10441,7 +10457,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py
 
-- source_sha256: `f873b88e057de359d79a1b827a53c26277d9be3535890c69c2096ca8f1018ad9`
+- source_sha256: `43872dd9fe5b6b18a2bd476e2da812792d2417515b6f2ce33b74e36676b8596c`
 - nodes: 9
 
 ### Nodes
@@ -10455,7 +10471,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenPlanVariant` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanVariant`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:24`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:25`
 - role: Planner-owned generalized lane variant labels.
 - responsibilities:
   - labels generalized no-overrides and overrides lane selection
@@ -10466,7 +10482,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenPlanTargetKind` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:39`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:40`
 - role: Planner-owned creations-target kind labels for generalized lane output.
 - responsibilities:
   - labels CALLER, OWNER, and SPELLSPACE creations routing for generalized planner steps
@@ -10477,7 +10493,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenPlanCallMode` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:54`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:55`
 - role: Planner-owned call-mode labels for the generalized no-overrides fast path.
 - responsibilities:
   - labels CALL0 through CALL8 and CALLN for generalized fast-path packing
@@ -10488,20 +10504,21 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenPlanStep` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:77`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:78`
 - role: Reusable generalized planner step object for one execution occurrence.
 - responsibilities:
   - stores generalized spell, occurrence, dependency, override, and contract payload metadata for one step
   - stores runtime lock, spellspace, owner-conduit, registration, and disposal metadata for later phase-11 compilation
   - preserves the old execution-plan step semantics in planner-owned form
+  - retains required_override_params independently of optional override metadata in either lane
 - owns_state: `_instance_key`, `_occurrence`, `_spell`, `_existence`, `_creations_target_kind`, `_shared_instance`, `_inject_spec`, `_dependency_keys`, `_dependency_keys_by_param`, `_dependency_resolution_order`, `_override_keys`, `_override_match_prefix`, `_override_match_prefix_len`, `_expects_overrides`, `_contract_keys`, `_allow_list_aggregation`, `_uses_positional_override`, `_contract_payload`, `_contract_positional_override`, `_has_contract_payload`, `_lock_hint`, `_use_spell_lock_hint`, `_requires_spellspace`, `_owner_conduit_required`, `_must_register`, `_disposal_method_names`
 - phases: `runtime`, `cleanup`
-- public methods: `allow_list_aggregation`, `collection_param_names`, `contract_keys`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_keys`, `dependency_keys_by_param`, `dependency_resolution_order`, `disposal_method_names`, `existence`, `expects_overrides` (+15 more)
+- public methods: `allow_list_aggregation`, `collection_param_names`, `contract_keys`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_keys`, `dependency_keys_by_param`, `dependency_resolution_order`, `disposal_method_names`, `existence`, `expects_overrides` (+16 more)
 
 #### `SpellGeneralizedCodegenLanePlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:431`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:442`
 - extends: `Cleanable`
 - role: Planner-owned generalized lane-plan carrier with fast-path and phase-11 row-cache state.
 - responsibilities:
@@ -10515,7 +10532,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1044`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1055`
 - role: Base generalized lane-plan builder from SpellCodegenModel.
 - responsibilities:
   - builds generalized lane-plan steps from graph, order, instance, injection, and runtime model sections
@@ -10528,7 +10545,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellSoloCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellSoloCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1918`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1931`
 - extends: `SpellGeneralizedCodegenPlanBuilder`
 - role: Solo-specialized builder over the generalized lane-plan base.
 - responsibilities:
@@ -10540,7 +10557,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellManyOnlyCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1954`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1967`
 - extends: `SpellGeneralizedCodegenPlanBuilder`
 - role: Many-only-specialized builder over the generalized lane-plan base.
 - responsibilities:
@@ -11226,7 +11243,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 
-- source_sha256: `63de1d5e8c58f6618aafd6e3b9d555a955a664857d9c008c245c5e6525ef7637`
+- source_sha256: `ca46babfc4b3dbf200b5f47a56ee2352f15f5024e01fad4ed52dc0d81bd93bed`
 - nodes: 2
 
 ### Nodes
@@ -11244,8 +11261,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - markers: `Enum`
 - role: Enum classifying the kind of socket represented by a DAG edge.
 - responsibilities:
-  - labels normal, spell-contract, and mutation-contract socket kinds
-- owns_state: `NORMAL`, `SPELL_CONTRACT`, `MUTATION_CONTRACT`
+  - labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED categories
+- owns_state: `NORMAL`, `SPELL_CONTRACT`, `OVERRIDE_REQUIRED`
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py -->
@@ -11402,7 +11419,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py
 
-- source_sha256: `9f946fdabc1b4fe9922c1e0ad4bdf8ef7a94fbe89b28f219e45bcb66169e48c4`
+- source_sha256: `2ea27ba86bd4c386185ae0dc095ee3e8b8aa95c328e1dc7feb1a04bd02d3d6e2`
 - nodes: 2
 
 ### Nodes
@@ -11423,6 +11440,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - lazily imports and owns SpellCodegenPlanner
   - delegates phase-10 planning to the planner facade
   - publishes SpellCodegenPlan onto SpellCompilerArtifact as the live phase-10 output
+  - skips non-resolvable definitions before lazy planner creation or model consumption
 - owns_state: `_codegen_planner`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -11453,7 +11471,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_11.py
 
-- source_sha256: `09d15bfd9d7fc45fee7d094d7ce80c36853ffffe82ad72215be6abdcc4053f79`
+- source_sha256: `b18f37db791d61d6b4bcd99560336b898f01034953860b67afc4d90efda0cfd7`
 - nodes: 2
 
 ### Nodes
@@ -11474,6 +11492,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - lazily imports and owns CodegenCreationSystem
   - delegates phase-11 creation packaging to the codegen-creation facade
   - publishes SpellCodegenCreation onto SpellCompilerArtifact as the live phase-11 output
+  - skips non-resolvable definitions before lazy codegen creation or executable artifact consumption
 - owns_state: `_codegen_creation_system`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -11553,7 +11572,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `cd51c8f022f7f214e1dc8184ce13849930a55ecf6d8e28455e9324d4910e4d0e`
+- source_sha256: `8149c623bb91d160dd96b5e0a9c367a5868f2c16282bff446d33e4b4aa679f36`
 - nodes: 2
 
 ### Nodes
@@ -11573,6 +11592,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - resolves symbolic constructor sockets into concrete dependency spell ids
   - builds the local constructor DAG and SpellResolutionFrame for one spell
   - publishes direct dependency ids and SpellLocalTopology into SpellSystemStates
+  - selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -11662,7 +11682,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
 
-- source_sha256: `db063a3d05dbba462035d0f741c9c3dee1970c9abe90eb13600f984157bfc541`
+- source_sha256: `887f82480fc8a556ff6a589b755ad900e3d0b729d75aeac6b3620e81460e00cd`
 - nodes: 2
 
 ### Nodes
@@ -11683,6 +11703,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds root and per-spell RootResolutionBlueprint artifacts for visible roots and local scopes
   - publishes canonical artifacts only to owned spells in conduit-wide passes or the selected local target, preserving dependency executors
   - rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints
+  - limits executable snapshots and blueprints to resolvable registrations while local descriptive topology stays owned by state
 - phases: `validation`, `runtime`
 - public methods: `run_frame_wide`, `run_local`
 
@@ -11837,7 +11858,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py
 
-- source_sha256: `8d1278804f20a9d409491ef449240e99df3e95886139466b81d8faf7061edcb0`
+- source_sha256: `e689adb5ed8f6c8fccd719086be71cfef69b39f214daa830688e9969a0f6f0aa`
 - nodes: 2
 
 ### Nodes
@@ -11858,6 +11879,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns and reuses SpellAnalyzer as the live phase-8 collaborator
   - publishes analyzer-owned occurrence graph truth onto SpellCompilerArtifact
   - bridges the current phase scheduler onto the analyzer seam without reviving old occurrence-plan code
+  - skips non-resolvable definitions before executable occurrence analysis
 - owns_state: `_spell_analyzer`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -11887,7 +11909,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py
 
-- source_sha256: `3358ee58ae938c94b0bd262f452000cd8b71e1d7bc7d34745486278e30c1850c`
+- source_sha256: `f7a7bbbca014f588baa3037479bc3b24a27c0f53bb496f94463c1413f0159ee6`
 - nodes: 2
 
 ### Nodes
@@ -11908,6 +11930,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns and reuses SpellArtifactProcessor as the live phase-9 collaborator
   - publishes SpellCodegenModel onto SpellCompilerArtifact
   - bridges the current phase scheduler onto the processor seam without reviving old injection-plan code
+  - skips non-resolvable definitions before executable model fitting
 - owns_state: `_artifact_processor`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -11937,7 +11960,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py
 
-- source_sha256: `5aed0a264de27f9745927b0bb35c90b4baaa5fc5b9596bd5ef139ba3e16d2b8b`
+- source_sha256: `62917eb26d859ce1d378e510c98e9da4256879ca7e344711777c7ffb03f020a7`
 - nodes: 2
 
 ### Nodes
@@ -11957,6 +11980,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases
   - captures and resets phase2_5 and phase8_11 codegen IR on SpellCompilerArtifact
   - builds normalized schema rows for phase-5 DAG/socket, phase-8 occurrence, phase-9 injection, and phase-11 step payloads
+  - exports required-input position, kind and reference IDs in override_required injection rows without changing ordinary row shapes
 - phases: `validation`, `runtime`
 - public methods: `build_fast_transient_schema`, `build_fast_transient_signature`, `build_injection_instance_rows`, `build_no_overrides_codegen_creation_step_signature_row`, `build_occurrence_canonical_rows`, `build_occurrence_contract_override_rows`, `build_occurrence_contract_override_spell_rows`, `build_occurrence_graph_rows`, `build_occurrence_instance_key_rows`, `build_override_target_rows`, `build_phase11_injection_spec_signature_row`, `build_phase11_spell_signature_row` (+18 more)
 
@@ -12347,7 +12371,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
 
-- source_sha256: `e09dad4d1bf53a44712abb59993e6e3cd2cdb05e0572759c9e15aeee587a24a6`
+- source_sha256: `ac415f8c2ca742eb93ee001720c9de2830b98ea1c9bfefa34db153189ec3c47f`
 - nodes: 2
 
 ### Nodes
@@ -12369,6 +12393,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact
   - owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion
   - retains existing providers as consumer dependency leaves without inspecting constructor contracts
+  - signs complete required-input topology and refuses non-resolvable providers during late contract expansion
 - phases: `runtime`
 - public methods: `analyze`, `strategy_id`
 
@@ -13161,8 +13186,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - markers: `Enum`
 - role: Enum classifying how one parameter is satisfied during resolution.
 - responsibilities:
-  - labels ignore, plain, single, collection, spellmap, spell-contract, and mutation-contract parameter shapes
-- owns_state: `IGNORE`, `PLAIN`, `SINGLE_BY_ANNOTATION`, `COLLECTION_BY_ANNOTATION`, `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`, `MUTATION_CONTRACT`
+  - labels the current IGNORE, PLAIN, SINGLE_BY_ANNOTATION, COLLECTION_BY_ANNOTATION, SPELLMAP_DEFAULT, SPELL_CONTRACT categories
+- owns_state: `IGNORE`, `PLAIN`, `SINGLE_BY_ANNOTATION`, `COLLECTION_BY_ANNOTATION`, `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py -->
@@ -14830,7 +14855,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py
 
-- source_sha256: `2e800b254b03b410c2e657a49cdfeddf222632efc609b41d0c4eac2c6aedd08f`
+- source_sha256: `67cb802e16de67043418ab1b27cf02597e48bb0fd0189272e897f912a9a70d86`
 - nodes: 3
 
 ### Nodes
@@ -14849,12 +14874,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - describe one constructor socket, including the is_collection truth later layers must carry forward verbatim
   - stay local - it makes no claim about the system graph
+  - retains descriptive referenced_spell_ids and parameter_kind separately from executable target_spell_ids
 - phases: `compile`
 
 #### `SpellLocalTopology` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology`
-- defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:90`
+- defined at: `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:102`
 - extends: `Cleanable`
 - role: Per-spell local constructor socket topology.
 - responsibilities:
@@ -15016,7 +15042,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
 
-- source_sha256: `262ecb2889e2328d81d821355769896d4c5b640d92935eed441f86cf7f1f7c30`
+- source_sha256: `3da298348a66d3b8fc795fcf10a92b61bdc17a3ef16557d07b242c971f92df20`
 - nodes: 2
 
 ### Nodes
@@ -15040,6 +15066,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - treat list[T] as the only collection DI form worth deeper inspection in this cut
   - defer SpellMap and SpellContract defaults to their own strategies
   - emit issues into the context; never mutate the spell or attempt recovery
+  - retains ordinary Python annotation shapes on non-resolvable definitions without enforcing constructor-DI limits
 - phases: `compile`
 - public methods: `validate`
 
@@ -15061,7 +15088,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py
 
-- source_sha256: `7eb4bc88b40efdeff8baac2236d73c8a57950fe4f316cb2118a7f83f4555f62f`
+- source_sha256: `c698523d28ec253ceb74d489c4edfb16663b2473923577e1d331bdab821862a8`
 - nodes: 2
 
 ### Nodes
@@ -15078,13 +15105,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `BindingResolutionCycleStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:29`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:30`
 - extends: `SpellValidationStrategy`
 - role: The binding-KEY counterpart to the spell-id cycle check: loops invisible by spell id but visible once resolution is modeled by binding key.
 - responsibilities:
   - build a binding-key graph from available requirements
   - report cycles reachable from the spell under validation
   - mutate nothing - spells, spellbooks and requirements are read only
+  - omits non-resolvable constructors and OVERRIDE_REQUIRED sockets from construction-cycle reconstruction
 - phases: `compile`
 - public methods: `validate`
 
@@ -15195,7 +15223,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
 
-- source_sha256: `fb498ec986d601ede370a66c1f9e3f23d00a5efe2d7eb1af6e732d1a048a43fa`
+- source_sha256: `cf7cc759abe13b9b8938926f3c1c6d511bf474efc5d14feb194e82d1144ba76e`
 - nodes: 2
 
 ### Nodes
@@ -15219,6 +15247,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - error on malformed contract descriptors and on more than one provider matching a contract key
   - warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state
   - read the Spellbook's contracted-spell maps and the frame system_state
+  - caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations
 - phases: `compile`
 - public methods: `validate`
 
@@ -15373,7 +15402,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
 
-- source_sha256: `5969b2dd7d5d18e5cd0030e5f0e090ddc97f5e8c67f8b62628227342112201f7`
+- source_sha256: `1ffd0b19e04e0e804ed7f6e611eec604c839ef852c679e34ffdd0ad90bb8ce15`
 - nodes: 2
 
 ### Nodes
@@ -15396,6 +15425,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - error on VARIADIC_DI_UNSUPPORTED, DI_MISSING_ANNOTATION, DI_BUILTIN_ANNOTATION, DI_COLLECTION_MISSING_ELEMENT and DI_COLLECTION_NON_FRAME
   - validate only - mutate nothing
+  - applies constructor-DI restrictions only to resolvable registrations
 - phases: `compile`
 - public methods: `validate`
 
@@ -15417,7 +15447,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
 
-- source_sha256: `56749c337c617279a40e35ea68e0e971aea14af29494229cc1be30c2a4a8fb21`
+- source_sha256: `52a73a9f90becffc54cdfb60e7c0b859fbbc45cb9bd39713ef7be6c40c2dd8ac`
 - nodes: 2
 
 ### Nodes
@@ -15434,12 +15464,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RequiredHolesStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:11`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:12`
 - extends: `SpellValidationStrategy`
 - role: Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.
 - responsibilities:
   - consume the Phase-1 SpellRequirements.iter_required_holes() view
   - emit warnings rather than hard errors
+  - reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations
 - phases: `compile`
 - public methods: `validate`
 
@@ -15781,7 +15812,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `13dd96deadd1886ed1364c2f10e95e261daa4eb874b923978589723a58cda787`
+- source_sha256: `699cfefb38814803bbb64a2ffce6ca506b9f15f49fb6d78708148b03e9761865`
 - nodes: 2
 
 ### Nodes
@@ -15800,6 +15831,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Public binding, validation, and conjure surface.
 - responsibilities:
   - binds and scans spells into local and contracted lookup surfaces
+  - forwards native resolvable policy through active and inactive binding and exposes it in spell descriptions
   - coordinates configuration freeze and frame publication into Aether and Nexus
   - conjures and retains exactly one root conduit
   - coordinates spell lineage state and transaction-sensitive binding changes
@@ -15872,7 +15904,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `054dbc0ad0e3be9bdf091c67617647b6bb37cfe01fb9fe2d62d8e841e0df4c20`
+- source_sha256: `3db8229b52a63285633377daf623256e779991ecad2881e7b86ef661bafd1b1f`
 - nodes: 2
 
 ### Nodes
@@ -15886,7 +15918,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellbookCreationSystem` (class)
 
 - id: `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem`
-- defined at: `src/melder/aether/spellbook/spellbook_creation_system.py:43`
+- defined at: `src/melder/aether/spellbook/spellbook_creation_system.py:55`
 - extends: `Cleanable`
 - role: Conjure-only orchestration helper for Spellbook.
 - responsibilities:
@@ -15894,6 +15926,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - runs conduit-scoped resolution phases and policy gating for conjure
   - builds and activates the root conduit for one conjure run
   - wires conduit ownership into local spells and fires conjure hooks
+  - excludes non-resolvable definitions from executable cache payload and plan-phase eligibility
 - owns_state: `_spellbook`, `_policy`, `_automatic`, `_conduit_cls`, `_phase_scheduler_cls`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory`, `phase_occurrence_plan_factory` (+15 more)

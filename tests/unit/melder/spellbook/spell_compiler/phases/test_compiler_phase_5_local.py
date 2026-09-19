@@ -161,6 +161,7 @@ def _make_spell_stub(
         _spellbook=spellbook,
         _compiler_artifact=artifact,
         is_existing_creation=is_existing_creation,
+        resolvable=True,
     )
     spell._cleanup_creation_context = lambda: None
     spellbook._spell_id_pool[spell_id] = spell

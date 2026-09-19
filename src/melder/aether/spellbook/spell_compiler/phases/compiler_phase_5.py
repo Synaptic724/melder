@@ -61,6 +61,8 @@ class CompilerPhase5:
           lifecycle.
         - Dependency visibility does not grant artifact publication authority:
           publish only for spells included in the pass's own compilation scope.
+        - Executable snapshots exclude non-resolvable definitions; their registration
+          and local topology remain available through their original owners.
     """
 
     __slots__ = ()
@@ -512,7 +514,9 @@ class CompilerPhase5:
         snapshot = adjacency_builder.build(required_spell_system_states)
 
         # --- 2. Filter to spellbook-visible spells -------------------------
-        visible_spell_ids = spellbook._spell_id_pool.keys()
+        visible_spell_ids = {
+            spell_id for spell_id, candidate in spellbook._spell_id_pool.items() if candidate.resolvable
+        }
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
             visible_spell_ids=visible_spell_ids,
@@ -663,7 +667,7 @@ class CompilerPhase5:
         snapshot = adjacency_builder.build(required_spell_system_states)
 
         spell_lookup = spellbook._spell_id_pool
-        visible_spell_ids = spell_lookup.keys()
+        visible_spell_ids = {spell_id for spell_id, candidate in spell_lookup.items() if candidate.resolvable}
         visible_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
             visible_spell_ids=visible_spell_ids,

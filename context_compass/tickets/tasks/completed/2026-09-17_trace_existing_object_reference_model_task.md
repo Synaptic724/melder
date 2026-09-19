@@ -113,7 +113,7 @@ fault injection/concurrency, full checkpoint replay and all codegen variants wer
     Current supplied-object uniqueness remains. Unimplemented model expansion is withdrawn, not delivered.
   EVIDENCE:
   - Owner's explicit choice in the current conversation.
-  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  - tickets/tasks/completed/2026-09-13_repair_provider_artifact_ownership_task.md
   IMPACT: This lane is retired with its findings retained. No production ownership redesign is shipped.
   NEXT: Follow the provider-artifact repair task under the retained current model.
   REREAD: REQUIRED
@@ -126,7 +126,7 @@ fault injection/concurrency, full checkpoint replay and all codegen variants wer
     keeping fixed supplied values distinct from definitions awaiting external input.
   EVIDENCE:
   - tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
-  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
   IMPACT: This creates durable discovery state before source work. No representation or public API is chosen.
   NEXT: Verify the current indexes and read the registration/compiler branch as one coherent unit.
   REREAD: REQUIRED

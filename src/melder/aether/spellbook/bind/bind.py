@@ -134,6 +134,8 @@ class Bind(Cleanable):
     - Successful registration always flows through canonical profile
       examination and deterministic fingerprinting rather than ad hoc ids.
     - Decorator-style and direct-call usage share the same binding pipeline.
+    - Resolution capability is native per-Spell policy, defaulting to True;
+      disabling it does not change naming, lifetime, or ownership rules.
     - Classes and existing objects declared under a Protocol spellframe must
       satisfy its directly declared public members before Spell creation.
 
@@ -154,9 +156,9 @@ class Bind(Cleanable):
         why the crystallizer can replay custody by recorded spell id while
         refusing to rehydrate ULIDs, and why the same object bound in two
         processes carries the same identity.
-        The refusals are as load-bearing as the successes. Modules and Protocols
-        are rejected as concrete spells because neither has a construction
-        contract; method and lambda bindings are forced to `Existence.unique`
+        The refusals are as load-bearing as the successes. Modules are rejected;
+        Protocol targets require explicit `resolvable=False` because they have
+        no construction contract. Method and lambda bindings are forced to `Existence.unique`
         because per-scope construction is meaningless for them. Rejecting at
         bind time is what keeps those errors adjacent to the mistake rather than
         surfacing deep inside a later meld.
@@ -241,6 +243,7 @@ class Bind(Cleanable):
             profile: str = "general",
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> Union[Spell, Any]:
         """
@@ -266,6 +269,8 @@ class Bind(Cleanable):
             disposal_method_names (Optional[Sequence[str]]): Ordered candidates specific to this binding.
             enforce_priority_disposal_methods (bool): Place the matching book block first when
                 True, last when False (default). Book order owns shared names in both modes.
+            resolvable (bool): Native resolution capability for this Spell version.
+                False permits descriptive Protocol targets; it does not relax other binding rules.
         Contract:
             - When `spell` is omitted, returns a decorator that will bind the
               later target with the supplied policy and lifecycle settings.
@@ -283,13 +288,13 @@ class Bind(Cleanable):
 
         Returns:
             Union[Spell, Any]:
-                - If used as a decorator, returns the decorated object.
+                - If used without a target, returns a decorator that produces a Spell.
                 - If used as a direct call, returns the newly created `Spell` instance.
 
         Raises:
             TypeError: If a class or supplied existing object lacks a required
                 directly declared Protocol member or exposes a non-callable
-                value where that Protocol requires a callable.
+                value where that Protocol requires a callable, or resolvable is not a bool.
         """
         self.check_cleaned()
         if spell is None:
@@ -310,6 +315,7 @@ class Bind(Cleanable):
                     profile,
                     disposal_method_names=disposal_method_names,
                     enforce_priority_disposal_methods=enforce_priority_disposal_methods,
+                    resolvable=resolvable,
                     **kwargs,
                 )
 
@@ -327,6 +333,7 @@ class Bind(Cleanable):
                 profile,
                 disposal_method_names=disposal_method_names,
                 enforce_priority_disposal_methods=enforce_priority_disposal_methods,
+                resolvable=resolvable,
                 **kwargs,
             )
 
@@ -342,6 +349,7 @@ class Bind(Cleanable):
             profile: str = "general",
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> Spell:
         """
@@ -350,7 +358,7 @@ class Bind(Cleanable):
         This method performs the full binding pipeline:
         * Validates existence and method/lambda constraints.
         * Enforces Protocol/Spellframe semantics:
-          - Protocols cannot be bound as concrete spells.
+          - Protocol targets require explicit resolvable=False.
           - Class-based and existing-object spells bound under a Protocol
             spellframe must satisfy its directly declared public members.
             Existing objects are checked on the supplied value, not its class.
@@ -377,6 +385,7 @@ class Bind(Cleanable):
             configured_disposal_method_names (Optional[Sequence[str]]): Ordered book candidates.
             disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
             enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
+            resolvable (bool): Immutable resolution capability, validated before target reflection.
 
         Disposal contract:
             Only names present in the existing ClassBindingProfile are retained.
@@ -392,7 +401,7 @@ class Bind(Cleanable):
 
         Raises:
             TypeError:
-                - If a Protocol is bound directly as a concrete spell.
+                - If resolvable is not a bool, or a Protocol target is resolvable.
                 - If a class or existing object under a Protocol spellframe
                   fails its directly declared public-member check.
             ValueError:
@@ -400,6 +409,7 @@ class Bind(Cleanable):
                   without name, etc.).
         """
         with self._lock:
+            Bind._validate_resolvable(resolvable)
             # 0. Block registration of Melder internal objects/classes.
             assert_allowed(spell, context="bind")
             # 0.1 Reject modules outright.
@@ -409,15 +419,16 @@ class Bind(Cleanable):
                 )
 
             # ------------------------------------------------------------------
-            # 1. Reject Protocols as concrete spells
+            # 1. Reject Protocols as resolvable spells
             # ------------------------------------------------------------------
             # Protocols define *interfaces*, not constructible implementations.
-            # Users may use Protocols as `spellframe` values, but cannot bind
-            # a Protocol itself as a Spell.
-            if Bind._is_protocol_type(spell):
+            # A Protocol may be a spellframe or an explicitly non-resolvable
+            # definition; it cannot be a concrete provider.
+            if resolvable and Bind._is_protocol_type(spell):
                 raise TypeError(
                     f"Cannot bind Protocol '{spell.__name__}' as a concrete spell. "
-                    f"Protocols may only be used as spellframes (DI contracts)."
+                    f"Use it as a spellframe (DI contract), or pass resolvable=False "
+                    f"to register a non-resolvable definition."
                 )
 
             # ------------------------------------------------------------------
@@ -459,6 +470,7 @@ class Bind(Cleanable):
                 binding_name=binding_name,
                 existence=existence,
                 disposal_method_names=resolved_disposal_method_names,
+                resolvable=resolvable,
             )
             spell_index = SpellIndex(initial_id=fingerprint)
 
@@ -524,6 +536,7 @@ class Bind(Cleanable):
                 existing_object=spell if is_instance else None,
                 spellbook=self._spellbook,
                 disposal_method_names=resolved_disposal_method_names,
+                resolvable=resolvable,
                 # Owner ruling 2026-07-19: leftover bind kwargs flow into
                 # Spell's OWN kwargs channel (Spell.__init__ stores them as
                 # spell.metadata). Native params stay sovereign: a colliding
@@ -545,6 +558,7 @@ class Bind(Cleanable):
             binding_name: Optional[str] = None,
             existence: Existence = Existence.unique,
             disposal_method_names: Sequence[str] = (),
+            resolvable: bool = True,
     ) -> str:
         """
         Compute the canonical spell fingerprint without registering the spell.
@@ -560,6 +574,7 @@ class Bind(Cleanable):
             binding_name (Optional[str]): A specific key used to distinguish this spell.
             existence (Existence): The lifecycle scope for this spell.
             disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
+            resolvable (bool): Per-version capability; omission preserves the legacy fingerprint.
         Contract:
             - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
               chain used by the real binding path.
@@ -571,7 +586,11 @@ class Bind(Cleanable):
 
         Returns:
             str: A unique identifier string (SHA256 hash) for the spell.
+
+        Raises:
+            TypeError: If resolvable is not a bool; checked before target reflection.
         """
+        Bind._validate_resolvable(resolvable)
         profile = SpellGeneralProfile.create_from_target(spell)
         return Bind.sha256_profile(
             profile.binding_profile,
@@ -580,6 +599,7 @@ class Bind(Cleanable):
             binding_name=binding_name,
             existence=existence,
             disposal_method_names=tuple(disposal_method_names),
+            resolvable=resolvable,
         )
 
     @staticmethod
@@ -591,6 +611,7 @@ class Bind(Cleanable):
             binding_name: Optional[str] = None,
             existence: Optional[Existence] = None,
             disposal_method_names: Sequence[str] = (),
+            resolvable: bool = True,
     ) -> str:
         """
         Computes the SHA256 hash of a spell's binding profile metadata.
@@ -604,7 +625,8 @@ class Bind(Cleanable):
         Contract:
             - Fingerprints normalized bind-time metadata only, not transient
               runtime object identity.
-            - Uses the explicit `v4-binding` schema prefix so future
+            - Uses the explicit `v4-binding` schema prefix for omitted/True and
+              `v4-binding-non-resolvable` for False, preserving all remaining inputs so future
               fingerprint-shape changes can version cleanly. v4 replaced the
               class source preview (first-5-lines text: docstring-sensitive,
               constructor-blind, and the only source-file read on the bind
@@ -614,14 +636,19 @@ class Bind(Cleanable):
               not.
             - Includes the direct bind-time parameters that shape later
               compiler/runtime behavior: spell_name, spellframe, binding_name,
-              existence, and resolved disposal metadata in execution order.
+              existence, resolvable, and resolved disposal metadata in execution order.
             - Equal bind signatures produce equal hashes; materially different
               signatures should produce different hashes.
         Returns:
             str: Deterministic SHA256 fingerprint for the supplied binding
                 profile.
+
+        Raises:
+            TypeError: If resolvable is not a bool; no truthiness coercion is applied.
         """
-        parts: list[str] = ["v4-binding"]  # fingerprint schema version
+        Bind._validate_resolvable(resolvable)
+        # Keep the legacy schema intact; only False selects a different hash domain.
+        parts: list[str] = ["v4-binding" if resolvable else "v4-binding-non-resolvable"]
 
         if isinstance(profile, ClassBindingProfile):
             parts += [
@@ -681,6 +708,26 @@ class Bind(Cleanable):
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _validate_resolvable(resolvable: bool) -> None:
+        """
+        Reject non-boolean capability inputs at independent admission/fingerprint boundaries.
+
+        Args:
+            resolvable: Per-version resolution capability supplied by the caller.
+
+        Returns:
+            None. Accepts True and False without conversion or state changes.
+
+        Raises:
+            TypeError: If a number, string, None or other non-bool value is supplied.
+        """
+        if type(resolvable) is not bool:
+            raise TypeError(
+                f"resolvable must be a bool (True or False), got {type(resolvable).__name__}. "
+                "Pass resolvable=False to register a non-resolvable definition."
+            )
 
     @staticmethod
     def _validate_binding(

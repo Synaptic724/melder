@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
- "source_sha256": "262ecb2889e2328d81d821355769896d4c5b640d92935eed441f86cf7f1f7c30",
+ "source_sha256": "3da298348a66d3b8fc795fcf10a92b61bdc17a3ef16557d07b242c971f92df20",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy": {
@@ -39,13 +39,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "2d30b3b64e112888af5cd133752584e5eeea33d95307cd7fc276cdce7f7a9f3a",
+   "span_sha256": "b3f470f2af8b0a37f1c3c67ce1f860b31b49ceab576bc2484d0563bf308fb50a",
    "include": true,
    "role": "Rejects collection-style DI annotation shapes Melder does not support, reading Phase-1 requirements annotations.",
    "responsibilities": [
     "treat list[T] as the only collection DI form worth deeper inspection in this cut",
     "defer SpellMap and SpellContract defaults to their own strategies",
-    "emit issues into the context; never mutate the spell or attempt recovery"
+    "emit issues into the context; never mutate the spell or attempt recovery",
+    "retains ordinary Python annotation shapes on non-resolvable definitions without enforcing constructor-DI limits"
    ],
    "phases": [
     "compile"

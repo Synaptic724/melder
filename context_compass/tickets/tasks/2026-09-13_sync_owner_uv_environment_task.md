@@ -94,7 +94,7 @@ retaining its free-threaded interpreter and extra installed tools.
   - .venv_new/pyvenv.cfg:1-5
   - src/melder/__version__.py:1-11
   - CONTRIBUTING.md:8-55
-  - tickets/tasks/2026-09-12_bind_conjure_order_benchmark_task.md:226-255
+  - tickets/tasks/completed/2026-09-12_bind_conjure_order_benchmark_task.md:226-255
   IMPACT: This is explicit new permission to change the owner's environment; earlier CI work left it alone.
   NEXT: Capture the package inventory and inspect uv's dry-run before installation.
   REREAD: REQUIRED

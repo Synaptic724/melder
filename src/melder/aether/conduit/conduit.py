@@ -3103,6 +3103,7 @@ class Conduit(Cleanable):
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -3151,6 +3152,9 @@ class Conduit(Cleanable):
                 frame.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native per-version resolution capability, forwarded unchanged to Spellbook.
+                Defaults to True; False retains existing binding and lifetime rules.
             **kwargs:
                 Optional lifecycle hooks and related bind-time metadata.
 
@@ -3163,7 +3167,7 @@ class Conduit(Cleanable):
                 If the conduit is cleaned, is not normal, no binding transaction is
                 active, or the spell collides with an existing registry entry.
             TypeError:
-                If invalid hook types are provided.
+                If invalid hook types or a non-bool resolvable value are provided.
 
         """
         self.check_cleaned()
@@ -3187,6 +3191,7 @@ class Conduit(Cleanable):
             spellframe=spellframe,
             binding_name=binding_name,
             profile=profile,
+            resolvable=resolvable,
             permissions=permissions,
             **kwargs,
         )
@@ -3201,6 +3206,7 @@ class Conduit(Cleanable):
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -3239,6 +3245,9 @@ class Conduit(Cleanable):
                 Secondary disambiguation key within the frame.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native capability of this parked version, forwarded unchanged to Spellbook.
+                Defaults to True and is independent of active index selection.
             **kwargs:
                 Optional lifecycle hooks (pre/activation/post).
 
@@ -3250,6 +3259,8 @@ class Conduit(Cleanable):
             RuntimeError:
                 If the conduit is cleaned, is not normal, the dynamic environment
                 is not enabled, or there is no owning Spellbook.
+            TypeError:
+                If resolvable is not a bool or Bind rejects the target.
         """
         self.check_cleaned()
         if self._conduit_state is not ConduitState.normal:
@@ -3270,6 +3281,7 @@ class Conduit(Cleanable):
             spellframe=spellframe,
             binding_name=binding_name,
             profile=profile,
+            resolvable=resolvable,
             **kwargs,
         )
         # The new inactive member joined `spell_index`; if that index is shared

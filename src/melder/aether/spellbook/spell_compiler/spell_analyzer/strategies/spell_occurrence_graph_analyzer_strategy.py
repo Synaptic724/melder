@@ -389,6 +389,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Contract:
             - Returns `(topology_rows, contracted_rows, system_state)` or
               `None` on failure (callers force the rebuild path).
+            - Topology rows include resolved socket policy and descriptive references,
+              so required-input changes cannot reuse a stale occurrence/model signature.
             - Failures are never cached; every spell retries the build.
             - The cached tuple is immutable; concurrent unit workers may race
               to build it, which is benign (identical values, last write
@@ -414,6 +416,12 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                         (
                             socket.param_name,
                             tuple(sorted(socket.target_spell_ids)),
+                            socket.socket_kind.value,
+                            socket.position,
+                            socket.parameter_kind,
+                            socket.is_collection,
+                            socket.is_optional,
+                            socket.referenced_spell_ids,
                         )
                         for socket in topology.sockets
                     )
@@ -1032,7 +1040,11 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             allow_missing: bool = False,
     ) -> Optional[str]:
         """
-        Resolve a SpellContract to a concrete provider spell id.
+        Resolve a SpellContract to a concrete resolvable provider spell id.
+
+        Contract:
+            Preserve explicit cardinality and dynamic missing-provider behavior.
+            A selected non-resolvable definition is incompatible, not missing.
         """
         consumer_spell_id = consumer_spell.spell_index.selected_spell_id
         if consumer_spell_id is None:
@@ -1054,6 +1066,18 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 ),
             )
         if len(contracted_candidates) == 1:
+            if not contracted_candidates[0].resolvable:
+                raise MeldExecutionError(
+                    spell_id=consumer_spell_id,
+                    spell_name=consumer_spell.spell_name,
+                    node_id=consumer_spell_id,
+                    param_name=param_name,
+                    message=(
+                        "SpellContract selected non-resolvable provider "
+                        f"{contracted_candidates[0].spell_id!r}. Select a resolvable provider "
+                        "or supply the consumer input through an override-required dependency."
+                    ),
+                )
             return contracted_candidates[0].spell_index.selected_spell_id
 
         if allow_missing:

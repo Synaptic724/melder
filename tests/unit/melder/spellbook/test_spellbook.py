@@ -51,6 +51,7 @@ class DummySpell:
         spellframe=None,
         existence=Existence.unique,
         owner_conduit_id=None,
+        resolvable: bool = True,
     ):
         """
         Purpose:
@@ -66,6 +67,7 @@ class DummySpell:
             spellframe: Optional spellframe override.
             existence: Existence enum for authoring dump tests.
             owner_conduit_id: Optional owner conduit id for authoring dump tests.
+            resolvable: Native resolution capability exposed by authoring descriptions.
         Returns:
             None.
         """
@@ -79,6 +81,7 @@ class DummySpell:
         self.spellframe = spellframe
         self.binding_name = binding_name
         self.existence = existence
+        self.resolvable = resolvable
         self._compiler_artifact = SpellCompilerArtifact(spell_id)
         self.profile = None
         self.resolution_required = False
@@ -4635,7 +4638,7 @@ def test_describe_spells_in_spellbook_returns_authoring_dump_in_stable_order():
         Verify Spellbook exposes the smaller ACL-authoring dump for visible spells.
     Contract:
         - Uses the spell-id pool as the visible spell set.
-        - Returns the requested selector/ownership fields only.
+        - Returns selector, ownership and native resolution capability fields.
         - Sorts deterministically by spell name, binding name, and spell id.
     Returns:
         None.
@@ -4651,6 +4654,7 @@ def test_describe_spells_in_spellbook_returns_authoring_dump_in_stable_order():
         spellframe="FrameB",
         existence=Existence.many,
         owner_conduit_id="conduit-2",
+        resolvable=False,
     )
     beta_spell = DummySpell(
         "sha-a",
@@ -4674,6 +4678,7 @@ def test_describe_spells_in_spellbook_returns_authoring_dump_in_stable_order():
             "binding_name": "__default__",
             "spellframe": "FrameA",
             "existence": "unique",
+            "resolvable": True,
             "owner_conduit_id": "conduit-1",
         },
         {
@@ -4682,6 +4687,7 @@ def test_describe_spells_in_spellbook_returns_authoring_dump_in_stable_order():
             "binding_name": "zeta",
             "spellframe": "FrameB",
             "existence": "many",
+            "resolvable": False,
             "owner_conduit_id": "conduit-2",
         },
     ]

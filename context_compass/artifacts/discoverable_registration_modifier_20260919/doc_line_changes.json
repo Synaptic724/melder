@@ -1,0 +1,34 @@
+{
+  "src_architecture.md": {
+    "verified_at: 2026-08-02T16:30:22Z": 1,
+    "end_line: 6800": 1,
+    "loc: 6800": 1,
+    "verified_at: 2026-09-05T12:55:45Z": 2,
+    "end_line: 932": 1,
+    "loc: 932": 1,
+    "verified_at: 2026-09-19T11:48:13Z": 1,
+    "end_line: 1663": 1,
+    "loc: 1663": 1,
+    "end_line: 6214": 1,
+    "loc: 6214": 1
+  },
+  "src_components.md": {
+    "- Reject module and Protocol concrete binding targets while allowing class,": 1,
+    "without one it returns a DECORATOR, and the decorated object comes back to the": 1,
+    "caller rather than the Spell - so the return type is not stable across call": 1,
+    "styles and callers cannot assume a `Spell` came back.": 1,
+    "- Protocols cannot be bound as concrete spells.": 1,
+    "- Rejects modules and Protocols as concrete spells.": 1,
+    "verified_at: 2026-08-02T16:30:22Z": 1,
+    "end_line: 6800": 1,
+    "loc: 6800": 1,
+    "verified_at: 2026-09-05T12:55:45Z": 2,
+    "end_line: 932": 1,
+    "loc: 932": 1,
+    "verified_at: 2026-09-19T11:48:13Z": 1,
+    "end_line: 1663": 1,
+    "loc: 1663": 1,
+    "end_line: 6214": 1,
+    "loc: 6214": 1
+  }
+}

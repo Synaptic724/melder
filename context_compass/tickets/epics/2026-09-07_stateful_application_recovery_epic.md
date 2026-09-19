@@ -301,7 +301,7 @@ Named lesser recovery already has related design work. Its epic calls for struct
 while excluding created-instance state. Coordinate with that work rather than designing competing
 naming, ownership or lesser-replay semantics:
 - context_compass/tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md
-- context_compass/tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md
+- context_compass/tickets/tasks/completed/2026-09-07_named_conduit_implementation_map_task.md
 
 The existing parallel-restore/ULID epic is related to identity translation, journal order and scheduling.
 Recheck its implementation state before touching those contracts; this capture does not take it over:
