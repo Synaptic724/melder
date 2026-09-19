@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
- "source_sha256": "e29296c891d1b20c806c978f50cfc579e97874f3ec74da0d199ecb7ec0a8e993",
+ "source_sha256": "69b0a2b8775bc9fd01b45bc642e7c9fb0b3163bd51f74f11a34d988890fc4918",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.restore_engine": {
@@ -15,7 +15,8 @@
    "responsibilities": [
     "fold the chain oldest-first, later-wins",
     "refuse on blockers before any replay",
-    "tear down in reverse order on failure"
+    "tear down in reverse order on failure",
+    "forwards recorded resolution capability through active and staged binding with legacy True defaults"
    ],
    "phases": [
     "init",
@@ -94,7 +95,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4ec7ba5c771d29dd306c73f4505b3d12411be5202f704dcf62d8529f8268031b",
+   "span_sha256": "98797dd645d1f7c4c3e8395f70c739cb94778b6ea423ae0ec76f3458bcd1f7a1",
    "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
    "responsibilities": [
     "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",
@@ -102,7 +103,8 @@
     "configuration rebuilds ride the reload verbs (recorded truth, never defaults)",
     "M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration",
     "forwards ordered disposal for active/staged binds; translated actual IDs drive anchors, exact selections, and contract grants",
-    "fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order"
+    "fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order",
+    "forwards recorded resolution capability through active and staged binding with legacy True defaults"
    ],
    "owns_state": [
     "folded stores",

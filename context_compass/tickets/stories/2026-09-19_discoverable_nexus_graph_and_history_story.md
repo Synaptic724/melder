@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-19-discoverable-nexus-graph-and-history
 - Epic: EPIC-2026-09-19-discoverable-non-resolvable-registrations
 - Sequence: S5
-- Status: draft
+- Status: review
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-19T17:25:45Z
-- Updated: 2026-09-19T21:38:40Z
+- Updated: 2026-09-19T23:28:23Z
 
 ## User Narrative
 As an agent, I can discover a registered abstract base/helper, navigate its relationships, inspect
@@ -57,8 +57,8 @@ is insufficient; discovery, relationships and history must form a coherent agent
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Planned to fulfill the owner's graph requirement after compiler/runtime semantics exist.
+- to_state: review
+- transition_reason: Shared graph/replay task delivered publication, ACL-filtered navigation and history/version proof.
 
 ## Dependencies / Related Work
 - Parent: `tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
@@ -120,11 +120,13 @@ parked version views and history. Reuse existing version rules; do not infer new
 in an executable plan or treat supplied live references as lifecycle-owned objects.
 
 ## Tasks (Implementation Checklist)
-- [ ] Define exact node/edge/revision payloads from S1-S3 and create a scoped Nexus task.
-- [ ] Add publication/navigation tests for a False base/helper and a consumer with a supplied socket.
-- [ ] Expose mode and descriptive relationships through projections and permitted command surfaces.
-- [ ] Add revision/impact behavior using distinct version identities and explicit organization changes.
-- [ ] Define candidate/adoption boundaries and hand durable payload semantics to S6.
+- [x] Joint implementation and qualification:
+  `tickets/tasks/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md`.
+- [x] Define payloads in the scoped Nexus/crystal patch.
+- [x] Add real publication/navigation tests for False definitions, bases and supplied references.
+- [x] Expose capability/relationships through ACL-filtered views and preserve research commands.
+- [x] Verify existing distinct-version history and graph updates after explicit notch.
+- [x] Preserve candidate/adoption rules and hand native capability to S6 replay.
 
 ## Acceptance Criteria
 - Agents can find a definition, traverse to/from consumers, inspect its source and compare versions.
@@ -134,7 +136,8 @@ in an executable plan or treat supplied live references as lifecycle-owned objec
 - ACL/frame posture remains enforced; unavailable source/history is reported explicitly.
 
 ## Validation / Test Plan
-- Not run. Exercise real room commands over a small recorded graph and assert no target constructor runs.
+- Real room tests pass for definition/reference/base navigation, hidden sections/endpoints, source/history,
+  parked version recording and updated graph links after explicit notch. Direct False meld refuses.
 - Compare two definition revisions with distinct existing identities and an explicit organization change.
   Check affected-consumer reporting; do not require same-identity body edits to create a new version.
 - Prove inspection does not rely on a successful meld or an existing instance.
@@ -197,6 +200,19 @@ Consume S1 answers on role vocabulary, edge provenance, revision identity and vi
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T23:28:23Z
+  TYPE: FACT
+  CLAIM: Existing Nexus payloads now carry capability and typed selected/reference/base links; public
+    ViewSpell/FrameViewer queries preserve endpoint and section visibility. Real room/source/history
+    and explicit version-selection tests pass. Existing version rules and projection refresh remain.
+  EVIDENCE:
+  - artifacts/non_resolvable_graph_replay_20260919/validation.md
+  - artifacts/non_resolvable_graph_replay_20260919/version_graph.xml:1-1
+  IMPACT: The definition graph is usable without construction; no new graph registry or ownership model.
+  NEXT: Owner reviews integrated S4-S7 implementation and retained limits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Owner accepts graph/history behavior and evidence.
 - [ ] Child tasks, artifacts and boards synchronized.
@@ -205,7 +221,7 @@ Consume S1 answers on role vocabulary, edge provenance, revision identity and vi
 Keep graph schema and cross-subsystem revision decisions here; task notes own implementation traces.
 
 ## Context / Handoff Summary
-Draft S5. Independent graph presence is the owner's core requirement. Retain definition/consumer
-connections and explicit revisions through real Nexus tools. S3 now supplies local descriptive
-references; read the delivered-input section above and its task. No Nexus node/history implementation
-has been completed here, and constructor blueprints are not the complete descriptive graph.
+S5 implemented and in review. FrameDescriptorManager publishes capability and value-only typed links;
+ViewSpell/FrameViewer navigate visible incoming/outgoing relationships. Late Phase3 republishes updated
+references; Rift projection refresh remains explicit. Real source/history and version-selection tests
+pass. Full evidence and existing limits are in the joint graph/replay task's validation artifact.

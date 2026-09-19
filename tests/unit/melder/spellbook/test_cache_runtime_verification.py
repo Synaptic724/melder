@@ -49,7 +49,9 @@ class _RecordingSpell:
             caching_enabled: bool = True,
             emit_result: bool = True,
     ) -> None:
+        """Mirror native cache eligibility and execution fields on a resolvable spell."""
         self.spell_id = spell_id
+        self.resolvable = True
         self.spell_name = spell_id
         self._caching_enabled = caching_enabled
         self._dynamic_environment = False

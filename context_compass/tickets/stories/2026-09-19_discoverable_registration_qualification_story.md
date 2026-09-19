@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-19-discoverable-registration-qualification
 - Epic: EPIC-2026-09-19-discoverable-non-resolvable-registrations
 - Sequence: S7
-- Status: draft
+- Status: review
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-19T17:25:45Z
-- Updated: 2026-09-19T19:25:38Z
+- Updated: 2026-09-19T23:28:23Z
 
 ## User Narrative
 As a user, I can rely on one documented end-to-end workflow for registering, inspecting, versioning,
@@ -50,8 +50,8 @@ Qualify the whole contract across subsystem boundaries and ship documentation/as
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Planned as the final cross-story qualification and documentation step.
+- to_state: review
+- transition_reason: Joint implementation task completed selected-scope qualification and documentation/build checks.
 
 ## Dependencies / Related Work
 - Parent: `tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
@@ -94,11 +94,13 @@ Qualify the whole contract across subsystem boundaries and ship documentation/as
    Read system-document authoring instructions for every authored document being changed.
 
 ## Tasks (Implementation Checklist)
-- [ ] Create an end-to-end qualification task based on the final API and earlier evidence.
-- [ ] Run the required behavioral matrix; route any failures back to their owning story.
-- [ ] Add/update public usage examples and architecture/component contracts.
-- [ ] Regenerate and verify authored indexes, graph descriptors/assembly, package and repository assets.
-- [ ] Review capability/default/restore documentation against executed examples.
+- [x] Qualification/evidence owner:
+  `tickets/tasks/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md`.
+- [x] Record end-to-end qualification in the joint final implementation task.
+- [x] Run the selected behavioral matrix and correct native fixture/version expectations.
+- [x] Update public usage guides and architecture/component contracts.
+- [x] Regenerate authored indexes, graph descriptors/assembly and package/repository assets.
+- [x] Review capability/default/restore documentation against executed behavior.
 - [ ] Present final walkthrough, limits and acceptance evidence; perform closure synchronization after acceptance.
 
 ## Acceptance Criteria
@@ -109,7 +111,9 @@ Qualify the whole contract across subsystem boundaries and ship documentation/as
 - No outstanding required story is hidden by a completion claim.
 
 ## Validation / Test Plan
-- Not run. This story is planned; earlier stories must provide the actual commands and outcomes.
+- 8055 distinct selected tests pass after targeted reruns; one pre-existing skip/four xfails remain.
+- 39 docs tests, strict 294-page build and 35,513-link/source validation pass. Source/LLM assets rebuilt.
+- Full repository suite and coverage: Not run. No measured runtime-speed claim.
 - Run focused suites first, then the necessary integration/qualification checks for changed boundaries.
 - If performance is claimed, measure the relevant bind/conjure/meld paths on the supported interpreter.
 - Keep coverage reporting separate and follow repository policy; no percentage is inferred from test count.
@@ -155,6 +159,20 @@ Resolve remaining supported-scope decisions with S1-S6 before writing definitive
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-19T23:28:23Z
+  TYPE: MEASURE
+  CLAIM: Cross-story qualification is recorded in the joint task: 8055 distinct selected passes,
+    one existing skip and four existing xfails; 39 docs tests, strict HTML and site checks pass.
+    Public/system docs explain native capability, graph/source/history, replay, ordinary constructor
+    errors and retained existing limits. Build assets and repository bundles are regenerated.
+  EVIDENCE:
+  - artifacts/non_resolvable_graph_replay_20260919/qualification_summary.json:1-12
+  - artifacts/non_resolvable_graph_replay_20260919/validation.md
+  IMPACT: Implementation is review-ready, without claiming full-suite coverage or publishing a release.
+  NEXT: Verify final asset freshness and provide the owner the completed change summary.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Integrated walkthrough and evidence shared.
 - [ ] Owner accepts required behavior and recorded limits.
@@ -164,5 +182,6 @@ Resolve remaining supported-scope decisions with S1-S6 before writing definitive
 Keep final cross-story acceptance and build evidence here; retain tactical logs in associated tasks/artifacts.
 
 ## Context / Handoff Summary
-Draft S7. No tests or asset builds have run for the new feature. Start only after preceding stories
-deliver their contracts and evidence; finish documentation/build parity before asking for epic closure.
+S7 is review-ready. Read the joint task validation artifact and latest asset-check logs. Selected-scope
+qualification has 8055 distinct passes, one existing skip/four xfails; docs tests/build/site checks pass.
+Ordinary Python errors replace the abandoned input preflight. No release or coverage measurement.

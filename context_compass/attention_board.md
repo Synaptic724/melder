@@ -83,7 +83,7 @@ Message alert rules
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
 | document_positional_meld_calls | review | handoff | codex | workflows_1 | none | Owner reviews and promotes documentation corrections. | 150 replacements; docs build and publication audit pass. | Owner accepts documentation update. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-19T21:56:08Z | REQUIRED |
-| discoverable_non_resolvable_registrations | in_progress | validation | codex | updater_0 | none | Verify overrides with ordinary constructor errors. | Correct runtime values, then Nexus and crystal replay. | Runtime compatibility passes and S5/S6 route is active. | tickets/tasks/2026-09-19_enforce_required_override_execution_task.md | 2026-09-19T22:21:52Z | REQUIRED |
+| discoverable_non_resolvable_registrations | review | handoff | codex | updater_0 | none | Owner reviews the completed definition feature. | Registered graph definitions with safe replay and ordinary Python errors. | Owner accepts turn-in or requests a follow-up. | tickets/tasks/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md | 2026-09-19T23:31:09Z | REQUIRED |
 | sync_owner_uv_environment | review | handoff | codex | workflows_1 | none | Owner resumes development and restarts editor Ruff. | Melder 0.2.40 and locked tools on existing no-GIL Python. | Owner accepts verified environment sync. | tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | 2026-09-13T20:48:32Z | REQUIRED |
 | reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
@@ -115,10 +115,10 @@ Message alert rules
 ### Active Attention Details
 - document_positional_meld_calls: SWITCH_TRIGGER is owner acceptance or new documentation failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-19_document_positional_meld_calls_task.md.
-- discoverable_non_resolvable_registrations: SWITCH_TRIGGER is verified runtime compatibility and S5/S6 continuation.
+- discoverable_non_resolvable_registrations: SWITCH_TRIGGER is owner acceptance or a concrete follow-up.
   RESUME_HIERARCHY: tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md ->
   tickets/stories/2026-09-19_discoverable_resolution_runtime_story.md ->
-  tickets/tasks/2026-09-19_enforce_required_override_execution_task.md.
+  tickets/tasks/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md.
 - sync_owner_uv_environment: SWITCH_TRIGGER is owner acceptance or new environment failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md.
 - reproducible_uv_environment: SWITCH_TRIGGER is owner acceptance or new hosted matrix failure evidence.

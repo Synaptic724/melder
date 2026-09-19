@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-19-enforce-required-override-execution
 - Story: STORY-2026-09-19-discoverable-resolution-runtime
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-19T22:12:13Z
-- Updated: 2026-09-19T22:12:13Z
+- Updated: 2026-09-19T23:28:23Z
 
 ## Objective
 Qualify supplied-value behavior across solo, generalized and many-only execution using ordinary
@@ -31,9 +31,9 @@ Python missing-argument errors. Fix actual override/cache failures without a new
   source-body identity or unrelated executor refactors.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner resumed and directed completion using the simpler ordinary-constructor-error approach.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Existing execution passes the supplied-value/cache matrix; custom preflight omitted per owner.
 
 ## Required Reading
 - S4 story's complete read map and S1 required/default/presence versus type policy.
@@ -49,7 +49,8 @@ Python missing-argument errors. Fix actual override/cache failures without a new
 - Carry rows independently of optional targeting metadata in both no-overrides/overrides variants.
 - Normalize effective addressing/arguments before presence checks. None and falsey values are present;
   do not introduce a new annotation-type validation policy in a presence check.
-- A reused consumer or supplied whole branch skips that constructor's input requirements.
+- Reused consumers retain normal reuse behavior. Whole-child overrides retain existing eager construction;
+  a plain required-int control demonstrated that independent pre-existing behavior.
 - Preserve current shared-instance override restrictions and selector/default/collection semantics.
 - Preserve ordinary Python missing-argument errors and existing wrappers; no new early-input preflight.
 - Qualify actual cold/warm executor behavior using existing mismatch/invalidation machinery.
@@ -73,7 +74,9 @@ Python missing-argument errors. Fix actual override/cache failures without a new
 - Source docs/descriptors/build outputs and ContextCompass tracking for this task.
 
 ## Validation
-- Not run for this task. Prior admission: 665 passed, one existing deferred skip.
+- 32 runtime compatibility cases pass, covering actual solo/many-only/generalized and hydrated lanes.
+- Ordinary/falsey/None values, positional/nested values, omission, reuse and descriptor supply are tested.
+- Whole-child eager construction is characterized as existing behavior, not changed by this feature.
 - Use .venv_new Python 3.14.7 free-threaded, uv --no-sync --offline, -X gil=0 and no pytest cacheprovider.
 
 ## Risks / Rollback Notes
@@ -189,8 +192,21 @@ Finish one complete source path, then record its evidence and next concrete step
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T23:26:03Z
+  TYPE: MEASURE
+  CLAIM: Runtime compatibility is complete under the simplified owner direction. All 32 cases pass
+    without new runtime argument preflight. They are included in the larger final qualification.
+    Existing eager whole-child construction is documented; the initial pruning assumption was false.
+  EVIDENCE:
+  - artifacts/required_override_execution_20260919/runtime_green.log:1-2
+  - artifacts/non_resolvable_graph_replay_20260919/qualification_summary.json:1-12
+  IMPACT: No runtime input-enforcement implementation remains; ordinary constructor errors are intentional.
+  NEXT: Review the completed feature integration and final artifact checks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-RESUMED. Finish with ordinary Python missing-argument errors; no additional early-input preflight.
-No source/test edits yet in this task. Qualify real supplied-value/nested/reuse/cache behavior and fix
-actual failures only, then finish S5 Nexus and S6 Crystallizer. S3 compiler and direct admission remain.
-Source already read: schema helper, injection analysis, both solo compilers, solo manifest. No agents.
+Review-ready. 32 supplied-value/omission/reuse/cache tests pass using existing execution and Python
+constructor errors. No new runtime argument preflight or branch-pruning machinery was added. Existing
+eager whole-child construction remains; the control case proves it predates this feature. Final
+integrated results are in the graph/replay task's validation artifact. No release or closure yet.

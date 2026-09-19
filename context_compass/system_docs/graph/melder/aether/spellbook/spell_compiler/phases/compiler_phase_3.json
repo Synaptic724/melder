@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "8149c623bb91d160dd96b5e0a9c367a5868f2c16282bff446d33e4b4aa679f36",
+ "source_sha256": "7ca9959aecad1dcf8ed1c91c49fdad3ce94428201f5b0b74209ea8be05853c59",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -12,7 +12,10 @@
    "lineno": 1,
    "include": true,
    "role": "Phase 3: local-frame and DAG build - where socket truth including is_collection is established.",
-   "semantics_authored_against": "f667ca74748f0f2dc641ed40143b96041015c2fd4b0bdac7269b75a3a963b1f2"
+   "semantics_authored_against": "f667ca74748f0f2dc641ed40143b96041015c2fd4b0bdac7269b75a3a963b1f2",
+   "responsibilities": [
+    "republishes enabled late-compiled Nexus records after local topology is available"
+   ]
   },
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3": {
    "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
@@ -30,13 +33,14 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "e210c3747ad148c38042db747a5c2b9080d0745a95be142479273d1260c1b71d",
+   "span_sha256": "d92ddac0b76bca8bddeaa78babac2438d932ea952fd39ef20de1fa6d6214bdf4",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
     "builds the local constructor DAG and SpellResolutionFrame for one spell",
     "publishes direct dependency ids and SpellLocalTopology into SpellSystemStates",
-    "selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology"
+    "selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology",
+    "republishes enabled late-compiled Nexus records after local topology is available"
    ],
    "phases": [
     "validation",

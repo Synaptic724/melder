@@ -40,7 +40,9 @@ class SuppliedConsumer:
 class DescriptorConsumer:
     """An explicit descriptor selects the registered definition for caller supply."""
 
-    def __init__(self, external: ExternalValue = SpellMap(spell=ExternalValue)) -> None:
+    definition_map = SpellMap(spell=ExternalValue)
+
+    def __init__(self, external: ExternalValue = definition_map) -> None:
         """Retain the effective value, exposing any accidentally injected descriptor."""
         self.external = external
 

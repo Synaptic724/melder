@@ -2,12 +2,12 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-09-19-discoverable-non-resolvable-registrations
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-19T16:34:27Z
-- Updated: 2026-09-19T21:38:40Z
+- Updated: 2026-09-19T23:31:09Z
 - Target Window: owner-directed; no release version assigned
 - Related Program/Initiative: Nexus graph discovery, Spellbook registration, Crystallizer, MutationResearch
 
@@ -77,9 +77,9 @@ Nexus access, research history, and restore. A meld-only guard or a source catal
 - Target-family expansion beyond abstract/concrete class definitions is an explicit discovery decision.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner started S1 discovery with a modifier on bind/bind_inactive and resolvable defaults.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Agreed implementation, graph/replay qualification and documentation/build checks are complete.
 
 ## Established Evidence and Limits
 - Phase 1 records annotation, default presence/value, and optionality separately. Ordinary defaults
@@ -92,9 +92,9 @@ Nexus access, research history, and restore. A meld-only guard or a source catal
   preview exists, but it does not create independent durable custody.
 - Registration and normal-conduit emission already feed Crystallizer; restore rebinds through
   runtime entry points and translates identities. Native policy/compiler metadata now exist, but
-  the new mode/graph persistence schema is still unimplemented.
-- S2 admission and S3 compiler propagation are implemented and tested. Direct/fast/nested/cached
-  execution enforcement and full Nexus/persistence behavior remain unqualified.
+  the native policy now survives supported crystal capture/replay and graph reconstruction.
+- S2-S7 are implemented and qualified within the recorded scope. Ordinary Python argument errors
+  replace the custom preflight the owner rejected; existing eager branch construction remains unchanged.
 - Detailed evidence: predecessor task, Notes at lines 273-478; reopen current ranges before citing.
 
 ## Requirements (Functional + Non-Functional)
@@ -178,18 +178,18 @@ Nexus access, research history, and restore. A meld-only guard or a source catal
   `tickets/stories/2026-09-19_discoverable_registration_modifier_story.md`
 - [ ] S3: `STORY-2026-09-19-caller-supplied-socket-compiler` — implemented; 2098 focused tests pass; in review.
   `tickets/stories/2026-09-19_caller_supplied_socket_compiler_story.md`
-- [ ] S4: `STORY-2026-09-19-discoverable-resolution-runtime` — in progress; direct admission verified, input execution active.
+- [ ] S4: `STORY-2026-09-19-discoverable-resolution-runtime` — implemented and in review; ordinary constructor errors retained.
   `tickets/stories/2026-09-19_discoverable_resolution_runtime_story.md`
-- [ ] S5: `STORY-2026-09-19-discoverable-nexus-graph-and-history` — draft; depends on S1-S4.
+- [ ] S5: `STORY-2026-09-19-discoverable-nexus-graph-and-history` — implemented and in review.
   `tickets/stories/2026-09-19_discoverable_nexus_graph_and_history_story.md`
-- [ ] S6: `STORY-2026-09-19-discoverable-registration-persistence` — draft; depends on S1-S5.
+- [ ] S6: `STORY-2026-09-19-discoverable-registration-persistence` — implemented and in review.
   `tickets/stories/2026-09-19_discoverable_registration_persistence_story.md`
-- [ ] S7: `STORY-2026-09-19-discoverable-registration-qualification` — draft; depends on S1-S6.
+- [ ] S7: `STORY-2026-09-19-discoverable-registration-qualification` — qualification complete; owner review pending.
   `tickets/stories/2026-09-19_discoverable_registration_qualification_story.md`
 
-All seven story files exist. S1 results are recorded; S2 registration and S3 compiler implementation
-are review-ready. S4 runtime enforcement is next, followed by graph/history, persistence and full
-qualification. The compiler layer does not establish runtime safety or feature completion.
+All seven story files are review-ready. The joint graph/replay task records final implementation and
+qualification, including 8055 distinct selected passes, 39 docs tests and the 294-page/site checks.
+Story checkboxes remain unchecked for formal owner acceptance, not for missing implementation.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] Complete the first S1 discovery task:
@@ -265,16 +265,10 @@ mark expected new-feature failures as permanently acceptable xfails. No coverage
 - Public examples, generated hardcopies, and build-runner outputs accompany the accepted implementation.
 
 ## Open Questions
-S1-S3 settled native mode/identity, initial admission, Phase-3 resolved classification and the selector/
-default/Optional/collection/descriptor policy. Read the discovery and implementation tasks for those
-decisions. Existing version rules remain; body-only edits do not automatically mint new versions.
-
-- Which additional notch/transfer, nested and receiving-policy matrices are required for final qualification?
-- How is supplied-value type compatibility checked for ABCs and non-runtime-checkable Protocols?
-- Which graph edges are inferred, declared, version-pinned, and relevant to invalidation versus impact only?
-- Which Nexus tool and access-control surfaces expose independent registration discovery and revisions?
-- How are older crystal/cache records interpreted, and how does restore rebuild graph-only registrations?
-- How are externally supplied live references represented in graph observations without claiming ownership?
+No open implementation decision remains for the agreed scope. Owner retained existing version rules
+and ordinary Python argument errors, removing custom input preflight. This feature adds no new runtime
+type checker, arbitrary internal-use/ownership inference or application-instance serialization.
+Existing eager whole-child construction, global uniqueness and explicit Rift refresh are documented limits.
 
 ## Decision Log
 - 2026-09-19: Owner selected modifier placement on bind and bind_inactive, defaulting to resolvable.
@@ -519,6 +513,21 @@ test paths are starting points, not a claim that existing tests cover this new f
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T23:31:09Z
+  TYPE: FACT
+  CLAIM: The agreed feature is implemented locally and ready for review: registration/compiler policy,
+    direct refusal, existing override/cache compatibility, ACL-filtered graph/source/history/version
+    navigation, and native crystal capture/active/staged/graft replay. Record major 2 protects old
+    readers while old records remain readable. Final selected evidence is 8055 passes, one existing
+    skip/four xfails, 39 docs tests and a passing 294-page/35,513-link build. No package release.
+  EVIDENCE:
+  - tickets/tasks/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md
+  - artifacts/non_resolvable_graph_replay_20260919/validation.md
+  IMPACT: No custom per-call argument preflight was introduced; existing unrelated behavior stays unchanged.
+  NEXT: Owner reviews implementation and requests turn-in/release separately if desired.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -529,25 +538,17 @@ test paths are starting points, not a claim that existing tests cover this new f
 - Preserve append-only decisions and explicit UNKNOWNs; every pass ends with one next source question.
 
 ## Context / Handoff Summary
-S1 source discovery is in review; S2 registration and S3 compiler are implemented and review-ready.
-S4 is in progress: direct/runtime admission is in review (665 passed, one existing skip), while
-required-override execution is active. S5-S7 remain required. Read the active S4 task and its predecessor
-for current evidence; S3 separately records 2098 passing compiler cases, with overlapping suite scope.
+IMPLEMENTED / REVIEW. Read the joint graph/replay task and validation artifact for current truth.
+All S1-S7 implementation/qualification work is delivered under the simplified owner scope: native
+default-True capability, False execution refusal, reference-only compiler topology, existing argument/
+cache behavior, visible Nexus graph/source/history/version navigation, and crystal replay/graft with
+record major 2. Legacy records use True when the bool is absent. Graphs rebuild from normal bindings.
 
-Current native contract: bind/bind_inactive default resolvable=True; each Spell stores its own immutable
-capability. True retains existing version fingerprints; False uses v4-binding-non-resolvable. Application
-Protocol definitions are admitted only with False. Existing naming, uniqueness, ownership and lifetime
-rules remain. Source assets and LLM source/tests corpora are regenerated and verified.
+8055 distinct selected tests pass, with one pre-existing skip/four xfails; 39 docs tests and strict
+294-page/35,513-link checks pass. Source/LLM assets are regenerated. Full repository suite/coverage
+was not run; no speed improvement is claimed. Current package version remains the user's 0.2.43.
 
-S3 delivers SocketKind.OVERRIDE_REQUIRED, descriptive references separate from executable targets,
-construction-root exclusion, required-input rows across both planners and injection exports, plus
-existing selector/structural/resolution revalidation integration. The remaining runtime must consume
-required_override_params via live CodegenCreationSchemaHelpers, emitted executors and hydration.
-
-Next: S4 actual required-input execution, nested branch/reuse preflight and emitted/cache parity. S5
-exposes connected Nexus graph/history; S6 persists/replays policy; S7 qualifies the complete feature.
-Compiler metadata does not establish runtime safety and False is not yet preserved by crystal replay.
-Do not ship this partial feature. No owned-object redesign, named-lesser work or version bump occurred.
-
-After compaction: REONBOARD, then the S4 required-override task and story read routes. User selected
-OVERRIDE_REQUIRED and existing version rules; do not reopen source-body versioning.
+Owner rejected custom missing-input preflight: ordinary Python errors remain. Existing eager child
+construction, process-wide uniqueness and explicit Rift refresh are retained. No source-body identity,
+owned-object lifecycle or named-lesser redesign, package release or commit. Formal owner acceptance
+and ticket closure remain; after compaction re-onboard and read the final task instead of old plans.

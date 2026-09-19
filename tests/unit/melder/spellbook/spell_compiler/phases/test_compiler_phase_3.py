@@ -1021,7 +1021,7 @@ def test_run_builds_resolution_frame_and_updates_topology(
         spellframe=_ServiceFrame,
         spell_name="DependencySpell",
     )
-    spellbook = SimpleNamespace(_spell_id_pool={"dep": dependency_spell})
+    spellbook = SimpleNamespace(_spell_id_pool={"dep": dependency_spell}, _nexus_publish_enabled=False)
     spell_system_states = _SpellSystemStatesStub()
     artifact = SpellCompilerArtifact("root")
     artifact._requirements = SimpleNamespace(parameters=[])

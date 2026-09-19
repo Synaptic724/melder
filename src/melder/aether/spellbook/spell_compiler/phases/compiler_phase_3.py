@@ -979,6 +979,8 @@ class CompilerPhase3:
             * Does not return a value; callers rely on:
                   - `artifact._resolution_frame` for ordering, and
                   - SpellSystemStates for dependencies and topology.
+            * Refreshes enabled post-conjure Nexus publication after topology exists;
+              no projection refresh or runtime resolution is performed here.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)
@@ -1026,6 +1028,8 @@ class CompilerPhase3:
         except AttributeError:
             # Test stubs may not implement the build-details hook.
             pass
+        if spellbook._nexus_publish_enabled:
+            spellbook._publish_spell_record_to_nexus(spell)
         # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
 
 

@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-19-discoverable-resolution-runtime
 - Epic: EPIC-2026-09-19-discoverable-non-resolvable-registrations
 - Sequence: S4
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-19T17:25:45Z
-- Updated: 2026-09-19T22:13:16Z
+- Updated: 2026-09-19T23:28:23Z
 
 ## User Narrative
 As a user, I receive clear errors when melding a discovery-only target or constructing a consumer
@@ -30,8 +30,8 @@ Make the declaration enforceable at actual execution, including paths that skip 
 - Direct meld and reuse-only meld refuse a selected non-resolvable registration before invocation.
 - Preserve registration lookup/introspection so Nexus can still discover the target.
 - Enforce capability independently of _spellbook_validation_required and risk-based validation skipping.
-- Require missing caller-supplied values when constructing the consumer and name the consumer,
-  parameter and target in the error; do not substitute None or a descriptor default.
+- Preserve Python's normal errors for missing ordinary required constructor arguments and existing
+  error wrappers. Owner removed the proposed custom early-input preflight from scope.
 - Accept actual override payloads through existing named/positional/deep/broadcast semantics as supported.
 - Keep ordinary defaults and normal consumer reuse semantics intact.
 - Prevent nested compiled execution from constructing a non-resolvable dependency without relying on
@@ -43,16 +43,16 @@ Make the declaration enforceable at actual execution, including paths that skip 
 ## Requirements (Non-Functional)
 - Use the existing cache/version/epoch machinery; no new global invalidation framework.
 - Add only contract-required checks and measure any claimed performance effect.
-- Report failure before avoidable construction side effects, according to the accepted execution boundary.
+- Preserve existing construction/reuse ordering; no additional per-call argument preflight.
 
 ## Scope Boundaries
 - In scope: actual input supply and resolution refusal, execution IR/hydration and focused runtime tests.
 - Out of scope: new lifetime modes, broad instance transfer/disposal redesign, Nexus graph authoring.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner approved continuation; the bounded runtime admission task is now routed.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Direct admission and existing supplied-value/cache compatibility are qualified.
 
 ## Dependencies / Related Work
 - Parent: `tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
@@ -124,23 +124,24 @@ Then cover fast/scoped/reuse/nested/hook/cache variants without adding another i
 ## Tasks (Implementation Checklist)
 - [x] Direct/runtime admission (implemented; review pending):
   `tickets/tasks/2026-09-19_enforce_non_resolvable_runtime_admission_task.md`.
-- [ ] Required supplied-input execution (active):
+- [x] Required supplied-input compatibility (implemented/tested; no custom preflight):
   `tickets/tasks/2026-09-19_enforce_required_override_execution_task.md`.
-- [ ] Create execution tasks per meaningful runtime family; share the S3 contract before edits.
-- [ ] Add direct/refusal and required-input regressions, then implement common entry behavior.
-- [ ] Carry caller supply through nested override targeting and generated executor families.
-- [ ] Verify reuse, hook order and side-effect behavior on success/failure.
-- [ ] Qualify memoized executors, cache hydration and version/selection invalidation.
+- [x] Create scoped runtime tasks and consume the S3 contract.
+- [x] Add direct-refusal and ordinary required-input compatibility regressions.
+- [x] Verify existing caller supply through nested targeting and all three executor families.
+- [x] Verify reuse and preserve existing hook/construction ordering without custom preflight.
+- [x] Qualify memoized executors, manifest hydration and version/selection behavior.
 
 ## Acceptance Criteria
 - Discovery-only targets never produce or return an instance through prohibited execution doors.
-- Missing required supplied inputs fail clearly; valid inputs reach consumers by identity.
+- Ordinary required arguments retain Python omission errors; supplied values reach consumers by identity.
 - Defaults, unrelated providers and normal reuse continue working.
 - Nested/cached/scoped paths agree with ordinary paths; no validation-disabled bypass remains.
 - No newly assigned lifecycle ownership arises merely from supplying an override.
 
 ## Validation / Test Plan
-- Not run. Start with an actual Base/Consumer scenario, then one nested consumer and cached replay.
+- Direct admission: 58 new cases; supplied-value/executor/cache compatibility: 32 cases. They are
+  included in the final 8055-distinct-test qualification; do not add overlapping counts.
 - Use the minimum real runtime slice; mock only external boundaries.
 - Exercise malformed, omitted, falsey and explicit-None inputs according to S1 policy.
 - Keep failures as regressions to fix; do not weaken assertions to accept partial behavior.
@@ -235,8 +236,7 @@ Use S1's required/type/descriptor policy; performance and failure-side-effect cl
 Record cross-family policy here; preserve exact reproductions and results in the owning task.
 
 ## Context / Handoff Summary
-S4 is in progress. Direct/runtime admission is implemented and in review: 665 cases pass, with one
-existing owner-deferred skip. False selection refuses before optional validation/hooks/retrieval;
-observational lookup and warm guards remain unchanged. Docs/assets were regenerated and verified.
-The required-override execution task is now active; read it and the delivered compiler rows before
-emitted/hydrated executor changes. S4, Nexus/history and crystal replay are not complete.
+S4 is review-ready. Direct False selection refuses before optional validation/hooks/retrieval;
+observational lookup and warm guards remain unchanged. Owner removed custom missing-input preflight.
+32 real supplied-value/omission/reuse/cache cases pass using existing runtime execution; eager whole-child
+construction remains existing behavior. Final graph/replay task records 8055 distinct selected passes.

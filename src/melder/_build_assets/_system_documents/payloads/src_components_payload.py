@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8618
-CONTENT_SHA256 = 'd1e02edd7ce77fae17349c6f108d0f3f977bbd2b2989ef11d528ef454c322809'
+LINE_COUNT = 8651
+CONTENT_SHA256 = '2eb5b7a03fc991fa76fd7c207a60103429cb2e0fc2672f8c21e04be1579a503f'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -366,7 +366,7 @@ Native registration capability foundation (2026-09-19):
   from this active description; exact parked-version inspection must not follow the selected member.
 - SpellBinder already forwards and resets this choice through bind/with_kwargs/finalize.
 - Compiler classification, root eligibility and direct runtime capability refusal are implemented.
-  Required-input executor enforcement, Nexus graph projection and crystal replay are still pending.
+  Ordinary overrides, Nexus graph publication and crystal replay retain the same per-version policy.
 - EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`, `Spellbook.bind_inactive`,
   `Spellbook.describe_spells_in_spellbook`; `src/melder/aether/spellbook/spellbinder.py:SpellBinder`.
 
@@ -538,7 +538,7 @@ Native resolution capability (S2 foundation, 2026-09-19):
   cleanup. Metadata, active/parked state, permissions and compilation readiness remain independent.
 - False permits application Protocol definitions while preserving kernel/module, naming, lifetime
   and Protocol spellframe member checks. A different SHA does not bypass active signature uniqueness.
-- Compiler consumers now honor the capability; complete runtime enforcement and durable replay remain unfinished.
+- Compiler/runtime consumers honor the capability; Nexus publishes it and crystal replay preserves it.
 - EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`, `Bind.sha256_profile`,
   `Bind.spell_id_inspector`; `src/melder/aether/spellbook/spell.py:Spell.resolvable`.
 
@@ -1110,6 +1110,20 @@ Purpose:
 - Provide the hosted crystallizer policy root, the passive persistence RECORD
   (digital-twin custody of the configured world), and the retained/live module
   world surfaces used for crystallized spell loading and activation.
+
+Non-resolvable definitions:
+- SpellCrystal captures native resolvable as a bool and releases it on cleanup. describe() carries the
+  value alongside existing binding policy. No live application instance is serialized by this feature.
+- RestoreEngine forwards the bool for active and staged binds. GraftRunner does so for selected,
+  parked and merged members. Legacy absence means True; malformed values reach Bind's bool validation.
+- RecordVersion uses major 2 because ignoring False would change executable behavior. Existing older
+  record support remains; older readers reject new envelopes through the existing major gate.
+- Graph references reconstruct through normal compilation of restored bindings and selected versions.
+  Process-wide uniqueness still requires releasing source claims before grafting detached custody.
+- EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py`,
+  `src/melder/crystallizer/crystal_loader_system/graft_runner.py`,
+  `src/melder/crystallizer/persistence/record_version.py`.
 
 Ordered capture/replay (2026-09-05):
 - SpellCrystal captures detached method-name values in resolved order, never sorting.
@@ -1893,6 +1907,21 @@ Purpose:
 - Own the frame-scoped descriptor publication and ACL registry layers beneath
   the public `Nexus` facade.
 
+Published definition graph:
+- FrameDescriptorManager adds resolvable and value-only relationships to the fresh binding payload.
+  Selected executable dependencies, override_required references and actual registered direct bases
+  have distinct kinds. Target source IDs pin the published book/version; no raw Spell/class is exposed.
+- Initial conjure publishes complete local topology. Late Phase3 compilation republishes via the
+  book's enabled sink after topology exists. Projection refresh remains the existing explicit Rift API.
+- ViewSpell/FrameViewer.describe_spell_relationships joins visible payloads for incoming/outgoing
+  navigation. Hidden binding sections and hidden endpoints remain absent from query results.
+  Normal describe_spell also filters hidden relationship targets on its detached payload copy.
+- Existing MR source/history commands work for False definitions; source-body identity rules and
+  active/parked publication lifecycle are unchanged. No internal-use or lifecycle ownership is inferred.
+- EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._build_published_relationships`,
+  `src/melder/nexus/rift/frame_viewer/view_spell.py:ViewSpell.describe_spell_relationships`,
+  `src/melder/nexus/rift/frame_viewer/frame_viewer.py:FrameViewer.describe_spell_relationships`.
+
 Responsibilities:
 - `FrameDescriptorManager` owns `frame_name -> FrameDescriptor`.
 - Refresh frame posture and frame-handle cache before passive publication.
@@ -2534,7 +2563,8 @@ Non-resolvable registration admission:
   while its False registration still refuses runtime retrieval.
 - Capability is immutable per Spell version. A fast-door entry is inserted only after successful
   admitted execution, so False cannot mint one. Existing epoch/context guards remain unchanged.
-- Required OVERRIDE_REQUIRED value checking inside generated executors remains separate work.
+- Ordinary required inputs use existing override execution and Python constructor errors. No additional
+  argument preflight is introduced; existing eager whole-child construction remains unchanged.
 - EVIDENCE: `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld.meld`,
   `ConduitMeld.meld_existing_spell`, `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld`,
   `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
@@ -2793,9 +2823,10 @@ Non-resolvable definitions and required inputs (S3, 2026-09-19):
   required_override_params rows (name, position, kind, reference IDs) in both variants of all families.
 - Source kind override_required appends position/kind/reference data to injection IR/signature rows;
   ordinary row layouts remain unchanged. Direct Phase8-11 wrappers and cache eligibility skip False roots.
-- Direct runtime admission now refuses False registrations. S4 still must enforce supplied-value
-  presence inside emitted/cached executors and qualify nested construction behavior.
-  S5/S6 still supply graph projection and persistence; these compiler contracts do not complete them.
+- Direct runtime admission refuses False registrations. Ordinary/falsey/None supplied values, nested
+  overrides, reuse and manifest hydration use existing executor paths. Python reports missing real
+  required arguments; there is no extra per-call missing-input preflight. Nexus and crystal consumers
+  preserve the definition/reference distinction through publication and replay.
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3`,
   `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:SpellSocketDescriptor`,
   `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:SpellInjectionInstanceSpec`.
@@ -5806,9 +5837,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
-  end_line: 806
-  loc: 806
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 857
+  loc: 857
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/nexus/frame_acl_manager.py`
   start_line: 1
   end_line: 814
@@ -5846,9 +5877,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
   start_line: 1
-  end_line: 6649
-  loc: 6649
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 6673
+  loc: 6673
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
   start_line: 1
   end_line: 3134
@@ -5866,9 +5897,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/view_spell.py`
   start_line: 1
-  end_line: 3092
-  loc: 3092
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 3145
+  loc: 3145
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/nexus/rift/rift.py`
   start_line: 1
   end_line: 1151
@@ -6386,9 +6417,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1165
-  loc: 1165
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 1170
+  loc: 1170
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
   end_line: 1445
@@ -6401,9 +6432,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
-  end_line: 2702
-  loc: 2702
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 2706
+  loc: 2706
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/mutation_research/mutation_configuration.py`
   start_line: 1
   end_line: 659
@@ -6469,9 +6500,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
-  end_line: 655
-  loc: 655
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 663
+  loc: 663
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_admission.py`
   start_line: 1
   end_line: 615
@@ -8095,7 +8126,7 @@ completed epics/stories of 2026-07-11/12).
   mid-describe) and ships AFTER (local truth leads the mirror);
   lenient + counted; untapped worlds pay one property read.
 - persistence/record_version.py - RecordVersion (static authority,
-  CURRENT "1.0.0", key "record_version"): stamps to_cached_item,
+  CURRENT "2.0.0", key "record_version"): stamps to_cached_item,
   capture_formation_record, and tap envelopes; check_readable refuses
   NEWER-major artifacts at from_cached_item (covers cache + external
   reloads) and load_formation_record; absent stamps read "0.0.0"
@@ -8503,8 +8534,10 @@ Companion documents:
 descriptive references through topology/model/plans; executable roots exclude False definitions.
 Frame-key watchers and the structural-to-resolution handoff support provider selection changes.
 Direct runtime admission refuses False before optional validation and object access, preserving
-observational lookup and success-only warm entries. Required-input executor/cache enforcement and
-Nexus/persistence integration are pending; this is not complete non-resolvable execution support.
+observational lookup and success-only warm entries. Existing override execution and ordinary Python
+argument errors are retained. Nexus publishes and navigates typed references under existing ACLs;
+crystal capture/restore/graft preserves the bool with record major 2. Existing eager branch replacement
+and version identity remain unchanged; this feature does not redesign supplied-object ownership.
 
 RELEASE-MATRIX CONCURRENCY REPAIR (2026-08-30): the Meld Resolution Runtime
 contract now records the shared-spell boundary exposed by concurrent owner and

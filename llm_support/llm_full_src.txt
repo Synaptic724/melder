@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: f9b5751371ed2805e63677be444bc2bdef7f07e5fb9d7edf43dc3ea21014fe5f
+SOURCE FINGERPRINT: fbb1849ddecf1be9e334e975c3d30fb16d803093a5699091e5f5fb2ba1dfcd4a
 FILE COUNT: 585
 
 ================================================================================
@@ -107069,7 +107069,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: 17ed15a08658a97bad5ae55c2a7d1d24be5e57d83bf8645a8d74e0c0d64a3008
+CONTENT SHA256: 219ea91695866b7b9be5ec912a6315ecfd5f96cf212450828304a6b367fc58cd
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -108053,6 +108053,8 @@ class CompilerPhase3:
             * Does not return a value; callers rely on:
                   - `artifact._resolution_frame` for ordering, and
                   - SpellSystemStates for dependencies and topology.
+            * Refreshes enabled post-conjure Nexus publication after topology exists;
+              no projection refresh or runtime resolution is performed here.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)
@@ -108100,6 +108102,8 @@ class CompilerPhase3:
         except AttributeError:
             # Test stubs may not implement the build-details hook.
             pass
+        if spellbook._nexus_publish_enabled:
+            spellbook._publish_spell_record_to_nexus(spell)
         # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
 
 
@@ -155317,7 +155321,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/graft_runner.py
-CONTENT SHA256: 354ec24b4078c73e3f2793418c6f6fe36bb71820d910da25ddfd084ddc71550c
+CONTENT SHA256: 980e3b1f82c1bc8463e3af1853f816f634894285085eedf0c23d69cb79711f52
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -155702,6 +155706,8 @@ class GraftRunner(Cleanable):
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
+        Recorded resolution capability is preserved; legacy absence defaults to True.
+
         Args:
             selected_id:
                 The recorded selection.
@@ -155738,6 +155744,7 @@ class GraftRunner(Cleanable):
                 crystal.get("disposal_method_names", [])
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         live_spell = self._host_book.find_spell_by_id(new_spell_id)
         live_index = (
@@ -155755,6 +155762,8 @@ class GraftRunner(Cleanable):
     ) -> int:
         """
         Park every non-selected member onto the fresh live index.
+
+        Every member retains its own recorded resolution capability.
 
         Args:
             selected_id:
@@ -155795,6 +155804,7 @@ class GraftRunner(Cleanable):
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
+                resolvable=crystal.get("resolvable", True),
             )
             parked += 1
         return parked
@@ -155822,6 +155832,7 @@ class GraftRunner(Cleanable):
               which may differ from its recorded SHA.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
+            - Each parked member retains its recorded resolution capability.
 
         Args:
             selected_id:
@@ -155852,6 +155863,7 @@ class GraftRunner(Cleanable):
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
+                resolvable=crystal.get("resolvable", True),
             )
             if spell_id == str(selected_id):
                 live_selected_id = new_spell_id
@@ -156918,7 +156930,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/load_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/restore_engine.py
-CONTENT SHA256: 5f3ae5812dc3ac03d33340b7adf8c8f7b6bfa59d9f9d710ab3999c9e7ce7647f
+CONTENT SHA256: d92f064b9fedf098907d8c7f66871afc69b5d928c126e1ac72ecd9724ee5f179
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -158840,6 +158852,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Forward ordered disposal names through normal book composition.
             Record a changed SHA before resolving dependent staged members.
+            Preserve recorded capability; only legacy absence defaults to True.
 
         Args:
             spellbook:
@@ -158865,6 +158878,7 @@ class RestoreEngine(Cleanable):
                 crystal.get("disposal_method_names", [])
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         self._report.record_built("spell_active")
         if new_spell_id != spell_id:
@@ -158889,6 +158903,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Retain the ordered recorded names and map any changed bind identity
             before the selection stage resolves this exact parked member.
+            Preserve the parked version's own resolution capability.
 
         Args:
             spellbook:
@@ -158931,6 +158946,7 @@ class RestoreEngine(Cleanable):
             binding_name=crystal.get("binding_name"),
             disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         if new_spell_id != spell_id:
             self._report.map_identity(spell_id, new_spell_id)
@@ -164694,7 +164710,7 @@ END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystals/spell_crystal.py
-CONTENT SHA256: edf473e14511f07bef6db17a5177fb125f3aef7dd372cb9dc0ff6a7c72d44632
+CONTENT SHA256: e1f88c53a3f13c62cfa461d81fb04fd0b61134ac36fbf08975408a865e08a74b
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -164828,6 +164844,7 @@ class SpellCrystal(Cleanable):
         "_spellframe_name",
         "_existence_name",
         "_permissions_name",
+        "_resolvable",
         "_disposal_method_names",
         "_profile_family",
         "_rebindability",
@@ -164867,6 +164884,7 @@ class SpellCrystal(Cleanable):
               reference, or the analyzer after construction.
             - Captures resolved disposal names in execution order. This detached
               persistence value does not sort or reapply book policy.
+            - Captures native resolution capability so replay cannot enable a definition.
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -164972,6 +164990,7 @@ class SpellCrystal(Cleanable):
         )
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
+        self._resolvable: bool = spell.resolvable
         # Capture-gap fields (restore_engine_2026_07_07 patch lane): the two
         # bind inputs the record previously dropped. Disposal names preserve
         # the spell's cleanup contract across a restore; the profile family
@@ -165089,6 +165108,7 @@ class SpellCrystal(Cleanable):
             del self._spellframe_name
             del self._existence_name
             del self._permissions_name
+            del self._resolvable
             del self._disposal_method_names
             del self._profile_family
             del self._rebindability
@@ -165807,6 +165827,7 @@ class SpellCrystal(Cleanable):
                 "spellframe_name": self._spellframe_name,
                 "existence_name": self._existence_name,
                 "permissions_name": self._permissions_name,
+                "resolvable": self._resolvable,
                 "disposal_method_names": list(self._disposal_method_names),
                 "profile_family": self._profile_family,
                 "rebindability": self._rebindability,
@@ -169682,7 +169703,7 @@ END FILE: src/melder/crystallizer/persistence/persistence_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/persistence/record_version.py
-CONTENT SHA256: 0a211ad14d8ac2ea4852011d1a814cc3d19fb4ca5393ee1f414da25e00d7e2be
+CONTENT SHA256: 5162e54b84ab34de0c74a8fc1afbfe993774203e033489c0e0db6feb55b5e5ae
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -169760,7 +169781,8 @@ class RecordVersion:
         machinery: read it to understand the runtime, do not drive it directly.
     """
 
-    CURRENT: ClassVar[str] = "1.0.0"
+    # Older readers must refuse records whose False capability they would otherwise ignore.
+    CURRENT: ClassVar[str] = "2.0.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod
@@ -208918,7 +208940,7 @@ END FILE: src/melder/nexus/frame_descriptor/spell_record.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/frame_descriptor_manager.py
-CONTENT SHA256: 48dd3f40e1554f793289600e3a63c7c29913766f56804bc456fd8e8b12ed2ef7
+CONTENT SHA256: c6768fd293a5dce2cc9e17ce75efeba5ca658fe7fd1f41aca7dc49eebb661e2f
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -209435,6 +209457,8 @@ class FrameDescriptorManager(Cleanable):
             - Short-circuits when the frame is not publishable.
             - Preserves the existing AI-profile extraction behavior.
             - Replaces the descriptor-owned spell record for the canonical key.
+            - Publishes immutable capability and value-only selected/base relationships
+              under the existing binding-payload ACL section.
 
         Args:
             spellbook:
@@ -209466,6 +209490,8 @@ class FrameDescriptorManager(Cleanable):
                     "Spell publication requires a non-empty descriptor payload."
                 )
             self._validate_published_spell_payload(payload)
+            payload.binding_payload["resolvable"] = spell.resolvable
+            payload.binding_payload["relationships"] = self._build_published_relationships(spellbook, spell)
 
             spell_record = SpellRecord(
                 origin_spellbook_id=spellbook._id,
@@ -209487,6 +209513,53 @@ class FrameDescriptorManager(Cleanable):
             )
             descriptor.upsert_spell_record(spell_record)
             return True
+
+    @staticmethod
+    def _build_published_relationships(spellbook: Spellbook, spell: Spell) -> Tuple[Dict[str, object], ...]:
+        """
+        Snapshot selected constructor references and actual registered direct bases.
+
+        Contract:
+            Returns detached values only; reference links never become construction edges.
+            The pool snapshot keeps publication independent of later registry mutations.
+            Missing/unpublished targets remain outside navigable graph relationships.
+            Does not infer internal-use or lifecycle ownership from names or annotations.
+
+        Args:
+            spellbook: Publishing book with the visible local/contracted target pool.
+            spell: Live version whose local topology and direct Python bases are described.
+
+        Returns:
+            Tuple of kind/parameter/target source-ID mappings, in publication order.
+        """
+        relationships: list[Dict[str, object]] = []
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is not None:
+            for socket in topology.sockets:
+                for kind, targets in (
+                    ("dependency", socket.target_spell_ids),
+                    ("override_required", socket.referenced_spell_ids),
+                ):
+                    for target_id in targets:
+                        target = spellbook._spell_id_pool.get(target_id)
+                        if target is not None:
+                            relationships.append({
+                                "kind": kind,
+                                "parameter": socket.param_name,
+                                "target_source_id": f"{target._spellbook.id}:{target_id}",
+                            })
+        if isinstance(spell.spell, type):
+            # A detached pool snapshot avoids retaining a live registry view in this value payload.
+            candidates = tuple(spellbook._spell_id_pool.values())
+            for base in spell.spell.__bases__:
+                for target in candidates:
+                    if target.spell is base:
+                        relationships.append({
+                            "kind": "base",
+                            "parameter": None,
+                            "target_source_id": f"{target._spellbook.id}:{target.spell_id}",
+                        })
+        return tuple(relationships)
 
     def _remove_spell_record(
             self,
@@ -227380,7 +227453,7 @@ END FILE: src/melder/nexus/rift/frame_link/frame_link_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/frame_viewer.py
-CONTENT SHA256: 6339ba8c563c5292840fc053c6304349cc59b4a0ab379a7e86fdd7e1df4b884b
+CONTENT SHA256: 716dbc505c538072fbd327ca99f205ecfcd8d40ad6aa399c1e276dbe42cd5884
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -232645,6 +232718,30 @@ class FrameViewer(Cleanable):
         return self.get_view_spell(frame_name=frame_name).describe_spell(
             spell_source_id,
             frame_name=frame_name,
+        )
+
+    def describe_spell_relationships(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Navigate visible registered dependencies, supplied references and direct bases.
+
+        Contract:
+            Delegates to the current ViewSpell with its ordinary ACL and action-hook gates.
+            Does not resolve or construct the inspected definition.
+
+        Args:
+            spell_source_id: Published book/version identity to navigate.
+            frame_name: Hosted frame containing the definition.
+
+        Returns:
+            Detached capability and incoming/outgoing relationship descriptions.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_relationships(
+            spell_source_id, frame_name=frame_name,
         )
 
     def describe_spell_brief(
@@ -242194,7 +242291,7 @@ END FILE: src/melder/nexus/rift/frame_viewer/view_multiframe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/view_spell.py
-CONTENT SHA256: 4ccd60f4dfeb5db9c18060b64d3651dc5445c848adc239d3895477a3c94146e5
+CONTENT SHA256: 99264e33e20300d80b6f31d7f3dca92e2051be1e38c89e734e79e8ac5be932fb
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -242442,6 +242539,15 @@ class ViewSpell(Cleanable):
                 tuple(),
             )
         )
+        filtered_payload = self._filter_spell_payload(spell_record.payload, visible_sections)
+        binding = filtered_payload.get("binding_payload")
+        if isinstance(binding, dict) and "relationships" in binding:
+            # Filtering operates on the detached normalized payload, never on the published record.
+            binding["relationships"] = tuple(
+                relationship for relationship in binding["relationships"]
+                if tuple(relationship["target_source_id"].split(":", 1))
+                in compiled_access_surface.visible_spell_keys
+            )
         return {
             "target_id": spell_link.link_id,
             "source_kind": spell_link.source_kind,
@@ -242457,10 +242563,54 @@ class ViewSpell(Cleanable):
             "source_profile_name": spell_record.payload.source_profile_name,
             "source_profile_version": spell_record.payload.source_profile_version,
             "visible_sections": visible_sections,
-            "payload": self._filter_spell_payload(
-                spell_record.payload,
-                visible_sections,
-            ),
+            "payload": filtered_payload,
+        }
+
+    def describe_spell_relationships(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Describe visible incoming and outgoing registered relationships without resolution.
+
+        Contract:
+            Uses current ACL-filtered spell descriptions. Both endpoints must be visible,
+            and the source binding-payload section must be readable. Capability is returned
+            only when that section is visible. No runtime object is acquired or constructed.
+
+        Args:
+            spell_source_id: Published book/version identity to navigate.
+            frame_name: Optional selected-frame assertion.
+
+        Returns:
+            Source identity, visible capability, and detached incoming/outgoing edge lists.
+        """
+        selected = self.describe_spell(spell_source_id, frame_name=frame_name)
+        descriptions = self.describe_spells(frame_name=frame_name)
+        visible_ids = {description["source_id"] for description in descriptions}
+        incoming: list[Dict[str, object]] = []
+        outgoing: list[Dict[str, object]] = []
+        for description in descriptions:
+            payload = self._get_required_payload_map(description["payload"])
+            binding = payload.get("binding_payload")
+            if not isinstance(binding, dict):
+                continue
+            for relationship in binding.get("relationships", ()):
+                if relationship["target_source_id"] not in visible_ids:
+                    continue
+                edge = {"source_id": description["source_id"], **relationship}
+                if edge["source_id"] == spell_source_id:
+                    outgoing.append(edge)
+                if edge["target_source_id"] == spell_source_id:
+                    incoming.append(edge)
+        binding = self._get_required_payload_map(selected["payload"]).get("binding_payload")
+        return {
+            "source_id": spell_source_id,
+            "resolvable": binding.get("resolvable", True) if isinstance(binding, dict) else None,
+            "incoming": incoming,
+            "outgoing": outgoing,
         }
 
     def describe_spell_payload(

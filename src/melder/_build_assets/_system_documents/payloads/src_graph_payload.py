@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27746
-CONTENT_SHA256 = '1c5d17cd84154ccecb4bc1a9accecea9aa52c1e3a2ed82d4aa9442e636f4a002'
+LINE_COUNT = 27765
+CONTENT_SHA256 = 'c1a867c23529ff2074135fb7bc75bb8c8f5f9e12214f152ceb6bbcae99e50e3b'
 
 TEXT = """# src_graph
 
@@ -11596,7 +11596,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `8149c623bb91d160dd96b5e0a9c367a5868f2c16282bff446d33e4b4aa679f36`
+- source_sha256: `7ca9959aecad1dcf8ed1c91c49fdad3ce94428201f5b0b74209ea8be05853c59`
 - nodes: 2
 
 ### Nodes
@@ -11606,6 +11606,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3`
 - defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:1`
 - role: Phase 3: local-frame and DAG build - where socket truth including is_collection is established.
+- responsibilities:
+  - republishes enabled late-compiled Nexus records after local topology is available
 
 #### `CompilerPhase3` (class)
 
@@ -11617,6 +11619,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds the local constructor DAG and SpellResolutionFrame for one spell
   - publishes direct dependency ids and SpellLocalTopology into SpellSystemStates
   - selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology
+  - republishes enabled late-compiled Nexus records after local topology is available
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -17532,7 +17535,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/graft_runner.py
 
-- source_sha256: `4dedb612226d94b78c675176677e2640195a39c64e35d985a651808054f5191d`
+- source_sha256: `89a67aab7fd43a1d110f5e0b674157cec39b8f31b47b89514f1f20be3a0e1bd0`
 - nodes: 2
 
 ### Nodes
@@ -17545,6 +17548,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - replay index membership, custody and selection through public verbs only
   - fresh index by default; explicit merge uses public bind/notch verbs without mutating index internals
+  - preserves each member resolution capability through selected, parked and merged graft bindings
 - phases: `runtime`
 
 #### `GraftRunner` (class)
@@ -17562,6 +17566,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - forwards ordered disposal names for every member and carries the new index directly to fresh-graft parking
   - adopts only a successfully grafted selected member using its returned live binding ID
   - emits a detached membership and index-identity report with explicit shortfalls
+  - preserves each member resolution capability through selected, parked and merged graft bindings
 - owns_state: `_record`, `_host_book (borrowed)`, `_skip_resident`, `_merge_into_index (borrowed)`, `_adopt_recorded_selection`, `_consumed`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `run`
@@ -17693,7 +17698,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `e29296c891d1b20c806c978f50cfc579e97874f3ec74da0d199ecb7ec0a8e993`
+- source_sha256: `69b0a2b8775bc9fd01b45bc642e7c9fb0b3163bd51f74f11a34d988890fc4918`
 - nodes: 3
 
 ### Nodes
@@ -17707,6 +17712,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - fold the chain oldest-first, later-wins
   - refuse on blockers before any replay
   - tear down in reverse order on failure
+  - forwards recorded resolution capability through active and staged binding with legacy True defaults
 - phases: `init`, `runtime`
 
 #### `RestoreReport` (class)
@@ -17736,6 +17742,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration
   - forwards ordered disposal for active/staged binds; translated actual IDs drive anchors, exact selections, and contract grants
   - fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order
+  - forwards recorded resolution capability through active and staged binding with legacy True defaults
 - owns_state: `folded stores`, `built_stack`, `report`
 - phases: `runtime`
 - public methods: `cleanup`, `restore`
@@ -18237,7 +18244,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `076f87f9d015c2f5a362b3581f34005752d6b3ad5f239e429d6cfc5c6170c86d`
+- source_sha256: `24d389a39c7f50d6f08e7b1dd77bc12ba9916d319e9be4b008a18fbce88c3e21`
 - nodes: 2
 
 ### Nodes
@@ -18249,6 +18256,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Custody carrier for one concrete spell version and the module world it depends on.
 - responsibilities:
   - carry the bind signature and delegate module analysis to crystal_analysis
+  - captures native per-version resolution capability as a detached replay value
 - phases: `runtime`
 
 #### `SpellCrystal` (class)
@@ -18262,6 +18270,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - captures detached disposal names in resolved execution order without sorting or reapplying book policy
   - delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)
   - carries the returned CrystalAnalysisResult and exposes it via delegating properties
+  - captures native per-version resolution capability as a detached replay value
 - owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `binding_name`, `cleanup`, `describe`, `disposal_method_names`, `existence_name`, `id`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension`, `module_to_kind`, `module_to_path`, `path_targets` (+20 more)
@@ -18541,7 +18550,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `35df51f36a8c1b2fe420f40471ea4d774b74c62eacff1c3b3a56c5c272a4e450`
+- source_sha256: `697cfc1efb3d38773ce361c2a24edcb134e8514aff6796d6b1baca6b3de8c08c`
 - nodes: 2
 
 ### Nodes
@@ -18554,16 +18563,18 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stamp outgoing payloads
   - refuse newer-major artifacts on read
+  - uses record major 2 so older readers cannot silently ignore non-resolvable policy
 - phases: `runtime`
 
 #### `RecordVersion` (class)
 
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:17`
-- role: Static record-schema version authority (stamp 1.0.0; readers gate on MAJOR; absent stamps read 0.0.0).
+- role: Static record-schema version authority (stamp 2.0.0; readers gate on MAJOR; absent stamps read 0.0.0).
 - responsibilities:
   - stamps cached items, formation records, and emission-tap envelopes
   - refuses newer-major payloads at the read gates
+  - uses record major 2 so older readers cannot silently ignore non-resolvable policy
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -22522,7 +22533,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/frame_descriptor_manager.py
 
-- source_sha256: `48dd3f40e1554f793289600e3a63c7c29913766f56804bc456fd8e8b12ed2ef7`
+- source_sha256: `35af138e3a44bdfc6818dc00a4a0aaa46ea29bea9b366e4e053863061e52daa6`
 - nodes: 2
 
 ### Nodes
@@ -22535,6 +22546,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - publish and remove frame, conduit and spell records
   - refresh frame posture before passive publication
+  - publishes native resolution capability and value-only selected dependency, supplied-reference and base links
 - phases: `runtime`, `cleanup`
 
 #### `FrameDescriptorManager` (class)
@@ -22548,6 +22560,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes frame, conduit, and spell records
   - owns Nexus-managed frame record creation and lookup
   - refreshes frame posture cache from Aether
+  - publishes native resolution capability and value-only selected dependency, supplied-reference and base links
 - owns_state: `_frame_descriptors_by_name`, `_aether`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `list_published_frame_names`
@@ -24419,7 +24432,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/frame_viewer.py
 
-- source_sha256: `09d295574f4f13a02efa9c596aa8220920338e70d42dbcc2d5b2968cddff9eaa`
+- source_sha256: `28ce784581117a2042b191c97be5e7dcb5fb9dcd2db060e1b0130f3e3d0c9fdf`
 - nodes: 2
 
 ### Nodes
@@ -24429,6 +24442,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.rift.frame_viewer.frame_viewer`
 - defined at: `src/melder/nexus/rift/frame_viewer/frame_viewer.py:1`
 - role: The READ surface of a room, opposite CommandSystem and Workstation; a view rather than a cache - helpers are built on demand so projection refreshes cannot leave it answering stale.
+- responsibilities:
+  - delegates registered relationship navigation to the current ACL-filtered spell viewer
 
 #### `FrameViewer` (class)
 
@@ -24440,9 +24455,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - holds the current per-frame projection-set references for the room
   - owns the helper cache for frame, conduit, and spell view surfaces
   - provides the visible frame-local query surface
+  - delegates registered relationship navigation to the current ACL-filtered spell viewer
 - owns_state: `_projection_sets_by_frame_name`, `_view_multiframe`, `_helper_surfaces_by_frame_name`, `_default_view_frame_name`
 - phases: `refresh`, `runtime`, `cleanup`
-- public methods: `cleanup`, `clone`, `compare_conduit_records`, `compare_conduits`, `compare_frame_conduits`, `compare_frame_spells`, `compare_frames`, `compare_frames_brief`, `compare_spell_records`, `compare_spells`, `count_conduit_records`, `count_frames` (+140 more)
+- public methods: `cleanup`, `clone`, `compare_conduit_records`, `compare_conduits`, `compare_frame_conduits`, `compare_frame_spells`, `compare_frames`, `compare_frames_brief`, `compare_spell_records`, `compare_spells`, `count_conduit_records`, `count_frames` (+141 more)
 
 ### Edges out
 
@@ -24696,7 +24712,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/view_spell.py
 
-- source_sha256: `4ccd60f4dfeb5db9c18060b64d3651dc5445c848adc239d3895477a3c94146e5`
+- source_sha256: `31eb065bec0549dec55e7e7aaf74afefaf39e22ec80be83bf1333188bcea818a`
 - nodes: 2
 
 ### Nodes
@@ -24706,6 +24722,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.nexus.rift.frame_viewer.view_spell`
 - defined at: `src/melder/nexus/rift/frame_viewer/view_spell.py:1`
 - role: Spell-scoped helper surface for one selected frame view.
+- responsibilities:
+  - describes incoming and outgoing registered relationships while filtering hidden endpoints and sections
 
 #### `ViewSpell` (class)
 
@@ -24717,9 +24735,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - returns ACL-filtered spell links and spell descriptions
   - surfaces spell payload, lineage, and comparison behavior through the selected frame helper
   - describe_spell_research joins viewer truth with the research record (residency payload or honest research_available=False)
+  - describes incoming and outgoing registered relationships while filtering hidden endpoints and sections
 - owns_state: `_frame_view`
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `compare_spells`, `describe_spell`, `describe_spell_access_summary`, `describe_spell_binding`, `describe_spell_brief`, `describe_spell_callable_profile`, `describe_spell_class_profile`, `describe_spell_crosswalk`, `describe_spell_detail`, `describe_spell_dunder_members`, `describe_spell_dynamic_access` (+27 more)
+- public methods: `cleanup`, `compare_spells`, `describe_spell`, `describe_spell_access_summary`, `describe_spell_binding`, `describe_spell_brief`, `describe_spell_callable_profile`, `describe_spell_class_profile`, `describe_spell_crosswalk`, `describe_spell_detail`, `describe_spell_dunder_members`, `describe_spell_dynamic_access` (+28 more)
 
 ### Edges out
 

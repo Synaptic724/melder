@@ -227,6 +227,9 @@ def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
     spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     spell = types.SimpleNamespace(
         profile=_PayloadProfile(),
+        resolvable=True,
+        spell=object(),
+        _spell_system_states=types.SimpleNamespace(get_local_topology=lambda _index: None),
         spell_id="spell-1",
         spell_index=types.SimpleNamespace(id="lineage-1"),
         spell_name="SpellOne",
@@ -302,6 +305,9 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
     )
     spell = types.SimpleNamespace(
         profile=_PayloadProfile(),
+        resolvable=True,
+        spell=object(),
+        _spell_system_states=types.SimpleNamespace(get_local_topology=lambda _index: None),
         spell_id="spell-1",
         spell_index=types.SimpleNamespace(id="lineage-1"),
         spell_name="SpellOne",

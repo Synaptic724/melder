@@ -805,8 +805,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   True preserves the existing v4-binding fingerprint; False uses a separate hash domain. Application
   Protocol definitions may be registered only with False; other admission and lifetime rules remain.
   Compiler consumers separate required supplied inputs from executable dependencies. Direct runtime
-  resolution and reuse now refuse False before validation or execution. Required-input executor/cache
-  enforcement, Nexus graph and persistence integration remain unfinished.
+  resolution and reuse refuse False before validation or execution. Ordinary supplied inputs use
+  existing override execution and Python constructor errors, including cached lanes; no new preflight.
+  Nexus publishes capability and typed references, and Crystallizer preserves the bool on replay.
   EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind` and
   `src/melder/aether/spellbook/spell.py:Spell.resolvable`.
 - Non-resolvable definitions keep descriptive local topology but are excluded from Phase-5 executable
@@ -814,6 +815,19 @@ each entry in `src_components.md`; this list is the set that crosses components.
   signature position/kind; those IDs never expand the constructor DAG. Both planner variants retain
   the required-input values. Defaulted parameters keep PLAIN semantics and ordinary Python values.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3`.
+- Nexus binds capability and selected dependency/reference/direct-base links into the existing
+  binding-payload section. ViewSpell/FrameViewer relationship navigation filters both endpoints
+  through current ACL visibility. Late Phase3 compilation republishes through the existing book sink;
+  external changes still require the normal Rift projection refresh. Source/history remains in MR.
+  EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._build_published_relationships`
+  and `src/melder/nexus/rift/frame_viewer/view_spell.py:ViewSpell.describe_spell_relationships`.
+- SpellCrystal records the native capability. Active/staged restore and fresh/merge graft forward
+  it through normal bind verbs; absent legacy fields default to True. Record schema major 2 prevents
+  older readers from silently discarding False. Graph links rebuild from restored bindings and selections.
+  EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py:SpellCrystal.describe`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._bind_one_active`,
+  `src/melder/crystallizer/crystal_loader_system/graft_runner.py:GraftRunner._bind_selected`,
+  `src/melder/crystallizer/persistence/record_version.py:RecordVersion`.
 - Selector-sensitive required inputs reuse the existing frame-key watcher. A successful structural
   rerun gates the prior conduit-local resolution verdict, so the existing Phase5-11 rebuild replaces
   stale executors after provider selection changes. No alternate cache lifecycle is introduced.
@@ -996,8 +1010,8 @@ the 11 verbs they name are real `def`s, and THE TWO APPARENT MISSES CONFIRM THE
 TEXT RATHER THAN CONTRADICT IT - `BootMediator` is absent exactly because the
 topology section records it was renamed to `LoadAdmission` on 2026-07-11, and
 `refuse_on_blockers` is a keyword parameter on `RestoreEngine`, not a method,
-which is what that section calls it. The `RecordVersion` "1.0.0" literal and the
-`__crystallizer_cache__` folder name both appear in source.
+which is what that section calls it. At that verification, RecordVersion was "1.0.0"; it advanced
+to "2.0.0" for non-resolvable registration policy. The `__crystallizer_cache__` folder remains.
 
 ### Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07)
 
@@ -1129,7 +1143,7 @@ shortfall honesty, R-A covenant) are unchanged.
   record - the thread-safety law - shipped after); melder-driven remote
   retention is opt-in via the delete lane. Callables-first stands: the
   record stores presence flags, never code.
-- RECORD VERSIONING: RecordVersion "1.0.0" stamps every durable
+- RECORD VERSIONING: RecordVersion "2.0.0" stamps every durable
   artifact (cached items, formation records, tap envelopes); readers
   gate on the MAJOR (newer refuses with the upgrade instruction;
   pre-versioning reads as 0.0.0 into the tolerance lanes). The twin
@@ -1407,9 +1421,9 @@ Aether and frames:
     and the loader - see "Persistence Subsystem Topology" below).
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1165
-  loc: 1165
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 1170
+  loc: 1170
+  verified_at: 2026-09-19T23:13:57Z
   note: bind-signature CARRIER for one spell version; delegates module-world
     analysis to crystal_analysis and carries the result (moved + slimmed,
     2026-07-10).
@@ -1576,9 +1590,9 @@ Aetheric mediator plane (BUILT, NOT WIRED - nothing constructs these):
   note: public AR singleton root.
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
-  end_line: 806
-  loc: 806
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 857
+  loc: 857
+  verified_at: 2026-09-19T23:13:57Z
   note: frame-scoped descriptor and canonical-record owner.
 - path: `src/melder/nexus/frame_acl_manager.py`
   start_line: 1
@@ -1630,9 +1644,9 @@ Aetheric mediator plane (BUILT, NOT WIRED - nothing constructs these):
   note: Nexus-owned coordinator for per-Rift gates.
 - path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
   start_line: 1
-  end_line: 6649
-  loc: 6649
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 6673
+  loc: 6673
+  verified_at: 2026-09-19T23:13:57Z
   note: Rift-backed public viewer host.
 - path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
   start_line: 1
@@ -1654,9 +1668,9 @@ Aetheric mediator plane (BUILT, NOT WIRED - nothing constructs these):
   note: conduit-local viewer helper.
 - path: `src/melder/nexus/rift/frame_viewer/view_spell.py`
   start_line: 1
-  end_line: 3092
-  loc: 3092
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 3145
+  loc: 3145
+  verified_at: 2026-09-19T23:13:57Z
   note: spell-local viewer helper.
 - path: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
   start_line: 1
@@ -2056,8 +2070,8 @@ flowchart LR
 ```
 
 This diagram describes the registration boundary. Compiler selection now preserves reference-only
-required inputs through both plan variants. Direct runtime admission refuses False; required-input
-executor enforcement, graph projection and durable replay still require the later feature layers.
+required inputs through both plan variants. Direct runtime admission refuses False; ordinary supplied
+inputs use existing execution, Nexus exposes references, and durable replay preserves the capability.
 
 ### ASCII Context Diagram (C4)
 ```
@@ -2282,9 +2296,11 @@ without rewriting the original record or existing live IDs.
 2026-09-19 registration/compiler foundation: native policy, compatible True identities, False-only
 Protocol admission and OVERRIDE_REQUIRED compiler metadata are implemented. Executable roots exclude
 False definitions; selector changes use existing structural and resolution revalidation mechanisms.
-Direct runtime admission now refuses False before validation, hooks, construction or reuse; its warm
-entries can only be minted after successful admission of an immutable True version. Required-input
-executor/cache enforcement, Nexus projection and crystal transport remain pending.
+Direct runtime admission refuses False before validation, hooks, construction or reuse; its warm
+entries can only be minted after successful admission of an immutable True version. Supplied values
+use existing execution and normal Python errors. Nexus publishes/navigates typed references under
+existing ACLs; crystal capture, active/staged replay and graft retain the per-version bool. Record
+major 2 rejects old readers safely. Existing eager branch construction and version rules are unchanged.
 
 WHAT CHANGED (2026-08-01): this document was RECOMPOSED to the Required Section
 Contract in `src_architecture_instructions.md`. It now carries exactly the 17

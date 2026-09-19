@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-19-discoverable-registration-persistence
 - Epic: EPIC-2026-09-19-discoverable-non-resolvable-registrations
 - Sequence: S6
-- Status: draft
+- Status: review
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-19T17:25:45Z
-- Updated: 2026-09-19T21:38:40Z
+- Updated: 2026-09-19T23:28:23Z
 
 ## User Narrative
 As a user, I can store and restore a graph containing discovery-only definitions and caller-supplied
@@ -56,8 +56,8 @@ The persisted world must reconstruct the same policy and graph meaning as the li
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Planned after the shared registration/socket/graph schema is defined.
+- to_state: review
+- transition_reason: Native capture, replay/graft and legacy/old-reader compatibility are implemented and verified.
 
 ## Dependencies / Related Work
 - Parent: `tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
@@ -129,12 +129,14 @@ artifact, then S4/S5's accepted runtime/graph payload contracts before selecting
 Legacy absence, recorded False, target identity translation and re-emission remain explicit tests.
 
 ## Tasks (Implementation Checklist)
-- [ ] Create capture/compatibility task and record the mode/revision wire schema.
-- [ ] Add active/staged and legacy-record round-trip regressions.
-- [ ] Implement capture, decode, binding replay and graft forwarding.
-- [ ] Verify notch/transfer/removal retain current graph policy and history correctly.
-- [ ] Qualify cache invalidation/hydration and recorded-to-live identity translation.
-- [ ] Verify rebuilt worlds re-emit the complete graph contract and hand evidence to S7.
+- [x] Joint implementation and qualification:
+  `tickets/tasks/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md`.
+- [x] Create capture/compatibility task and record schema-major policy.
+- [x] Add active/staged, legacy and old-reader round-trip regressions.
+- [x] Implement native capture and all active/staged/graft binding forwarding.
+- [x] Verify selection/history and retain existing ownership/removal behavior.
+- [x] Qualify cache hydration and replay identity behavior through existing mechanisms.
+- [x] Verify rebuilt worlds re-emit capability and rebuild graph references; hand evidence to S7.
 
 ## Acceptance Criteria
 - Restored False registrations remain visible and unresolvable in a fresh runtime world.
@@ -145,7 +147,8 @@ Legacy absence, recorded False, target identity translation and re-emission rema
 - Failed replay respects current admission/teardown and reports unreplayable information explicitly.
 
 ## Validation / Test Plan
-- Not run. Use isolated-world/cross-process tests for actual value round trips and identity translation.
+- Isolated-world checkpoint flush/reload, active/staged capability, re-emission, detached-custody graft,
+  legacy absence and old-reader refusal pass. Existing restore integration and record suites are qualified.
 - Cover pre/post-conjure active/staged registrations, old/new schema records and stored source recovery.
 - Include a restored consumer meld with a supplied input and a refusal without it.
 - Verify ordinary resolvable records remain compatible; do not claim full record coverage from one fixture.
@@ -206,6 +209,19 @@ Use S1/S5 decisions for target families, graph revision identity, legacy policy 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T23:28:23Z
+  TYPE: FACT
+  CLAIM: SpellCrystal captures the native bool; active/staged restore and three graft binding sites
+    preserve it. Record major 2 protects older readers; old records without the bool use True. Real
+    disk reload/re-emission and detached-custody graft tests pass without changing process-wide uniqueness.
+  EVIDENCE:
+  - artifacts/non_resolvable_graph_replay_20260919/validation.md
+  - artifacts/non_resolvable_graph_replay_20260919/replay.xml:1-1
+  IMPACT: False cannot silently become a factory during supported replay. No arbitrary live-object serialization.
+  NEXT: Owner reviews integrated implementation and current record-version compatibility.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Owner accepts round-trip behavior and evidence.
 - [ ] Child tasks, artifacts and boards synchronized.
@@ -214,7 +230,7 @@ Use S1/S5 decisions for target families, graph revision identity, legacy policy 
 Keep compatibility and cross-subsystem persistence decisions here; task notes retain exact fixture evidence.
 
 ## Context / Handoff Summary
-Draft S6. Capture, storage and restore are separate from compiler cache replay; both must preserve mode.
-S2/S3 provide native policy and compiler reference/input rows; their persistence is still unimplemented.
-Consume the handoffs above after S4/S5 settle runtime/graph contracts. Do not revive object-instance
-serialization or assume activation captures omitted prior emissions.
+S6 implemented and in review. Crystal capture and public replay/graft verbs preserve per-version bools;
+record major 2 rejects older readers safely while legacy absence remains True. Graph references rebuild
+through normal restored bindings/selections. Supported detached-custody graft respects existing global
+uniqueness. See the joint graph/replay validation artifact for exact tests and retained limitations.
