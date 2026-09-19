@@ -1,0 +1,961 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="58" skipped="0" tests="58" time="2.467" timestamp="2026-09-19T15:56:58.598388-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-False-False-False]" time="0.008"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-False-False-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-False-True-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-False-True-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-True-False-False]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-True-False-True]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-True-True-False]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[id-True-True-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:64: in _meld_selected
+    return runtime.meld(spell_id=spell_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-False-False-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-False-False-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-False-True-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-False-True-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-True-False-False]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-True-False-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-True-True-False]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[name-True-True-True]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:66: in _meld_selected
+    return runtime.meld("RuntimeDefinition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-False-False-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-False-False-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-False-True-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-False-True-True]" time="0.007"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-True-False-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-True-False-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-True-True-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[class-True-True-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:71: in _meld_selected
+    return runtime.meld(RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-False-False-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-False-False-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-False-True-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-False-True-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-True-False-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-True-False-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-True-True-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[frame-True-True-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:68: in _meld_selected
+    return runtime.meld(spellframe=RuntimeDefinition)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-False-False-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-False-False-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-False-True-False]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-False-True-True]" time="0.006"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:387: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:818: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-True-False-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-True-False-True]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-True-True-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_every_public_selector_before_optional_validation[named-True-True-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:93: in test_false_target_refuses_every_public_selector_before_optional_validation
+    _meld_selected(runtime, selector, spell_id)
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:70: in _meld_selected
+    return runtime.meld(RuntimeDefinition, binding_name="definition")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_reuse_even_when_user_object_is_already_present[False-False]" time="0.006"><failure message="ValueError: Spell 'b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994' is not live.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:122: in test_false_target_refuses_reuse_even_when_user_object_is_already_present
+    conduit.meld_existing_spell(spell=spell_id)
+src\melder\aether\conduit\conduit.py:4193: in meld_existing_spell
+    return meld_component.meld_existing_spell(
+src\melder\aether\conduit\meld\conduit_meld.py:599: in meld_existing_spell
+    raise ValueError(
+E   ValueError: Spell 'b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994' is not live.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_reuse_even_when_user_object_is_already_present[False-True]" time="0.006"><failure message="ValueError: Spell 'b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994' is not live.">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:119: in test_false_target_refuses_reuse_even_when_user_object_is_already_present
+    door.meld_existing_spell(spell=spell_id)
+src\melder\aether\conduit\meld\spellspace_meld.py:610: in meld_existing_spell
+    raise ValueError(
+E   ValueError: Spell 'b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994' is not live.</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_reuse_even_when_user_object_is_already_present[True-False]" time="0.005"><failure message="Failed: DID NOT RAISE MeldExecutionError">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:121: in test_false_target_refuses_reuse_even_when_user_object_is_already_present
+    with pytest.raises(MeldExecutionError, match="resolvable=False"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE MeldExecutionError</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_refuses_reuse_even_when_user_object_is_already_present[True-True]" time="0.005"><failure message="Failed: DID NOT RAISE MeldExecutionError">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:118: in test_false_target_refuses_reuse_even_when_user_object_is_already_present
+    with pytest.raises(MeldExecutionError, match="resolvable=False"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE MeldExecutionError</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[None-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[None-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override1-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override1-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override2-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override2-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override3-False]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override3-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override4-False]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_false_target_override_cannot_enable_resolution_or_run_hooks[override4-True]" time="0.006"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:146: in test_false_target_override_cannot_enable_resolution_or_run_hooks
+    runtime.meld(spell_id=spell_id, override=override)
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider[False]" time="0.049"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:164: in test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider
+    runtime.meld(spell_id=definition_id)
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider[True]" time="0.007"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:164: in test_explicit_false_selection_does_not_fall_back_to_a_resolvable_provider
+    runtime.meld(spell_id=definition_id)
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=6781d832a5d6a0a4cb4290007630388c462834dbcf8224086f18e986cb74d3a2, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_notch_to_false_invalidates_cached_name_selection_without_mutating_capability[False]" time="0.008"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:187: in test_notch_to_false_invalidates_cached_name_selection_without_mutating_capability
+    runtime.meld(RuntimeDefinition)
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_admission" name="test_notch_to_false_invalidates_cached_name_selection_without_mutating_capability[True]" time="0.008"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):&#10;    (none recorded)&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_admission.py:187: in test_notch_to_false_invalidates_cached_name_selection_without_mutating_capability
+    runtime.meld(RuntimeDefinition)
+src\melder\aether\conduit\spell_space\spell_space.py:489: in meld
+    return self._meld.meld(
+src\melder\aether\conduit\meld\spellspace_meld.py:372: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:648: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:896: in _ensure_resolution_resolvable
+    raise SpellbookValidationError([spell])
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: RuntimeDefinition (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'RuntimeDefinition' (id=b626089ea0cf2b33de43b0c35f60bc3080de6cafbbf9609b6f5d669a930a5994, frame=None):
+E       (none recorded)
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase></testsuite></testsuites>

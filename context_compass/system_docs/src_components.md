@@ -346,8 +346,8 @@ Native registration capability foundation (2026-09-19):
 - describe_spells_in_spellbook adds resolvable to each visible record. Parked members remain absent
   from this active description; exact parked-version inspection must not follow the selected member.
 - SpellBinder already forwards and resets this choice through bind/with_kwargs/finalize.
-- Compiler classification and root eligibility are implemented; S4 runtime input/direct-resolution
-  enforcement, Nexus graph projection and crystal replay are still pending.
+- Compiler classification, root eligibility and direct runtime capability refusal are implemented.
+  Required-input executor enforcement, Nexus graph projection and crystal replay are still pending.
 - EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`, `Spellbook.bind_inactive`,
   `Spellbook.describe_spells_in_spellbook`; `src/melder/aether/spellbook/spellbinder.py:SpellBinder`.
 
@@ -2506,6 +2506,20 @@ Purpose:
   object, which is why both the hook system and the dirty-root refusal live
   behind it rather than in the binding pipeline.
 
+Non-resolvable registration admission:
+- ConduitMeld and SpellSpaceMeld check the selected native _resolvable field in both meld and
+  meld_existing_spell before override normalization, optional validation, hooks or object retrieval.
+- False calls Meld._raise_non_resolvable_registration, which raises MeldExecutionError carrying the
+  selected name/id and guidance to use a consumer override or select a resolvable registration.
+- Lookup/status helpers remain observational. A supplied existing object may be described as live
+  while its False registration still refuses runtime retrieval.
+- Capability is immutable per Spell version. A fast-door entry is inserted only after successful
+  admitted execution, so False cannot mint one. Existing epoch/context guards remain unchanged.
+- Required OVERRIDE_REQUIRED value checking inside generated executors remains separate work.
+- EVIDENCE: `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld.meld`,
+  `ConduitMeld.meld_existing_spell`, `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
+
 Responsibilities:
 - Provide a shared abstract `Meld` core for lookup, validation, lazy
   recompilation, and creation-context dispatch.
@@ -2760,7 +2774,8 @@ Non-resolvable definitions and required inputs (S3, 2026-09-19):
   required_override_params rows (name, position, kind, reference IDs) in both variants of all families.
 - Source kind override_required appends position/kind/reference data to injection IR/signature rows;
   ordinary row layouts remain unchanged. Direct Phase8-11 wrappers and cache eligibility skip False roots.
-- S4 still must enforce supplied-value presence and direct/fast/cached resolution restrictions.
+- Direct runtime admission now refuses False registrations. S4 still must enforce supplied-value
+  presence inside emitted/cached executors and qualify nested construction behavior.
   S5/S6 still supply graph projection and persistence; these compiler contracts do not complete them.
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3`,
   `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:SpellSocketDescriptor`,
@@ -6032,19 +6047,19 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1573
-  loc: 1573
-  verified_at: 2026-09-19T21:23:18Z
+  end_line: 1604
+  loc: 1604
+  verified_at: 2026-09-19T22:06:30Z
 - path: `src/melder/aether/conduit/meld/conduit_meld.py`
   start_line: 1
-  end_line: 820
-  loc: 820
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 832
+  loc: 832
+  verified_at: 2026-09-19T22:06:30Z
 - path: `src/melder/aether/conduit/meld/spellspace_meld.py`
   start_line: 1
-  end_line: 819
-  loc: 819
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 831
+  loc: 831
+  verified_at: 2026-09-19T22:06:30Z
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
   end_line: 309
@@ -8166,6 +8181,25 @@ completed epics/stories of 2026-07-11/12).
 
 
 ## Diagrams
+### Direct Resolution Admission
+```text
+selector -> target Spell -> immutable capability -> ordinary resolution/reuse -> warm entry
+                                    |
+                                  False -> MeldExecutionError
+lookup/status probes -> target metadata and live-state observation
+```
+
+```mermaid
+flowchart LR
+  Q[Runtime selector] --> S[Selected Spell]
+  S --> C{Resolvable?}
+  C -->|False| E[MeldExecutionError]
+  C -->|True| R[Existing validation and execution]
+  R --> W[Success-only warm entry]
+  P[Observational probe] --> S
+  S --> D[Metadata and live status]
+```
+
 ### Required-Input Compiler Flow
 ```text
 Phase 1/2 declaration -> Phase 3 selection -> True provider -> executable target IDs
@@ -8449,8 +8483,9 @@ Companion documents:
 2026-09-19: native registration and S3 compiler consumers are implemented. Required inputs preserve
 descriptive references through topology/model/plans; executable roots exclude False definitions.
 Frame-key watchers and the structural-to-resolution handoff support provider selection changes.
-Runtime input/direct/fast/cache enforcement and Nexus/persistence integration are pending; this
-component delta must not be read as complete non-resolvable execution support.
+Direct runtime admission refuses False before optional validation and object access, preserving
+observational lookup and success-only warm entries. Required-input executor/cache enforcement and
+Nexus/persistence integration are pending; this is not complete non-resolvable execution support.
 
 RELEASE-MATRIX CONCURRENCY REPAIR (2026-08-30): the Meld Resolution Runtime
 contract now records the shared-spell boundary exposed by concurrent owner and

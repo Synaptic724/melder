@@ -30,11 +30,11 @@ def main() -> None:
               spellframe="memory", binding_name="cache")
     conduit = book.conjure()
 
-    primary = conduit.meld(spell=PrimaryStore, spellframe="storage",
+    primary = conduit.meld(PrimaryStore, spellframe="storage",
                            binding_name="primary")
-    replica = conduit.meld(spell=ReplicaStore, spellframe="storage",
+    replica = conduit.meld(ReplicaStore, spellframe="storage",
                            binding_name="replica")
-    cache = conduit.meld(spell=CacheStore, spellframe="memory",
+    cache = conduit.meld(CacheStore, spellframe="memory",
                          binding_name="cache")
     assert (primary.role, replica.role, cache.role) == (
         "primary", "replica", "cache")

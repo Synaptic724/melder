@@ -73,7 +73,7 @@ def main() -> None:
     book = md.Spellbook(configuration=configuration)
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()   # LAW 3 happens here: validate + freeze
-    assert isinstance(conduit.meld(spell=Service), Service)
+    assert isinstance(conduit.meld(Service), Service)
 
     try:
         configuration.set_property(

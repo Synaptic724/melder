@@ -24,7 +24,7 @@ def main() -> None:
         disposal_method_names=["close"],
     )
     conduit = book.conjure()
-    conn = conduit.meld(spell=PooledConnection)
+    conn = conduit.meld(PooledConnection)
     assert isinstance(conn, PooledConnection) and not CLOSED
 
     conduit.cleanup()

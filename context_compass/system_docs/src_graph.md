@@ -170,7 +170,7 @@ descriptors and reassemble.
 
 ## src/melder/__init__.py
 
-- source_sha256: `5cd6c48497eb0b83fdcb4a01a1d7a63f819b1a26e6a72945305dae1fad55a8b0`
+- source_sha256: `1f7f2a54bb542e0f87d5908d910ee47f971d48b83faf1bdab2ed274374dad92c`
 - nodes: 1
 
 ### Nodes
@@ -5138,7 +5138,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `16144ea202e7071265b7797b25af2edef09cc17893ba00687a8d6116289d3ebb`
+- source_sha256: `76e08703072c8975a7d19f1fef41e0e7f41724d1f90f7b239a9bdb15bf598733`
 - nodes: 2
 
 ### Nodes
@@ -5149,8 +5149,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - defined at: `src/melder/aether/conduit/meld/conduit_meld.py:1`
 - role: Conduit-facing meld front door.
 - responsibilities:
-  - own the caller-conduit creations store
+  - route the caller-conduit creations store through the shared Meld surface
   - refuse spellspace-scoped lineages the conduit door cannot satisfy
+  - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
 - phases: `runtime`
 
 #### `ConduitMeld` (class)
@@ -5163,7 +5164,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - routes conduit-local unique_per_conduit and many storage through ConduitCreations
   - rejects spellspace-request spells on the conduit entry path
   - provides reuse-only and live-creation status probes over conduit-scoped storage
-- owns_state: `_creations`
+  - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`
 
@@ -5421,7 +5422,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `56a7ed3aa1d7f9290fa4a6deb9e4b282f384843142f6923e5e1dd7c5c6898fe2`
+- source_sha256: `3de42b0c9906b23895f18b722e48daa041bb06b96047d36ccc23bb475124554f`
 - nodes: 2
 
 ### Nodes
@@ -5435,12 +5436,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - resolve by id or normalized key
   - gate on structural and per-conduit resolution validity
   - choose reuse or instantiate from Existence
+  - provides the common non-resolvable-registration error without restricting observational lookup
 - phases: `runtime`, `cleanup`
 
 #### `Meld` (abstract)
 
 - id: `melder.aether.conduit.meld.meld.Meld`
-- defined at: `src/melder/aether/conduit/meld/meld.py:42`
+- defined at: `src/melder/aether/conduit/meld/meld.py:43`
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Resolution runtime orchestrator.
@@ -5451,6 +5453,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - dispatches execution into CreationContext
   - reads contract-default signatures without forcing evaluation of unavailable annotation names
   - gates conduit-local resolution after structural recompilation so changed selection rebuilds its executor
+  - provides the common non-resolvable-registration error without restricting observational lookup
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `meld`, `meld_existing_spell`, `set_meld_hooks`
@@ -5478,11 +5481,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - `melder.aether.conduit.meld.meld.Meld` creates `RLock`
 - `melder.aether.conduit.meld.meld.Meld` creates `NotImplementedError`
+- `melder.aether.conduit.meld.meld.Meld` creates `MeldExecutionError`
 - `melder.aether.conduit.meld.meld.Meld` creates `SpellbookValidationError`
 - `melder.aether.conduit.meld.meld.Meld` creates `TypeError`
 - `melder.aether.conduit.meld.meld.Meld` creates `KeyError`
 - `melder.aether.conduit.meld.meld.Meld` creates `RuntimeError`
-- `melder.aether.conduit.meld.meld.Meld` creates `MeldExecutionError`
 - `melder.aether.conduit.meld.meld.Meld` creates `SpellCompilerSystem`
 - `melder.aether.conduit.meld.meld.Meld` creates `HookExecutionError`
 
@@ -5553,7 +5556,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `5863628136e1f0f9d3788be26882a85037a0934eb79aad90eff8354cbb0a9889`
+- source_sha256: `03441843572e6c4a8feb1979e1a666ead411f41ddbe74fd068504b62e0780795`
 - nodes: 2
 
 ### Nodes
@@ -5565,6 +5568,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Spellspace-facing meld front door.
 - responsibilities:
   - route unique_per_spell_space work onto spellspace-local storage
+  - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
 - phases: `runtime`
 
 #### `SpellSpaceMeld` (class)
@@ -5577,7 +5581,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - routes unique_per_spell_space storage through spellspace-local Creations
   - routes conduit-owned lifetimes through owner-conduit ConduitCreations
   - provides live-creation status over spellspace-local and owner-conduit storage
-- owns_state: `_spellspace`, `_spellspace_creations`, `_owner_conduit_creations`, `_spellspace_id`, `_owner_conduit_id`
+  - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
+- owns_state: `_spellspace`, `_spellspace_id`, `_owner_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`
 

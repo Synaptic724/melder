@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.40"
+BUILT_FOR_VERSION = "0.2.43"
 NODE_COUNT = 1224
 EDGE_COUNT = 1452
 WHY_COUNT = 989
@@ -278,7 +278,7 @@ NODES = {
     'melder.aether.conduit.meld.creation_context.creation_context_factory': ('src/melder/aether/conduit/meld/creation_context/creation_context_factory.py', 'creation_context_factory', 'module', 1, False),
     'melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory': ('src/melder/aether/conduit/meld/creation_context/creation_context_factory.py', 'CreationContextFactory', 'class', 19, False),
     'melder.aether.conduit.meld.meld': ('src/melder/aether/conduit/meld/meld.py', 'meld', 'module', 1, False),
-    'melder.aether.conduit.meld.meld.Meld': ('src/melder/aether/conduit/meld/meld.py', 'Meld', 'abstract', 42, False),
+    'melder.aether.conduit.meld.meld.Meld': ('src/melder/aether/conduit/meld/meld.py', 'Meld', 'abstract', 43, False),
     'melder.aether.conduit.meld.overrides.spell_overrider': ('src/melder/aether/conduit/meld/overrides/spell_overrider.py', 'spell_overrider', 'module', 1, False),
     'melder.aether.conduit.meld.overrides.spell_overrider.SpellOverrider': ('src/melder/aether/conduit/meld/overrides/spell_overrider.py', 'SpellOverrider', 'class', 56, False),
     'melder.aether.conduit.meld.overrides.spell_overrider._Specificity': ('src/melder/aether/conduit/meld/overrides/spell_overrider.py', '_Specificity', 'enum', 17, False),

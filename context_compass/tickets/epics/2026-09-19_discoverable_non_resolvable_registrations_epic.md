@@ -178,7 +178,7 @@ Nexus access, research history, and restore. A meld-only guard or a source catal
   `tickets/stories/2026-09-19_discoverable_registration_modifier_story.md`
 - [ ] S3: `STORY-2026-09-19-caller-supplied-socket-compiler` — implemented; 2098 focused tests pass; in review.
   `tickets/stories/2026-09-19_caller_supplied_socket_compiler_story.md`
-- [ ] S4: `STORY-2026-09-19-discoverable-resolution-runtime` — ready; consumes the delivered S2/S3 contract.
+- [ ] S4: `STORY-2026-09-19-discoverable-resolution-runtime` — in progress; direct admission verified, input execution active.
   `tickets/stories/2026-09-19_discoverable_resolution_runtime_story.md`
 - [ ] S5: `STORY-2026-09-19-discoverable-nexus-graph-and-history` — draft; depends on S1-S4.
   `tickets/stories/2026-09-19_discoverable_nexus_graph_and_history_story.md`
@@ -505,6 +505,20 @@ test paths are starting points, not a claim that existing tests cover this new f
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T22:13:16Z
+  TYPE: FACT
+  CLAIM: S4 direct runtime admission now refuses non-resolvable targets before optional validation,
+    hooks or retrieval across Conduit and SpellSpace doors. 665 focused tests pass with one existing
+    deferred skip; docs/assets are synchronized. Required input emission, branch/reuse preflight and
+    hydration remain an active S4 task. Current workspace build version is 0.2.43, unchanged by this task.
+  EVIDENCE:
+  - tickets/tasks/2026-09-19_enforce_non_resolvable_runtime_admission_task.md
+  - tickets/tasks/2026-09-19_enforce_required_override_execution_task.md
+  IMPACT: Runtime admission is delivered without claiming full input, Nexus graph or replay behavior.
+  NEXT: Finish S4 required-override execution before moving to S5/S6.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -516,8 +530,9 @@ test paths are starting points, not a claim that existing tests cover this new f
 
 ## Context / Handoff Summary
 S1 source discovery is in review; S2 registration and S3 compiler are implemented and review-ready.
-S4 runtime enforcement is ready to begin; S5-S7 remain required. Read the S3 child task and validation
-artifact for exact code, 2098 distinct passing cases, build checks and remaining limits.
+S4 is in progress: direct/runtime admission is in review (665 passed, one existing skip), while
+required-override execution is active. S5-S7 remain required. Read the active S4 task and its predecessor
+for current evidence; S3 separately records 2098 passing compiler cases, with overlapping suite scope.
 
 Current native contract: bind/bind_inactive default resolvable=True; each Spell stores its own immutable
 capability. True retains existing version fingerprints; False uses v4-binding-non-resolvable. Application
@@ -529,10 +544,10 @@ construction-root exclusion, required-input rows across both planners and inject
 existing selector/structural/resolution revalidation integration. The remaining runtime must consume
 required_override_params via live CodegenCreationSchemaHelpers, emitted executors and hydration.
 
-Next: S4 direct/reuse/nested/fast/scoped/cached refusal and actual required-input enforcement. S5
+Next: S4 actual required-input execution, nested branch/reuse preflight and emitted/cache parity. S5
 exposes connected Nexus graph/history; S6 persists/replays policy; S7 qualifies the complete feature.
 Compiler metadata does not establish runtime safety and False is not yet preserved by crystal replay.
 Do not ship this partial feature. No owned-object redesign, named-lesser work or version bump occurred.
 
-After compaction: REONBOARD, then the S3 handoff and S4 story required-reading routes. User selected
+After compaction: REONBOARD, then the S4 required-override task and story read routes. User selected
 OVERRIDE_REQUIRED and existing version rules; do not reopen source-body versioning.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "56a7ed3aa1d7f9290fa4a6deb9e4b282f384843142f6923e5e1dd7c5c6898fe2",
+ "source_sha256": "3de42b0c9906b23895f18b722e48daa041bb06b96047d36ccc23bb475124554f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -15,7 +15,8 @@
    "responsibilities": [
     "resolve by id or normalized key",
     "gate on structural and per-conduit resolution validity",
-    "choose reuse or instantiate from Existence"
+    "choose reuse or instantiate from Existence",
+    "provides the common non-resolvable-registration error without restricting observational lookup"
    ],
    "phases": [
     "runtime",
@@ -28,7 +29,7 @@
    "label": "Meld",
    "kind": "abstract",
    "file": "src/melder/aether/conduit/meld/meld.py",
-   "lineno": 42,
+   "lineno": 43,
    "bases": [
     "Cleanable"
    ],
@@ -44,11 +45,11 @@
     "set_meld_hooks"
    ],
    "shape": {
-    "method_count": 26,
+    "method_count": 27,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "285e5584511836403314863ac5d32fb6bc7fa5aca2f07ae3f10cbf52a6542ef2",
+   "span_sha256": "dd825cb91e24aefd6f3a62f798a4149ffc7ef2f2e849c384ba5924892d983f3d",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
@@ -56,7 +57,8 @@
     "chooses reuse versus construction",
     "dispatches execution into CreationContext",
     "reads contract-default signatures without forcing evaluation of unavailable annotation names",
-    "gates conduit-local resolution after structural recompilation so changed selection rebuilds its executor"
+    "gates conduit-local resolution after structural recompilation so changed selection rebuilds its executor",
+    "provides the common non-resolvable-registration error without restricting observational lookup"
    ],
    "owns_state": [
     "_input_resolution_cache",
@@ -94,6 +96,12 @@
   },
   {
    "from": "melder.aether.conduit.meld.meld.Meld",
+   "to_label": "MeldExecutionError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.meld.meld.Meld",
    "to_label": "SpellbookValidationError",
    "relation": "creates",
    "confidence": "candidate"
@@ -113,12 +121,6 @@
   {
    "from": "melder.aether.conduit.meld.meld.Meld",
    "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.meld.meld.Meld",
-   "to_label": "MeldExecutionError",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -150,6 +152,7 @@
   "Tuple": "typing.Tuple",
   "Sequence": "typing.Sequence",
   "ClassVar": "typing.ClassVar",
+  "NoReturn": "typing.NoReturn",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "HookExecutionError": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",

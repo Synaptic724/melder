@@ -4,12 +4,12 @@
 - Story ID: STORY-2026-09-19-discoverable-resolution-runtime
 - Epic: EPIC-2026-09-19-discoverable-non-resolvable-registrations
 - Sequence: S4
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-19T17:25:45Z
-- Updated: 2026-09-19T21:38:40Z
+- Updated: 2026-09-19T22:13:16Z
 
 ## User Narrative
 As a user, I receive clear errors when melding a discovery-only target or constructing a consumer
@@ -50,9 +50,9 @@ Make the declaration enforceable at actual execution, including paths that skip 
 - Out of scope: new lifetime modes, broad instance transfer/disposal redesign, Nexus graph authoring.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: S2/S3 now provide the implemented native policy and tested compiler input contract.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Owner approved continuation; the bounded runtime admission task is now routed.
 
 ## Dependencies / Related Work
 - Parent: `tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
@@ -122,6 +122,10 @@ direct Base meld, report an omitted Consumer input, and return the exact supplie
 Then cover fast/scoped/reuse/nested/hook/cache variants without adding another invalidation framework.
 
 ## Tasks (Implementation Checklist)
+- [x] Direct/runtime admission (implemented; review pending):
+  `tickets/tasks/2026-09-19_enforce_non_resolvable_runtime_admission_task.md`.
+- [ ] Required supplied-input execution (active):
+  `tickets/tasks/2026-09-19_enforce_required_override_execution_task.md`.
 - [ ] Create execution tasks per meaningful runtime family; share the S3 contract before edits.
 - [ ] Add direct/refusal and required-input regressions, then implement common entry behavior.
 - [ ] Carry caller supply through nested override targeting and generated executor families.
@@ -209,6 +213,20 @@ Use S1's required/type/descriptor policy; performance and failure-side-effect cl
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T22:13:16Z
+  TYPE: FACT
+  CLAIM: Direct admission is implemented and in review: 665 passed, one existing owner-deferred
+    shared-context skip. The shared error and four native checks preserve observational lookup and
+    success-only warm entries. Docs/assets pass checks. Required supplied-input execution is the
+    next active task; no full S4 completion or cache-input safety claim follows from admission tests.
+  EVIDENCE:
+  - tickets/tasks/2026-09-19_enforce_non_resolvable_runtime_admission_task.md
+  - artifacts/non_resolvable_runtime_admission_20260919/validation.md:1-55
+  IMPACT: Continue from the delivered compiler rows into actual emitted/hydrated input checks.
+  NEXT: Execute tickets/tasks/2026-09-19_enforce_required_override_execution_task.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Owner accepts runtime behavior and evidence.
 - [ ] Child tasks, artifacts and boards synchronized.
@@ -217,7 +235,8 @@ Use S1's required/type/descriptor policy; performance and failure-side-effect cl
 Record cross-family policy here; preserve exact reproductions and results in the owning task.
 
 ## Context / Handoff Summary
-Ready S4. S2/S3 provide native Spell.resolvable and required_override_params; consume the delivered
-contract above, then open the runtime task/patch and read its source owners. No supplied-value or
-direct/fast/cache enforcement has been implemented or qualified under this story. Start with the
-Base/Consumer public behavior, then extend across the listed runtime families and doors.
+S4 is in progress. Direct/runtime admission is implemented and in review: 665 cases pass, with one
+existing owner-deferred skip. False selection refuses before optional validation/hooks/retrieval;
+observational lookup and warm guards remain unchanged. Docs/assets were regenerated and verified.
+The required-override execution task is now active; read it and the delivered compiler rows before
+emitted/hydrated executor changes. S4, Nexus/history and crystal replay are not complete.

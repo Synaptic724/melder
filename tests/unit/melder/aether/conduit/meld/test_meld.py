@@ -290,6 +290,7 @@ class _SpellStub:
             resolution_complete: Deferred runtime-resolution completion flag.
         """
         self.spell_id = spell_id
+        self._resolvable = True
         self.spell_name = spell_name
         self.spellframe = spellframe
         self.spell_index = spell_index or _SpellIndexStub(current=spell_id)

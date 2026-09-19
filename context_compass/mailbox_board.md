@@ -83,8 +83,8 @@ Message format (append-only; delete after consumption)
 <!-- BEGIN USER-DEFINED: checked_in -->
 | codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T17:17:54Z | active |
 | codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-06T09:52:54Z | departed |
-| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-19T21:44:14Z | active |
-| updater_0 | codex | 2026-09-19T15:05:33Z | 2026-09-19T21:35:03Z | active |
+| workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-19T21:56:08Z | active |
+| updater_0 | codex | 2026-09-19T15:05:33Z | 2026-09-19T22:02:12Z | active |
 | knowledge_expert_0 | codex | 2026-09-13T18:03:36Z | 2026-09-13T18:18:14Z | active - Melder architecture/index reread complete; consultation available |
 <!-- END USER-DEFINED: checked_in -->
 

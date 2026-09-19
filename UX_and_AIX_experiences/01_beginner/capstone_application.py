@@ -14,15 +14,15 @@ def run_application(conduit: md.Conduit) -> list[str]:
     the runtime addresses registered by the bootstrap. Return the three request
     messages, with assertions that demonstrate shared and fresh lifetimes.
     """
-    config: AppConfig = conduit.meld(spell="AppConfig")
-    pool: DbPool = conduit.meld(spell="DbPool")
-    assert config is conduit.meld(spell="AppConfig")
-    assert pool is conduit.meld(spell="DbPool")
+    config: AppConfig = conduit.meld("AppConfig")
+    pool: DbPool = conduit.meld("DbPool")
+    assert config is conduit.meld("AppConfig")
+    assert pool is conduit.meld("DbPool")
 
     handlers: list[RequestHandler] = []
     messages: list[str] = []
     for order_id in (101, 102, 103):
-        handler: RequestHandler = conduit.meld(spell="RequestHandler")
+        handler: RequestHandler = conduit.meld("RequestHandler")
         assert handler.requests_handled == 0
         messages.append(handler.handle(order_id))
         assert handler.requests_handled == 1

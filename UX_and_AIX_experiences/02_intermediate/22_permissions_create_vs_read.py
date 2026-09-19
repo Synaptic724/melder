@@ -38,9 +38,9 @@ def main() -> None:
     borrower.add_spell_to_contract(spell_id=guarded_id, conduit=owner,
                                    permissions="read")
 
-    print("create-shared meld:", type(borrower.meld(spell=OpenService)).__name__)
+    print("create-shared meld:", type(borrower.meld(OpenService)).__name__)
     try:
-        result = borrower.meld(spell=GuardedService)
+        result = borrower.meld(GuardedService)
         print("read-shared meld answered:", type(result).__name__,
               "(read = resolve-only; construction rights stay with the owner)")
     except Exception as err:

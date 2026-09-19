@@ -20,7 +20,7 @@ def main() -> None:
     book.bind(spell=WorkOrder, existence="many")
     conduit = book.conjure()
 
-    orders = [conduit.meld(spell=WorkOrder) for _ in range(4)]
+    orders = [conduit.meld(WorkOrder) for _ in range(4)]
     assert len({id(o) for o in orders}) == 4
     assert [o.number for o in orders] == [1, 2, 3, 4]
     print("many: four melds, four fresh WorkOrders:", [o.number for o in orders])

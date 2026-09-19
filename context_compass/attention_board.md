@@ -82,8 +82,8 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| document_positional_meld_calls | in_progress | implementation | codex | workflows_1 | none | Audit and apply the publication-source codemod. | Consistent positional meld examples in RTD and downloads. | Codemod and documentation checks pass. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-19T21:44:14Z | REQUIRED |
-| discoverable_non_resolvable_registrations | review | handoff | codex | updater_0 | none | Open S4 runtime task from the compiler handoff. | S3 compiler verified; runtime input/refusal work next. | S4 task routed or owner accepts S3. | tickets/tasks/2026-09-19_implement_override_required_compiler_task.md | 2026-09-19T21:38:40Z | REQUIRED |
+| document_positional_meld_calls | review | handoff | codex | workflows_1 | none | Owner reviews and promotes documentation corrections. | 150 replacements; docs build and publication audit pass. | Owner accepts documentation update. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-19T21:56:08Z | REQUIRED |
+| discoverable_non_resolvable_registrations | in_progress | validation | codex | updater_0 | none | Verify overrides with ordinary constructor errors. | Correct runtime values, then Nexus and crystal replay. | Runtime compatibility passes and S5/S6 route is active. | tickets/tasks/2026-09-19_enforce_required_override_execution_task.md | 2026-09-19T22:21:52Z | REQUIRED |
 | sync_owner_uv_environment | review | handoff | codex | workflows_1 | none | Owner resumes development and restarts editor Ruff. | Melder 0.2.40 and locked tools on existing no-GIL Python. | Owner accepts verified environment sync. | tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | 2026-09-13T20:48:32Z | REQUIRED |
 | reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
@@ -113,12 +113,12 @@ Message alert rules
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- document_positional_meld_calls: SWITCH_TRIGGER is verified source replacements and rebuilt docs.
+- document_positional_meld_calls: SWITCH_TRIGGER is owner acceptance or new documentation failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-19_document_positional_meld_calls_task.md.
-- discoverable_non_resolvable_registrations: SWITCH_TRIGGER is S4 runtime-task intake or owner acceptance of S3.
+- discoverable_non_resolvable_registrations: SWITCH_TRIGGER is verified runtime compatibility and S5/S6 continuation.
   RESUME_HIERARCHY: tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md ->
-  tickets/tasks/2026-09-19_implement_override_required_compiler_task.md ->
-  tickets/stories/2026-09-19_discoverable_resolution_runtime_story.md.
+  tickets/stories/2026-09-19_discoverable_resolution_runtime_story.md ->
+  tickets/tasks/2026-09-19_enforce_required_override_execution_task.md.
 - sync_owner_uv_environment: SWITCH_TRIGGER is owner acceptance or new environment failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md.
 - reproducible_uv_environment: SWITCH_TRIGGER is owner acceptance or new hosted matrix failure evidence.

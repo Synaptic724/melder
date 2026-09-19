@@ -111,7 +111,7 @@ def main() -> None:
 
     # THE WORKSTATION HOLDS; IT DOES NOT MAKE. The object comes from the
     # runtime; the bench just keeps a name on it.
-    ledger = conduit.meld(spell=Ledger, binding_name="bench-ledger")
+    ledger = conduit.meld(Ledger, binding_name="bench-ledger")
     workstation.bind_object("ledger", ledger)
     # A bare get() works RIGHT NOW because the name is unique. Watch what
     # happens to this exact call a few lines below.

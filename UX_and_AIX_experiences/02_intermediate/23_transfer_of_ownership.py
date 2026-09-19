@@ -35,7 +35,7 @@ def main() -> None:
     print("transfer report keys:", sorted(report))
 
     # THE NEW HOME CAN MELD IT.
-    moved = target.meld(spell=MigratingService)
+    moved = target.meld(MigratingService)
     assert isinstance(moved, MigratingService)
     print("new home melds it:", type(moved).__name__)
 
@@ -43,7 +43,7 @@ def main() -> None:
     # TRANSFER rather than a share - if the source could still meld it,
     # ownership would have been copied, not moved.
     try:
-        source.meld(spell=MigratingService)
+        source.meld(MigratingService)
         raise AssertionError(
             "the source still melds it - that is sharing, not transfer"
         )

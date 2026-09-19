@@ -18,10 +18,10 @@ def main() -> None:
     book.bind(spell=Engine, existence="unique")
     conduit = book.conjure()
 
-    engine = conduit.meld(spell=Engine)
+    engine = conduit.meld(Engine)
     assert type(engine) is Engine
     assert isinstance(engine, Engine) and engine.cylinders == 8
-    assert engine is conduit.meld(spell=Engine)
+    assert engine is conduit.meld(Engine)
     print("the real object, every time:", type(engine).__name__)
 
 

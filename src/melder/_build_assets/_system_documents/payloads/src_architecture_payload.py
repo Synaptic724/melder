@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 2395
-CONTENT_SHA256 = 'e43f3f81ade29d968968f2f37a4bd65da2cc4166991195458f0fa28d2c4fab71'
+LINE_COUNT = 2401
+CONTENT_SHA256 = '5f074fe1d4f66b2b65cdbe8d48d59f7576f843d213bec99955f0fc20dbafecbc'
 
 TEXT = """# Src Architecture (C4)
 
@@ -823,8 +823,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   resolvable=True and retain the bool on each Spell version, independently of active/parked state.
   True preserves the existing v4-binding fingerprint; False uses a separate hash domain. Application
   Protocol definitions may be registered only with False; other admission and lifetime rules remain.
-  Compiler consumers now separate required supplied inputs from executable dependencies. Full runtime
-  input/direct/fast/cache enforcement, Nexus graph and persistence integration remain unfinished.
+  Compiler consumers separate required supplied inputs from executable dependencies. Direct runtime
+  resolution and reuse now refuse False before validation or execution. Required-input executor/cache
+  enforcement, Nexus graph and persistence integration remain unfinished.
   EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind` and
   `src/melder/aether/spellbook/spell.py:Spell.resolvable`.
 - Non-resolvable definitions keep descriptive local topology but are excluded from Phase-5 executable
@@ -960,6 +961,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Direct meld and reuse-only resolution of a non-resolvable registration raise MeldExecutionError
+  with its selected name/id and caller-supply guidance. Observational lookup remains available.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
 - Duplicate binding keys or spell id collisions raise RuntimeError.
 - Conjure raises SpellbookValidationError when broken spells exist.
 - Meld raises SpellbookValidationError when spell validity is invalid/gated/disabled.
@@ -1919,9 +1923,9 @@ Resolution and creations:
 
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1573
-  loc: 1573
-  verified_at: 2026-09-19T21:23:18Z
+  end_line: 1604
+  loc: 1604
+  verified_at: 2026-09-19T22:06:30Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -2071,8 +2075,8 @@ flowchart LR
 ```
 
 This diagram describes the registration boundary. Compiler selection now preserves reference-only
-required inputs through both plan variants; runtime enforcement, graph projection and durable replay
-still require the later non-resolvable feature layers.
+required inputs through both plan variants. Direct runtime admission refuses False; required-input
+executor enforcement, graph projection and durable replay still require the later feature layers.
 
 ### ASCII Context Diagram (C4)
 ```
@@ -2297,7 +2301,9 @@ without rewriting the original record or existing live IDs.
 2026-09-19 registration/compiler foundation: native policy, compatible True identities, False-only
 Protocol admission and OVERRIDE_REQUIRED compiler metadata are implemented. Executable roots exclude
 False definitions; selector changes use existing structural and resolution revalidation mechanisms.
-Runtime input/direct/fast/cache enforcement, Nexus projection and crystal transport remain pending.
+Direct runtime admission now refuses False before validation, hooks, construction or reuse; its warm
+entries can only be minted after successful admission of an immutable True version. Required-input
+executor/cache enforcement, Nexus projection and crystal transport remain pending.
 
 WHAT CHANGED (2026-08-01): this document was RECOMPOSED to the Required Section
 Contract in `src_architecture_instructions.md`. It now carries exactly the 17
