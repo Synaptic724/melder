@@ -1,0 +1,120 @@
+..FF..FF..........                                                       [100%]
+================================== FAILURES ===================================
+_ test_protocol_binding_rejects_missing_or_noncallable_members[MissingReader-instance-False] _
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x000002C3D00B0610>
+late_bind = False, existing = True
+provider_type = <class 'test_existing_instance_protocol_admission.MissingReader'>
+
+    @pytest.mark.parametrize("late_bind", [False, True])
+    @pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
+    @pytest.mark.parametrize("provider_type", [MissingReader, NonCallableReader])
+    def test_protocol_binding_rejects_missing_or_noncallable_members(
+            instance_book: Spellbook,
+            late_bind: bool,
+            existing: bool,
+            provider_type: type,
+    ) -> None:
+        """Reject incompatible providers at bind instead of injecting a later AttributeError.
+    
+        The class cases are passing controls. The existing-instance cases reproduce
+        the skipped admission check before and after conjure, without mocking it.
+        """
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+        target = provider_type() if existing else provider_type
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests\component\melder\spellbook\test_existing_instance_protocol_admission.py:81: Failed
+_ test_protocol_binding_rejects_missing_or_noncallable_members[MissingReader-instance-True] _
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x000002C3D00B0910>
+late_bind = True, existing = True
+provider_type = <class 'test_existing_instance_protocol_admission.MissingReader'>
+
+    @pytest.mark.parametrize("late_bind", [False, True])
+    @pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
+    @pytest.mark.parametrize("provider_type", [MissingReader, NonCallableReader])
+    def test_protocol_binding_rejects_missing_or_noncallable_members(
+            instance_book: Spellbook,
+            late_bind: bool,
+            existing: bool,
+            provider_type: type,
+    ) -> None:
+        """Reject incompatible providers at bind instead of injecting a later AttributeError.
+    
+        The class cases are passing controls. The existing-instance cases reproduce
+        the skipped admission check before and after conjure, without mocking it.
+        """
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+        target = provider_type() if existing else provider_type
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests\component\melder\spellbook\test_existing_instance_protocol_admission.py:81: Failed
+_ test_protocol_binding_rejects_missing_or_noncallable_members[NonCallableReader-instance-False] _
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x000002C3D00B0310>
+late_bind = False, existing = True
+provider_type = <class 'test_existing_instance_protocol_admission.NonCallableReader'>
+
+    @pytest.mark.parametrize("late_bind", [False, True])
+    @pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
+    @pytest.mark.parametrize("provider_type", [MissingReader, NonCallableReader])
+    def test_protocol_binding_rejects_missing_or_noncallable_members(
+            instance_book: Spellbook,
+            late_bind: bool,
+            existing: bool,
+            provider_type: type,
+    ) -> None:
+        """Reject incompatible providers at bind instead of injecting a later AttributeError.
+    
+        The class cases are passing controls. The existing-instance cases reproduce
+        the skipped admission check before and after conjure, without mocking it.
+        """
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+        target = provider_type() if existing else provider_type
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests\component\melder\spellbook\test_existing_instance_protocol_admission.py:81: Failed
+_ test_protocol_binding_rejects_missing_or_noncallable_members[NonCallableReader-instance-True] _
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x000002C3D00B0010>
+late_bind = True, existing = True
+provider_type = <class 'test_existing_instance_protocol_admission.NonCallableReader'>
+
+    @pytest.mark.parametrize("late_bind", [False, True])
+    @pytest.mark.parametrize("existing", [False, True], ids=["class", "instance"])
+    @pytest.mark.parametrize("provider_type", [MissingReader, NonCallableReader])
+    def test_protocol_binding_rejects_missing_or_noncallable_members(
+            instance_book: Spellbook,
+            late_bind: bool,
+            existing: bool,
+            provider_type: type,
+    ) -> None:
+        """Reject incompatible providers at bind instead of injecting a later AttributeError.
+    
+        The class cases are passing controls. The existing-instance cases reproduce
+        the skipped admission check before and after conjure, without mocking it.
+        """
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+        target = provider_type() if existing else provider_type
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+tests\component\melder\spellbook\test_existing_instance_protocol_admission.py:81: Failed
+=========================== short test summary info ===========================
+FAILED tests/component/melder/spellbook/test_existing_instance_protocol_admission.py::test_protocol_binding_rejects_missing_or_noncallable_members[MissingReader-instance-False]
+FAILED tests/component/melder/spellbook/test_existing_instance_protocol_admission.py::test_protocol_binding_rejects_missing_or_noncallable_members[MissingReader-instance-True]
+FAILED tests/component/melder/spellbook/test_existing_instance_protocol_admission.py::test_protocol_binding_rejects_missing_or_noncallable_members[NonCallableReader-instance-False]
+FAILED tests/component/melder/spellbook/test_existing_instance_protocol_admission.py::test_protocol_binding_rejects_missing_or_noncallable_members[NonCallableReader-instance-True]
+4 failed, 14 passed in 0.57s

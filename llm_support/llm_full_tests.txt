@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: de8f4e2f84271309944eda53bc8b77322113fed198c8f6524b8f0c83ce08b53c
-FILE COUNT: 823
+SOURCE FINGERPRINT: 4c71cf0031b6418d4f70f00b5c68aaf9bb435ea33b8e01418392759eac9fdac0
+FILE COUNT: 824
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -36850,7 +36850,7 @@ END FILE: tests/component/melder/spellbook/spell_crafter/validation/test_spellbo
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_existing_instance_protocol_admission.py
-CONTENT SHA256: 7f7cb7ed51340ee37a560c4950eaad73db470b8a2ed913e45f8d3bb3db708a82
+CONTENT SHA256: 70693a53aac8b510dcedc460fcb92fa8827d78b17ef521aaccd89a9e4c3ba0e4
 SOURCE ENCODING: utf-8
 ================================================================================
 """Existing providers must satisfy the same declared Protocol members as class providers.
@@ -36899,6 +36899,26 @@ class NonCallableReader:
     read = None
 
 
+class InstanceOnlyReader:
+    """Supply read on the instance, without a corresponding class member."""
+
+    def __init__(self) -> None:
+        """Install a callable on the supplied reference before binding."""
+        self.read = self._read
+
+    def _read(self) -> str:
+        """Return a value proving that the actual supplied member is usable."""
+        return "supplied-reader"
+
+
+class ShadowedReader(ValidReader):
+    """Model an instance whose method no longer satisfies its class's contract."""
+
+    def __init__(self) -> None:
+        """Shadow the inherited read method on this deliberately invalid input."""
+        self.__dict__["read"] = None
+
+
 class ReaderConsumer:
     """Borrow a required Protocol provider without acquiring its cleanup custody."""
 
@@ -36927,8 +36947,8 @@ def test_protocol_binding_rejects_missing_or_noncallable_members(
 ) -> None:
     """Reject incompatible providers at bind instead of injecting a later AttributeError.
 
-    The class cases are passing controls. The existing-instance cases reproduce
-    the skipped admission check before and after conjure, without mocking it.
+    The class cases are controls. The existing-instance cases guard the same
+    admission boundary before and after conjure, without mocking it.
     """
     if late_bind:
         instance_book.conjure(dynamic=True)
@@ -36938,11 +36958,11 @@ def test_protocol_binding_rejects_missing_or_noncallable_members(
 
 
 @pytest.mark.parametrize("late_bind", [False, True])
-@pytest.mark.parametrize("provider_type", [ValidReader, InheritedReader])
+@pytest.mark.parametrize("provider_type", [ValidReader, InheritedReader, InstanceOnlyReader])
 def test_valid_protocol_instance_remains_injectable_by_identity(
         instance_book: Spellbook,
         late_bind: bool,
-        provider_type: type[ValidReader],
+        provider_type: type,
 ) -> None:
     """Accept a real member implementation and inject the same usable supplied object."""
     supplied = provider_type()
@@ -36985,6 +37005,76 @@ def test_protocol_factory_admission_keeps_its_separate_callable_contract(
     if root is None:
         root = instance_book.conjure(dynamic=True)
     assert root.meld(spell_id=spell_id).read() == "supplied-reader"
+
+
+@pytest.mark.parametrize("late_bind", [False, True])
+def test_shadowed_instance_method_is_rejected_before_registration(
+        instance_book: Spellbook, late_bind: bool,
+) -> None:
+    """Reject the supplied surface even when its class exposes a valid method.
+
+    A subsequent compatible binding uses the same frame/name and resolves by
+    identity, proving rejection did not publish a competing provider.
+    """
+    root = instance_book.conjure(dynamic=True) if late_bind else None
+    with pytest.raises(TypeError, match=r"Existing object.*ReaderContract.*Missing members: read"):
+        instance_book.bind(
+            spell=ShadowedReader(), existence="unique", spellframe=ReaderContract, binding_name="primary",
+        )
+    supplied = InstanceOnlyReader()
+    instance_book.bind(
+        spell=supplied, existence="unique", spellframe=ReaderContract, binding_name="primary",
+    )
+    consumer_id = instance_book.bind(spell=ReaderConsumer, existence="many")
+    if root is None:
+        root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=consumer_id).reader is supplied
+
+
+@pytest.mark.parametrize("late_bind", [False, True])
+def test_inactive_bind_rejects_incompatible_protocol_value(
+        instance_book: Spellbook, late_bind: bool,
+) -> None:
+    """Reject a bad parked value without changing the active index or provider."""
+    supplied = ValidReader()
+    active_id = instance_book.bind(
+        spell=supplied, existence="unique", spellframe=ReaderContract, binding_name="primary",
+    )
+    index = instance_book._spells_by_id[active_id].spell_index
+    root = instance_book.conjure(dynamic=True) if late_bind else None
+    with pytest.raises(TypeError, match=r"Existing object.*ReaderContract.*Missing members: read"):
+        instance_book.bind_inactive(
+            spell=MissingReader(), spell_index=index, existence="unique",
+            spellframe=ReaderContract, binding_name="primary",
+        )
+    assert index.spells_in_index() == {active_id}
+    if root is None:
+        root = instance_book.conjure(dynamic=True)
+    assert root.meld(spell_id=active_id) is supplied
+
+
+def test_valid_instance_member_survives_staging_and_selection(instance_book: Spellbook) -> None:
+    """Preserve instance-only members through staging, public selection and meld."""
+    active_id = instance_book.bind(
+        spell=ValidReader(), existence="unique", spellframe=ReaderContract, binding_name="primary",
+    )
+    index = instance_book._spells_by_id[active_id].spell_index
+    root = instance_book.conjure(dynamic=True)
+    supplied = InstanceOnlyReader()
+    staged_id = instance_book.bind_inactive(
+        spell=supplied, spell_index=index, existence="unique",
+        spellframe=ReaderContract, binding_name="primary",
+    )
+    root.notch_spell(spell_index=index, spell=instance_book._inactive_spells[staged_id])
+    result = root.meld(spell_id=staged_id)
+    assert result is supplied
+    assert result.read() == "supplied-reader"
+
+
+def test_existing_protocol_provider_keeps_unique_only_error_precedence(instance_book: Spellbook) -> None:
+    """Report invalid existing-object lifetime before the incompatible member contract."""
+    with pytest.raises(ValueError, match=r"Existing-object spells must use Existence.unique"):
+        instance_book.bind(spell=MissingReader(), existence="many", spellframe=ReaderContract)
 ================================================================================
 END FILE: tests/component/melder/spellbook/test_existing_instance_protocol_admission.py
 ================================================================================
@@ -42474,7 +42564,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py
-CONTENT SHA256: e8bccb907f8e195fb30401a21cda0abf572637bc2cef1c2893f90023233da8fb
+CONTENT SHA256: 1b90fc26b000fcf2bec1b198d694dd550e2bbbec5b5595193357424a952b9946
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional
@@ -44039,30 +44129,39 @@ def test_component_spell_crafter_executes_real_creation_context_override_lane_fo
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_dependency_closure() -> None:
+@pytest.mark.parametrize("precompile_service", [False, True], ids=["uncompiled", "compiled"])
+def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_dependency_closure(
+        precompile_service: bool,
+) -> None:
     """
     Purpose:
-        Validate local Phase 5 only attaches artifacts for the target spell and its dependencies.
+        Validate local Phase 5 sees dependencies while publishing only to the target spell.
     Contract:
         - The local root-blueprint map excludes unrelated visible spells.
         - The local system index excludes unrelated visible spells.
-        - Scoped dependency spells receive local Phase 5 artifacts.
+        - The target index retains its dependency nodes.
+        - Dependency artifacts remain unchanged, whether absent or already compiled.
+    Args:
+        precompile_service: Build real provider artifacts first when True.
     Returns:
         None.
     Raises:
-        AssertionError: If local Phase 5 leaks unrelated spells into the scoped artifacts.
+        AssertionError: If local Phase 5 loses dependency visibility or mutates provider artifacts.
     """
     spellbook = _make_spellbook()
 
     class Service:
-        pass
+        """Supply the dependency whose canonical artifacts must be preserved."""
 
     class Consumer:
+        """Define the only target compiled by the local Phase-5 pass."""
+
         def __init__(self, service: Service) -> None:
+            """Retain the required service dependency."""
             self.service = service
 
     class Outside:
-        pass
+        """Provide an unrelated visible spell that must stay outside the local graph."""
 
     service_id = spellbook.bind(
         spell=Service,
@@ -44095,11 +44194,26 @@ def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_depen
         assert service_spell is not None
         assert outside_spell is not None
 
-        _run_phase_root_blueprints_local(consumer_spell, "cid")
-
         consumer_artifact = consumer_spell._compiler_artifact
         service_artifact = service_spell._compiler_artifact
         outside_artifact = outside_spell._compiler_artifact
+
+        if precompile_service:
+            _run_phase_root_blueprints_local(service_spell, "cid")
+            _run_phase_occurrence_plan(service_spell, "cid")
+            _run_phase_injection_plan(service_spell, "cid")
+            _run_phase_patch_maps(service_spell, "cid")
+            _run_phase_execution_plan(service_spell, "cid")
+            assert service_artifact._root_blueprint_phase5 is not None
+            assert service_artifact._spell_system_index_phase5 is not None
+            assert service_artifact._spell_codegen_creation is not None
+
+        # Capture identity to detect replacement or destructive invalidation by the consumer pass.
+        service_blueprint = service_artifact._root_blueprint_phase5
+        service_index = service_artifact._spell_system_index_phase5
+        service_codegen = service_artifact._spell_codegen_creation
+
+        _run_phase_root_blueprints_local(consumer_spell, "cid")
 
         assert consumer_artifact._entire_dag_blueprint_phase5 is not None
         assert set(consumer_artifact._entire_dag_blueprint_phase5.keys()) == {consumer_id}
@@ -44109,7 +44223,9 @@ def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_depen
         assert consumer_artifact._spell_system_index_phase5.get_node(outside_id) is None
 
         assert consumer_artifact._root_blueprint_phase5 is not None
-        assert service_artifact._root_blueprint_phase5 is not None
+        assert service_artifact._root_blueprint_phase5 is service_blueprint
+        assert service_artifact._spell_system_index_phase5 is service_index
+        assert service_artifact._spell_codegen_creation is service_codegen
         assert outside_artifact._root_blueprint_phase5 is None
     finally:
         spellbook.cleanup()
@@ -107549,8 +107665,143 @@ def test_late_bound_consumer_injects_existing_value(instance_book: Spellbook) ->
 END FILE: tests/integration/melder/spellbook/test_existing_instance_planning.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/spellbook/test_existing_instance_protocol_injection.py
+CONTENT SHA256: 983c8028af15f5fb530be335e63b20f36f7e1e448dc6b419a462cdeb20b0f884
+SOURCE ENCODING: utf-8
+================================================================================
+"""Preserve supplied Protocol references through real compiler and contract paths."""
+
+from collections.abc import Iterator
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Union
+
+import pytest
+
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.spellbook.spellbook import Spellbook
+from tests.component.melder.spellbook.test_existing_instance_protocol_admission import (
+    InheritedReader,
+    InstanceOnlyReader,
+    ReaderConsumer,
+    ReaderContract,
+    ValidReader,
+)
+from tests.integration.melder.spellbook.test_existing_instance_planning import (
+    instance_book as instance_book,
+)
+
+if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
+
+
+class ReaderCollection:
+    """Receive registered Protocol providers through collection DI."""
+
+    def __init__(self, readers: list[ReaderContract]) -> None:
+        """Borrow the resolved references without adopting their cleanup custody."""
+        self.readers = readers
+
+
+class MappedReaderConsumer:
+    """Select the supplied provider through a named SpellMap socket."""
+
+    def __init__(
+            self,
+            reader: Union[ReaderContract, SpellMap] = SpellMap(
+                spellframe=ReaderContract, binding_name="primary",
+            ),
+    ) -> None:
+        """Retain the exact resolved value for identity and member-use checks."""
+        self.reader = reader
+
+
+class ContractReaderConsumer:
+    """Select the supplied provider across a real conduit link."""
+
+    def __init__(
+            self,
+            reader: Union[ReaderContract, SpellContract] = SpellContract(
+                spellframe=ReaderContract, binding_name="primary",
+            ),
+    ) -> None:
+        """Borrow the contracted reference without acquiring its lifecycle."""
+        self.reader = reader
+
+
+@contextmanager
+def consumer_runtime(
+        owner_book: Spellbook, provider_id: str, path: str,
+) -> Iterator[tuple[Conduit, str]]:
+    """Create a consumer through public APIs and own any additional borrower.
+
+    Contract: the imported fixture owns the source world. The contract route
+    grants the provider inside the native link transaction and cleans the
+    borrower in finally. No compiler stage or admission check is replaced.
+
+    Args:
+        owner_book: Isolated book containing the supplied provider.
+        provider_id: Provider identifier to grant on the contract route.
+        path: annotation, collection, map or contract consumer route.
+
+    Yields:
+        Runtime conduit and the selected consumer's spell identifier.
+    """
+    if path == "contract":
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower_book = Spellbook(aetheric_frame=owner_book._aetheric_frame_name)
+        consumer_id = borrower_book.bind(spell=ContractReaderConsumer, existence="many")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
+        try:
+            assert owner.link(borrower)
+            with borrower.transaction("link", conduits=[borrower, owner]):
+                assert borrower.add_spell_to_contract(
+                    spell_id=provider_id, conduit=owner, permissions="create",
+                )
+            assert borrower.validate_contracts_and_define()
+            yield borrower, consumer_id
+        finally:
+            borrower.permanent_cleanup()
+        return
+    consumer_types = {
+        "annotation": ReaderConsumer,
+        "collection": ReaderCollection,
+        "map": MappedReaderConsumer,
+    }
+    consumer_id = owner_book.bind(spell=consumer_types[path], existence="many")
+    root = owner_book.conjure(dynamic=True)
+    yield root, consumer_id
+
+
+@pytest.mark.parametrize("path", ["annotation", "collection", "map", "contract"])
+@pytest.mark.parametrize("provider_type", [ValidReader, InheritedReader, InstanceOnlyReader])
+def test_protocol_instance_remains_the_same_usable_dependency(
+        instance_book: Spellbook, path: str, provider_type: type,
+) -> None:
+    """Use admitted instances through four real compiler/runtime resolution routes.
+
+    Contract: every consumer receives the exact supplied reference and can use
+    its member, including members present only on the actual instance.
+    """
+    supplied = provider_type()
+    provider_id = instance_book.bind(
+        spell=supplied, existence="unique", spellframe=ReaderContract, binding_name="primary",
+    )
+    with consumer_runtime(instance_book, provider_id, path) as (root, consumer_id):
+        consumer = root.meld(spell_id=consumer_id)
+        if path == "collection":
+            assert len(consumer.readers) == 1
+            actual = consumer.readers[0]
+        else:
+            actual = consumer.reader
+        assert actual is supplied
+        assert actual.read() == "supplied-reader"
+================================================================================
+END FILE: tests/integration/melder/spellbook/test_existing_instance_protocol_injection.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_provider_artifact_ownership.py
-CONTENT SHA256: 526f830a4259537e7a70e6d9b8a9f428c8c47ebd604aa2b00a3ce56599036ce9
+CONTENT SHA256: 797148bfa791c3356b702e53093a8509b709db12ba458a3c6e4916f6207cf0c1
 SOURCE ENCODING: utf-8
 ================================================================================
 """Native provider ownership regressions for borrower validation and teardown.
@@ -107768,6 +108019,25 @@ def test_provider_survives_resolution_only_and_implicit_local_compilation(
     consumer = borrower.meld(spellframe="consumers", binding_name="consumer-boundary")
     assert consumer.provider is runtime.original
     borrower.cleanup()
+    runtime.assert_provider_usable()
+
+
+def test_provider_survives_same_book_local_consumer_compilation(
+        provider_runtime: ProviderRuntime,
+) -> None:
+    """Keep an owned dependency usable when local compilation rebuilds only a consumer.
+
+    The consumer is bound after conjure and melded through the normal lazy
+    compilation path. The provider is probed only at the final boundary so a
+    diagnostic meld cannot repair a later observation.
+    """
+    runtime = provider_runtime
+    consumer_id = runtime.provider.bind(
+        spell=ProviderConsumer, existence="many",
+        spellframe="consumers", binding_name="local-consumer",
+    )
+    consumer = runtime.provider.meld(spell_id=consumer_id)
+    assert consumer.provider is runtime.original
     runtime.assert_provider_usable()
 ================================================================================
 END FILE: tests/integration/melder/spellbook/test_provider_artifact_ownership.py
@@ -246765,7 +247035,7 @@ END FILE: tests/unit/melder/mutation_research/test_mutation_research_root_matrix
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/bind/test_bind.py
-CONTENT SHA256: efdd65c6a62dcef7976ce527950f1273172b91cf7d37ee3cffec3c411a73e035
+CONTENT SHA256: e99ba39f12d34b945448c52df14479cf11a4febb8eec7cd5204f29b1403a8a64
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -247858,17 +248128,35 @@ def test_examiner_returning_wrong_type_raises(monkeypatch):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
 
 
-# Protocol with instance profile (allowed) ------------------------------
+# Protocol with existing profiles (member validation required) -----------
 
-def test_instance_profile_under_protocol_spellframe(monkeypatch):
-    class P:
-        __is_protocol__ = True
-        def foo(self): ...
-    obj = object()
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
+@pytest.mark.parametrize("profile_kind", ["instance", "other"])
+@pytest.mark.parametrize("compatible", [False, True])
+def test_instance_profile_under_protocol_spellframe(
+        monkeypatch: pytest.MonkeyPatch, profile_kind: str, compatible: bool,
+) -> None:
+    """Validate supplied values for both existing-object profile families.
+
+    Contract: missing members fail before Spell creation; compatible values
+    remain the exact existing_object passed to the canonical Spell.
+    """
+    obj = RealClassImplementingProto() if compatible else object()
+    profile = instance_profile() if profile_kind == "instance" else other_profile()
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
-    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe=P)
-    assert isinstance(spell, StubSpell)
+    try:
+        if compatible:
+            spell = b.bind(
+                Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe=ProtoWithFoo,
+            )
+            assert spell.kwargs["existing_object"] is obj
+        else:
+            with pytest.raises(TypeError, match=r"Existing object.*Protocol 'ProtoWithFoo'.*Missing members: foo"):
+                b.bind(
+                    Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe=ProtoWithFoo,
+                )
+    finally:
+        b.cleanup()
 
 
 # SpellType matrix completion -------------------------------------------
@@ -251811,7 +252099,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_5.py
-CONTENT SHA256: 30d33fa4fbda0bc6335b024b5fd0b0cb66654491057bc8c8a653ef3fcdc46442
+CONTENT SHA256: 5b9ca69b5f8f2383592b8d13125b604840b333a65f8ec89a963fdf78a17588a6
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 5 rooted-blueprint behavior."""
@@ -252357,7 +252645,7 @@ def test_run_frame_wide_attaches_fallback_blueprint_when_root_missing(
 def test_run_frame_wide_filters_component_of_rebuild_to_owned_roots(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Phase 5 should rebuild component_of only for owned roots."""
+    """Restrict publication and component_of rebuilding to owned roots, retaining provider state."""
     phase = CompilerPhase5()
     manager = _ChangeControlManagerStub()
     aether = _AetherStub(manager)
@@ -252376,12 +252664,16 @@ def test_run_frame_wide_filters_component_of_rebuild_to_owned_roots(
         spellbook=spellbook,
         spell_system_states=states,
     )
-    _make_spell_stub(
+    contracted_spell = _make_spell_stub(
         "contracted",
         spellbook=spellbook,
         spell_system_states=states,
         is_existing_creation=True,
     )
+    retained_index = compiler_phase_5_module.SpellSystemIndex()
+    retained_codegen = object()
+    contracted_spell._compiler_artifact._spell_system_index_phase5 = retained_index
+    contracted_spell._compiler_artifact._spell_codegen_creation = retained_codegen
     _patch_ir_exports(monkeypatch)
     snapshot = SpellSystemAdjacencySnapshot(
         dependencies={
@@ -252424,6 +252716,8 @@ def test_run_frame_wide_filters_component_of_rebuild_to_owned_roots(
             "root_blueprints": {"owned": blueprints["owned"]},
         }
     ]
+    assert contracted_spell._compiler_artifact._spell_system_index_phase5 is retained_index
+    assert contracted_spell._compiler_artifact._spell_codegen_creation is retained_codegen
 
 
 def test_run_frame_wide_registers_revalidator_and_revalidates_dirty_roots(
@@ -252572,7 +252866,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_5_local.py
-CONTENT SHA256: 3e72f6907133dbb436581d2c93205ce49a4c5bbf1f81db3e683f108bae45cac8
+CONTENT SHA256: a454765c50a4a94c64a89aab7676ac2ed255666373cffa4c69c620215ba7e888
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 5 local scoping behavior."""
@@ -252915,6 +253209,7 @@ def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates(
         system_index=system_index,
         spell_lookup=spellbook._spell_id_pool,
         root_builder=root_builder,
+        publication_spell_ids={"root", "dep", "existing"},
     )
 
     assert root_spell._compiler_artifact._spell_system_index_phase5 is system_index
@@ -252932,7 +253227,7 @@ def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates(
 def test_run_local_scopes_to_dependency_closure(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Phase 5 local entrypoint should only materialize the target dependency closure."""
+    """Build the full target closure while preserving a dependency's canonical artifacts."""
     phase = CompilerPhase5()
     states = _SpellSystemStatesStub(
         [
@@ -252958,6 +253253,10 @@ def test_run_local_scopes_to_dependency_closure(
         spell_system_states=states,
     )
     captured = _patch_ir_exports(monkeypatch)
+    retained_blueprint = _RootBlueprintStub("dep")
+    retained_codegen = object()
+    dep_spell._compiler_artifact._root_blueprint_phase5 = retained_blueprint
+    dep_spell._compiler_artifact._spell_codegen_creation = retained_codegen
     full_snapshot = SpellSystemAdjacencySnapshot(
         dependencies={
             "root": set(["dep"]),
@@ -253008,7 +253307,8 @@ def test_run_local_scopes_to_dependency_closure(
     assert index.get_node("dep") is not None
     assert index.get_node("outside") is None
     assert root_spell._compiler_artifact._root_blueprint_phase5 is not None
-    assert dep_spell._compiler_artifact._root_blueprint_phase5 is not None
+    assert dep_spell._compiler_artifact._root_blueprint_phase5 is retained_blueprint
+    assert dep_spell._compiler_artifact._spell_codegen_creation is retained_codegen
     assert outside_spell._compiler_artifact._root_blueprint_phase5 is None
     # Eager phase2_5 IR capture removed (write-only snapshot).
     assert captured["capture"] == []

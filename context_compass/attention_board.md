@@ -82,12 +82,11 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| existing_object_reference_discovery | in_progress | discovery | codex | updater_0 | none | Stage 1: discuss supplied application state, then metadata representation. | Representation and dependency-aware error contract. | Stage-1 representation decisions are recorded for the next stage. | tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md | 2026-09-17T23:14:23Z | REQUIRED |
+| existing_instance_protocol_admission | review | handoff | codex | updater_0 | none | Review the completed Bind Protocol repair. | 334 focused checks pass; docs and assets current. | Owner accepts the bounded repair. | tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md | 2026-09-19T11:52:48Z | REQUIRED |
 | existing_object_di_comparison | review | handoff | codex | updater_0 | none | Verify repeat registration and cleanup of the same user-created reference. | Exact prebuilt-instance identity and custody semantics across three frameworks. | Owner reviews the comparative explanation. | tickets/tasks/2026-09-13_compare_existing_object_ownership_di_task.md | 2026-09-13T23:03:24Z | REQUIRED |
 | sync_owner_uv_environment | review | handoff | codex | workflows_1 | none | Owner resumes development and restarts editor Ruff. | Melder 0.2.40 and locked tools on existing no-GIL Python. | Owner accepts verified environment sync. | tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | 2026-09-13T20:48:32Z | REQUIRED |
-| provider_artifact_ownership | blocked | handoff | codex | updater_0 | Owned-object ownership work is prerequisite. | Resume through the existing-object reference/blueprint program. | Retained regressions qualify the dependent repair. | Ownership contracts and required model changes permit repair. | tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md | 2026-09-17T01:07:11Z | REQUIRED |
+| provider_artifact_ownership | review | handoff | codex | updater_0 | none | Review repaired artifact behavior and corrected component expectation. | 491 Spellbook component tests pass; original provider proofs retained. | Owner accepts repair or reports another full-suite failure. | tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md | 2026-09-19T13:30:00Z | REQUIRED |
 | existing_instance_planning | review | handoff | codex | updater_0 | none | Discuss reference-model ideas only when owner chooses. | Fresh supplied A-to-B injection test passes by identity. | Owner selects any further work. | tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md | 2026-09-13T23:35:50Z | REQUIRED |
-| existing_object_lifecycle_ownership | in_progress | discovery | codex | updater_0 | none | Follow the story checkpoint: bind representation first. | Normal supplied-object handling with construction disabled. | Staged contracts are accepted before implementation. | tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | 2026-09-17T22:21:43Z | REQUIRED |
 | commandops_local_wheel | review | handoff | codex | updater_0 | none | Owner transfers verified 0.2.40 wheel into CommandOps. | Archive and isolated install smoke passed. | Owner accepts wheel; named lesser work later. | tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md | 2026-09-13T16:42:22Z | REQUIRED |
 | optional_dependency_resolution | review | handoff | codex | updater_0 | none | Owner reruns broader suite; capture thread traceback if it recurs. | Three fixtures corrected; 18 tests pass; thread failure unreproduced. | Owner accepts fixes or supplies another failure. | tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md | 2026-09-13T16:25:07Z | REQUIRED |
 | named_binding_meld_lookup | review | handoff | codex | updater_0 | none | Owner reviews named and framed binding lookup results. | 25 tests pass across three lifecycle modes. | Owner accepts observed behavior or requests changes. | tickets/tasks/2026-09-13_named_binding_meld_lookup_test_task.md | 2026-09-13T12:09:53Z | REQUIRED |
@@ -98,13 +97,17 @@ Message alert rules
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
 | ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes partial-rerun coverage correction. | Complete same-run coverage without repeated tests. | Owner accepts corrected reporting in a fresh run. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T18:58:09Z | REQUIRED |
 | stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
-| provider_artifact_and_existing_instance_repair | blocked | handoff | codex | updater_0 | Remaining repair depends on owned-object program. | Settle the reference/blueprint ownership model first. | Provider repair follows coherent ownership contracts. | Dependent repair and downstream proofs accepted. | tickets/epics/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md | 2026-09-17T01:07:11Z | REQUIRED |
+| provider_artifact_and_existing_instance_repair | review | handoff | codex | updater_0 | none | Review delivered provider and instance repair records. | Provider repair and original downstream proofs pass. | Owner accepts program disposition. | tickets/epics/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md | 2026-09-19T13:08:28Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| retired_existing_object_design | done | updater_0 | tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
+| retired_existing_object_design | done | updater_0 | tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
+| retired_existing_object_design | done | updater_0 | tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
+| retired_existing_object_design | done | updater_0 | tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md | Owner retired expansion; findings retained, artifact bug continues. | 2026-09-19T12:52:16Z |
 | deferred_annotation_acquisition | done | updater_0 | tickets/tasks/completed/2026-09-13_repair_deferred_annotation_acquisition_task.md | Owner accepted; 271 checks and generated assets pass. | 2026-09-13T20:42:12Z |
 | turn_in_codex_1_tickets | done | codex_1 | tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md | All 17 assigned tickets turned in; rejected repair explicitly deferred; evidence retained. | 2026-09-06T10:04:39Z |
 | 2026-09-04_readthedocs_documentation_epic | done | codex_2 | tickets/epics/completed/2026-09-04_readthedocs_documentation_epic.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
@@ -113,22 +116,17 @@ Message alert rules
 | 2026-09-04_rtd_build_and_hosting_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_build_and_hosting_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
 | 2026-09-04_rtd_example_catalog_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_example_catalog_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
 | 2026-09-04_rtd_expert_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_expert_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_intermediate_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_intermediate_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_navigation_and_site_shell_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_navigation_and_site_shell_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_quality_and_launch_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_quality_and_launch_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_reference_and_architecture_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_reference_and_architecture_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- existing_object_reference_discovery: SWITCH_TRIGGER is Stage-1 representation completion with decisions recorded; RESUME_HIERARCHY: tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md (Current Checkpoint) -> tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md.
+- existing_instance_protocol_admission: SWITCH_TRIGGER is owner acceptance of the verified repair; RESUME_HIERARCHY: tickets/stories/2026-09-19_existing_instance_protocol_admission_story.md -> tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md.
 - existing_object_di_comparison: SWITCH_TRIGGER is a cited three-framework comparison; RESUME_HIERARCHY: tickets/tasks/2026-09-13_compare_existing_object_ownership_di_task.md.
 - sync_owner_uv_environment: SWITCH_TRIGGER is owner acceptance or new environment failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md.
-- provider_artifact_ownership: SWITCH_TRIGGER is ownership-program readiness; RESUME_HIERARCHY: tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md -> tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md.
+- provider_artifact_ownership: SWITCH_TRIGGER is owner acceptance of the verified repair; RESUME_HIERARCHY: tickets/stories/2026-09-13_provider_artifact_ownership_story.md -> tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md.
 - existing_instance_planning: SWITCH_TRIGGER is owner resumption of coordinated existing-object work; RESUME_HIERARCHY: tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md.
-- existing_object_lifecycle_ownership: SWITCH_TRIGGER is owner acceptance of discovery contracts; RESUME_HIERARCHY: tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md -> tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md.
 - commandops_local_wheel: SWITCH_TRIGGER is a verified wheel delivered to the owner.
   RESUME_HIERARCHY: tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md.
 - optional_dependency_resolution: SWITCH_TRIGGER is owner acceptance of the verified default-precedence patch.
@@ -149,6 +147,6 @@ Message alert rules
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_ci_validation_stage_design_task.md.
 - stateful_application_recovery: SWITCH_TRIGGER is owner selection of a concrete stateful recovery scenario.
   RESUME_HIERARCHY: tickets/epics/2026-09-07_stateful_application_recovery_epic.md -> linked source investigation and related scope/identity work.
-- provider_artifact_and_existing_instance_repair: SWITCH_TRIGGER is ownership-program readiness for the remaining repair.
+- provider_artifact_and_existing_instance_repair: SWITCH_TRIGGER is owner review of the delivered repairs.
   RESUME_HIERARCHY: tickets/epics/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md.
 <!-- END USER-DEFINED: notes -->

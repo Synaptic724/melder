@@ -1,23 +1,27 @@
 # Task: Reproduce and repair provider artifact ownership
 
+CURRENT OWNER DIRECTION (2026-09-19): provider-artifact repair is active under the current model.
+The broader redesign is retired. Earlier dependency/parking statements below are superseded history.
+Keep tests asserting provider usability; no xfail or expected-error conversion is authorized.
+
+
 ## Metadata
 - Task ID: TASK-2026-09-13-repair-provider-artifact-ownership
 - Story: STORY-2026-09-13-provider-artifact-ownership
-- Status: blocked
+- Status: review
 - Owner: codex
 - Agent Name: updater_0
 - Created: 2026-09-13T18:14:07Z
-- Updated: 2026-09-17T01:07:11Z
+- Updated: 2026-09-19T13:30:00Z
 
 ## Objective
 Keep a provider's canonical executable artifacts alive when a borrower validates its visible graph.
 
 ## Ticket Contract
 - ENTRY_GATE: linked owner-authorized epic/story, active route and current source trace.
-- EXECUTION_BOUNDARY: experiments, regression tests and source reads only until the owner resumes implementation.
+- EXECUTION_BOUNDARY: current-model artifact ownership repair, native regressions, relevant docs and build checks.
 - DEPENDENCIES: original CommandOps provider-prefix and linked GraphCache/PolicyEngine acceptance tests.
-  Implementation now depends on the contracts and required ownership work selected in
-  tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
+  The previous broader-model prerequisite was withdrawn by the owner on 2026-09-19.
 - EXIT_GATE: native repro turns green; original identity/state/cleanup proofs pass through coordinated verification.
 - FAILURE_ESCALATION: do not infer ownership from visibility or repair missing payloads under borrower scope.
 
@@ -29,26 +33,28 @@ Keep a provider's canonical executable artifacts alive when a borrower validates
 - [x] Trace current Phase-5 publication and downstream artifact use.
 - [x] Reproduce the original validation boundary without extra diagnostic provider melds.
 - [x] Compare structural/resolution-only refresh, implicit meld, repeated and two-borrower paths.
-- [ ] Follow the ownership program's selected contracts, then implement and qualify the dependent correction.
-- [ ] Validate repeated/two-borrower behavior and preserve ordinary resolution.
-- [ ] Coordinate original GraphCache/PolicyEngine acceptance and refresh generated assets.
+- [x] Implement the selected current-model publication correction; broader redesign retired.
+- [x] Validate repeated/two-borrower and same-book local behavior; preserve ordinary resolution.
+- [x] Run all nine unchanged original GraphCache/PolicyEngine checks and refresh generated assets.
 
 ## State Transition Event
-- from_state: review
-- to_state: blocked
-- transition_reason: owner requires the broader existing-object ownership work before this repair proceeds.
+- from_state: in_progress
+- to_state: review
+- transition_reason: native artifact regressions and nine original CommandOps cases pass; docs and assets verify.
 
 ## Validation
-Eight characterization cases pass recording provider data/plan/injection outcomes. Thirteen corrected-
-contract regressions produce seven expected missing-codegen failures and six passing early-prefix controls.
+Current repair: 29 focused checks pass. Extended selection has 935 ordinary passes plus eight cache
+cases passing separately after sandbox ACL setup failures; its 2 skips, 3 xfails and 1 non-strict xpass
+come from unchanged tests. All nine original CommandOps provider tests pass. Source/index/graph/build-bundle
+checks pass. See repair_result_20260919.md. Full repository suite and coverage: Not run.
 
 ## Risks / Rollback Notes
 Borrower visibility includes the same provider Spell object. Protect canonical ownership rather than
 adding borrowed providers to the borrower plan queue. Preserve all unrelated working-tree edits.
 
 ## Catch-up Read Map (Required Before Resuming)
-Read the latest Notes, then the epic and the original independent-prefix test. Implementation is
-paused for owner discussion and experiments. No production source has changed in these repair lanes.
+Read the latest Notes and repair_result_20260919.md first. Implementation is delivered for review.
+The source map below records the original diagnosis; remeasure ranges against the patched Phase-5 source.
 
 Orientation (verify indexes before slicing):
 - system_docs/src_architecture.md: Bind/Conjure/Meld sequences, ownership and cleanup invariants.
@@ -114,6 +120,8 @@ Experiment questions before choosing a repair:
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/provider_artifact_ownership_20260913/
+  - artifacts/provider_artifact_ownership_20260913/repair_result_20260919.md
+  - system_docs/patches/active/provider_artifact_ownership_2026_09_19/
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: retain compact reproduction/validation evidence for owner acceptance.
 
@@ -123,6 +131,20 @@ Experiment questions before choosing a repair:
 - IF_UNKNOWN: record ownership questions before patching.
 
 ## Notes
+- DATETIME: 2026-09-19T12:51:19Z
+  TYPE: DECISION
+  CLAIM: Owner retires the broader redesign and explicitly chooses to fix this artifact bug next.
+    This supersedes the September 17 redesign dependency. Retain the current existing-object model
+    and all corrected-behavior assertions; do not mark the seven native failures xfail.
+  EVIDENCE:
+  - Owner reply: Retire the broader redesign; fix the artifact bug next (Recommended).
+  - tests/integration/melder/spellbook/test_provider_artifact_ownership.py:71-216
+  IMPACT: Source investigation, bounded compiler repair, tests/docs/build checks are authorized.
+    Native scope is provider-owned artifact publication versus borrower visibility, not object redesign.
+  NEXT: Re-read the Phase-5 publication/invalidation chain, then stage the bounded patch contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-09-13T18:14:07Z
   TYPE: FACT
   CLAIM: Current CompilerPhase5 matches the consultation SHA256
@@ -250,17 +272,243 @@ Experiment questions before choosing a repair:
     qualification criteria, but do not select or implement an isolated ownership patch.
   EVIDENCE:
   - Owner's explicit dependency direction in this conversation.
-  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
   IMPACT: Implementation waits for the ownership contracts and required model changes from that epic.
     This records project sequencing, not new source proof that all redesign features are technically necessary.
   NEXT: Resume through the owned-object design program, then revalidate the artifact failure under its model.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T12:02:05Z
+  TYPE: FACT
+  CLAIM: Owner's pasted suite output contains the same seven missing-codegen failures already
+    recorded here on September 13: validation/consumer-meld prefixes, three repeated-borrower cases
+    and two explicit/implicit compilation cases. Read the entire supplied output and native test module.
+    The fixture binds the RetainedProvider CLASS with unique existence, then obtains its instance by
+    meld. These tests do not assume the proposed external-object registration or lifetime redesign.
+  EVIDENCE:
+  - Owner-supplied Pasted text.txt:1-794 (seven missing spell_codegen_creation failures).
+  - tests/integration/melder/spellbook/test_provider_artifact_ownership.py:68-112
+  - tests/integration/melder/spellbook/test_provider_artifact_ownership.py:134-216
+  - artifacts/provider_artifact_ownership_20260913/regressions_discussion_final.xml
+  IMPACT: These are retained native corrected-behavior regressions for the deferred artifact ownership
+    repair, not stale Protocol expectations or hypothetical future-API tests. The error establishes
+    unavailable executable artifacts; it does not by itself establish destruction of the live object.
+    This is inspection of owner output and existing evidence, not a fresh test run or runtime repair.
+  NEXT: Explain the test contract and preserve the owner's ownership-program sequencing decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T12:48:07Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Owner favors retaining the current unique-only supplied-object model and conditionally
+    proposes retiring the broader epic and making the ownership tests expected failures. Verified the
+    new attachment is byte-identical to the previously read seven-failure report (SHA256
+    970b9ccd0094f5e8905446fdd8e3fa4ad36044cb99cb26ab2dbf449c26f66a29).
+    Explained that these tests use a class-created unique provider and still expose an independent
+    artifact-availability defect. Asked whether to retain the model and fix that defect next, or defer
+    the known bug with strict xfails while retiring the expansion proposal.
+  EVIDENCE:
+  - Owner's current conditional retirement/expected-failure request.
+  - tests/integration/melder/spellbook/test_provider_artifact_ownership.py:71-112
+  - tests/integration/melder/spellbook/test_provider_artifact_ownership.py:134-216
+  - The two owner attachments have identical SHA256 and 794 lines.
+  IMPACT: No epic deletion/archive or test-expectation change is made from the mistaken inference
+    that unique-only semantics make these provider failures correct. Pending clarification concerns
+    bug priority and deferral, not permission to retain the already-supported unique-only model.
+  NEXT: Apply the owner's selected bug disposition and preserve the completed repair/history links.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T12:54:21Z
+  TYPE: FACT
+  CLAIM: Current Phase 5 attaches destructive setters to every visible snapshot Spell. Both setters
+    clear the Spell's codegen and creation context. Conduit-wide planning rebuilds owned-local Spells;
+    target-local planning rebuilds only its target. Therefore filtering only by book ownership would
+    still invalidate same-book dependency artifacts during local compilation.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:162-368
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:460-693
+  - src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:365-398
+  - src/melder/aether/spellbook/spellbook_creation_system.py:2134-2291
+  - src/melder/aether/spellbook/spellbook_creation_system.py:3084-3156
+  IMPACT: Preserve full dependency visibility but explicitly limit canonical publication to the pass's
+    compilation targets: owned spells for conduit-wide runs, the selected spell for local runs.
+    Do not add borrowed providers to the borrower compilation queue or change live-object semantics.
+  NEXT: Stage patch contracts, reproduce the retained failures and add a same-book local regression.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T12:56:12Z
+  TYPE: MEASURE
+  CLAIM: Fresh unchanged native suite reproduces all seven owner-reported missing-codegen failures;
+    six early prefixes pass. The broader redesign and three discovery tickets are retired with findings
+    retained, not marked implemented. A text-encoding failure during path redirects was recovered by
+    byte-preserving replacements; archive destinations and routing were verified.
+  EVIDENCE:
+  - artifacts/provider_artifact_ownership_20260913/repair_20260919_red.log
+  - artifacts/provider_artifact_ownership_20260913/repair_20260919_red.xml
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  IMPACT: Current repair has an exact native baseline and no redesign dependency. The original
+    corrected-behavior assertions remain authoritative and will not be converted to xfail.
+  NEXT: Consume the new patch contracts and implement explicit Phase-5 publication targets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T12:57:19Z
+  TYPE: DECISION
+  CLAIM: Required patch contracts are authored, linked and consumed in order. Mapping: architecture
+    visibility/publication invariant -> explicit helper publication IDs -> unchanged native borrower
+    tests; local rebuild scope -> target-only publication -> same-book late-consumer regression;
+    component lifecycle boundary -> preserve excluded artifact references -> frame/local unit controls.
+  EVIDENCE:
+  - system_docs/patches/active/provider_artifact_ownership_2026_09_19/architecture_patch.md:6-46
+  - system_docs/patches/active/provider_artifact_ownership_2026_09_19/component_patch_phase5.md:6-36
+  - system_docs/patches/active/provider_artifact_ownership_2026_09_19/code_description_patch_phase5.md:6-31
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:311-368
+  - src/melder/aether/spellbook/spellbook_creation_system.py:2229-2291
+  IMPACT: Runtime scope is one fully read Phase-5 module; no new public API, owned-object flag or
+    provider recompilation fallback. Both Phase-5 unit files and native provider test were read fully.
+  NEXT: Add same-book regressions, confirm their baseline, then apply the Phase-5 publication gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T12:58:59Z
+  TYPE: FACT
+  CLAIM: Added a native same-book late-consumer regression; its corrected single-consumer baseline
+    reproduces missing codegen. An initial three-same-class variant hit the existing duplicate-name
+    rule and was removed from this focused test. Phase 5 now accepts explicit publication IDs: owned
+    book IDs for conduit-wide, selected target only for local. Unit controls preserve excluded artifacts.
+  EVIDENCE:
+  - artifacts/provider_artifact_ownership_20260913/local_single_20260919_red.log
+  - artifacts/provider_artifact_ownership_20260913/local_20260919_red.log
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
+  - tests/integration/melder/spellbook/test_provider_artifact_ownership.py:219-237
+  IMPACT: Production correction remains one module and preserves full visible graph construction.
+    Existing failure assertions are unchanged. Native acceptance must now verify the repair.
+  NEXT: Run the native ownership regressions and Phase-5 unit controls.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T13:00:03Z
+  TYPE: MEASURE
+  CLAIM: Focused production verification passes all 29 cases: fourteen native provider cases including
+    all seven previously failing paths plus same-book local compilation, and fifteen Phase-5 unit controls.
+  EVIDENCE:
+  - artifacts/provider_artifact_ownership_20260913/repair_20260919_green.log
+  - artifacts/provider_artifact_ownership_20260913/repair_20260919_green.xml
+  IMPACT: Publication restriction repairs the observed failure without changing existing-object semantics
+    or weakening assertions. Broader compiler/contracts and original downstream acceptance remain to check.
+  NEXT: Run surrounding native compiler/contract regressions and inspect downstream test availability.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T13:03:05Z
+  TYPE: MEASURE
+  CLAIM: Surrounding compiler/contract/integration selection reports 935 passed, 2 skipped, 3 existing
+    xfails and 1 non-strict xpass; eight cache cases failed sandbox temporary-directory setup. A second
+    local temp run also hit Windows directory cleanup permissions. The eight cache tests then pass in
+    the approved unsandboxed run. Original unchanged CommandOps provider suite passes all nine cases
+    using its .venv314 interpreter and process-local PYTHONPATH to this Melder source; no environment install.
+  EVIDENCE:
+  - artifacts/provider_artifact_ownership_20260913/repair_20260919_extended.log
+  - artifacts/provider_artifact_ownership_20260913/cache_20260919.log
+  - artifacts/provider_artifact_ownership_20260913/commandops_20260919.xml
+  - tests/integration/melder/spellbook/test_spellbook_integration_di_validation_faults.py:122-244
+  IMPACT: The original GraphCache/PolicyEngine ownership acceptance is now green. This patch added no
+    xfail markers. All 943 ordinary native passes are accounted for across the extended/cache runs;
+    unrelated pre-existing xfail markers are retained. Docs and generated-asset synchronization remain.
+  NEXT: Update compiler publication contracts and graph descriptors, then regenerate/check build assets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T13:08:28Z
+  TYPE: MEASURE
+  CLAIM: Architecture/components, only the changed Phase-5 descriptor and generated graph/index are
+    synchronized. All baseline prose lines survive. All three source asset builders and all repository
+    corpus checks pass; a transient index write failure succeeded on retry. Diff/correctness checks pass.
+  EVIDENCE:
+  - artifacts/provider_artifact_ownership_20260913/repair_result_20260919.md
+  - artifacts/provider_artifact_ownership_20260913/repair_20260919_assets_check.log
+  - artifacts/provider_artifact_ownership_20260913/repair_20260919_bundles_check.log
+  - artifacts/provider_artifact_ownership_20260913/commandops_20260919_source.log
+  IMPACT: Repair is ready for owner review; the seven original failures and added same-book case pass
+    with their intended assertions, not xfails. No release/version/environment change occurred.
+  NEXT: Owner reviews and accepts the completed provider-artifact repair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T13:25:41Z
+  TYPE: FACT
+  CLAIM: Owner's broader component run found a remaining pre-repair assertion in
+    test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_dependency_closure:
+    it requires publishing a blueprint onto the dependency. That conflicts with the accepted local
+    target-only publication contract. The prior selected run did not include this component file.
+  EVIDENCE:
+  - Owner's traceback identifies tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1563-1633.
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:612-709
+  - system_docs/patches/active/provider_artifact_ownership_2026_09_19/component_patch_phase5.md:10-23
+  IMPACT: Reopen the same repair task for a component-test expectation correction, preserving the runtime
+    ownership fix. Verify dependency visibility and unchanged pre-existing/absent artifacts explicitly.
+  NEXT: Read the component module fully, update this test contract, and run the surrounding component suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T13:27:24Z
+  TYPE: DECISION
+  CLAIM: The exact component case reproduces the reported failure. The full 1707-line component module
+    was read. Correct its accepted contract by parameterizing absent versus precompiled dependency state:
+    keep dependency nodes in the target index, preserve dependency blueprint/index/codegen references,
+    and exclude unrelated visible spells. Runtime source and publication behavior stay unchanged.
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1563-1637
+  - artifacts/provider_artifact_ownership_20260913/component_followup_red.log
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:313-379
+  IMPACT: This is an overlooked test expectation, not a reason to restore destructive dependency writes.
+  NEXT: Update the component case and run the full Spellbook component selection plus ownership regressions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T13:27:50Z
+  TYPE: MEASURE
+  CLAIM: Corrected component expectations now pass for absent and real compiled provider artifacts.
+    The complete reported component module plus native provider-ownership regressions pass 31 cases.
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1563-1670
+  - artifacts/provider_artifact_ownership_20260913/component_followup_focused.log
+  - artifacts/provider_artifact_ownership_20260913/component_followup_focused.xml
+  IMPACT: Dependency visibility and preservation are both checked; no runtime change was required.
+  NEXT: Run the full Spellbook component tree to catch any other stale expectations from this repair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T13:30:00Z
+  TYPE: MEASURE
+  CLAIM: Full tests/component/melder/spellbook selection passes 491 tests. The reported module and
+    native ownership regressions separately pass 31 cases. The revised test verifies both absent and
+    real precompiled provider artifacts remain identical while dependency visibility stays intact.
+    Test corpus regenerated; all src/tests/other bundle checks and source asset checks pass.
+  EVIDENCE:
+  - artifacts/provider_artifact_ownership_20260913/component_followup_full.log
+  - artifacts/provider_artifact_ownership_20260913/component_followup_full.xml
+  - artifacts/provider_artifact_ownership_20260913/component_followup_focused.xml
+  - artifacts/provider_artifact_ownership_20260913/component_followup_bundle_check.log
+  - tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py:1563-1664
+  IMPACT: The overlooked component expectation is corrected and broader component qualification is green.
+    No production changes or xfail markers were needed; full repository-suite coverage is not claimed.
+  NEXT: Owner reruns their full suite or accepts this verified component follow-up.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Owner-directed dependency: remaining implementation follows the existing-object lifecycle/ownership epic.
-Do not treat this as an independently scoped small repair.
-Production changes paused for discussion. The provider failure is reproduced after validation and
-implicit borrower meld. Eight experiment cases show consumer injection identity and retained data
-survive while the provider plan is cleared; resolution-only refresh also fails. Thirteen corrected-
-contract regressions preserve the original independent-prefix discipline. Full catch-up read map above.
+FIXED / REVIEW: stale local Phase-5 component expectation corrected; 491 Spellbook component
+tests pass. Test corpus rebuilt and all asset/bundle checks pass. Runtime repair remains implemented: Phase 5 retains full dependency visibility but publishes canonical artifacts only to
+owned book targets for conduit-wide passes, or the selected target for local passes. Same-book and
+borrowed providers keep their executable state. One production module changed for this bug.
+All seven original failures and the added local case pass; 29 focused checks, 943 ordinary native passes
+across extended/cache runs, and 9 unchanged CommandOps provider cases. Existing unrelated xfail markers
+remain. All relevant docs, graph/indexes, source assets and repository corpora are current.
+Broader existing-object redesign and three discovery tickets are retired, with research retained.
+The current unique-only supplied-object model and correct-behavior test assertions remain.
+Read repair_result_20260919.md for exact evidence and limitations. Acceptance pending; do not restart
+redesign discovery or create expected-failure markers for this now-repaired bug.

@@ -1,20 +1,50 @@
 # Task: Define normal bind representation for an existing object with construction disabled
 
+- Completed: 2026-09-19T12:51:19Z
+- Disposition: retired_by_owner; proposed redesign not pursued.
+- Summary: Owner retains the current unique-only supplied-object model and explicitly retires the
+  broader redesign. Research and unimplemented proposals below are historical, not pending directives.
+  The delivered Protocol repair remains separate. Provider-artifact repair resumes in its original task;
+  this retirement does not mark the known artifact bug fixed or make its failing tests expected behavior.
+
+
 ## Metadata
 - Task ID: TASK-2026-09-17-existing-object-bind-representation-design
 - Story: STORY-2026-09-17-existing-object-reference-blueprint-discovery
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-17T22:21:43Z
-- Updated: 2026-09-17T23:14:23Z
+- Updated: 2026-09-19T12:51:19Z
 
 ## Objective
-Design only the bind-time representation for the owner's basic target: the user supplies an existing
-object; Melder studies that reference and its type, treats it through normal object machinery, and
-explicitly forbids construction. Identify which current metadata can be reused and which distinction
-must be represented. Do not assume a new compiler subsystem is necessary.
+Review existing-object representation from Melder's current unique-only, Spell-based model. Establish
+which observed behaviors need repair before proposing new registration or representation mechanisms.
+Any later representation proposal must serve the owner's selected requirements; neither broader
+lifetimes nor an external-registration process is an accepted prerequisite.
+
+## Current Owner Correction (2026-09-19)
+
+The owner questions the expanded design and emphasizes Melder's top-down, Spell-based architecture.
+Existing objects being unique is a deliberate constraint, not a demonstrated defect. Dishka/DI examples
+establish a supply/injection precedent only; they do not select Melder's registration or graph model.
+The owner has not selected a new external-registration process or decided that bind should express it.
+
+Keep these facts distinct:
+- Current bind can wrap an already-created value in a Spell record. Creating that record does not
+  recreate the supplied application object. This is existing behavior, not approval of a redesigned API.
+- Existing unique values can already satisfy consumer dependencies through an explicitly registered frame.
+- The verified Protocol defect is skipped validation of an explicitly declared Protocol spellframe:
+  Bind recognizes the Protocol, but invokes its compatibility check only for ClassBindingProfile.
+  It is not an inability to recognize Protocols, nor proof that richer instance metadata is required.
+- Discovering every Protocol an arbitrary object might satisfy is a separate capability; the concrete
+  failing tests already provide the intended Protocol as spellframe and still admit incompatible instances.
+- Storage/staging/transfer observations remain separate evidence. They do not prove uniqueness is wrong
+  or that a new provider/context registration abstraction is necessary.
+
+Earlier richer-profile and external-supply proposals remain unselected ideas. Review the concrete
+declared-Protocol admission gap within the existing model before expanding representation work.
 
 ## Ticket Contract
 - ENTRY_GATE: parent story's Current Checkpoint routes Stage 1 here; owner clarified the supplied-instance target.
@@ -37,13 +67,13 @@ must be represented. Do not assume a new compiler subsystem is necessary.
   not the input case this first task is designing and does not gate its progress.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: owner asks how the distinction propagates to dependent resolution and explicit meld failure.
+- from_state: in_progress
+- to_state: review
+- transition_reason: owner selects the focused Protocol investigation; broader representation remains unselected.
 
 ## Steps / Checklist
-- [ ] Compare the current class and instance bind paths using the recorded source entrypoints.
-- [ ] Write a small metadata table: supplied reference, inspected type, profile, SpellType/family,
+- [x] Compare the current class and instance bind paths using the recorded source entrypoints.
+- [x] Write a small metadata table: supplied reference, inspected type, profile, SpellType/family,
   identity/signature, construction permission, advertised contract and disposal metadata.
 - [ ] Identify normal metadata and machinery that can be reused without invoking the target or treating
   its already-satisfied constructor arguments as DI requirements.
@@ -58,11 +88,76 @@ must be represented. Do not assume a new compiler subsystem is necessary.
 - Proposed fields/classification and exact affected symbols, with no production implementation claim.
 - The representation contract passed to Stage 2 and any unresolved decision that prevents that handoff.
 
+## Current Bind Representation Comparison (2026-09-19)
+
+Existing objects ALREADY bind through the normal public Spellbook.bind surface and can be injected into
+consumers. The current distinction is explicit: InstanceBindingProfile -> EXISTING_CREATION SpellType
+-> Spell.is_existing_creation. A new independent boolean is not established as necessary by this trace.
+
+| Concern | Class binding today | Non-callable instance binding today |
+| --- | --- | --- |
+| Raw candidate | Class object. | Exact object supplied by the user. |
+| Profile | ClassBindingProfile; original_object is the class. | InstanceBindingProfile; original_object is the supplied reference. |
+| Inspection metadata | Name, qualname, module, bases/MRO, annotations, origin, constructor signature, method names and flags. | Type name, module and repr; no attached class-shaped inspection profile. |
+| Runtime target | Spell.spell is the class; user_created_object is None. | Spell.spell and user_created_object both retain the supplied instance. |
+| Classification | SpellBindingKind.CLASS and a SPELL* SpellType. | SpellBindingKind.INSTANCE and an EXISTING_CREATION* SpellType. |
+| Bind identity | Class metadata and constructor shape, plus frame/name/existence/disposal. | Type/module/repr, plus the same bind metadata; not a Python reference-identity key. |
+| Registry admission | Normal SpellIndex, lookup key, id maps and lineage registration. | The same registration mechanisms; no separate public object-registration API is required today. |
+| Existing-value storage | Construction later supplies runtime values. | Active admission registers the reference at conjure or late bind; staged gaps remain recorded. |
+| Constructor requirements | Phase 1 inspects the callable signature. | Phase 1 emits no constructor parameters; incoming consumer edges remain usable. |
+| Resolution | Compiled construction/reuse according to existence. | Existing executor returns user_created_object; its direct branch does not select from scope stores. |
+| Current lifetime admission | Class-family policy supports the existing lifetime modes. | Bind._validate_binding requires unique. Broader meanings remain later design. |
+| Protocol/disposal handling | Bind uses ClassBindingProfile for these checks/method lists. | Instance profile skips those branches; retained gaps still need coordinated repair. |
+
+Current call path:
+1. Spellbook.bind validates the public input and opens/joins its bind transaction.
+2. Bind asks the examiner for a profile; build_profile selects class, callable or instance from the candidate.
+3. Bind creates the fingerprint/index, validates admission, chooses SpellType and constructs the Spell record.
+4. Spellbook claims the lookup key and registers ordinary maps/state. At conjure or active late bind,
+   it also admits the existing value to Creations through the current unique-only helper.
+5. A consumer resolves that registered provider; the supplied value remains the same Python object.
+
+The identity regression explicitly binds supplied with spellframe=ExistingValue, binds ValueConsumer,
+then asserts root.meld(spell_id=consumer_id).value is supplied. ValueConsumer's parameter is a normal,
+required ExistingValue annotation. Retained native result: one passed on 2026-09-13; not rerun this turn.
+Adjacent source tests cover transitive, collection and SpellMap injection; merely reading them is not
+a new claim of execution.
+
+Initial representation recommendation: retain the existing supplied-reference classification and normal
+registration path. Reuse type(instance) inspection for richer descriptive metadata without replacing
+the live target with its class or turning constructor description into executable requirements.
+The existing-value distinction must remain visible to planning/execution when the reference is unavailable.
+Any construction-capability accessor should agree with that canonical distinction, not become an
+independently mutable flag that can contradict it. Exact profile composition and public callable-instance
+intent remain pending; today build_profile routes callable instances into CallableBindingProfile.
+
+Evidence:
+- src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:10-231
+- src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:390-447
+- src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:43-136
+- src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:199-215
+- src/melder/aether/spellbook/bind/bind.py:323-523
+- src/melder/aether/spellbook/bind/bind.py:573-740
+- src/melder/aether/spellbook/bind/bind.py:768-835
+- src/melder/aether/spellbook/spell.py:380-439
+- src/melder/aether/spellbook/spellbook.py:5026-5290
+- src/melder/aether/spellbook/spellbook_creation_system.py:1190-1240
+- src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:188-275
+- src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:155-234
+- tests/integration/melder/spellbook/test_existing_instance_planning.py:24-39
+- tests/integration/melder/spellbook/test_existing_instance_planning.py:128-169
+- artifacts/existing_instance_planning_20260913/direct_owned_dependency_confirmation.xml:1-1
+
 ## Dependency Resolution Contract Added By Owner
 
 Construction disabled does not mean the object is unresolvable. The supplied object must remain a
 normal provider dependency. When B depends on A, retain the B -> A edge and the parameter/occurrence
 attribution. If the selected resolution can use A's supplied reference, inject that exact object.
+
+Owner's SpellContract analogy concerns availability of a target. The dependency remains required:
+missing/unusable target means a resolution failure, not Optional/None fallback. The current public
+instance-bind path takes an actual object and rejects None; declaring a definition before supply
+is still a separate extension. Existing-object classification must survive a missing runtime target.
 
 If the selected resolution cannot be satisfied, refuse that meld with a specific diagnostic naming
 the consumer and provider. A path requiring fresh construction cannot silently construct A. A missing
@@ -116,6 +211,34 @@ or a final decision on all lifecycle behavior.
   inaccessible scope or required-but-forbidden construction. It cannot diagnose arbitrary object health
   without a declared mechanism for doing so.
 
+## External Pattern Confirmation (2026-09-19)
+
+Owner asks whether the supplied-resource model is viable and whether Dishka and Dependency Injector
+support injecting an externally created object into another object. Official documentation confirms
+the supply/injection pattern:
+- Dishka declares context-sourced dependencies with from_context and receives actual instances through
+  context dictionaries. Other providers request those dependencies normally; the context-data example
+  resolves A using externally supplied Request/Broker values.
+- Dependency Injector's Object provider returns its supplied value unchanged. Factory calls dependency
+  providers and injects their results, so Object(existing_a) can supply A to a constructed B.
+- Cleanup is separately expressed: Dishka supports generator finalization, and Dependency Injector has
+  Resource initialization/shutdown. These documents do not establish Melder-style ownership transfer.
+
+Primary sources checked on 2026-09-19:
+- https://dishka.readthedocs.io/en/stable/provider/from_context.html
+- https://dishka.readthedocs.io/en/stable/advanced/context.html
+- https://dishka.readthedocs.io/en/stable/provider/provide.html
+- https://python-dependency-injector.ets-labs.org/providers/object.html
+- https://python-dependency-injector.ets-labs.org/providers/factory.html
+- https://python-dependency-injector.ets-labs.org/providers/resource.html
+
+Feasibility assessment: reuse of Melder's binding, graph, stores, validity/error and ownership machinery
+is supported by the prior source trace and native supplied-A-to-B identity test. The transfer probe also
+moves an existing reference into the target store when move_creations=True. That evidence supports
+adapting existing systems; it does not prove a flag-only change or that every normal pipeline path can
+remain unchanged. Known staged-admission and transfer/store gaps remain part of the staged design.
+No framework packages were installed and no new runtime tests ran for this documentation comparison.
+
 ## Verified Error And Validity Seams
 
 - Spell currently derives is_existing_creation from its SpellType, independently of value presence.
@@ -167,7 +290,7 @@ The initial trace identifies these entrypoints. Read the current implementations
   build_requirements, only to verify how the chosen distinction protects constructor opacity.
 
 ## Evidence To Carry Forward
-- tickets/tasks/2026-09-17_trace_existing_object_reference_model_task.md: original investigation record.
+- tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md: original investigation record.
 - artifacts/existing_object_discovery_20260917/discovery.md: source map, observations and broader candidate options.
 - artifacts/existing_object_discovery_20260917/reference_transitions.log: transfer and staging outcomes.
 - artifacts/existing_object_discovery_20260917/reference_crystals.log: source availability and fingerprint outcomes.
@@ -210,6 +333,18 @@ Keep findings and the next single source/design action here. The story owns the 
 do not copy that sequence into this task. Update the checkpoint when the current stage changes.
 
 ## Notes
+- DATETIME: 2026-09-19T12:51:19Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly selected: Retire the broader redesign; fix the artifact bug next.
+    Current supplied-object uniqueness remains. Unimplemented model expansion is withdrawn, not delivered.
+  EVIDENCE:
+  - Owner's explicit choice in the current conversation.
+  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  IMPACT: This lane is retired with its findings retained. No production ownership redesign is shipped.
+  NEXT: Follow the provider-artifact repair task under the retained current model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-09-17T22:21:43Z
   TYPE: DECISION
   CLAIM: Owner clarified the basic target as an existing object bound by the user, studied through its
@@ -217,7 +352,7 @@ do not copy that sequence into this task. Update the checkpoint when the current
     Owner asks for a durable stepwise continuation plan because this work will span many compactions.
   EVIDENCE:
   - Owner's latest two messages in this task, recorded in the parent story's Owner Intent section.
-  - tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+  - tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
   IMPACT: Stage 1 designs bind representation only. The broader initial discovery remains useful evidence;
     definition-first supply and downstream lifecycle work do not displace the current input case.
   NEXT: Compare Bind._bind_logic and BindingProfileStrategy's class/instance paths to draft the metadata reuse table.
@@ -258,12 +393,82 @@ do not copy that sequence into this task. Update the checkpoint when the current
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-19T10:10:38Z
+  TYPE: FACT
+  CLAIM: Current official Dishka and Dependency Injector documentation supports externally supplied
+    objects participating as dependencies of constructed consumers. Cleanup mechanisms are separately
+    configured. Retained Melder evidence already proves supplied-reference injection and a successful
+    move_creations=True transfer case; the broader ownership model still needs coordinated changes.
+  EVIDENCE:
+  - https://dishka.readthedocs.io/en/stable/advanced/context.html
+  - https://python-dependency-injector.ets-labs.org/providers/object.html
+  - https://python-dependency-injector.ets-labs.org/providers/factory.html
+  - https://dishka.readthedocs.io/en/stable/provider/provide.html
+  - https://python-dependency-injector.ets-labs.org/providers/resource.html
+  - artifacts/existing_instance_planning_20260913/direct_owned_dependency_confirmation.xml:1-1
+  - artifacts/existing_object_discovery_20260917/reference_transitions.log:1-6
+  IMPACT: The basic resource-supply/injection model has direct precedent. This supports the direction,
+    not an assumption that other frameworks implement Melder's uniqueness, transfer or persistence rules.
+    This turn verifies documentation and retained evidence; no new runtime test or implementation claim.
+  NEXT: Compare normal class and supplied-instance bind metadata to identify reusable fields and construction policy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T10:19:45Z
+  TYPE: FACT
+  CLAIM: Completed the class/instance binding metadata comparison. Existing-instance injection and
+    classification already exist: normal bind registers the value as EXISTING_CREATION, retains it on
+    Spell and admits active values to Creations. Instance inspection is much narrower than class inspection.
+    The source regression uses a required typed consumer and asserts exact supplied identity.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:67-231
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:390-447
+  - src/melder/aether/spellbook/bind/bind.py:415-523
+  - src/melder/aether/spellbook/spellbook.py:5026-5290
+  - tests/integration/melder/spellbook/test_existing_instance_planning.py:128-137
+  IMPACT: Build the proposal around existing bind/classification machinery and richer descriptive type
+    metadata. Do not present a new discriminator or injection ability as wholly missing. Availability
+    may fail while the consumer dependency remains required; initial instance bind still requires a value.
+  NEXT: Specify the richer instance/type profile composition and its readers while retaining existing-value intent.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T10:24:07Z
+  TYPE: DECISION
+  CLAIM: Owner interrupts the expanded proposal and questions its architectural premise. Preserve the
+    current unique-only existing-object model as the baseline; no separate external-registration model
+    is selected. Corrected the Protocol explanation: the declared frame is recognized but the instance
+    branch skips compatibility validation. Narrow inspection metadata is not itself proof of a defect.
+  EVIDENCE:
+  - Owner's current correction concerning Spell-based/top-down design, uniqueness and Protocol understanding.
+  - src/melder/aether/spellbook/bind/bind.py:464-523
+  - tests/component/melder/spellbook/test_existing_instance_protocol_admission.py:16-101
+  IMPACT: Stop treating broader lifetimes, class-profile enrichment or external supply as necessary
+    consequences of the observed bugs. Keep the current bind behavior distinct from the owner's API choice.
+    No runtime changes or new tests in this correction; the existing red Protocol evidence remains open.
+  NEXT: Review the declared-Protocol admission defect and separate necessary repairs from optional model changes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T10:52:47Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly selects Protocol investigation through bind and compiler. Its focused task
+    now owns active discovery; retain this metadata comparison and architecture corrections as context.
+  EVIDENCE:
+  - tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
+  IMPACT: No broader representation decision or implementation is implied by the investigation.
+  NEXT: Continue the Protocol bind/compiler trace in the focused task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-CURRENT STAGE: 1, bind representation. STATUS: in_progress; design/source reads only, no implementation.
+STATUS: review; CONTINUE in tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
 TARGET: user binds an existing instance; reuse normal object machinery with an explicit construction prohibition.
 DEPENDENCY CONTRACT: preserve B -> A, inject eligible supplied A, or refuse the affected resolution with
 consumer/provider/path context. Construction policy and resolution validity are distinct; see the source-backed section.
-CURRENT DISCUSSION: user-selected application state versus Melder's explicit registration/lifecycle state;
-see Supplied Application State. Do not claim that a live reference proves application readiness.
-NEXT SINGLE STEP: settle that boundary, then finish the bind metadata comparison and construction-policy placement.
+CURRENT DISCUSSION: owner questions the broader redesign. Read Current Owner Correction first.
+Unique-only existing objects remain the baseline; no external-registration process or bind redesign selected.
+The concrete Protocol issue is skipped validation of a declared frame, not inability to recognize Protocols.
+COMPLETED: current class/instance bind comparison and concrete source path; existing injection/classification confirmed.
+NEXT SINGLE STEP: follow the focused Protocol task through bind/compiler admission and native regressions.
 Read the parent story checkpoint and this task's reread order. Keep the initial nine probe outcomes as baseline.

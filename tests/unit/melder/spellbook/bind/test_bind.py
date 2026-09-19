@@ -1088,17 +1088,35 @@ def test_examiner_returning_wrong_type_raises(monkeypatch):
         b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
 
 
-# Protocol with instance profile (allowed) ------------------------------
+# Protocol with existing profiles (member validation required) -----------
 
-def test_instance_profile_under_protocol_spellframe(monkeypatch):
-    class P:
-        __is_protocol__ = True
-        def foo(self): ...
-    obj = object()
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(instance_profile()))
+@pytest.mark.parametrize("profile_kind", ["instance", "other"])
+@pytest.mark.parametrize("compatible", [False, True])
+def test_instance_profile_under_protocol_spellframe(
+        monkeypatch: pytest.MonkeyPatch, profile_kind: str, compatible: bool,
+) -> None:
+    """Validate supplied values for both existing-object profile families.
+
+    Contract: missing members fail before Spell creation; compatible values
+    remain the exact existing_object passed to the canonical Spell.
+    """
+    obj = RealClassImplementingProto() if compatible else object()
+    profile = instance_profile() if profile_kind == "instance" else other_profile()
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
-    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe=P)
-    assert isinstance(spell, StubSpell)
+    try:
+        if compatible:
+            spell = b.bind(
+                Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe=ProtoWithFoo,
+            )
+            assert spell.kwargs["existing_object"] is obj
+        else:
+            with pytest.raises(TypeError, match=r"Existing object.*Protocol 'ProtoWithFoo'.*Missing members: foo"):
+                b.bind(
+                    Permissions.read, Existence.unique, aetheric_frame="f", spell=obj, spellframe=ProtoWithFoo,
+                )
+    finally:
+        b.cleanup()
 
 
 # SpellType matrix completion -------------------------------------------

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="3" time="0.414" timestamp="2026-09-19T05:11:28.166808-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="context_compass.artifacts.existing_instance_protocol_20260919.test_protocol_paths" name="test_inactive_bind_rejects_incompatible_protocol_value[False]" time="0.006"><failure message="Failed: DID NOT RAISE TypeError">instance_book = &lt;melder.aether.spellbook.spellbook.Spellbook object at 0x00000247A1AE0010&gt;
+late_bind = False
+
+    @pytest.mark.parametrize("late_bind", (False, True))
+    def test_inactive_bind_rejects_incompatible_protocol_value(instance_book: Spellbook, late_bind: bool) -&gt; None:
+        """The common admission boundary must also reject bad parked values before any selection."""
+        active_id = instance_book.bind(
+            spell=ValidReader(), existence="unique", spellframe=ReaderContract, binding_name="primary",
+        )
+        index = instance_book._spells_by_id[active_id].spell_index
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+&gt;       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+context_compass\artifacts\existing_instance_protocol_20260919\test_protocol_paths.py:230: Failed</failure></testcase><testcase classname="context_compass.artifacts.existing_instance_protocol_20260919.test_protocol_paths" name="test_inactive_bind_rejects_incompatible_protocol_value[True]" time="0.008"><failure message="Failed: DID NOT RAISE TypeError">instance_book = &lt;melder.aether.spellbook.spellbook.Spellbook object at 0x00000247A1AE0310&gt;
+late_bind = True
+
+    @pytest.mark.parametrize("late_bind", (False, True))
+    def test_inactive_bind_rejects_incompatible_protocol_value(instance_book: Spellbook, late_bind: bool) -&gt; None:
+        """The common admission boundary must also reject bad parked values before any selection."""
+        active_id = instance_book.bind(
+            spell=ValidReader(), existence="unique", spellframe=ReaderContract, binding_name="primary",
+        )
+        index = instance_book._spells_by_id[active_id].spell_index
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+&gt;       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+context_compass\artifacts\existing_instance_protocol_20260919\test_protocol_paths.py:230: Failed</failure></testcase><testcase classname="context_compass.artifacts.existing_instance_protocol_20260919.test_protocol_paths" name="test_valid_instance_member_survives_staging_and_selection" time="0.008" /></testsuite></testsuites>

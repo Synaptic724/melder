@@ -214,3 +214,22 @@ def test_provider_survives_resolution_only_and_implicit_local_compilation(
     assert consumer.provider is runtime.original
     borrower.cleanup()
     runtime.assert_provider_usable()
+
+
+def test_provider_survives_same_book_local_consumer_compilation(
+        provider_runtime: ProviderRuntime,
+) -> None:
+    """Keep an owned dependency usable when local compilation rebuilds only a consumer.
+
+    The consumer is bound after conjure and melded through the normal lazy
+    compilation path. The provider is probed only at the final boundary so a
+    diagnostic meld cannot repair a later observation.
+    """
+    runtime = provider_runtime
+    consumer_id = runtime.provider.bind(
+        spell=ProviderConsumer, existence="many",
+        spellframe="consumers", binding_name="local-consumer",
+    )
+    consumer = runtime.provider.meld(spell_id=consumer_id)
+    assert consumer.provider is runtime.original
+    runtime.assert_provider_usable()

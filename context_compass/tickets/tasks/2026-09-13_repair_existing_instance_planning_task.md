@@ -34,7 +34,7 @@ Annotation work is accepted and closed. Provider-artifact repair remains parked 
 
 ## Scope Boundaries
 - In scope: existing-instance injection and frame-admission consistency, with focused native regression evidence.
-- Deferred lifecycle epic: tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
+- Deferred lifecycle epic: tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md.
 - Out of scope: Optional/default semantics, Iris ownership redesign, release/publication or consumer changes.
 
 ## Steps
@@ -992,7 +992,7 @@ Melder interpretation for discussion, not a selected implementation:
     story boundaries, unresolved custody questions and full source/doc/test catch-up pointers.
     Resume gap #3: existing-instance frame admission, starting with Protocol class/instance parity.
   EVIDENCE:
-  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
   - Owner instruction to make the epic and move onto the other flagged errors.
   IMPACT: The narrow disposal implementation estimate is superseded. No disposal or transfer changes
     are authorized in the next tranche. Distinguish Protocol validation from concrete frame grouping.
@@ -1061,7 +1061,7 @@ Melder interpretation for discussion, not a selected implementation:
     review: 18 native cases, four expected failures and fourteen controls; F/I lint passes.
     Rebuilt the tests corpus (823 files) and its fingerprint/output check passes.
   EVIDENCE:
-  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md:1-250
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md:1-250
   - tests/component/melder/spellbook/test_existing_instance_protocol_admission.py:1-132
   - artifacts/existing_instance_planning_20260913/protocol_admission_red.xml
   - artifacts/existing_instance_planning_20260913/protocol_test_bundle_build.log:1-2
@@ -1079,7 +1079,7 @@ Melder interpretation for discussion, not a selected implementation:
     management. Added the separate construction, contract-validation and lifecycle-ownership rules,
     a Protocol story, source/test catch-up links, regression results and acceptance criteria.
   EVIDENCE:
-  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
   - Owner's ticket-update instruction after agreeing that these are parts of the same existing-object model.
   IMPACT: This task retains the native evidence; future Protocol implementation is coordinated through
     the deferred epic instead of being treated as an unrelated local exception. No source/test edits or new test runs.
@@ -1128,7 +1128,7 @@ Generated graph/source/test assets are current. Read instance_repair_result.md f
 CommandOps/Iris test reaches successful construction but fails builder.cleaned after root.cleanup.
 The subsequent source trace identifies omitted disposal configuration for the builder's class;
 the original test has not been changed. The task remains open for review/downstream acceptance.
-Owner now parks disposal in tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
+Owner now parks disposal in tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md.
 It preserves the accepted flag but supersedes the narrow implementation estimate with a full ownership,
 transfer/rollback and persistence program. No disposal implementation or new wheel exists.
 Current work: Protocol/frame admission for existing instances. Eighteen native cases are written and

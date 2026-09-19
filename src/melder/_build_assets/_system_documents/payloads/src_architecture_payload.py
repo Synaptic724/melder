@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 2336
-CONTENT_SHA256 = 'e0441e16a4194ed8f84c16609a7190e543edd68fc4baced49a55b2db2e09e04d'
+LINE_COUNT = 2353
+CONTENT_SHA256 = '69fb551fdd388ed337b01c6c948828d367ae4057b6befd434396f31d03e954ad'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-13
+- Updated: 2026-09-19
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -537,7 +537,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
   Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
   `ProtocolCrafter` remain importable and usable while being unbindable.
 - The only live enforcement call site is
-  `src/melder/aether/spellbook/bind/bind.py:364` -
+  `src/melder/aether/spellbook/bind/bind.py:404` -
   `assert_allowed(spell, context="bind")`, a direct call to the
   module-level function. Identity resolution is factored into the pure helper
   `_internal_identity_of(candidate)` in the same module.
@@ -641,6 +641,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 1. `Spellbook.bind(...)`:
    - Enum conversion for permissions and existence.
    - `Bind._bind_logic` produces SpellIndex and Spell.
+   - Protocol admission checks class and actual existing-object targets before a Spell is published.
    - Disposal candidates resolve once into a Spell-owned ordered list before fingerprinting.
      Book names own overlaps; priority places their block first or last (default).
    - Spellbook registers spell maps and SpellSystemStates lineage.
@@ -818,6 +819,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Phase-5 dependency visibility is broader than canonical artifact publication. Conduit-wide
+  resolution publishes to the book's owned Spells; local resolution publishes only to its target.
+  Borrowed and unselected dependency Spells retain their executable artifacts and creation contexts.
+  The complete visible graph remains available for validation and consumer compilation.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
 - Ordinary Python parameter defaults suppress inferred DI: the constructor retains its chosen
   value even when a matching provider is registered. Phase 1 classifies these parameters as PLAIN.
   Explicit SpellMap/SpellContract defaults retain their descriptor semantics; annotations without
@@ -853,6 +859,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   No post-bind mutation protocol or disposal-time configuration matching is introduced.
   EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`.
 - Existing-object spells must use `Existence.unique` for Creations registration.
+- A supplied object declared under a Protocol must pass Bind's direct-public-member presence/callability
+  check, as class providers do. The check inspects the actual value, preserving instance-only members
+  and rejecting non-callable shadows. Successful injection returns the supplied reference without
+  construction. Inherited Protocol declarations, annotation-only fields and signatures remain unchecked.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` and `Bind._structurally_implements_protocol`.
 - SpellIndex identity (ULID) is immutable; the active selected spell it targets
   can change. Versions are owned by MutationResearch.
 - `dynamic=False` conjure only allows `Policies.default`.
@@ -1249,9 +1260,9 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 915
-  loc: 915
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 932
+  loc: 932
+  verified_at: 2026-09-19T11:48:13Z
   note: binding pipeline.
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
@@ -1338,6 +1349,12 @@ Configuration and hooks:
 
 SpellCompiler and validation:
 
+- path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
+  start_line: 1
+  end_line: 709
+  loc: 709
+  verified_at: 2026-09-19T13:04:08Z
+  note: visible dependency blueprints with publication restricted to the current compilation targets.
 - path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
   start_line: 1
   end_line: 693

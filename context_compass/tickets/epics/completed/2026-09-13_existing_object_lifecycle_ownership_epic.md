@@ -1,19 +1,32 @@
 # Epic: Explore reference registration and lifecycle ownership for user-created objects
 
+- Completed: 2026-09-19T12:51:19Z
+- Disposition: retired_by_owner; proposed redesign not pursued.
+- Summary: Owner retains the current unique-only supplied-object model and explicitly retires the
+  broader redesign. Research and unimplemented proposals below are historical, not pending directives.
+  The delivered Protocol repair remains separate. Provider-artifact repair resumes in its original task;
+  this retirement does not mark the known artifact bug fixed or make its failing tests expected behavior.
+
+
 ## Metadata
 - Epic ID: EPIC-2026-09-13-existing-object-lifecycle-ownership
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p2
 - Created: 2026-09-13T22:04:24Z
-- Updated: 2026-09-17T22:21:43Z
-- Target Window: active discovery; implementation remains unselected
+- Updated: 2026-09-19T12:51:19Z
+- Target Window: bounded Protocol admission repair active; broader ownership design remains exploratory
 - Related Program/Initiative: existing-instance injection and disposal investigation
 
 ## Primary Exploration: Register the Reference, Preserve the Blueprint, Forbid New Creations
 
 **Start the next deep dive here. This is the central design question of the epic.**
+
+Latest direction (2026-09-19): the owner questions the need for a broader registration model and
+keeps unique-only existing objects as the baseline. The owner now authorizes the focused Bind Protocol
+admission repair. It is now implemented and ready for review with 334 focused tests passing. The broader
+reference/profile/lifetime ideas below remain unselected possibilities, not prerequisites for that fix.
 
 Current owner clarification: the user binds an actual existing object. Treat it through normal object
 machinery with creation disabled, studying the supplied reference/type. Transfer of ownership must
@@ -21,10 +34,14 @@ carry the existing object and its applicable responsibility. Work in stages and 
 where the source supports it; no new compiler architecture is presumed.
 
 The authoritative stage sequence and current checkpoint are in:
-- tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+- tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
 
-Current Stage 1 task:
-- tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md
+Current approved repair:
+- tickets/stories/2026-09-19_existing_instance_protocol_admission_story.md
+- tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md
+
+Investigation evidence:
+- tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
 
 The definition-first/later-supply extension below is retained for future exploration. It must not
 replace the supplied-instance input case or expand the current bind-representation stage.
@@ -329,13 +346,14 @@ Evidence/tests:
 
 ## Milestones and Required Stories
 Active discovery story:
-- tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+- tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
 
 These story boundaries are defined now; materialize their linked story/task files when the epic resumes.
 - [ ] STORY-existing-object-reference-blueprint-design: deep-dive the owner's primary proposal,
   establish no-new-creation and uniqueness constraints, and settle version/lifetime semantics before coding.
 - [ ] STORY-existing-object-custody-contract: accepted construction/validation/ownership model and custody boundaries.
-- [ ] STORY-existing-object-protocol-admission: consistent Protocol validation for class and supplied providers.
+- [ ] STORY-2026-09-19-existing-instance-protocol-admission: approved bounded Bind repair.
+  tickets/stories/2026-09-19_existing_instance_protocol_admission_story.md
 - [ ] STORY-existing-object-storage-and-admission: coherent Spell/store/cleanup references and transitions.
 - [ ] STORY-existing-object-transfer-and-rollback: transfer, discard, borrowers, rollback and concurrent use.
 - [ ] STORY-existing-object-disposal-configuration-and-recording: accepted flag, bind policy and legacy replay.
@@ -422,6 +440,18 @@ implement under the story sequence. No release/version/environment changes are a
 - IF_UNKNOWN: resolve ownership choices through source evidence and owner discussion before implementation.
 
 ## Notes
+- DATETIME: 2026-09-19T12:51:19Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly selected: Retire the broader redesign; fix the artifact bug next.
+    Current supplied-object uniqueness remains. Unimplemented model expansion is withdrawn, not delivered.
+  EVIDENCE:
+  - Owner's explicit choice in the current conversation.
+  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  IMPACT: This lane is retired with its findings retained. No production ownership redesign is shipped.
+  NEXT: Follow the provider-artifact repair task under the retained current model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-09-13T22:04:24Z
   TYPE: DECISION
   CLAIM: Owner requests this epic and defers existing-object lifecycle/disposal work to resume other errors.
@@ -519,8 +549,8 @@ implement under the story sequence. No release/version/environment changes are a
     candidate contracts, impact mapping and owner decisions rather than change runtime behavior.
   EVIDENCE:
   - Owner instruction to make a discovery story and figure out how this works.
-  - tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
-  - tickets/tasks/2026-09-17_trace_existing_object_reference_model_task.md
+  - tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+  - tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md
   IMPACT: Discovery is active. Prior discussion-only restrictions are lifted for investigation;
     implementation and independent provider-artifact repair remain outside the current tranche.
   NEXT: Trace the current registration/compiler path before selecting a reference representation.
@@ -534,8 +564,8 @@ implement under the story sequence. No release/version/environment changes are a
     diverge today; pre-conjure staged selection has a factory-wiring gap. Synthetic source custody
     preserves definitions, while existing instances remain external replay requirements.
   EVIDENCE:
-  - tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
-  - tickets/tasks/2026-09-17_trace_existing_object_reference_model_task.md
+  - tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+  - tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md
   IMPACT: Recommended direction is explicit external-only source policy plus existing scope admission,
     with definition/value identities, cleanup custody and executable-artifact authority kept distinct.
     This is a candidate design; source findings do not establish a full compiler rewrite as necessary.
@@ -550,11 +580,54 @@ implement under the story sequence. No release/version/environment changes are a
     Sequential continuation is now recorded in the discovery story with one Stage-1 task ready.
   EVIDENCE:
   - Owner clarification and repeated-compaction continuation request in this conversation.
-  - tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
-  - tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md
+  - tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+  - tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md
   IMPACT: Keep broader possibilities in this epic without allowing them to drive every stage at once.
     The story owns stage order; the active task owns exact reads, decisions and the next source action.
   NEXT: Follow Stage 1's bind representation comparison before progressing to storage or transfer design.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T11:15:11Z
+  TYPE: FACT
+  CLAIM: Owner-selected Protocol investigation has a bounded result: the class-only admission gate
+    skips supplied instances; compiler selection trusts declared frames. An actual-instance admission
+    simulation passes 39 selected checks without compiler changes. Shared checker limitations for
+    inherited Protocol members/data annotations are a separate scope choice.
+  EVIDENCE:
+  - tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
+  - artifacts/existing_instance_protocol_20260919/findings.md
+  IMPACT: This defect does not require expanded lifetimes, a new external-registration API or richer
+    instance profiles. No production patch landed; broader ownership and provider-artifact work remain open.
+  NEXT: Review the narrow Protocol admission repair while preserving the current unique-instance baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T11:36:38Z
+  TYPE: DECISION
+  CLAIM: Owner selects the bounded Protocol repair in Bind and requests a concrete implementation story.
+    Materialized the story/task while preserving the unique-only model and shared-checker limitations.
+  EVIDENCE:
+  - Owner instruction to fix this in bind, update the epic and make a story.
+  - tickets/stories/2026-09-19_existing_instance_protocol_admission_story.md
+  - tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md
+  IMPACT: Protocol admission implementation is authorized independently of the still-exploratory
+    lifecycle/disposal/reference redesign. Provider-artifact ownership remains on its existing dependency route.
+  NEXT: Complete the bounded repair and its native/compiler-path qualification.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T11:52:48Z
+  TYPE: FACT
+  CLAIM: The focused Protocol story is implemented in Bind and ready for review: incompatible supplied
+    providers fail at admission; compatible references remain injectable. Native qualification passes 334
+    checks, and documentation plus generated assets are synchronized.
+  EVIDENCE:
+  - tickets/stories/2026-09-19_existing_instance_protocol_admission_story.md
+  - artifacts/existing_instance_protocol_repair_20260919/validation.md
+  IMPACT: This fixes the concrete Protocol gap within the current model. The lifecycle/disposal and
+    provider-artifact ownership program remains open; this result does not select its broader redesign.
+  NEXT: Review the bounded repair before selecting the next existing-object topic.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
@@ -567,8 +640,13 @@ implement under the story sequence. No release/version/environment changes are a
 Record program boundaries and owner decisions here; keep tactical evidence in future linked tasks.
 
 ## Context / Handoff Summary
+Current delivered repair: STORY-2026-09-19-existing-instance-protocol-admission, review pending.
+Historical discovery summary below predates that authorization; broader ownership work remains open.
+
 CURRENT: staged design under STORY-2026-09-17-existing-object-reference-blueprint-discovery.
-Read that story's Owner Intent and Current Checkpoint, then the bind-representation design task.
+Read that story's Owner Intent and Current Checkpoint, then the focused Protocol investigation task.
+Latest result: actual-instance admission at Bind is the proposed repair; 39 diagnostic checks pass
+with compiler unchanged. Broader registration/lifetime proposals remain unselected. No production patch.
 Stage 1 starts with the actual user-supplied instance, normal machinery and construction disabled.
 The original discovery task/artifact retains nine observations and the impact map; no production implementation.
 START with Primary Exploration and the owner's verbatim reference/blueprint

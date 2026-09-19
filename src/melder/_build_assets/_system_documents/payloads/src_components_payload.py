@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8460
-CONTENT_SHA256 = '7af4a98ecf300fd08c9cf9581279f33a5f1436a1f82b1a75aa39dd2767ad6049'
+LINE_COUNT = 8494
+CONTENT_SHA256 = '240b02b2215131b0aa29114ca39316a3d6b0f761ab1ce5877fe79179782c197f'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-13
+- Updated: 2026-09-19
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -519,6 +519,18 @@ Text is preserved as authored; only its location changed.
 Purpose:
 - Convert user objects into registered spell metadata with stable index identities.
 
+Protocol admission for supplied values (2026-09-19):
+- `Bind._bind_logic` applies the shared member check to ClassBindingProfile and existing
+  InstanceBindingProfile/OtherBindingProfile targets after ordinary binding-policy validation.
+- The helper reads the actual supplied target. Instance-only callable members satisfy the check;
+  shadowing a required method with a non-callable value fails before Spell creation/publication.
+- Member coverage remains public entries directly in the Protocol dictionary, with presence and
+  callability checks. Inherited Protocol declarations, annotation-only fields and signatures are
+  outside this boundary. Normal attribute access can execute user descriptors and propagate errors.
+- Active and inactive bind share admission. Valid existing providers retain unique-only lifetime
+  and exact-reference injection; compiler selection and meld add no repeated Protocol reflection.
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` and `Bind._structurally_implements_protocol`.
+
 Ordered disposal contract (2026-09-05):
 - Spellbook forwards configured candidates and each bind's explicit candidates separately.
 - Bind matches the existing class profile once into one ordered list. Missing names disappear
@@ -554,7 +566,7 @@ Outputs:
 - Nothing at all from the internal-registration guard on the success path: it
   returns `None` when the candidate is bindable and raises otherwise.
   EVIDENCE:
-  - src/melder/aether/spellbook/bind/bind.py:241-274 (`bind` return contract)
+  - src/melder/aether/spellbook/bind/bind.py:244-292 (`bind` contract)
   - src/melder/aether/spellbook/bind/bind.py:84-97 (`assert_allowed`)
 
 Owned State:
@@ -578,6 +590,7 @@ Invariants/Guarantees:
 
 Failure Modes:
 - TypeError for invalid binding targets or protocol misuse.
+- Incompatible Protocol declarations report the class or existing object, Protocol name and failing members.
 - ValueError for invalid bindings (existence rules, binding name conflicts).
 - ValueError if method/lambda spells are bound with non-unique existence.
 
@@ -624,6 +637,7 @@ Binding flow (local spell):
    - Rejects modules and Protocols as concrete spells.
    - Uses SpellExaminer to build a binding profile.
    - Fingerprints the profile and constructs a SpellIndex.
+   - Validates lifecycle policy, then Protocol members on class and existing-object targets.
    - Creates a Spell with metadata (existence, permissions, spellframe).
 3) Spellbook attaches hooks and registers the spell into local maps.
 4) SpellSystemStates registers the lineage and marks it dirty.
@@ -2715,6 +2729,16 @@ Spec vs implementation notes:
 Purpose:
 - Compile per-spell artifacts and validate correctness before resolution.
 
+Phase-5 publication authority (2026-09-19):
+- Snapshot visibility remains local plus contracted dependencies. The graph and system index retain
+  those dependencies so consumer validation and compilation continue to see the complete closure.
+- `_attach_phase5_artifacts_for_snapshot` takes explicit `publication_spell_ids`. Conduit-wide runs
+  publish only to `spellbook._spells_by_id`; local runs publish only to their selected target Spell.
+- Attachment setters invalidate downstream codegen and creation contexts. Excluding unselected
+  dependencies prevents clearing provider plans that the current pass will not rebuild, including
+  providers in the same book during target-local compilation. Selected targets still invalidate normally.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
+
 Constructor default precedence (2026-09-13):
 - Phase 1 preserves ordinary explicit defaults by classifying them as PLAIN before annotation
   inference. This includes None, falsey scalars, selected instances and collection defaults.
@@ -2801,6 +2825,7 @@ Extension Points:
 
 Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
+- `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
 - `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
 
@@ -3871,9 +3896,9 @@ Concurrency/Threading:
   module-level object, so it adds no contention to bind.
 Enforcement Surface:
 - Exactly one live call site:
-  `src/melder/aether/spellbook/bind/bind.py:364` -
+  `src/melder/aether/spellbook/bind/bind.py:404` -
   `assert_allowed(spell, context="bind")`. (Was cited as `:363` here and `:364`
-  in `src_architecture.md`; the call is on 364. The two documents disagreeing
+  in `src_architecture.md` before subsequent edits; the current call is on 404. The documents disagreeing
   about the same line is the failure a bare `bind.py:NNN` invites - no checker
   can resolve a filename with no path.)
 Key Files (C1):
@@ -3989,6 +4014,7 @@ Purpose:
 - Register a spell and update local maps and SpellSystemStates.
 Contract/Interface:
 - `Spellbook.bind(...)` and `Bind._bind_logic(...)`.
+- The shared Bind path also admits inactive values; a Protocol mismatch fails before a Spell is returned.
 Data Structures:
 - SpellIndex, Spell, lookup maps.
 Concurrency/Threading:
@@ -4149,6 +4175,8 @@ Purpose:
 - Build per-spell requirements, symbolic graphs, and resolution frames.
 Contract/Interface:
 - `SpellCompilerArtifact.cleanup_phase_artifacts()` and phase methods.
+- Phase-5 canonical publication is restricted to the current compilation targets; visible dependencies
+  outside that set keep their existing artifacts and creation contexts.
 Data Structures:
 - Requirements, symbolic graph, resolution frame, validation results.
 - RootResolutionBlueprint uses a PathRegistry (PathId interning) and DagIndex
@@ -5376,6 +5404,7 @@ These flows describe concrete method sequences for core behaviors.
 1. `Spellbook.bind(...)`:
    - Converts permissions and existence enums.
    - Calls `Bind._bind_logic` to create SpellIndex and Spell.
+   - Bind validates required direct Protocol members on classes and supplied values before Spell publication.
    - Attaches hooks and registers local lookup keys.
    - Registers lineage in SpellSystemStates (marks dirty).
    - If Conduit exists, stamps ownership and registers existing objects into Creations.
@@ -5582,9 +5611,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 915
-  loc: 915
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 932
+  loc: 932
+  verified_at: 2026-09-19T11:48:13Z
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
   end_line: 507
@@ -5980,6 +6009,11 @@ expanded into its real modules rather than given a plausible number.
   end_line: 309
   loc: 309
   verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
+  start_line: 1
+  end_line: 709
+  loc: 709
+  verified_at: 2026-09-19T13:04:08Z
 - path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
   start_line: 1
   end_line: 693

@@ -1,15 +1,20 @@
 # Epic: Preserve provider artifact ownership and plan existing instances correctly
 
+CURRENT OWNER DIRECTION (2026-09-19): provider-artifact repair is active under the current model.
+The broader redesign is retired. Earlier dependency/parking statements below are superseded history.
+Keep tests asserting provider usability; no xfail or expected-error conversion is authorized.
+
+
 ## Metadata
 - Epic ID: EPIC-2026-09-13-provider-artifact-ownership-and-existing-instance-planning
-- Status: blocked
+- Status: review
 - Owner: codex
 - Agent Name: updater_0
 - Author / consulting expert: knowledge_expert_0
 - Priority: p1
 - Created: 2026-09-13T18:03:36Z
-- Updated: 2026-09-17T01:07:11Z
-- Target Window: downstream of the existing-object ownership program
+- Updated: 2026-09-19T13:08:28Z
+- Target Window: active provider-artifact repair under the current model
 - Related Program/Initiative: CommandOps native provider and ActivityBootstrap acceptance
 
 ## Problem / Opportunity
@@ -38,12 +43,10 @@ contract throughout planning. Correct these runtime contracts where they are own
 can use ordinary native APIs without compensating wrappers or suppressed validation.
 
 ## Ticket Contract
-- ENTRY_GATE: owner assignment and route exist; remaining provider repair follows ownership contracts
-  and required model work from EPIC-2026-09-13-existing-object-lifecycle-ownership.
+- ENTRY_GATE: owner assignment and route exist; current-model provider repair authorized on 2026-09-19.
 - EXECUTION_BOUNDARY: native reproduction, source repair and focused regression evidence for these two failures.
 - DEPENDENCIES: accepted CommandOps consultation, original tests/logs and current Melder compiler/runtime source.
-  Owner-directed ownership prerequisite:
-  tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md.
+  The former broader-redesign prerequisite is retired by owner direction.
 - EXIT_GATE: both repair stories pass their criteria; original consumer proofs pass; evidence and boards are synced.
 - FAILURE_ESCALATION: record a blocker if current source differs materially or reproductions need unavailable inputs.
   Raise a concrete contract decision if the repair requires changing public ownership or lifetime semantics.
@@ -70,8 +73,8 @@ can use ordinary native APIs without compensating wrappers or suppressed validat
 
 ## State Transition Event
 - from_state: in_progress
-- to_state: blocked
-- transition_reason: owner places remaining provider repair behind the broader existing-object ownership work.
+- to_state: review
+- transition_reason: provider repair and original downstream proofs are delivered; related story records remain for owner review.
 
 ## Success Metrics
 - All eight independent provider-prefix cases complete with the original unique GraphCache identity.
@@ -248,6 +251,20 @@ CommandOps lead for original-scenario validation. Do not publish or silently rep
 - IF_UNKNOWN: record unresolved repair design in the relevant story before implementation.
 
 ## Notes
+- DATETIME: 2026-09-19T12:51:19Z
+  TYPE: DECISION
+  CLAIM: Owner retires the broader redesign and explicitly chooses to fix this artifact bug next.
+    This supersedes the September 17 redesign dependency. Retain the current existing-object model
+    and all corrected-behavior assertions; do not mark the seven native failures xfail.
+  EVIDENCE:
+  - Owner reply: Retire the broader redesign; fix the artifact bug next (Recommended).
+  - tests/integration/melder/spellbook/test_provider_artifact_ownership.py:71-216
+  IMPACT: Source investigation, bounded compiler repair, tests/docs/build checks are authorized.
+    Native scope is provider-owned artifact publication versus borrower visibility, not object redesign.
+  NEXT: Re-read the Phase-5 publication/invalidation chain, then stage the bounded patch contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-09-13T18:03:36Z
   TYPE: DECISION
   CLAIM: Owner-authorized native repair epic is ready for updater_0. Two confirmed 0.2.40 mechanisms
@@ -276,9 +293,13 @@ CommandOps lead for original-scenario validation. Do not publish or silently rep
   SCORE_0_TO_10: 10
 
 ## Current Owner Direction
+2026-09-19: retain the current model; broader redesign retired. Provider-artifact repair is now delivered
+for review with nine original downstream provider cases passing. Protocol admission is also delivered
+and linked through STORY-2026-09-19-existing-instance-protocol-admission. Earlier directions below are history.
+
 2026-09-17: the remaining provider-artifact repair is dependent on the existing-object ownership
 program. Do not present it as a standalone small repair or implement an isolated ownership policy.
-Follow tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md for the primary design.
+Follow tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md for the primary design.
 This is an owner-directed dependency; the update makes no new claim about the only possible technical fix.
 
 Owner selected one issue at a time and approved the annotation-only repair after reviewing its
@@ -293,6 +314,20 @@ work is superseded by the ownership-program dependency above.
 Frame admission now has four native rejection regressions failing and fourteen controls passing;
 the proposed correction extends existing bind-time Protocol validation to supplied instances only.
 
+- DATETIME: 2026-09-19T13:08:28Z
+  TYPE: FACT
+  CLAIM: The current-model provider-artifact repair now preserves canonical provider execution through
+    borrower and local passes. Native qualification and all nine original CommandOps provider tests pass.
+    The withdrawn broader redesign is archived; its observations remain references, not prerequisites.
+  EVIDENCE:
+  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  - artifacts/provider_artifact_ownership_20260913/repair_result_20260919.md
+  IMPACT: Provider story is delivered for review. Earlier instance-planning/Iris cleanup evidence remains
+    separate; this result does not claim that unrelated acceptance criteria were rerun or repaired.
+  NEXT: Review the provider repair and existing delivered story records before program closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -303,7 +338,7 @@ Record program decisions and cross-story implications here. Keep tactical findin
 Preserve append-only history and source-backed claims; unknown behavior stays explicitly unknown.
 
 ## Context / Handoff Summary
-Annotation and existing-instance discovery repairs are implemented; the original provider-artifact
-regressions remain preserved. The owner now requires the remaining repair to follow the broader
-existing-object ownership program. Resume through that program's reference/blueprint/compiler design,
-then use this epic's native and original downstream tests to qualify the dependent artifact repair.
+Provider artifact ownership is repaired and ready for review: all original downstream provider proofs
+pass, native regressions stay correct-behavior assertions, and docs/assets are synchronized. Existing
+annotation, instance-injection and Protocol repairs are retained. Broader reference/lifetime redesign
+is retired. The prior real-Iris cleanup observation is separate and was not rerun by this provider repair.

@@ -59,6 +59,8 @@ class CompilerPhase5:
         - Directly ports the canonical `SpellCrafter` phase-5 behaviour.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
+        - Dependency visibility does not grant artifact publication authority:
+          publish only for spells included in the pass's own compilation scope.
     """
 
     __slots__ = ()
@@ -316,15 +318,18 @@ class CompilerPhase5:
             system_index: SpellSystemIndex,
             spell_lookup: Dict[str, Spell],
             root_builder: SpellSystemRootBlueprintBuilder,
+            publication_spell_ids: Collection[str],
     ) -> None:
         """
-        Attach Phase 5 artifacts to all spells participating in a snapshot.
+        Attach Phase 5 artifacts only to the pass's publication targets.
 
         Purpose:
-            Ensure scoped spells have consistent Phase 5 artifacts before
-            Phase 6-11 are executed.
+            Prepare canonical artifacts for spells this pass will compile,
+            preserving other visible providers' executable state and contexts.
         Contract:
-            - Updates only spells included in "snapshot.all_spell_ids".
+            - Updates only snapshot IDs also in publication_spell_ids.
+            - Keeps the complete visible snapshot for dependency analysis.
+            - Does not invalidate artifacts on excluded dependency spells.
             - Existing-creation spells get index only and skip blueprints.
             - Builds fallback per-spell blueprint when not present as a root.
         Args:
@@ -338,10 +343,16 @@ class CompilerPhase5:
                 Visible spell_id -> spell map.
             root_builder:
                 Builder used for per-spell fallback blueprints.
+            publication_spell_ids:
+                Canonical publication scope: owned IDs for a conduit-wide pass,
+                or the selected target ID for a target-local pass. The caller
+                supplies this separately from dependency visibility.
         Returns:
             None.
         """
         for spell_id in snapshot.all_spell_ids:
+            if spell_id not in publication_spell_ids:
+                continue
             spell_instance = spell_lookup[spell_id]
             target_artifact = spell_instance._compiler_artifact
             self._set_spell_system_index_phase5(
@@ -476,8 +487,9 @@ class CompilerPhase5:
 
         Phase 5 produces two related outputs:
             - A root-only blueprint map for system validation (Phase 6).
-            - Per-spell blueprints attached to constructed spells so Phase 8-10
-              and Phase 11 compilation can proceed for any meldable spell.
+            - Per-spell blueprints attached to owned constructed spells so their
+              Phase 8-11 compilation can proceed. Contracted dependencies stay
+              visible without replacing their provider-owned artifacts.
             - The change-control component of the map is rebuilt from owned roots
               only, so contracted roots are not revalidated by this conduit.
 
@@ -524,6 +536,7 @@ class CompilerPhase5:
             system_index=system_index,
             spell_lookup=spellbook._spell_id_pool,
             root_builder=root_builder,
+            publication_spell_ids=spellbook._spells_by_id.keys(),
         )
 
         artifact._spell_system_index_phase5 = system_index
@@ -616,7 +629,9 @@ class CompilerPhase5:
             - Build a full snapshot, then narrow to visible and locally-scoped
               ids.
             - Construct local root blueprints and phase-5 index.
-            - Attach phase-5 artifacts only to scoped spells.
+            - Attach canonical phase-5 artifacts only to the selected target,
+              matching the target-only Phase 8-11 rebuild. Its dependencies
+              remain in the index/blueprint without invalidating their plans.
             - Update the invoking artifact phase-2-5 cache and invalidate
               phase 8-11 when needed.
 
@@ -679,6 +694,7 @@ class CompilerPhase5:
             system_index=system_index,
             spell_lookup=spell_lookup,
             root_builder=root_builder,
+            publication_spell_ids=(target_spell_id,),
         )
 
         artifact._spell_system_index_phase5 = system_index

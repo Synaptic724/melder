@@ -1,0 +1,40 @@
+PROTOCOL_PATH {"failure_at_use": "AttributeError", "injected_same_bad_reference": true, "path": "annotation"}
+.PROTOCOL_PATH {"failure_at_use": "AttributeError", "injected_same_bad_reference": true, "path": "collection"}
+.PROTOCOL_PATH {"failure_at_use": "AttributeError", "injected_same_bad_reference": true, "path": "map"}
+.PROTOCOL_PATH {"failure_at_use": "AttributeError", "injected_same_bad_reference": true, "path": "contract"}
+.............FF....
+================================== FAILURES ===================================
+_______ test_shadowed_method_requires_actual_instance_validation[False] _______
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x000003CCEFDC0010>
+late_bind = False
+
+    @pytest.mark.parametrize("late_bind", (False, True))
+    def test_shadowed_method_requires_actual_instance_validation(instance_book: Spellbook, late_bind: bool) -> None:
+        """Reject an instance whose class is compatible but whose live method was replaced with None."""
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+context_compass\artifacts\existing_instance_protocol_20260919\test_protocol_paths.py:191: Failed
+_______ test_shadowed_method_requires_actual_instance_validation[True] ________
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x000003CCEFDC0310>
+late_bind = True
+
+    @pytest.mark.parametrize("late_bind", (False, True))
+    def test_shadowed_method_requires_actual_instance_validation(instance_book: Spellbook, late_bind: bool) -> None:
+        """Reject an instance whose class is compatible but whose live method was replaced with None."""
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+context_compass\artifacts\existing_instance_protocol_20260919\test_protocol_paths.py:191: Failed
+=========================== short test summary info ===========================
+FAILED context_compass/artifacts/existing_instance_protocol_20260919/test_protocol_paths.py::test_shadowed_method_requires_actual_instance_validation[False]
+FAILED context_compass/artifacts/existing_instance_protocol_20260919/test_protocol_paths.py::test_shadowed_method_requires_actual_instance_validation[True]
+2 failed, 20 passed in 0.64s

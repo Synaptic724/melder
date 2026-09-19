@@ -1,16 +1,30 @@
 # Story: Discover the reference and blueprint model for externally supplied objects
 
+- Completed: 2026-09-19T12:51:19Z
+- Disposition: retired_by_owner; proposed redesign not pursued.
+- Summary: Owner retains the current unique-only supplied-object model and explicitly retires the
+  broader redesign. Research and unimplemented proposals below are historical, not pending directives.
+  The delivered Protocol repair remains separate. Provider-artifact repair resumes in its original task;
+  this retirement does not mark the known artifact bug fixed or make its failing tests expected behavior.
+
+
 ## Metadata
 - Story ID: STORY-2026-09-17-existing-object-reference-blueprint-discovery
 - Epic: EPIC-2026-09-13-existing-object-lifecycle-ownership
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-17T21:22:19Z
-- Updated: 2026-09-17T23:14:23Z
+- Updated: 2026-09-19T12:51:19Z
 
 ## Owner Intent: The Basic End State
+
+Latest direction: the owner questions whether the broader proposal fits Melder's top-down, Spell-based
+model. Unique-only existing objects remain a valid baseline; an external-registration process, broader
+lifetimes and a revised bind API are not selected. Separate concrete defects from optional extensions.
+The Protocol issue is skipped compatibility checking for a declared frame, not inability to recognize it.
+The end-state discussion below remains design context; it does not override this reassessment.
 
 The user binds an ACTUAL EXISTING OBJECT. Melder studies that reference and its type, reuses normal
 object registration/graph/runtime machinery where appropriate, and explicitly disables construction.
@@ -33,12 +47,12 @@ This clarification takes precedence over the broader candidate options in the in
 ## Current Checkpoint
 
 - CURRENT_STAGE: 1 - bind representation.
-- STAGE_STATUS: in_progress; error/validity distinction traced, bind metadata comparison still pending.
-- CURRENT_DISCUSSION: owner asks whether the supplied object's application state is the user's chosen
-  baseline. Proposed map-and-use boundary is recorded in the Stage-1 task; do not treat it as implemented.
-- CURRENT_TASK: tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md.
-- NEXT_SINGLE_STEP: settle the supplied-state boundary, then compare bind metadata and construction-policy
-  placement while preserving the dependency-aware failure contract recorded in the Stage-1 task.
+- STAGE_STATUS: bounded Protocol repair delivered for review; broader representation design remains open.
+- CURRENT_DISCUSSION: keep the current unique-only Spell model as baseline. The concrete declared-Protocol
+  validation gap does not establish a need for external registration or richer instance profiles.
+- CURRENT_TASK: tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md.
+- NEXT_SINGLE_STEP: review the delivered Bind repair and its 334 passing focused checks. Broader checker
+  coverage and object representation remain separate decisions.
 - ALREADY_DONE: initial cross-system source map and nine characterization probes. Their evidence lives
   in the original trace task/artifact. No production implementation of this model has started.
 - DO_NOT_RESTART: the full discovery sweep, basic A-to-B injection proof, generic DI comparison or the
@@ -123,7 +137,7 @@ must address compiler, runtime, transfer and persistence together rather than pr
 - transition_reason: owner clarified the supplied-instance end state and requests a durable sequential approach.
 
 ## Dependencies / Related Work
-- tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+- tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
 - tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md
 - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
 - tickets/tasks/2026-09-13_compare_existing_object_ownership_di_task.md
@@ -131,9 +145,10 @@ must address compiler, runtime, transfer and persistence together rather than pr
 
 ## Tasks
 - [x] TASK-2026-09-17-trace-existing-object-reference-model (discovery delivered; review pending):
-  tickets/tasks/2026-09-17_trace_existing_object_reference_model_task.md
+  tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md
 - [x] Synthesize findings into a coherent decision document.
-- [ ] Stage 1: tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md.
+- [ ] Stage 1: tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md.
+- [x] Focused investigation delivered for review: tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
 - [ ] Open subsequent stage tasks in the sequence above as the preceding stage resolves.
 
 ## Acceptance Criteria
@@ -181,13 +196,25 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
 - IF_UNKNOWN: record the exact source or owner decision needed.
 
 ## Notes
+- DATETIME: 2026-09-19T12:51:19Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly selected: Retire the broader redesign; fix the artifact bug next.
+    Current supplied-object uniqueness remains. Unimplemented model expansion is withdrawn, not delivered.
+  EVIDENCE:
+  - Owner's explicit choice in the current conversation.
+  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  IMPACT: This lane is retired with its findings retained. No production ownership redesign is shipped.
+  NEXT: Follow the provider-artifact repair task under the retained current model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-09-17T21:22:19Z
   TYPE: DECISION
   CLAIM: Owner authorizes discovery of how the reference/blueprint/no-new-creation model should work.
     Created this story and a tactical trace task; runtime implementation remains outside this phase.
   EVIDENCE:
   - Owner request to make a discovery story and figure out the model.
-  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md:14-95
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md:14-95
   IMPACT: The earlier no-discovery discussion boundary is lifted for this story; it is not approval to implement.
   NEXT: Trace the current registration/compiler/value-store boundaries and record the first meaningful finding.
   REREAD: REQUIRED
@@ -200,7 +227,7 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
     resolvable values outside those stores; staged admission and crystal replay have explicit gaps.
   EVIDENCE:
   - artifacts/existing_object_discovery_20260917/discovery.md:1-370
-  - tickets/tasks/2026-09-17_trace_existing_object_reference_model_task.md
+  - tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md
   IMPACT: The initial discovery is reviewable. Recommended direction separates external-only source
     policy, scope value admission, cleanup custody and executable artifact authority; no runtime change.
   NEXT: Discuss the external-only definition plus scoped-admission direction first, then its custody rules.
@@ -215,7 +242,7 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
     current checkpoint; opened only the bind-representation task.
   EVIDENCE:
   - Owner's clarification and request for a compaction-safe approach, preserved in Owner Intent above.
-  - tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md
+  - tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md
   IMPACT: Stage 1 is the sole next design scope. The initial broad map and nine observations remain
     reference evidence; earlier definition-first supply proposals do not displace supplied-instance binding.
   NEXT: Follow the Stage-1 task to compare class/instance bind metadata and draft its reuse table.
@@ -230,10 +257,51 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
     diagnostic attribution obligation forward to Stage 3.
   EVIDENCE:
   - Owner's current dependency-resolution question and error requirement.
-  - tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md
+  - tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md
   IMPACT: Keep normal graph edges and eligible-reference injection. Refuse unsatisfied active paths
     without constructor fallback. Error schema and exact validity publication are not implemented.
   NEXT: Complete the Stage-1 metadata comparison with this distinction in the representation contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T10:24:07Z
+  TYPE: DECISION
+  CLAIM: Owner challenges the expanded external-supply proposal and affirms that unique-only existing
+    objects are not inherently flawed. Re-anchored Stage 1 to Melder's current model and the concrete
+    declared-Protocol validation gap. External DI examples do not authorize adopting their architecture.
+  EVIDENCE:
+  - Owner's current architectural correction.
+  - tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md
+  IMPACT: Later stage alternatives remain exploratory. No new registration model, broader lifetime set,
+    class-profile enrichment requirement or bind API has been accepted.
+  NEXT: Review the specific Protocol admission defect before selecting broader representation work.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T10:52:47Z
+  TYPE: DECISION
+  CLAIM: Owner selects investigation of the concrete Protocol issue, including its bind/compiler
+    integration. Opened a focused task and evidence folder; broader representation proposals remain unselected.
+  EVIDENCE:
+  - Owner request to investigate the Protocol problem through bind and possibly compiler.
+  - tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
+  IMPACT: One active source/probe scope now owns this question. Preserve the existing unique-instance model.
+  NEXT: Follow the focused task's bind/compiler trace, then native regression baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-19T11:15:11Z
+  TYPE: FACT
+  CLAIM: Native tests confirm invalid instances pass bind, compiler and four injection routes, then
+    fail at member use. Actual-instance admission simulation passes 39 selected checks with compiler
+    unchanged. Staged binding shares the hole; instance-only and shadowed members prove why the value
+    itself must be checked. Shared inherited-Protocol/data-field limits are separate.
+  EVIDENCE:
+  - artifacts/existing_instance_protocol_20260919/findings.md
+  - tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md
+  IMPACT: Initial repair can target the existing Bind branch/helper under the current unique-only model.
+    This is diagnostic evidence and a recommendation, not a production patch or full Protocol implementation.
+  NEXT: Review bounded instance admission first, keeping broader checker semantics explicit.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
@@ -245,9 +313,15 @@ and must preserve existing scope vocabulary, uniqueness and externally supplied-
 Keep tactical evidence in the task; record cross-boundary implications and decisions here.
 
 ## Context / Handoff Summary
+LATEST: the bounded Protocol repair is delivered in the linked 2026-09-19 implementation task/story;
+334 focused checks pass and assets are current. Earlier investigation status below is historical.
+
 CURRENT STAGE: 1 - bind representation, in progress. Read Owner Intent and Current Checkpoint first.
 The user supplies an existing object; treat it through normal object machinery with creation disabled.
 Transfer must carry that object and applicable responsibility. Failed dependency resolution must identify
 the consumer/provider/path and use the appropriate validity/error structure; construction policy remains
-separate. Complete the Stage-1 bind metadata comparison next; reuse the earlier broad discovery as evidence.
-Stage state, source pointers, decisions and NEXT live in ContextCompass. No production implementation.
+separate. The current bind comparison is recorded; reuse it without treating its proposed enrichment as required.
+LATEST CORRECTION: keep unique-only as baseline; broader registration/profile proposals are unselected.
+Current investigation is tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md.
+Its findings are ready: bind admission is the proposed repair seam; 39 diagnostic checks pass with
+compiler unchanged. Shared checker limits remain separate. No production implementation.

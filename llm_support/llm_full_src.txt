@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: c94eee458355b648b309521a2af751e17d91e091a7a0cae5d28fa03bce660a24
+SOURCE FINGERPRINT: c32415ad4d0ff3e7b19ec785bba6e186b733dfe749964bf225bea87828208f13
 FILE COUNT: 585
 
 ================================================================================
@@ -64409,7 +64409,7 @@ END FILE: src/melder/aether/conduit/spell_space/spell_space_thread_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/bind/bind.py
-CONTENT SHA256: bb8f173452ae52ce2145bc1e94fc0b243fbed7d243fa43cb0711fbd34c728be9
+CONTENT SHA256: 95781e88165534ceca33b23ab4ee0d06e783bf487a5737f3e8f0bb154ab222c3
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -64548,6 +64548,8 @@ class Bind(Cleanable):
     - Successful registration always flows through canonical profile
       examination and deterministic fingerprinting rather than ad hoc ids.
     - Decorator-style and direct-call usage share the same binding pipeline.
+    - Classes and existing objects declared under a Protocol spellframe must
+      satisfy its directly declared public members before Spell creation.
 
     Registration:
         MELDER KERNEL - guarded. Invoked through `Spellbook.bind(...)`; users
@@ -64685,6 +64687,9 @@ class Bind(Cleanable):
               immediately and returns the created `Spell`.
             - Decorator and direct-call modes are semantically equivalent once
               the target object is known.
+            - A Protocol spellframe checks directly declared public members on
+              a class or supplied existing object. Callable bindings retain
+              their separate factory/handler contract.
             - Matching book names form one ordered block, including names also supplied
               explicitly. Spell-only names keep their order before or after that block.
               Each matching name is retained once.
@@ -64694,6 +64699,11 @@ class Bind(Cleanable):
             Union[Spell, Any]:
                 - If used as a decorator, returns the decorated object.
                 - If used as a direct call, returns the newly created `Spell` instance.
+
+        Raises:
+            TypeError: If a class or supplied existing object lacks a required
+                directly declared Protocol member or exposes a non-callable
+                value where that Protocol requires a callable.
         """
         self.check_cleaned()
         if spell is None:
@@ -64755,8 +64765,9 @@ class Bind(Cleanable):
         * Validates existence and method/lambda constraints.
         * Enforces Protocol/Spellframe semantics:
           - Protocols cannot be bound as concrete spells.
-          - Class-based spells bound under a Protocol spellframe must structurally
-            implement that Protocol.
+          - Class-based and existing-object spells bound under a Protocol
+            spellframe must satisfy its directly declared public members.
+            Existing objects are checked on the supplied value, not its class.
           - Method/lambda spells may also be grouped under Protocol or string
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
@@ -64796,8 +64807,8 @@ class Bind(Cleanable):
         Raises:
             TypeError:
                 - If a Protocol is bound directly as a concrete spell.
-                - If a Protocol spellframe is provided for a class-based spell that
-                  does not structurally implement it.
+                - If a class or existing object under a Protocol spellframe
+                  fails its directly declared public-member check.
             ValueError:
                 - If the binding is otherwise invalid (existence errors, lambda
                   without name, etc.).
@@ -64879,18 +64890,20 @@ class Bind(Cleanable):
             # 4. Protocol spellframe semantics
             # ------------------------------------------------------------------
             # If the caller provided a Protocol as the spellframe:
-            #   * For class-based spells: enforce structural implementation.
+            #   * For classes and existing objects: check the actual target's
+            #     members, including instance-only or shadowed implementations.
             #   * For callable spells: allow binding (factory/handler semantics),
             #     but do not run structural checks (no meaningful attribute set).
             if spellframe is not None and Bind._is_protocol_type(spellframe):
-                if isinstance(binding_profile, ClassBindingProfile):
+                if isinstance(binding_profile, ClassBindingProfile) or is_instance:
                     ok, missing_members = Bind._structurally_implements_protocol(
                         spell, spellframe
                     )
                     if not ok:
                         missing_str = ", ".join(sorted(missing_members))
+                        target_kind = "Existing object" if is_instance else "Class"
                         raise TypeError(
-                            f"Class '{spell_name}' does not structurally implement "
+                            f"{target_kind} '{spell_name}' does not structurally implement "
                             f"Protocol '{spellframe.__name__}'. "
                             f"Missing members: {missing_str}"
                         )
@@ -65280,30 +65293,34 @@ class Bind(Cleanable):
 
     @staticmethod
     def _structurally_implements_protocol(
-            cls: type, protocol_type: type[Any]
+            candidate: object, protocol_type: type[Any]
     ) -> tuple[bool, list[str]]:
         """
-        Best-effort structural check that `cls` implements `protocol_type`.
+        Check the supported public-member contract on a class or supplied object.
 
         This is intentionally conservative and runtime-friendly:
         * It only verifies that all *public* attributes defined directly on the
-          Protocol (non-underscore names) exist on the class.
+          Protocol (non-underscore names) exist on the candidate.
         * If an attribute is callable on the Protocol, it must be present and
-          callable on the class as well.
+          callable on the candidate as well.
+        * For an existing object, inspect the actual value so instance-only
+          members and instance shadowing are respected without construction.
 
         It does NOT try to fully emulate static type-checking (mypy/pyright).
-        The goal is simply to catch obvious mismatches where a class is bound
-        under a Protocol spellframe but clearly does not implement the contract.
+        Inherited Protocol members, annotation-only data and signature/type
+        compatibility are outside this check. Normal attribute access may run
+        user descriptors; errors other than missing attributes propagate.
+        Admission checks the surface at bind time, not continuously at meld.
 
         Args:
-            cls (type): The candidate implementation class.
+            candidate (object): The implementation class or actual supplied value.
             protocol_type (type[Any]): The Protocol subclass being used as the
                 spellframe.
 
         Returns:
             tuple[bool, list[str]]:
-                - bool: True if the class appears to implement the Protocol.
-                - list[str]: The names of any missing members if the check fails.
+                - bool: True if the candidate passes the supported member checks.
+                - list[str]: Missing or non-callable required member names.
         """
         missing: list[str] = []
 
@@ -65313,13 +65330,13 @@ class Bind(Cleanable):
             if name.startswith("_"):
                 continue
 
-            if not hasattr(cls, name):
+            if not hasattr(candidate, name):
                 missing.append(name)
                 continue
 
             # If the Protocol member is callable, require the implementation
             # to also expose a callable with the same name.
-            impl_attr = getattr(cls, name, None)
+            impl_attr = getattr(candidate, name, None)
             if callable(attr) and not callable(impl_attr):
                 missing.append(name)
 
@@ -107981,7 +107998,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
-CONTENT SHA256: a94db51de9ff24db9f9e246dad6f52bdf0fd6f7e94d1d24e3c7f2d1b05591ef8
+CONTENT SHA256: b1634e4e60c6a51334adaa589cb8be445beecd8253b1cb03f0cad1f4989f2718
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
@@ -108045,6 +108062,8 @@ class CompilerPhase5:
         - Directly ports the canonical `SpellCrafter` phase-5 behaviour.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
+        - Dependency visibility does not grant artifact publication authority:
+          publish only for spells included in the pass's own compilation scope.
     """
 
     __slots__ = ()
@@ -108302,15 +108321,18 @@ class CompilerPhase5:
             system_index: SpellSystemIndex,
             spell_lookup: Dict[str, Spell],
             root_builder: SpellSystemRootBlueprintBuilder,
+            publication_spell_ids: Collection[str],
     ) -> None:
         """
-        Attach Phase 5 artifacts to all spells participating in a snapshot.
+        Attach Phase 5 artifacts only to the pass's publication targets.
 
         Purpose:
-            Ensure scoped spells have consistent Phase 5 artifacts before
-            Phase 6-11 are executed.
+            Prepare canonical artifacts for spells this pass will compile,
+            preserving other visible providers' executable state and contexts.
         Contract:
-            - Updates only spells included in "snapshot.all_spell_ids".
+            - Updates only snapshot IDs also in publication_spell_ids.
+            - Keeps the complete visible snapshot for dependency analysis.
+            - Does not invalidate artifacts on excluded dependency spells.
             - Existing-creation spells get index only and skip blueprints.
             - Builds fallback per-spell blueprint when not present as a root.
         Args:
@@ -108324,10 +108346,16 @@ class CompilerPhase5:
                 Visible spell_id -> spell map.
             root_builder:
                 Builder used for per-spell fallback blueprints.
+            publication_spell_ids:
+                Canonical publication scope: owned IDs for a conduit-wide pass,
+                or the selected target ID for a target-local pass. The caller
+                supplies this separately from dependency visibility.
         Returns:
             None.
         """
         for spell_id in snapshot.all_spell_ids:
+            if spell_id not in publication_spell_ids:
+                continue
             spell_instance = spell_lookup[spell_id]
             target_artifact = spell_instance._compiler_artifact
             self._set_spell_system_index_phase5(
@@ -108462,8 +108490,9 @@ class CompilerPhase5:
 
         Phase 5 produces two related outputs:
             - A root-only blueprint map for system validation (Phase 6).
-            - Per-spell blueprints attached to constructed spells so Phase 8-10
-              and Phase 11 compilation can proceed for any meldable spell.
+            - Per-spell blueprints attached to owned constructed spells so their
+              Phase 8-11 compilation can proceed. Contracted dependencies stay
+              visible without replacing their provider-owned artifacts.
             - The change-control component of the map is rebuilt from owned roots
               only, so contracted roots are not revalidated by this conduit.
 
@@ -108510,6 +108539,7 @@ class CompilerPhase5:
             system_index=system_index,
             spell_lookup=spellbook._spell_id_pool,
             root_builder=root_builder,
+            publication_spell_ids=spellbook._spells_by_id.keys(),
         )
 
         artifact._spell_system_index_phase5 = system_index
@@ -108602,7 +108632,9 @@ class CompilerPhase5:
             - Build a full snapshot, then narrow to visible and locally-scoped
               ids.
             - Construct local root blueprints and phase-5 index.
-            - Attach phase-5 artifacts only to scoped spells.
+            - Attach canonical phase-5 artifacts only to the selected target,
+              matching the target-only Phase 8-11 rebuild. Its dependencies
+              remain in the index/blueprint without invalidating their plans.
             - Update the invoking artifact phase-2-5 cache and invalidate
               phase 8-11 when needed.
 
@@ -108665,6 +108697,7 @@ class CompilerPhase5:
             system_index=system_index,
             spell_lookup=spell_lookup,
             root_builder=root_builder,
+            publication_spell_ids=(target_spell_id,),
         )
 
         artifact._spell_system_index_phase5 = system_index

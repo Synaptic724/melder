@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: faf3010d25ccf2c488114be387e6ab6cba979cff8c68cdc15f3eb5e7a27af982
+SOURCE FINGERPRINT: f698eb251e16addb90ddf7c5edec9ad41c8b09ed903e9a250150ee3a4a52b3bd
 FILE COUNT: 358
 
 ================================================================================
@@ -61030,7 +61030,7 @@ END FILE: docs/beginner/install.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/beginner/registration.md
-CONTENT SHA256: a7042c1f40637b2170edea94e5f82ee0b638e6912d58e7d11a90021b4d2c9eb8
+CONTENT SHA256: f4344577c3b46b65228c4657ad83ddcd58469c72b9ff27f524d12e14d3b3bed0
 SOURCE ENCODING: utf-8
 ================================================================================
 # What you can bind
@@ -61045,6 +61045,19 @@ Use the class examples when you want to study construction and instance
 lifetimes. Use the function and prebuilt-instance examples when a value comes
 from application setup you already control. Read their assertions before
 assuming that all registration forms have interchangeable lifetime behavior.
+
+## Bind an existing object under a Protocol
+
+An existing object uses `existence="unique"`. When you supply a Protocol as
+`spellframe`, Melder checks the actual object during bind: public members defined
+directly on that Protocol must exist, and callable members must be callable.
+An incompatible object raises `TypeError` before registration. Compatible objects
+can be injected into consumers, preserving the original reference.
+
+This is a limited member check, not full static type checking. It does not check
+inherited Protocol declarations, annotation-only data fields or method signatures.
+Members supplied by the instance itself can satisfy the check. Factory bindings
+retain their separate callable contract.
 
 ## Register a group of services
 
@@ -66355,7 +66368,7 @@ END FILE: pyproject.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: requirements.txt
-CONTENT SHA256: 15d0087ac1c8f407bd34f5ab118477052682aee2011ae367a95419146ab65ac6
+CONTENT SHA256: 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder has ZERO third-party RUNTIME dependencies.
@@ -66397,14 +66410,14 @@ SOURCE ENCODING: utf-8
 # tests/integration), not by marker.
 pytest==9.1.1
 pytest-cov==7.1.0
-coverage==7.15.2
+coverage==7.16.1
 
 # --- lint ---
-ruff==0.16
+ruff==0.16.7
 
 # --- build ---
-setuptools==83.0.0
-wheel==0.47.0
+setuptools==84.0.0
+wheel==0.48.0
 
 # --- optional: parallel test runs (`pytest -n auto`) ---
 # pytest-xdist==3.8.0

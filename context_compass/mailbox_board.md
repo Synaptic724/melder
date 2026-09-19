@@ -84,7 +84,7 @@ Message format (append-only; delete after consumption)
 | codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T17:17:54Z | active |
 | codex_2 | codex | 2026-09-04T20:41:17Z | 2026-09-06T09:52:54Z | departed |
 | workflows_1 | codex | 2026-09-04T21:39:59Z | 2026-09-13T20:48:32Z | active |
-| updater_0 | codex | 2026-09-06T20:45:10Z | 2026-09-17T23:06:40Z | active |
+| updater_0 | codex | 2026-09-06T20:45:10Z | 2026-09-19T13:25:41Z | active |
 | knowledge_expert_0 | codex | 2026-09-13T18:03:36Z | 2026-09-13T18:18:14Z | active - Melder architecture/index reread complete; consultation available |
 <!-- END USER-DEFINED: checked_in -->
 

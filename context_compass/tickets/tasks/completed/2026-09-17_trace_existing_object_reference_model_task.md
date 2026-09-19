@@ -1,14 +1,22 @@
 # Task: Trace existing-object references from registration through compiler and lifecycle
 
+- Completed: 2026-09-19T12:51:19Z
+- Disposition: retired_by_owner; proposed redesign not pursued.
+- Summary: Owner retains the current unique-only supplied-object model and explicitly retires the
+  broader redesign. Research and unimplemented proposals below are historical, not pending directives.
+  The delivered Protocol repair remains separate. Provider-artifact repair resumes in its original task;
+  this retirement does not mark the known artifact bug fixed or make its failing tests expected behavior.
+
+
 ## Metadata
 - Task ID: TASK-2026-09-17-trace-existing-object-reference-model
 - Story: STORY-2026-09-17-existing-object-reference-blueprint-discovery
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-17T21:22:19Z
-- Updated: 2026-09-17T22:21:43Z
+- Updated: 2026-09-19T12:51:19Z
 
 ## Objective
 Produce a source-backed current/proposed model for externally supplied references, non-creatable
@@ -99,14 +107,26 @@ fault injection/concurrency, full checkpoint replay and all codegen variants wer
 - IF_UNKNOWN: record concrete missing evidence or policy choice before continuation.
 
 ## Notes
+- DATETIME: 2026-09-19T12:51:19Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly selected: Retire the broader redesign; fix the artifact bug next.
+    Current supplied-object uniqueness remains. Unimplemented model expansion is withdrawn, not delivered.
+  EVIDENCE:
+  - Owner's explicit choice in the current conversation.
+  - tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md
+  IMPACT: This lane is retired with its findings retained. No production ownership redesign is shipped.
+  NEXT: Follow the provider-artifact repair task under the retained current model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATETIME: 2026-09-17T21:22:19Z
   TYPE: PLAN
   CLAIM: Discovery begins with how a bound target becomes an existing creation and how that choice
     reaches requirements and compiled value retrieval. Then trace stores/transfer and source custody,
     keeping fixed supplied values distinct from definitions awaiting external input.
   EVIDENCE:
-  - tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
-  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
   IMPACT: This creates durable discovery state before source work. No representation or public API is chosen.
   NEXT: Verify the current indexes and read the registration/compiler branch as one coherent unit.
   REREAD: REQUIRED
@@ -220,8 +240,8 @@ fault injection/concurrency, full checkpoint replay and all codegen variants wer
     design beginning with a user-bound existing instance handled normally with construction disabled.
     The new bind-representation task is the continuation route; do not rerun this entire trace on re-entry.
   EVIDENCE:
-  - tickets/stories/2026-09-17_existing_object_reference_blueprint_discovery_story.md
-  - tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md
+  - tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md
+  - tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md
   IMPACT: Preserve all observations and earlier candidates while giving later agents one concrete stage.
   NEXT: Open the bind-representation design task and compare normal class metadata with supplied-instance metadata.
   REREAD: REQUIRED
@@ -233,7 +253,7 @@ ranges, identity/version information and one next step; distinguish proposed cha
 
 ## Context / Handoff Summary
 Initial discovery ready for review; no production edits. CONTINUE through the story's Current Checkpoint
-and tickets/tasks/2026-09-17_existing_object_bind_representation_design_task.md, Stage 1 only.
+and tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md, Stage 1 only.
 Reuse this task/artifact's nine observations and source map. The current input is the actual instance
 supplied to bind; normal machinery with construction disabled is the target. Transfer/store divergence,
 staged factory wiring and synthetic/live-only replay evidence remain available for their later stages.

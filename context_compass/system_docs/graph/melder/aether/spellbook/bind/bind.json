@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "1afa14dba2152cfe4087d39483f9db4524d0c72bd17b3fd9b401579dcd4d8687",
+ "source_sha256": "4a9e0f86a702122841b5a0dcceedbe73fbe4c2b44d61d157514fb3c013232b06",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -35,13 +35,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "61f2d7464c143b6e6840e0181c817214db485c4b2745ed62eaa93f35a2059586",
+   "span_sha256": "2f38f97576dbc48f1a4f2f1fa2608fc6b296a8bbf54d3156fefeae98fa76a63f",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
     "fingerprints binding metadata into structural spell ids",
     "resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement",
     "validates binding policy and spellframe semantics",
+    "checks direct public Protocol members on classes and actual supplied objects before Spell creation",
     "creates canonical Spell records for Spellbook registration"
    ],
    "owns_state": [
@@ -53,7 +54,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "61f2d7464c143b6e6840e0181c817214db485c4b2745ed62eaa93f35a2059586"
+   "semantics_authored_against": "2f38f97576dbc48f1a4f2f1fa2608fc6b296a8bbf54d3156fefeae98fa76a63f"
   }
  },
  "edges_out": [

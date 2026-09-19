@@ -89,7 +89,7 @@ or Melder implementation audits for this question. The existing general comparis
     registration keys, scope caches and cleanup custody independently.
   EVIDENCE:
   - Owner's cross-framework research request in this conversation.
-  - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md
+  - tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md
   IMPACT: Research is authorized; the implementation epic remains deferred.
   NEXT: Read official instance/context registration and disposal documentation across the three frameworks.
   REREAD: REQUIRED

@@ -134,6 +134,8 @@ class Bind(Cleanable):
     - Successful registration always flows through canonical profile
       examination and deterministic fingerprinting rather than ad hoc ids.
     - Decorator-style and direct-call usage share the same binding pipeline.
+    - Classes and existing objects declared under a Protocol spellframe must
+      satisfy its directly declared public members before Spell creation.
 
     Registration:
         MELDER KERNEL - guarded. Invoked through `Spellbook.bind(...)`; users
@@ -271,6 +273,9 @@ class Bind(Cleanable):
               immediately and returns the created `Spell`.
             - Decorator and direct-call modes are semantically equivalent once
               the target object is known.
+            - A Protocol spellframe checks directly declared public members on
+              a class or supplied existing object. Callable bindings retain
+              their separate factory/handler contract.
             - Matching book names form one ordered block, including names also supplied
               explicitly. Spell-only names keep their order before or after that block.
               Each matching name is retained once.
@@ -280,6 +285,11 @@ class Bind(Cleanable):
             Union[Spell, Any]:
                 - If used as a decorator, returns the decorated object.
                 - If used as a direct call, returns the newly created `Spell` instance.
+
+        Raises:
+            TypeError: If a class or supplied existing object lacks a required
+                directly declared Protocol member or exposes a non-callable
+                value where that Protocol requires a callable.
         """
         self.check_cleaned()
         if spell is None:
@@ -341,8 +351,9 @@ class Bind(Cleanable):
         * Validates existence and method/lambda constraints.
         * Enforces Protocol/Spellframe semantics:
           - Protocols cannot be bound as concrete spells.
-          - Class-based spells bound under a Protocol spellframe must structurally
-            implement that Protocol.
+          - Class-based and existing-object spells bound under a Protocol
+            spellframe must satisfy its directly declared public members.
+            Existing objects are checked on the supplied value, not its class.
           - Method/lambda spells may also be grouped under Protocol or string
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
@@ -382,8 +393,8 @@ class Bind(Cleanable):
         Raises:
             TypeError:
                 - If a Protocol is bound directly as a concrete spell.
-                - If a Protocol spellframe is provided for a class-based spell that
-                  does not structurally implement it.
+                - If a class or existing object under a Protocol spellframe
+                  fails its directly declared public-member check.
             ValueError:
                 - If the binding is otherwise invalid (existence errors, lambda
                   without name, etc.).
@@ -465,18 +476,20 @@ class Bind(Cleanable):
             # 4. Protocol spellframe semantics
             # ------------------------------------------------------------------
             # If the caller provided a Protocol as the spellframe:
-            #   * For class-based spells: enforce structural implementation.
+            #   * For classes and existing objects: check the actual target's
+            #     members, including instance-only or shadowed implementations.
             #   * For callable spells: allow binding (factory/handler semantics),
             #     but do not run structural checks (no meaningful attribute set).
             if spellframe is not None and Bind._is_protocol_type(spellframe):
-                if isinstance(binding_profile, ClassBindingProfile):
+                if isinstance(binding_profile, ClassBindingProfile) or is_instance:
                     ok, missing_members = Bind._structurally_implements_protocol(
                         spell, spellframe
                     )
                     if not ok:
                         missing_str = ", ".join(sorted(missing_members))
+                        target_kind = "Existing object" if is_instance else "Class"
                         raise TypeError(
-                            f"Class '{spell_name}' does not structurally implement "
+                            f"{target_kind} '{spell_name}' does not structurally implement "
                             f"Protocol '{spellframe.__name__}'. "
                             f"Missing members: {missing_str}"
                         )
@@ -866,30 +879,34 @@ class Bind(Cleanable):
 
     @staticmethod
     def _structurally_implements_protocol(
-            cls: type, protocol_type: type[Any]
+            candidate: object, protocol_type: type[Any]
     ) -> tuple[bool, list[str]]:
         """
-        Best-effort structural check that `cls` implements `protocol_type`.
+        Check the supported public-member contract on a class or supplied object.
 
         This is intentionally conservative and runtime-friendly:
         * It only verifies that all *public* attributes defined directly on the
-          Protocol (non-underscore names) exist on the class.
+          Protocol (non-underscore names) exist on the candidate.
         * If an attribute is callable on the Protocol, it must be present and
-          callable on the class as well.
+          callable on the candidate as well.
+        * For an existing object, inspect the actual value so instance-only
+          members and instance shadowing are respected without construction.
 
         It does NOT try to fully emulate static type-checking (mypy/pyright).
-        The goal is simply to catch obvious mismatches where a class is bound
-        under a Protocol spellframe but clearly does not implement the contract.
+        Inherited Protocol members, annotation-only data and signature/type
+        compatibility are outside this check. Normal attribute access may run
+        user descriptors; errors other than missing attributes propagate.
+        Admission checks the surface at bind time, not continuously at meld.
 
         Args:
-            cls (type): The candidate implementation class.
+            candidate (object): The implementation class or actual supplied value.
             protocol_type (type[Any]): The Protocol subclass being used as the
                 spellframe.
 
         Returns:
             tuple[bool, list[str]]:
-                - bool: True if the class appears to implement the Protocol.
-                - list[str]: The names of any missing members if the check fails.
+                - bool: True if the candidate passes the supported member checks.
+                - list[str]: Missing or non-callable required member names.
         """
         missing: list[str] = []
 
@@ -899,13 +916,13 @@ class Bind(Cleanable):
             if name.startswith("_"):
                 continue
 
-            if not hasattr(cls, name):
+            if not hasattr(candidate, name):
                 missing.append(name)
                 continue
 
             # If the Protocol member is callable, require the implementation
             # to also expose a callable with the same name.
-            impl_attr = getattr(cls, name, None)
+            impl_attr = getattr(candidate, name, None)
             if callable(attr) and not callable(impl_attr):
                 missing.append(name)
 

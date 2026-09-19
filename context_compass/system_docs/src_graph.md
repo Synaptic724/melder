@@ -5778,7 +5778,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `1afa14dba2152cfe4087d39483f9db4524d0c72bd17b3fd9b401579dcd4d8687`
+- source_sha256: `4a9e0f86a702122841b5a0dcceedbe73fbe4c2b44d61d157514fb3c013232b06`
 - nodes: 2
 
 ### Nodes
@@ -5800,6 +5800,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - fingerprints binding metadata into structural spell ids
   - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
   - validates binding policy and spellframe semantics
+  - checks direct public Protocol members on classes and actual supplied objects before Spell creation
   - creates canonical Spell records for Spellbook registration
 - owns_state: `_spellbook`, `_spell_examiner`
 - phases: `init`, `runtime`, `cleanup`
@@ -11661,7 +11662,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
 
-- source_sha256: `a94db51de9ff24db9f9e246dad6f52bdf0fd6f7e94d1d24e3c7f2d1b05591ef8`
+- source_sha256: `db063a3d05dbba462035d0f741c9c3dee1970c9abe90eb13600f984157bfc541`
 - nodes: 2
 
 ### Nodes
@@ -11680,6 +11681,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - builds SpellSystemAdjacencySnapshot and SpellSystemIndex from visible spell state
   - builds root and per-spell RootResolutionBlueprint artifacts for visible roots and local scopes
+  - publishes canonical artifacts only to owned spells in conduit-wide passes or the selected local target, preserving dependency executors
   - rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints
 - phases: `validation`, `runtime`
 - public methods: `run_frame_wide`, `run_local`
