@@ -1,0 +1,76 @@
+{
+  "c1_updates": [
+    {
+      "document": "context_compass\\system_docs\\src_architecture.md",
+      "source": "src/melder/aether/conduit/conduit.py",
+      "lines": 6360
+    },
+    {
+      "document": "context_compass\\system_docs\\src_architecture.md",
+      "source": "src/melder/aether/conduit/meld/meld.py",
+      "lines": 1699
+    },
+    {
+      "document": "context_compass\\system_docs\\src_architecture.md",
+      "source": "src/melder/aether/conduit/creations/creations.py",
+      "lines": 698
+    },
+    {
+      "document": "context_compass\\system_docs\\src_architecture.md",
+      "source": "src/melder/aether/conduit/spell_space/spell_space.py",
+      "lines": 554
+    },
+    {
+      "document": "context_compass\\system_docs\\src_components.md",
+      "source": "src/melder/aether/conduit/conduit.py",
+      "lines": 6360
+    },
+    {
+      "document": "context_compass\\system_docs\\src_components.md",
+      "source": "src/melder/aether/conduit/meld/meld.py",
+      "lines": 1699
+    },
+    {
+      "document": "context_compass\\system_docs\\src_components.md",
+      "source": "src/melder/aether/conduit/creations/creations.py",
+      "lines": 698
+    },
+    {
+      "document": "context_compass\\system_docs\\src_components.md",
+      "source": "src/melder/aether/conduit/spell_space/spell_space.py",
+      "lines": 554
+    }
+  ],
+  "accounted_replacements": {
+    "context_compass\\system_docs\\src_architecture.md": {
+      "- Updated: 2026-09-19": 1,
+      "verified_at: 2026-08-02T13:00:45Z": 1,
+      "verified_at: 2026-09-19T19:57:57Z": 1,
+      "verified_at: 2026-09-05T12:55:45Z": 1,
+      "end_line: 6299": 1,
+      "loc: 6299": 1,
+      "end_line: 1604": 1,
+      "loc: 1604": 1,
+      "verified_at: 2026-09-19T22:06:30Z": 1,
+      "end_line: 625": 1,
+      "loc: 625": 1,
+      "end_line: 489": 1,
+      "loc: 489": 1
+    },
+    "context_compass\\system_docs\\src_components.md": {
+      "verified_at: 2026-08-02T13:00:45Z": 1,
+      "verified_at: 2026-09-19T19:57:57Z": 1,
+      "verified_at: 2026-09-05T12:55:45Z": 1,
+      "end_line: 6299": 1,
+      "loc: 6299": 1,
+      "end_line: 625": 1,
+      "loc: 625": 1,
+      "end_line: 489": 1,
+      "loc: 489": 1,
+      "end_line: 1604": 1,
+      "loc: 1604": 1,
+      "verified_at: 2026-09-19T22:06:30Z": 1
+    }
+  },
+  "unexpected_content_loss": false
+}

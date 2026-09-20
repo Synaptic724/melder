@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "3de42b0c9906b23895f18b722e48daa041bb06b96047d36ccc23bb475124554f",
+ "source_sha256": "60e5e5ca181e7d803ac51c6b26eb360a91089732733f3409eb5fe07b4583fa49",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -29,7 +29,7 @@
    "label": "Meld",
    "kind": "abstract",
    "file": "src/melder/aether/conduit/meld/meld.py",
-   "lineno": 43,
+   "lineno": 45,
    "bases": [
     "Cleanable"
    ],
@@ -42,17 +42,19 @@
     "has_live_creation",
     "meld",
     "meld_existing_spell",
+    "purge",
     "set_meld_hooks"
    ],
    "shape": {
-    "method_count": 27,
+    "method_count": 29,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "dd825cb91e24aefd6f3a62f798a4149ffc7ef2f2e849c384ba5924892d983f3d",
+   "span_sha256": "87e10ce7bd4873f6b3f805a1e1905bbebf1c7e9a75e2003f8187c94269df7b19",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
+    "discovers and authorizes the purge target store, then delegates locked retirement to Creations; instance targeting remains deferred",
     "enforces validity and dirty-root gates",
     "chooses reuse versus construction",
     "dispatches execution into CreationContext",
@@ -153,6 +155,7 @@
   "Sequence": "typing.Sequence",
   "ClassVar": "typing.ClassVar",
   "NoReturn": "typing.NoReturn",
+  "Union": "typing.Union",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "HookExecutionError": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
@@ -163,6 +166,7 @@
   "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
   "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "Creations": "melder.aether.conduit.creations.creations.Creations",
   "SpellCompilerSystem": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8655
-CONTENT_SHA256 = 'fb28da249dac8f75a89386ac8f9d657c37b26209c0a1460f039becb13bd28912'
+LINE_COUNT = 8694
+CONTENT_SHA256 = 'eeedff989ce0fca55506678d69fe723bfd991c21c94c0b96d942b799d65e494a'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-19
+- Updated: 2026-09-20
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -2145,6 +2145,13 @@ Key Files (C1):
 Purpose:
 - Execution scope for resolving spells and managing object lifecycles.
 
+Scoped purge (2026-09-20): Conduit.purge forwards the same name/type/frame/id selectors as meld
+to the existing Meld door. Meld enforces local/root/leader authority before invoking the selected
+store. Purge keeps the conduit, its pools, registrations and compiled contexts alive. The default
+purge_all=True removes all retained creations for that target; False and instance-reference targets
+raise NotImplementedError pending the later instance-targeting work.
+EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.purge`.
+
 Registration capability forwarding (2026-09-19): bind and bind_inactive explicitly forward
 resolvable: bool = True to the owning Spellbook. Neither creates another policy copy or changes
 conduit posture; normal/dynamic admission stays at the existing facade boundaries.
@@ -2423,6 +2430,19 @@ Text is preserved as authored; only its location changed.
 Purpose:
 - Instance lifecycle registry for Conduits and scoped spellspaces.
 
+Native purge (2026-09-20): Creations.purge receives Meld's resolved internal definition; it does
+not discover or authorize scopes. _detach_purge_entries removes one selected key from both maps
+under the store lock. Unique also holds Spell._lock first, matching construction. Key membership
+and Existence distinguish absence, falsey singleton values and many buckets. Detached live references
+survive lock release, then _dispose_disposable_registry and _attempt_cleanup apply the existing
+newest-first/method-order/ExceptionGroup contract. The store remains reusable and callback-created
+replacement entries survive. Transfer extraction is not used.
+SpellSpace.purge always targets its own store for many/unique_per_spell_space; it refuses broader
+lifetimes even when its owning conduit is a root or elected leader. Managed stack/pool state is
+unchanged, and direct manual SpellSpace use needs no active-stack entry.
+EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.purge` and
+`src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.purge`.
+
 Responsibilities:
 - Track live objects in `_creations`.
 - Track cleanup-only disposal metadata in `_disposable_creations`.
@@ -2553,6 +2573,14 @@ Purpose:
   permitted at all. It is the only path by which a bound spell becomes a live
   object, which is why both the hook system and the dirty-root refusal live
   behind it rather than in the binding pipeline.
+
+Purge discovery (2026-09-20): Meld.purge reuses _resolve_spell without compiling or constructing.
+_get_purge_creations owns scope checks: space -> local space, many/per-conduit -> caller conduit,
+unique -> Spell owner, lineage -> lineage root, cluster -> elected leader. Shared-store removal
+requires _conduit_id to match the selected store's owner; _resolution_conduit_id grants no authority.
+It delegates to Creations.purge for locks/removal/disposal. No runtime Spell import or public internal
+Spell dispatch is added. Instance-reference targets and purge_all=False raise NotImplementedError.
+EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld.purge` and `Meld._get_purge_creations`.
 
 Non-resolvable registration admission:
 - ConduitMeld and SpellSpaceMeld check the selected native _resolvable field in both meld and
@@ -5379,6 +5407,13 @@ Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
 
 ## Method-Level Call Flows (C1)
+
+### Flow: Purge a Target's Retained Creations
+1. Conduit.purge or SpellSpace.purge normalizes logical names versus explicit spell_id as meld does.
+2. Meld.purge uses _resolve_spell; _get_purge_creations selects and authorizes the existing store.
+3. Creations.purge takes Spell._lock for unique, then _detach_purge_entries takes the store lock.
+4. Both maps detach the selected key. After locks are released, existing disposal helpers run.
+5. Return the removed count or raise aggregated disposal errors. Other keys and warmed contexts remain.
 These flows describe concrete method sequences for core behaviors.
 
 ### Flow: Import -> Runtime Guardrails
@@ -6056,9 +6091,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6299
-  loc: 6299
-  verified_at: 2026-09-19T19:57:57Z
+  end_line: 6360
+  loc: 6360
+  verified_at: 2026-09-20T22:38:07Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
   end_line: 603
@@ -6086,9 +6121,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 625
-  loc: 625
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 698
+  loc: 698
+  verified_at: 2026-09-20T22:38:07Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 133
@@ -6096,14 +6131,14 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 489
-  loc: 489
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 554
+  loc: 554
+  verified_at: 2026-09-20T22:38:07Z
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1604
-  loc: 1604
-  verified_at: 2026-09-19T22:06:30Z
+  end_line: 1699
+  loc: 1699
+  verified_at: 2026-09-20T22:38:07Z
 - path: `src/melder/aether/conduit/meld/conduit_meld.py`
   start_line: 1
   end_line: 832
@@ -8533,6 +8568,10 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-20 purge adds Conduit/SpellSpace -> Meld discovery/authority -> Creations retirement.
+Scope and writer-lock rules mirror existing creation routing. Instance-reference targets and
+purge_all=False remain explicitly unimplemented; full-target purge preserves registration and scopes.
 
 2026-09-19: native registration and S3 compiler consumers are implemented. Required inputs preserve
 descriptive references through topology/model/plans; executable roots exclude False definitions.

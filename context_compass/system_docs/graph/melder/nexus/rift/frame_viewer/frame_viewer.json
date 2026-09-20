@@ -12,10 +12,10 @@
    "lineno": 1,
    "include": true,
    "role": "The READ surface of a room, opposite CommandSystem and Workstation; a view rather than a cache - helpers are built on demand so projection refreshes cannot leave it answering stale.",
-   "semantics_authored_against": "d55e756ae46ce8b02ed23632008d615534a866f96bb409ac71aea0547ff8ca90",
    "responsibilities": [
     "delegates registered relationship navigation to the current ACL-filtered spell viewer"
-   ]
+   ],
+   "semantics_authored_against": "d55e756ae46ce8b02ed23632008d615534a866f96bb409ac71aea0547ff8ca90"
   },
   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer": {
    "id": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",

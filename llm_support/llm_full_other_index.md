@@ -10,11 +10,11 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 9d18314fdb4892b6c40abd0467cd56a6bc44371ada09dbad69311d3192148fe9 |
-| bundle_sha256 | de2300280bb64c5f5bc44a0dd567812935452f010b260ed5f8e78c08a77f81d9 |
-| bundle_line_count | 66533 |
+| source_fingerprint | 85374aba8e914462510940cb668eba936bb3951f7099f351f2d0ab232f8de289 |
+| bundle_sha256 | 49e5bf11817d31e78d42119de1bcbbe823d8e24a4791018c81f934d2e0e7a7ca |
+| bundle_line_count | 66786 |
 | bundle_line_ending | lf |
-| files | 358 |
+| files | 359 |
 
 ## Files
 
@@ -349,32 +349,33 @@ Line numbers are 1-based and inclusive.
 | 62696-62731 | 62701-62728 | 1328 | utf-8 | 96c15ac9df5c58c46fb2baead22c8017f6f7d8c6892387d0a15d23bd57e4de67 | docs/intermediate/ownership.md |
 | 62732-62768 | 62737-62765 | 1320 | utf-8 | d6474f9c89da214decbc3776d9ff4323d2000b72569ad367c9b0a68029d4668a | docs/intermediate/permissions.md |
 | 62769-62852 | 62774-62849 | 3912 | utf-8 | 4f94ddeb7320af564ae3a65de9add910248a4898adf309850ba72c5cdcd7d976 | docs/intermediate/registration.md |
-| 62853-62892 | 62858-62889 | 1674 | utf-8 | c4f8b8287c0affdbe7793a354308d698c82b744a498fae27eea2a9d71adf2d78 | docs/intermediate/scopes.md |
-| 62893-63079 | 62898-63076 | 9073 | utf-8 | e34fd39e119d2f5e767cab323c187f2d64b07bbf33a84417120ea023390e8dcc | docs/maintaining.md |
-| 63080-63182 | 63085-63179 | 1645 | utf-8 | 0023e672162c7d558eee38de8581c01af3feeb0cbfd218e98e46a0936f037b07 | docs/navigation.toml |
-| 63183-63204 | 63188-63201 | 709 | utf-8 | 8482b9e2f40e18690b0bb09cf45f4ba63fcb986ede7ef8931b4fca92347c0a68 | docs/reference/api.md |
-| 63205-63233 | 63210-63230 | 1084 | utf-8 | eacb6a494239da3f30f87f0e9347e9702b87475a1a94d63505189e06d4a542c4 | docs/reference/downloads.md |
-| 63234-63353 | 63239-63350 | 4178 | utf-8 | e4248737cd23f771837188f1099a03247ef1c68fab65f82b0bf91015416adf8a | docs/reference/glossary.md |
-| 63354-63394 | 63359-63391 | 1473 | utf-8 | 8b0f1aa93d1e72849f899313b36dc30957a17b59384a9aacd732d879726ef294 | docs/reference/releases.md |
-| 63395-63432 | 63400-63429 | 3202 | utf-8 | 494198b394d663cf2cd6c9a5d352a37dfae57b0d3af2c3351011450eb34f2359 | docs/reference/troubleshooting.md |
-| 63433-63442 | 63438-63439 | 98 | utf-8 | 0b8400cd23255199095b7fc5ffbe4caa6c59b6534f1536765d751525d53d6a74 | docs/requirements.txt |
-| 63443-63680 | 63448-63677 | 12754 | utf-8 | 7e2f41a419965899a1af28083177609d2e5ffd0fd8b821f9cef121d12b545e24 | docs/tests/test_build_docs.py |
-| 63681-63751 | 63686-63748 | 3075 | utf-8 | d6fb5f7e297a6a57cb8af5faee3ee230010d1d79b2bb82cc43370461a6330c93 | docs/tests/test_curriculum.py |
-| 63752-63885 | 63757-63882 | 6986 | utf-8 | ea570a5a5b6d5c2c3a1170e5f798d56e1eac287f313333621db12ade86b5178e | docs/tests/test_example_catalog.py |
-| 63886-64018 | 63891-64015 | 6577 | utf-8 | 66d54409fc72b1653d53c7695c38cdd837a1bbb7022665a773bf00de8d6a210f | docs/tests/test_references.py |
-| 64019-64067 | 64024-64064 | 1971 | utf-8 | b9eda9c7b69635d59cdd585b5dffbd76b5427ea67b6b3d833574b2faaee7b724 | docs/tests/test_site_check.py |
-| 64068-64136 | 64073-64133 | 2946 | utf-8 | ed3beb9b231fc6096dc6ecd10df674850a7a955973190befe3650780ed316348 | docs/tools/api_aliases.py |
-| 64137-64315 | 64142-64312 | 9602 | utf-8 | 602471f7ff85fd830ae834115615cad98e21f3498642ebb5911ce9d1f36943ea | docs/tools/api_reference.py |
-| 64316-64459 | 64321-64456 | 7372 | utf-8 | 1ae71034eb85357f051bd6177731b4fc6a84a2cc57cdba8a83efc7547e457fb4 | docs/tools/architecture_reference.py |
-| 64460-64820 | 64465-64817 | 19325 | utf-8 | 5b3c5f530247f131840f7d60b360e4810bef5db2da6b9c6d16cb6abc9c1c8e17 | docs/tools/build_docs.py |
-| 64821-64970 | 64826-64967 | 6880 | utf-8 | 7e4d5a36d954bebbadcfee7c178de8f6b55821888138385ff6f5e54909feff3e | docs/tools/check_site.py |
-| 64971-65143 | 64976-65140 | 8693 | utf-8 | 6487317bdfa6406272c5139a0eb3b1ae4e369b1105444950bc14c41c3801605d | docs/tools/curriculum.py |
-| 65144-65292 | 65149-65289 | 6272 | utf-8 | eb8a0d4ef63cd56e45ccdfe2a3280c724b877c6d78ad39fe349accb7438af283 | docs/tools/docstring_format.py |
-| 65293-65557 | 65298-65554 | 15703 | utf-8 | c69eef2e6ae0009a3d4bc73793afcb703c779ddbb6c9415f10820ddc92a3194f | docs/tools/example_catalog.py |
-| 65558-65741 | 65563-65738 | 9795 | utf-8 | b34ca95947e7bc5ff483013d3f629909ee621688689baec0d5debfb8f577c85d | docs/tools/handbook.py |
-| 65742-65821 | 65747-65818 | 3510 | utf-8 | 9c406c13a3d2fe9700bc9d18cd96a4ccf0c1977224e7b597a079e2f66e000050 | docs/tools/install_tectonic.py |
-| 65822-65850 | 65827-65847 | 464 | utf-8 | 8c616af406d11267294c71aa8814e29115fa1956d3e9f8c1085b4cf42707429d | docs/tools/site_model.py |
-| 65851-66184 | 65856-66181 | 13542 | utf-8 | 93ffa350dbbc556831cf68ecac2768697561a71601be1d2bed4814f4d0da2cb2 | experimentation/test_spellframe_type_injection.py |
-| 66185-66437 | 66190-66434 | 7773 | utf-8 | de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232 | pyproject.toml |
-| 66438-66506 | 66443-66503 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 66507-66533 | 66512-66530 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 62853-62932 | 62858-62929 | 3548 | utf-8 | a4a9db5fd822de85def1041fa5caa1cd8d80fc5da483ad17e1e19b236f3b3c10 | docs/intermediate/scopes.md |
+| 62933-63119 | 62938-63116 | 9073 | utf-8 | e34fd39e119d2f5e767cab323c187f2d64b07bbf33a84417120ea023390e8dcc | docs/maintaining.md |
+| 63120-63222 | 63125-63219 | 1645 | utf-8 | 0023e672162c7d558eee38de8581c01af3feeb0cbfd218e98e46a0936f037b07 | docs/navigation.toml |
+| 63223-63244 | 63228-63241 | 709 | utf-8 | 8482b9e2f40e18690b0bb09cf45f4ba63fcb986ede7ef8931b4fca92347c0a68 | docs/reference/api.md |
+| 63245-63273 | 63250-63270 | 1084 | utf-8 | eacb6a494239da3f30f87f0e9347e9702b87475a1a94d63505189e06d4a542c4 | docs/reference/downloads.md |
+| 63274-63393 | 63279-63390 | 4178 | utf-8 | e4248737cd23f771837188f1099a03247ef1c68fab65f82b0bf91015416adf8a | docs/reference/glossary.md |
+| 63394-63434 | 63399-63431 | 1473 | utf-8 | 8b0f1aa93d1e72849f899313b36dc30957a17b59384a9aacd732d879726ef294 | docs/reference/releases.md |
+| 63435-63472 | 63440-63469 | 3202 | utf-8 | 494198b394d663cf2cd6c9a5d352a37dfae57b0d3af2c3351011450eb34f2359 | docs/reference/troubleshooting.md |
+| 63473-63482 | 63478-63479 | 98 | utf-8 | 0b8400cd23255199095b7fc5ffbe4caa6c59b6534f1536765d751525d53d6a74 | docs/requirements.txt |
+| 63483-63720 | 63488-63717 | 12754 | utf-8 | 7e2f41a419965899a1af28083177609d2e5ffd0fd8b821f9cef121d12b545e24 | docs/tests/test_build_docs.py |
+| 63721-63791 | 63726-63788 | 3075 | utf-8 | d6fb5f7e297a6a57cb8af5faee3ee230010d1d79b2bb82cc43370461a6330c93 | docs/tests/test_curriculum.py |
+| 63792-63925 | 63797-63922 | 6986 | utf-8 | ea570a5a5b6d5c2c3a1170e5f798d56e1eac287f313333621db12ade86b5178e | docs/tests/test_example_catalog.py |
+| 63926-64058 | 63931-64055 | 6577 | utf-8 | 66d54409fc72b1653d53c7695c38cdd837a1bbb7022665a773bf00de8d6a210f | docs/tests/test_references.py |
+| 64059-64107 | 64064-64104 | 1971 | utf-8 | b9eda9c7b69635d59cdd585b5dffbd76b5427ea67b6b3d833574b2faaee7b724 | docs/tests/test_site_check.py |
+| 64108-64176 | 64113-64173 | 2946 | utf-8 | ed3beb9b231fc6096dc6ecd10df674850a7a955973190befe3650780ed316348 | docs/tools/api_aliases.py |
+| 64177-64355 | 64182-64352 | 9602 | utf-8 | 602471f7ff85fd830ae834115615cad98e21f3498642ebb5911ce9d1f36943ea | docs/tools/api_reference.py |
+| 64356-64499 | 64361-64496 | 7372 | utf-8 | 1ae71034eb85357f051bd6177731b4fc6a84a2cc57cdba8a83efc7547e457fb4 | docs/tools/architecture_reference.py |
+| 64500-64860 | 64505-64857 | 19325 | utf-8 | 5b3c5f530247f131840f7d60b360e4810bef5db2da6b9c6d16cb6abc9c1c8e17 | docs/tools/build_docs.py |
+| 64861-65010 | 64866-65007 | 6880 | utf-8 | 7e4d5a36d954bebbadcfee7c178de8f6b55821888138385ff6f5e54909feff3e | docs/tools/check_site.py |
+| 65011-65183 | 65016-65180 | 8693 | utf-8 | 6487317bdfa6406272c5139a0eb3b1ae4e369b1105444950bc14c41c3801605d | docs/tools/curriculum.py |
+| 65184-65332 | 65189-65329 | 6272 | utf-8 | eb8a0d4ef63cd56e45ccdfe2a3280c724b877c6d78ad39fe349accb7438af283 | docs/tools/docstring_format.py |
+| 65333-65597 | 65338-65594 | 15703 | utf-8 | c69eef2e6ae0009a3d4bc73793afcb703c779ddbb6c9415f10820ddc92a3194f | docs/tools/example_catalog.py |
+| 65598-65781 | 65603-65778 | 9795 | utf-8 | b34ca95947e7bc5ff483013d3f629909ee621688689baec0d5debfb8f577c85d | docs/tools/handbook.py |
+| 65782-65861 | 65787-65858 | 3510 | utf-8 | 9c406c13a3d2fe9700bc9d18cd96a4ccf0c1977224e7b597a079e2f66e000050 | docs/tools/install_tectonic.py |
+| 65862-65890 | 65867-65887 | 464 | utf-8 | 8c616af406d11267294c71aa8814e29115fa1956d3e9f8c1085b4cf42707429d | docs/tools/site_model.py |
+| 65891-66224 | 65896-66221 | 13542 | utf-8 | 93ffa350dbbc556831cf68ecac2768697561a71601be1d2bed4814f4d0da2cb2 | experimentation/test_spellframe_type_injection.py |
+| 66225-66477 | 66230-66474 | 7773 | utf-8 | de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232 | pyproject.toml |
+| 66478-66690 | 66483-66687 | 13066 | utf-8 | 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae | release_docs/0.2.43.md |
+| 66691-66759 | 66696-66756 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 66760-66786 | 66765-66783 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |

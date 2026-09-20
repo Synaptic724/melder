@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/nexus.py",
- "source_sha256": "e3f28d397749a5aaf921acb37580d012a001358674ff615cf45634482aac2ded",
+ "source_sha256": "f291e1bf3bc9910ae13af8982406a31b67909bee4e70a1cd408775d64c417581",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.nexus": {
@@ -30,30 +30,34 @@
    "label": "Nexus",
    "kind": "class",
    "file": "src/melder/nexus/nexus.py",
-   "lineno": 61,
+   "lineno": 64,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
+    "activate",
+    "activated",
     "add_rift",
     "authorize_frame_link_for_rift",
     "check_for_aetheric_frame",
     "cleanup",
     "close_and_wait_rift",
     "configuration",
+    "configure",
+    "configured",
     "count_active_rift_threads",
     "count_active_rift_threads_total",
+    "create_configuration",
+    "create_configuration_builder",
     "create_frame_projection_sets",
     "create_frame_projection_sets_for_rift",
     "create_nexus_frame_for_rift",
     "create_rift",
     "create_rift_configuration",
-    "create_system_configuration",
-    "disable",
+    "deactivate",
     "disable_all_rift_gates",
     "disable_rift_gate",
-    "enable",
     "enable_all_rift_gates",
     "enable_rift_gate",
     "frame_manager",
@@ -72,8 +76,8 @@
     "has_rift",
     "id",
     "insert_head_frame_acl_configuration",
+    "is_activated",
     "is_configured",
-    "is_enabled",
     "list_accessible_nexus_frame_names",
     "list_accessible_non_nexus_frame_names",
     "list_frame_acl_profile_names",
@@ -89,11 +93,11 @@
     "set_rift_gate_entry_mode"
    ],
    "shape": {
-    "method_count": 91,
+    "method_count": 95,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8c0e8105b8307048442f52b382ee6c8a4422438c943c901cfce6d1736532e9a8",
+   "span_sha256": "ae8eef708a490641aaab5106c1fc065b67746f4bb5d9b2ed59f723fb75bf02fb",
    "role": "Public AR root.",
    "responsibilities": [
     "creates and registers live Rift instances",
@@ -131,6 +135,18 @@
   {
    "from": "melder.nexus.nexus.Nexus",
    "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus.Nexus",
+   "to_label": "NexusConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus.Nexus",
+   "to_label": "NexusConfigurationBuilder",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -220,12 +236,6 @@
   },
   {
    "from": "melder.nexus.nexus.Nexus",
-   "to_label": "NexusConfiguration",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.nexus.nexus.Nexus",
    "to_label": "Rift",
    "relation": "creates",
    "confidence": "candidate"
@@ -252,6 +262,7 @@
   "NexusFrameManager": "melder.nexus.nexus_frame_manager.NexusFrameManager",
   "RiftConfiguration": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
   "NexusConfiguration": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+  "NexusConfigurationBuilder": "melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder",
   "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
   "RiftValidationMode": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
   "CodegenProjection": "melder.nexus.rift.projection.codegen_projection.CodegenProjection",

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27766
-CONTENT_SHA256 = '4ae7bce90ba05f583b973863537f6c6738cbc84b9aa31867083edcf728b59886'
+LINE_COUNT = 27867
+CONTENT_SHA256 = '9f55c312aeaf67724435426740ee052ddff0731d93169e8316d7a53ea4219fb8'
 
 TEXT = """# src_graph
 
@@ -31,7 +31,7 @@ descriptors and reassemble.
 
 ## src/melder/__architecture__.py
 
-- source_sha256: `e817cc60cd05b8ec0ac5ad9571ac823481d2230247bf327c36b5d9e4432ca0b6`
+- source_sha256: `d31689d0f783ac7d5ef4d70c22455e1282aebffc94aa90cedd3c1b01543221e3`
 - nodes: 1
 
 ### Nodes
@@ -81,7 +81,7 @@ descriptors and reassemble.
 
 ## src/melder/__components__.py
 
-- source_sha256: `1b068fb4fa1a0f0083e7a8568cdb9973cc0a31266035a9c297d9f6bb25638096`
+- source_sha256: `314b5ddb50f2d91de8a3f0a57eb1736831a514bc832587287ed190f70c5bec48`
 - nodes: 1
 
 ### Nodes
@@ -131,7 +131,7 @@ descriptors and reassemble.
 
 ## src/melder/__graph_details__.py
 
-- source_sha256: `32b52400c58dd14dcf6ff5c9c04f68b0e5d9e6cbac4b2eb087d3b2ae7d074794`
+- source_sha256: `fe43aa2f5c3864327cf0517e709d9f868f2e4c0a503b2b05ab51d4456b43233c`
 - nodes: 1
 
 ### Nodes
@@ -160,7 +160,7 @@ descriptors and reassemble.
 
 ## src/melder/__graph_network__.py
 
-- source_sha256: `787d47f3b6baf59adbb10d416642dfc4653b819981d319df69562542c70b6bbe`
+- source_sha256: `9c368851b2a4321e2fb6032bf07c178e6671a2c8a19f0ce5dad5d2d3df3a603a`
 - nodes: 1
 
 ### Nodes
@@ -189,7 +189,7 @@ descriptors and reassemble.
 
 ## src/melder/__init__.py
 
-- source_sha256: `1f7f2a54bb542e0f87d5908d910ee47f971d48b83faf1bdab2ed274374dad92c`
+- source_sha256: `89900a6077d9a924578e5596b8320a2468bb9b0d6608b0534aa40762bff40599`
 - nodes: 1
 
 ### Nodes
@@ -206,7 +206,7 @@ descriptors and reassemble.
 
 ## src/melder/__license__.py
 
-- source_sha256: `9a0c67a1b8391ab86af1c4242de72b21d3c78abd513f9a5c36bae809bf39a314`
+- source_sha256: `fdacc9edcd065b54c0e53877eab98e9bfe06b0340e39bb248063bfb55e013809`
 - nodes: 1
 
 ### Nodes
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `102e41233d9a796dc1e93e4e42742e43bf74c0c6039f2dc0ca2dd0097aad7c02`
+- source_sha256: `4b0801083210f446ec591bbbe4c35809618b7d33ff64b431b673b2237e45615e`
 - nodes: 1
 
 ### Nodes
@@ -268,7 +268,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/_builder.py
 
-- source_sha256: `cece79d162fb78ea95352b0e0c9f427a5dfa0b4cd54dbb1493be4289aec2a3a6`
+- source_sha256: `3355739447be32d3fedb2acf1e34709011d030be4b03ed460897e4eaba1bd6de`
 - nodes: 3
 
 ### Nodes
@@ -295,7 +295,7 @@ descriptors and reassemble.
 #### `HarvestResult` (class)
 
 - id: `melder._build_assets._agent_documentation._builder.HarvestResult`
-- defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:381`
+- defined at: `src/melder/_build_assets/_agent_documentation/_builder.py:399`
 - role: Collected output of one package harvest scan.
 - responsibilities:
   - hold the three catalogued states plus diagnostics
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `59c31e122e7acc9d683654b676f1c05b29ec68aee83bb9cfa8c9e784cc9f84ba`
+- source_sha256: `6f10f0507ec6ef3c952267a4b5ad2a57ad4f120cf90f6a68c38d39dd3474e80c`
 - nodes: 1
 
 ### Nodes
@@ -356,7 +356,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/_builder.py
 
-- source_sha256: `1cd4aded02fec27885a4ffc95dbe3561b17e5a467e3189e06b08f9ab7482a2e0`
+- source_sha256: `d489c6f750871953f94521c402a00ede1d84a598f071017b4e015fbe0d340241`
 - nodes: 2
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `585261fed8f8b8e0847277837b4ed8ad2fdcfec2ceb4016ab238f40fa3e3d524`
+- source_sha256: `7562eadce587a46a7df2846b0a3480c406b75f5c9bd5473e3c33ba2b9ca246db`
 - nodes: 1
 
 ### Nodes
@@ -462,7 +462,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/_builder.py
 
-- source_sha256: `7e2f90aef6bc81cf62d9162c991759a91744aa2cf7ee7998b239b16b0876943c`
+- source_sha256: `84066d37f33c13695b6adc89904719248c0bf7740f289a1ff8298c8662972f30`
 - nodes: 2
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `4b924e6401cf6b27e90d188e8592cebb577f3259da0242f6a4684a6d7ebccab5`
+- source_sha256: `7d3b758bf3ecc2aa9835c91f33e92f3995eb78cf9d01cb0c6de3bba995a52841`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `bd7306f33213b85f9225b47ad5d0f906b3313f7019722dcdb4c6f57d05bf45fb`
+- source_sha256: `e23175c9d515720c2332ee37d7cefa9da7a10d418e824741cdb95a1bf3aab5bc`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `fdf40071a2df2cda481ccb2db710ee91c58dc498ed6738515d88d304d483679a`
+- source_sha256: `9c92de4eef1cf069dce70a460a3d7a51af4d1d85b1534a46bb82fb8d319fd909`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `a7fdc7196f81651b9e372fdeb9bcc4ea4dddb1480d5d39231c47989d1409636d`
+- source_sha256: `6fc43393662a5d6f463331e8a8e19c87ef7dbe66f74e186f0fe2ccf1b5525acd`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `7d86e71ba8aab43509d80fff182a1873bb8e86b5040687cd6b1c160a383a31eb`
+- source_sha256: `455322de0949eb313fd78ebc320bdea5d6bf8fe0b1c0cec3b36ccdc9750c0a8e`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `2f6db1b2149f7031337f2bd2c3ee25d748c75ff3786066bb612179994f52ef9f`
+- source_sha256: `bb914d36cd145fb2e5388fca946995e303b13162523d503f51646247d9dbec7c`
 - nodes: 1
 
 ### Nodes
@@ -598,7 +598,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/system_documents.py
 
-- source_sha256: `36765f4c54af3b9299760af1cebfce517279ad325ad928ba8199678a1869703d`
+- source_sha256: `6a11e3037f4453e794e91255bbee0cfc901107640432b41299ecd2903da02863`
 - nodes: 2
 
 ### Nodes
@@ -625,7 +625,7 @@ descriptors and reassemble.
 
 ## src/melder/aether/aether.py
 
-- source_sha256: `b4926f02e99052ad632d3063da23ffca68dc69724cee4c543dd47c08d96ea5b7`
+- source_sha256: `869db592dfb195e80576d1c5cf9160a285f9873dc0b3e8698722fe88bb0939e2`
 - nodes: 2
 
 ### Nodes
@@ -644,7 +644,7 @@ descriptors and reassemble.
 #### `Aether` (class)
 
 - id: `melder.aether.aether.Aether`
-- defined at: `src/melder/aether/aether.py:34`
+- defined at: `src/melder/aether/aether.py:48`
 - extends: `Cleanable`
 - role: Global Melder substrate root.
 - responsibilities:
@@ -654,7 +654,7 @@ descriptors and reassemble.
   - registers conduits and spell lineage state
 - owns_state: `_aetheric_frames`, `_default_frame`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `acquire_load_authority`, `activate`, `activated`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_conduits`, `create_configuration`, `create_configuration_builder` (+15 more)
+- public methods: `acquire_load_authority`, `activate`, `activated`, `aetheric_mediator`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_conduits`, `create_configuration` (+18 more)
 
 ### Edges out
 
@@ -681,13 +681,14 @@ descriptors and reassemble.
 - `melder.aether.aether.Aether` -> `melder.utilities.helpers.ulid_factory`: Aether uses the internal ulid_factory module when minting its runtime identifier.
 - `melder.aether.aether.Aether` -> `melder.utilities.synchronization.load_gate.LoadGate`: Aether constructs and owns the LoadGate BEFORE any frame can exist and drives acquire/release_load_authority (drain over live mediators).
 
-### Edge candidates (12, unconfirmed)
+### Edge candidates (14, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.aether.Aether` creates `RLock`
 - `melder.aether.aether.Aether` creates `AetherConfiguration`
 - `melder.aether.aether.Aether` creates `AetherConfigurationBuilder`
+- `melder.aether.aether.Aether` creates `Identity`
 - `melder.aether.aether.Aether` creates `ValueError`
 - `melder.aether.aether.Aether` creates `RuntimeError`
 - `melder.aether.aether.Aether` creates `TypeError`
@@ -695,8 +696,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.aether.Aether` creates `Crystallizer`
 - `melder.aether.aether.Aether` creates `AetherUtilitySystem`
 - `melder.aether.aether.Aether` creates `LoadGate`
-- `melder.aether.aether.Aether` creates `Nexus`
+- `melder.aether.aether.Aether` creates `AethericMediator`
 - `melder.aether.aether.Aether` creates `MutationResearch`
+- `melder.aether.aether.Aether` creates `Nexus`
 
 <!-- END FILE: src/melder/aether/aether.py -->
 
@@ -704,7 +706,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aether_configuration.py
 
-- source_sha256: `4b7b79b60bb10a244d75333b32ddbca4589bd5bb53c5daf35fe35e94a14cdd37`
+- source_sha256: `a3b7d28622c5a5b3e30824a1640c1a24d24ee3d625dc2d28b8f858f39321ba17`
 - nodes: 2
 
 ### Nodes
@@ -722,7 +724,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `AetherConfiguration` (class)
 
 - id: `melder.aether.aether_configuration.AetherConfiguration`
-- defined at: `src/melder/aether/aether_configuration.py:11`
+- defined at: `src/melder/aether/aether_configuration.py:12`
 - extends: `Cleanable`
 - role: Mutable-to-frozen root configuration surface for process-wide Aether policy.
 - responsibilities:
@@ -761,7 +763,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aether_configuration_builder.py
 
-- source_sha256: `ba6e54f5361a57f1c7900b74c8135266ff70991428c49e1046a7754e3209aa73`
+- source_sha256: `10db2a581c15678c55b1067fdcaf6cd966d6883f056e45348fd6397bb1cef49c`
 - nodes: 2
 
 ### Nodes
@@ -778,7 +780,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `AetherConfigurationBuilder` (class)
 
 - id: `melder.aether.aether_configuration_builder.AetherConfigurationBuilder`
-- defined at: `src/melder/aether/aether_configuration_builder.py:14`
+- defined at: `src/melder/aether/aether_configuration_builder.py:11`
 - extends: `Cleanable`
 - role: One-shot builder for Aether root configuration assembly.
 - responsibilities:
@@ -816,7 +818,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aether_utility_system.py
 
-- source_sha256: `6d2ff6dda5d4b3c17e6753fd617a726da495844942cc6b05dc66db7021961574`
+- source_sha256: `b3e72d750ebb8b2d4a1ce8df252c1e9e0501e42a4b507899c76f8a4e92b7ac6f`
 - nodes: 2
 
 ### Nodes
@@ -834,7 +836,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `AetherUtilitySystem` (class)
 
 - id: `melder.aether.aether_utility_system.AetherUtilitySystem`
-- defined at: `src/melder/aether/aether_utility_system.py:10`
+- defined at: `src/melder/aether/aether_utility_system.py:11`
 - extends: `Cleanable`
 - role: Process-wide utility and logger provider host.
 - responsibilities:
@@ -867,7 +869,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/aetheric_frame.py
 
-- source_sha256: `b52a81b2de38b9a3d9c021d24178a36bc0371aa086e6a0b19308ff103077f8da`
+- source_sha256: `1236a76e6e8b5cd92a63ec71d93fd949ccbcfeeed942d34def3acc83e726068c`
 - nodes: 2
 
 ### Nodes
@@ -990,7 +992,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/conduit_cloud.py
 
-- source_sha256: `b542c1e631f32562e5c5b571ed40f1d0416607111fb063ff3c3f1bcc6b21491f`
+- source_sha256: `50481252d1d509c524a9eccefc1895bb2307e5a8a2ef53e5feb97a5f68de46c6`
 - nodes: 2
 
 ### Nodes
@@ -1037,7 +1039,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
 
-- source_sha256: `bfa4a2fa257ae6c0e9bc5e077f9e195648048fef7acbe501a23047fc2d2a8a71`
+- source_sha256: `1444dde9957c097733fdc9b373c410752246d56a6c34339fabafff040750a312`
 - nodes: 2
 
 ### Nodes
@@ -1098,7 +1100,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py
 
-- source_sha256: `6b9a8cfe6eb88611e9255f50e65cdd3cba5a16fe8fa2e8e4a157df1d75348684`
+- source_sha256: `72cab182e5448f2592d7292db51f2a6b9d9cda3fa5034412c6b788f47d0ce539`
 - nodes: 2
 
 ### Nodes
@@ -1222,7 +1224,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/orchestrator.py
 
-- source_sha256: `c46342139bff3b2df12e337b6037efd4a9a9306f87cae0721d40a2821f63c586`
+- source_sha256: `7690680704f62deb6b45a2b82443cdf0c8e9412d3f4a95375acfa5b23670bee0`
 - nodes: 2
 
 ### Nodes
@@ -1276,7 +1278,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/orchestrator/staged_mutation.py
 
-- source_sha256: `ee672e4aee82c0d3994ea19bd3bc353c7d2169621ddbb9cbcea2f343ffa0daf5`
+- source_sha256: `e7d9f9a1887df6413c188a28e591f2b97eef94ec19875841d3e4495a1665be21`
 - nodes: 2
 
 ### Nodes
@@ -1524,7 +1526,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py
 
-- source_sha256: `fd4fc8471505d6336546f7e0067ec19273d821623671a4a30f3077eee88c7047`
+- source_sha256: `5ee7c19dea74c2673e4a7d6c2efb3a39e7d0056067e491a78f829cda8262054d`
 - nodes: 2
 
 ### Nodes
@@ -1834,7 +1836,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy_builder.py
 
-- source_sha256: `0d7614eba9bd544f4d42f7f031e85208706690d2f4468c2f490a9e8e59dcb498`
+- source_sha256: `75e04910d3a1377b14ef153cfbd8a691032ba8318a201f67b2042fc1948174b1`
 - nodes: 2
 
 ### Nodes
@@ -2023,7 +2025,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_manager.py
 
-- source_sha256: `f48c8d9f56c3f7bda476cce6ed50a76db712e32d51f4e886358d64c67e1a5d76`
+- source_sha256: `d37f41768ea519b5be249692b34accf6148a2c1044811e4a611a625e2811ff23`
 - nodes: 2
 
 ### Nodes
@@ -2072,7 +2074,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py
 
-- source_sha256: `fdacb052071cadeb39c44f3df327efa02e2448a491cdf8f0b9dd8b5d60e8a080`
+- source_sha256: `42785ad21008f2724633820744aeacb223c268faaeaf7af7b5d9e31303ae889f`
 - nodes: 2
 
 ### Nodes
@@ -2142,7 +2144,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_session.py
 
-- source_sha256: `216e361858b3e25f4509ff9db88c479af7ac40412b502d6a907811cd79f418bc`
+- source_sha256: `42baf8f867c0a3db78a74b90b6794df75747e68c0aa4ac82a3d92941ec77b260`
 - nodes: 2
 
 ### Nodes
@@ -2289,7 +2291,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py
 
-- source_sha256: `e9ab9ba92b940f0c10b1978cff086ab67b256c15a92bd322f758127b13c50a25`
+- source_sha256: `9984f1426364c2c08b254f8fa8b25e98bd10682a196968859006e1238f74e439`
 - nodes: 2
 
 ### Nodes
@@ -2493,7 +2495,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py
 
-- source_sha256: `3d4d24e15d1d0179172b4dc065b0bd9b93ab2cdc9b0cf348c4d1b581f0d039bb`
+- source_sha256: `d609c3eb03ce5df32434c89d6e33a205bb01aaf222b78dd261f3b87a60b49904`
 - nodes: 2
 
 ### Nodes
@@ -2552,7 +2554,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident.py
 
-- source_sha256: `719367ee9546cf45352e89114d4b9e1c943605890c11f784b2511ac77925f7cb`
+- source_sha256: `d652283b9e6620a2f73d6eb66a12395a398a0b745bece253026031a494b99166`
 - nodes: 2
 
 ### Nodes
@@ -2600,7 +2602,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py
 
-- source_sha256: `056a2eb54f0d56de20b3749c4007f74050193b6cb6a69b692a90ac41d179f2ab`
+- source_sha256: `8b3b71796dc37deecf2294a9f0db1bc1250763a3163888fdaecf72ded1d3bcea`
 - nodes: 2
 
 ### Nodes
@@ -2969,7 +2971,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
 
-- source_sha256: `51cf7c957486a73721154dcb0a3bf223c9afc9bf86c32faffe24648ea8b404d9`
+- source_sha256: `a3add707c9fc95e313056e42752efcef41ccac3173ed272f5fe96b7497d692b6`
 - nodes: 3
 
 ### Nodes
@@ -3575,7 +3577,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/information_registry.py
 
-- source_sha256: `5fc88947b1907c3b66b774dce84c0de83d743e1f8f88ad99a12b445ed09a7fab`
+- source_sha256: `3c5388cf28b9584c7b2473a1c004656b9e404ae8ec27b6e7e30a6493d7f717bd`
 - nodes: 3
 
 ### Nodes
@@ -3637,7 +3639,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/mediator.py
 
-- source_sha256: `b384be8b654a422d3b3793505fec3d2c6ef912933cf60d0cb89227456a54c6d6`
+- source_sha256: `93c18135cb4af2a445d52e3e254adf0956fc1ff886d2bb1828bed2df3c0915d3`
 - nodes: 2
 
 ### Nodes
@@ -3688,7 +3690,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/participation.py
 
-- source_sha256: `d0dbbb96056ad7cc8927699e4e840a40500d8b19d93ef9f2a38f4727ea7ca73c`
+- source_sha256: `c4b26186822ef46fd376de02b27cb3c6fc4f8fd2f786739260f6c5743f763cb7`
 - nodes: 3
 
 ### Nodes
@@ -3934,7 +3936,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategies/frame_create_transaction_strategy.py
 
-- source_sha256: `69f6e75c85380d072c43af6102d5afd2795a0023db4eb16a02571928625ea572`
+- source_sha256: `66fb1a4674162935ef6ab28fde6c33116ca9f88f9c16651af48d8b900b6b392e`
 - nodes: 2
 
 ### Nodes
@@ -3972,7 +3974,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py
 
-- source_sha256: `c8bf7f5dedd15237bd99a669058314062d758e6a8154b5f78e47a5d77c0ba9d4`
+- source_sha256: `b87c1141cea51a5e80ba69f8dbddcf3f57ae6e0461876579e1da280c5120b212`
 - nodes: 2
 
 ### Nodes
@@ -4010,7 +4012,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py
 
-- source_sha256: `d282afbe821d27ff39bdcff8ece599a3da59a65d7b2323f2c2a8c002f23d139f`
+- source_sha256: `3ba60f3146eb235a43facbb3b922fc5ba36c83b2de99ed3064378965c29ae88e`
 - nodes: 2
 
 ### Nodes
@@ -4048,7 +4050,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategies/subsystem_configure_transaction_strategy.py
 
-- source_sha256: `c4bcf5f6d7ecbacb78c88effefbb9cd9e5aad54aa37ac114426cd76dab270910`
+- source_sha256: `f10265a993ab6fc9f51287d1bf62714b2a3d9955a1fe5a261f939d04fdc76a47`
 - nodes: 2
 
 ### Nodes
@@ -4087,7 +4089,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategies/subsystem_deactivate_transaction_strategy.py
 
-- source_sha256: `382f584fd92553604478b5b941531f76c45b96d7bc131a954eeecf883eab2f67`
+- source_sha256: `0fa0b98ab431f888e75c97c48ecd894e9bbd0d47dd171d48f925522f7f6a3024`
 - nodes: 2
 
 ### Nodes
@@ -4125,7 +4127,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/strategy_builder.py
 
-- source_sha256: `5dfac4cb2109a19cb10fe31e13ca3a38b02af1b4015b483f6ae1ba2fd4a436a5`
+- source_sha256: `b77e1d27a74d26132c3e5179f46fff1c8b7ce8c087494f415154590a683045c9`
 - nodes: 2
 
 ### Nodes
@@ -4233,7 +4235,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_session.py
 
-- source_sha256: `6d1924fd069b92a3f187cac57800f34c10aa55ef0707c72552fbb31affd71278`
+- source_sha256: `c52214127d25cd6ba680b2081fa8e91403c57b6d6f75c15ad6537b752e147ee5`
 - nodes: 5
 
 ### Nodes
@@ -4320,7 +4322,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_strategy.py
 
-- source_sha256: `17e9b7a15d504093a33a4fc0c7dabda275b345bff19cd5ddce0fa85fe7045240`
+- source_sha256: `242fb47d8af12974dac2f2b9be94a04dca2141715461afa090d4257195f2828f`
 - nodes: 2
 
 ### Nodes
@@ -4353,7 +4355,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/transaction_type.py
 
-- source_sha256: `8cd6595d4de6a0fca6ce2563bed642ed7690e60b7e38f0237351c84934215033`
+- source_sha256: `e78b23419a2961efa8a55516849863d9df679977622ff3f77b5167646eb4d13e`
 - nodes: 2
 
 ### Nodes
@@ -4382,7 +4384,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 
-- source_sha256: `a090f5a6ac1d752c28c21f88f86b7432deaddeb4520c35d26d8c86611613ff8c`
+- source_sha256: `bd7167cb98c0e55d4571e063071ead2f87048756831396bc5c0d77c8e8a2b8da`
 - nodes: 2
 
 ### Nodes
@@ -4413,7 +4415,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `02a9dbbec7e17d0a450cd28ed260a50957d4bfe3f8360e4fb92778666d912e33`
+- source_sha256: `cff643f175fa419c46a4bbefc387b8cdd071370eb1b178f1aa3aad1d149da90b`
 - nodes: 2
 
 ### Nodes
@@ -4437,13 +4439,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Runtime execution scope for spell resolution.
 - responsibilities:
   - hosts meld execution
+  - forwards full-target purge selectors to Meld while keeping conduit and registration lifetimes intact
   - forwards per-version resolvable policy through both binding facades without changing conduit state
   - owns concrete conduit-facing runtime helpers and pooled spellspace state
   - creates lesser conduits
   - supports dynamic linking and ownership transfer in dynamic mode
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits`, `cleanup_spell` (+59 more)
+- public methods: `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits`, `cleanup_spell` (+60 more)
 
 ### Edges out
 
@@ -4503,7 +4506,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_cluster.py
 
-- source_sha256: `ffd236f7d36e155ff50130fab84cbd39803b13065789726ef3491698e10b0c26`
+- source_sha256: `a7730aab488936d977dee4c983fd4c0a92aa61036ac139c6aaacbc4abb2f581a`
 - nodes: 2
 
 ### Nodes
@@ -4559,7 +4562,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_pool.py
 
-- source_sha256: `2500ab6eab3ef00a37133cc758581e5f638690a11829443ff442e651ccd2b6de`
+- source_sha256: `d6865864423b5c48579f0d9beedec8058e6c88cb7bb9ca8e12bb8b772fe28343`
 - nodes: 2
 
 ### Nodes
@@ -4642,7 +4645,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `43438bf62c05934cbe9aceef3fd2f0564edc0b7e9ebab72ad0f3d9c140b9d4e4`
+- source_sha256: `1c4641a5fe86188eff43da8ea23d40298ef4b837214ed7c0ab36dbaa78c7cc59`
 - nodes: 2
 
 ### Nodes
@@ -4709,7 +4712,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/contract/contract.py
 
-- source_sha256: `c6c7ebd5a1b23775076f1464145e828f2b22b8c435c97b9ff4df0601af35cd9b`
+- source_sha256: `35d3f7c16b891197c513a41cff1c23f49eb3ba69c716ab0648596c1e848e934b`
 - nodes: 2
 
 ### Nodes
@@ -4958,7 +4961,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
 
-- source_sha256: `563b7793572e8f5453d9dd739bfa9b1314a91981195fe964d156c342cda8c966`
+- source_sha256: `b8ece173fc7064dd6fc4e108efc6cb998738548ab7193ccfdcbeccbbc69ab916`
 - nodes: 2
 
 ### Nodes
@@ -5018,7 +5021,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/cluster_creations.py
 
-- source_sha256: `b50f82833fd03b9b527ba204f5ec5f2d1d284c2684e3298e363520dbcb71a67d`
+- source_sha256: `6df125a5a74225bff05fac1d0bf79ca76d833a40606db9a86e6afda935ef29f9`
 - nodes: 2
 
 ### Nodes
@@ -5105,7 +5108,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `f1336f35d0b1518b8a56d9f8d89fee9c0bef9d01b3614208ef2369869d2fb438`
+- source_sha256: `d00a4b38433a5e1c4102983f9e66f525c8b2f64e5445b8da6fba878e1e1af0c4`
 - nodes: 2
 
 ### Nodes
@@ -5124,7 +5127,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Creations` (class)
 
 - id: `melder.aether.conduit.creations.creations.Creations`
-- defined at: `src/melder/aether/conduit/creations/creations.py:9`
+- defined at: `src/melder/aether/conduit/creations/creations.py:14`
 - extends: `Cleanable`
 - role: Generic scoped live-object registry with separate disposal metadata.
 - responsibilities:
@@ -5132,9 +5135,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains established Spell disposal lists through registration and in-memory transfer
   - invokes methods in list order; the first method failure stops its object while other objects continue
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
+  - purges a selected spell entry with creation writer locks and existing disposal helpers, without scope discovery or authorization
 - owns_state: `_creations`, `_disposable_creations`, `_owner_conduit_id`, `_id`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `reset_for_pool`, `reset_for_pool_unlocked`, `restore_spell_creations`
+- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `reset_for_pool`, `reset_for_pool_unlocked`, `restore_spell_creations`
 
 ### Edges out
 
@@ -5390,7 +5394,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/creation_context/creation_context_factory.py
 
-- source_sha256: `8dd187e85c341ce4a63809120a84749f7aee3aa40934d5fd723c3b6e05d8ec07`
+- source_sha256: `45bbb3c7d60756938bba3097f05617879593e04a9705a9e4e390a5c49bda7623`
 - nodes: 2
 
 ### Nodes
@@ -5437,11 +5441,42 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_factory.py -->
 
+<!-- BEGIN FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py -->
+
+## src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
+
+- source_sha256: `e3b8fbd0dbbe6f900f90f9a0bd403015cd1af04fab4a5ed9796025a3c853855c`
+- nodes: 2
+
+### Nodes
+
+#### `creation_context_rebuild` (module)
+
+- id: `melder.aether.conduit.meld.creation_context.creation_context_rebuild`
+- defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `CreationContextRebuild` (class)
+
+- id: `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild`
+- defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:14`
+- extends: `Cleanable`
+- public methods: `cleanup`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+<!-- END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py -->
+
 <!-- BEGIN FILE: src/melder/aether/conduit/meld/meld.py -->
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `3de42b0c9906b23895f18b722e48daa041bb06b96047d36ccc23bb475124554f`
+- source_sha256: `60e5e5ca181e7d803ac51c6b26eb360a91089732733f3409eb5fe07b4583fa49`
 - nodes: 2
 
 ### Nodes
@@ -5461,12 +5496,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Meld` (abstract)
 
 - id: `melder.aether.conduit.meld.meld.Meld`
-- defined at: `src/melder/aether/conduit/meld/meld.py:43`
+- defined at: `src/melder/aether/conduit/meld/meld.py:45`
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Resolution runtime orchestrator.
 - responsibilities:
   - resolves target spells
+  - discovers and authorizes the purge target store, then delegates locked retirement to Creations; instance targeting remains deferred
   - enforces validity and dirty-root gates
   - chooses reuse versus construction
   - dispatches execution into CreationContext
@@ -5475,7 +5511,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - provides the common non-resolvable-registration error without restricting observational lookup
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `meld`, `meld_existing_spell`, `set_meld_hooks`
+- public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `meld`, `meld_existing_spell`, `purge`, `set_meld_hooks`
 
 ### Edges out
 
@@ -5514,7 +5550,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/overrides/spell_overrider.py
 
-- source_sha256: `1a91f48288692ee42825f5ec0e6d6b8a17fea88948e33335eb91f76ad1aca6d1`
+- source_sha256: `edcc0f27a2ea5f02a5b5f10d4e40726688892bb2b04e82eb3a1a615b85f1f644`
 - nodes: 3
 
 ### Nodes
@@ -5633,7 +5669,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/spell_space/spell_space.py
 
-- source_sha256: `fcacfd99ab8b0a0e6420292bba98f0a34c1e22ea416adc093a4a1f3d2c879310`
+- source_sha256: `8d0831812ef82b432d031a4869cb05e5e22d2d59b8213b7b4da01ede1259cf2d`
 - nodes: 2
 
 ### Nodes
@@ -5658,9 +5694,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - marks one active spellspace scope on a conduit
   - enforces active-scope usage for spellspace-bound meld calls
   - clears spellspace-scoped instances on reset or cleanup
+  - exposes purge for local many and spellspace creations only, with removal delegated through its Meld door
 - owns_state: `_id`, `_owner_conduit_id`, `_meld`, `_creations`, `_owner_conduit_creations`, `_spellspace_pool`, `_spellspace_stack_state`
 - phases: `runtime`, `cleanup`
-- public methods: `cleanup`, `id`, `meld`, `owner_conduit_id`, `permanent_cleanup`, `recycle_from_managed_context`
+- public methods: `cleanup`, `id`, `meld`, `owner_conduit_id`, `permanent_cleanup`, `purge`, `recycle_from_managed_context`
 
 ### Edges out
 
@@ -5673,13 +5710,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.spell_space.spell_space.SpellSpace` -> `melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld`: SpellSpace owns SpellSpaceMeld as its request-local meld front door.
 - `melder.aether.conduit.spell_space.spell_space.SpellSpace` -> `melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState`: SpellSpace borrows the conduit-owned per-thread stack holder to validate managed enter/exit order.
 
-### Edge candidates (3, unconfirmed)
+### Edge candidates (4, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.conduit.spell_space.spell_space.SpellSpace` creates `RLock`
 - `melder.aether.conduit.spell_space.spell_space.SpellSpace` creates `Creations`
 - `melder.aether.conduit.spell_space.spell_space.SpellSpace` creates `SpellSpaceMeld`
+- `melder.aether.conduit.spell_space.spell_space.SpellSpace` creates `ValueError`
 
 <!-- END FILE: src/melder/aether/conduit/spell_space/spell_space.py -->
 
@@ -5687,7 +5725,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/spell_space/spell_space_pool.py
 
-- source_sha256: `007c14c3427c019e33f4c16978da4df1d6956259674d28fdb79767d107b8374f`
+- source_sha256: `aae77f56878e26499b0e05c032b73edf69f8fcac8e7d7623549cc09aa4134ca0`
 - nodes: 2
 
 ### Nodes
@@ -5983,7 +6021,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/configuration/spellbook_configuration.py
 
-- source_sha256: `d5399d8aa84df3e9ad997e1d5f2ba8a561cd4456a06afc581b63d945dac02d5b`
+- source_sha256: `ce6385f477114d3fbf351e3db2a88672cbf54d58acb17e8a3e468a4b117cb208`
 - nodes: 2
 
 ### Nodes
@@ -6453,7 +6491,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py
 
-- source_sha256: `42fce85bf5a56defdabb12179e75f4b8c09eb6ca0b8d95ee8e47e803a8c33cd1`
+- source_sha256: `122f60166abfcd49aa99b31ad43f3c6c7bd28fb983eb55dfd09b1647a766b939`
 - nodes: 3
 
 ### Nodes
@@ -6506,7 +6544,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py
 
-- source_sha256: `a727950eac97fe52883edc5961a65a4eda005fdd594cc5785e32bb6c33971861`
+- source_sha256: `b0e2fb287d76d8d796f85ee88cba3a7c13938e5cbeb6b9b2555d9395c3e1611e`
 - nodes: 2
 
 ### Nodes
@@ -6560,7 +6598,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy.py
 
-- source_sha256: `384f43db26a66722140ac195b0461766d0ddde0896ed8f6a74a18d9be55db805`
+- source_sha256: `392e8c4dd9754e71c1c033c3c8337fb7efd8ae8abf6c1145d0846f936c0c9231`
 - nodes: 2
 
 ### Nodes
@@ -6872,7 +6910,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py
 
-- source_sha256: `de923683fbe1e07c1965ed0666754596016a04c96a64ae112f20f5289e5f53cc`
+- source_sha256: `4ba5974b05e52bb00fa1ce96239d0ad302e7d8660696ce122f2bb788af592c37`
 - nodes: 2
 
 ### Nodes
@@ -6922,7 +6960,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_order_processor_strategy.py
 
-- source_sha256: `904e960166dc581229b19038359665527a6e0f818a549466661cceb03a9e1aee`
+- source_sha256: `4e283151f57f43978c62427c99ac9ac1d197054d595f070a57b7467890f889a8`
 - nodes: 2
 
 ### Nodes
@@ -7023,7 +7061,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py
 
-- source_sha256: `6d2cbfa7109ea1d1d1b82ecde5bdbadddc3590404a4c4ed84579a25114a67c85`
+- source_sha256: `c51c151ef88a4c5b5b21f57d52cb21cf3520d5e73a39efc2d784f0c3c6600d6b`
 - nodes: 2
 
 ### Nodes
@@ -8074,7 +8112,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `85c9c5fa77a356d671c208563d967284c9d066709299382a9a25c6394c3638f1`
+- source_sha256: `b8dea64f5189f78fb3e6f10ad6c627922e23334ee8bd875fa454426a40f58caf`
 - nodes: 1
 
 ### Nodes
@@ -9539,7 +9577,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `73e8064b739043e81a53c9f93136e35b9b1bd842e7522a73ae0713ceb274c8a4`
+- source_sha256: `588a2f876e8b0395d65c6cc4016ef0da1b5a52cb462f42c53fef7093d2bb2f0d`
 - nodes: 1
 
 ### Nodes
@@ -9569,7 +9607,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
 
-- source_sha256: `02016fff03ba053a5c1f4dbbedba48094f5e53005c5e58b77caf4266d3c1ba24`
+- source_sha256: `024ee9105bfea6d3f2a49cd1ba45ad4b2a9119029fe0ce8d3ed522569e6b6786`
 - nodes: 1
 
 ### Nodes
@@ -11023,7 +11061,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/dag_index.py
 
-- source_sha256: `8640981761dbe6c2c4c542f59c2e854f890328b0b7bd7c161742d966369eb4d4`
+- source_sha256: `585794c001eec41f7a14d976c1a60df479eec7d1efee7adf8855f9f4f78de6df`
 - nodes: 6
 
 ### Nodes
@@ -11396,7 +11434,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_1.py
 
-- source_sha256: `1bfb826c377b6591dfd89c5b68481c1819c495d597718ed02cc6e317a3eb596c`
+- source_sha256: `bf50674374a3b0aa700fcf827c83f15a2a485bcdddb47d72e46c0fd221ba2613`
 - nodes: 2
 
 ### Nodes
@@ -11547,7 +11585,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 
-- source_sha256: `fe35bec034ca053a9d04ab364f8e3d47eeaac1570a51c9ef3e890c4c55b0d384`
+- source_sha256: `bd67e855e840b21d4484198ddf6f93c2459e82ba1ac31558da0fa14511215d12`
 - nodes: 2
 
 ### Nodes
@@ -11662,7 +11700,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
 
-- source_sha256: `598a33ead89e2533aa5482b560b0166f85aecf5b98a3d1020f68daa15be5c8aa`
+- source_sha256: `664981bca31acec490ea136791a51dc199896eb3468da26be1e6086738e5a2b1`
 - nodes: 2
 
 ### Nodes
@@ -11771,7 +11809,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
 
-- source_sha256: `122858a91ef7525d2dbe562beb6fbda82a6429579a7638de9ea331788310c058`
+- source_sha256: `065df3f0df42cf575583152c479444cc6ea4d60addaab19277120a55e68dcf17`
 - nodes: 2
 
 ### Nodes
@@ -11838,7 +11876,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py
 
-- source_sha256: `e309ceaec2c0cce92a1975bea2166f7a66f41ad289e5a9b92988a9b6871960fd`
+- source_sha256: `ecc6134e55ec2e73c8272116da67aad450c1b286ff7802f8e7de5387d658b46a`
 - nodes: 2
 
 ### Nodes
@@ -12053,7 +12091,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py
 
-- source_sha256: `8ca9b49d37671dd4e9d8781664961a7fe84dd903a9b57586baca47375a022708`
+- source_sha256: `b252441f12013987e41df07e73921be09465c0d627c8ca6a6e902d19446e0a31`
 - nodes: 8
 
 ### Nodes
@@ -12457,7 +12495,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_compiler.py
 
-- source_sha256: `43b26195124ac9ad6b4cb33516ceb48e94d634e1210c00b04107a5dd6616b92f`
+- source_sha256: `62aa5f4f964b7282acc6360d6a2c2e8a62a4d0576283cab9f0f4cf750e0eb6f6`
 - nodes: 2
 
 ### Nodes
@@ -12605,7 +12643,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py
 
-- source_sha256: `7dc2557bc347b8e6b0459ffc091676d396c301b5ba2518cd8eaf012be90e1b29`
+- source_sha256: `cdef922d4049bb1cb8c26d1d045f93384d17f3ca9c6de5806788f0bf72a49c42`
 - nodes: 2
 
 ### Nodes
@@ -12959,7 +12997,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py
 
-- source_sha256: `d831916072465289186da630f22bb31e59316b03774a634ab86a056fbeecb8c1`
+- source_sha256: `6cf25ac4c85184dfe078d37ae8020b36868ccb1b487b61de08ad398dad3f69d1`
 - nodes: 2
 
 ### Nodes
@@ -13011,7 +13049,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py
 
-- source_sha256: `9cb51395c479e501851830dae8447884151effee52a4960d210be66da1d52ff0`
+- source_sha256: `4239588cce771124b2b209fafac9d67a6b63e8c659cfc43069999e94a3f91c23`
 - nodes: 2
 
 ### Nodes
@@ -13153,7 +13191,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/resolution_profile_strategy.py
 
-- source_sha256: `4d242c36b62eb2e13e35c6cedb46dfa4477329fdf6e33de0af074e54c98ce5ba`
+- source_sha256: `37b71e37bd21a4a5c49d6125f5a16de5b06b31643918960da25e88c586b45e05`
 - nodes: 2
 
 ### Nodes
@@ -13458,7 +13496,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py
 
-- source_sha256: `541d0fbf6d54ef202786fec2b7560ce3919b2d79f8077ad8e712ed3546d5d467`
+- source_sha256: `f55706a1b58f86f462289ed2e6b2f55f7ddfdbee7b378a38c616a094f57b6e06`
 - nodes: 2
 
 ### Nodes
@@ -13636,7 +13674,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py
 
-- source_sha256: `9864d2727f1a492f14524458a3cb1f3432bb892f6d23238a818c240243bac02a`
+- source_sha256: `7e984152de6b23d103cf3ca6d03d5148c9c5918259fa7ec0c82f7c11ebae96c1`
 - nodes: 2
 
 ### Nodes
@@ -13728,7 +13766,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py
 
-- source_sha256: `5a29b89e3cc618134fbe4cf4f21a35122d0f55fb79ec830ffa93967f7fbf9479`
+- source_sha256: `4586d7f13bcb68820206a0aead968676b52ef11e5c3602b157cc43d6d39651d7`
 - nodes: 2
 
 ### Nodes
@@ -13837,7 +13875,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
 
-- source_sha256: `b8e4f563706e8c4f674f9a22549dc5f3317b75d2b07993c9e8856ac4e4b0bfe5`
+- source_sha256: `63acc81852ee24fe25257f1aaaebb3cb1aee329b3be1c6b2a2f40e3622eb4446`
 - nodes: 2
 
 ### Nodes
@@ -13881,7 +13919,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py
 
-- source_sha256: `9400979bba914ba2ae77bf493c36343b74f3509a0ee3b12a295cf1f68d125bcb`
+- source_sha256: `07edcf640262778824d6d1dc666a15116aaa9c1510bb5abbfc58a07f76c2c282`
 - nodes: 2
 
 ### Nodes
@@ -13925,7 +13963,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/contracted_version_drift_strategy.py
 
-- source_sha256: `df64c3b040eb03b6e9c2cdbe09e62452a1a3affe3cd9e8e9b24cacffecdc7a0b`
+- source_sha256: `df1107848966a546a963a1377692688a35bdb82cbfbbcb8185bf9bc42f5cd383`
 - nodes: 2
 
 ### Nodes
@@ -13969,7 +14007,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
 
-- source_sha256: `8ea12de6628f3a426912da66b3d626a86c8f4d5bb965fb3c5805b1a39c7c31a1`
+- source_sha256: `3e241960620d763d3f646fb3245c6cecc44f0661017450d106213d21acf42a02`
 - nodes: 2
 
 ### Nodes
@@ -14015,7 +14053,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/dependency_type_sanity_strategy.py
 
-- source_sha256: `1bfe9561f078aaadfee1f55cc445537137a278adf61a86232f30bbabcc67acaa`
+- source_sha256: `69959ce02eae76b007ba99a07c218cbecf024a0fa56993efd86968ec998a4bd8`
 - nodes: 2
 
 ### Nodes
@@ -14059,7 +14097,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
 
-- source_sha256: `72f67dfd20302d18c56d0036202ac7486f2e79fd61a98769318b9efdb4d31425`
+- source_sha256: `425101ff8d0177816fe4b6dc735e7dfcf510c62d1b44efac12becb1c1ab44a19`
 - nodes: 2
 
 ### Nodes
@@ -14101,7 +14139,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/graph_consistency_strategy.py
 
-- source_sha256: `88b08529eabc4a67d90318fef4767d9aca77b6f8f2a846d28494ae8ea5e5b8b2`
+- source_sha256: `998067aafeff5e2d967e4926247bdac36d1c8a945e05023cca29f58f3aa87d5d`
 - nodes: 2
 
 ### Nodes
@@ -14145,7 +14183,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/identity_mixing_strategy.py
 
-- source_sha256: `098d834e47ec1b91c1ed10a403fedc56687c1bb942f8d7729f8d7150a97a56ab`
+- source_sha256: `0ab351c9d78a1b2d47e7faa4de5ce83c6c467711647263a01440c8d845070135`
 - nodes: 2
 
 ### Nodes
@@ -14189,7 +14227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/index_coverage_strategy.py
 
-- source_sha256: `82292c84d579d755368f60f58bb28f9f991abf41c73a575b04c913b38c97708d`
+- source_sha256: `e1a3726875de7487b6bfc83139c96ec46091e4d8daec45156023bcca79d846d8`
 - nodes: 2
 
 ### Nodes
@@ -14233,7 +14271,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/index_dependency_sanity_strategy.py
 
-- source_sha256: `f889d28018e8db2a57dd1daf9fa9dc1d4b92cbf219b18c1d4a13914a212c1f99`
+- source_sha256: `d0f44827aa381880fe65aa3261f6f86786b534a20dbcee1c4f12f7574a38723b`
 - nodes: 2
 
 ### Nodes
@@ -14278,7 +14316,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/lineage_alignment_strategy.py
 
-- source_sha256: `a654f75bf353d3bf1f391f92d240d0769a23911378ca00e2dda7bd47f6199d38`
+- source_sha256: `9826ccc3262b4f4b0aa76fb129be56481373db64e02f22d4101f921c63338c62`
 - nodes: 2
 
 ### Nodes
@@ -14322,7 +14360,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/lineage_version_conflict_strategy.py
 
-- source_sha256: `ef2d8e9e93c7c4a0f36e811fdf5c75cdbba08283c7298d7e6f99f4aa5b99e98b`
+- source_sha256: `b9b3dc6bc443e8558b3c3b6d80e786f289d07e4cff668ea7d1f5546d6bef2ccb`
 - nodes: 2
 
 ### Nodes
@@ -14365,7 +14403,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/missing_phase4_strategy.py
 
-- source_sha256: `7f1b5652364172bec6b64d9acf414c71fa6a11321c790f3806af311966c367c9`
+- source_sha256: `74df75e450abc29d7e81575488b45143f7a4d9ea8d1d47868ca3c9d26037333c`
 - nodes: 2
 
 ### Nodes
@@ -14409,7 +14447,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/ownership_consistency_strategy.py
 
-- source_sha256: `5eddd9f328f1bda52729392e305c8dee8475c5273d4263d08da9d068d6b3d9a7`
+- source_sha256: `7f91af59088de7dd4910a983e14b30d8ed706925ca176c22184a971f774dae2f`
 - nodes: 2
 
 ### Nodes
@@ -14452,7 +14490,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/root_coverage_strategy.py
 
-- source_sha256: `f648eaf721831b652135af85afae68d71b37ea2f7ad57dad9ec2e12b427f47d6`
+- source_sha256: `93860bb4327c85186d785f6ed0fbc03bed56c9bad34fe593075fb5ca4e453504`
 - nodes: 2
 
 ### Nodes
@@ -14496,7 +14534,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/root_lineage_conflict_strategy.py
 
-- source_sha256: `445a532c25966a03ecc04ec58f5df98e7bc6db9608243f713fb4cf14c2952b0d`
+- source_sha256: `75fd929990a1f774d24c8e940b1c7ae497da99bdbb97e5897b1bcc80280601b3`
 - nodes: 2
 
 ### Nodes
@@ -14539,7 +14577,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/root_reachability_strategy.py
 
-- source_sha256: `832df9bfed73f537c5effc7065b67ead65682b10920275b6d1ad47a0957f139d`
+- source_sha256: `49796a9df3f1e2d5b0ac6cd1d8598a7271550cd43039b5dd91e3aa53f056cc98`
 - nodes: 2
 
 ### Nodes
@@ -14583,7 +14621,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/root_scale_limit_strategy.py
 
-- source_sha256: `1e59d8b7fe998717975234aa0c1941c6c72406bac031fae64140f3e734cba03a`
+- source_sha256: `3ac24bdf40e2e114e99591928eee389302681aa4302f7600b6d487a4a21b39d4`
 - nodes: 2
 
 ### Nodes
@@ -14628,7 +14666,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/root_viability_strategy.py
 
-- source_sha256: `cfeda5a3b0cac74e70d4ed23c9f490d2dd78f26dfc116b3e6e2ad17b5f68a2c3`
+- source_sha256: `ec8e88f1d051d08fb591855c7943e82d6f71f5f93c638861f874de649da22089`
 - nodes: 2
 
 ### Nodes
@@ -14673,7 +14711,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
 
-- source_sha256: `0666fe37dbc612814b7c9a19123468b2d416932952e084cfa4ed165e2eab8c3c`
+- source_sha256: `7d3c9e9e638d9dc74ee628326cceae0acd907cbd972ae0d2cbf04d9c2bbffd76`
 - nodes: 2
 
 ### Nodes
@@ -14717,7 +14755,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.py
 
-- source_sha256: `b728e1d4a296d2bd6cde21926dc2cd5260b724b9ad8da3393f39f6c6baf9b5c8`
+- source_sha256: `0628ceb4f3221cd36be0d1d37d89e17c6ee7fe38592a70957c72502df4e34e7a`
 - nodes: 2
 
 ### Nodes
@@ -14761,7 +14799,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/strategy_base.py
 
-- source_sha256: `906a4a2e8d3ead8848c6d53d4a2747b98a3bd45bc7a6e05c766cee11d2095d04`
+- source_sha256: `cd29ca113289cd98b3c74d7c55e96a859e4f6d66d171a5656ae2df8a7dcd9958`
 - nodes: 2
 
 ### Nodes
@@ -14794,7 +14832,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/topology_dependency_mismatch_strategy.py
 
-- source_sha256: `3294976b9def26a6457ce4e641515fe53b034c6439cd7f64a9e746545f0ed553`
+- source_sha256: `605ddb41db2b060ab67139150c00b2ad40ad3d8a7a2df7f0a26170ccd65c7da5`
 - nodes: 2
 
 ### Nodes
@@ -14838,7 +14876,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
 
-- source_sha256: `33f50a2a5b5b1c1b9df30061f50e9b7984845eb8f15050676bc93134a4cfbad7`
+- source_sha256: `e85681a8a1765419e014effa441c26f39e10c79aba52af7d7cc4ffba3b9ca1f7`
 - nodes: 2
 
 ### Nodes
@@ -14940,7 +14978,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py
 
-- source_sha256: `5dfa8acec0fc777c75616b4af8775ac3e4d3e23237a16d20ce7aed52d24fd961`
+- source_sha256: `f62acebbfabc9fe68bb9a4cb67e07912345b3cebe17b2878c3402646536f0488`
 - nodes: 2
 
 ### Nodes
@@ -15205,7 +15243,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
 
-- source_sha256: `088de9e2d3147121137d79fe11b033313ca501c79c4ecb6b258fa960f2f29476`
+- source_sha256: `cb065f08e88d94d7455fd9e3a2cd9228f5902d7d1f69c0bc5547a1d3551bc75b`
 - nodes: 2
 
 ### Nodes
@@ -15296,7 +15334,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py
 
-- source_sha256: `97281e83ca991da1d504b2f027023ffb746ac6a1ae2ffa2c4367cad576b5203e`
+- source_sha256: `0ce93c831ea656ce830341d57246b915fb4413cbf93bc8e4b474ae04656b0b7f`
 - nodes: 2
 
 ### Nodes
@@ -15341,7 +15379,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py
 
-- source_sha256: `758057871c7db8799b29fcd707147a2fb59c750a87729eec60f5441b0a750f5e`
+- source_sha256: `efb2f26d284c70943ee3a5384b2850e213ad2e6b392a6f3629dfd262efa6772a`
 - nodes: 2
 
 ### Nodes
@@ -15519,7 +15557,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py
 
-- source_sha256: `76cf24e3d01c2ae716237f44a4a9c5ec527421ddf090d14b7a46c5d27f531b4b`
+- source_sha256: `4a3745657cd4d60ba5deb282d201ae8aeb35cb3248589a7cd4ab8cb71cdeacbd`
 - nodes: 2
 
 ### Nodes
@@ -15563,7 +15601,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
 
-- source_sha256: `65a59fd63012966adb7419c867fdf604344eb5eccd51502dc90501a1f6f3e3a9`
+- source_sha256: `f66bd88393f439d5ef0a294469709079d6a8b324954de170cc0e3a66d9ff18ff`
 - nodes: 2
 
 ### Nodes
@@ -15607,7 +15645,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py
 
-- source_sha256: `00125ec31d1096f387c1f9d22917474f259220737f21e88a19028324f41f8e04`
+- source_sha256: `b8521d45bb6ea259bfc977e308b69ab70c0a23f1831817b5a219a2fd1a56e8c1`
 - nodes: 2
 
 ### Nodes
@@ -15694,7 +15732,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/validation_system.py
 
-- source_sha256: `5ac3ba08c2368411fe8d49eaeda9c638d32b7ab220de8384f0c4d63f729c9876`
+- source_sha256: `3f85506ef01b4cbc5f18211daca304347aa69720050432daccd49a7c4f6a5687`
 - nodes: 2
 
 ### Nodes
@@ -15791,7 +15829,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbinder.py
 
-- source_sha256: `fd276b033234c70f82e7d33f77dd2185c5e75bf3180cd9ef67cacc989b0ab3cf`
+- source_sha256: `3c3b7938925539c1638f0ee64d871577bb2e6509f270b0e4c12d518f413b902e`
 - nodes: 2
 
 ### Nodes
@@ -15999,7 +16037,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py
 
-- source_sha256: `267383b9d55645bcf766c1198d3db0855add0d4b6d5c793f0b81d907d146a7b0`
+- source_sha256: `d4563db0652b05ddc530654d161b5828a25a0f393c99d9177f4ad98f8bf6890c`
 - nodes: 2
 
 ### Nodes
@@ -16044,7 +16082,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/asset_management/asset_management_system.py
 
-- source_sha256: `a0f4656170c9b9848d16ac455149b4962c319d1ececb3e29bdd1d57001424119`
+- source_sha256: `26713002da4a9b717aca5dcee845bc5154ec47e5ba54a15fc58adb773286ffa8`
 - nodes: 2
 
 ### Nodes
@@ -17480,7 +17518,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py
 
-- source_sha256: `b8cb57f73130ba84b6851be93891155c5a000e80b92863b46f5658f7a9356a8d`
+- source_sha256: `65776dea2e747ca4ec8c686f508c4616314ca33edf5052da9449a6f5b4c1af1e`
 - nodes: 2
 
 ### Nodes
@@ -17597,7 +17635,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/load_admission.py
 
-- source_sha256: `f6c9013e860bdf39c057f3b9ac42e64815744ee75f4d5e5d2e6831332f845b38`
+- source_sha256: `d2fe9bae071dedd0f8780e7a641ec0128f9f74c9e323a6192ae00a3345a0e1b7`
 - nodes: 2
 
 ### Nodes
@@ -17789,7 +17827,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py
 
-- source_sha256: `e97de4390170ff5ec0a2c111dcc79537086f1e10d2f8b7981e73c95b21227cfe`
+- source_sha256: `c8cf5ce95e44c823d7b73e85d4b7fce4a40877f6ea0e35c8d27bf5ba686b759b`
 - nodes: 1
 
 ### Nodes
@@ -17812,7 +17850,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystallizer.py
 
-- source_sha256: `06de01c3f23694c48d1a8a9a605928acaefdb52c51ef979683c04311d2fc92ce`
+- source_sha256: `7a9c7a11a1846d34ccb57c8b48335c6f34b54e1f62f79312dbbad6ba8333671a`
 - nodes: 2
 
 ### Nodes
@@ -17830,7 +17868,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Crystallizer` (class)
 
 - id: `melder.crystallizer.crystallizer.Crystallizer`
-- defined at: `src/melder/crystallizer/crystallizer.py:41`
+- defined at: `src/melder/crystallizer/crystallizer.py:44`
 - extends: `Cleanable`
 - role: Hosted singleton crystallizer root.
 - responsibilities:
@@ -17839,7 +17877,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - anchors crystallizer policy above retained and live module-world surfaces
 - owns_state: `_configuration`, `_configured`, `_activated`, `_aether`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `activate`, `activated`, `active_profile_name`, `analyze_checkpoint`, `analyze_formation`, `analyze_impact`, `apply_external_retention`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `configuration` (+52 more)
+- public methods: `activate`, `activated`, `active_profile_name`, `analyze_checkpoint`, `analyze_formation`, `analyze_impact`, `apply_external_retention`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `configuration` (+53 more)
 
 ### Edges out
 
@@ -17864,12 +17902,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.crystallizer.crystallizer.Crystallizer` -> `melder.crystallizer.crystal_analysis.impact_engine.ImpactEngine`: analyze_impact builds a per-call engine over describe_spell_crystals payloads and cleans it after answering.
 - `melder.crystallizer.crystallizer.Crystallizer` -> `melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner`: graft_index facade constructs one single-use GraftRunner per invocation (activation-gated; live-object facade precedent).
 
-### Edge candidates (15, unconfirmed)
+### Edge candidates (16, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.crystallizer.crystallizer.Crystallizer` creates `RLock`
 - `melder.crystallizer.crystallizer.Crystallizer` creates `CrystallizerConfiguration`
+- `melder.crystallizer.crystallizer.Crystallizer` creates `CrystallizerConfigurationBuilder`
 - `melder.crystallizer.crystallizer.Crystallizer` creates `ImpactEngine`
 - `melder.crystallizer.crystallizer.Crystallizer` creates `GraftRunner`
 - `melder.crystallizer.crystallizer.Crystallizer` creates `SpellIndexCrystal`
@@ -19145,7 +19184,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/mutation_research/mutation_research.py
 
-- source_sha256: `bf7c258d2c7fd592719354796598671649dfae0ea7f46f2326465891f934deee`
+- source_sha256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`
 - nodes: 2
 
 ### Nodes
@@ -19163,7 +19202,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `MutationResearch` (class)
 
 - id: `melder.mutation_research.mutation_research.MutationResearch`
-- defined at: `src/melder/mutation_research/mutation_research.py:37`
+- defined at: `src/melder/mutation_research/mutation_research.py:38`
 - extends: `Cleanable`
 - role: Aether-hosted singleton mutation-research root: the formal declaration record over the live spell world, plus the agent foresight surface (source_view / impact_view with residency join / module_graph_view / source_drift_view / preview_candidate - all read-only over crystallizer custody).
 - responsibilities:
@@ -19220,10 +19259,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.mutation_research.mutation_research.MutationResearch` creates `MutationResearchConfiguration`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `MutationResearchConfigurationBuilder`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `DiffEngine`
+- `melder.mutation_research.mutation_research.MutationResearch` creates `ValueError`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `ResearchSet`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `TypeError`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `RuntimeError`
-- `melder.mutation_research.mutation_research.MutationResearch` creates `ValueError`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `Path`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `KeyError`
 - `melder.mutation_research.mutation_research.MutationResearch` creates `StructuralSynthesizer`
@@ -19750,7 +19789,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/builder/frame_acl_builder.py
 
-- source_sha256: `04ab4cd5bafc5a90c9d618cfd32d02319f97438f9844f57cfc1e8a16da621f82`
+- source_sha256: `1568bb8eb24d32e652e1ba6d3d569610c8fd0b2dd64d2d2d2e1183c60c7fd772`
 - nodes: 2
 
 ### Nodes
@@ -19813,7 +19852,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/builder/frame_acl_codegen_builder.py
 
-- source_sha256: `d8c1ddb05d0073cf5614f0e51e6fbda80c0cfa00ccc7d49ac75ccd8f248b3131`
+- source_sha256: `063c979b0297eb7164a72db1cefefc9086da43c03e26e74b125704e8635e1a44`
 - nodes: 2
 
 ### Nodes
@@ -19867,7 +19906,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/builder/frame_acl_command_builder.py
 
-- source_sha256: `0b06975e4b2e2e55c6d0ac742db837997dfc3a7fa62246046c97e3ddcca79952`
+- source_sha256: `2924b984fea3233858254f166f20f8fdae0001c0913e6eb762efaa3e04ac041a`
 - nodes: 2
 
 ### Nodes
@@ -19921,7 +19960,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/builder/frame_acl_view_builder.py
 
-- source_sha256: `9fda3d3454026ae74d8fa10d602bcd85d224f7144b140a9f3b86c33a2361dbfa`
+- source_sha256: `50ef75ac5b2b61bd436d926da62a0df0dcb5aa56d2f31e285672c0dd2717c8b1`
 - nodes: 2
 
 ### Nodes
@@ -21872,7 +21911,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/nexus_configuration.py
 
-- source_sha256: `734266175f9406060e0d6c2f1e5cf4b833e5c0ccee988bb183d7ba7eb1cfd78d`
+- source_sha256: `43d802c7c8b743cf91f10b19dd13ab5920eea9edda3d57a293a8015210ae7467`
 - nodes: 2
 
 ### Nodes
@@ -21897,7 +21936,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - freezes into the active Nexus governance surface
 - owns_state: `_properties`, `available_properties`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `build`, `cleanup`, `emit_configured_twin_when_recording`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `id`, `load_default_dictionary`, `load_recorded_dictionary`, `set_property` (+27 more)
+- public methods: `activate`, `activated`, `build`, `cleanup`, `emit_configured_twin_when_recording`, `finalize`, `freeze`, `frozen`, `get_property`, `has_property`, `id`, `load_default_dictionary` (+29 more)
 
 ### Edges out
 
@@ -21924,6 +21963,45 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.configuration.nexus_configuration.NexusConfiguration` creates `NexusCrystal`
 
 <!-- END FILE: src/melder/nexus/configuration/nexus_configuration.py -->
+
+<!-- BEGIN FILE: src/melder/nexus/configuration/nexus_configuration_builder.py -->
+
+## src/melder/nexus/configuration/nexus_configuration_builder.py
+
+- source_sha256: `f5708a1672781ce31af5de1950b041e304e5452908e70953ee3c3319d6e9a2ed`
+- nodes: 2
+
+### Nodes
+
+#### `nexus_configuration_builder` (module)
+
+- id: `melder.nexus.configuration.nexus_configuration_builder`
+- defined at: `src/melder/nexus/configuration/nexus_configuration_builder.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `NexusConfigurationBuilder` (class)
+
+- id: `melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder`
+- defined at: `src/melder/nexus/configuration/nexus_configuration_builder.py:9`
+- extends: `Cleanable`
+- public methods: `activate`, `build`, `cleanup`, `finalize`, `id`, `with_defaults`, `with_rift_creation_enabled`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+### Edge candidates (3, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder` creates `RLock`
+- `melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder` creates `NexusConfiguration`
+- `melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder` creates `RuntimeError`
+
+<!-- END FILE: src/melder/nexus/configuration/nexus_configuration_builder.py -->
 
 <!-- BEGIN FILE: src/melder/nexus/configuration/nexus_frame_mode.py -->
 
@@ -22076,7 +22154,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/configuration/rift_space_type.py
 
-- source_sha256: `d114e2940962e945a84e7c555d74669e376f417327f086d473422206396ca1f0`
+- source_sha256: `f4086d1685c31b0463d196fb0db5fc1827cc097975374762e06d898133ce30d5`
 - nodes: 2
 
 ### Nodes
@@ -22290,7 +22368,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/frame_descriptor/frame_descriptor.py
 
-- source_sha256: `6e17af312a51ae864d58d9b7fd97fa6a59526777f8afe3cc659df8ba7585aeb7`
+- source_sha256: `30c44ab37961d4c541c399dc5e905956b6850512b4a1aeea21d349b8dd1c39f9`
 - nodes: 2
 
 ### Nodes
@@ -22597,7 +22675,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus.py
 
-- source_sha256: `e3f28d397749a5aaf921acb37580d012a001358674ff615cf45634482aac2ded`
+- source_sha256: `f291e1bf3bc9910ae13af8982406a31b67909bee4e70a1cd408775d64c417581`
 - nodes: 2
 
 ### Nodes
@@ -22616,7 +22694,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Nexus` (class)
 
 - id: `melder.nexus.nexus.Nexus`
-- defined at: `src/melder/nexus/nexus.py:61`
+- defined at: `src/melder/nexus/nexus.py:64`
 - extends: `Cleanable`
 - role: Public AR root.
 - responsibilities:
@@ -22627,7 +22705,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - coordinates projection refresh across affected Rifts
 - owns_state: `_rifts_by_id`, `_frame_descriptor_manager`, `_frame_acl_manager`, `_frame_manager`, `_rift_gate_controller`, `_configuration`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
-- public methods: `add_rift`, `authorize_frame_link_for_rift`, `check_for_aetheric_frame`, `cleanup`, `close_and_wait_rift`, `configuration`, `count_active_rift_threads`, `count_active_rift_threads_total`, `create_frame_projection_sets`, `create_frame_projection_sets_for_rift`, `create_nexus_frame_for_rift`, `create_rift` (+39 more)
+- public methods: `activate`, `activated`, `add_rift`, `authorize_frame_link_for_rift`, `check_for_aetheric_frame`, `cleanup`, `close_and_wait_rift`, `configuration`, `configure`, `configured`, `count_active_rift_threads`, `count_active_rift_threads_total` (+43 more)
 
 ### Edges out
 
@@ -22652,11 +22730,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.nexus.Nexus` -> `melder.nexus.rift.rift.Rift`: Nexus is the top-level owner of the live Rift registry and cleans registered Rifts on teardown.
 - `melder.nexus.nexus.Nexus` -> `melder.nexus.rift.rift_gate_controller.rift_gate_controller.RiftGateController`: Nexus owns the central Rift gate control plane for live AR sessions.
 
-### Edge candidates (17, unconfirmed)
+### Edge candidates (18, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.nexus.nexus.Nexus` creates `RLock`
+- `melder.nexus.nexus.Nexus` creates `NexusConfiguration`
+- `melder.nexus.nexus.Nexus` creates `NexusConfigurationBuilder`
 - `melder.nexus.nexus.Nexus` creates `CompiledFrameACLAccessSurface`
 - `melder.nexus.nexus.Nexus` creates `FrameACLCompiler`
 - `melder.nexus.nexus.Nexus` creates `FrameProjectionSet`
@@ -22671,7 +22751,6 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.nexus.nexus.Nexus` creates `FrameACLManager`
 - `melder.nexus.nexus.Nexus` creates `FrameDescriptorManager`
 - `melder.nexus.nexus.Nexus` creates `NexusFrameManager`
-- `melder.nexus.nexus.Nexus` creates `NexusConfiguration`
 - `melder.nexus.nexus.Nexus` creates `Rift`
 
 <!-- END FILE: src/melder/nexus/nexus.py -->
@@ -22680,7 +22759,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus_frame_builder.py
 
-- source_sha256: `6481fff174b4c8ce46b7b9d77a06f92a331cf90bbe7cbf0708d354a5a38acd9d`
+- source_sha256: `38d807840b1159d5b98243a903a208cc4a4618577842ceb357c60eefe0bfb9c0`
 - nodes: 2
 
 ### Nodes
@@ -22792,7 +22871,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus_frame_manager.py
 
-- source_sha256: `1267208da0a54770d9cfdeef17b3cee2970a5bf5cb83b2bf03adad98afc8f175`
+- source_sha256: `7562de9e4b1ba22ad4da2a095177f860e556c334b5170e61f21ff03da14e9761`
 - nodes: 2
 
 ### Nodes
@@ -22851,7 +22930,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/codegen_system.py
 
-- source_sha256: `43666d37727d50dcb6c67f6fb925663fdedbfe76ab5989e1fb552b82c42d7832`
+- source_sha256: `893e92b260a507e8f02ecb05b085fa0eedce98f3a2c4abe6392ab04f4968b64f`
 - nodes: 2
 
 ### Nodes
@@ -22965,7 +23044,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py
 
-- source_sha256: `64bb623ef9bf75722d1377204c459933a416b81add2df06263adba77cc9c8e78`
+- source_sha256: `e07f87d163676a3d7d88990ce003e91b11e5ab55bddb69c0c0d8a84c4995b6bb`
 - nodes: 2
 
 ### Nodes
@@ -23050,7 +23129,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/execution/codegen_executor.py
 
-- source_sha256: `844ee03b1792dd62a4fe71e695701a2e63e5dcff2af22d476f0a9e49aeb4bce8`
+- source_sha256: `a37f76730b269c329ddd5f26f3d502602ee31a8aba62f15f515a79c9c49c1ffd`
 - nodes: 2
 
 ### Nodes
@@ -23096,7 +23175,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py
 
-- source_sha256: `4c983458b32732b8fe983da568d0e0fa5b1ea29cb34a046deb0bb4b48e993f31`
+- source_sha256: `790d38f2740742afda465adc6157c476b1b150e3985bc69ed655ca94583a6cea`
 - nodes: 2
 
 ### Nodes
@@ -23140,7 +23219,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py
 
-- source_sha256: `3d85dad638cc25b96b0b8ec57784b295eb6a13cf51cf55af69413e6ef6ebe110`
+- source_sha256: `7db516b9c8ffc94a6a1ee732364fbdec9475296e84c2dedca532f26e2f0dd844`
 - nodes: 2
 
 ### Nodes
@@ -23184,7 +23263,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py
 
-- source_sha256: `f11e49680abe6ba7613b521a72a4109f9b448dcacd55de97ecc27c97cfdf9bd8`
+- source_sha256: `ad4c518cc888f06eeefaeac51f0c81e3909410d3711e193be6da8bc4239e0019`
 - nodes: 2
 
 ### Nodes
@@ -23294,7 +23373,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py
 
-- source_sha256: `8f5796d306944277c1de96bc519bf35528d43df655f269984d380d7b62e2a6fa`
+- source_sha256: `4875bd8c91cfd618a560055f0b102e2fc3ec485a11e4ae741080236c2002c554`
 - nodes: 2
 
 ### Nodes
@@ -23342,7 +23421,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_command_strategy.py
 
-- source_sha256: `9b0345974ca8f1ced92206f872eb5b8c1419260a5fae9380349b42dc188d0b89`
+- source_sha256: `a61a6af10a4f81006c81d1da7ebe572335d3553cf485a67b40eb7e8644bfc073`
 - nodes: 2
 
 ### Nodes
@@ -23389,7 +23468,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py
 
-- source_sha256: `92499283cb485259720c21eb75bafc109325f265342012fa0330f44f58c063fa`
+- source_sha256: `63132bfcd3a64f5bd3a19b1af355718c58c66e8c5eb0a43bbc8bf721d4d97f01`
 - nodes: 2
 
 ### Nodes
@@ -23437,7 +23516,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_room_objects_strategy.py
 
-- source_sha256: `a9ae751939b7c9b4501957823913023ac6755d22e4fe8c840394929b89d660e3`
+- source_sha256: `b5104c701315db97185b5be400d0a6eb99c698de045086a60d7a268c2aec7fb0`
 - nodes: 2
 
 ### Nodes
@@ -23484,7 +23563,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_target_strategy.py
 
-- source_sha256: `cb665b1b312a9cfaf8c63abd91fa40dfc3ec978343bd6448bde0333e02b088ed`
+- source_sha256: `3e2a2c66ca8f6398c216b320ff5cb9d84ba47075289bbb9488e8640d29808ba9`
 - nodes: 2
 
 ### Nodes
@@ -23531,7 +23610,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_workstation_strategy.py
 
-- source_sha256: `cb2bf39017aa8116a3f39f2430f0d3e7785615bccf01ee002c58b7c9b7f79bc0`
+- source_sha256: `5f2c6dac4352a1c0dbf1ef12536f82b2a263e922b254a7456ac4cc61941c776e`
 - nodes: 2
 
 ### Nodes
@@ -23578,7 +23657,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py
 
-- source_sha256: `b956a1ae19ae32607188520e50b4ef08c602ba98f8b433e2f0d8ce7cdefc0678`
+- source_sha256: `5ebc11bbf1f3122271e5a9f62979db3b03e37dfef2e9930f9cb2418decf50657`
 - nodes: 2
 
 ### Nodes
@@ -23627,7 +23706,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py
 
-- source_sha256: `dc651a9bae79f59638babfb172bbf4b67a499d16fd1462eb95d88e0d373d9709`
+- source_sha256: `b804423e4244dc4cea5c64670bcee16d1f519056ad4b02e6084186edf7ff8da9`
 - nodes: 2
 
 ### Nodes
@@ -23674,7 +23753,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py
 
-- source_sha256: `e59e648963829ce4ab7331f7846c4ac89e779a86ba2513d15b3ed555a84d4cec`
+- source_sha256: `a11fa6e19341c9e888de519b76f747c4c7d0df0e0458acdfe449c3f284da04cf`
 - nodes: 2
 
 ### Nodes
@@ -23759,7 +23838,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/codegen_validator.py
 
-- source_sha256: `81ec01cfabf8cc9dff3688ad7c24e44e49ec8c944b2e5f5659327d3588587c9a`
+- source_sha256: `3bfe28361d5b29c4435baef8c52af9bdbe1203b58e11b0ed4f226c5e9b7bf4c9`
 - nodes: 2
 
 ### Nodes
@@ -23827,7 +23906,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_ast_structure_strategy.py
 
-- source_sha256: `29230e04c9573b7a05bd73479c0a95a9902e331d675faa6386a5f2e09398ec5c`
+- source_sha256: `83e4bea26aff1ccd10ae09d30213a0400a1ae83a76f15eab032cf4bfbe1de363`
 - nodes: 2
 
 ### Nodes
@@ -23871,7 +23950,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_attribute_access_strategy.py
 
-- source_sha256: `0782903ecd1235e84ad780369c9d16571693a07ed59b2128891c4c9ae1151c33`
+- source_sha256: `561758a049cfe86f9303fd32081155bec2bd98f7febbb3da59667f0029d795cf`
 - nodes: 2
 
 ### Nodes
@@ -23917,7 +23996,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py
 
-- source_sha256: `fa1a46ed8581e20f683b8efc55b228e3a01c1d6b3dd78bf1247a0a9f98e5a7e1`
+- source_sha256: `cb5f6095c8a97d9e669ea81d92465c669672f54141644a3b53241c08e07e2c63`
 - nodes: 2
 
 ### Nodes
@@ -23963,7 +24042,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py
 
-- source_sha256: `be52268127aa4c9e0708978fc489b2aec941e92e3f84e6edcfb34efc1421a051`
+- source_sha256: `1abe2d8b1e5c511fbd65ad24b21cec8c25c3256d641a3858fe03013257a81f00`
 - nodes: 2
 
 ### Nodes
@@ -24009,7 +24088,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py
 
-- source_sha256: `73994ec030502c882cd4ab320f4f435861b670a78edba3c8a58c244307238070`
+- source_sha256: `55ad4e8ee81686b0a431827de9fe4e1109b2a07acb15613c5bd1967af181a092`
 - nodes: 2
 
 ### Nodes
@@ -24055,7 +24134,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_recursive_control_strategy.py
 
-- source_sha256: `788252513a341c305a22c95c7a230e8299cba0b89991e080ce91720a0e6411b0`
+- source_sha256: `da05e4181c3f6269c8062e567c87945a48b117d4b21bb50e72896cbd81b3e5ac`
 - nodes: 2
 
 ### Nodes
@@ -24101,7 +24180,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py
 
-- source_sha256: `bd56c3a55c0d271f14fe18ab530dd2e38f9923ca739696c91ca2315aad3fcd09`
+- source_sha256: `1d59e5b8d58305576a615e30824a1b2da669f135fdd2a98f69197c7bfa910332`
 - nodes: 2
 
 ### Nodes
@@ -24147,7 +24226,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/capability_command_system.py
 
-- source_sha256: `17ff1d1e87853cfd27e9178ff2ab1fda3f32616c9a23faa0a2278d9623442e1d`
+- source_sha256: `16c6f715b0e9fccc16f3be47fad1bc70714a23e25f5fba7fa98167eb380c4228`
 - nodes: 2
 
 ### Nodes
@@ -24193,7 +24272,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/codegen_command_system.py
 
-- source_sha256: `df9755e2d8f58d21ac6a0ba733a5515d9e4ee43ae3eb44efbb5eb1af25956232`
+- source_sha256: `86214d8fa305e8a6bb08cdecabe2b55b8255a060dcff1d54532361cbcc8d0821`
 - nodes: 2
 
 ### Nodes
@@ -24247,7 +24326,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `88a640e5db37bf07202a6ecff9d63caaf026df916cec20edbd76b316648b99c7`
+- source_sha256: `52fbd6cd5097d9c91b459c394a5aeb9bcac21750a2c8659e92635853d3f51bce`
 - nodes: 2
 
 ### Nodes
@@ -24300,7 +24379,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/static_command_system.py
 
-- source_sha256: `999a42147c08d6f9167f1b9ab94d556d3db792d5d55ce27cfb9a67004e2e147e`
+- source_sha256: `7c70af7a30ac45666d5fb1541b6ee8ed9833f7cf26a81919e0b235dd51ec4f8c`
 - nodes: 2
 
 ### Nodes
@@ -24499,7 +24578,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/static_frame_viewer.py
 
-- source_sha256: `433949c0cbb6c5a8b6b3626e240270398b54e7247eef4451575bde3d1fb2c927`
+- source_sha256: `9db5d16d9971de73bcca0d913a3bbe97f51eb943139dcd224d832139b72c0926`
 - nodes: 2
 
 ### Nodes
@@ -24567,7 +24646,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/view_conduit.py
 
-- source_sha256: `943f47636d68b13e6529534f47135d40041a022b56d88e7197768c6ea891dd6f`
+- source_sha256: `d9dc9ff070537e54f64d1500b21ee1f02be3b4155761e4fb8164b9e37887f0cf`
 - nodes: 2
 
 ### Nodes
@@ -24616,7 +24695,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/view_frame.py
 
-- source_sha256: `d618b268dfb40ed6c9f1d5a769dc10b21acb7f0bdbb337257d97f848ceaf6ca0`
+- source_sha256: `2947fe5ea6f89fce5911f1d802e6733dac2ecf3e5b6ec79103c4e512d319755f`
 - nodes: 2
 
 ### Nodes
@@ -24665,7 +24744,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/view_multiframe.py
 
-- source_sha256: `4012c2a89abaa0f5b9ad7a0f7298f2ba7ff27a336b0189547ccc74ee8ad322ae`
+- source_sha256: `32cbf6453a0c3e21449046dd1d22ffa7afbbd81500cf39fe43ac0ae30e6875b9`
 - nodes: 2
 
 ### Nodes
@@ -24768,7 +24847,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/projection/codegen_projection.py
 
-- source_sha256: `0e9b80352f92d1bb50f6199f99e35a5b0579eefbd156659ddba632abfb0eb4d1`
+- source_sha256: `4c82508e42d1de6f69c9e07b98e9295cc4c4feb117d6fefa2664bcb8b5fa07b6`
 - nodes: 2
 
 ### Nodes
@@ -24814,7 +24893,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/projection/command_projection.py
 
-- source_sha256: `4e0ed5c086be1b06473a2739455743aaa66ce3076a4a7b54d8abcdd905fa23fd`
+- source_sha256: `30b2a65d5606119f7d16b132deab8d401eadbd988f5d2e73ca1fe7aba6e8a908`
 - nodes: 2
 
 ### Nodes
@@ -24860,7 +24939,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/projection/frame_projection_set.py
 
-- source_sha256: `921099cc10ca18db33cfb406a4b2ec91f9fd9938b68c599fcee4f8c033dfeb87`
+- source_sha256: `c34ed845e3ec3d42810d40c478bac1472edf7568a8bc72333ee431f3f64a2c71`
 - nodes: 2
 
 ### Nodes
@@ -24910,7 +24989,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/projection/view_projection.py
 
-- source_sha256: `f7eb6f72f66a3282ea6aa83a878e0a7c845fc8179ba22fa74f400584d02f9fc7`
+- source_sha256: `8503b65f9986ee9cefa41e1a32154a5ea9e95cd32a6aebe532e7b642c2d61902`
 - nodes: 2
 
 ### Nodes
@@ -24956,7 +25035,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift.py
 
-- source_sha256: `b5e1345cc0e3e1235512731226d8537bc4cd8a99311e7c95822006f53438ea0c`
+- source_sha256: `bcd218d4520507c32749f3445c1cdecb2a285a1f83f4d3991169e166ab4846b5`
 - nodes: 2
 
 ### Nodes
@@ -25112,7 +25191,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/capability_rift_space.py
 
-- source_sha256: `576ae462c8564d3c3b59c014ed8ce3d8b2c4878611f73c7d44888be47fdb593d`
+- source_sha256: `2300d24392b725bf3611e79b69d2764d0124b75528b23713a67da4c89d867086`
 - nodes: 2
 
 ### Nodes
@@ -25159,7 +25238,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/codegen_rift_space.py
 
-- source_sha256: `7bcc37dfc9c948deb8b2865de473008b11f2d9065478f14b4e66f4d61b2636a4`
+- source_sha256: `6f6b07110ff89145c5084d79d406d28c8a5c848ca8b1a5de9cf3e917e71b191f`
 - nodes: 2
 
 ### Nodes
@@ -25375,7 +25454,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/rift_space.py
 
-- source_sha256: `1b2e87bdd39c6afae906b58c509135a0e3fa46da1905c4270b3be37b46493f8a`
+- source_sha256: `89b358dfe5d7cf904754d07e1a12b31c254161648d1a5ed0ace5d9c13442dd99`
 - nodes: 2
 
 ### Nodes
@@ -25438,7 +25517,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/static_rift_space.py
 
-- source_sha256: `5ebf868e5007b0ef36e757a827e54c799fbc734e16b9f89afe9319716072417d`
+- source_sha256: `093da31e16cb88fd150558cc9fc305435aeb4b69df348331fa57e73917953371`
 - nodes: 2
 
 ### Nodes
@@ -25483,7 +25562,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/rift_space/workstation.py
 
-- source_sha256: `36da76ad52ff0de4a8ad21a936f41afb436998ad8615f2a8ff7fb049cc340778`
+- source_sha256: `c0ed8955cf615984080ed74452e2fb6b508246b3bc140143d43ba11815995d90`
 - nodes: 2
 
 ### Nodes
@@ -25529,7 +25608,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/system_document.py
 
-- source_sha256: `3453c6d0c2d5b8150a21d03dd9a0bf6d516e8b2e03454d6bf41f782b19c1ddc8`
+- source_sha256: `c6867f7e901f94c2b7082d7e5a282806a88e6c6dae4bfa69b03eb011f68d4cdb`
 - nodes: 2
 
 ### Nodes
@@ -25569,7 +25648,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/ai_native_support_tools/agent_text_reader.py
 
-- source_sha256: `76628b392ad8d7160e44a30f186f3eed89947fb4296968ea5ef9398c37f538dc`
+- source_sha256: `03602c4a7362463fdb1f72639519841a527dae645d5f7d64b6231f4244b1f3cf`
 - nodes: 5
 
 ### Nodes
@@ -25707,7 +25786,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/ai_native_support_tools/system_document_view.py
 
-- source_sha256: `d9c9b12c884b11794cdee230b59711433367b1bff7fe2329a0312b0ab830608a`
+- source_sha256: `1a2034e8f0c6bc30ea7bb60786e90b2e51dfb739daa7af314afe20087c1ebb42`
 - nodes: 9
 
 ### Nodes
@@ -26559,8 +26638,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/general_base/cleanable.py
 
-- source_sha256: `d530df3c1b1c2d97af0695c1be5b94da43dcabf3c50d4e6af05f1c5067f69a4a`
-- nodes: 3
+- source_sha256: `dc25bcce431ba9f159e34cc64d2e914fad1eea739a1798f973b8793296989297`
+- nodes: 4
 
 ### Nodes
 
@@ -26586,7 +26665,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - provides the cleanup-context helper for deterministic teardown
 - owns_state: `_cleaned`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `async_cleanup`, `check_cleaned`, `cleaned`, `cleanup`, `is_cleaned`, `using_cleanup`
+- public methods: `async_cleanup`, `async_using_cleanup`, `check_cleaned`, `cleaned`, `cleanup`, `is_cleaned`, `using_cleanup`
 
 #### `_CleanupContext` (class)
 
@@ -26597,6 +26676,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - scope one cleanup pass
 - phases: `cleanup`
 
+#### `_AsyncCleanupContext` (class)
+
+- id: `melder.utilities.general_base.cleanable._AsyncCleanupContext`
+- defined at: `src/melder/utilities/general_base/cleanable.py:296`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
@@ -26605,7 +26690,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - `melder.utilities.general_base.cleanable.Cleanable` -> `melder.utilities.interfaces.ICleanable`: Cleanable is the concrete lifecycle base whose public surface is mirrored by ICleanable.
 
-### Edge candidates (5, unconfirmed)
+### Edge candidates (7, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -26614,6 +26699,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.utilities.general_base.cleanable.Cleanable` creates `RLock`
 - `melder.utilities.general_base.cleanable._CleanupContext` creates `RLock`
 - `melder.utilities.general_base.cleanable._CleanupContext` creates `RuntimeError`
+- `melder.utilities.general_base.cleanable._AsyncCleanupContext` creates `RLock`
+- `melder.utilities.general_base.cleanable._AsyncCleanupContext` creates `RuntimeError`
 
 <!-- END FILE: src/melder/utilities/general_base/cleanable.py -->
 
@@ -26662,7 +26749,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/helpers/class_surface_ast_describer.py
 
-- source_sha256: `b6a97dbc3019e91c15ee923634a6830158875f38edad2ebdcbef3f8e55e69cbf`
+- source_sha256: `458c0ceb2c0d3a0844001964fe431352bf0a4f4236ff91820199a8b158329ccf`
 - nodes: 5
 
 ### Nodes
@@ -26929,7 +27016,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/helpers/package.py
 
-- source_sha256: `314498d9a1472da9432e5ee0246a8e2c6d6181b3e5afcf147768524de99989b3`
+- source_sha256: `8d36a769fba4d21759fae69970f54effb30b5c53ebe32757058d0a2d25b5a591`
 - nodes: 2
 
 ### Nodes
@@ -26971,12 +27058,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.utilities.helpers.package.Package` creates `Pack`
 - `melder.utilities.helpers.package.Package` creates `RuntimeError`
 - `melder.utilities.helpers.package.Package` creates `ValueError`
-- `melder.utilities.helpers.package.Package` creates `SimpleNamespace`
 - `melder.utilities.helpers.package.Package` creates `AttributeError`
+- `melder.utilities.helpers.package.Package` creates `SimpleNamespace`
 
 ### Published aliases
 
-- `Pack` = `Package` (line 941)
+- `Pack` = `Package` (line 997)
 
 <!-- END FILE: src/melder/utilities/helpers/package.py -->
 
@@ -26984,8 +27071,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/helpers/ulid_factory.py
 
-- source_sha256: `9225cb9a958aacc0eca5e62847ec48b1e3d78f26b563d3db95c3902fd4fa2018`
-- nodes: 1
+- source_sha256: `72d0fedade9853662d5e78234bf5e24deffac6a47e262e792717a378aa03c1a9`
+- nodes: 2
 
 ### Nodes
 
@@ -26999,6 +27086,20 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - remove a third-party runtime dependency
 - owns_state: `_CROCKFORD32`
 - phases: `runtime`
+
+#### `ULID_Factory` (class)
+
+- id: `melder.utilities.helpers.ulid_factory.ULID_Factory`
+- defined at: `src/melder/utilities/helpers/ulid_factory.py:80`
+- public methods: `datetime`, `is_ulid`, `randomness`, `timestamp`, `timestamp_ms`, `to_int`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edge candidates (2, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.utilities.helpers.ulid_factory.ULID_Factory` creates `TypeError`
+- `melder.utilities.helpers.ulid_factory.ULID_Factory` creates `ValueError`
 
 <!-- END FILE: src/melder/utilities/helpers/ulid_factory.py -->
 
@@ -27504,7 +27605,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/synchronization/phase_scheduler.py
 
-- source_sha256: `182089be2e46ca3b6f6b819a3313c370878107eb152e96c1a1424802ca88482b`
+- source_sha256: `71b5038babb32dbc5717f75c8fbbc8b93037f1d9bd952652b8c60d6ad127878e`
 - nodes: 2
 
 ### Nodes

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 2417
-CONTENT_SHA256 = '1c285e93568d33ca0b082fcb1634e4886c6b1d3855ae8e5d766aafcc973dbe5b'
+LINE_COUNT = 2444
+CONTENT_SHA256 = 'd995468a801dd272a4295b9c91934504341b8524b5843bcdc34c962126a6bbb4'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-19
+- Updated: 2026-09-20
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -819,6 +819,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Scoped creation purge (2026-09-20): Conduit and SpellSpace expose normal Meld selectors.
+  Meld discovers the existing definition and enforces scope authority; Creations alone owns
+  retirement locks, paired live/disposal-map removal and existing disposal helpers. Space purge
+  stays local. Conduit many/per-conduit removal stays local; unique, lineage and cluster require
+  the spell owner, lineage root and elected leader respectively. Unique retirement takes the
+  Spell lock before the store lock; other modes use their actual store lock. Disposal occurs
+  after detachment and lock release. Definitions, contexts and scope objects remain usable.
+  purge_all=True removes all retained target entries; instance references and False are explicitly
+  not implemented. Purge changes no existing meld hot path or compiler-cache policy.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld.purge`,
+  `src/melder/aether/conduit/creations/creations.py:Creations.purge`.
 - Native registration capability (S2 foundation, 2026-09-19): bind/bind_inactive default to
   resolvable=True and retain the bool on each Spell version, independently of active/parked state.
   True preserves the existing v4-binding fingerprint; False uses a separate hash domain. Application
@@ -1898,9 +1909,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6299
-  loc: 6299
-  verified_at: 2026-09-19T19:57:57Z
+  end_line: 6360
+  loc: 6360
+  verified_at: 2026-09-20T22:38:07Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -1937,9 +1948,9 @@ Resolution and creations:
 
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1604
-  loc: 1604
-  verified_at: 2026-09-19T22:06:30Z
+  end_line: 1699
+  loc: 1699
+  verified_at: 2026-09-20T22:38:07Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -1961,9 +1972,9 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 625
-  loc: 625
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 698
+  loc: 698
+  verified_at: 2026-09-20T22:38:07Z
   note: instance registry.
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
@@ -1973,9 +1984,9 @@ Resolution and creations:
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 489
-  loc: 489
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 554
+  loc: 554
+  verified_at: 2026-09-20T22:38:07Z
   note: spellspace scoping.
 
 Control plane:
@@ -2073,6 +2084,18 @@ Non-path notes carried forward from the previous revision:
 - Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
 
 ## Diagrams
+### Scoped Purge
+```text
+Conduit / SpellSpace -> Meld: discover + authorize -> Creations: lock + detach -> dispose
+```
+
+```mermaid
+flowchart LR
+  C[Conduit or SpellSpace] --> M[Meld: existing selectors and scope authority]
+  M --> S[Creations: retire selected entries under writer locks]
+  S --> D[Existing disposal helpers after lock release]
+```
+
 ### Registration Capability Foundation
 ```text
 bind / bind_inactive -> Bind bool admission + fingerprint -> Spell.resolvable
@@ -2311,6 +2334,10 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-20 purge adds selective creation retirement through the existing scope owners. Meld keeps
+lookup/authority; Creations keeps lock/removal/disposal. Full-target purge is implemented with
+purge_all=True. Instance-reference targeting and False remain explicitly deferred.
 
 2026-09-19 registration/compiler foundation: native policy, compatible True identities, False-only
 Protocol admission and OVERRIDE_REQUIRED compiler metadata are implemented. Executable roots exclude

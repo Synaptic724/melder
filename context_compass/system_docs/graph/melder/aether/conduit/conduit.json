@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "02a9dbbec7e17d0a450cd28ed260a50957d4bfe3f8360e4fb92778666d912e33",
+ "source_sha256": "cff643f175fa419c46a4bbefc387b8cdd071370eb1b178f1aa3aad1d149da90b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -90,6 +90,7 @@
     "policy",
     "prewarm_lesser_conduits",
     "prewarm_spellspaces",
+    "purge",
     "register_conduit_hooks",
     "remove_from_spell_index",
     "remove_index_from_contract",
@@ -108,14 +109,15 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 119,
+    "method_count": 120,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5a727deab084875797759b49e1b2bf69dd5e5b8d84259041b5b44120762995db",
+   "span_sha256": "acb3c5cdc474087fa214f67f0bc632dfef24726622240761fff66c0b92a49c3d",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
+    "forwards full-target purge selectors to Meld while keeping conduit and registration lifetimes intact",
     "forwards per-version resolvable policy through both binding facades without changing conduit state",
     "owns concrete conduit-facing runtime helpers and pooled spellspace state",
     "creates lesser conduits",

@@ -494,5 +494,61 @@ class SpellSpace(Cleanable):
             spell_override=override,
         )
 
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_id: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """Remove only this SpellSpace's retained creations for a selected Spell.
+
+        Args:
+            spell: Logical name, class or function reference used for discovery.
+            spell_id: Explicit machine identity, mutually exclusive with spell.
+            spellframe: Optional frame/type for ordinary meld lookup.
+            binding_name: Optional binding name.
+            purge_all: True removes every matching local creation. False and
+                instance-reference targeting are not implemented yet.
+
+        Contract:
+            Only many and unique_per_spell_space entries are eligible. This
+            operation never delegates to a conduit, root or cluster store.
+            The scope, thread stack, pool membership and compiled contexts stay
+            intact; direct use does not require an active managed context.
+            Removal/disposal uses the existing Creations writer lock.
+
+        Returns:
+            Number of removed local creations, or zero for no matching entry.
+
+        Raises:
+            ValueError: If selectors conflict or no target is supplied.
+            KeyError: If normal meld lookup cannot discover the Spell.
+            RuntimeError: If cleaned or the Spell belongs to a broader lifetime.
+            TypeError: If purge_all is not a bool.
+            NotImplementedError: If instance-reference targeting or purge_all=False
+                is requested.
+            ExceptionGroup: Disposal failures after removal.
+        """
+        self.check_cleaned()
+        if spell is not None and spell_id is not None:
+            raise ValueError("purge accepts either `spell` or `spell_id`, not both.")
+        internal_spell = spell
+        internal_spell_name = None
+        if spell_id is not None:
+            internal_spell = spell_id
+        elif isinstance(spell, str):
+            internal_spell = None
+            internal_spell_name = spell
+        return self._meld.purge(
+            internal_spell,
+            spell_name=internal_spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            purge_all=purge_all,
+        )
+
     # Machine identity remains explicit at the public boundary via `spell_id=`;
     # this scope forwards it positionally into the internal ID fast lane.

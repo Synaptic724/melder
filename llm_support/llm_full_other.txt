@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 9d18314fdb4892b6c40abd0467cd56a6bc44371ada09dbad69311d3192148fe9
-FILE COUNT: 358
+SOURCE FINGERPRINT: 85374aba8e914462510940cb668eba936bb3951f7099f351f2d0ab232f8de289
+FILE COUNT: 359
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -62852,7 +62852,7 @@ END FILE: docs/intermediate/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/scopes.md
-CONTENT SHA256: c4f8b8287c0affdbe7793a354308d698c82b744a498fae27eea2a9d71adf2d78
+CONTENT SHA256: a4a9db5fd822de85def1041fa5caa1cd8d80fc5da483ad17e1e19b236f3b3c10
 SOURCE ENCODING: utf-8
 ================================================================================
 # Spell spaces, lineage, and scopes that end
@@ -62887,6 +62887,46 @@ Read [dynamic mode](dynamic-linking.md) before using this operation.
 
 [Clusters](../advanced/clusters.md) add a group-wide lifetime. The original cluster
 lesson remains in its saved Intermediate collection and is linked from that guide.
+
+## Purge creations while keeping the scope
+
+Use `purge` to dispose and remove the retained creations for one registered target
+without ending its scope or removing its registration:
+
+```python
+removed = conduit.purge("Job")
+removed = space.purge("RequestSession")
+```
+
+Names, class/function references, spellframe/binding selectors, and explicit
+`spell_id=` work through the same discovery as `meld`. The return value is the
+number removed, or `0` when that authorized store has no matching creation.
+`purge_all=True` is the default: a `many` target removes its whole retained bucket.
+Only `many` objects with configured disposal are retained; untracked results are
+not affected by purge.
+
+| Lifetime | Who may purge it |
+| --- | --- |
+| `many` | The conduit or spell space holding those local creations |
+| `unique_per_spell_space` | That spell space only |
+| `unique_per_conduit` | That conduit only |
+| `unique_per_conduit_lineage` | The lineage root conduit |
+| `unique_per_conduit_cluster` | The elected cluster leader |
+| `unique` | The spell's owning conduit |
+
+A spell space always stays within its own creations. It cannot purge objects
+belonging to its conduit, lineage root, or cluster leader.
+
+Purge follows the configured disposal methods and their ordering. It attempts
+other selected objects after an object's disposal fails, then raises an
+`ExceptionGroup`; removed entries remain removed. A subsequent meld can create a
+fresh factory-backed instance using the existing compiled context. References
+already held by application objects are not rewritten. An externally supplied
+object remains referenced by its registration, so purging its store entry does
+not unbind it or turn it into a factory.
+
+**Instance-reference purging is not implemented yet.** Passing a created instance
+or requesting `purge_all=False` raises `NotImplementedError` before removal.
 ================================================================================
 END FILE: docs/intermediate/scopes.md
 ================================================================================
@@ -66434,6 +66474,219 @@ exclude = [
 ]
 ================================================================================
 END FILE: pyproject.toml
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/0.2.43.md
+CONTENT SHA256: 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.43
+
+**Draft release notes — changes since 0.2.37**
+
+Prepared September 20, 2026. The target is **0.2.43**, as selected by the owner to match the current
+source version. This document does not announce a published 0.2.43 release.
+
+## Release boundaries
+
+| Boundary | Verified evidence |
+| --- | --- |
+| Previous published GitHub release | [Melder 0.2.37](https://github.com/Synaptic724/melder/releases/tag/0.2.37) |
+| Publication time | **September 6, 2026, 18:42:22 UTC — 12:42:22 p.m. MDT in Edmonton** |
+| Baseline commit | `a30a754d0bb61db0b142936010cdb82cffecec6f`, the 0.2.37 tag |
+| Proposed next release | **0.2.43** |
+| Source snapshot used here | `05ebf662b64b60b8c105903de43c4a956607cda8` on `codex_features2` |
+| Snapshot commit time | September 20, 2026, 01:16:50 UTC — September 19, 7:16:50 p.m. MDT |
+
+GitHub's release list still ends at 0.2.37 at preparation time. The checked-in package version moves
+from 0.2.37 to 0.2.40 on September 13, then to 0.2.43 on September 19. No 0.2.42 release, local tag or
+package-version boundary was found. These notes cover the complete target snapshot, including work
+committed after the 0.2.43 version bump; they do not invent intervening release histories.
+
+## Suggested release summary
+
+Melder 0.2.43 adds registered definitions that agents can inspect and version without allowing
+Melder to resolve them. It also fixes constructor-default handling, Python 3.14 deferred annotations,
+existing-instance dependency planning, and provider-artifact ownership during validation.
+
+Applications upgrading from 0.2.37 should review defaulted dependency parameters and Crystallizer
+record compatibility. Existing bindings remain resolvable unless explicitly registered otherwise.
+
+## Added
+
+- **Non-resolvable registrations.** `bind(..., resolvable=False)` and
+  `bind_inactive(..., resolvable=False)` retain a definition in Melder's registered world without
+  permitting direct resolution or reuse through Meld. The default is `resolvable=True`.
+- **Definitions remain useful to agents.** Abstract bases, internal helpers and explicitly
+  non-resolvable Protocol definitions can retain registration identity and participate in existing
+  source/history/version workflows without becoming automatic construction targets.
+- **References remain visible without construction edges.** Required consumer inputs selecting a
+  non-resolvable definition retain descriptive target relationships. Callers supply their values
+  through existing overrides. Ordinary missing-argument errors remain Python's responsibility;
+  this feature adds no runtime argument preflight.
+- **Nexus relationship navigation.** `describe_spell_relationships` on ViewSpell/FrameViewer exposes
+  visible incoming and outgoing dependency, supplied-reference and registered direct-base links.
+  Existing ACL visibility applies to both endpoints. External changes retain the normal explicit
+  Rift projection-refresh requirement.
+- **Crystallizer preserves resolution policy.** SpellCrystal capture, active/staged restore and
+  supported graft paths retain each version's `resolvable` value. Replayed bindings reconstruct
+  their relationships through the existing compilation process.
+
+## Fixed
+
+- **Ordinary Python defaults are honored.** A matching registered provider no longer replaces an
+  ordinary constructor default such as `None`, `0`, `False`, a collection or a chosen instance.
+  Explicit SpellMap/SpellContract descriptors keep their DI meaning; explicit overrides still work.
+- **Python 3.14 deferred annotations survive inspection.** Binding and dependency inspection retain
+  unresolved names as ForwardRefs instead of failing immediately when annotation evaluation meets
+  a name imported only under `TYPE_CHECKING`. Existing normalization/provider matching handles the
+  reference; missing providers still follow normal validation rules.
+- **Existing instances work as dependency providers.** Planning no longer tries to inspect a
+  supplied, non-callable object as a constructor. Direct and nested consumers can receive the same
+  registered reference. This repair does not introduce new instance lifetimes or ownership modes.
+- **Protocol admission checks the supplied object.** Binding an existing object under a Protocol
+  now checks the actual value for the supported directly declared public members and callability.
+  Instance-only members and non-callable shadows are handled at bind time. This is not a full
+  static type checker or a new inherited-Protocol/signature-validation system.
+- **Borrower validation preserves provider execution artifacts.** Compiling a borrower or a local
+  consumer no longer clears executable artifacts on providers that the pass will not rebuild.
+  Provider instances and their retained state remain usable afterward.
+- **Local revalidation uses the current cancellation event.** Local Phase-5/6 calls no longer capture
+  the previous scheduler run's event. A failed run cannot poison the next validation, while
+  cancellation during the current run still reaches the phase body.
+
+## Documentation, benchmarks and development tooling
+
+- Benchmark/profile adapters now use `spell_id=` for IDs returned by bind: **134 selector corrections
+  across 23 files**, plus three old public `spell_override=` calls corrected to `override=`.
+- Published examples were updated to consistent human-target calling syntax; registration/override
+  guidance documents the new definition capability and its persistence limits.
+- Added the repository's `uv.lock`, contributor setup instructions and locked CI installation flows.
+  The dynamic free-threaded Python matrix remains intact. This is development/build tooling;
+  it does not add runtime dependencies to applications installing Melder.
+- Refreshed generated agent documentation, bind-guard/system-document assets and repository bundles.
+
+## Upgrade notes
+
+### Defaulted parameters now keep their defaults
+
+Code that relied on Melder overriding an ordinary Python default must express its injection intent
+explicitly. For example:
+
+```python
+# Retains None, even if Service has a registered provider.
+def __init__(self, service: Optional[Service] = None):
+    ...
+
+# Requests annotation-based injection.
+def __init__(self, service: Service):
+    ...
+```
+
+Use an explicit SpellMap/SpellContract where that descriptor's semantics are intended, or pass a
+per-call `override`. Do not make an argument nullable solely to represent required caller supply.
+
+### Crystallizer record format advances to 2.0.0
+
+The record format's major version changes from **1.0.0 to 2.0.0**, independently of Melder's package
+version. Older readers must reject new records rather than silently discard `resolvable=False`
+and turn a definition into a resolution target. Update consumers of newly written records together.
+
+New readers retain legacy handling: an old record without the capability field defaults to True.
+Restore continues to reconstruct recorded structure; this release does not serialize arbitrary
+live application objects, their state or suspended execution.
+
+### Compiled cache version advances from 7 to 8
+
+The existing cache mismatch mechanism rebuilds plans compiled under the former default-injection
+policy. No separate invalidation service or manual cache migration is introduced.
+
+### Existing identity and ownership rules remain
+
+- Omitted/True resolution capability preserves the existing binding fingerprint scheme;
+  False uses a distinct fingerprint domain.
+- Existing version rules remain: a same-identity method-body edit does not automatically create
+  a new version. Use the normal registration/module/binding and version-selection workflows.
+- Supplied existing objects retain the current unique-only model and existing disposal/transfer rules.
+- The public distinction between a logical name and `spell_id=` **already existed in 0.2.37**.
+  The benchmark changes repair stale callers; they are not a new addressing API in 0.2.43.
+
+## Completed epic mapping
+
+Ticket closure is evidence of accepted scope, not proof of a release date. Each inclusion below is
+also backed by source changes after the 0.2.37 tag. Historical proposals inside a closed ticket are
+excluded where the completion record says they were deferred.
+
+| Completed epic | Completion recorded | Included in 0.2.43 | Source commits after 0.2.37 |
+| --- | --- | --- | --- |
+| Preserve provider artifact ownership and plan existing instances correctly | September 19, 2026, 14:51:36 UTC | Deferred-annotation acquisition; supplied-instance planning/injection; actual-instance Protocol admission; provider-artifact preservation | `4b3ab72ee`, `7a9eea3a1` |
+| Expose versioned registrations in Nexus without runtime resolution | September 20, 2026, 00:25:59 UTC | Native capability flag; compiler reference/construction separation; runtime refusal; Nexus graph/history; Crystallizer replay; final local-cancellation repair | `63ef620e3`, `f3fa43281`, `2644dced8`, `0005a7a9f` |
+
+Additional delivered work is tracked outside those two completed epics:
+
+| Work record | Recorded state | Release treatment |
+| --- | --- | --- |
+| Constructor default precedence | Done; September 19 turn-in | Include default-first classification and cache version 8. Initial source delivery is in `a425aa1a1`. |
+| Final reported-failure repairs | Done; September 20, 00:25:59 UTC | Include current-run cancellation wiring; the crystal test-double adjustment is validation maintenance, not a separate public feature. Source delivery is in `0005a7a9f`. |
+| Benchmark spell-ID compatibility | Review; implemented and committed | Include benchmark maintenance in `05ebf662b`; do not call it a completed epic or a runtime addressing change. |
+| Positional meld documentation | Review; implemented and committed | Include documentation alignment, not a new runtime API. |
+| Reproducible uv environment | Review; implemented and committed | Include repository/CI tooling in `ed9f5047d`; distinguish it from application runtime behavior. |
+
+## Do not announce these as new in this release
+
+**Already in the 0.2.37 baseline:** ordered live-spell disposal, the original Read the Docs
+documentation rollout, and the human-name versus explicit-machine-ID Meld API. Their completed
+records predate the baseline release. Current fixes/docs updates do not make those original features new.
+
+**Not implemented by this release:**
+
+- Named lesser conduits:
+  naming, ConduitCloud registration and corresponding persistence remain design/discovery work.
+- Purge:
+  draft scope rules only; no purge runtime implementation.
+- Existing-object lifecycle/ownership redesign:
+  parked; multiple external-instance lifetimes, new disposal policy and ownership redesign are not delivered.
+- Stateful application recovery:
+  a proposed extension beyond structural restore, not a completed recovery feature.
+- Broad shared-context rebuild/publication redesign:
+  closed as cancelled/deferred, with its runtime repair unimplemented/unqualified. Do not convert
+  that closure into a concurrency guarantee. The narrow cancellation fix above is a separate delivery.
+
+## Validation and remaining limits
+
+These are retained development results, **not a newly executed release-wide test run**:
+
+- Non-resolvable feature qualification: **8,055 distinct selected passes**, one existing skip and
+  four existing expected failures; 39 documentation tests and a strict 294-page documentation build.
+- Final reported-failure repair: **394 distinct focused passes**, one asset-runner skip and
+  25 fresh-process churn passes. Six deterministic regressions failed before the repair and pass afterward.
+- Provider ownership: the original **nine CommandOps provider acceptance cases passed**. That does
+  not imply the separate Iris builder-cleanup acceptance issue was repaired.
+- Benchmark migration: the standalone gauntlet passes its default 1,000 iterations, plus 18 selected
+  benchmark checks and nine additional adapter checks. The shared comparative gauntlet still has
+  a separate frozen-configuration setup-order failure before its Meld calls.
+
+The selections overlap and must not be summed. Full repository coverage and a fresh full-suite run
+were not performed for this document. Existing eager construction of overridden child branches,
+process-wide identity uniqueness, explicit Rift refresh and the deferred Iris cleanup boundary remain.
+
+Before publication, use the normal CI/distribution checks against the exact release candidate.
+No version bump, tag, wheel publication or GitHub release was performed while preparing these notes.
+
+## Evidence for the maintainer
+
+- GitHub release metadata
+  and release list, read September 20.
+- Tag, version and per-area commit map.
+- Integrated feature validation.
+- Provider-artifact repair evidence.
+- Cancellation repair evidence.
+- Benchmark migration evidence and remaining setup issue.
+
+The evidence folder retains the original 0.2.42 intake name. The owner subsequently selected
+**0.2.43**, and every release recommendation in this document uses that corrected target.
+================================================================================
+END FILE: release_docs/0.2.43.md
 ================================================================================
 ================================================================================
 BEGIN FILE: requirements.txt

@@ -4118,6 +4118,67 @@ class Conduit(Cleanable):
     # Machine identity remains explicit at the public boundary via `spell_id=`;
     # this facade forwards it positionally into the internal ID fast lane.
 
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_id: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """Remove retained creations selected with the same addresses as meld.
+
+        Args:
+            spell: Logical name, class or function reference used for discovery.
+            spell_id: Explicit machine identity, mutually exclusive with spell.
+            spellframe: Optional frame/type used for normal binding lookup.
+            binding_name: Optional named binding within the selected frame.
+            purge_all: True removes the binding's retained entries. False and
+                instance-reference targeting are not implemented yet.
+
+        Contract:
+            Meld discovers the Spell and checks scope authority. Many and
+            per-conduit creations are local; unique, lineage and cluster
+            creations require their owning/root/leader conduit. SpellSpace
+            creations must be purged through their SpellSpace. Registrations,
+            compiled contexts and this conduit remain usable. Existing external
+            references are not revoked, including supplied objects held by Spell.
+
+        Returns:
+            Number removed; zero when the authorized store has no matching entry.
+
+        Raises:
+            ValueError: If selectors conflict or no target is supplied.
+            KeyError: If the normal meld lookup cannot discover the Spell.
+            RuntimeError: If cleaned or not authorized for the selected scope.
+            TypeError: If purge_all is not a bool.
+            NotImplementedError: If instance-reference targeting or purge_all=False
+                is requested.
+            ExceptionGroup: Disposal failures after entries have been removed.
+
+        Threading:
+            Creations uses the existing creation writer locks. Purge is targeted
+            retirement, not a drain of in-flight calls or an ownership transfer.
+        """
+        self.check_cleaned()
+        if spell is not None and spell_id is not None:
+            raise ValueError("purge accepts either `spell` or `spell_id`, not both.")
+        internal_spell = spell
+        internal_spell_name = None
+        if spell_id is not None:
+            internal_spell = spell_id
+        elif isinstance(spell, str):
+            internal_spell = None
+            internal_spell_name = spell
+        return self._meld.purge(
+            internal_spell,
+            spell_name=internal_spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            purge_all=purge_all,
+        )
+
     def meld_existing_spell(
             self,
             spell_name: str | None = None,

@@ -82,17 +82,14 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| teach_meld_string_names | review | handoff | codex | workflows_1 | none | Owner reviews and commits the quoted-name examples. | All 133 lessons and docs/publication checks pass. | Owner accepts the teaching correction. | tickets/tasks/2026-09-20_teach_meld_string_names_task.md | 2026-09-20T09:22:39Z | REQUIRED |
+| scoped_creation_purge | in_progress | implementation | codex | updater_0 | none | Add regressions and implement native scoped purge. | Meld owns scope authority; Creations owns locked retirement. | Feature tests and generated assets pass. | tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md | 2026-09-20T22:06:15Z | REQUIRED |
+| purge_scope_discovery | review | handoff | codex | updater_0 | none | Owner reviews the bounded Meld-to-Creations purge plan. | Authority matrix and 38 passing characterization checks. | Owner directs implementation. | tickets/tasks/2026-09-20_discover_purge_scope_ownership_task.md | 2026-09-20T21:43:07Z | REQUIRED |
 | bind_lifecycle_hooks_planning | review | handoff | codex | updater_0 | none | Owner reviews the three bind-time lifecycle stages. | Draft epic preserves reference checks, Spell edits and post-bind callbacks. | Owner selects further discovery or implementation. | tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md | 2026-09-20T08:04:19Z | REQUIRED |
 | release_0_2_37_to_0_2_43 | review | handoff | codex | updater_0 | none | Owner reviews the 0.2.43 release document. | Verified release date, completed-work map and migration notes. | Owner accepts draft or requests revisions. | tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md | 2026-09-20T07:54:22Z | REQUIRED |
 | benchmark_spell_id_lookup | review | handoff | codex | updater_0 | none | Owner reviews keyword migration and separate setup finding. | 134 ID selectors corrected; original gauntlet and scoped checks pass. | Owner accepts repair or directs distinct setup follow-up. | tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md | 2026-09-20T01:15:40Z | REQUIRED |
-| purge_scope_planning | review | handoff | codex | updater_0 | none | Owner reviews purge scope rules before further work. | Epic drafted; source and repository assets verified. | Owner directs discovery or implementation separately. | tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md | 2026-09-20T00:56:30Z | REQUIRED |
-| document_positional_meld_calls | review | handoff | codex | workflows_1 | none | Owner reviews the completed documentation update. | Docs verified; all three prior failures now pass in follow-up runs. | Owner accepts documentation and cache-reset results. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-20T08:12:53Z | REQUIRED |
-| sync_owner_uv_environment | review | handoff | codex | workflows_1 | none | Owner resumes development and restarts editor Ruff. | Melder 0.2.40 and locked tools on existing no-GIL Python. | Owner accepts verified environment sync. | tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | 2026-09-13T20:48:32Z | REQUIRED |
-| reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
+| purge_scope_planning | review | handoff | codex | updater_0 | none | Owner reviews the completed epic/build-only pass. | Epic drafted; source and repository assets verified. | Owner accepts planning/build delivery. | tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md | 2026-09-20T21:43:07Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
-| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes partial-rerun coverage correction. | Complete same-run coverage without repeated tests. | Owner accepts corrected reporting in a fresh run. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T18:58:09Z | REQUIRED |
 | stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
@@ -100,46 +97,42 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| workflows_responsibility_transfer | done | workflows_0 | tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md | Succession and approved cleanup complete; twelve archive hashes verified. | 2026-09-20T22:34:55Z |
+| 2026-09-06_ci_validation_stage_design_task | done | workflows_0 | tickets/tasks/completed/2026-09-06_ci_validation_stage_design_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
+| 2026-09-08_reproducible_uv_environment_task | done | workflows_0 | tickets/tasks/completed/2026-09-08_reproducible_uv_environment_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
+| 2026-09-13_sync_owner_uv_environment_task | done | workflows_0 | tickets/tasks/completed/2026-09-13_sync_owner_uv_environment_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
+| 2026-09-19_document_positional_meld_calls_task | done | workflows_0 | tickets/tasks/completed/2026-09-19_document_positional_meld_calls_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
+| 2026-09-20_teach_meld_string_names_task | done | workflows_0 | tickets/tasks/completed/2026-09-20_teach_meld_string_names_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
 | 2026-09-19_fix_feature_turn_in_failures_task | done | updater_0 | tickets/tasks/completed/2026-09-19_fix_feature_turn_in_failures_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 | 2026-09-19_discoverable_non_resolvable_registrations_epic | done | updater_0 | tickets/epics/completed/2026-09-19_discoverable_non_resolvable_registrations_epic.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 | 2026-09-19_discoverable_registration_contract_discovery_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_contract_discovery_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 | 2026-09-19_discoverable_registration_modifier_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_modifier_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 | 2026-09-19_caller_supplied_socket_compiler_story | done | updater_0 | tickets/stories/completed/2026-09-19_caller_supplied_socket_compiler_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 | 2026-09-19_discoverable_resolution_runtime_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_resolution_runtime_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
-| 2026-09-19_discoverable_nexus_graph_and_history_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_nexus_graph_and_history_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
-| 2026-09-19_discoverable_registration_persistence_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_persistence_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
-| 2026-09-19_discoverable_registration_qualification_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_qualification_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
-| 2026-09-19_publish_and_replay_non_resolvable_definitions_task | done | updater_0 | tickets/tasks/completed/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
-| 2026-09-19_enforce_non_resolvable_runtime_admission_task | done | updater_0 | tickets/tasks/completed/2026-09-19_enforce_non_resolvable_runtime_admission_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
-| 2026-09-19_enforce_required_override_execution_task | done | updater_0 | tickets/tasks/completed/2026-09-19_enforce_required_override_execution_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- teach_meld_string_names: SWITCH_TRIGGER is owner acceptance or new documentation failure evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-20_teach_meld_string_names_task.md.
+- scoped_creation_purge: SWITCH_TRIGGER is completed validation and documentation/build evidence.
+  RESUME_HIERARCHY: tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md ->
+  tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md.
+- purge_scope_discovery: SWITCH_TRIGGER is owner direction to implement the reviewed plan.
+  RESUME_HIERARCHY: tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md ->
+  tickets/tasks/2026-09-20_discover_purge_scope_ownership_task.md.
 - bind_lifecycle_hooks_planning: SWITCH_TRIGGER is owner direction after reviewing the draft; no implementation yet.
   RESUME_HIERARCHY: tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md.
 - release_0_2_37_to_0_2_43: SWITCH_TRIGGER is owner acceptance or requested edits to the release draft.
   RESUME_HIERARCHY: tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md.
 - benchmark_spell_id_lookup: SWITCH_TRIGGER is owner review or direction on the separate shared-gauntlet setup failure.
   RESUME_HIERARCHY: tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md.
-- purge_scope_planning: SWITCH_TRIGGER is owner direction after reviewing the draft; implementation is not authorized.
+- purge_scope_planning: SWITCH_TRIGGER is owner acceptance of the completed planning/build pass.
   RESUME_HIERARCHY: tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md ->
   tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md.
-- document_positional_meld_calls: SWITCH_TRIGGER is owner acceptance or new documentation failure evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-19_document_positional_meld_calls_task.md.
-- sync_owner_uv_environment: SWITCH_TRIGGER is owner acceptance or new environment failure evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md.
-- reproducible_uv_environment: SWITCH_TRIGGER is owner acceptance or new hosted matrix failure evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-08_reproducible_uv_environment_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
 - embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_embed_melder_banner_task.md.
-- ci_validation_stage_design: SWITCH_TRIGGER is owner acceptance or new hosted failure evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-06_ci_validation_stage_design_task.md.
 - stateful_application_recovery: SWITCH_TRIGGER is owner selection of a concrete stateful recovery scenario.
   RESUME_HIERARCHY: tickets/epics/2026-09-07_stateful_application_recovery_epic.md -> linked source investigation and related scope/identity work.
 <!-- END USER-DEFINED: notes -->

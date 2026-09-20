@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/class_surface_ast_describer.py",
- "source_sha256": "b6a97dbc3019e91c15ee923634a6830158875f38edad2ebdcbef3f8e55e69cbf",
+ "source_sha256": "458c0ceb2c0d3a0844001964fe431352bf0a4f4236ff91820199a8b158329ccf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.class_surface_ast_describer": {

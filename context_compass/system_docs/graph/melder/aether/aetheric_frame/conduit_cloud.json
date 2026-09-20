@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/conduit_cloud.py",
- "source_sha256": "b542c1e631f32562e5c5b571ed40f1d0416607111fb063ff3c3f1bcc6b21491f",
+ "source_sha256": "50481252d1d509c524a9eccefc1895bb2307e5a8a2ef53e5feb97a5f68de46c6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.conduit_cloud": {
@@ -52,7 +52,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "df0b1f661b17689724af017252608af47153b6e2d7f41b5846393207c9902a90",
+   "span_sha256": "57e3df8380e76591a4c2d02a6448ee11f1bff475ea289fab9f26591cca47d6cc",
    "role": "Frame-scoped registry of named conduits.",
    "responsibilities": [
     "stores conduit name to conduit mappings",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space.py",
- "source_sha256": "fcacfd99ab8b0a0e6420292bba98f0a34c1e22ea416adc093a4a1f3d2c879310",
+ "source_sha256": "8d0831812ef82b432d031a4869cb05e5e22d2d59b8213b7b4da01ede1259cf2d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space": {
@@ -38,19 +38,21 @@
     "meld",
     "owner_conduit_id",
     "permanent_cleanup",
+    "purge",
     "recycle_from_managed_context"
    ],
    "shape": {
-    "method_count": 8,
+    "method_count": 9,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3bf71d6d0a5e58e5b49ddeb1fd145142d95db3df816773d95fb3292ec6596fbc",
+   "span_sha256": "83a083bc3f8a836c3eadf3f9cc354349101d3bf30b3f14f1b2487ccfd705a5ac",
    "role": "Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.",
    "responsibilities": [
     "marks one active spellspace scope on a conduit",
     "enforces active-scope usage for spellspace-bound meld calls",
-    "clears spellspace-scoped instances on reset or cleanup"
+    "clears spellspace-scoped instances on reset or cleanup",
+    "exposes purge for local many and spellspace creations only, with removal delegated through its Meld door"
    ],
    "owns_state": [
     "_id",
@@ -92,6 +94,12 @@
   {
    "from": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
    "to_label": "SpellSpaceMeld",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+   "to_label": "ValueError",
    "relation": "creates",
    "confidence": "candidate"
   }

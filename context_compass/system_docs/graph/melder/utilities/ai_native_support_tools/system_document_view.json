@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/ai_native_support_tools/system_document_view.py",
- "source_sha256": "d9c9b12c884b11794cdee230b59711433367b1bff7fe2329a0312b0ab830608a",
+ "source_sha256": "1a2034e8f0c6bc30ea7bb60786e90b2e51dfb739daa7af314afe20087c1ebb42",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.ai_native_support_tools.system_document_view": {

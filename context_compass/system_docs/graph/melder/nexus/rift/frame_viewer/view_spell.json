@@ -12,10 +12,10 @@
    "lineno": 1,
    "include": true,
    "role": "Spell-scoped helper surface for one selected frame view.",
-   "semantics_authored_against": "99ca4769f332b0a8e4f0f3382e597063586a3811d2088b0e084b972537131d54",
    "responsibilities": [
     "describes incoming and outgoing registered relationships while filtering hidden endpoints and sections"
-   ]
+   ],
+   "semantics_authored_against": "99ca4769f332b0a8e4f0f3382e597063586a3811d2088b0e084b972537131d54"
   },
   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell": {
    "id": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",

@@ -2,19 +2,20 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-09-19-scope-aware-creation-purge
-- Status: draft
+- Status: in_progress
 - Owner: user
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-20T00:53:18Z
-- Updated: 2026-09-20T00:56:30Z
+- Updated: 2026-09-20T21:43:07Z
 - Target Window: future owner-approved implementation
 - Related Program/Initiative: Meld, Conduit, SpellSpace and Creations lifecycle
 
 ## Current Authorization
-PLANNING ONLY. The owner explicitly requested this epic before any implementation, followed by
-regeneration of Melder build assets. Do not add purge methods, runtime behavior, or feature tests in
-this pass. This record captures the requested feature and the investigation needed before building it.
+IMPLEMENTATION AUTHORIZED (2026-09-20). The owner accepted the discovery plan and directed the
+bounded implementation. Meld retains all scope discovery and caller authority checks; Creations
+owns creation locking, removal and disposal only. Mirror the existing writer locks for each Existence.
+Active task: tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md.
 
 ## Problem / Opportunity
 The owner wants `purge` as the lifecycle counterpart to `meld`: remove a target's retained creations
@@ -40,6 +41,10 @@ lesser conduits, spellspaces and shared instances use broader resolution targets
   before coding. Do not silently broaden deletion, bypass existing ownership, or invent a new scope.
 
 ## Goals (Outcomes)
+- Current tranche: normal name/type/frame/id selectors with purge_all=True. Actual created-instance
+  references and purge_all=False are explicitly deferred and must raise NotImplementedError.
+- No public targeting of internal Spell metadata objects; the word spell in the owner's request
+  refers to application objects. Reuse Meld's existing discovery instead of adding a runtime import.
 - Provide purge through Conduit and SpellSpace with shared orchestration owned by Meld.
 - Identify the selected registration using the existing Meld lookup machinery, without constructing it.
 - Carry the actual originating scope into purge so routing does not erase caller authority.
@@ -62,8 +67,8 @@ lesser conduits, spellspaces and shared instances use broader resolution targets
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Owner requested an epic recording the idea and explicitly prohibited implementation.
+- to_state: in_progress
+- transition_reason: Owner selected scope/ownership discovery and planning before implementation.
 
 ## Owner-Requested Scope Rules
 
@@ -71,15 +76,17 @@ lesser conduits, spellspaces and shared instances use broader resolution targets
 | --- | --- | --- |
 | many | The calling local conduit's creations, or the calling SpellSpace's creations | Local to that originating scope; do not widen to another conduit/spellspace |
 | unique_per_spell_space | That SpellSpace | Preserve the specific spellspace identity; never infer another one |
-| unique_per_conduit | That conduit | Preserve the applicable conduit identity when called through either facade |
-| unique_per_conduit_cluster | Root scope | The root scope itself must originate the request |
-| unique | Root scope | The root scope itself must originate the request |
-| unique_per_conduit_lineage | Not specified by the owner yet | Must be decided before supporting this mode; do not silently copy the cluster rule |
+| unique_per_conduit | That conduit's Creations | That conduit itself; SpellSpace cannot delegate to it |
+| unique_per_conduit_cluster | Elected cluster leader's Creations | The cluster leader conduit itself must originate the request |
+| unique | Spellbook owner's/root conduit's Creations | The spell's owning conduit itself must originate the request |
+| unique_per_conduit_lineage | Resolving lineage root's Creations | Only that lineage root conduit may originate the request |
 
-The first five rows are the owner's requested behavior, not claims about current purge support.
+These rows are requested behavior, not claims about current purge support.
 `unique_per_conduit_cluster` and `unique_per_spell_space` are the existing enum spellings for the
-owner's "unique per cluster" and "unique per spellspace" terms. The enum also declares lineage scope;
-that additional mode remains an explicit question rather than an inferred permission.
+owner's "unique per cluster" and "unique per spellspace" terms. On 2026-09-20 the owner explicitly
+selected root-only lineage purge and ruled that SpellSpace purge touches only that space's own
+Creations. A SpellSpace cannot delegate purge authority to any broader store, even when its owning
+conduit is a spell owner, lineage root or cluster leader.
 
 ## Requirements (Functional + Non-Functional)
 - Capture the originating Conduit or SpellSpace before forwarding into Meld. Retain caller identity
@@ -90,6 +97,11 @@ that additional mode remains an explicit question rather than an inferred permis
   executing a constructor, or creating an instance solely to delete it.
 - Conduit and SpellSpace should delegate shared decisions to Meld; storage mutation belongs to the
   relevant Creations owner rather than ad hoc edits to private dictionaries in each facade.
+- Owner ruling (2026-09-20): extend Creations with a dedicated purge operation. Do not implement
+  purge through extract_spell_creations or its transfer/restore payload format.
+- Owner simplification (2026-09-20): resolve the Spell using Meld's mechanics, select the authorized
+  store from Existence and caller scope, then call Creations.purge(spell). Keep the core in these
+  existing layers; no global lookup fallback or new scope/compiler system.
 - Define how live records, disposal metadata and any cached reuse references are retired together.
   A successful purge must not leave a reuse path returning a removed creation.
 - Keep unrelated scopes and unrelated creations intact. Dependent Python objects may still hold
@@ -134,8 +146,9 @@ Documents are navigation and intent; read the actual implementations before chan
   `tickets/epics/completed/2026-09-19_discoverable_non_resolvable_registrations_epic.md`.
 
 ## Milestones (Track Progress)
+- [ ] Later tranche: actual-instance targeting; not implemented by the normal-selector delivery.
 - [x] M0: Record owner intent and explicit no-implementation boundary.
-- [ ] M1: Discover store routing, caller identity and existing targeted removal/disposal contracts.
+- [x] M1: Discover store routing, caller identity and existing targeted removal/disposal contracts.
 - [ ] M2: Settle root terminology, lineage mode, many selection and error/return semantics.
 - [ ] M3: Create approved implementation stories/tasks, patch contracts and meaningful failing regressions.
 - [ ] M4: Implement the approved scope routing and Creations retirement contract.
@@ -152,6 +165,8 @@ Documents are navigation and intent; read the actual implementations before chan
 - [ ] Retain source-backed decisions and exact reading pointers through later implementation.
 - Current planning/build-only task:
   `tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md`.
+- Active discovery task:
+  `tickets/tasks/2026-09-20_discover_purge_scope_ownership_task.md`.
 
 ## Acceptance Criteria (Feature Complete)
 - Both public facades expose the approved purge operation through shared Meld orchestration.
@@ -186,26 +201,30 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
 - [ ] No disposal-policy redesign or new cache system without a demonstrated need.
 
 ## Open Questions
-- What precisely identifies "root scope" for unique and cluster rules: owning/root conduit, lineage
-  root, cluster leader, or another existing authority? Verify actual ownership before selecting a check.
-- Does a SpellSpace attached to a root conduit count as a root-origin caller, or must the Conduit
-  itself initiate root-only purges? Preserve caller kind until this is explicitly settled.
-- What should unique_per_conduit_lineage do?
-- Does a target purge remove all locally tracked many instances, one explicit instance, or support both?
-- How does a conduit call identify a required SpellSpace; what happens without explicit scope context?
-- Exact selector signature, absent-target outcome, return payload and disposal-error behavior.
-- Confirm target-only disposal and external-instance behavior without implying removal of references
-  already held by other application objects or cascading through dependent registrations.
+- Resolved: unique uses the live Spell owner; cluster uses the elected leader's store; lineage uses
+  the resolving lineage's root. The caller must be the appropriate conduit itself.
+- Resolved: SpellSpace is strictly local; it cannot purge conduit/root/cluster creations.
+- Plan proposes all retained many entries for the selected Spell, count return, zero for no entries
+  and aggregated disposal failures. These are concrete API proposals for implementation review.
+- Supplied objects remain reachable through Spell.user_created_object after a store clear. Preserve
+  the Creations-only boundary and do not promise fresh reconstruction or redesign their ownership.
+- Selective purge does not revoke existing Python references or implicitly cascade to consumers.
+  Follow existing writer/lifecycle coordination; do not add a universal draining mechanism.
 
 ## Decision Log
 - Owner named the feature purge and wants it as meld's counterpart for retained creations.
 - Owner selected Conduit and SpellSpace entry points, with Meld owning shared logic and caller context.
 - Owner supplied the five scope rules above and explicitly prohibited implementation in this pass.
-- Existing enum adds a sixth lineage mode; its purge rule remains undecided.
+- At intake the enum's sixth lineage mode was undecided; the 2026-09-20 ruling below settles it.
+- 2026-09-20: Owner selected lineage-root-only purge and strictly local SpellSpace purge.
+- 2026-09-20: Owner selected native Creations extension, then simplified orchestration to resolved
+  Spell -> authorized store -> removal, mirroring Meld selection.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false
-- ARTIFACT_PATHS: none; build evidence belongs to the planning/build task.
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - artifacts/purge_scope_discovery_20260920/plan.md
+- Build and characterization logs belong to their linked tasks.
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: future accepted feature closure.
 
@@ -228,7 +247,25 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-20T21:43:07Z
+  TYPE: DECISION
+  CLAIM: Discovery is complete and owner direction keeps the implementation narrow: normal Meld
+    selection resolves the Spell, caller/Existence determines authority and store, and a native
+    Creations.purge(spell) removes/disposes that store's entries. SpellSpace stays strictly local;
+    lineage, cluster and unique require the specific root, leader and Spell owner respectively.
+  EVIDENCE:
+  - tickets/tasks/2026-09-20_discover_purge_scope_ownership_task.md
+  - artifacts/purge_scope_discovery_20260920/plan.md
+  - artifacts/purge_scope_discovery_20260920/characterization_final.log:1-2
+  IMPACT: Expected core changes are four existing files. The 38 passing discovery checks establish
+    current routing/reuse behavior; they do not represent purge implementation or feature acceptance.
+  NEXT: Implement the bounded plan when the owner directs that step.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
+- Discovery/plan complete: the linked discovery task records source traces and 38 passing existing
+  runtime characterization checks. Four core production files are planned; no purge code is implemented.
 - Build follow-through complete: the linked task records regenerated source assets and passing
   source/repository freshness checks for 0.2.43. This is not purge feature implementation.
 - [ ] Feature implementation and validation delivered in a later authorized pass.
@@ -238,8 +275,9 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
 Keep program decisions and scope rules here; future child tasks own source findings and test evidence.
 
 ## Context / Handoff Summary
-Draft idea only. Purge is intended to retire selected creations through Conduit/SpellSpace -> Meld ->
-the authorized store. Preserve actual caller context. The five owner rules are recorded; root identity,
-root-attached SpellSpace authority, lineage mode and many-instance selection require later decisions.
-Do not implement on the strength of this epic-creation request. The linked planning/build task has
-completed existing-asset regeneration and freshness checks; await owner direction for further work.
+Discovery and bounded plan are complete in the linked 2026-09-20 task and plan artifact. Use the
+resolved Spell with existing Meld selectors, enforce the settled authority matrix, and extend
+Creations.purge(spell) for removal/disposal. No extraction or global lookup fallback. SpellSpace is
+strictly local; lineage/cluster/unique require their specific root/leader/owner conduit. Expected
+core edits are Creations, Meld and the two public facades. Existing-runtime characterization is
+38 passed, two extraction cases deselected. Implementation remains unstarted pending owner direction.

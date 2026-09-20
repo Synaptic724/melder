@@ -30,3 +30,43 @@ Read [dynamic mode](dynamic-linking.md) before using this operation.
 
 [Clusters](../advanced/clusters.md) add a group-wide lifetime. The original cluster
 lesson remains in its saved Intermediate collection and is linked from that guide.
+
+## Purge creations while keeping the scope
+
+Use `purge` to dispose and remove the retained creations for one registered target
+without ending its scope or removing its registration:
+
+```python
+removed = conduit.purge("Job")
+removed = space.purge("RequestSession")
+```
+
+Names, class/function references, spellframe/binding selectors, and explicit
+`spell_id=` work through the same discovery as `meld`. The return value is the
+number removed, or `0` when that authorized store has no matching creation.
+`purge_all=True` is the default: a `many` target removes its whole retained bucket.
+Only `many` objects with configured disposal are retained; untracked results are
+not affected by purge.
+
+| Lifetime | Who may purge it |
+| --- | --- |
+| `many` | The conduit or spell space holding those local creations |
+| `unique_per_spell_space` | That spell space only |
+| `unique_per_conduit` | That conduit only |
+| `unique_per_conduit_lineage` | The lineage root conduit |
+| `unique_per_conduit_cluster` | The elected cluster leader |
+| `unique` | The spell's owning conduit |
+
+A spell space always stays within its own creations. It cannot purge objects
+belonging to its conduit, lineage root, or cluster leader.
+
+Purge follows the configured disposal methods and their ordering. It attempts
+other selected objects after an object's disposal fails, then raises an
+`ExceptionGroup`; removed entries remain removed. A subsequent meld can create a
+fresh factory-backed instance using the existing compiled context. References
+already held by application objects are not rewritten. An externally supplied
+object remains referenced by its registration, so purging its store entry does
+not unbind it or turn it into a factory.
+
+**Instance-reference purging is not implemented yet.** Passing a created instance
+or requesting `purge_all=False` raises `NotImplementedError` before removal.

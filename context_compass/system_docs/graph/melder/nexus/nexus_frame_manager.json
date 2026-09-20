@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/nexus_frame_manager.py",
- "source_sha256": "1267208da0a54770d9cfdeef17b3cee2970a5bf5cb83b2bf03adad98afc8f175",
+ "source_sha256": "7562de9e4b1ba22ad4da2a095177f860e556c334b5170e61f21ff03da14e9761",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.nexus_frame_manager": {
@@ -53,7 +53,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "84156e8ec83915b6f930e7958e7e57a98fc82eae0f7deebc235142abc7dcfba0",
+   "span_sha256": "f7e3365b5000a650f2ca57e50199ee88d0ba2c88caf736a05f3a51b90d0498f8",
    "role": "Nexus-owned manager for authored managed frames.",
    "responsibilities": [
     "stores authored Nexus-frame configurations by frame name",

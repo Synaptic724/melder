@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether_utility_system.py",
- "source_sha256": "6d2ff6dda5d4b3c17e6753fd617a726da495844942cc6b05dc66db7021961574",
+ "source_sha256": "b3e72d750ebb8b2d4a1ce8df252c1e9e0501e42a4b507899c76f8a4e92b7ac6f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether_utility_system": {
@@ -28,7 +28,7 @@
    "label": "AetherUtilitySystem",
    "kind": "class",
    "file": "src/melder/aether/aether_utility_system.py",
-   "lineno": 10,
+   "lineno": 11,
    "bases": [
     "Cleanable"
    ],
@@ -52,7 +52,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "56584a2b5b5e70b40186a4db1fb509e2c11ce5ce3ba1b980bd5efc931b2ce386",
+   "span_sha256": "c819f2b1c6001696bb6ec6101dc0cbe87cf537a224be90532e3d93ed7dba91df",
    "role": "Process-wide utility and logger provider host.",
    "responsibilities": [
     "stores the channel-logger resolver",
@@ -113,12 +113,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "Callable": "collections.abc.Callable",
+  "Iterable": "collections.abc.Iterable",
   "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Dict": "typing.Dict",
-  "Iterable": "typing.Iterable",
-  "Optional": "typing.Optional",
-  "Union": "typing.Union",
   "ClassVar": "typing.ClassVar",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "IChannelLogger": "melder.utilities.interfaces.ichannellogger.IChannelLogger",

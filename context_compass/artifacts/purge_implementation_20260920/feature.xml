@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="46" time="0.977" timestamp="2026-09-20T16:23:06.395994-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique-False]" time="0.017" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique-True]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique_per_conduit-False]" time="0.060" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique_per_conduit-True]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique_per_conduit_lineage-False]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique_per_conduit_lineage-True]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique_per_spell_space-False]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[unique_per_spell_space-True]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[many-False]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_retires_only_target_and_reuses_the_compiled_context[many-True]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_lesser_purge_preserves_root_and_sibling_creations[many]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_lesser_purge_preserves_root_and_sibling_creations[unique_per_conduit]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_spellspace_purge_preserves_other_scopes[many]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_spellspace_purge_preserves_other_scopes[unique_per_spell_space]" time="0.014" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_lesser_cannot_use_resolution_root_identity_to_purge[unique]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_lesser_cannot_use_resolution_root_identity_to_purge[unique_per_conduit_lineage]" time="0.012" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_spellspace_never_delegates_purge_to_broader_stores[unique]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_spellspace_never_delegates_purge_to_broader_stores[unique_per_conduit]" time="0.012" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_spellspace_never_delegates_purge_to_broader_stores[unique_per_conduit_lineage]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_spellspace_never_delegates_purge_to_broader_stores[unique_per_conduit_cluster]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_conduit_cannot_purge_the_active_spellspace" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_accepts_normal_meld_selectors[id]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_accepts_normal_meld_selectors[name]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_accepts_normal_meld_selectors[class]" time="0.006" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_accepts_normal_meld_selectors[frame]" time="0.006" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_counts_singleton_values_by_existence[None]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_counts_singleton_values_by_existence[False]" time="0.012" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_counts_singleton_values_by_existence[0]" time="0.006" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_counts_singleton_values_by_existence[value3]" time="0.006" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_counts_singleton_values_by_existence[value4]" time="0.005" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_counts_singleton_values_by_existence[value5]" time="0.005" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_counts_singleton_values_by_existence[value6]" time="0.005" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_non_disposable_many_has_no_retained_objects_to_purge" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_single_many_instance_purge_preserves_the_other_instances[False]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_single_many_instance_purge_preserves_the_other_instances[True]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_can_target_the_canonical_spell_directly" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_exact_reference_purge_never_uses_application_equality" time="0.007"><failure message="assert 0 == 1&#10; +  where 0 = purge(&lt;test_conduit_component_purge.test_exact_reference_purge_never_uses_application_equality.&lt;locals&gt;.IdentityOnly object at 0x00000302093871D0&gt;, purge_all=False)&#10; +    where purge = &lt;Conduit name=identity-root id=01M30EMYC741WRC3G84MD0P7YE&gt;.purge">def test_exact_reference_purge_never_uses_application_equality() -&gt; None:
+        """Equal-looking or untracked objects never retire a different creation."""
+        class IdentityOnly(PurgeResource):
+            """Fail loudly if removal tries list.remove/equality instead of identity."""
+    
+            def __eq__(self, other: object) -&gt; bool:
+                """Expose accidental equality-based deletion as a regression."""
+                raise AssertionError("Purge must not compare application values.")
+    
+        book = _make_spellbook(disposal=True)
+        spell_id = book.bind(spell=IdentityOnly, existence=Existence.many, permissions="create")
+        root = book.conjure(name="identity-root")
+        try:
+            first = root.meld(spell_id=spell_id)
+            second = root.meld(spell_id=spell_id)
+            assert root.purge(IdentityOnly(), purge_all=False) == 0
+&gt;           assert root.purge(second, purge_all=False) == 1
+E           assert 0 == 1
+E            +  where 0 = purge(&lt;test_conduit_component_purge.test_exact_reference_purge_never_uses_application_equality.&lt;locals&gt;.IdentityOnly object at 0x00000302093871D0&gt;, purge_all=False)
+E            +    where purge = &lt;Conduit name=identity-root id=01M30EMYC741WRC3G84MD0P7YE&gt;.purge
+
+tests\component\melder\aether\conduit\test_conduit_component_purge.py:302: AssertionError</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_disposes_many_in_reverse_and_keeps_existing_method_failure_semantics" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_mirrors_creation_lock_family_and_order[unique]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_mirrors_creation_lock_family_and_order[unique_per_conduit]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_mirrors_creation_lock_family_and_order[many]" time="0.013" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_mirrors_creation_lock_family_and_order[unique_per_conduit_cluster]" time="0.012" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_mirrors_creation_lock_family_and_order[unique_per_conduit_lineage]" time="0.012" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_native_purge_mirrors_creation_lock_family_and_order[unique_per_spell_space]" time="0.012" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_waits_for_the_actual_singleton_constructor_lock[unique]" time="0.009"><failure message="assert 0 == 1&#10; +  where 0 = &lt;test_conduit_component_purge.test_purge_waits_for_the_actual_singleton_constructor_lock.&lt;locals&gt;.BlockingResource object at 0x0000030210280190&gt;.cleanup_calls">existence = &lt;Existence.unique: 1&gt;
+
+    @pytest.mark.parametrize("existence", [
+        Existence.unique, Existence.unique_per_conduit,
+        Existence.unique_per_conduit_lineage, Existence.unique_per_spell_space,
+    ])
+    def test_purge_waits_for_the_actual_singleton_constructor_lock(existence: Existence) -&gt; None:
+        """A purge racing real construction waits on the same lock and retires the published object."""
+        entered, finish = Event(), Event()
+    
+        class BlockingResource(PurgeResource):
+            """Hold the real generated creation path inside its constructor."""
+    
+            def __init__(self) -&gt; None:
+                """Announce entry and wait for deterministic test release."""
+                super().__init__()
+                entered.set()
+                if not finish.wait(5):
+                    raise RuntimeError("Constructor release timed out.")
+    
+        book = _make_spellbook(disposal=True)
+        spell_id = book.bind(spell=BlockingResource, existence=existence, permissions="create")
+        root = book.conjure(name="race-root")
+        space = root.create_spellspace()
+        caller = space if existence is Existence.unique_per_spell_space else root
+        store = space._creations if existence is Existence.unique_per_spell_space else root._creations
+        spell = book._spells_by_id[spell_id]
+        lock_owner = spell if existence is Existence.unique else store
+        original_lock = lock_owner._lock
+        observed = ObservedLock("writer", [])
+        lock_owner._lock = observed
+    
+        def run_purge() -&gt; int:
+            """Mark this thread so the test observes entry into the actual writer lock."""
+            observed.watched_thread = get_ident()
+            return caller.purge(spell_id=spell_id)
+    
+        try:
+            with ThreadPoolExecutor(max_workers=2) as workers:
+                creation_future = workers.submit(caller.meld, spell_id=spell_id)
+                try:
+                    assert entered.wait(5)
+                    purge_future = workers.submit(run_purge)
+                    assert observed.attempted.wait(5)
+                    assert not purge_future.done()
+                finally:
+                    finish.set()
+                obj = creation_future.result(timeout=5)
+                assert purge_future.result(timeout=5) == 1
+&gt;               assert obj.cleanup_calls == 1
+E               assert 0 == 1
+E                +  where 0 = &lt;test_conduit_component_purge.test_purge_waits_for_the_actual_singleton_constructor_lock.&lt;locals&gt;.BlockingResource object at 0x0000030210280190&gt;.cleanup_calls
+
+tests\component\melder\aether\conduit\test_conduit_component_purge.py:459: AssertionError</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_purge" name="test_purge_waits_for_the_actual_singleton_constructor_lock[unique_per_conduit]" time="0.013"><failure message="assert 0 == 1&#10; +  where 0 = &lt;test_conduit_component_purge.test_purge_waits_for_the_actual_singleton_constructor_lock.&lt;locals&gt;.BlockingResource object at 0x000003020E450190&gt;.cleanup_calls">existence = &lt;Existence.unique_per_conduit: 2&gt;
+
+    @pytest.mark.parametrize("existence", [
+        Existence.unique, Existence.unique_per_conduit,
+        Existence.unique_per_conduit_lineage, Existence.unique_per_spell_space,
+    ])
+    def test_purge_waits_for_the_actual_singleton_constructor_lock(existence: Existence) -&gt; None:
+        """A purge racing real construction waits on the same lock and retires the published object."""
+        entered, finish = Event(), Event()
+    
+        class BlockingResource(PurgeResource):
+            """Hold the real generated creation path inside its constructor."""
+    
+            def __init__(self) -&gt; None:
+                """Announce entry and wait for deterministic test release."""
+                super().__init__()
+                entered.set()
+                if not finish.wait(5):
+                    raise RuntimeError("Constructor release timed out.")
+    
+        book = _make_spellbook(disposal=True)
+        spell_id = book.bind(spell=BlockingResource, existence=existence, permissions="create")
+        root = book.conjure(name="race-root")
+        space = root.create_spellspace()
+        caller = space if existence is Existence.unique_per_spell_space else root
+        store = space._creations if existence is Existence.unique_per_spell_space else root._creations
+        spell = book._spells_by_id[spell_id]
+        lock_owner = spell if existence is Existence.unique else store
+        original_lock = lock_owner._lock
+        observed = ObservedLock("writer", [])
+        lock_owner._lock = observed
+    
+        def run_purge() -&gt; int:
+            """Mark this thread so the test observes entry into the actual writer lock."""
+            observed.watched_thread = get_ident()
+            return caller.purge(spell_id=spell_id)
+    
+        try:
+            with ThreadPoolExecutor(max_workers=2) as workers:
+                creation_future = workers.submit(caller.meld, spell_id=spell_id)
+                try:
+                    assert entered.wait(5)
+                    purge_future = workers.submit(run_purge)
+                    assert observed.attempted.wait(5)
+                    assert not purge_future.done()
+                finally:
+                    finish.set()
+                obj = creation_future.result(timeout=5)
+                assert purge_future.result(timeout=5) == 1
+&gt;               assert obj.cleanup_calls == 1
+E               assert 0 == 1
+E                +  where 0 = &lt;test_conduit_component_purge.test_purge_waits_for_the_actual_singleton_constructor_lock.&lt;locals&gt;.BlockingResource object at 0x000003020E450190&gt;.cleanup_calls
+
+tests\component\melder\aether\conduit\test_conduit_component_purge.py:459: AssertionError</failure></testcase></testsuite></testsuites>

@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     ClassVar,
     NoReturn,
+    Union,
 )
 
 
@@ -484,6 +485,113 @@ class Meld(Cleanable, ABC):
         """
         raise NotImplementedError(
             "Concrete Meld subclasses must implement meld_existing_spell()."
+        )
+
+    @abstractmethod
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_name: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """
+        Define the retirement contract implemented by each concrete Meld door.
+
+        Purpose:
+            Keep conduit and SpellSpace purge orchestration on the concrete
+            door that owns the corresponding scope rules.
+
+        Contract:
+            - Concrete doors use `_resolve_purge_spell` for shared discovery.
+            - Each door authorizes and selects its existing creation store.
+            - Creations owns the removal locks and recorded disposal work.
+            - Discovery never creates an instance or compiles a dependency graph.
+
+        Args:
+            spell: Canonical id string or class/function reference, as on meld.
+            spell_name: Logical name forwarded by the public facade.
+            spellframe: Optional frame/type used for binding lookup.
+            binding_name: Optional binding name within that frame.
+            purge_all: True retires the target's retained entries. False remains
+                explicitly unimplemented until instance targeting is added.
+
+        Returns:
+            int: Number of retired creations, or zero when the selected store
+            contains none for the resolved target.
+
+        Raises:
+            NotImplementedError: If a subclass calls this abstract body rather
+                than implementing its own scope-specific purge operation.
+        """
+        raise NotImplementedError(
+            "Concrete Meld subclasses must implement purge()."
+        )
+
+    def _resolve_purge_spell(
+            self,
+            *,
+            spell: Optional[Union[str, object]],
+            spell_name: Optional[str],
+            spellframe: Optional[Union[str, object]],
+            binding_name: Optional[str],
+            purge_all: bool,
+    ) -> Spell:
+        """
+        Discover a purge target through the existing meld lookup machinery.
+
+        Purpose:
+            Share selector validation and discovery without moving either
+            concrete door's scope policy into this base class.
+
+        Contract:
+            - Uses `_resolve_spell` unchanged for local/contracted lookup.
+            - Returns the already-registered internal definition, never an
+              application instance and never a newly constructed definition.
+            - Refuses the deferred instance-reference and purge_all=False forms.
+            - Does not select a store, authorize a scope, compile, or dispose.
+
+        Args:
+            spell: Canonical id string or class/function reference.
+            spell_name: Optional logical name from the public facade.
+            spellframe: Optional frame/type used by ordinary meld discovery.
+            binding_name: Optional named binding within that frame.
+            purge_all: Supported whole-target mode; must be the bool True.
+
+        Returns:
+            Spell: Existing definition visible to this Meld door.
+
+        Raises:
+            RuntimeError: If this Meld has been cleaned.
+            TypeError: If purge_all is not a bool.
+            NotImplementedError: If False or an instance reference is supplied.
+            ValueError: If no usable selector is supplied.
+            KeyError: If ordinary meld discovery cannot find the binding.
+
+        Threading / Lifecycle:
+            Uses the same lookup maps as meld. Structural changes keep their
+            existing coordination contract; this helper owns no new state or lock.
+        """
+        self.check_cleaned()
+        if not isinstance(purge_all, bool):
+            raise TypeError("purge_all must be a bool.")
+        if not purge_all:
+            raise NotImplementedError(
+                "purge_all=False is not implemented. Use purge_all=True with "
+                "a registered name, type, frame or spell_id."
+            )
+        if spell is not None and not (
+            isinstance(spell, str) or inspect.isclass(spell) or inspect.isroutine(spell)
+        ):
+            raise NotImplementedError(
+                "Instance-reference purge is not implemented. Select the binding "
+                "by registered name, type, frame or spell_id."
+            )
+        return self._resolve_spell(
+            spell=spell, spell_name=spell_name,
+            spellframe=spellframe, binding_name=binding_name,
         )
 
     def has_live_creation(

@@ -1,9 +1,14 @@
 from threading import RLock
-from typing import Any, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+
 StoredDisposalEntry = Tuple[object, List[str]]
+StoredDisposalValue = Union[StoredDisposalEntry, List[StoredDisposalEntry]]
 
 
 class Creations(Cleanable):
@@ -372,6 +377,74 @@ class Creations(Cleanable):
             - Returns the stored object directly.
         """
         return self._creations.get(spell_id)
+
+    def purge(
+            self,
+            spell: Spell,
+    ) -> int:
+        """Retire this store's creations for an already-resolved Spell.
+
+        Contract:
+            Meld owns target-store selection and scope authorization. This
+            operation only removes creations and runs their recorded disposal
+            methods. It removes the whole spell entry, including every retained
+            object in a many bucket.
+            Unrelated entries, scope identity and the Spell remain unchanged.
+
+        Threading:
+            Unique creation uses the Spell lock, so unique removal takes that
+            lock before the store lock. Every other existence takes only the
+            store lock. Both registries detach together; disposal runs after
+            all removal locks are released. Detached live references survive
+            until then, including objects without explicit disposal methods.
+
+        Args:
+            spell: Resolved definition supplying the key and existence policy.
+
+        Returns:
+            Number of removed creations; zero when no matching entry exists.
+
+        Raises:
+            RuntimeError: If this store has been permanently cleaned.
+            ExceptionGroup: Collected disposal failures, after removal. Removed
+                entries are not restored; later replacements remain untouched.
+        """
+        self.check_cleaned()
+        if spell.existence is Existence.unique:
+            with spell._lock:
+                count, retired, disposal = self._detach_purge_entries(spell)
+        else:
+            count, retired, disposal = self._detach_purge_entries(spell)
+        errors = (
+            self._dispose_disposable_registry({spell.spell_id: disposal})
+            if disposal is not None else []
+        )
+        # Keep non-disposable objects alive until the removal locks are released.
+        del retired
+        if errors:
+            raise ExceptionGroup("Errors occurred during creations purge", errors)
+        return count
+
+    def _detach_purge_entries(
+            self,
+            spell: Spell,
+    ) -> Tuple[int, object, Optional[StoredDisposalValue]]:
+        """Detach selected live/disposal entries under the store's writer lock.
+
+        The caller already holds the Spell lock for unique. Membership, rather
+        than truthiness or application value type, determines singleton presence.
+        Returned live references keep finalizers outside the critical section.
+        """
+        with self._lock:
+            self.check_cleaned()
+            spell_id = spell.spell_id
+            if spell_id not in self._creations:
+                return 0, None, None
+            live = self._creations[spell_id]
+            count = len(live) if spell.existence is Existence.many else 1
+            self._creations.pop(spell_id)
+            disposal = self._disposable_creations.pop(spell_id, None)
+            return count, live, disposal
 
     def extract_spell_creations(
             self,

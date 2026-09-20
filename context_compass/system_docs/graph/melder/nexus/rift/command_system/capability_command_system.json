@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/capability_command_system.py",
- "source_sha256": "17ff1d1e87853cfd27e9178ff2ab1fda3f32616c9a23faa0a2278d9623442e1d",
+ "source_sha256": "16c6f715b0e9fccc16f3be47fad1bc70714a23e25f5fba7fa98167eb380c4228",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.capability_command_system": {
@@ -82,7 +82,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cc75918e7b00aa8b6609b786366e58efb835dff032983257cfb75bea3e35a1b1",
+   "span_sha256": "5c0956cba257724a338d1aaec223c89c59ec3492783e28ace24103c76fc52036",
    "role": "Capability-room specialization of the shared command surface.",
    "responsibilities": [
     "preserves the shared broad runtime command behavior for CapabilityRiftSpace",

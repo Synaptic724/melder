@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether_configuration_builder.py",
- "source_sha256": "ba6e54f5361a57f1c7900b74c8135266ff70991428c49e1046a7754e3209aa73",
+ "source_sha256": "10db2a581c15678c55b1067fdcaf6cd966d6883f056e45348fd6397bb1cef49c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether_configuration_builder": {
@@ -25,7 +25,7 @@
    "label": "AetherConfigurationBuilder",
    "kind": "class",
    "file": "src/melder/aether/aether_configuration_builder.py",
-   "lineno": 14,
+   "lineno": 11,
    "bases": [
     "Cleanable"
    ],
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "22271c08f495c37067f7408d5f35c8b74ab83737f56f73c7ccef26d12021df3e",
+   "span_sha256": "44c6ee626ca9cd5cc66bc104df18c0225a798a6779f100a5e80875418e905157",
    "role": "One-shot builder for Aether root configuration assembly.",
    "responsibilities": [
     "owns a mutable AetherConfiguration during fluent assembly",
@@ -93,12 +93,8 @@
  ],
  "published_aliases": [],
  "imports": {
-  "Path": "pathlib.Path",
+  "Callable": "collections.abc.Callable",
   "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "ClassVar": "typing.ClassVar",
-  "Optional": "typing.Optional",
-  "Union": "typing.Union",
   "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
