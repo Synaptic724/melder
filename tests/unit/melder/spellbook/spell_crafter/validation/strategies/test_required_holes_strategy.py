@@ -1,4 +1,5 @@
 from typing import Iterable, List, Optional
+from types import SimpleNamespace
 
 import pytest
 
@@ -107,6 +108,9 @@ class _SpellStub:
             None.
         """
         self.spell_name = spell_name
+        self.resolvable = True
+        self.spell_index = SimpleNamespace(selected_spell_id=spell_name)
+        self._spell_system_states = SimpleNamespace(get_local_topology=lambda _index: None)
 
 
 class _CancelStub:
@@ -235,11 +239,11 @@ def test_validate_no_required_holes_is_noop() -> None:
     Purpose:
         Ensure no issues are emitted when there are no required holes.
     Contract:
-        has_required_holes is consulted and iter_required_holes is not called.
+        No plain or resolved required inputs means no diagnostics.
     Returns:
         None.
     Raises:
-        AssertionError: If issues are added or iter_required_holes is called.
+        AssertionError: If issues are added.
     """
     strategy = RequiredHolesStrategy()
     issues: list[SpellValidationIssue] = []
@@ -253,8 +257,6 @@ def test_validate_no_required_holes_is_noop() -> None:
     strategy.validate(context)
 
     assert issues == []
-    assert requirements.has_required_holes_calls == 1
-    assert requirements.iter_required_holes_calls == 0
 
 
 def test_validate_emits_issue_for_each_required_hole() -> None:

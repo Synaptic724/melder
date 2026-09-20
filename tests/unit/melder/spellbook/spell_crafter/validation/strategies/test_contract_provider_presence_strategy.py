@@ -111,6 +111,7 @@ class _SpellStub:
             spell_id: str = "spell-id",
             spell_name: str = "spell-name",
             mutation_override: Optional[dict] = None,
+            resolvable: bool = True,
     ) -> None:
         """
         Purpose:
@@ -120,10 +121,12 @@ class _SpellStub:
         Args:
             spell_id: Spell id assigned to spell_index.selected_spell_id.
             spell_name: Spell name for diagnostics.
+            resolvable: Native construction capability of the consuming definition.
         Returns:
             None.
         """
         self.spell_name = spell_name
+        self.resolvable = resolvable
         self.spell_index = _SpellIndexStub(spell_id)
         self._mutation_override = (
             dict(mutation_override) if mutation_override is not None else {}
@@ -156,6 +159,7 @@ class _ProviderSpellStub:
         spellframe: object,
         spell_name: str,
         binding_name: Optional[str],
+        resolvable: bool = True,
     ) -> None:
         """
         Purpose:
@@ -166,12 +170,14 @@ class _ProviderSpellStub:
             spellframe: Frame/interface used for provider lookup.
             spell_name: Provider spell name.
             binding_name: Optional binding name.
+            resolvable: Whether this provider is eligible for actual resolution.
         Returns:
             None.
         """
         self.spellframe = spellframe
         self.spell_name = spell_name
         self.binding_name = binding_name
+        self.resolvable = resolvable
 
 
 class _ConfigStub:
@@ -302,6 +308,7 @@ def _make_context(
     contracted_spells: Optional[List[Tuple[_SpellIndexStub, _ProviderSpellStub]]],
     system_state: Optional[SystemState],
     mutation_override: Optional[dict] = None,
+    resolvable: bool = True,
 ) -> tuple[SpellValidationContext, list]:
     """
     Purpose:
@@ -322,7 +329,7 @@ def _make_context(
         contracted_spells=contracted_spells,
     )
     context = SpellValidationContext(
-        spell=_SpellStub(mutation_override=mutation_override),
+        spell=_SpellStub(mutation_override=mutation_override, resolvable=resolvable),
         spellbook=spellbook,
         requirements=requirements,
         symbolic_graph=None,
@@ -331,6 +338,61 @@ def _make_context(
         issues=issues,
     )
     return context, issues
+
+
+@pytest.mark.parametrize("cached", [False, True])
+@pytest.mark.parametrize("resolvable", [False, True])
+def test_contract_provider_capability_is_preserved_in_validation_cache(cached: bool, resolvable: bool) -> None:
+    """A selected False provider is incompatible, and pass-cache reuse preserves that verdict."""
+    contract = SpellContract(spellframe="service", binding_name="primary")
+    requirements = _RequirementsStub([
+        _ParamStub(name="service", di_shape=ParameterDIShape.SPELL_CONTRACT, default_value=contract),
+    ])
+    provider = _ProviderSpellStub(
+        spellframe="service", spell_name="Provider", binding_name="primary", resolvable=resolvable,
+    )
+    context, issues = _make_context(
+        requirements=requirements,
+        contracted_spells=[(_SpellIndexStub("provider-id"), provider)],
+        system_state=SystemState.dynamic,
+    )
+    if cached:
+        context.validation_pass_cache = {}
+    strategy = ContractProviderPresenceStrategy()
+    try:
+        for _ in range(2):
+            strategy.validate(context)
+            if resolvable:
+                assert issues == []
+            else:
+                assert len(issues) == 1
+                assert issues[0].code == "SPELL_CONTRACT_NON_RESOLVABLE_PROVIDER"
+                assert issues[0].details["provider_spell_id"] == "provider-id"
+            issues.clear()
+    finally:
+        strategy.cleanup()
+        context.cleanup()
+        contract.cleanup()
+
+
+@pytest.mark.parametrize("system_state", [SystemState.automatic, SystemState.dynamic])
+def test_non_resolvable_root_does_not_require_contract_provider(system_state: SystemState) -> None:
+    """A descriptive constructor keeps the contract declaration without creating resolution obligations."""
+    contract = SpellContract(spellframe="service")
+    context, issues = _make_context(
+        requirements=_RequirementsStub([
+            _ParamStub(name="service", di_shape=ParameterDIShape.SPELL_CONTRACT, default_value=contract),
+        ]),
+        contracted_spells=[], system_state=system_state, resolvable=False,
+    )
+    strategy = ContractProviderPresenceStrategy()
+    try:
+        strategy.validate(context)
+        assert issues == []
+    finally:
+        strategy.cleanup()
+        context.cleanup()
+        contract.cleanup()
 
 
 def test_contract_provider_presence_missing_spell_contract_warns() -> None:

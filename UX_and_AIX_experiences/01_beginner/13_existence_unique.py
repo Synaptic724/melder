@@ -18,8 +18,8 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    instances = {root.meld(spell=WorldClock), child.meld(spell=WorldClock),
-                 grandchild.meld(spell=WorldClock)}
+    instances = {root.meld(WorldClock), child.meld(WorldClock),
+                 grandchild.meld(WorldClock)}
     assert len(instances) == 1
     print("unique: one WorldClock across three scopes")
 

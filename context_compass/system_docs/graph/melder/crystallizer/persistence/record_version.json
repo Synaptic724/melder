@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/record_version.py",
- "source_sha256": "35df51f36a8c1b2fe420f40471ea4d774b74c62eacff1c3b3a56c5c272a4e450",
+ "source_sha256": "697cfc1efb3d38773ce361c2a24edcb134e8514aff6796d6b1baca6b3de8c08c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.record_version": {
@@ -14,7 +14,8 @@
    "role": "Schema version authority for every durable crystallizer artifact.",
    "responsibilities": [
     "stamp outgoing payloads",
-    "refuse newer-major artifacts on read"
+    "refuse newer-major artifacts on read",
+    "uses record major 2 so older readers cannot silently ignore non-resolvable policy"
    ],
    "phases": [
     "runtime"
@@ -40,11 +41,12 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "f4cab9b22a9009d49140b3781f410f76985d3be0526bfdcba3c6f3fcc6c1fd69",
-   "role": "Static record-schema version authority (stamp 1.0.0; readers gate on MAJOR; absent stamps read 0.0.0).",
+   "span_sha256": "0230e4ac86f34f72a30569a89ea2321ca2816d7338c04799b38f5d4e2a40f479",
+   "role": "Static record-schema version authority (stamp 2.0.0; readers gate on MAJOR; absent stamps read 0.0.0).",
    "responsibilities": [
     "stamps cached items, formation records, and emission-tap envelopes",
-    "refuses newer-major payloads at the read gates"
+    "refuses newer-major payloads at the read gates",
+    "uses record major 2 so older readers cannot silently ignore non-resolvable policy"
    ],
    "phases": [
     "runtime"

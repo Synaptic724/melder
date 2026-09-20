@@ -36,7 +36,9 @@ class _ToggleCancel:
 
 class _Spell:
     def __init__(self, spell_name: str = "TestSpell") -> None:
+        """Represent a resolvable constructor for the DI-shape checks."""
         self.spell_name = spell_name
+        self.resolvable = True
 
 
 class _Parameter:

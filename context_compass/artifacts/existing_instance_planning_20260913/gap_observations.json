@@ -1,0 +1,520 @@
+[
+  {
+    "case": "direct",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AD4E6550> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "nested",
+    "error": "Phase 'plan_group' encountered 2 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AD4E4D90> is not a callable object; TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AD4E4D90> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "collection",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AD4E5F10> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "pair",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AD4E6CD0> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "function",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA6BD110> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "name_token",
+    "error": "name 'ExistingValue' is not defined",
+    "error_type": "NameError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "bind"
+  },
+  {
+    "case": "string_token",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA7855D0> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "map",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA868650> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "override",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA866490> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "missing_provider_override",
+    "error": "Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'ValueConsumer' (annotation=<class 'tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue'>).",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "default",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "default_override",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "none_default",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "direct",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "nested",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "collection",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "pair",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "function",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "name_token",
+    "error": "name 'ExistingValue' is not defined",
+    "error_type": "NameError",
+    "outcome": "refused",
+    "planning": "leaf_probe",
+    "stage": "bind"
+  },
+  {
+    "case": "string_token",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "map",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "override",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "missing_provider_override",
+    "error": "Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'value' on spell 'ValueConsumer' (annotation=<class 'tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue'>).",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "leaf_probe",
+    "stage": "conjure"
+  },
+  {
+    "case": "default",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "default_override",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "none_default",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "deferred_class_provider",
+    "error": "name 'ExistingValue' is not defined",
+    "error_type": "NameError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "bind_consumer"
+  },
+  {
+    "case": "consumer_scope_root_many",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA5E7EF0> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "consumer_scope_root_unique",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA5E6320> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "consumer_scope_lesser_unique_per_conduit",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA5E8800> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "consumer_scope_spellspace_unique_per_spell_space",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA5E80D0> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "case": "consumer_scope_root_many",
+    "consumer_reused": false,
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "consumer_scope_root_unique",
+    "consumer_reused": true,
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "consumer_scope_lesser_unique_per_conduit",
+    "consumer_reused": true,
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "consumer_scope_spellspace_unique_per_spell_space",
+    "consumer_reused": true,
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "class_protocol_invalid",
+    "error": "Class 'WrongValue' does not structurally implement Protocol 'ReadableValue'. Missing members: read",
+    "error_type": "TypeError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "bind"
+  },
+  {
+    "case": "class_protocol_valid",
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "bind"
+  },
+  {
+    "case": "lookup_id",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "lookup_instance",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "lookup_class",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "lookup_name",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "lookup_frame",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "lookup_named",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "scope_root",
+    "disposals_after_scope": 0,
+    "identity_preserved": true,
+    "late_bind": false,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "scope_lesser",
+    "disposals_after_scope": 0,
+    "identity_preserved": true,
+    "late_bind": false,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "scope_spellspace",
+    "disposals_after_scope": 0,
+    "identity_preserved": true,
+    "late_bind": false,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "scope_root",
+    "disposals_after_scope": 0,
+    "identity_preserved": true,
+    "late_bind": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "scope_lesser",
+    "disposals_after_scope": 0,
+    "identity_preserved": true,
+    "late_bind": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "scope_spellspace",
+    "disposals_after_scope": 0,
+    "identity_preserved": true,
+    "late_bind": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "root_override_none",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "root_override_empty",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "root_override_replacement",
+    "error": "[MELD] Execution failed for spell 'ExistingValue' (2c2354d524a3970efe932d3ccb3a979dc7bbc4d81a38da65a9624694419bd479): Overrides were supplied for a spell instance that already exists. Shared instances cannot be overridden after creation.",
+    "error_type": "MeldExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "disposal_instance",
+    "disposals": 0,
+    "outcome": "completed",
+    "planning": "stock",
+    "requested": [
+      "dispose"
+    ],
+    "retained_methods": []
+  },
+  {
+    "case": "disposal_class",
+    "disposals": 1,
+    "outcome": "completed",
+    "planning": "stock",
+    "requested": [
+      "dispose"
+    ],
+    "retained_methods": [
+      "dispose"
+    ]
+  },
+  {
+    "binding_accepted": true,
+    "case": "wrong_frame_concrete",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <test_existing_instance_gap_experiment.WrongValue object at 0x00000390AC5A3010> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "binding_accepted": true,
+    "case": "wrong_frame_protocol",
+    "error": "Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <test_existing_instance_gap_experiment.WrongValue object at 0x00000390AD4E1E10> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "conjure"
+  },
+  {
+    "binding_accepted": true,
+    "case": "wrong_frame_concrete",
+    "identity_preserved": true,
+    "injected_incompatible_instance": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "binding_accepted": true,
+    "case": "wrong_frame_protocol",
+    "error": "'WrongValue' object has no attribute 'read'",
+    "error_type": "AttributeError",
+    "identity_preserved": true,
+    "injected_incompatible_instance": true,
+    "outcome": "refused",
+    "planning": "leaf_probe",
+    "stage": "consumer_use"
+  },
+  {
+    "case": "linked_annotation",
+    "error": "Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA5EDB70> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "linked_contract",
+    "error": "Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: <tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x00000390AA5EA470> is not a callable object",
+    "error_type": "PhaseExecutionError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "linked_annotation",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "linked_contract",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "leaf_probe",
+    "stage": "meld"
+  },
+  {
+    "case": "falsey_false",
+    "error": "[SPELLBOOK] bind received a primitive 'bool', which is not a valid spell target. Bind a class, function, lambda, or an existing object instance.",
+    "error_type": "TypeError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "bind"
+  },
+  {
+    "case": "falsey_zero",
+    "error": "[SPELLBOOK] bind received a primitive 'int', which is not a valid spell target. Bind a class, function, lambda, or an existing object instance.",
+    "error_type": "TypeError",
+    "outcome": "refused",
+    "planning": "stock",
+    "stage": "bind"
+  },
+  {
+    "case": "falsey_empty_list",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  },
+  {
+    "case": "falsey_empty_dict",
+    "identity_preserved": true,
+    "outcome": "completed",
+    "planning": "stock",
+    "stage": "meld"
+  }
+]

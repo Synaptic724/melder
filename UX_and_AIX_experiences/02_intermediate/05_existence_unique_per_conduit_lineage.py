@@ -25,9 +25,9 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    ledgers = [root.meld(spell=FamilyLedger),
-               child.meld(spell=FamilyLedger),
-               grandchild.meld(spell=FamilyLedger)]
+    ledgers = [root.meld(FamilyLedger),
+               child.meld(FamilyLedger),
+               grandchild.meld(FamilyLedger)]
     assert ledgers[0] is ledgers[1] is ledgers[2]
     print("three generations, one ledger:", type(ledgers[0]).__name__)
     print("a sibling family = a second book with its own root (one "

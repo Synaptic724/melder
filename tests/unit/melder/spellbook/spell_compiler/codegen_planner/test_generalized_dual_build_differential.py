@@ -81,6 +81,7 @@ def spec(param_sources=None, allow_list=False, uses_pos=False, payload=None,
         allow_list_aggregation=allow_list,
         uses_positional_override=uses_pos,
         contract_payload=payload,
+        required_override_params=(),
         collection_param_names=frozenset(collections))
 
 def make_model(records, keys_by_spell, specs_by_key, order, root_key,
@@ -113,7 +114,7 @@ def record(existence, disposal=(), user_obj=None, spell=None):
 STEP_ATTRS = (
     "instance_key", "occurrence", "existence", "creations_target_kind",
     "shared_instance", "dependency_keys", "dependency_keys_by_param",
-    "dependency_resolution_order", "collection_param_names",
+    "dependency_resolution_order", "collection_param_names", "required_override_params",
     "override_keys", "override_match_prefix",
     "override_match_prefix_len", "expects_overrides", "contract_keys",
     "allow_list_aggregation", "uses_positional_override", "contract_payload",

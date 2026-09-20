@@ -1,0 +1,5 @@
+Wheel: C:\Users\Mark\PycharmProjects\melder_private\dist\melder-0.2.40-py3-none-any.whl
+Version: 0.2.40
+Bytes: 3088864
+SHA256: 13762e8f273d9fcb37772d0b68c50bbeb13101b83c2e38e2d1e7b89869b5b943
+Archive/version/default-precedence source verification: PASS

@@ -1,0 +1,425 @@
+human and machine identity lanes resolved one live service
+.EEEEEEEEEEEEEEE
+=================================== ERRORS ====================================
+_ ERROR at setup of test_omitted_binding_does_not_fall_back_before_or_after_named_meld[automatic_prebind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_omitted_binding_does_not_fall_back_before_or_after_named_meld[automatic_prebind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_omitted_binding_does_not_fall_back_before_or_after_named_meld[dynamic_prebind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_omitted_binding_does_not_fall_back_before_or_after_named_meld[dynamic_prebind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_omitted_binding_does_not_fall_back_before_or_after_named_meld[dynamic_postbind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_omitted_binding_does_not_fall_back_before_or_after_named_meld[dynamic_postbind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_explicit_binding_call_forms_return_the_same_unique_instance[automatic_prebind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_explicit_binding_call_forms_return_the_same_unique_instance[automatic_prebind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_explicit_binding_call_forms_return_the_same_unique_instance[dynamic_prebind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_explicit_binding_call_forms_return_the_same_unique_instance[dynamic_prebind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_explicit_binding_call_forms_return_the_same_unique_instance[dynamic_postbind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_explicit_binding_call_forms_return_the_same_unique_instance[dynamic_postbind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_keyword_alone_requires_a_spell_identity[automatic_prebind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_keyword_alone_requires_a_spell_identity[automatic_prebind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_keyword_alone_requires_a_spell_identity[dynamic_prebind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_keyword_alone_requires_a_spell_identity[dynamic_prebind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_keyword_alone_requires_a_spell_identity[dynamic_postbind] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_keyword_alone_requires_a_spell_identity[dynamic_postbind]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-test] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-test]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-binding_name="test"] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-binding_name="test"]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_prebind-test] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_prebind-test]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_prebind-binding_name="test"] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_prebind-binding_name="test"]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_postbind-test] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_postbind-test]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+_ ERROR at setup of test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_postbind-binding_name="test"] _
+
+request = <SubRequest 'named_binding_runtime' for <Function test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_postbind-binding_name="test"]>>
+
+    @pytest.fixture(params=("automatic_prebind", "dynamic_prebind", "dynamic_postbind"))
+    def named_binding_runtime(request: pytest.FixtureRequest) -> Iterator[tuple[Conduit, str]]:
+        """Yield a real root containing only MyService's named binding.
+    
+        Each case owns a fresh frame/book/root and releases them deterministically.
+        Caching and recording are excluded from this identifier-resolution test.
+        Unique existence makes identity comparisons meaningful across call forms.
+        """
+        mode = str(request.param)
+        dynamic = mode != "automatic_prebind"
+        book = Spellbook(aetheric_frame=f"named_binding_lookup_{mode}")
+        frame = book._aetheric_frame
+        conduit: Optional[Conduit] = None
+        try:
+>           book.configure_aether_frame(
+                system_state="dynamic" if dynamic else "automatic",
+                system_caching_enabled=False,
+                ai_native=False,
+                rift_enabled=False,
+            )
+E           TypeError: Spellbook.configure_aether_frame() missing 2 required keyword-only arguments: 'disposal' and 'disposal_method_names'
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:58: TypeError
+=========================== short test summary info ===========================
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_omitted_binding_does_not_fall_back_before_or_after_named_meld[automatic_prebind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_omitted_binding_does_not_fall_back_before_or_after_named_meld[dynamic_prebind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_omitted_binding_does_not_fall_back_before_or_after_named_meld[dynamic_postbind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_explicit_binding_call_forms_return_the_same_unique_instance[automatic_prebind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_explicit_binding_call_forms_return_the_same_unique_instance[dynamic_prebind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_explicit_binding_call_forms_return_the_same_unique_instance[dynamic_postbind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_keyword_alone_requires_a_spell_identity[automatic_prebind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_keyword_alone_requires_a_spell_identity[dynamic_prebind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_keyword_alone_requires_a_spell_identity[dynamic_postbind]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-test]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-binding_name="test"]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_prebind-test]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_prebind-binding_name="test"]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_postbind-test]
+ERROR tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_value_or_assignment_text_is_not_a_spell_name[dynamic_postbind-binding_name="test"]
+1 passed, 15 errors in 0.51s

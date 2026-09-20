@@ -20,13 +20,13 @@ def main() -> None:
     book.bind(spell=Greeter, existence="unique")
     conduit = book.conjure()
 
-    greeter = conduit.meld(spell=Greeter)
+    greeter = conduit.meld(Greeter)
     assert isinstance(greeter, Greeter)
     assert isinstance(conduit, md.Conduit)
     print(greeter.greet())
 
     # unique existence means the SAME instance comes back every meld
-    again = conduit.meld(spell=Greeter)
+    again = conduit.meld(Greeter)
     assert again is greeter
     print("unique lifecycle held:", again is greeter)
 

@@ -14,6 +14,9 @@ class SocketKind(Enum):
         Regular DI parameter (annotation, SpellMap, etc.).
     - SPELL_CONTRACT:
         A SpellContract socket that must be satisfied by a provider spell.
+    - OVERRIDE_REQUIRED:
+        A required input whose selected registration is non-resolvable. Its
+        target is descriptive; a caller supplies the value during construction.
 
     Subsystem Context:
         The edge-kind vocabulary of the `dag` package: a DAG socket carries one of
@@ -26,8 +29,9 @@ class SocketKind(Enum):
 
     AGENT_PURPOSE:
         access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs
-        SPELL_CONTRACT (late-bound provider socket). Two live socket families only.
+        SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input).
     """
 
     NORMAL = auto()
     SPELL_CONTRACT = auto()
+    OVERRIDE_REQUIRED = auto()

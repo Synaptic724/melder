@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="13" time="0.862" timestamp="2026-09-19T06:54:22.149211-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[consumer-book]" time="0.053" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[consumer-configuration-freeze]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[empty-conjure]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[link]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[contract]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[late-bind]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[validate-resolution]" time="0.013"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:178: in test_provider_survives_independent_borrower_operation_prefix
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[consumer-meld]" time="0.012"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:178: in test_provider_survives_independent_borrower_operation_prefix
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_repeated_borrower_validation_and_cleanup[1-1]" time="0.011"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:200: in test_provider_survives_repeated_borrower_validation_and_cleanup
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_repeated_borrower_validation_and_cleanup[1-3]" time="0.016"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:200: in test_provider_survives_repeated_borrower_validation_and_cleanup
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_repeated_borrower_validation_and_cleanup[2-2]" time="0.020"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:200: in test_provider_survives_repeated_borrower_validation_and_cleanup
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_resolution_only_and_implicit_local_compilation[resolution_only]" time="0.012"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:216: in test_provider_survives_resolution_only_and_implicit_local_compilation
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_resolution_only_and_implicit_local_compilation[implicit_meld]" time="0.012"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:216: in test_provider_survives_resolution_only_and_implicit_local_compilation
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase></testsuite></testsuites>

@@ -89,6 +89,7 @@ class CompilerPhase8(Cleanable):
 
         Contract:
             - Delegates directly to `SpellAnalyzer.analyze_occurrence(...)`.
+            - Non-resolvable definitions skip executable analysis, including direct calls.
             - Treats `spellbook` and `spell_system_states` as compatibility
               signature parameters only.
             - Publishes any analyzer output onto the supplied compiler
@@ -113,6 +114,8 @@ class CompilerPhase8(Cleanable):
         """
         _ = spellbook
         _ = spell_system_states
+        if not spell.resolvable:
+            return
         self._spell_analyzer.analyze_occurrence(
             spell,
             artifact,

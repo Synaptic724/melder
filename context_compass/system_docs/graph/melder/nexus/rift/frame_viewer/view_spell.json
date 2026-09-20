@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/view_spell.py",
- "source_sha256": "4ccd60f4dfeb5db9c18060b64d3651dc5445c848adc239d3895477a3c94146e5",
+ "source_sha256": "31eb065bec0549dec55e7e7aaf74afefaf39e22ec80be83bf1333188bcea818a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.view_spell": {
@@ -12,7 +12,10 @@
    "lineno": 1,
    "include": true,
    "role": "Spell-scoped helper surface for one selected frame view.",
-   "semantics_authored_against": "99ca4769f332b0a8e4f0f3382e597063586a3811d2088b0e084b972537131d54"
+   "semantics_authored_against": "99ca4769f332b0a8e4f0f3382e597063586a3811d2088b0e084b972537131d54",
+   "responsibilities": [
+    "describes incoming and outgoing registered relationships while filtering hidden endpoints and sections"
+   ]
   },
   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell": {
    "id": "melder.nexus.rift.frame_viewer.view_spell.ViewSpell",
@@ -44,6 +47,7 @@
     "describe_spell_missing_sections",
     "describe_spell_origin",
     "describe_spell_payload",
+    "describe_spell_relationships",
     "describe_spell_research",
     "describe_spell_resolution",
     "describe_spell_source",
@@ -66,16 +70,17 @@
     "search_spells_prefix"
    ],
    "shape": {
-    "method_count": 57,
+    "method_count": 58,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "63b3f2f77db21c67523d058565c9c50c5bc2e7f50849790d7eb879654d861ca9",
+   "span_sha256": "af6096b5dbe0e0a9098e9b168985be985a0a1a139e45001c16f58918f164cc12",
    "role": "Spell-scoped helper surface for one selected frame view.",
    "responsibilities": [
     "returns ACL-filtered spell links and spell descriptions",
     "surfaces spell payload, lineage, and comparison behavior through the selected frame helper",
-    "describe_spell_research joins viewer truth with the research record (residency payload or honest research_available=False)"
+    "describe_spell_research joins viewer truth with the research record (residency payload or honest research_available=False)",
+    "describes incoming and outgoing registered relationships while filtering hidden endpoints and sections"
    ],
    "owns_state": [
     "_frame_view"

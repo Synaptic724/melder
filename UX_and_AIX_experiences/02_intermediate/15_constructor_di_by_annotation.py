@@ -27,7 +27,7 @@ def main() -> None:
     book.bind(spell=ReportService, existence="unique")
     conduit = book.conjure()
 
-    report = conduit.meld(spell=ReportService)
+    report = conduit.meld(ReportService)
     assert isinstance(report.database, Database)
     print(report.run())
     print("annotated the parameter; melder built the graph")

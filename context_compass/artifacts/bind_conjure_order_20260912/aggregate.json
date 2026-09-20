@@ -1,0 +1,245 @@
+{
+  "metadata": {
+    "recorded_at_utc": "2026-09-12T20:51:44.590201+00:00",
+    "run_id": "run_1",
+    "python": "3.14.0 free-threading build (tags/v3.14.0:ebf955d, Oct  7 2025, 10:13:09) [MSC v.1944 64 bit (AMD64)]",
+    "executable": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\.venv_new\\Scripts\\python.exe",
+    "gil_enabled": false,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "melder_version": "0.2.37",
+    "melder_source": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\__init__.py",
+    "git_head": "ed9f5047d8a7305954ae4d1cc74818323c118c88",
+    "src_status": "",
+    "warmup_pairs": 20,
+    "measured_pairs": 200,
+    "warm_sweeps_per_sample": 10,
+    "workers": 5,
+    "existence": "unique",
+    "bind_api": "five individual Spellbook.bind calls; no outer transaction",
+    "meld_api": "Conduit.meld(spell_id=returned_id)",
+    "dynamic_posture_before_timing": true,
+    "system_caching_enabled": false,
+    "crystallizer_recording": false,
+    "nexus_publication": false,
+    "gc_enabled": true,
+    "total_excludes": [
+      "import",
+      "fresh book/frame setup",
+      "assertions",
+      "warm melds",
+      "cleanup"
+    ]
+  },
+  "total_measured_samples": 1200,
+  "summaries": {
+    "bind_conjure_meld": {
+      "samples": 600,
+      "phases": {
+        "bind_ns": {
+          "median_ms": 1.0766499999999999,
+          "p10_ms": 0.9556899999999999,
+          "p90_ms": 1.74681,
+          "mean_ms": 1.2411283333333334
+        },
+        "conjure_ns": {
+          "median_ms": 2.59685,
+          "p10_ms": 2.0549500000000003,
+          "p90_ms": 3.5781300000000003,
+          "mean_ms": 2.718141166666667
+        },
+        "first_meld_ns": {
+          "median_ms": 0.1069,
+          "p10_ms": 0.097,
+          "p90_ms": 0.20932,
+          "mean_ms": 0.12961416666666667
+        },
+        "total_ns": {
+          "median_ms": 3.82745,
+          "p10_ms": 3.14476,
+          "p90_ms": 5.41724,
+          "mean_ms": 4.0912215
+        },
+        "warm_five_meld_ns": {
+          "median_ms": 0.00439,
+          "p10_ms": 0.0043,
+          "p90_ms": 0.008191,
+          "mean_ms": 0.0053463
+        },
+        "setup_ns": {
+          "median_ms": 0.3188,
+          "p10_ms": 0.24179999999999996,
+          "p90_ms": 0.48267,
+          "mean_ms": 0.34345
+        },
+        "cleanup_ns": {
+          "median_ms": 1.1644,
+          "p10_ms": 0.81523,
+          "p90_ms": 1.55151,
+          "mean_ms": 1.190836
+        }
+      },
+      "per_first_meld": [
+        {
+          "median_ms": 0.04445,
+          "p10_ms": 0.035690000000000006,
+          "p90_ms": 0.07001000000000002,
+          "mean_ms": 0.049663
+        },
+        {
+          "median_ms": 0.0183,
+          "p10_ms": 0.0172,
+          "p90_ms": 0.03691,
+          "mean_ms": 0.023025166666666666
+        },
+        {
+          "median_ms": 0.015,
+          "p10_ms": 0.014099999999999998,
+          "p90_ms": 0.0337,
+          "mean_ms": 0.0192135
+        },
+        {
+          "median_ms": 0.0143,
+          "p10_ms": 0.013599999999999998,
+          "p90_ms": 0.033100000000000004,
+          "mean_ms": 0.0183855
+        },
+        {
+          "median_ms": 0.0142,
+          "p10_ms": 0.013300000000000001,
+          "p90_ms": 0.03200000000000001,
+          "mean_ms": 0.017703166666666666
+        }
+      ],
+      "by_position_total": {
+        "0": {
+          "median_ms": 4.02695,
+          "p10_ms": 3.62065,
+          "p90_ms": 5.74245,
+          "mean_ms": 4.398928
+        },
+        "1": {
+          "median_ms": 3.47095,
+          "p10_ms": 3.0494199999999996,
+          "p90_ms": 5.01095,
+          "mean_ms": 3.783515
+        }
+      }
+    },
+    "conjure_bind_meld": {
+      "samples": 600,
+      "phases": {
+        "bind_ns": {
+          "median_ms": 1.87345,
+          "p10_ms": 1.6431999999999998,
+          "p90_ms": 2.7928100000000002,
+          "mean_ms": 2.1032116666666667
+        },
+        "conjure_ns": {
+          "median_ms": 0.32115,
+          "p10_ms": 0.25995,
+          "p90_ms": 0.52042,
+          "mean_ms": 0.3604446666666667
+        },
+        "first_meld_ns": {
+          "median_ms": 5.319599999999999,
+          "p10_ms": 4.477930000000001,
+          "p90_ms": 7.334239999999999,
+          "mean_ms": 5.626064833333333
+        },
+        "total_ns": {
+          "median_ms": 7.52885,
+          "p10_ms": 6.496599999999999,
+          "p90_ms": 10.54208,
+          "mean_ms": 8.092109
+        },
+        "warm_five_meld_ns": {
+          "median_ms": 0.00449,
+          "p10_ms": 0.00438,
+          "p90_ms": 0.00837,
+          "mean_ms": 0.005440566666666666
+        },
+        "setup_ns": {
+          "median_ms": 0.3132,
+          "p10_ms": 0.21949000000000002,
+          "p90_ms": 0.47913000000000006,
+          "mean_ms": 0.33133983333333333
+        },
+        "cleanup_ns": {
+          "median_ms": 1.18885,
+          "p10_ms": 0.8396399999999999,
+          "p90_ms": 1.6014199999999998,
+          "mean_ms": 1.2283218333333332
+        }
+      },
+      "per_first_meld": [
+        {
+          "median_ms": 2.0251,
+          "p10_ms": 1.41567,
+          "p90_ms": 2.85878,
+          "mean_ms": 2.077266333333333
+        },
+        {
+          "median_ms": 0.90175,
+          "p10_ms": 0.7374400000000001,
+          "p90_ms": 1.25834,
+          "mean_ms": 0.9529296666666667
+        },
+        {
+          "median_ms": 0.82135,
+          "p10_ms": 0.67976,
+          "p90_ms": 1.1922599999999999,
+          "mean_ms": 0.8829616666666666
+        },
+        {
+          "median_ms": 0.7944,
+          "p10_ms": 0.66503,
+          "p90_ms": 1.1800899999999999,
+          "mean_ms": 0.8609726666666667
+        },
+        {
+          "median_ms": 0.7778499999999999,
+          "p10_ms": 0.65693,
+          "p90_ms": 1.13721,
+          "mean_ms": 0.849025
+        }
+      ],
+      "by_position_total": {
+        "0": {
+          "median_ms": 7.74615,
+          "p10_ms": 7.1119900000000005,
+          "p90_ms": 10.918410000000002,
+          "mean_ms": 8.483357333333334
+        },
+        "1": {
+          "median_ms": 7.0595,
+          "p10_ms": 6.3047699999999995,
+          "p90_ms": 10.208079999999999,
+          "mean_ms": 7.700860666666666
+        }
+      }
+    }
+  },
+  "conjure_first_over_bind_first": 1.9670668460724505,
+  "bind_first_total_reduction_percent": 49.16288676225453,
+  "per_run": [
+    {
+      "run": "run_1",
+      "bind_first_total_ms": 3.7044,
+      "conjure_first_total_ms": 7.3198,
+      "ratio": 1.9759745167908431
+    },
+    {
+      "run": "run_2",
+      "bind_first_total_ms": 3.7248,
+      "conjure_first_total_ms": 7.4804,
+      "ratio": 2.0082689003436425
+    },
+    {
+      "run": "run_3",
+      "bind_first_total_ms": 4.22975,
+      "conjure_first_total_ms": 8.50215,
+      "ratio": 2.010083338258762
+    }
+  ]
+}

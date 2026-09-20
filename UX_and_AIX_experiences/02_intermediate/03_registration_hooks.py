@@ -33,7 +33,7 @@ def main() -> None:
         .finalize()
 
     conduit = book.conjure()
-    engine = conduit.meld(spell=Engine)
+    engine = conduit.meld(Engine)
     assert isinstance(engine, Engine)
     assert "engine constructed" in EVENTS
     print("lifecycle event order:", " -> ".join(EVENTS))

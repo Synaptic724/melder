@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/frame_viewer/frame_viewer.py",
- "source_sha256": "09d295574f4f13a02efa9c596aa8220920338e70d42dbcc2d5b2968cddff9eaa",
+ "source_sha256": "28ce784581117a2042b191c97be5e7dcb5fb9dcd2db060e1b0130f3e3d0c9fdf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.frame_viewer.frame_viewer": {
@@ -12,7 +12,10 @@
    "lineno": 1,
    "include": true,
    "role": "The READ surface of a room, opposite CommandSystem and Workstation; a view rather than a cache - helpers are built on demand so projection refreshes cannot leave it answering stale.",
-   "semantics_authored_against": "d55e756ae46ce8b02ed23632008d615534a866f96bb409ac71aea0547ff8ca90"
+   "semantics_authored_against": "d55e756ae46ce8b02ed23632008d615534a866f96bb409ac71aea0547ff8ca90",
+   "responsibilities": [
+    "delegates registered relationship navigation to the current ACL-filtered spell viewer"
+   ]
   },
   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer": {
    "id": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
@@ -87,6 +90,7 @@
     "describe_spell_payload",
     "describe_spell_record",
     "describe_spell_records",
+    "describe_spell_relationships",
     "describe_spell_resolution",
     "describe_spellbook_existence_mismatches",
     "describe_spellbook_permission_mismatches",
@@ -179,16 +183,17 @@
     "search_targets_prefix"
    ],
    "shape": {
-    "method_count": 168,
+    "method_count": 169,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8e693ae451acb2c66e077c130221a0ec7d50fd43f3976571de9e631ecfebae68",
+   "span_sha256": "e3d8fbf3bce28d1efd6782b3d5a20535bca8180bf7eb47812c47e44d1596a9d5",
    "role": "Projection-backed room viewer asset.",
    "responsibilities": [
     "holds the current per-frame projection-set references for the room",
     "owns the helper cache for frame, conduit, and spell view surfaces",
-    "provides the visible frame-local query surface"
+    "provides the visible frame-local query surface",
+    "delegates registered relationship navigation to the current ACL-filtered spell viewer"
    ],
    "owns_state": [
     "_projection_sets_by_frame_name",

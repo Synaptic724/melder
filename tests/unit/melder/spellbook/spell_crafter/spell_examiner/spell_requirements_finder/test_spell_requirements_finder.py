@@ -550,7 +550,8 @@ def test_remaining_helper_edges_for_builtins_sentinels_and_tuple_paths(monkeypat
     assert finder._looks_like_di_target(list) is False
 
 
-def test_parameter_classification_shapes_and_optional_logic():
+def test_parameter_classification_shapes_and_optional_logic() -> None:
+    """Preserve descriptor/no-default DI while ordinary defaults remain plain values."""
     spellmap_default = SpellMap(spellframe="frame-key")
     contract_default = SpellContract(spellframe="frame-key")
 
@@ -618,8 +619,10 @@ def test_parameter_classification_shapes_and_optional_logic():
 
     assert shape("contract") is ParameterDIShape.SPELL_CONTRACT
 
-    assert shape("opt_union") is ParameterDIShape.SINGLE_BY_ANNOTATION
+    assert shape("opt_union") is ParameterDIShape.PLAIN
     assert optional("opt_union") is True
+    assert by_name["opt_union"].has_default is True
+    assert by_name["opt_union"].default_value is None
 
     # union containing builtin keeps plain
     assert shape("union_multi") is ParameterDIShape.PLAIN

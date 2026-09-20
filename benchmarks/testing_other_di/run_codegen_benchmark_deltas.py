@@ -230,7 +230,7 @@ class CodegenBenchmarkSession:
             - Performs one `Conduit.meld` on the root spell id.
             - Raises AssertionError if the returned type is unexpected.
         """
-        root = self._conduit.meld(spell=self._root_id)
+        root = self._conduit.meld(spell_id=self._root_id)
         if not isinstance(root, BenchmarkRoot):
             raise AssertionError("Expected BenchmarkRoot from root meld.")
 
@@ -257,7 +257,7 @@ class CodegenBenchmarkSession:
             - Raises AssertionError if the returned type is unexpected.
         """
         with self._conduit.enter_spellspace() as spellspace:
-            scoped = spellspace.meld(spell=self._spellspace_root_id)
+            scoped = spellspace.meld(spell_id=self._spellspace_root_id)
             if not isinstance(scoped, BenchmarkSpellspaceRoot):
                 raise AssertionError(
                     "Expected BenchmarkSpellspaceRoot from spellspace meld."
@@ -272,8 +272,8 @@ class CodegenBenchmarkSession:
             - Uses many-scoped root so repeated override calls remain valid.
         """
         overridden = self._conduit.meld(
-            spell=self._override_args_root_id,
-            spell_override=[7],
+            spell_id=self._override_args_root_id,
+            override=[7],
         )
         if not isinstance(overridden, BenchmarkOverrideArgsRoot):
             raise AssertionError("Expected BenchmarkOverrideArgsRoot from __args__ override meld.")
@@ -287,8 +287,8 @@ class CodegenBenchmarkSession:
             - Uses many-scoped root so repeated override calls remain valid.
         """
         overridden = self._conduit.meld(
-            spell=self._override_root_id,
-            spell_override={"left": BenchmarkLeafA()},
+            spell_id=self._override_root_id,
+            override={"left": BenchmarkLeafA()},
         )
         if not isinstance(overridden, BenchmarkOverrideRoot):
             raise AssertionError("Expected BenchmarkOverrideRoot from targeted override meld.")

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="20.330" timestamp="2026-09-19T16:44:09.844255-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_nexus_exposes_definition_reference_and_base_relationships" time="0.011"><failure message="ValueError: ViewFrame target 'spell:01M2XXERSD6SE3N8SSKS1JQAC8:2d500a94e6133046e8bbf65f5ab5aa8e97bb7c9d11e7f5a87b8cd2f757849810' was not found for frame 'ops'.">tests\integration\melder\aether\test_non_resolvable_graph_replay.py:90: in test_nexus_exposes_definition_reference_and_base_relationships
+    description = viewer.describe_spell(source, frame_name="ops")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\frame_viewer.py:5260: in describe_spell
+    return self.get_view_spell(frame_name=frame_name).describe_spell(
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_spell.py:229: in describe_spell
+    spell_link = self.get_required_spell(
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_spell.py:2581: in get_required_spell
+    return self._get_required_frame_view().get_required_target_by_source(
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_frame.py:2174: in get_required_target_by_source
+    raise ValueError(
+E   ValueError: ViewFrame target 'spell:01M2XXERSD6SE3N8SSKS1JQAC8:2d500a94e6133046e8bbf65f5ab5aa8e97bb7c9d11e7f5a87b8cd2f757849810' was not found for frame 'ops'.</failure></testcase><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_checkpoint_replay_preserves_false_and_reemits_it" time="10.912" /><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_graft_preserves_active_and_parked_capability" time="8.752"><failure message="RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time &#10;fingerprint (e.g., structural profile, lookup signature, existence, and resolved &#10;disposal metadata). The existing spell with this id is already registered in the &#10;Aether for this frame. If you intended to register a distinct spell, ensure its &#10;bind-time fingerprint differs so it produces a unique spell_id.">tests\integration\melder\aether\test_non_resolvable_graph_replay.py:136: in test_graft_preserves_active_and_parked_capability
+    report = root.graft_index(record, host)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\crystallizer\crystallizer.py:1078: in graft_index
+    return runner.run()
+           ^^^^^^^^^^^^
+src\melder\crystallizer\crystal_loader_system\graft_runner.py:313: in run
+    live_index, bound = self._bind_selected(
+src\melder\crystallizer\crystal_loader_system\graft_runner.py:411: in _bind_selected
+    new_spell_id = self._host_book.bind(
+src\melder\aether\spellbook\spellbook.py:5183: in bind
+    raise RuntimeError(
+E   RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+E   fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+E   disposal metadata). The existing spell with this id is already registered in the 
+E   Aether for this frame. If you intended to register a distinct spell, ensure its 
+E   bind-time fingerprint differs so it produces a unique spell_id.</failure></testcase><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_old_record_reader_refuses_new_capability_records" time="0.006" /></testsuite></testsuites>

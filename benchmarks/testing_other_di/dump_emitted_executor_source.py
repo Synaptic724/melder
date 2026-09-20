@@ -164,9 +164,9 @@ def main() -> None:
         request_id = spell_ids[_support.REQUEST_SCOPED_TYPES[0]]
         lesser = root.create_lesser_conduit()
         try:
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             with lesser.enter_spellspace() as space:
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
         finally:
             lesser.cleanup()
         root.cleanup()

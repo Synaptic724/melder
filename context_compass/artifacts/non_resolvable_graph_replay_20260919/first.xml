@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="2" skipped="0" tests="4" time="7.425" timestamp="2026-09-19T16:43:11.488433-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_nexus_exposes_definition_reference_and_base_relationships" time="0.012"><failure message="ValueError: ViewFrame target 'spell:01M2XXCZVGJFCR154XWT6VPK2V:2d500a94e6133046e8bbf65f5ab5aa8e97bb7c9d11e7f5a87b8cd2f757849810' was not found for frame 'ops'.">tests\integration\melder\aether\test_non_resolvable_graph_replay.py:90: in test_nexus_exposes_definition_reference_and_base_relationships
+    description = viewer.describe_spell(source, frame_name="ops")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\frame_viewer.py:5260: in describe_spell
+    return self.get_view_spell(frame_name=frame_name).describe_spell(
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_spell.py:229: in describe_spell
+    spell_link = self.get_required_spell(
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_spell.py:2581: in get_required_spell
+    return self._get_required_frame_view().get_required_target_by_source(
+src\melder\nexus\rift\frame_viewer\view_action_hooks.py:53: in _wrapped
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\frame_viewer\view_frame.py:2174: in get_required_target_by_source
+    raise ValueError(
+E   ValueError: ViewFrame target 'spell:01M2XXCZVGJFCR154XWT6VPK2V:2d500a94e6133046e8bbf65f5ab5aa8e97bb7c9d11e7f5a87b8cd2f757849810' was not found for frame 'ops'.</failure></testcase><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_checkpoint_replay_preserves_false_and_reemits_it" time="0.005"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\non_resolvable_graph_replay_20260919\\tmp_first'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:141: in mktemp
+    p = make_numbered_dir(root=self.getbasetemp(), prefix=basename, mode=0o700)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\non_resolvable_graph_replay_20260919\\tmp_first'</error></testcase><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_graft_preserves_active_and_parked_capability" time="6.534"><failure message="RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time &#10;fingerprint (e.g., structural profile, lookup signature, existence, and resolved &#10;disposal metadata). The existing spell with this id is already registered in the &#10;Aether for this frame. If you intended to register a distinct spell, ensure its &#10;bind-time fingerprint differs so it produces a unique spell_id.">tests\integration\melder\aether\test_non_resolvable_graph_replay.py:136: in test_graft_preserves_active_and_parked_capability
+    report = root.graft_index(record, host)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\crystallizer\crystallizer.py:1078: in graft_index
+    return runner.run()
+           ^^^^^^^^^^^^
+src\melder\crystallizer\crystal_loader_system\graft_runner.py:313: in run
+    live_index, bound = self._bind_selected(
+src\melder\crystallizer\crystal_loader_system\graft_runner.py:411: in _bind_selected
+    new_spell_id = self._host_book.bind(
+src\melder\aether\spellbook\spellbook.py:5183: in bind
+    raise RuntimeError(
+E   RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+E   fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+E   disposal metadata). The existing spell with this id is already registered in the 
+E   Aether for this frame. If you intended to register a distinct spell, ensure its 
+E   bind-time fingerprint differs so it produces a unique spell_id.</failure></testcase><testcase classname="tests.integration.melder.aether.test_non_resolvable_graph_replay" name="test_old_record_reader_refuses_new_capability_records" time="0.007" /></testsuite></testsuites>

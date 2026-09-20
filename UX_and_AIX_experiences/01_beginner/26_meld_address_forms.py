@@ -31,8 +31,8 @@ def main() -> None:
               spellframe="finance", binding_name="ledger")
     conduit = book.conjure()
 
-    by_object = conduit.meld(spell=BillingService)
-    by_name = conduit.meld(spell="BillingService")
+    by_object = conduit.meld(BillingService)
+    by_name = conduit.meld("BillingService")
     # Explicit machine form: SHA identity never shares the human string slot.
     by_id = conduit.meld(spell_id=spell_id)
     assert by_object is by_name is by_id
@@ -43,7 +43,7 @@ def main() -> None:
     print("framed spell answers at (frame, name)")
 
     try:
-        conduit.meld(spell="LedgerService")
+        conduit.meld("LedgerService")
     except KeyError as err:
         print("name-derived key misses a framed bind:", err)
 

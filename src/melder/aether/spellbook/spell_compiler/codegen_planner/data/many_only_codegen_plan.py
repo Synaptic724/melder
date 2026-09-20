@@ -5,6 +5,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis import (
+        RequiredOverrideParam,
         SpellInjectionInstanceSpec,
     )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
@@ -71,6 +72,7 @@ class ManyOnlyCodegenPlanStep:
         "_shared_instance",
         "_dependency_resolution_order",
         "_collection_param_names",
+        "_required_override_params",
         "_uses_positional_override",
         "_contract_positional_override",
         "_has_contract_payload",
@@ -94,6 +96,7 @@ class ManyOnlyCodegenPlanStep:
             contract_payload: Optional[Dict[str, Any]],
             override_match_prefix: Optional[int],
             override_match_prefix_len: int,
+            required_override_params: Tuple[RequiredOverrideParam, ...] = (),
     ) -> None:
         """
         Initialize one many-only execution step (pure store; one validation).
@@ -128,6 +131,9 @@ class ManyOnlyCodegenPlanStep:
                 Override-target path prefix for this step, if any.
             override_match_prefix_len:
                 Length of `override_match_prefix`.
+            required_override_params:
+                Immutable required-input rows retained in both variants. These are
+                construction obligations, independent of optional targeting metadata.
 
         Raises:
             ValueError: If `collection_param_names` is None.
@@ -143,6 +149,7 @@ class ManyOnlyCodegenPlanStep:
         self._shared_instance = shared_instance
         self._dependency_resolution_order = dependency_resolution_order
         self._collection_param_names = collection_param_names
+        self._required_override_params = required_override_params
         self._uses_positional_override = uses_positional_override
         self._contract_positional_override = contract_positional_override
         self._has_contract_payload = has_contract_payload
@@ -197,6 +204,11 @@ class ManyOnlyCodegenPlanStep:
               dependency count.
         """
         return self._collection_param_names
+
+    @property
+    def required_override_params(self) -> Tuple[RequiredOverrideParam, ...]:
+        """Return required supplied-input policy without adding executable dependency keys."""
+        return self._required_override_params
 
     @property
     def uses_positional_override(self) -> bool:
@@ -1040,6 +1052,7 @@ class ManyOnlyCodegenPlanBuilder:
                     ),
                     dependency_resolution_order=dependency_resolution_order,
                     collection_param_names=inject_spec.collection_param_names,
+                    required_override_params=inject_spec.required_override_params,
                     uses_positional_override=inject_spec.uses_positional_override,
                     contract_positional_override=contract_positional_override,
                     has_contract_payload=has_contract_payload,

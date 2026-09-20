@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="11" time="2.215" timestamp="2026-09-13T13:46:24.208805-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_dependency_resolves_before_and_after_conjure[False-class]" time="0.006"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:78: in test_typechecking_dependency_resolves_before_and_after_conjure
+    target = instance_book.bind(spell=consumer_type, existence="unique")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:521: in _bind_logic
+    provisional_general_profile.complete_with_spell(new_spell)
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:139: in complete_with_spell
+    self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\resolution_profile_strategy.py:50: in build_profile
+    requirements = finder.build_requirements(cancel_event=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:243: in build_requirements
+    parameters = self._build_parameter_requirements(
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:1016: in _build_parameter_requirements
+    signature = inspect.signature(call_target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2563: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2446: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:24: in __annotate__
+    def __init__(self, service: BasicService) -&gt; None:
+                                ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_dependency_resolves_before_and_after_conjure[False-function]" time="0.005"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:78: in test_typechecking_dependency_resolves_before_and_after_conjure
+    target = instance_book.bind(spell=consumer_type, existence="unique")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:415: in _bind_logic
+    provisional_general_profile = self._spell_examiner.create_profile(
+src\melder\aether\spellbook\spell_compiler\spell_examiner\spell_examiner.py:211: in create_profile
+    return builder(target, show_dunders, max_repr)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\spell_examiner.py:229: in &lt;lambda&gt;
+    lambda target, show_dunders, max_repr: SpellGeneralProfile.create_from_target(
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:112: in create_from_target
+    ).build_profile(binding_target)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\binding_profile_strategy.py:60: in build_profile
+    return self._build_callable_profile(candidate)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\binding_profile_strategy.py:148: in _build_callable_profile
+    signature = inspect.signature(effective)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:63: in __annotate__
+    def deferred_consumer_factory(service: BasicService) -&gt; DeferredConsumer:
+                                           ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_dependency_resolves_before_and_after_conjure[False-collection]" time="0.004"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:78: in test_typechecking_dependency_resolves_before_and_after_conjure
+    target = instance_book.bind(spell=consumer_type, existence="unique")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:521: in _bind_logic
+    provisional_general_profile.complete_with_spell(new_spell)
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:139: in complete_with_spell
+    self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\resolution_profile_strategy.py:50: in build_profile
+    requirements = finder.build_requirements(cancel_event=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:243: in build_requirements
+    parameters = self._build_parameter_requirements(
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:1016: in _build_parameter_requirements
+    signature = inspect.signature(call_target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2563: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2446: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:32: in __annotate__
+    def __init__(self, services: list[BasicService]) -&gt; None:
+                                      ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_dependency_resolves_before_and_after_conjure[True-class]" time="0.054"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:78: in test_typechecking_dependency_resolves_before_and_after_conjure
+    target = instance_book.bind(spell=consumer_type, existence="unique")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:521: in _bind_logic
+    provisional_general_profile.complete_with_spell(new_spell)
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:139: in complete_with_spell
+    self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\resolution_profile_strategy.py:50: in build_profile
+    requirements = finder.build_requirements(cancel_event=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:243: in build_requirements
+    parameters = self._build_parameter_requirements(
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:1016: in _build_parameter_requirements
+    signature = inspect.signature(call_target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2563: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2446: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:24: in __annotate__
+    def __init__(self, service: BasicService) -&gt; None:
+                                ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_dependency_resolves_before_and_after_conjure[True-function]" time="0.009"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:78: in test_typechecking_dependency_resolves_before_and_after_conjure
+    target = instance_book.bind(spell=consumer_type, existence="unique")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:415: in _bind_logic
+    provisional_general_profile = self._spell_examiner.create_profile(
+src\melder\aether\spellbook\spell_compiler\spell_examiner\spell_examiner.py:211: in create_profile
+    return builder(target, show_dunders, max_repr)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\spell_examiner.py:229: in &lt;lambda&gt;
+    lambda target, show_dunders, max_repr: SpellGeneralProfile.create_from_target(
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:112: in create_from_target
+    ).build_profile(binding_target)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\binding_profile_strategy.py:60: in build_profile
+    return self._build_callable_profile(candidate)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\binding_profile_strategy.py:148: in _build_callable_profile
+    signature = inspect.signature(effective)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:63: in __annotate__
+    def deferred_consumer_factory(service: BasicService) -&gt; DeferredConsumer:
+                                           ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_dependency_resolves_before_and_after_conjure[True-collection]" time="0.009"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:78: in test_typechecking_dependency_resolves_before_and_after_conjure
+    target = instance_book.bind(spell=consumer_type, existence="unique")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:521: in _bind_logic
+    provisional_general_profile.complete_with_spell(new_spell)
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:139: in complete_with_spell
+    self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\resolution_profile_strategy.py:50: in build_profile
+    requirements = finder.build_requirements(cancel_event=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:243: in build_requirements
+    parameters = self._build_parameter_requirements(
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:1016: in _build_parameter_requirements
+    signature = inspect.signature(call_target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2563: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2446: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:32: in __annotate__
+    def __init__(self, services: list[BasicService]) -&gt; None:
+                                      ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_annotation_preserves_default[none]" time="0.005"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:94: in test_typechecking_annotation_preserves_default
+    target = instance_book.bind(spell=DeferredChosenDefault if selected else DeferredNoneDefault, existence="many")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:521: in _bind_logic
+    provisional_general_profile.complete_with_spell(new_spell)
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:139: in complete_with_spell
+    self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\resolution_profile_strategy.py:50: in build_profile
+    requirements = finder.build_requirements(cancel_event=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:243: in build_requirements
+    parameters = self._build_parameter_requirements(
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:1016: in _build_parameter_requirements
+    signature = inspect.signature(call_target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2563: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2446: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:40: in __annotate__
+    def __init__(self, service: Optional[BasicService] = None) -&gt; None:
+                                         ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_annotation_preserves_default[chosen_instance]" time="0.005"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:94: in test_typechecking_annotation_preserves_default
+    target = instance_book.bind(spell=DeferredChosenDefault if selected else DeferredNoneDefault, existence="many")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:521: in _bind_logic
+    provisional_general_profile.complete_with_spell(new_spell)
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:139: in complete_with_spell
+    self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\resolution_profile_strategy.py:50: in build_profile
+    requirements = finder.build_requirements(cancel_event=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:243: in build_requirements
+    parameters = self._build_parameter_requirements(
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:1016: in _build_parameter_requirements
+    signature = inspect.signature(call_target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2563: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2446: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:50: in __annotate__
+    def __init__(self, service: BasicService = selected) -&gt; None:
+                                ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_typechecking_dependency_without_provider_still_fails_validation" time="0.004"><failure message="NameError: name 'BasicService' is not defined">tests\integration\melder\spellbook\test_deferred_annotations.py:103: in test_typechecking_dependency_without_provider_still_fails_validation
+    instance_book.bind(spell=DeferredConsumer, existence="many")
+src\melder\aether\spellbook\spellbook.py:5139: in bind
+    new_spell = self._bind.bind(
+src\melder\aether\spellbook\bind\bind.py:309: in bind
+    return self._bind_logic(
+src\melder\aether\spellbook\bind\bind.py:521: in _bind_logic
+    provisional_general_profile.complete_with_spell(new_spell)
+src\melder\aether\spellbook\spell_compiler\spell_examiner\profiles\general_profile.py:139: in complete_with_spell
+    self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_examiner\strategies\resolution_profile_strategy.py:50: in build_profile
+    requirements = finder.build_requirements(cancel_event=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:243: in build_requirements
+    parameters = self._build_parameter_requirements(
+src\melder\aether\spellbook\spell_compiler\spell_requirements_finder\spell_requirements_finder.py:1016: in _build_parameter_requirements
+    signature = inspect.signature(call_target)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2563: in _signature_from_callable
+    return _get_signature_of(init)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2446: in _signature_from_callable
+    sig = _get_signature_of(obj.__func__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2517: in _signature_from_callable
+    return _signature_from_function(sigcls, obj,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2340: in _signature_from_function
+    annotations = get_annotations(func, globals=globals, locals=locals, eval_str=eval_str,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:987: in get_annotations
+    ann = _get_dunder_annotations(obj)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\annotationlib.py:1180: in _get_dunder_annotations
+    ann = getattr(obj, "__annotations__", None)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_deferred_annotations.py:24: in __annotate__
+    def __init__(self, service: BasicService) -&gt; None:
+                                ^^^^^^^^^^^^
+E   NameError: name 'BasicService' is not defined</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_literal_forward_annotation_still_resolves" time="0.009" /><testcase classname="tests.integration.melder.spellbook.test_deferred_annotations" name="test_resolved_signature_keeps_binding_fingerprint_text" time="0.000" /></testsuite></testsuites>

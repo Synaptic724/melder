@@ -102,7 +102,7 @@ def _capture_compiles(
             )
         conduit = spellbook.conjure(name="lane-diag")
         try:
-            conduit.meld(spell=spell_ids[root_cls])
+            conduit.meld(spell_id=spell_ids[root_cls])
         finally:
             conduit.cleanup()
     finally:

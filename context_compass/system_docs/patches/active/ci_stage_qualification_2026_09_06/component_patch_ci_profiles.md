@@ -42,3 +42,13 @@ ci_qualification.py owns dirty-source verification for record/select/verify. Rep
 porcelain refusal with unchanged-index verification and raw delta inspection. Accept only byte-
 identical regular files with unchanged Git modes; staged and actual working-tree changes refuse.
 The error must include changed path names. Existing profile flags, jobs and proof schema stay intact.
+
+## Coverage transport correction
+Put OS, Python, run ID and attempt in the XML filename itself as well as its artifact name.
+Download same-run coverage artifacts across attempts with merge-multiple=true; filenames cannot
+collide, including singleton downloads. The coverage helper selects one newest report per current
+matrix cell and copies only that set to selected-coverage/. Codecov sees that directory only.
+Coverage stays nonblocking/token-only. No new tests or hosted triggers are introduced.
+The download action explicitly selects the current repository/run through GitHub's artifact API,
+with actions:read granted by both callers and the coverage job. Helpers receive no token; the
+separate Codecov credential remains isolated. This makes earlier-attempt discovery explicit.

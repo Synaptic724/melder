@@ -1,0 +1,14 @@
+[
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\aether\\spellbook\\bind\\bind.py",
+    "Hash": "1C26F36E728AE5141ABCFE0D476CFFD139F9C7DF703F664DB5635043FFC5277A"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\aether\\spellbook\\spell_compiler\\phases\\compiler_phase_3.py",
+    "Hash": "F667CA74748F0F2DC641ED40143B96041015C2FD4B0BDAC7269B75A3A963B1F2"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\aether\\spellbook\\spell_compiler\\validation\\strategies\\existing_creation_compatibility_strategy.py",
+    "Hash": "5C1F93A69C984B6FAD95BFAAB652A061CCADD3C0A2F12F41C144982BD720D918"
+  }
+]

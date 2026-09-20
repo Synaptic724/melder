@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py",
- "source_sha256": "6b7c9de501b78e87ceeec09bfd029783b79da6816218d3735f0cbc2aaae0e967",
+ "source_sha256": "342c2d8a55fce722957141f7b2711e05801d25f9b85b8752b5c351a957d738bb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy": {
@@ -19,7 +19,7 @@
    "label": "SpellInjectionProcessorStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py",
-   "lineno": 32,
+   "lineno": 33,
    "bases": [
     "SpellArtifactProcessorStrategy"
    ],
@@ -33,12 +33,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c0f359d782a3be9164f16ca8bf9e53f9e23b3b6b97ac9a71e613df2a525cb9b8",
+   "span_sha256": "18906aefcf84c6d7971db57f31d8f9acce5a7707dd9e0c1131d14c2270e1d682",
    "role": "Processor strategy fitting the injection section of the codegen model.",
    "responsibilities": [
     "builds per-instance injection specs from occurrence and contract truth",
     "publishes SpellInjectionAnalysis onto SpellCodegenModel",
-    "derives root dependency and positional-override summary selectors for planning"
+    "derives root dependency and positional-override summary selectors for planning",
+    "emits required supplied-input sources from local topology even without occurrence dependency entries"
    ],
    "phases": [
     "runtime"
@@ -99,6 +100,7 @@
   "SpellInjectionParamSource": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource",
   "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "SpellOccurrenceContractAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
   "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",

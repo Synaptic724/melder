@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 9f5cfd838d578f1194f0367dd7878ea003df28b86570e05167475e2d3820cef6
-FILE COUNT: 356
+SOURCE FINGERPRINT: 672e05c9834f7097574228a8e54388017a6680de8504657b380e769ba1a490e2
+FILE COUNT: 358
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -64,7 +64,7 @@ END FILE: .gitattributes
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/BRANCH_WORKFLOW.md
-CONTENT SHA256: dd585a964bf94febf5fa060ee1d423ca2202ee6da7bf3b14fe8f465270d7b08a
+CONTENT SHA256: ec8cb8ee9e7c4abe2307d501c8931f7cebc77b00ceaf1b28810dfe19500f5b33
 SOURCE ENCODING: utf-8
 ================================================================================
 # Branch CI and release workflow
@@ -151,10 +151,22 @@ the currently available stable matrix afresh.
 ## Coverage reporting and README badges
 
 The existing OS/version runtime runs also produce line/branch coverage XML for Melder.
-They do not run the suite a second time. Each matrix cell retains a coverage artifact for 14 days;
-one reporting job uploads those reports to Codecov after the full matrix succeeds.
-It requires an XML file for every discovered OS/version from the same run/attempt; missing artifacts
-leave a reporting warning/failure rather than publishing an incomplete matrix as the current result.
+They do not run the suite a second time. Successful cells retain coverage artifacts for 14 days;
+JUnit results remain available even when tests fail. One reporting job uploads coverage after
+the full matrix succeeds. It selects the newest available report for every current OS/Python cell
+within the same workflow run. Partial reruns may therefore use Ubuntu attempt 2 with Windows and
+macOS attempt 1: GitHub preserves the original event commit/ref across attempts of that run.
+
+The XML filename itself carries OS, Python version, run ID and attempt. Downloads explicitly select
+the current repository/run through the read-only Actions API, merge those unique filenames, and
+copy only the verified selection into `selected-coverage/` for Codecov. This works with singleton
+downloads as well as multiple artifacts. Superseded attempts and obsolete Python-version reports
+are excluded from upload; missing cells, foreign runs, future attempts and empty newest reports fail.
+The `selected-coverage-<run>-<attempt>` artifact records which original filenames were selected.
+
+Older workflow revisions using plain `coverage.xml` payloads still need **Re-run all jobs** to create
+a complete same-attempt set. The corrected layout takes effect in a new run after this change is
+committed and promoted. This reporting reuse does not relax publication artifacts or source proof.
 Tests and the current source/release checks remain required. Coverage delivery is nonblocking,
 and codecov.yml disables extra coverage statuses and PR comments; no percentage threshold is added.
 
@@ -187,10 +199,18 @@ Create a short-lived branch from current dev and explicitly target dev when
 opening the PR; prod remains the repository's default branch. Run:
 
 ```bash
-python -m pytest -q tests/unit tests/component tests/integration
-python src/melder/_build_assets/_build_asset_runner.py --check
-python llm_support/_builder.py --check
+uv sync --locked --python 3.14t
+uv run --locked python -X gil=0 .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+uv run --locked python src/melder/_build_assets/_build_asset_runner.py --check
+uv run --locked python llm_support/_builder.py --check
 ```
+
+`uv.lock` pins the development dependency resolution shared with CI. Runtime jobs preserve the
+dynamic OS/no-GIL Python matrix and sync the test group with each selected interpreter. Distribution
+jobs sync only the build group and build without isolation, using those locked tools. Their wheel
+probe still installs only the exact built wheel in a separate environment. Cache keys include the
+lockfile and runtime/build context. The documentation toolchain retains `docs/requirements.lock`.
+See [contributor setup](../CONTRIBUTING.md) for optional groups and deliberate lock updates.
 
 If generated assets are stale, regenerate locally and commit them. Stage newly
 added input files before running the repository builder so its tracked-file
@@ -1487,7 +1507,7 @@ END FILE: .github/scripts/normalize_sdist.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/scripts/python_runtime_matrix.py
-CONTENT SHA256: 5f94b0b333954326246f5e982d376d595991b167baa5325ef138e82199808c4e
+CONTENT SHA256: 208d579c3def6e7323fe9bceed76ebd9d22bd4861c826d64c7f1d27ff5d9b1aa
 SOURCE ENCODING: utf-8
 ================================================================================
 """Discover stable supported no-GIL runtimes and verify their coverage report inventory."""
@@ -1497,6 +1517,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import tomllib
 import urllib.request
 from collections.abc import Mapping, Sequence
@@ -1635,22 +1656,57 @@ def validate_matrix(value: object, floor: tuple[int, int, int]) -> dict[str, lis
 
 
 def require_coverage(directory: pathlib.Path, matrix: Mapping[str, list[dict[str, str]]],
-                     run_id: str, attempt: str) -> None:
-    """Require a nonempty coverage report for every discovered OS/version from this run attempt.
+                     run_id: str, attempt: str) -> list[pathlib.Path]:
+    """Select the newest report for every required OS/version within this immutable workflow run.
 
-    Reject missing and unexpected report directories before Codecov receives a
-    partial matrix. Inputs must already have passed validate_matrix.
+    Partial reruns retain successful cells from earlier attempts. Payload names
+    preserve OS/version/run/attempt even when the download action flattens one
+    artifact. Reject missing cells, foreign/future evidence and an empty newest
+    report; never fall back past that invalid report. Valid obsolete version
+    cells are excluded from the upload. Inputs must pass validate_matrix first.
     """
     if re.fullmatch(r"[1-9]\d*", run_id) is None or re.fullmatch(r"[1-9]\d*", attempt) is None:
         raise ValueError("Coverage reports require positive run and attempt identifiers.")
-    names = {f"coverage-{entry['os']}-python-{entry['python']}-{run_id}-{attempt}" for entry in matrix["include"]}
-    observed = {path.name for path in directory.iterdir()}
-    if observed != names:
-        raise ValueError(f"Coverage matrix differs: missing={sorted(names - observed)}, unexpected={sorted(observed - names)}.")
-    for name in sorted(names):
-        report = directory / name / "coverage.xml"
-        if not report.is_file() or report.stat().st_size == 0:
-            raise ValueError(f"Missing or empty coverage report: {name}/coverage.xml")
+    if not directory.is_dir():
+        raise ValueError("No coverage reports were downloaded for this workflow run.")
+    required = {(entry["os"], entry["python"]) for entry in matrix["include"]}
+    selected: dict[tuple[str, str], tuple[int, pathlib.Path]] = {}
+    for report in sorted(directory.iterdir()):
+        identity = re.fullmatch(r"coverage-(.+)-python-(\d+\.\d+\.\d+)-([1-9]\d*)-([1-9]\d*)\.xml", report.name)
+        if identity is None or report.is_symlink() or not report.is_file():
+            raise ValueError(f"Coverage report lacks a regular identity-bearing XML payload: {report.name!r}.")
+        runner, version, source_run, source_attempt = identity.groups()
+        stable_version(version)
+        if runner not in {target[0] for target in RuntimeMatrixPolicy.TARGETS}:
+            raise ValueError(f"Unknown coverage platform in {report.name!r}.")
+        if source_run != run_id or int(source_attempt) > int(attempt):
+            raise ValueError(f"Coverage report belongs to another run or a future attempt: {report.name!r}.")
+        cell = runner, version
+        if cell in required and (cell not in selected or int(source_attempt) > selected[cell][0]):
+            selected[cell] = int(source_attempt), report
+    missing = required - set(selected)
+    if missing:
+        raise ValueError(f"Coverage matrix is incomplete; missing OS/Python cells: {sorted(missing)}.")
+    reports = [selected[cell][1] for cell in sorted(required)]
+    for report in reports:
+        if report.stat().st_size == 0:
+            raise ValueError(f"Newest coverage report is empty: {report.name!r}; regenerate that cell's report.")
+    return reports
+
+
+def stage_coverage(reports: Sequence[pathlib.Path], directory: pathlib.Path, record: pathlib.Path) -> None:
+    """Copy only the verified selection to an empty upload directory and record its original identities.
+
+    Never delete or overwrite an existing output set. Validation must finish
+    before this function is called; a copy failure prevents the upload step.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    if any(directory.iterdir()):
+        raise ValueError("Selected coverage output must be empty; choose a fresh upload directory.")
+    for report in reports:
+        shutil.copyfile(report, directory / report.name)
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(json.dumps({"reports": [report.name for report in reports]}, indent=2) + "\n", encoding="utf-8")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -1659,6 +1715,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("operation", choices=("discover", "coverage"))
     parser.add_argument("--report", type=pathlib.Path, default=pathlib.Path("reports/python-matrix.json"))
     parser.add_argument("--directory", type=pathlib.Path, default=pathlib.Path("coverage-reports"))
+    parser.add_argument("--selected-directory", type=pathlib.Path, default=pathlib.Path("selected-coverage"))
+    parser.add_argument("--selection-report", type=pathlib.Path, default=pathlib.Path("reports/coverage-selection.json"))
     args = parser.parse_args(argv)
     floor = supported_floor()
     if args.operation == "discover":
@@ -1670,8 +1728,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"Selected {len(matrix['include'])} stable no-GIL OS/version combinations.")
     else:
         matrix = validate_matrix(json.loads(os.environ["CI_PYTHON_MATRIX"]), floor)
-        require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
-        print("OK: coverage reports cover the complete discovered no-GIL matrix.")
+        reports = require_coverage(args.directory, matrix, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"])
+        stage_coverage(reports, args.selected_directory, args.selection_report)
+        print(f"OK: selected {len(reports)} same-run reports covering the complete no-GIL matrix.")
     return 0
 
 
@@ -2260,7 +2319,7 @@ END FILE: .github/scripts/verify_distributions.py
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/build-distributions.yml
-CONTENT SHA256: cefce537f69b23a397d62ee4d23c12a79112133d73f051d49b97cff9c9fe8ce2
+CONTENT SHA256: 3ba0199266bf477a2c211a83af6a73c86ced78435da819746fca9303f40fe915
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Build distributions
@@ -2296,34 +2355,39 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
+        id: python
         with:
           python-version-file: pyproject.toml
           freethreaded: true
           allow-prereleases: false
-          cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group build
+      - name: Set up uv for locked build tools
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+          resolution-strategy: lowest
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-suffix: build-${{ steps.python.outputs.python-version }}-${{ runner.arch }}
+      - name: Install locked build tools
+        run: uv sync --locked --only-group build --python "${{ steps.python.outputs.python-path }}"
       - name: Verify durable source assets
-        run: python src/melder/_build_assets/_build_asset_runner.py --check
+        run: uv run --no-sync python src/melder/_build_assets/_build_asset_runner.py --check
       - name: Set deterministic source timestamps for same-commit retries
         run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
       - name: Build wheel and source distribution
-        run: python -m build --sdist --wheel
+        run: uv run --no-sync python -m build --no-isolation --sdist --wheel
       - name: Normalize source archive metadata for identical retries
-        run: python .github/scripts/normalize_sdist.py
+        run: uv run --no-sync python .github/scripts/normalize_sdist.py
       - name: Verify archive boundaries and versions
         env:
           RELEASE_TAG: ${{ inputs.release-tag }}
-        run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+        run: uv run --no-sync python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
       - name: Install and verify the wheel in isolation
         env:
           PYTHON_GIL: "0"
         run: |
-          python -m venv "$RUNNER_TEMP/melder-wheel-probe"
-          "$RUNNER_TEMP/melder-wheel-probe/bin/python" -m pip install --quiet --no-deps dist/*.whl
+          uv venv --python "${{ steps.python.outputs.python-path }}" "$RUNNER_TEMP/melder-wheel-probe"
+          uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps dist/*.whl
           "$RUNNER_TEMP/melder-wheel-probe/bin/python" -I .github/scripts/smoke_wheel.py
       - name: Retain verified distributions
         uses: actions/upload-artifact@v7
@@ -2422,7 +2486,7 @@ END FILE: .github/workflows/build-src-assets.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/ci.yml
-CONTENT SHA256: 2b3a7a503d90147b7ed9bf954e83503abe58b33afac043982770f1e082ca0146
+CONTENT SHA256: 787ae9bb78db01978d03ba326fc3a36d71848e24fb0207c0a5e120ef396b6652
 SOURCE ENCODING: utf-8
 ================================================================================
 name: CI
@@ -2489,6 +2553,9 @@ jobs:
   tests:
     needs: branch-policy
     if: needs.branch-policy.outputs.runtime-required == 'true'
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/test-runtime.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -2625,7 +2692,7 @@ END FILE: .github/workflows/docs.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/python-publish.yml
-CONTENT SHA256: 476b8f0c0118960358894c3124dd3368bedfce0d2dd7dea61f5c4d6362503777
+CONTENT SHA256: 193f9c846b4e978c621490c6520f9da356b2261440f98190b25e95a027e85b41
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Publish Python Package
@@ -2691,6 +2758,9 @@ jobs:
 
   tests:
     needs: release-gate
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/test-runtime.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -2913,7 +2983,7 @@ END FILE: .github/workflows/release-candidate.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/test-runtime.yml
-CONTENT SHA256: e2c44e32a49f4a473382ce078c40d2ec679391e0a4d1eea91747d51da2f00b6f
+CONTENT SHA256: d6488923d27dfc67924182579b6a3dacff4b7cdc560a025d81c20976b210ec12
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Runtime tests
@@ -2961,33 +3031,43 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    env:
+      COVERAGE_ARTIFACT: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
+        id: python
         with:
           python-version: ${{ matrix.python }}
           architecture: ${{ matrix.architecture }}
           freethreaded: true
           allow-prereleases: false
-          cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Install Melder and test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group test
-          python -m pip install --no-deps --editable .
+      - name: Set up uv for locked dependencies
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+          resolution-strategy: lowest
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-suffix: runtime-${{ matrix.python }}t-${{ matrix.architecture }}
+      - name: Install locked Melder and test dependencies
+        run: uv sync --locked --no-default-groups --group test --python "${{ steps.python.outputs.python-path }}"
       - name: Run supported test tiers with runtime verification
         env:
           # Fix pytest's posture, including plugins, without affecting macOS setup helpers.
           PYTHON_GIL: "0"
-        run: python .github/scripts/run_runtime_tests.py --report reports/runtime.xml --coverage-report reports/coverage.xml
+        run: >-
+          uv run --no-sync python .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+          --coverage-report reports/${{ env.COVERAGE_ARTIFACT }}.xml
       - name: Retain coverage report
-        if: always()
+        # Only successful runtime executions may supply reusable coverage reports.
+        if: success()
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.os }}-python-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: reports/coverage.xml
+          name: ${{ env.COVERAGE_ARTIFACT }}
+          path: reports/${{ env.COVERAGE_ARTIFACT }}.xml
+          archive: true
           if-no-files-found: warn
           retention-days: 14
       - name: Retain test results
@@ -3002,6 +3082,9 @@ jobs:
   coverage:
     name: Coverage / Codecov
     needs: [discover, test]
+    permissions:
+      contents: read
+      actions: read
     # Forks still run tests and retain XML, but never receive upload credentials.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -3031,20 +3114,33 @@ jobs:
         if: steps.credentials.outputs.enabled == 'true'
         uses: actions/download-artifact@v8
         with:
-          pattern: coverage-*-${{ github.run_id }}-${{ github.run_attempt }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+          # Partial reruns reuse successful cells from earlier attempts of this run.
+          pattern: coverage-*-${{ github.run_id }}-*
           path: coverage-reports
-          merge-multiple: false
+          # XML payload names already carry OS/version/run/attempt, so merging is lossless.
+          merge-multiple: true
       - name: Require the complete coverage matrix
         if: steps.credentials.outputs.enabled == 'true'
         env:
           CI_PYTHON_MATRIX: ${{ needs.discover.outputs.matrix }}
         run: python .github/scripts/python_runtime_matrix.py coverage
+      - name: Retain coverage selection provenance
+        if: steps.credentials.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: selected-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/coverage-selection.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload coverage to Codecov
         if: steps.credentials.outputs.enabled == 'true'
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: coverage-reports
+          directory: selected-coverage
           fail_ci_if_error: true
           # Final-release tags have already been verified against current prod.
           override_branch: ${{ github.event_name == 'release' && 'prod' || '' }}
@@ -3381,6 +3477,94 @@ search:
     - _sources/*
 ================================================================================
 END FILE: .readthedocs.yaml
+================================================================================
+================================================================================
+BEGIN FILE: CONTRIBUTING.md
+CONTENT SHA256: 565b5e38fd55562bbe223f5f4edf13de77f00a12059aa7f2c6c7f1815ffaa0ae
+SOURCE ENCODING: utf-8
+================================================================================
+# Working on Melder
+
+The repository includes `uv.lock` so contributors can install the same resolved development
+dependencies across supported platforms. Melder itself has no runtime package dependencies.
+Applications installing Melder maintain their own lockfiles; this lock describes the checkout.
+
+## Create the development environment
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) version 0.11.23 or newer.
+From a clone of this repository, run:
+
+```bash
+uv sync --locked --python 3.14t
+uv run --locked python -X gil=0 -c "import sys, sysconfig; print(sys.version); assert sysconfig.get_config_var('Py_GIL_DISABLED') == 1; assert not sys._is_gil_enabled()"
+```
+
+The `t` requests free-threaded Python. Select the exact version shown in a CI report when
+reproducing a version-specific failure, for example `--python 3.14.7t`. The lock supports the
+Python range declared in `pyproject.toml`; it does not pin the interpreter to one minor version.
+
+`uv sync` creates `.venv`, installs Melder in editable mode and includes the default `dev` group:
+test, lint and build tools. Use a dedicated checkout/environment: syncing removes packages that
+are outside the selected groups. To choose a different environment location, set
+`UV_PROJECT_ENVIRONMENT` before running the commands.
+
+`--locked` refuses a stale lock instead of changing it during installation. Commit dependency
+declarations and the regenerated lock together when intentionally changing requirements.
+
+## Run checks
+
+```bash
+uv run --locked python -X gil=0 .github/scripts/run_runtime_tests.py --report reports/runtime.xml
+uv run --locked python src/melder/_build_assets/_build_asset_runner.py --check
+uv run --locked python llm_support/_builder.py --check
+```
+
+The test driver runs unit, component and integration tests and verifies the GIL remains disabled.
+To focus on one test file, use `uv run --locked python -X gil=0 -m pytest <path>`.
+
+CI uses this same lock. Its dynamic OS/Python matrix first selects a free-threaded interpreter,
+then passes that interpreter to `uv sync --locked --no-default-groups --group test`.
+The lock chooses dependencies for each matrix environment; it does not collapse the Python matrix.
+Distribution jobs install only the locked `build` group. CI uses the minimum supported uv version
+declared in `pyproject.toml`, and a stale lock fails the install step.
+
+Extra development groups are opt-in:
+
+```bash
+uv sync --locked --python 3.14t --group typecheck
+uv run --locked --group typecheck mypy
+```
+
+The other optional groups are `parallel`, `codemod` and `benchmark`. Use `--all-groups` when you
+need all of them. Documentation uses its separate locked environment; see
+[documentation maintenance](docs/maintaining.md).
+
+## Build and inspect the package
+
+The default development environment includes the locked build backend and build tools:
+
+```bash
+uv run --locked python -m build --no-isolation --sdist --wheel
+uv run --locked python .github/scripts/verify_distributions.py
+```
+
+Build isolation is disabled here so the build uses the installed locked toolchain. The resulting
+wheel and source archive still pass the repository's distribution checks. No publishing occurs.
+
+## Update dependencies deliberately
+
+```bash
+uv lock --check
+uv lock --upgrade-package pytest
+uv sync --locked --python 3.14t
+```
+
+Use `uv lock` after editing dependency declarations, and `uv lock --upgrade` only for an intentional
+refresh of the entire resolution. Review the diff and validate the affected checks before committing
+`pyproject.toml` and `uv.lock`. Keep private indexes, credentials and machine-local dependency paths
+out of the shared lock. `pip install melder` remains the normal package-consumer installation path.
+================================================================================
+END FILE: CONTRIBUTING.md
 ================================================================================
 ================================================================================
 BEGIN FILE: LICENSE
@@ -4137,7 +4321,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: e06ac20f8c7fffcf7739e1b5aeee6a2922a8e6162bd83b479d63e437c60bc7aa
+CONTENT SHA256: 7fb7c607315d42b8491d7a1f155c80fb3cc4605ef992bb043a68abe845c20e56
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -4182,6 +4366,9 @@ pip install melder
 ```
 
 **Zero dependencies.** Nothing else comes with it. Requires Python 3.14+.
+
+Working from a clone? Use the repository's `uv.lock` and
+[locked contributor setup](https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md).
 
 ---
 
@@ -5256,7 +5443,7 @@ END FILE: README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/01_hello_meld.py
-CONTENT SHA256: c1e68d2c38d81d41b78a594e268afe8e40426392c68801a0fb38512b2bc9f067
+CONTENT SHA256: 31da401764c7aa1f8fb5d40be906508cc30333b1d68edf96b359d15b848a35b2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5281,13 +5468,13 @@ def main() -> None:
     book.bind(spell=Greeter, existence="unique")
     conduit = book.conjure()
 
-    greeter = conduit.meld(spell=Greeter)
+    greeter = conduit.meld(Greeter)
     assert isinstance(greeter, Greeter)
     assert isinstance(conduit, md.Conduit)
     print(greeter.greet())
 
     # unique existence means the SAME instance comes back every meld
-    again = conduit.meld(spell=Greeter)
+    again = conduit.meld(Greeter)
     assert again is greeter
     print("unique lifecycle held:", again is greeter)
 
@@ -5299,7 +5486,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/01_hello_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py
-CONTENT SHA256: 644a5e7dfd11eb5cca967e5c180bf49284d3ff3135b078c305bf3eeea49e27a5
+CONTENT SHA256: 9a1b5c17ba1be86b6a436e36a1e05ba7aeb2c0a1469d684b608d0be69f018960
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5326,13 +5513,13 @@ def main() -> None:
     book.bind(spell=RequestScratchpad, existence="many")
     conduit = book.conjure()
 
-    cache_a = conduit.meld(spell=SharedCache)
-    cache_b = conduit.meld(spell=SharedCache)
+    cache_a = conduit.meld(SharedCache)
+    cache_b = conduit.meld(SharedCache)
     assert cache_a is cache_b
     print("unique: one instance, shared -", cache_a is cache_b)
 
-    pad_a = conduit.meld(spell=RequestScratchpad)
-    pad_b = conduit.meld(spell=RequestScratchpad)
+    pad_a = conduit.meld(RequestScratchpad)
+    pad_b = conduit.meld(RequestScratchpad)
     assert pad_a is not pad_b
     print("many: fresh instance per meld -", pad_a is not pad_b)
 
@@ -5344,7 +5531,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py
-CONTENT SHA256: 6fa36e0178f4a26de1b270d5b5ff5e4c6278d0b88b0ed2f911a1fad99b1978c7
+CONTENT SHA256: 116bdae139bf8e992bbe676adbe83b32e47ca58da9de7ccdcbd999c92250e30c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5376,12 +5563,12 @@ def main() -> None:
 
     conduit = book.conjure()
 
-    settings = conduit.meld(spell=make_settings)
+    settings = conduit.meld(make_settings)
     print("function spell melded ->", settings)
-    again = conduit.meld(spell=make_settings)
+    again = conduit.meld(make_settings)
     print("unique law: same product back?", settings is again)
 
-    held = conduit.meld(spell=prebuilt)
+    held = conduit.meld(prebuilt)
     assert held is prebuilt and held.label == "built-by-hand"
     print("instance spell melded:", held.label)
 
@@ -5393,7 +5580,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/04_named_bindings.py
-CONTENT SHA256: afef37e3ff9678fefa3968c82bf604fe0d7d374359df7f8fa98b65d5f044c09d
+CONTENT SHA256: 04555e7824c864d54a95851f70394e45319089ef100259f151853fbbf50b17e2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5427,8 +5614,8 @@ def main() -> None:
     )
     conduit = book.conjure()
 
-    primary = conduit.meld(spell=PostgresStore, binding_name="primary")
-    local = conduit.meld(spell=SqliteStore, binding_name="local")
+    primary = conduit.meld(PostgresStore, binding_name="primary")
+    local = conduit.meld(SqliteStore, binding_name="local")
     assert primary.kind == "postgres" and local.kind == "sqlite"
     print("named bindings resolved:", primary.kind, "+", local.kind)
 
@@ -5440,7 +5627,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/04_named_bindings.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/05_lesser_conduit_scopes.py
-CONTENT SHA256: c88d897a8924e3d1334e3a0f6f3829844a70ff63acea68e78ad1908209617fe8
+CONTENT SHA256: b50ce7fd0996fd3a11c008ea705ea9d70ccd3995a7d3968b5e56af48d5273019
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5469,13 +5656,13 @@ def main() -> None:
     root = book.conjure()
     child = root.create_lesser_conduit()
 
-    assert root.meld(spell=AppWideConfig) is child.meld(spell=AppWideConfig)
+    assert root.meld(AppWideConfig) is child.meld(AppWideConfig)
     print("unique: shared across root and child")
 
-    root_session = root.meld(spell=PerScopeSession)
-    child_session = child.meld(spell=PerScopeSession)
+    root_session = root.meld(PerScopeSession)
+    child_session = child.meld(PerScopeSession)
     assert root_session is not child_session
-    assert child.meld(spell=PerScopeSession) is child_session
+    assert child.meld(PerScopeSession) is child_session
     print("unique_per_conduit: one per scope, stable within it")
 
 
@@ -5486,7 +5673,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/05_lesser_conduit_scopes.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py
-CONTENT SHA256: 0dc440ddd75abcf8b860f513cf0c69259455ba56c2f3f9af2d247f20d7738ce3
+CONTENT SHA256: 2a108bac7745d3a473fadcd73907a811dd36bbba16586cb65d40a9eb29b3a3cd
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5512,7 +5699,7 @@ def main() -> None:
     conduit = book.conjure()
 
     try:
-        conduit.meld(spell=NeverRegistered)
+        conduit.meld(NeverRegistered)
     except KeyError as err:
         # the documented "not found anywhere" contract is one stable KeyError
         print("unregistered spell -> KeyError:", err)
@@ -5535,7 +5722,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py
-CONTENT SHA256: 2ba89b8e4ebad65f93f74f6589b20a5fc38f424e241942f61eee998c0a197f6d
+CONTENT SHA256: f52dabc98eb5056113f0eff63c01fe7977df464918dc745fa6c5e44dfffceebb
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5566,8 +5753,8 @@ def main() -> None:
     )
     conduit = book.conjure()
 
-    s_a, s_b = conduit.meld(spell=FromStrings), conduit.meld(spell=FromStrings)
-    e_a, e_b = conduit.meld(spell=FromEnums), conduit.meld(spell=FromEnums)
+    s_a, s_b = conduit.meld(FromStrings), conduit.meld(FromStrings)
+    e_a, e_b = conduit.meld(FromEnums), conduit.meld(FromEnums)
     assert s_a is not s_b and e_a is not e_b
     print("string and enum registrations behave identically (many)")
 
@@ -5579,7 +5766,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/08_disposal_contract.py
-CONTENT SHA256: 9df7fe70460e402213fc46c6b9cb6b090897d81b3fe28d9fb54cf1bd8fd89c11
+CONTENT SHA256: 76177c3fb8a453d2c5c69a92572a24f7feef4d05d6c0a24c22a09410a6f44b52
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5608,7 +5795,7 @@ def main() -> None:
         disposal_method_names=["close"],
     )
     conduit = book.conjure()
-    conn = conduit.meld(spell=PooledConnection)
+    conn = conduit.meld(PooledConnection)
     assert isinstance(conn, PooledConnection) and not CLOSED
 
     conduit.cleanup()
@@ -5626,7 +5813,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/08_disposal_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/09_spellframe_grouping.py
-CONTENT SHA256: b6121863b7cb2c1544bc7b1366b4fd6bfb538649a490a0fee0079424cf54940b
+CONTENT SHA256: 4a411f46429b943325e71106b532e92de9d1089b3ce7c5792b12972d138b5033
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5661,11 +5848,11 @@ def main() -> None:
               spellframe="memory", binding_name="cache")
     conduit = book.conjure()
 
-    primary = conduit.meld(spell=PrimaryStore, spellframe="storage",
+    primary = conduit.meld(PrimaryStore, spellframe="storage",
                            binding_name="primary")
-    replica = conduit.meld(spell=ReplicaStore, spellframe="storage",
+    replica = conduit.meld(ReplicaStore, spellframe="storage",
                            binding_name="replica")
-    cache = conduit.meld(spell=CacheStore, spellframe="memory",
+    cache = conduit.meld(CacheStore, spellframe="memory",
                          binding_name="cache")
     assert (primary.role, replica.role, cache.role) == (
         "primary", "replica", "cache")
@@ -5679,7 +5866,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/09_spellframe_grouping.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/10_explicit_cleanup.py
-CONTENT SHA256: 66de36d7c0cfde180ce1dd33aaceff5238841f2c363a7955aad1c2d29f4dda82
+CONTENT SHA256: 5777fad5b8fc7e71131037ecfa2a4e46401b46ed58ea1f0feb9b0fe26ffc891c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5700,7 +5887,7 @@ def main() -> None:
     book = md.Spellbook()
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()
-    assert isinstance(conduit.meld(spell=Service), Service)
+    assert isinstance(conduit.meld(Service), Service)
 
     conduit.cleanup()
     book.cleanup()
@@ -5720,7 +5907,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/10_explicit_cleanup.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/11_bind_many_at_once.py
-CONTENT SHA256: 93b584b45ffb8ed6653ae98d453163f73b5936494e18deee02341f501ee63210
+CONTENT SHA256: efa10e0765169bfd96a0e80af3f483afc1acb8c42a4465bb20036e249892fd49
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5750,7 +5937,7 @@ def main() -> None:
         book.bind(spell=cls, existence="unique")
     conduit = book.conjure()
 
-    assert all(isinstance(conduit.meld(spell=c), c)
+    assert all(isinstance(conduit.meld(c), c)
                for c in (Users, Orders, Invoices))
     print("three spells bound with one plain loop")
 
@@ -5801,7 +5988,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/12_agent_first_read.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/13_existence_unique.py
-CONTENT SHA256: adb30b7a01a931d78fe97919a3b87cea5882da6b238a419a184c77dd85cf821b
+CONTENT SHA256: 83a5d8290e01eb5a279adfdba4945ef43b62d6233ed6571a307d393f3c4cf747
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5824,8 +6011,8 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    instances = {root.meld(spell=WorldClock), child.meld(spell=WorldClock),
-                 grandchild.meld(spell=WorldClock)}
+    instances = {root.meld(WorldClock), child.meld(WorldClock),
+                 grandchild.meld(WorldClock)}
     assert len(instances) == 1
     print("unique: one WorldClock across three scopes")
 
@@ -5837,7 +6024,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/13_existence_unique.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/14_existence_many.py
-CONTENT SHA256: 8b8ec62130695aedc4144f0318d4b88004f14ddb2ad759718c19c46c3f21f443
+CONTENT SHA256: 847417534748284674b79e7a49af4c8ae01649d9c83158477ed91d23c8ddede4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5862,7 +6049,7 @@ def main() -> None:
     book.bind(spell=WorkOrder, existence="many")
     conduit = book.conjure()
 
-    orders = [conduit.meld(spell=WorkOrder) for _ in range(4)]
+    orders = [conduit.meld(WorkOrder) for _ in range(4)]
     assert len({id(o) for o in orders}) == 4
     assert [o.number for o in orders] == [1, 2, 3, 4]
     print("many: four melds, four fresh WorkOrders:", [o.number for o in orders])
@@ -5875,7 +6062,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/14_existence_many.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/15_existence_unique_per_conduit.py
-CONTENT SHA256: cdf9c0e63fb868778700dadbfbd97a7ce665bc488f109530815eaf6f460e5aee
+CONTENT SHA256: ef8f251f6da3269fcafcac0dc3e9a7ebc881403a75e77c848141251c1b6d76e3
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5898,9 +6085,9 @@ def main() -> None:
     child_a = root.create_lesser_conduit()
     child_b = root.create_lesser_conduit()
 
-    a1, a2 = child_a.meld(spell=ScopeLocalSession), child_a.meld(spell=ScopeLocalSession)
-    b1 = child_b.meld(spell=ScopeLocalSession)
-    r1 = root.meld(spell=ScopeLocalSession)
+    a1, a2 = child_a.meld(ScopeLocalSession), child_a.meld(ScopeLocalSession)
+    b1 = child_b.meld(ScopeLocalSession)
+    r1 = root.meld(ScopeLocalSession)
     assert a1 is a2
     assert len({id(a1), id(b1), id(r1)}) == 3
     print("unique_per_conduit: stable within a scope, three scopes = three instances")
@@ -5913,7 +6100,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/15_existence_unique_per_conduit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/16_typed_melding.py
-CONTENT SHA256: e24d1e1d788148a77d4fd31f95281b8a29cf3405c0b5b8b501e43e791ab6b9b6
+CONTENT SHA256: c048344bbe2584ef6000d105ac41f9eb45abb23e4f1f1bd1f4639444744e08ce
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5936,7 +6123,7 @@ def main() -> None:
     book.bind(spell=WeatherService, existence="unique")
     conduit: md.Conduit = book.conjure()
 
-    weather: WeatherService = conduit.meld(spell=WeatherService)
+    weather: WeatherService = conduit.meld(WeatherService)
     report: str = weather.today()
     assert report == "sunny, 24C"
     print("typed end to end:", report)
@@ -6096,7 +6283,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/19_lifecycle_map.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/20_defaults_just_work.py
-CONTENT SHA256: 41a5596c8eb97d27ecfb0e39145b2140f6a386baf0c331bcba35e81220380aee
+CONTENT SHA256: 4901ae4ba5c752a7a906b0eeb7f200fb3fa1ea4156a01d9d40b9f3ad1911648d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6120,7 +6307,7 @@ def main() -> None:
     book.bind(spell=HttpClient, existence="unique")
     conduit = book.conjure()
 
-    client = conduit.meld(spell=HttpClient)
+    client = conduit.meld(HttpClient)
     assert (client.timeout, client.retries) == (30, 3)
     print("defaults arrived untouched:", client.timeout, client.retries)
 
@@ -6132,7 +6319,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/20_defaults_just_work.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/21_the_basic_rhythm.py
-CONTENT SHA256: f88355673a7533e463482747acf68233ab225333d0c9a5e06d04e6e6097cc2e6
+CONTENT SHA256: 372777617b9e14bfe29cac66b23901fc2e0c3fa9a156fbac088345199ea66df1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6169,9 +6356,9 @@ def main() -> None:
 
     # 3. meld everywhere, as often as you like
     for _ in range(3):
-        server = conduit.meld(spell=Server)
+        server = conduit.meld(Server)
         assert isinstance(server, Server)
-    assert conduit.meld(spell=Config) is conduit.meld(spell=Config)
+    assert conduit.meld(Config) is conduit.meld(Config)
     print("bind everything, conjure once, meld everywhere")
 
 
@@ -6321,7 +6508,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py
-CONTENT SHA256: 3d448f303e64f3ae30793dab77c024d4a25860313380d603af7aba16b3f18aa0
+CONTENT SHA256: 404288c08cc7e2690deb22361aacb0a496c230c078f871370b16b41adef18022
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6372,9 +6559,9 @@ def main() -> None:
     conduit = book.conjure()
 
     # melding = looking up a category member by its full address
-    users = conduit.meld(spell=UsersRepo, spellframe="repositories",
+    users = conduit.meld(UsersRepo, spellframe="repositories",
                          binding_name="users")
-    email = conduit.meld(spell=EmailNotifier, spellframe="notifiers",
+    email = conduit.meld(EmailNotifier, spellframe="notifiers",
                          binding_name="email")
     assert isinstance(users, UsersRepo) and isinstance(email, EmailNotifier)
     print("categories addressed as [category][name]: repositories, notifiers")
@@ -6387,7 +6574,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py
-CONTENT SHA256: 29ec293313ce2f86f5ce8dbf8819966b00f57c0da42471cac6cf2ac1a402981c
+CONTENT SHA256: 5b951eba78852c0bccf3c3e9d56d2b33a89ef915f89f86396c30f6142b5c264c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6423,8 +6610,8 @@ def main() -> None:
               spellframe="finance", binding_name="ledger")
     conduit = book.conjure()
 
-    by_object = conduit.meld(spell=BillingService)
-    by_name = conduit.meld(spell="BillingService")
+    by_object = conduit.meld(BillingService)
+    by_name = conduit.meld("BillingService")
     # Explicit machine form: SHA identity never shares the human string slot.
     by_id = conduit.meld(spell_id=spell_id)
     assert by_object is by_name is by_id
@@ -6435,7 +6622,7 @@ def main() -> None:
     print("framed spell answers at (frame, name)")
 
     try:
-        conduit.meld(spell="LedgerService")
+        conduit.meld("LedgerService")
     except KeyError as err:
         print("name-derived key misses a framed bind:", err)
 
@@ -6452,7 +6639,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py
-CONTENT SHA256: 8347dd703e5fdba875bfa735d2df1060ee5954e39653ded9e7dd6e782c348d99
+CONTENT SHA256: b7e1c24bb3b05ca77d266e5bed3b72a5ae430fa6fe016174c7d9a93163fbb039
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6471,7 +6658,7 @@ class Mailer:
 
 
 def welcome_new_user(conduit: md.Conduit, username: str) -> str:
-    mailer = conduit.meld(spell=Mailer)
+    mailer = conduit.meld(Mailer)
     return mailer.send(username)
 
 
@@ -6494,7 +6681,7 @@ def main() -> None:
     # the whole reason to pass the conduit instead of re-conjuring: a
     # second conjure would have built a second world with its own Mailer,
     # and these two would not be the same object.
-    assert conduit.meld(spell=Mailer) is conduit.meld(spell=Mailer)
+    assert conduit.meld(Mailer) is conduit.meld(Mailer)
     print("one world handle, passed where needed - and the SAME Mailer")
     print("  answered both calls, which is what re-conjuring would break")
 
@@ -6506,7 +6693,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/28_real_objects_no_wrappers.py
-CONTENT SHA256: dc7c0648eeea053be1abc75d7c0cc50eaced82e4a88438fccfb59e54da3f4fd4
+CONTENT SHA256: a36c7b048770adaebd81df4eba5e4f4325e42181d168c53c489fed488e494b09
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6529,10 +6716,10 @@ def main() -> None:
     book.bind(spell=Engine, existence="unique")
     conduit = book.conjure()
 
-    engine = conduit.meld(spell=Engine)
+    engine = conduit.meld(Engine)
     assert type(engine) is Engine
     assert isinstance(engine, Engine) and engine.cylinders == 8
-    assert engine is conduit.meld(spell=Engine)
+    assert engine is conduit.meld(Engine)
     print("the real object, every time:", type(engine).__name__)
 
 
@@ -6543,7 +6730,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/28_real_objects_no_wrappers.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/29_many_state_isolation.py
-CONTENT SHA256: bcd94e9baefafd0542593c9677aeb5ac053e1977a939061c68c9c7727c3d85fb
+CONTENT SHA256: f4be714c7a07222d6ee29bd947305b938defaa519876612a062c8ce2a33f27fa
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6566,9 +6753,9 @@ def main() -> None:
     book.bind(spell=Basket, existence="many")
     conduit = book.conjure()
 
-    first = conduit.meld(spell=Basket)
+    first = conduit.meld(Basket)
     first.items.append("apples")
-    second = conduit.meld(spell=Basket)
+    second = conduit.meld(Basket)
     assert first.items == ["apples"] and second.items == []
     print("fresh instances, fresh state:", first.items, "vs", second.items)
 
@@ -6749,7 +6936,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/33_prebuilt_registry.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/34_scope_contrast_one_tree.py
-CONTENT SHA256: 608e2f1ec535535d7aa88ab64e0e79a9ec552a25bc849d7c6b636db649a22c67
+CONTENT SHA256: 61283cc67c3a66a4d9f43b561772847cdc53f2942402f08bbe8f39358534d869
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6777,9 +6964,9 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    registries = {id(c.meld(spell=GlobalRegistry))
+    registries = {id(c.meld(GlobalRegistry))
                   for c in (root, child, grandchild)}
-    caches = {id(c.meld(spell=ScopeCache))
+    caches = {id(c.meld(ScopeCache))
               for c in (root, child, grandchild)}
     assert len(registries) == 1 and len(caches) == 3
     print("same tree: 1 shared registry, 3 scope-local caches")
@@ -6841,7 +7028,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/35_disposal_multiple_methods.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py
-CONTENT SHA256: 41845e6a0aa9fb88147729b1c4ae59d616f63b238d6f8b091b014dba2bea3a1e
+CONTENT SHA256: ea5e82b4e4a8a441ca14d77ec3520db911fc83ba456a612bf229d8cd8aa00b42
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6871,7 +7058,7 @@ def main() -> None:
 
     # scopes within the world: lesser conduits
     child = root.create_lesser_conduit()
-    assert root.meld(spell=WorldState) is child.meld(spell=WorldState)
+    assert root.meld(WorldState) is child.meld(WorldState)
     print("scopes via lesser conduits; roots via separate books")
 
 
@@ -6882,7 +7069,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/37_bind_vocabulary_cheatsheet.py
-CONTENT SHA256: 734f9b54cdcf286ea907ddefb6e5e25a63949d719a0c3a7f7e2681fbaac0f405
+CONTENT SHA256: 230b25e5c31d8dbf1416e6a3015bfaa64afd50882b9bdcda678119a40b904cd4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6925,7 +7112,7 @@ def main() -> None:
         profile="general",
     )
     instance = book.conjure().meld(
-        spell=FullyDressed, spellframe="demo", binding_name="fully-dressed"
+        FullyDressed, spellframe="demo", binding_name="fully-dressed"
     )
     assert isinstance(instance, FullyDressed)
     print("registration using the full vocabulary melded:", type(instance).__name__)
@@ -7039,7 +7226,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/39_agent_inventory_pattern.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py
-CONTENT SHA256: 632263a38dfdcbd06ce3d3d2de30fa41a79ae9d840ae6e0239d4db614ea51f4d
+CONTENT SHA256: 42eb7d6121908fc9b7b9879d2f885de1c46ab4b025c586660ffbd20b143c41e4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7064,7 +7251,7 @@ def main() -> None:
     """Start the graph, use it, and guarantee shutdown around the application call."""
     book, conduit = build_application()
     try:
-        pool: DbPool = conduit.meld(spell="DbPool")
+        pool: DbPool = conduit.meld("DbPool")
         messages = run_application(conduit)
         assert messages == [
             "orders-service: order 101 = coffee",
@@ -7091,7 +7278,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py
-CONTENT SHA256: 50ade8943fea7f62fc6d7a72ab07e20a9b3b7d4d6cdcb434e4956c33f4b79a2c
+CONTENT SHA256: 09634543f77e020858add5ad4e06a35ebe8c4373d359c19bc8ddb9493b7f4a7c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7123,7 +7310,7 @@ def main() -> None:
     book.bind(spell=HeavyThing, existence="unique")
     conduit = book.conjure()
 
-    thing = conduit.meld(spell=HeavyThing)
+    thing = conduit.meld(HeavyThing)
     watcher = weakref.ref(thing)   # watches WITHOUT holding
 
     # Drop OUR reference. In plain Python this object would now die...
@@ -7211,7 +7398,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/_concept_map.txt
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/capstone_application.py
-CONTENT SHA256: 4d5f389d7fe17d86da9e54ef2498c16025693a9d629f15d3ff5b838c53c2c9a9
+CONTENT SHA256: cf4252b747fbef5b090ae5ffcb4e7175893ea34c1702ff19c601b77c686dd194
 SOURCE ENCODING: utf-8
 ================================================================================
 """Consume the running graph using concrete types without runtime model imports."""
@@ -7230,15 +7417,15 @@ def run_application(conduit: md.Conduit) -> list[str]:
     the runtime addresses registered by the bootstrap. Return the three request
     messages, with assertions that demonstrate shared and fresh lifetimes.
     """
-    config: AppConfig = conduit.meld(spell="AppConfig")
-    pool: DbPool = conduit.meld(spell="DbPool")
-    assert config is conduit.meld(spell="AppConfig")
-    assert pool is conduit.meld(spell="DbPool")
+    config: AppConfig = conduit.meld("AppConfig")
+    pool: DbPool = conduit.meld("DbPool")
+    assert config is conduit.meld("AppConfig")
+    assert pool is conduit.meld("DbPool")
 
     handlers: list[RequestHandler] = []
     messages: list[str] = []
     for order_id in (101, 102, 103):
-        handler: RequestHandler = conduit.meld(spell="RequestHandler")
+        handler: RequestHandler = conduit.meld("RequestHandler")
         assert handler.requests_handled == 0
         messages.append(handler.handle(order_id))
         assert handler.requests_handled == 1
@@ -7362,7 +7549,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/capstone_models.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py
-CONTENT SHA256: aebf2aa6903b76cd76e0ee7e826f5dbb2326b9c5ae42fc9e2e671debb38793ae
+CONTENT SHA256: ba6477c604da5d40ff11af72b2751233c34584416cca1f3ecf7125962c139d87
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7394,10 +7581,10 @@ def main() -> None:
     assert len(bound) == 2
 
     conduit = book.conjure()
-    hub_a = conduit.meld(spell=MetricsHub)
-    hub_b = conduit.meld(spell=MetricsHub)
-    ticket_a = conduit.meld(spell=JobTicket)
-    ticket_b = conduit.meld(spell=JobTicket)
+    hub_a = conduit.meld(MetricsHub)
+    hub_b = conduit.meld(MetricsHub)
+    ticket_a = conduit.meld(JobTicket)
+    ticket_b = conduit.meld(JobTicket)
     assert hub_a is hub_b and ticket_a is not ticket_b
     print("decorated lifecycles held: unique hub, many tickets")
 
@@ -7409,7 +7596,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/02_spellbinder_full_chain.py
-CONTENT SHA256: 276e656b3e1170d62125f7ed374605f1481ab92cba31cb36d4e84d2cb273805f
+CONTENT SHA256: 24339ce3af28a34ceb0893d2e9395dbc394f66fd7dc99b2564d32eb86957a602
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7454,7 +7641,7 @@ def main() -> None:
 
     conduit = book.conjure()
     client = conduit.meld(
-        spell=HttpClient, spellframe="network", binding_name="payments-api",
+        HttpClient, spellframe="network", binding_name="payments-api",
         override={"base_url": "https://pay.example", "timeout": 30},
     )
     assert client.base_url == "https://pay.example" and client.timeout == 30
@@ -7463,8 +7650,8 @@ def main() -> None:
     # Constructor arguments ride override= at meld time.
 
     child = conduit.create_lesser_conduit()
-    policy_root = conduit.meld(spell=RetryPolicy, spellframe="network")
-    policy_child = child.meld(spell=RetryPolicy, spellframe="network")
+    policy_root = conduit.meld(RetryPolicy, spellframe="network")
+    policy_child = child.meld(RetryPolicy, spellframe="network")
     assert policy_root is not policy_child
     print("per-conduit policy under a spellframe: one per scope")
 
@@ -7476,7 +7663,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/02_spellbinder_full_chain.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py
-CONTENT SHA256: 8cdf812321f61f21e48b5e953bae7f83708c507d828b8195e640652d93e2392a
+CONTENT SHA256: d57a256da6f1b8df69ce7d9dc14e17bc732a07ed5bfb38d401a929c088960b55
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7514,7 +7701,7 @@ def main() -> None:
         .finalize()
 
     conduit = book.conjure()
-    engine = conduit.meld(spell=Engine)
+    engine = conduit.meld(Engine)
     assert isinstance(engine, Engine)
     assert "engine constructed" in EVENTS
     print("lifecycle event order:", " -> ".join(EVENTS))
@@ -7527,7 +7714,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution.py
-CONTENT SHA256: 3f671575d10d9c3049f2c9711a1543f826a2bbd106568e0c66e0a49e7c285f8b
+CONTENT SHA256: 640d768c09652832611d7be6464e3a0c6c7888bb29610bd9d0fb66b375a20288
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7554,9 +7741,9 @@ def main() -> None:
     space_two = conduit.enter_spellspace()
     assert isinstance(space_one, md.SpellSpace)
 
-    one_a = space_one.meld(spell=RoomState)
-    one_b = space_one.meld(spell=RoomState)
-    two_a = space_two.meld(spell=RoomState)
+    one_a = space_one.meld(RoomState)
+    one_b = space_one.meld(RoomState)
+    two_a = space_two.meld(RoomState)
     print("stable within a space:", one_a is one_b)
     print("separate across spaces:", one_a is not two_a)
 
@@ -7568,7 +7755,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/05_existence_unique_per_conduit_lineage.py
-CONTENT SHA256: 7c9ae39c64bcf776e47b5d543a38186e31771e433ba7cb7b5b0f45b236d4ee6f
+CONTENT SHA256: 9a390a16846abbd66b1a163a84141905411f677bdd0da2cbf0c803b5a502563c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7598,9 +7785,9 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    ledgers = [root.meld(spell=FamilyLedger),
-               child.meld(spell=FamilyLedger),
-               grandchild.meld(spell=FamilyLedger)]
+    ledgers = [root.meld(FamilyLedger),
+               child.meld(FamilyLedger),
+               grandchild.meld(FamilyLedger)]
     assert ledgers[0] is ledgers[1] is ledgers[2]
     print("three generations, one ledger:", type(ledgers[0]).__name__)
     print("a sibling family = a second book with its own root (one "
@@ -7659,7 +7846,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/07_lesser_conduits_child_scopes.py
-CONTENT SHA256: 98745649367221ce24851919b1122b511f8fbac382a16deb3670105607f2ec5b
+CONTENT SHA256: a6464fb0416bf2a4397b47b0846849a649178d7cf5d315449b37fc20b5bb809b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7691,8 +7878,8 @@ def main() -> None:
 
     # "unique" is a world singleton, so the child resolves the SAME
     # instance the root does.
-    from_root = root.meld(spell=ScopedService)
-    from_child = child.meld(spell=ScopedService)
+    from_root = root.meld(ScopedService)
+    from_child = child.meld(ScopedService)
     assert from_root is from_child
     print("child scope melds the root's world:", type(from_child).__name__)
 
@@ -7803,7 +7990,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/09_permissions_block_sharing.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py
-CONTENT SHA256: 8735ed4a795de98b70b748e1b08f280c4b62987c6c78c20e690ceb4deeb1ef8f
+CONTENT SHA256: 09e95d9e657152fae248de3b9d9e597194799fdb64cb7c3daa62ec97afb5eb43
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7834,10 +8021,10 @@ def main() -> None:
     print("fluent binds returned spell ids:", sink_id[:8], audit_id[:8])
 
     conduit = book.conjure()
-    sink_a = conduit.meld(spell=TelemetrySink, binding_name="sink")
-    sink_b = conduit.meld(spell=TelemetrySink, binding_name="sink")
-    audit_a = conduit.meld(spell=AuditTrail)
-    audit_b = conduit.meld(spell=AuditTrail)
+    sink_a = conduit.meld(TelemetrySink, binding_name="sink")
+    sink_b = conduit.meld(TelemetrySink, binding_name="sink")
+    audit_a = conduit.meld(AuditTrail)
+    audit_b = conduit.meld(AuditTrail)
     assert sink_a is sink_b and audit_a is not audit_b
     print("fluent lifecycles held: unique sink, many audit trails")
 
@@ -7849,7 +8036,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/11_permissions_linking_vocabulary.py
-CONTENT SHA256: fa7da598e876eb516e5e7460583bb693ae6d9cf40377b3aa14315ec3bf1213ca
+CONTENT SHA256: c796881a755facd08ceca357a40c9d14a9f7cf6f3f53f2d2c44556c0104ac2fa
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7875,7 +8062,7 @@ def main() -> None:
               permissions="read")
     conduit = book.conjure()
 
-    held = conduit.meld(spell=prebuilt)
+    held = conduit.meld(prebuilt)
     assert held is prebuilt
     print("read permission: resolve works, instance handed back untouched")
     print("vocabulary: read < create (create implies read); block stops sharing")
@@ -8026,7 +8213,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/14_introspect_the_book.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py
-CONTENT SHA256: 99e2515c6f5adafba21986f7c9cbdb59d4c7c9d4cdd540bab06fd930b8b0301c
+CONTENT SHA256: c236299fa3f92bc554c13028d6abb57c444586548d233a1d8f648722858d98be
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8058,7 +8245,7 @@ def main() -> None:
     book.bind(spell=ReportService, existence="unique")
     conduit = book.conjure()
 
-    report = conduit.meld(spell=ReportService)
+    report = conduit.meld(ReportService)
     assert isinstance(report.database, Database)
     print(report.run())
     print("annotated the parameter; melder built the graph")
@@ -8071,7 +8258,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py
-CONTENT SHA256: c2623276e646f86d927cebf558aa297eb93e3a221960944cc032bb8e44b48320
+CONTENT SHA256: 46f4ded8b4264dfb35a7c84828462b84cad31cdc71c90a6ad56e0d10f82d86ed
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8100,7 +8287,7 @@ def main() -> None:
     book.bind(spell=Consumer, existence="unique")
     conduit = book.conjure()
 
-    consumer = conduit.meld(spell=Consumer)
+    consumer = conduit.meld(Consumer)
     assert isinstance(consumer.store, PrimaryStore)
     print("SpellMap default resolved:", consumer.store.label)
 
@@ -8112,7 +8299,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/17_collection_di.py
-CONTENT SHA256: 272e4fb164d7a1c62dbe3e7c1cb1b06ac0e245db82ea82593c6ae77eb58b8bfb
+CONTENT SHA256: 84c6fbebb4774785c8d255469435d19996f64c3bdd194a48dac093ae57d32aaa
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8157,7 +8344,7 @@ def main() -> None:
     book.bind(spell=Dispatcher, existence="unique")
     conduit = book.conjure()
 
-    dispatcher = conduit.meld(spell=Dispatcher)
+    dispatcher = conduit.meld(Dispatcher)
     results = [h.handle() for h in dispatcher.handlers]
     assert results == ["email", "sms"]
     print("collection DI delivered all implementations:", results)
@@ -8170,7 +8357,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/17_collection_di.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/18_live_creation_probe.py
-CONTENT SHA256: f20fe1b4a0d59aa751921c9e6fa9de8d940045e6f3185f444491f6ad92eae291
+CONTENT SHA256: 52cd0d83a7ede9f0ab2663cfb0de89a5a8366e7a0584b59c2fb1c8adeb09ee8f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8193,7 +8380,7 @@ def main() -> None:
     conduit = book.conjure()
 
     before = conduit.has_live_creation(spell=ExpensiveEngine)
-    conduit.meld(spell=ExpensiveEngine)
+    conduit.meld(ExpensiveEngine)
     after = conduit.has_live_creation(spell=ExpensiveEngine)
     print("live before meld?", before, "| after?", after)
     assert after is True and before is False
@@ -8207,7 +8394,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/18_live_creation_probe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/19_spellbook_configuration_basics.py
-CONTENT SHA256: 3d0a42a12c2ea10d92b33ed3f496dc8c99778e6cdb57f813136b6b83dcc2520d
+CONTENT SHA256: 33b322aca9ef3f6c2040077271491ba01c7f59826356222cfa35c935c5daf23c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8232,7 +8419,7 @@ def main() -> None:
     book = md.Spellbook(configuration=configuration)
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()  # validates + freezes the configuration here
-    assert isinstance(conduit.meld(spell=Service), Service)
+    assert isinstance(conduit.meld(Service), Service)
     print("configured, conjured, melded")
 
     try:
@@ -8249,7 +8436,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/19_spellbook_configuration_basi
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/20_phase_scheduler_knobs.py
-CONTENT SHA256: 925e7815c81cbd2f23194f025cea3805b5ce5bb42fea83286528dd9ea66bca0a
+CONTENT SHA256: e493cffdc3c8fd42c6a57ae16bc8088826a9354020e2fa1bc65c8a1a35c2c9a5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8286,7 +8473,7 @@ def main() -> None:
     book.bind(spell=Beta, existence="unique")
     conduit = book.conjure()  # phases run under the tuned scheduler
 
-    beta = conduit.meld(spell=Beta)
+    beta = conduit.meld(Beta)
     assert isinstance(beta.alpha, Alpha)
     print("compiled on one worker with a generous barrier; DI intact")
     print("if conjure ever raises PhaseTimeoutError, this timeout knob is why")
@@ -8299,7 +8486,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/20_phase_scheduler_knobs.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py
-CONTENT SHA256: d659e26bf705d3dc9623cf6482407a5d473bc4dd4ffaa3cab9b7714d5973a943
+CONTENT SHA256: f57ce95f06bb9981c2346683a4d860df3a39fbe404bcfed9d150111a71f90ce1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8345,7 +8532,7 @@ def main() -> None:
     # must OWN the spell being pulled.
     borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner,
                                    permissions="create")
-    shared = borrower.meld(spell=SharedDirectory)
+    shared = borrower.meld(SharedDirectory)
     print("borrower melded the owner's spell:", shared.lookup())
     print("settled once at first conjure; every later conduit inherited")
 
@@ -8357,7 +8544,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.py
-CONTENT SHA256: 117c968107f9b68fc7bbca9c109e91ef0783534145fd7be1fb91e918fcd85fa1
+CONTENT SHA256: e75d78f437297bd77fb3d2114f7e8d7343abe63864c9c7fa4656082095c7f45c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8400,9 +8587,9 @@ def main() -> None:
     borrower.add_spell_to_contract(spell_id=guarded_id, conduit=owner,
                                    permissions="read")
 
-    print("create-shared meld:", type(borrower.meld(spell=OpenService)).__name__)
+    print("create-shared meld:", type(borrower.meld(OpenService)).__name__)
     try:
-        result = borrower.meld(spell=GuardedService)
+        result = borrower.meld(GuardedService)
         print("read-shared meld answered:", type(result).__name__,
               "(read = resolve-only; construction rights stay with the owner)")
     except Exception as err:
@@ -8416,7 +8603,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.p
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/23_transfer_of_ownership.py
-CONTENT SHA256: c6b05d8b560fe610782c988060e3d39769d35b1684d9346e1cf81c650f3f3070
+CONTENT SHA256: 13b55c392a7e8d3228fd5cac32525c4a7bc21daab67c11aa29e8b7ac05a0c1d1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8456,7 +8643,7 @@ def main() -> None:
     print("transfer report keys:", sorted(report))
 
     # THE NEW HOME CAN MELD IT.
-    moved = target.meld(spell=MigratingService)
+    moved = target.meld(MigratingService)
     assert isinstance(moved, MigratingService)
     print("new home melds it:", type(moved).__name__)
 
@@ -8464,7 +8651,7 @@ def main() -> None:
     # TRANSFER rather than a share - if the source could still meld it,
     # ownership would have been copied, not moved.
     try:
-        source.meld(spell=MigratingService)
+        source.meld(MigratingService)
         raise AssertionError(
             "the source still melds it - that is sharing, not transfer"
         )
@@ -8525,7 +8712,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/24_conduit_cloud.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/25_clusters_unique_per_cluster.py
-CONTENT SHA256: 6b6cd0bb0d2ecc405e300d3f3b7ce303b1ef4a82a70588d2cf13e399d42ff8d1
+CONTENT SHA256: a2572f485cbfd068b689fcf9ee8d9a738d985e3fee418b79357ec7f0b975e82c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8577,8 +8764,8 @@ def main() -> None:
 
     cloud.add_conduit_to_cluster(member, "workers")
 
-    bus_a = owner.meld(spell=ClusterBus)
-    bus_b = member.meld(spell=ClusterBus)
+    bus_a = owner.meld(ClusterBus)
+    bus_b = member.meld(ClusterBus)
     assert bus_a is bus_b, "cluster members must share the elected leader's bus"
     print("one bus per cluster, shared by members:", bus_a is bus_b)
 
@@ -8719,7 +8906,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/26_conduit_categories_as_factor
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/27_sever_link.py
-CONTENT SHA256: ed4081b1a6d7d3f08b459bdf4b682127fc3edec803d0fc6feb613f87ed638ef3
+CONTENT SHA256: ceb768540b5abd49dbed85f69067f6fb9e15b80e443421ecfdbceffad9f077cb
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8757,13 +8944,13 @@ def main() -> None:
     owner.link(borrower)
     borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner,
                                    permissions="create")
-    shared = borrower.meld(spell=SharedDirectory)
+    shared = borrower.meld(SharedDirectory)
     print("while linked, the borrower resolves:", shared.lookup())
 
     # ...and the undo. The contract dies WITH the link.
     owner.sever_link(borrower)
     try:
-        borrower.meld(spell=SharedDirectory)
+        borrower.meld(SharedDirectory)
         print("post-sever meld unexpectedly resolved")
     except Exception as err:
         print("post-sever meld refused:", type(err).__name__,
@@ -8774,7 +8961,7 @@ def main() -> None:
     # RIGHTS - it never reaches into anyone's memory.
     print("owner still holds the live creation:",
           owner.has_live_creation(spell=SharedDirectory))
-    still_alive = owner.meld(spell=SharedDirectory)
+    still_alive = owner.meld(SharedDirectory)
     print("owner still resolves its own spell:", still_alive is shared)
 
     # Severing again refuses: there is no contract left to remove.
@@ -8792,7 +8979,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/27_sever_link.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py
-CONTENT SHA256: cc30a5eee90344175abf2e77daa7acf4d7b4aea4be29a6d95d05124caf7cfcd4
+CONTENT SHA256: 4ef30efa686509ed7dfc3f2595a818856042d192b212d1e4cc8c4d1700635762
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8827,13 +9014,13 @@ def main() -> None:
 
     # An unnamed child scope, working away...
     worker = root.create_lesser_conduit()
-    bench_before = worker.meld(spell=Workbench)
+    bench_before = worker.meld(Workbench)
 
     # ...promoted in place. Name granted, world registration performed.
     worker.upgrade_to_normal(name="worker")
 
     # It KEPT its stuff: the per-conduit bench survives the promotion.
-    bench_after = worker.meld(spell=Workbench)
+    bench_after = worker.meld(Workbench)
     assert bench_after is bench_before
     print("promotion kept the child's creations:", type(bench_after).__name__)
 
@@ -8850,7 +9037,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/29_scoped_cleanup_lesser_conduits.py
-CONTENT SHA256: 4214fff48155fd11af0b8c1d67f91a344ea7d143113c0f1d9e79ad7aaacc51de
+CONTENT SHA256: 7f8d1fa11e1285682e55dfe6c6b7c17ced5c80372e1f8b2d00dd7dfe8d5128ef
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8892,11 +9079,11 @@ def main() -> None:
     root = book.conjure()
 
     # The long-lived scope holds its own session...
-    root_session = root.meld(spell=JobSession)
+    root_session = root.meld(JobSession)
 
     # ...and each job gets a THROWAWAY scope with its own.
     job = root.create_lesser_conduit()
-    job_session = job.meld(spell=JobSession)
+    job_session = job.meld(JobSession)
     assert job_session is not root_session  # per-conduit = per-scope
 
     # Job done: end the SCOPE, not the world.
@@ -8905,7 +9092,7 @@ def main() -> None:
     print("root session untouched:", root_session.closed is False)
 
     # The root never noticed - it keeps resolving.
-    assert root.meld(spell=JobSession) is root_session
+    assert root.meld(JobSession) is root_session
     print("root still resolves after the child scope ended")
 
     # And when the whole world is done, the same verb one level up.
@@ -9033,7 +9220,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_froz
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
-CONTENT SHA256: 6a44d0fd46ef691478804deb4b43947ea3d6a8c773b5cf1b87acb78fa481c828
+CONTENT SHA256: 56f5763477c77d6c599031e6dfd1aeee57f817b6c33adedf17b54c1241b77b76
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9111,7 +9298,7 @@ def main() -> None:
     book = md.Spellbook(configuration=configuration)
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()   # LAW 3 happens here: validate + freeze
-    assert isinstance(conduit.meld(spell=Service), Service)
+    assert isinstance(conduit.meld(Service), Service)
 
     try:
         configuration.set_property(
@@ -9138,7 +9325,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/32_config_meld_hooks.py
-CONTENT SHA256: 98220e797ca53942536606ce17f7aa00b96fbd3b55915c4f04c9807a599e7758
+CONTENT SHA256: 02883f47d4d8f2aae166bcee76eb125d66d72a30786af368ce926d5a1a54bfe2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9172,8 +9359,8 @@ def main() -> None:
     book.bind(spell=Watched, existence="many")
     conduit = book.conjure()
 
-    conduit.meld(spell=Watched)
-    conduit.meld(spell=Watched)
+    conduit.meld(Watched)
+    conduit.meld(Watched)
     print("meld pipeline observed:", events)
     assert events.count("pre") >= 2 and events.count("post") >= 2
     print("every meld fired pre and post - the pipeline is watchable")
@@ -9296,7 +9483,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/34_config_link_and_contract_hoo
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/35_one_config_every_book.py
-CONTENT SHA256: 93914e617c408464d95bb62c4328bef76089227c7a4358c442bda53d7c1b4ca3
+CONTENT SHA256: af9fccd0cf3e4330813d53aa0dd1417a25d5e5ef6dcf6ed549a6238fb4e49e7a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9402,8 +9589,8 @@ def main() -> None:
     # the shared configuration is what they have in common, not their identity.
     conduit_a = book_a.conjure(name="shared-policy-a")
     conduit_b = book_b.conjure(name="shared-policy-b")
-    assert isinstance(conduit_a.meld(spell=ServiceA), ServiceA)
-    assert isinstance(conduit_b.meld(spell=ServiceB), ServiceB)
+    assert isinstance(conduit_a.meld(ServiceA), ServiceA)
+    assert isinstance(conduit_b.meld(ServiceB), ServiceB)
     print("both worlds conjured under the one shared policy")
 
 
@@ -9908,7 +10095,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/_dynamic_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py
-CONTENT SHA256: cbaaeb126c4f33ea9a61bb764a3de0aebf88b21b279382934238f08a511bb57f
+CONTENT SHA256: bad4b16740458ae8b56d7cddb7b2757f21790f408bcbb367133b476c3744d095
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9957,7 +10144,7 @@ def main() -> None:
     test_credentials = Credentials()
     test_credentials.source = "test-fixture"
     pipeline = conduit.meld(
-        spell=MailPipeline,
+        MailPipeline,
         override={"transport>credentials": test_credentials},
     )
     assert pipeline.transport.credentials is test_credentials
@@ -9969,7 +10156,7 @@ def main() -> None:
     # above did not build a private throwaway graph. It CONSTRUCTED the
     # singleton Transport - around your fixture - and registered it as the
     # canonical one. The override therefore did not end when the call did.
-    plain = conduit.meld(spell=Transport)
+    plain = conduit.meld(Transport)
     assert plain is pipeline.transport
     assert plain.credentials.source == "test-fixture"
     print("the override BUILT the singleton; later melds reuse it:",
@@ -9989,7 +10176,7 @@ END FILE: UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py
-CONTENT SHA256: 68971c1649ea83d1e41714106b2c8c097bf756e598b272e38041b7b85fcaa7d0
+CONTENT SHA256: af0add3aee9cc3052e19eaf3fa8c7029c7caa43cdc1c870f83e5c90c1c3d36c3
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -10055,8 +10242,8 @@ def main() -> None:
     conduit_a = book_a.conjure(name="cache-a")
     conduit_b = book_b.conjure(name="cache-b")
 
-    cache_a = conduit_a.meld(spell=TenantCache, binding_name="tenant-a")
-    cache_b = conduit_b.meld(spell=TenantCache, binding_name="tenant-b")
+    cache_a = conduit_a.meld(TenantCache, binding_name="tenant-a")
+    cache_b = conduit_b.meld(TenantCache, binding_name="tenant-b")
 
     # "unique" = one instance per FRAME. Two frames, two singletons.
     assert type(cache_a) is type(cache_b) is TenantCache
@@ -10064,8 +10251,8 @@ def main() -> None:
     print("one class, two worlds, two singletons:", cache_a is not cache_b)
 
     # Each world reuses ITS OWN singleton, forever.
-    assert conduit_a.meld(spell=TenantCache, binding_name="tenant-a") is cache_a
-    assert conduit_b.meld(spell=TenantCache, binding_name="tenant-b") is cache_b
+    assert conduit_a.meld(TenantCache, binding_name="tenant-a") is cache_a
+    assert conduit_b.meld(TenantCache, binding_name="tenant-b") is cache_b
     print("per-frame reuse holds; nothing leaked across the wall")
 
     # THE LINE, PROVEN. A third world binding the SAME class the SAME way
@@ -12299,7 +12486,7 @@ END FILE: UX_and_AIX_experiences/03_advanced/18_loading_it_back.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/19_wildcard_and_broadcast_overrides.py
-CONTENT SHA256: 2ba8daedf169770888ac53bfddfd48ea6e38fa0d38e1d476e359e75e27835e65
+CONTENT SHA256: 34f2bf761d8ac2032433cfa12407c40d102f7e357167fd4aa08c6f9c31161da1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -12415,7 +12602,7 @@ def main() -> None:
     # UNIQUE - *param. MailPipeline has exactly ONE credentials socket
     # under it, so the wildcard resolves without naming the path.
     mail = conduit.meld(
-        spell=MailPipeline,
+        MailPipeline,
         override={"*credentials": fixture},
     )
     assert mail.transport.credentials is fixture
@@ -12427,7 +12614,7 @@ def main() -> None:
     # the whole reason the form is safe to reach for.
     try:
         conduit.meld(
-            spell=BackupPipeline,
+            BackupPipeline,
             override={"*credentials": fixture},
         )
         raise AssertionError("expected a refusal - *param matched twice")
@@ -12437,7 +12624,7 @@ def main() -> None:
     # BROADCAST - **param. Same graph, and now hitting every match is
     # exactly what was asked for.
     backup = conduit.meld(
-        spell=BackupPipeline,
+        BackupPipeline,
         override={"**credentials": fixture},
     )
     assert backup.transport.credentials is fixture
@@ -12450,7 +12637,7 @@ def main() -> None:
     # also enforced. A no-op override is a caller mistake, not a default.
     try:
         conduit.meld(
-            spell=MailPipeline,
+            MailPipeline,
             override={"**nosuchparam": fixture},
         )
         raise AssertionError("expected a refusal - **param matched nothing")
@@ -12462,7 +12649,7 @@ def main() -> None:
     specific = Credentials()
     specific.source = "archive-only"
     mixed = conduit.meld(
-        spell=BackupPipeline,
+        BackupPipeline,
         override={
             "**credentials": fixture,
             "archive>credentials": specific,
@@ -12476,7 +12663,7 @@ def main() -> None:
 
     # `many` kept the blast radius inside the call: a plain meld gets a
     # clean graph with no fixture in it.
-    clean = conduit.meld(spell=BackupPipeline)
+    clean = conduit.meld(BackupPipeline)
     assert clean.transport.credentials is not fixture
     assert clean.archive.credentials.source == "vault"
     print("plain meld is untouched:", clean.archive.credentials.source)
@@ -14517,7 +14704,7 @@ END FILE: UX_and_AIX_experiences/04_expert/09_getting_data_into_your_database.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/10_deep_overrides_paths_through_a_graph.py
-CONTENT SHA256: fecc546b6301bcd20e19602901b5fa69a1f50779a650b70ca29f23b3de1926a7
+CONTENT SHA256: 9260b9ec373bec5e77ea32aec1ad36852b0b38cc8e0c0dc1703129b3b35b3392
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -14604,7 +14791,7 @@ def main() -> None:
 
     # The shape, unmodified. TWO credentials sockets exist - one under
     # gateway, one under mirror - and they are four hops down.
-    plain = conduit.meld(spell=Edge)
+    plain = conduit.meld(Edge)
     assert plain.gateway.upstream.credentials.label == "real"
     assert plain.mirror.upstream.credentials.label == "real"
     print("graph built: two credentials sockets, both at depth 4")
@@ -14614,7 +14801,7 @@ def main() -> None:
     swapped = Credentials()
     swapped.label = "gateway-only"
     one = conduit.meld(
-        spell=Edge,
+        Edge,
         override={"gateway>upstream>credentials": swapped},
     )
     assert one.gateway.upstream.credentials.label == "gateway-only"
@@ -14627,7 +14814,7 @@ def main() -> None:
     grafted_credentials = Credentials()
     grafted_credentials.label = "grafted"
     grafted = conduit.meld(
-        spell=Edge,
+        Edge,
         override={"mirror>upstream": Upstream(grafted_credentials)},
     )
     assert grafted.mirror.upstream.credentials.label == "grafted"
@@ -14637,7 +14824,7 @@ def main() -> None:
     # 3. AMBIGUITY IS THE NORMAL CASE AT DEPTH. `*credentials` matches
     #    twice here, and melder refuses rather than picking one.
     try:
-        conduit.meld(spell=Edge, override={"*credentials": swapped})
+        conduit.meld(Edge, override={"*credentials": swapped})
         raise AssertionError("expected a refusal: *param matched twice")
     except Exception as error:
         print()
@@ -14648,7 +14835,7 @@ def main() -> None:
     everywhere = Credentials()
     everywhere.label = "all"
     broad = conduit.meld(
-        spell=Edge,
+        Edge,
         override={"**credentials": everywhere},
     )
     assert broad.gateway.upstream.credentials.label == "all"
@@ -14660,7 +14847,7 @@ def main() -> None:
     pinned = Credentials()
     pinned.label = "pinned"
     mixed = conduit.meld(
-        spell=Edge,
+        Edge,
         override={
             "**credentials": everywhere,
             "gateway>upstream>credentials": pinned,
@@ -14677,7 +14864,7 @@ def main() -> None:
     #    otherwise undetectable - the refusal is the feature.
     try:
         conduit.meld(
-            spell=Edge,
+            Edge,
             override={"gateway>upstrem>credentials": swapped},
         )
         raise AssertionError("expected a refusal: no such path")
@@ -15151,7 +15338,7 @@ END FILE: UX_and_AIX_experiences/04_expert/12_the_codegen_loop_end_to_end.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py
-CONTENT SHA256: 3e7a93a33408735e89c12187ce6809404aa1890f6cdc41b2b1a4b47af4edadba
+CONTENT SHA256: 84cbfe0ce9dbfd5d22af86c875a88a4c3c33f155bef48dc228d1ba19cfdfeacc
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -15339,10 +15526,10 @@ def main() -> None:
     # seeing both worlds did not merge them. Note we meld through the
     # conduit that BOUND these spells - a fresh book in the same frame
     # would own nothing and resolve nothing.
-    invoice = billing_conduit.meld(spell=Invoice, binding_name="billing")
+    invoice = billing_conduit.meld(Invoice, binding_name="billing")
     assert invoice.kind == "invoice"
     try:
-        billing_conduit.meld(spell=Product, binding_name="catalog")
+        billing_conduit.meld(Product, binding_name="catalog")
         raise AssertionError("catalog's object must not resolve in billing")
     except Exception as error:
         print()
@@ -15949,7 +16136,7 @@ END FILE: UX_and_AIX_experiences/04_expert/15_campaigns_the_why_that_rides_along
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
-CONTENT SHA256: c591baff4680d51b6091abd19aad6143573668e53ddbb90806254944cada9c49
+CONTENT SHA256: efef8ade265bf83ed729ec76b071f8d9f5e9891a06221896cbd5033df9433b54
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -15961,7 +16148,7 @@ GOAL: CHANGING THE WIRING WHILE THE WORLD RUNS. A dynamic world can gain
 
         owner.link(borrower)
         borrower.add_spell_to_contract(spell_id=..., conduit=owner, ...)
-        borrower.meld(spell=...)
+        borrower.meld(...)
 
       EACH VERB IS COMPLETE IN ITSELF. There is no window to open, no
       session to hold, nothing to commit afterwards. A structural verb
@@ -16071,7 +16258,7 @@ def main() -> None:
 
     # The owner resolves its own spell. This works before any linking -
     # ownership and sharing are different questions.
-    assert owner.meld(spell=Service,
+    assert owner.meld(Service,
                       binding_name="rewire-service").label == "service"
     print("owner melds its own spell -> service")
 
@@ -16091,7 +16278,7 @@ def main() -> None:
     print("  sharing is a PULL - the named conduit must OWN the spell")
 
     # STEP 5: meld completes the late binding across the new edge.
-    borrowed = borrower.meld(spell=Service, binding_name="rewire-service")
+    borrowed = borrower.meld(Service, binding_name="rewire-service")
     assert borrowed.label == "service"
     print("borrower melds it ->", borrowed.label)
     print()
@@ -16138,7 +16325,7 @@ END FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py
-CONTENT SHA256: 520c5453939681b2adeab737fd4009109b21726e18966800a9a8deb61b2a9fa7
+CONTENT SHA256: 2381c74c2ecab6c3e473a9316efde3c13d0a5118829b1d9ffef343535609a8d8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -16239,7 +16426,7 @@ def main() -> None:
     print("index: 1 member, selected =", v1_id[:12], "...")
 
     # v1 RESOLVES. This is the world as it stands.
-    before = conduit.meld(spell=HotSwapPricingV1)
+    before = conduit.meld(HotSwapPricingV1)
     assert before.rate == 100
     print("meld -> rate", before.rate)
 
@@ -16262,7 +16449,7 @@ def main() -> None:
     # AND THE PARKED CANDIDATE IS INERT. The expensive half of the swap
     # has already happened - v2 is compiled, registered and owned - while
     # the old version is still the one serving traffic.
-    still = conduit.meld(spell=HotSwapPricingV1)
+    still = conduit.meld(HotSwapPricingV1)
     assert still.rate == 100
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")
@@ -16665,7 +16852,7 @@ END FILE: UX_and_AIX_experiences/04_expert/19_the_codebase_as_a_walkable_graph.p
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/20_the_workstation_an_agents_workbench.py
-CONTENT SHA256: 6355e3f0f51a7a20ebd8f572e6749534950af4494607082a0689fc4dd0a69a74
+CONTENT SHA256: 53e783239b532ecace596e9be63cd1663b3798fb5924830a52abe148d9a08e0f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -16781,7 +16968,7 @@ def main() -> None:
 
     # THE WORKSTATION HOLDS; IT DOES NOT MAKE. The object comes from the
     # runtime; the bench just keeps a name on it.
-    ledger = conduit.meld(spell=Ledger, binding_name="bench-ledger")
+    ledger = conduit.meld(Ledger, binding_name="bench-ledger")
     workstation.bind_object("ledger", ledger)
     # A bare get() works RIGHT NOW because the name is unique. Watch what
     # happens to this exact call a few lines below.
@@ -17125,7 +17312,7 @@ END FILE: UX_and_AIX_experiences/04_expert/21_many_agents_writing_code_at_once.p
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_running_it.py
-CONTENT SHA256: ced4fc115beafa0678ceb0c750912472ec6856ddaa6a9dad72b28293db6a75b9
+CONTENT SHA256: ab486498e1799026eb3d54dbcd5d6034c091e5ad289ae1ccb8f4d824613d4357
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -17281,7 +17468,7 @@ def main() -> None:
         binding_name="foresight-rule",
     )
     conduit = book.conjure(name="foresight-root")
-    live = conduit.meld(spell=PriceRule, binding_name="foresight-rule")
+    live = conduit.meld(PriceRule, binding_name="foresight-rule")
     assert live.apply(4) == 40
     print()
     print("world up; PriceRule.apply(4) ->", live.apply(4))
@@ -17347,7 +17534,7 @@ def main() -> None:
         "research_preview must not move the record - it is foresight, "
         "not a dry-run that half-commits"
     )
-    still = conduit.meld(spell=PriceRule, binding_name="foresight-rule")
+    still = conduit.meld(PriceRule, binding_name="foresight-rule")
     assert still.apply(4) == 40
     print("record heads: IDENTICAL before and after the preview")
     print("live object : still the old rule ->", still.apply(4))
@@ -17603,7 +17790,7 @@ END FILE: UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_b
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py
-CONTENT SHA256: cf7ee69fa99fa87a322edd9c195094e889a0a313381f6d51f1ab5221064b7fa9
+CONTENT SHA256: 90262ed0fad1cb50a26558f08a3d8141bb0a6542de0f7c2e31eb3170650c770e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -17716,7 +17903,7 @@ def main() -> None:
         disposal_method_names=None,
     )
     conduit = book.conjure(name="restore-root")
-    ledger = conduit.meld(spell=Ledger, binding_name="restore-ledger")
+    ledger = conduit.meld(Ledger, binding_name="restore-ledger")
     ledger.entries.append("before the checkpoint")
     print("world up; ledger holds", len(ledger.entries), "entry")
 
@@ -18011,7 +18198,7 @@ END FILE: UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
-CONTENT SHA256: 8c98e072c784aaa4cb62809fb1a33c1f12191a604e1393d2bd18623db9cd03fa
+CONTENT SHA256: 8c6a5cb7d32c3eaa570a0c4d08e4d2fa8ecfd14a8fb415b52a699a06c59e76e8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -18194,7 +18381,7 @@ def main() -> None:
     # Now mint versions the only way that works: bind / bind_inactive.
     index = conduit.get_spell_by_id(v1).spell_index
     assert index.spells_in_index() == {v1}
-    assert conduit.meld(spell=Rate, binding_name="iterate-rate").value == 1
+    assert conduit.meld(Rate, binding_name="iterate-rate").value == 1
 
     staged = conduit.bind_inactive(
         spell=RateV2, spell_index=index,
@@ -18202,7 +18389,7 @@ def main() -> None:
     )
     assert index.spells_in_index() == {v1, staged}
     assert index.selected_spell_id == v1, "staging must NOT move selection"
-    assert conduit.meld(spell=Rate, binding_name="iterate-rate").value == 1
+    assert conduit.meld(Rate, binding_name="iterate-rate").value == 1
     print("v2 STAGED: 2 members, selection unchanged, candidate inert")
 
     walked_default = commands.research_walk("default")
@@ -18262,7 +18449,7 @@ END FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py
-CONTENT SHA256: fbb2692b7524ff0d82fc39e848cb8575795efca47921aa1b209bb6200717465c
+CONTENT SHA256: ed47915cdc8bd3d555207d85cbe75bb6573d2b27eea42115c312c21d6e17d3e0
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -18378,7 +18565,7 @@ def build_world():
 
 def main() -> None:
     crystallizer, conduit, commands = build_world()
-    vault = conduit.meld(spell=Vault, binding_name="outlive-vault")
+    vault = conduit.meld(Vault, binding_name="outlive-vault")
     vault.contents.append("written before any codegen")
     print("world up; custody recording:", crystallizer.activated)
 
@@ -20440,7 +20627,7 @@ END FILE: UX_and_AIX_experiences/04_expert/35_the_gate_that_waits_for_readers.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py
-CONTENT SHA256: bb9dd2b51292f0f420b21365696cb713513af1ae83a83559370f7caca0b7f255
+CONTENT SHA256: 51d2ad36a77d0c17b0ee8d8ead6d7d6f6d374dfc79374d95671d7de5660b144a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -20613,10 +20800,10 @@ def main() -> None:
               % (class_name, module_name, class_name.lower()))
 
     # MELD THEM. Now they are objects.
-    tokenizer = conduit.meld(spell=classes["Tokenizer"],
+    tokenizer = conduit.meld(classes["Tokenizer"],
                              binding_name="tokenizer")
-    counter = conduit.meld(spell=classes["Counter"], binding_name="counter")
-    reporter = conduit.meld(spell=classes["Reporter"],
+    counter = conduit.meld(classes["Counter"], binding_name="counter")
+    reporter = conduit.meld(classes["Reporter"],
                             binding_name="reporter")
     print()
     print("melded three OBJECTS:", type(tokenizer).__name__,
@@ -20647,7 +20834,7 @@ def main() -> None:
     print("  moment they landed")
 
     # UNIQUE MEANS THE SAME OBJECT BACK.
-    again = conduit.meld(spell=classes["Tokenizer"],
+    again = conduit.meld(classes["Tokenizer"],
                          binding_name="tokenizer")
     assert again is tokenizer, "existence='unique' returns the same object"
     print()
@@ -20667,7 +20854,7 @@ def main() -> None:
     book.bind(spell=worker_class, existence="many", permissions="create",
               binding_name="worker")
 
-    workers = [conduit.meld(spell=worker_class, binding_name="worker")
+    workers = [conduit.meld(worker_class, binding_name="worker")
                for _ in range(5)]
     assert len({id(worker) for worker in workers}) == 5, (
         "existence='many' must build a NEW instance per meld"
@@ -32117,7 +32304,7 @@ END FILE: benchmarks/testing_other_di/diagnose_cache_integration_flows.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/dump_emitted_executor_source.py
-CONTENT SHA256: efd357537aec02ee7484cdbc9560f63c112775321f8662f715d625975dfa9492
+CONTENT SHA256: 1c04aebe7bb11e929454ff629376556412cc4009c432f1d57905a919a494a95c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -32286,9 +32473,9 @@ def main() -> None:
         request_id = spell_ids[_support.REQUEST_SCOPED_TYPES[0]]
         lesser = root.create_lesser_conduit()
         try:
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             with lesser.enter_spellspace() as space:
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
         finally:
             lesser.cleanup()
         root.cleanup()
@@ -33832,7 +34019,7 @@ END FILE: benchmarks/testing_other_di/optimistic/test_optimistic_meld_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_bind_conjure_cycle.py
-CONTENT SHA256: 65aeff37d101b54c62e0e8c028d27db59f73cf9db66f738e3a8bb1a722ab17c3
+CONTENT SHA256: 9fdd4b8a99ad909593b91a8dcceffdd27c239a106e3af3c65ab4dc664be5f738
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -34213,7 +34400,7 @@ def run_cycle(
                 meld_profiler.enable()
             meld_t0 = time.perf_counter_ns()
             for cls, spell_id in direct_ids:
-                resolved = conduit.meld(spell=spell_id)
+                resolved = conduit.meld(spell_id=spell_id)
                 if not isinstance(resolved, cls):
                     raise AssertionError(
                         f"meld returned wrong type for {cls.__name__}"
@@ -34223,7 +34410,7 @@ def run_cycle(
                 try:
                     with lesser.enter_spellspace() as space:
                         for cls, spell_id in spellspace_ids:
-                            resolved = space.meld(spell=spell_id)
+                            resolved = space.meld(spell_id=spell_id)
                             if not isinstance(resolved, cls):
                                 raise AssertionError(
                                     "spellspace meld returned wrong type "
@@ -34528,7 +34715,7 @@ END FILE: benchmarks/testing_other_di/profile_bind_conjure_cycle.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_construction_lane.py
-CONTENT SHA256: 87f1b69a41f10cedaf2aa4730e2df5c47ebcbdb0c8099f6e0b3875a209fa7b91
+CONTENT SHA256: bb7becba709230a3b99b7df60c2381cbc17f309f47e33d8613a5d251e83aec70
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -34670,11 +34857,11 @@ def _run_cycles(root: Any, outer_id: str, request_id: str, count: int) -> int:
     for _ in range(count):
         lesser = root.create_lesser_conduit()
         try:
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             space_cm = lesser.enter_spellspace()
             space = space_cm.__enter__()
             try:
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             finally:
                 space_cm.__exit__(None, None, None)
         finally:
@@ -34738,7 +34925,7 @@ END FILE: benchmarks/testing_other_di/profile_construction_lane.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_deep_all_di_transient_only_no_singletons.py
-CONTENT SHA256: 0f90ccb8e6fb840d9d51fe2b0c6912d1419ca097d294582f80443909f7e812d1
+CONTENT SHA256: 244411264af150737d8dc99b6a63b9e5f14e748972c85f27676715d13921b6fa
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -34972,7 +35159,7 @@ def _melder_get_root(state: Dict[str, Any]) -> Any:
     Returns:
         Any: Resolved root instance.
     """
-    return state["conduit"].meld(spell=state["root_id"])
+    return state["conduit"].meld(spell_id=state["root_id"])
 
 
 def _melder_get_by_id(state: Dict[str, Any], spell_id: str) -> Any:
@@ -34986,7 +35173,7 @@ def _melder_get_by_id(state: Dict[str, Any], spell_id: str) -> Any:
     Returns:
         Any: Resolved instance.
     """
-    return state["conduit"].meld(spell=spell_id)
+    return state["conduit"].meld(spell_id=spell_id)
 
 
 def _melder_cleanup(state: Dict[str, Any]) -> None:
@@ -36591,7 +36778,7 @@ END FILE: benchmarks/testing_other_di/profile_phase_scheduler_breakdown.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_scope_cycle_contention.py
-CONTENT SHA256: d592d5f982a2b4f8000834d0bce2beb8832771826f4ac5d0ccce7a756070dc09
+CONTENT SHA256: ff495e37e275aef04cd68942c35a4a80ee2b050ee56751a97f8d800523c8615e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -36803,10 +36990,10 @@ def _worker(
             # is the pure repeat-door lane (cached instance read). Timing
             # them separately attributes per-cycle cost to the right lane.
             seg_t0 = time.perf_counter_ns()
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             outer1_ns = time.perf_counter_ns() - seg_t0
             seg_t0 = time.perf_counter_ns()
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             outer2_ns = time.perf_counter_ns() - seg_t0
             space_cm = lesser.enter_spellspace()
             seg_t0 = time.perf_counter_ns()
@@ -36814,10 +37001,10 @@ def _worker(
             enter_ns = time.perf_counter_ns() - seg_t0
             try:
                 seg_t0 = time.perf_counter_ns()
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
                 request1_ns = time.perf_counter_ns() - seg_t0
                 seg_t0 = time.perf_counter_ns()
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
                 request2_ns = time.perf_counter_ns() - seg_t0
             finally:
                 seg_t0 = time.perf_counter_ns()
@@ -36983,11 +37170,11 @@ def _micro_worker(
     lesser = root.create_lesser_conduit()
     try:
         for _ in range(1000):
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
         barrier.wait(timeout=10)
         loop_t0 = time.perf_counter_ns()
         for _ in range(MICRO_ITERS):
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
         results["outer_door_ns"] = (
             (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
         )
@@ -36995,11 +37182,11 @@ def _micro_worker(
         space = space_cm.__enter__()
         try:
             for _ in range(1000):
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             barrier.wait(timeout=10)
             loop_t0 = time.perf_counter_ns()
             for _ in range(MICRO_ITERS):
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             results["request_door_ns"] = (
                 (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
             )
@@ -37082,7 +37269,7 @@ END FILE: benchmarks/testing_other_di/profile_scope_cycle_contention.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_tail_stall_attribution.py
-CONTENT SHA256: e96068a6a0f2dfd2de50032dac4080483acfddf272f99de6a7449261fb7420a0
+CONTENT SHA256: 02137abcbd4bbb6b0a9e351e111216a6a0ea48082f7c31206ee174a72244e967
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -37224,11 +37411,11 @@ def _worker(
             log.records.append(("create", seg_start, seg_dur))
 
         seg_start = time.perf_counter_ns()
-        lesser.meld(spell=outer_id)
-        lesser.meld(spell=outer_id)
+        lesser.meld(spell_id=outer_id)
+        lesser.meld(spell_id=outer_id)
         with lesser.enter_spellspace() as space:
-            space.meld(spell=request_id)
-            space.meld(spell=request_id)
+            space.meld(spell_id=request_id)
+            space.meld(spell_id=request_id)
         seg_dur = time.perf_counter_ns() - seg_start
         if seg_dur >= STALL_NS:
             log.records.append(("melds", seg_start, seg_dur))
@@ -37408,7 +37595,7 @@ END FILE: benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/run_codegen_benchmark_deltas.py
-CONTENT SHA256: ac05403f885d5c94d96e6ad1314526cd4c4042bbe919d53b26265ee3e76263da
+CONTENT SHA256: ffa9b2c3cd7ec1ab877fb86262241aaa383ed1a5faef6e0d1d70d6470b307d7b
 SOURCE ENCODING: utf-8
 ================================================================================
 import cProfile
@@ -37643,7 +37830,7 @@ class CodegenBenchmarkSession:
             - Performs one `Conduit.meld` on the root spell id.
             - Raises AssertionError if the returned type is unexpected.
         """
-        root = self._conduit.meld(spell=self._root_id)
+        root = self._conduit.meld(spell_id=self._root_id)
         if not isinstance(root, BenchmarkRoot):
             raise AssertionError("Expected BenchmarkRoot from root meld.")
 
@@ -37670,7 +37857,7 @@ class CodegenBenchmarkSession:
             - Raises AssertionError if the returned type is unexpected.
         """
         with self._conduit.enter_spellspace() as spellspace:
-            scoped = spellspace.meld(spell=self._spellspace_root_id)
+            scoped = spellspace.meld(spell_id=self._spellspace_root_id)
             if not isinstance(scoped, BenchmarkSpellspaceRoot):
                 raise AssertionError(
                     "Expected BenchmarkSpellspaceRoot from spellspace meld."
@@ -37685,8 +37872,8 @@ class CodegenBenchmarkSession:
             - Uses many-scoped root so repeated override calls remain valid.
         """
         overridden = self._conduit.meld(
-            spell=self._override_args_root_id,
-            spell_override=[7],
+            spell_id=self._override_args_root_id,
+            override=[7],
         )
         if not isinstance(overridden, BenchmarkOverrideArgsRoot):
             raise AssertionError("Expected BenchmarkOverrideArgsRoot from __args__ override meld.")
@@ -37700,8 +37887,8 @@ class CodegenBenchmarkSession:
             - Uses many-scoped root so repeated override calls remain valid.
         """
         overridden = self._conduit.meld(
-            spell=self._override_root_id,
-            spell_override={"left": BenchmarkLeafA()},
+            spell_id=self._override_root_id,
+            override={"left": BenchmarkLeafA()},
         )
         if not isinstance(overridden, BenchmarkOverrideRoot):
             raise AssertionError("Expected BenchmarkOverrideRoot from targeted override meld.")
@@ -39697,7 +39884,7 @@ END FILE: benchmarks/testing_other_di/run_snapshot_timings.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_all_di_systems.py
-CONTENT SHA256: 6529e036e4aa106eb64b3b2ff11cbbd8043f276083a92171aa17d91c1b236b67
+CONTENT SHA256: 76e70a53a05e2efc575cd89e7ae514d26c4f67b544bfc899e4353b1cfa11cf32
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -39834,7 +40021,7 @@ def _build_melder_depth9(*, existence: Existence, frame: str, conjure_name: str)
 
 
 def _melder_get(state: _MelderState) -> Any:
-    return state.conduit.meld(spell=state.root_id)
+    return state.conduit.meld(spell_id=state.root_id)
 
 
 def _melder_cleanup(state: _MelderState) -> None:
@@ -40626,7 +40813,7 @@ END FILE: benchmarks/testing_other_di/test_bool_vs_len_perf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_conduit_integration_perf_deep_graphs.py
-CONTENT SHA256: 6ec1d8081ae16c95a3d09ca8c4a8ad1ae78f18b08a2408eb96201f849a58a7a4
+CONTENT SHA256: e5f414a8a02f6167dcbe7ae2bc3c4a81ed677e5f3ff219f194b5aef834da3f7c
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -40778,7 +40965,7 @@ def test_perf_conjure_scaling_depth3_5_7_9_automatic() -> None:
         conjure_s = time.perf_counter() - t0
         try:
             t0 = time.perf_counter()
-            _ = conduit.meld(spell=spell_ids[root_cls])
+            _ = conduit.meld(spell_id=spell_ids[root_cls])
             meld_s = time.perf_counter() - t0
             print(
                 f"Perf scaling depth={depth} (ms): "
@@ -40808,12 +40995,12 @@ def test_perf_depth9_unique_conjure_and_meld_cold_warm() -> None:
     conjure_s = time.perf_counter() - t0
     try:
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
 
         t0 = time.perf_counter()
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         warm_s = time.perf_counter() - t0
         assert root1 is root2
 
@@ -40844,14 +41031,14 @@ def test_perf_depth9_many_all_nodes_avg() -> None:
     conduit = spellbook.conjure(name="perf-depth9-many")
     try:
         # Warm up interpreter/method caches a bit.
-        _ = conduit.meld(spell=root_id)
+        _ = conduit.meld(spell_id=root_id)
 
         iterations = 250
         t0 = time.perf_counter()
         leaf_a_id = 0
         leaf_b_id = 0
         for _i in range(iterations):
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             assert isinstance(root, Depth9Root)
             leaf_a_id, leaf_b_id = _depth9_leaf_ids(root)
         total_s = time.perf_counter() - t0
@@ -40891,14 +41078,14 @@ def test_perf_spellspace_depth3_unique_per_spellspace() -> None:
         # One spellspace: cold + warm within the same scope.
         with conduit.enter_spellspace() as space:
             t0 = time.perf_counter()
-            root1 = space.meld(spell=root_id)
+            root1 = space.meld(spell_id=root_id)
             cold_s = time.perf_counter() - t0
             assert isinstance(root1, Depth3Root)
 
             warm_iters = 10_000
             t0 = time.perf_counter()
             for _ in range(warm_iters):
-                root2 = space.meld(spell=root_id)
+                root2 = space.meld(spell_id=root_id)
             warm_total_s = time.perf_counter() - t0
             assert root1 is root2
 
@@ -40909,7 +41096,7 @@ def test_perf_spellspace_depth3_unique_per_spellspace() -> None:
         last_id = None
         for i in range(spaces):
             with conduit.enter_spellspace() as space:
-                root = space.meld(spell=root_id)
+                root = space.meld(spell_id=root_id)
                 if i == 0:
                     first_id = id(root)
                 last_id = id(root)
@@ -40951,12 +41138,12 @@ def test_perf_depth9_many_with_cached_leaves_and_cleanup() -> None:
     try:
         # Cold build + verify leaf reuse across calls.
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
         leaf_a_1, leaf_b_1 = _depth9_leaf_ids(root1)
 
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         assert isinstance(root2, Depth9Root)
         leaf_a_2, leaf_b_2 = _depth9_leaf_ids(root2)
         assert leaf_a_1 == leaf_a_2
@@ -40965,7 +41152,7 @@ def test_perf_depth9_many_with_cached_leaves_and_cleanup() -> None:
         iterations = 200
         t0 = time.perf_counter()
         for _ in range(iterations):
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             assert isinstance(root, Depth9Root)
         total_s = time.perf_counter() - t0
 
@@ -41024,17 +41211,17 @@ def test_perf_mixed_workload_alternating_depth7_depth9_and_spellspace_cleanup() 
         t0 = time.perf_counter()
         for i in range(iterations):
             if i % 2 == 0:
-                root = conduit.meld(spell=root9_id)
+                root = conduit.meld(spell_id=root9_id)
                 assert isinstance(root, Depth9Root)
             else:
-                root = conduit.meld(spell=root7_id)
+                root = conduit.meld(spell_id=root7_id)
                 assert isinstance(root, Depth7Root)
 
             if (i + 1) % spellspace_every == 0:
                 spellspace_count += 1
                 t_space = time.perf_counter()
                 with conduit.enter_spellspace() as space:
-                    obj = space.meld(spell=root3_space_id)
+                    obj = space.meld(spell_id=root3_space_id)
                     assert isinstance(obj, Depth3Root)
                 spellspace_total_s += time.perf_counter() - t_space
 
@@ -41087,7 +41274,7 @@ def test_perf_cycle_conjure_meld_cleanup_depth9_unique_per_conduit() -> None:
         conjure_total += conjure_s
         try:
             t0 = time.perf_counter()
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             meld_s = time.perf_counter() - t0
             meld_total += meld_s
             assert isinstance(root, Depth9Root)
@@ -41131,7 +41318,7 @@ def test_perf_spellspace_depth9_unique_per_spellspace_repeated_cleanup() -> None
         t0 = time.perf_counter()
         for _ in range(spaces):
             with conduit.enter_spellspace() as space:
-                root = space.meld(spell=root_id)
+                root = space.meld(spell_id=root_id)
                 assert isinstance(root, Depth9Root)
         total_s = time.perf_counter() - t0
 
@@ -42659,7 +42846,7 @@ END FILE: benchmarks/testing_other_di/test_data_gc_extended_fixed.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singletons.py
-CONTENT SHA256: 6455334a9b93805bad9115b49cbbd4ef45f9144cb153faf4a7d87d41d7860476
+CONTENT SHA256: ad80f9a731330443491f4ee9fe7795b62dea8c882a9adad3dfad5628abe0dfc5
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -42823,7 +43010,7 @@ def _melder_build_transient(*, frame: str, classes: tuple[type, ...], root_cls: 
 
 
 def _melder_get(state: _MelderState) -> Any:
-    return state.conduit.meld(spell=state.root_id)
+    return state.conduit.meld(spell_id=state.root_id)
 
 
 def _melder_get_alias(state: _MelderState) -> Any:
@@ -42836,7 +43023,7 @@ def _melder_get_alias(state: _MelderState) -> Any:
     """
     conduit = state.conduit
     root_id = state.root_id
-    return conduit.meld(spell=root_id)
+    return conduit.meld(spell_id=root_id)
 
 
 def _melder_cleanup(state: _MelderState) -> None:
@@ -43353,10 +43540,10 @@ def test_perf_mixed_workload_depth7_depth9_transient(lib: str) -> None:
             t0 = time.perf_counter()
             for i in range(iterations):
                 if i % 2 == 0:
-                    r = conduit.meld(spell=root9_id)
+                    r = conduit.meld(spell_id=root9_id)
                     assert isinstance(r, Depth9Root)
                 else:
-                    r = conduit.meld(spell=root7_id)
+                    r = conduit.meld(spell_id=root7_id)
                     assert isinstance(r, Depth7Root)
             total_s = time.perf_counter() - t0
         finally:
@@ -43499,7 +43686,7 @@ END FILE: benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singlet
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_di_perf_basic.py
-CONTENT SHA256: 94b726a8372e155469308b13d3facc1b80652d9b277d6e70daeb5d38fa9e059f
+CONTENT SHA256: 24359687d2e949dde1a94ac8bec545a022eff74347fecbe401b93582c5e3cab3
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -43742,11 +43929,11 @@ def _melder_run(mode: str) -> _PerfRow:
 
     try:
         # “cold” sanity resolves (NOT timed)
-        cfg_obj = conduit.meld(spell=config_id)
+        cfg_obj = conduit.meld(spell_id=config_id)
         assert isinstance(cfg_obj, PerfConfig)
-        log1 = conduit.meld(spell=logger_id)
+        log1 = conduit.meld(spell_id=logger_id)
         assert isinstance(log1, PerfLogger)
-        log2 = conduit.meld(spell=logger_id)
+        log2 = conduit.meld(spell_id=logger_id)
         assert isinstance(log2, PerfLogger)
 
         logger_is_cached: Optional[bool]
@@ -43756,12 +43943,12 @@ def _melder_run(mode: str) -> _PerfRow:
         else:
             logger_is_cached = None
 
-        svc_obj = conduit.meld(spell=service_id)
+        svc_obj = conduit.meld(spell_id=service_id)
         assert isinstance(svc_obj, PerfService)
 
-        cfg_total_ns = _time_loop(lambda: conduit.meld(spell=config_id), warmup=WARMUP, tries=TRIES)
-        log_total_ns = _time_loop(lambda: conduit.meld(spell=logger_id), warmup=WARMUP, tries=TRIES)
-        svc_total_ns = _time_loop(lambda: conduit.meld(spell=service_id), warmup=WARMUP, tries=TRIES)
+        cfg_total_ns = _time_loop(lambda: conduit.meld(spell_id=config_id), warmup=WARMUP, tries=TRIES)
+        log_total_ns = _time_loop(lambda: conduit.meld(spell_id=logger_id), warmup=WARMUP, tries=TRIES)
+        svc_total_ns = _time_loop(lambda: conduit.meld(spell_id=service_id), warmup=WARMUP, tries=TRIES)
 
         return _PerfRow(
             name="melder",
@@ -44095,7 +44282,7 @@ END FILE: benchmarks/testing_other_di/test_di_perf_basic.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_di_perf_overhead_suite.py
-CONTENT SHA256: 53e2f7ed2219a54c30c8bce5f3169ab46466f5f6c918968feb061f347095c83a
+CONTENT SHA256: 0508c3f56d9cb801f1d035bf08177453e979aa7d56f0e1d3888aec3cc11487bf
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -44381,17 +44568,17 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
         meld = conduit.meld
 
         # --- sanity (NOT timed) ---
-        cfg1 = meld(spell=config_id)
-        cfg2 = meld(spell=config_id)
+        cfg1 = meld(spell_id=config_id)
+        cfg2 = meld(spell_id=config_id)
         assert isinstance(cfg1, s.config_cls)
         assert isinstance(cfg2, s.config_cls)
 
-        log1 = meld(spell=logger_id)
-        log2 = meld(spell=logger_id)
+        log1 = meld(spell_id=logger_id)
+        log2 = meld(spell_id=logger_id)
         assert isinstance(log1, s.logger_cls)
         assert isinstance(log2, s.logger_cls)
 
-        svc1 = meld(spell=service_id)
+        svc1 = meld(spell_id=service_id)
         assert isinstance(svc1, s.service_cls)
 
         if mode == "singleton":
@@ -44402,13 +44589,13 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
 
         # --- WRAPPER GETTERS (fair, explicit, stable) ---
         def get_cfg() -> object:
-            return meld(spell=config_id)
+            return meld(spell_id=config_id)
 
         def get_log() -> object:
-            return meld(spell=logger_id)
+            return meld(spell_id=logger_id)
 
         def get_svc() -> object:
-            return meld(spell=service_id)
+            return meld(spell_id=service_id)
 
         tries = s.settings.tries
         warmup = s.settings.warmup
@@ -44918,7 +45105,7 @@ END FILE: benchmarks/testing_other_di/test_di_perf_overhead_suite.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_family_lane_harness.py
-CONTENT SHA256: aacc116d17717783c7d94d76be21830bd04bb9aaea518b627d0b1b182ae9d970
+CONTENT SHA256: 8d232ff04399e76fcd1ee6be34ed6802520b4c056eb5be26e0d3f50ccaeacccd
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -45236,7 +45423,7 @@ def _capture_sources(
         root_id = bind_fn(spellbook)
         conduit = spellbook.conjure(name=f"lane-{tag}")
         try:
-            conduit.meld(spell=root_id)
+            conduit.meld(spell_id=root_id)
         finally:
             conduit.cleanup()
     finally:
@@ -45267,15 +45454,15 @@ def _warm_per_meld_us(
         root_id = bind_fn(spellbook)
         conduit = spellbook.conjure(name=f"lane-{tag}")
         try:
-            conduit.meld(spell=root_id)  # cold: compile + first build
+            conduit.meld(spell_id=root_id)  # cold: compile + first build
             for _ in range(warmup):
-                conduit.meld(spell=root_id)
+                conduit.meld(spell_id=root_id)
             gc.collect()
             gc.disable()
             try:
                 start = time.perf_counter()
                 for _ in range(iterations):
-                    conduit.meld(spell=root_id)
+                    conduit.meld(spell_id=root_id)
                 elapsed = time.perf_counter() - start
             finally:
                 gc.enable()
@@ -49907,7 +50094,7 @@ END FILE: benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_melder_gauntlet.py
-CONTENT SHA256: 8768c710c4b2ac975c9b6e0807a7f988c41e4363c5e38e5b10b6051d918b34b5
+CONTENT SHA256: 2eed3245c8a80d43637a994517b0f7990a1d70e21e85da7e55a86c451023fbea
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -50038,7 +50225,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     conduit = spellbook.conjure(name="real-world-gauntlet", dynamic=False)
 
     def _get(cls: type) -> Any:
-        resolved = conduit.meld(spell=spell_ids[cls])
+        resolved = conduit.meld(spell_id=spell_ids[cls])
         if not isinstance(resolved, cls):
             raise AssertionError("Melder: resolve returned wrong type")
         return resolved
@@ -50067,8 +50254,8 @@ def _build_runtime_melder() -> _support.RuntimeOps:
         lesser = conduit.create_lesser_conduit()
         outer_create_ns = _support.time.perf_counter_ns() - outer_create_t0
         try:
-            outer1 = lesser.meld(spell=spell_ids[outer_cls])
-            outer2 = lesser.meld(spell=spell_ids[outer_cls])
+            outer1 = lesser.meld(spell_id=spell_ids[outer_cls])
+            outer2 = lesser.meld(spell_id=spell_ids[outer_cls])
             if not isinstance(outer1, outer_cls):
                 raise AssertionError(
                     f"Melder: {variant_error_prefix} outer resolve returned wrong type"
@@ -50084,9 +50271,9 @@ def _build_runtime_melder() -> _support.RuntimeOps:
             space = request_cm.__enter__()
             request_create_ns = _support.time.perf_counter_ns() - request_create_t0
             try:
-                marker1 = space.meld(spell=spell_ids[request_marker_cls])
+                marker1 = space.meld(spell_id=spell_ids[request_marker_cls])
 
-                marker2 = space.meld(spell=spell_ids[request_marker_cls])
+                marker2 = space.meld(spell_id=spell_ids[request_marker_cls])
                 if not isinstance(marker1, request_marker_cls):
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} request marker wrong type"
@@ -50095,7 +50282,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} request scope marker not cached"
                     )
-                inherited = space.meld(spell=spell_ids[outer_cls])
+                inherited = space.meld(spell_id=spell_ids[outer_cls])
                 if inherited is not outer1:
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} outer scope did not propagate into request"
@@ -50123,19 +50310,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def request_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.RequestRoot])
+                root = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(root, _support.RequestRoot):
                     raise AssertionError("Melder: request root resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.RequestGroup])
-                root = space.meld(spell=spell_ids[_support.RequestRoot])
+                group = space.meld(spell_id=spell_ids[_support.RequestGroup])
+                root = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(group, _support.RequestGroup) or not isinstance(
                     root, _support.RequestRoot
                 ):
                     raise AssertionError("Melder: request scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.RequestRoot])
-                root2 = space.meld(spell=spell_ids[_support.RequestRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.RequestRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(root1, _support.RequestRoot) or not isinstance(
                     root2, _support.RequestRoot
                 ):
@@ -50151,19 +50338,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def worker_a_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                root = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(root, _support.WorkerAJobRoot):
                     raise AssertionError("Melder: worker A resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.WorkerAGroup])
-                root = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                group = space.meld(spell_id=spell_ids[_support.WorkerAGroup])
+                root = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(group, _support.WorkerAGroup) or not isinstance(
                     root, _support.WorkerAJobRoot
                 ):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
-                root2 = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(root1, _support.WorkerAJobRoot) or not isinstance(
                     root2, _support.WorkerAJobRoot
                 ):
@@ -50179,19 +50366,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def worker_b_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                root = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(root, _support.WorkerBJobRoot):
                     raise AssertionError("Melder: worker B resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.WorkerBGroup])
-                root = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                group = space.meld(spell_id=spell_ids[_support.WorkerBGroup])
+                root = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(group, _support.WorkerBGroup) or not isinstance(
                     root, _support.WorkerBJobRoot
                 ):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
-                root2 = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(root1, _support.WorkerBJobRoot) or not isinstance(
                     root2, _support.WorkerBJobRoot
                 ):
@@ -50429,7 +50616,7 @@ END FILE: benchmarks/testing_other_di/test_melder_gauntlet_gc_probe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_melder_hotpath_profiles.py
-CONTENT SHA256: 3ece6a97ef98be46eb57e787aac680345e2e55cb2fb34b01d8f77a5a80a1ffab
+CONTENT SHA256: c87777b11437bef384a1af27f05d12eb908c7377a4f979c81ecfb4b7fe07d298
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -50699,12 +50886,12 @@ def test_profile_meld_depth9_hotpaths() -> None:
     conduit = spellbook.conjure(name="profile-meld-depth9", dynamic=False)
     try:
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
 
         t0 = time.perf_counter()
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         warm_s = time.perf_counter() - t0
         assert root1 is root2
 
@@ -50725,7 +50912,7 @@ def test_profile_meld_depth9_hotpaths() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-cold")
             cd = sb.conjure(name="profile-meld-depth9-cold", dynamic=False)
             try:
-                _ = cd.meld(spell=root)
+                _ = cd.meld(spell_id=root)
             finally:
                 cd.cleanup()
 
@@ -50733,8 +50920,8 @@ def test_profile_meld_depth9_hotpaths() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-warm")
             cd = sb.conjure(name="profile-meld-depth9-warm", dynamic=False)
             try:
-                _ = cd.meld(spell=root)
-                _ = cd.meld(spell=root)
+                _ = cd.meld(spell_id=root)
+                _ = cd.meld(spell_id=root)
             finally:
                 cd.cleanup()
 
@@ -50772,7 +50959,7 @@ def test_profile_cycle_conjure_meld_cleanup_depth9() -> None:
         conjure_times.append(time.perf_counter() - t0)
         try:
             t0 = time.perf_counter()
-            _ = conduit.meld(spell=root_id)
+            _ = conduit.meld(spell_id=root_id)
             meld_times.append(time.perf_counter() - t0)
         finally:
             t0 = time.perf_counter()
@@ -51717,7 +51904,7 @@ END FILE: benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cleaned.py
-CONTENT SHA256: 37f023607172dd4e657dd68c309b05b060c23b7c3ddf39b29f9faaf6088583cf
+CONTENT SHA256: 216d23fca0623b1ffba568c4cf769b2db2148201665e7ed76986cfc9d05cf804
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -52129,7 +52316,7 @@ def test_melder_single_meld_lock_and_check_cleaned() -> None:
         Cleanable.check_cleaned = _make_check_cleaned_counter(check_counts)
 
         def resolve_request_root() -> Any:
-            return space.meld(spell=spell_ids[_support.RequestRoot])
+            return space.meld(spell_id=spell_ids[_support.RequestRoot])
 
         first_report = _capture_one_meld_report(
             resolver=resolve_request_root,
@@ -52166,7 +52353,7 @@ END FILE: benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cle
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_multithreading_di.py
-CONTENT SHA256: 0685f27ae11ba5d71db53dd788ed2ae51d77a052d0f043ebc1e488ba31d36189
+CONTENT SHA256: abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -52665,19 +52852,19 @@ def _build_runtime_melder() -> _RuntimeOps:
     conduit = spellbook.conjure(name="threaded-di-stress")
 
     def resolve_depth9() -> None:
-        root = conduit.meld(spell=root9_id)
+        root = conduit.meld(spell_id=root9_id)
         if not isinstance(root, Depth9Root):
             raise AssertionError("Melder: Depth9Root meld returned wrong type")
 
     def resolve_depth7() -> None:
-        root = conduit.meld(spell=root7_id)
+        root = conduit.meld(spell_id=root7_id)
         if not isinstance(root, Depth7Root):
             raise AssertionError("Melder: Depth7Root meld returned wrong type")
 
     def spellspace_cycle() -> None:
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=root3_id)
-            r2 = space.meld(spell=root3_id)
+            r1 = space.meld(spell_id=root3_id)
+            r2 = space.meld(spell_id=root3_id)
             if not isinstance(r1, Depth3Root):
                 raise AssertionError("Melder: Depth3Root meld returned wrong type")
             if r1 is not r2:
@@ -52827,7 +53014,7 @@ END FILE: benchmarks/testing_other_di/test_multithreading_di.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_overrides_all.py
-CONTENT SHA256: 8eacc242bef29f8a94cc2a5029c623313c7036783de384a6f3d47ecea3d60d9e
+CONTENT SHA256: 5a8adde1490e7a084768ec364f4310d54c8c2373a64ad884abc303b5b1af9fff
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -53404,9 +53591,9 @@ def _build_override_melder(g: _OverrideGraphSpec) -> _OverrideOps:
 
     def get_root() -> Any:
         if g.melder_override_mode == "existing":
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
         else:
-            root = conduit.meld(spell=root_id, spell_override={g.melder_override_key: override_instance})
+            root = conduit.meld(spell_id=root_id, override={g.melder_override_key: override_instance})
         if not isinstance(root, g.root_type):
             raise AssertionError("Melder: root resolve returned wrong type")
         return root
@@ -54447,7 +54634,7 @@ END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
-CONTENT SHA256: 75197362c8e1539109dbc623e26986a809c9f326984480e2896f1b2e495fad69
+CONTENT SHA256: 56e1579121344b45b9da7fe42c20e620d584316ed33660e74ab83001aea6bdc9
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -55434,7 +55621,7 @@ def _build_runtime_melder() -> _RuntimeOps:
     conduit = spellbook.conjure(name="real-world-gauntlet", dynamic=False)
 
     def _get(cls: type) -> Any:
-        root = conduit.meld(spell=spell_ids[cls])
+        root = conduit.meld(spell_id=spell_ids[cls])
         if not isinstance(root, cls):
             raise AssertionError("Melder: resolve returned wrong type")
         return root
@@ -55463,8 +55650,8 @@ def _build_runtime_melder() -> _RuntimeOps:
         lesser = conduit.create_lesser_conduit()
         outer_create_ns = time.perf_counter_ns() - outer_create_t0
         try:
-            outer1 = lesser.meld(spell=spell_ids[outer_cls])
-            outer2 = lesser.meld(spell=spell_ids[outer_cls])
+            outer1 = lesser.meld(spell_id=spell_ids[outer_cls])
+            outer2 = lesser.meld(spell_id=spell_ids[outer_cls])
             if not isinstance(outer1, outer_cls):
                 raise AssertionError(f"Melder: {variant_error_prefix} outer resolve returned wrong type")
             if outer1 is not outer2:
@@ -55476,13 +55663,13 @@ def _build_runtime_melder() -> _RuntimeOps:
             space = request_cm.__enter__()
             request_create_ns = time.perf_counter_ns() - request_create_t0
             try:
-                marker1 = space.meld(spell=spell_ids[request_marker_cls])
-                marker2 = space.meld(spell=spell_ids[request_marker_cls])
+                marker1 = space.meld(spell_id=spell_ids[request_marker_cls])
+                marker2 = space.meld(spell_id=spell_ids[request_marker_cls])
                 if not isinstance(marker1, request_marker_cls):
                     raise AssertionError(f"Melder: {variant_error_prefix} request marker wrong type")
                 if marker1 is not marker2:
                     raise AssertionError(f"Melder: {variant_error_prefix} request scope marker not cached")
-                inherited = space.meld(spell=spell_ids[outer_cls])
+                inherited = space.meld(spell_id=spell_ids[outer_cls])
                 if inherited is not outer1:
                     raise AssertionError(f"Melder: {variant_error_prefix} outer scope did not propagate into request")
                 variant_call(space)
@@ -55508,17 +55695,17 @@ def _build_runtime_melder() -> _RuntimeOps:
     def request_scope_cycle(variant: int) -> _ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[RequestRoot])
+                root = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(root, RequestRoot):
                     raise AssertionError("Melder: request root resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[RequestGroup])
-                root = space.meld(spell=spell_ids[RequestRoot])
+                group = space.meld(spell_id=spell_ids[RequestGroup])
+                root = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(group, RequestGroup) or not isinstance(root, RequestRoot):
                     raise AssertionError("Melder: request scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[RequestRoot])
-                root2 = space.meld(spell=spell_ids[RequestRoot])
+                root1 = space.meld(spell_id=spell_ids[RequestRoot])
+                root2 = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Melder: request scope variant returned wrong type")
 
@@ -55532,17 +55719,17 @@ def _build_runtime_melder() -> _RuntimeOps:
     def worker_a_scope_cycle(variant: int) -> _ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[WorkerAJobRoot])
+                root = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(root, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[WorkerAGroup])
-                root = space.meld(spell=spell_ids[WorkerAJobRoot])
+                group = space.meld(spell_id=spell_ids[WorkerAGroup])
+                root = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(group, WorkerAGroup) or not isinstance(root, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[WorkerAJobRoot])
-                root2 = space.meld(spell=spell_ids[WorkerAJobRoot])
+                root1 = space.meld(spell_id=spell_ids[WorkerAJobRoot])
+                root2 = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
 
@@ -55556,17 +55743,17 @@ def _build_runtime_melder() -> _RuntimeOps:
     def worker_b_scope_cycle(variant: int) -> _ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[WorkerBJobRoot])
+                root = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(root, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[WorkerBGroup])
-                root = space.meld(spell=spell_ids[WorkerBJobRoot])
+                group = space.meld(spell_id=spell_ids[WorkerBGroup])
+                root = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(group, WorkerBGroup) or not isinstance(root, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[WorkerBJobRoot])
-                root2 = space.meld(spell=spell_ids[WorkerBJobRoot])
+                root1 = space.meld(spell_id=spell_ids[WorkerBJobRoot])
+                root2 = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
 
@@ -56485,7 +56672,7 @@ END FILE: benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_shallow_all.py
-CONTENT SHA256: 36c358567675fc9be3959b989e3c781b471ef8d296586b09edcf062c58cb63b7
+CONTENT SHA256: e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -57705,21 +57892,21 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
     conduit = spellbook.conjure(name="threaded-di-stress")
 
     def get_root_a() -> Any:
-        root = conduit.meld(spell=root_a_id)
+        root = conduit.meld(spell_id=root_a_id)
         if not isinstance(root, g.root_a):
             raise AssertionError("Melder: root_a meld returned wrong type")
         return root
 
     def get_root_b() -> Any:
-        root = conduit.meld(spell=root_b_id)
+        root = conduit.meld(spell_id=root_b_id)
         if not isinstance(root, g.root_b):
             raise AssertionError("Melder: root_b meld returned wrong type")
         return root
 
     def spellspace_cycle() -> None:
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=root_space_id)
-            r2 = space.meld(spell=root_space_id)
+            r1 = space.meld(spell_id=root_space_id)
+            r2 = space.meld(spell_id=root_space_id)
             if not isinstance(r1, g.spellspace_root):
                 raise AssertionError("Melder: spellspace root meld returned wrong type")
             if r1 is not r2:
@@ -57732,7 +57919,7 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
 
     def spellspace_resolve(handle: Any) -> Any:
         _, space = handle
-        root = space.meld(spell=root_space_id)
+        root = space.meld(spell_id=root_space_id)
         if not isinstance(root, g.spellspace_root):
             raise AssertionError("Melder: spellspace root meld returned wrong type")
         return root
@@ -58115,14 +58302,14 @@ def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
 
     def get_root_a(ix: int) -> Any:
         g = graphs[ix]
-        root = conduit.meld(spell=root_a_ids[ix])
+        root = conduit.meld(spell_id=root_a_ids[ix])
         if not isinstance(root, g.root_a):
             raise AssertionError("Melder: root_a meld returned wrong type")
         return root
 
     def get_root_b(ix: int) -> Any:
         g = graphs[ix]
-        root = conduit.meld(spell=root_b_ids[ix])
+        root = conduit.meld(spell_id=root_b_ids[ix])
         if not isinstance(root, g.root_b):
             raise AssertionError("Melder: root_b meld returned wrong type")
         return root
@@ -58130,8 +58317,8 @@ def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
     def spellspace_cycle(ix: int) -> None:
         g = graphs[ix]
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=space_root_ids[ix])
-            r2 = space.meld(spell=space_root_ids[ix])
+            r1 = space.meld(spell_id=space_root_ids[ix])
+            r2 = space.meld(spell_id=space_root_ids[ix])
             if not isinstance(r1, g.spellspace_root):
                 raise AssertionError("Melder: spellspace root meld returned wrong type")
             if r1 is not r2:
@@ -58549,7 +58736,7 @@ END FILE: benchmarks/testing_other_di/test_shallow_all.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_shallow_all_diagnostics.py
-CONTENT SHA256: bd71cb7bce51cf56c4045d7821bada10ba8744748c5449331a985be04931f3ec
+CONTENT SHA256: fd9bd411f3e4693742030feb2360f6a277a9a309847f2ea9ab6f5b67e0cf723f
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -58887,7 +59074,7 @@ def _time_meld(conduit: Any, root_id: str, iterations: int) -> float:
         return 0.0
     start = time.perf_counter()
     for _ in range(iterations):
-        conduit.meld(spell=root_id)
+        conduit.meld(spell_id=root_id)
     elapsed = time.perf_counter() - start
     return elapsed / float(iterations)
 
@@ -58986,7 +59173,7 @@ def test_shallow_all_melder_route_diagnostics(graph: object) -> None:
             ("B", root_b_id, graph.root_b),
         ):
             for _ in range(warmup_iters):
-                conduit.meld(spell=root_id)
+                conduit.meld(spell_id=root_id)
 
             spell = _lookup_spell(meld, root_id)
             expected_route = _expected_route(meld, spell)
@@ -59740,7 +59927,7 @@ END FILE: benchmarks/testing_other_di/test_shallow_diagnostics.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_unroll_locals_microbench.py
-CONTENT SHA256: ab62442e3e2946b9e364b240680aad435f2e5f160e4da2f9b07426290ad4787c
+CONTENT SHA256: fd37689f9434810fae37ddb92fb3c41ac31f08b615baf480be293ac1d742e141
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -59852,15 +60039,15 @@ def _warm_per_meld_us(
             root_id = spell_ids[root_cls]
             conduit = spellbook.conjure(name=f"unroll-mb-d{depth}-{label}")
             try:
-                conduit.meld(spell=root_id)  # cold: compiles the executor + builds deps
+                conduit.meld(spell_id=root_id)  # cold: compiles the executor + builds deps
                 for _ in range(warmup):
-                    conduit.meld(spell=root_id)
+                    conduit.meld(spell_id=root_id)
                 gc.collect()
                 gc.disable()
                 try:
                     start = time.perf_counter()
                     for _ in range(iterations):
-                        conduit.meld(spell=root_id)
+                        conduit.meld(spell_id=root_id)
                     elapsed = time.perf_counter() - start
                 finally:
                     gc.enable()
@@ -59928,7 +60115,7 @@ END FILE: benchmarks/testing_other_di/test_unroll_locals_microbench.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_unroll_path_diagnostic.py
-CONTENT SHA256: c19ed4366f17e835a642eaf99527b6db0e5b3e7cd3f3710dce72ffa934e40d7f
+CONTENT SHA256: dedd7934b0c6ddbd5869bc8b0c1a120ca948ad5183c3dd7de73c6b6c76faf82a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -60035,7 +60222,7 @@ def _capture_compiles(
             )
         conduit = spellbook.conjure(name="lane-diag")
         try:
-            conduit.meld(spell=spell_ids[root_cls])
+            conduit.meld(spell_id=spell_ids[root_cls])
         finally:
             conduit.cleanup()
     finally:
@@ -60843,7 +61030,7 @@ END FILE: docs/beginner/install.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/beginner/registration.md
-CONTENT SHA256: a7042c1f40637b2170edea94e5f82ee0b638e6912d58e7d11a90021b4d2c9eb8
+CONTENT SHA256: f4344577c3b46b65228c4657ad83ddcd58469c72b9ff27f524d12e14d3b3bed0
 SOURCE ENCODING: utf-8
 ================================================================================
 # What you can bind
@@ -60858,6 +61045,19 @@ Use the class examples when you want to study construction and instance
 lifetimes. Use the function and prebuilt-instance examples when a value comes
 from application setup you already control. Read their assertions before
 assuming that all registration forms have interchangeable lifetime behavior.
+
+## Bind an existing object under a Protocol
+
+An existing object uses `existence="unique"`. When you supply a Protocol as
+`spellframe`, Melder checks the actual object during bind: public members defined
+directly on that Protocol must exist, and callable members must be callable.
+An incompatible object raises `TypeError` before registration. Compatible objects
+can be injected into consumers, preserving the original reference.
+
+This is a limited member check, not full static type checking. It does not check
+inherited Protocol declarations, annotation-only data fields or method signatures.
+Members supplied by the instance itself can satisfy the check. Factory bindings
+retain their separate callable contract.
 
 ## Register a group of services
 
@@ -62442,7 +62642,7 @@ END FILE: docs/intermediate/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/overrides.md
-CONTENT SHA256: 743c56bbb0b416ce2f444c66a8448a52e61b12f9fc8e12551ef68608783e9c4f
+CONTENT SHA256: 27926214cd2755f20b0c62c5dde3a0c6487d71a7919f030613d7cea3771f1a7b
 SOURCE ENCODING: utf-8
 ================================================================================
 # Flat overrides and live creation probes
@@ -62471,6 +62671,12 @@ use these reads without using a meld merely to discover whether something is ali
 
 Continue to [deep overrides](../advanced/overrides.md) when the target is inside
 a dependency graph rather than a parameter of the object you are resolving.
+
+For a registered `resolvable=False` definition, supply its consumer's value through the same override
+API. The supplied object remains your reference; this does not transfer lifecycle ownership. Missing
+ordinary required arguments use Python's normal constructor error, including in cached execution.
+Existing whole-child overrides still eagerly construct registered children before replacement;
+they do not prune the child's constructor inputs. Plan for that existing behavior when replacing a branch.
 ================================================================================
 END FILE: docs/intermediate/overrides.md
 ================================================================================
@@ -62549,7 +62755,7 @@ END FILE: docs/intermediate/permissions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/registration.md
-CONTENT SHA256: 5bc5b281115bc952069db5fa4540019213c2dd4a8721fd197094a5d1e5879619
+CONTENT SHA256: f5d7f6d355be8dd9b1764345d1aaf6f6ad8c554a1f549d03f8b2bae244749ad0
 SOURCE ENCODING: utf-8
 ================================================================================
 # Fluent registration and module scanning
@@ -62569,6 +62775,59 @@ client's configured values and the root/child policy identity difference.
 the disposal vocabulary. The client's `base_url` and `timeout` are supplied through
 `meld(override=...)`. Keeping these channels distinct prevents configuration from
 being attached to a registration while the constructor still receives its defaults.
+
+Ordinary constructor defaults are honored even when a matching provider is registered.
+`dependency: Optional[Service] = None` retains `None`, and `dependency: Service = chosen_service`
+retains that exact instance. A default does not create an inferred dependency edge. This also applies
+to collection defaults, `0`, `False`, and empty values.
+An explicit `meld(override={"dependency": replacement})` still supplies a value in place of the default.
+
+To request injection, omit the default (`dependency: Service`) or use an explicit `SpellMap` or
+`SpellContract` descriptor. `Optional[Service]` without a default still requests inferred DI.
+
+## Register a definition without making it resolvable
+
+Use `resolvable=False` for an abstract base or helper that belongs in the registered graph but
+must not be constructed or returned by Melder. Both `bind` and `bind_inactive` default to
+`resolvable=True`; the choice belongs to each bound version.
+
+```python
+from melder import Spellbook
+
+class ExternalService:
+    pass
+
+class Worker:
+    def __init__(self, service: ExternalService) -> None:
+        self.service = service
+
+book = Spellbook()
+definition_id = book.bind(spell=ExternalService, existence="unique", resolvable=False)
+book.bind(spell=Worker, existence="many")
+conduit = book.conjure()
+try:
+    service = ExternalService()
+    worker = conduit.meld(Worker, override={"service": service})
+    assert worker.service is service
+finally:
+    conduit.permanent_cleanup()
+```
+
+Directly melding `definition_id` raises `MeldExecutionError`. Its metadata remains inspectable.
+Required constructor annotations retain the registered reference without an executable dependency.
+Python reports omitted required arguments; Melder adds no separate argument preflight. Keep a
+parameter genuinely required when you want Python to enforce supply, and use ordinary defaults only
+for valid application fallbacks. An explicit DI descriptor default is not a required Python argument.
+
+On a Rift-enabled frame, refresh the Rift's projections after external changes and use
+`frame_viewer.describe_spell_relationships(source_id, frame_name=...)` to navigate visible dependencies,
+supplied references and registered direct bases. Source IDs use `book.id:spell_id`. Existing research
+commands provide source/history reads. Existing version rules still apply; method-body edits alone
+do not mint a new binding version.
+
+Crystallizer records and restores the flag, including parked members and index grafts. New durable
+records use schema major 2 so older readers refuse rather than silently enabling a definition.
+Legacy records without the flag retain ordinary resolvable behavior.
 
 ## Register where the code lives
 
@@ -65571,8 +65830,342 @@ class Asset:
 END FILE: docs/tools/site_model.py
 ================================================================================
 ================================================================================
+BEGIN FILE: experimentation/test_spellframe_type_injection.py
+CONTENT SHA256: 93ffa350dbbc556831cf68ecac2768697561a71601be1d2bed4814f4d0da2cb2
+SOURCE ENCODING: utf-8
+================================================================================
+"""Probe spellframe grouping through Melder's real public integration path.
+
+Run from the Melder repository in PowerShell:
+    $env:PYTHONPATH = (Resolve-Path src).Path
+    py -3.14t experimentation/test_spellframe_type_injection.py -v
+
+Ten scenarios run in both automatic and dynamic mode. Constructor inference,
+explicit SpellMap selection, qualified public meld and machine-ID lookup are
+kept separate. No compiler or resolver behavior is mocked. The native test-only
+Aether reset isolates each case inside this experiment process. System caching
+is disabled through frame configuration, matching the native cache tests, so
+saved compilation plans cannot contaminate these binding/injection cases.
+
+The file uses unittest so it runs without pytest and can also be collected by
+pytest when that runner is available. Application/runtime source is unchanged.
+"""
+
+import inspect
+import sys
+import unittest
+from typing import ClassVar, Optional, Union
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+
+
+class Provider:
+    """A resource-free dependency with observable behavior for identity checks."""
+
+    def __init__(self) -> None:
+        """Initialize the provider's stable value; no external resource is owned."""
+        self.value = "ready"
+
+    def read(self) -> str:
+        """Return the stable value used to prove that a constructed provider works."""
+        return self.value
+
+
+class UserProvider(Provider):
+    """A distinct provider type with an observable userland value."""
+
+    def __init__(self) -> None:
+        """Initialize the inherited value contract with a different public result."""
+        super().__init__()
+        self.value = "userland"
+
+
+class Consumer:
+    """Borrow an injected Provider and use it through its ordinary typed contract."""
+
+    def __init__(self, provider: Provider) -> None:
+        """Retain the injected provider without taking ownership of its disposal."""
+        self.provider = provider
+
+    def execute(self) -> str:
+        """Use the dependency so an unresolved descriptor or missing object fails."""
+        return "consumer:" + self.provider.read()
+
+
+class MappedConsumer(Consumer):
+    """Choose the commandops provider explicitly when several providers are bound."""
+
+    def __init__(
+        self,
+        provider: Union[Provider, SpellMap] = SpellMap(
+            spellframe="commandops",
+            binding_name="service",
+        ),
+    ) -> None:
+        """Require Melder to replace the descriptor with the selected Provider.
+
+        A direct Python call that leaves the SpellMap default unresolved raises
+        TypeError. The injected provider remains borrowed by the consumer.
+        """
+        if isinstance(provider, SpellMap):
+            raise TypeError("MappedConsumer requires its SpellMap to be resolved.")
+        super().__init__(provider)
+
+
+class AutomaticSpellframeTests(unittest.TestCase):
+    """Exercise public binding/conjure/meld behavior in a fresh automatic world."""
+
+    DYNAMIC: ClassVar[bool] = False
+
+    @staticmethod
+    def reset_world() -> None:
+        """Use the repository's native test reset and reattach class-level hosts.
+
+        This is process-local test isolation, matching Melder integration tests;
+        it does not replace registration, compilation, validation or resolution.
+        """
+        Aether._reset_singleton_for_tests()
+        runtime = Aether()
+        Spellbook._aether = runtime
+        Conduit._aether = runtime
+
+    def setUp(self) -> None:
+        """Create one real book with deterministic phase scheduling for each case."""
+        self.reset_world()
+        self.book: Spellbook = Spellbook()
+        self.book.get_configuration().set_property(
+            "phase_scheduler_workers_per_spellbook", 1
+        )
+        self.book.configure_aether_frame(
+            system_state="dynamic" if self.DYNAMIC else None,
+            disposal=None,
+            disposal_method_names=None,
+            system_caching_enabled=False,
+        )
+        self.root: Optional[Conduit] = None
+
+    def tearDown(self) -> None:
+        """Attempt root/book cleanup and always reset the process-local world."""
+        try:
+            if self.root is not None:
+                self.root.cleanup()
+        finally:
+            try:
+                self.book.cleanup()
+            finally:
+                self.reset_world()
+
+    def bind_provider(
+        self,
+        spellframe: Optional[str] = None,
+        binding_name: Optional[str] = None,
+    ) -> str:
+        """Bind Provider with unique lifetime and return its public machine ID."""
+        return self.book.bind(
+            spell=Provider,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
+
+    def bind_distinct_provider_pair(self) -> tuple[str, str]:
+        """Bind two distinct types under the same binding name in different frames."""
+        commandops_id = self.bind_provider("commandops", "service")
+        userland_id = self.book.bind(
+            spell=UserProvider,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe="userland",
+            binding_name="service",
+        )
+        return commandops_id, userland_id
+
+    def bind_consumer(self, consumer_type: type[Consumer] = Consumer) -> str:
+        """Bind a consumer class and return the ID used to resolve the root object."""
+        return self.book.bind(
+            spell=consumer_type,
+            existence=Existence.many,
+            permissions="create",
+        )
+
+    def conjure_root(self) -> Conduit:
+        """Run real native validation/compilation and retain the root for cleanup."""
+        self.root = self.book.conjure(
+            name="spellframe_type_injection_experiment",
+            dynamic=self.DYNAMIC,
+        )
+        return self.root
+
+    def test_plain_class_injection_baseline(self) -> None:
+        """Unframed constructor injection and direct class lookup share Provider."""
+        provider_id = self.bind_provider()
+        consumer_id = self.bind_consumer()
+        root = self.conjure_root()
+
+        consumer = root.meld(spell_id=consumer_id)
+        provider = root.meld(spell_id=provider_id)
+
+        self.assertEqual(consumer.execute(), "consumer:ready")
+        self.assertIs(consumer.provider, provider)
+        self.assertIs(root.meld(Provider), provider)
+
+    def test_named_framed_provider_still_injects_by_concrete_type(self) -> None:
+        """A unique framed/named Provider satisfies an ordinary typed parameter."""
+        provider_id = self.bind_provider("commandops", "service")
+        consumer_id = self.bind_consumer()
+        root = self.conjure_root()
+
+        consumer = root.meld(spell_id=consumer_id)
+        provider = root.meld(spellframe="commandops", binding_name="service")
+
+        self.assertEqual(consumer.execute(), "consumer:ready")
+        self.assertIs(consumer.provider, provider)
+        self.assertIs(provider, root.meld(spell_id=provider_id))
+
+    def test_two_spellframes_do_not_disambiguate_plain_type_injection(self) -> None:
+        """Two Provider registrations fail specifically because inference is ambiguous."""
+        self.bind_provider("commandops", "service")
+        self.bind_provider("userland", "service")
+        self.bind_consumer()
+
+        with self.assertRaises(PhaseExecutionError) as raised:
+            self.conjure_root()
+
+        errors = raised.exception.errors
+        self.assertTrue(
+            any("multiple DI candidates" in str(error) for error in errors),
+            "Expected an ambiguous-provider error, got: "
+            + "; ".join(str(error) for error in errors),
+        )
+
+    def test_spellmap_selects_one_provider_across_spellframes(self) -> None:
+        """The explicit descriptor chooses commandops and leaves userland distinct."""
+        commandops_id = self.bind_provider("commandops", "service")
+        userland_id = self.bind_provider("userland", "service")
+        consumer_id = self.bind_consumer(MappedConsumer)
+        root = self.conjure_root()
+
+        consumer = root.meld(spell_id=consumer_id)
+        commandops_provider = root.meld(spell_id=commandops_id)
+        userland_provider = root.meld(spell_id=userland_id)
+
+        self.assertEqual(consumer.execute(), "consumer:ready")
+        self.assertIs(consumer.provider, commandops_provider)
+        self.assertIsNot(consumer.provider, userland_provider)
+
+    def test_spellframe_only_selects_default_binding(self) -> None:
+        """Omitting binding_name selects each spellframe's default provider."""
+        commandops_id = self.bind_provider(spellframe="commandops")
+        userland_id = self.book.bind(
+            spell=UserProvider,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe="userland",
+        )
+        consumer_id = self.bind_consumer()
+        root = self.conjure_root()
+
+        commandops_provider = root.meld(spellframe="commandops")
+        userland_provider = root.meld(spellframe="userland")
+        consumer = root.meld(spell_id=consumer_id)
+
+        self.assertEqual(commandops_provider.read(), "ready")
+        self.assertEqual(userland_provider.read(), "userland")
+        self.assertIsNot(commandops_provider, userland_provider)
+        self.assertIs(commandops_provider, root.meld(spell_id=commandops_id))
+        self.assertIs(userland_provider, root.meld(spell_id=userland_id))
+        self.assertIs(
+            commandops_provider,
+            root.meld(spellframe="commandops", binding_name="__default__"),
+        )
+        self.assertEqual(consumer.execute(), "consumer:ready")
+        self.assertIs(consumer.provider, commandops_provider)
+
+    def test_spellframe_only_does_not_guess_named_binding(self) -> None:
+        """A missing default is an error even when the frame has one named provider."""
+        provider_id = self.bind_provider("commandops", "service")
+        root = self.conjure_root()
+
+        with self.assertRaisesRegex(KeyError, "binding='__default__'"):
+            root.meld(spellframe="commandops")
+
+        provider = root.meld(spellframe="commandops", binding_name="service")
+        self.assertEqual(provider.read(), "ready")
+        self.assertIs(provider, root.meld(spell_id=provider_id))
+
+    def test_same_binding_name_across_spellframes_selects_distinct_providers(self) -> None:
+        """The frame distinguishes two addresses whose binding name is identical."""
+        commandops_id, userland_id = self.bind_distinct_provider_pair()
+        root = self.conjure_root()
+
+        commandops_provider = root.meld(spellframe="commandops", binding_name="service")
+        userland_provider = root.meld(spellframe="userland", binding_name="service")
+
+        self.assertEqual(commandops_provider.read(), "ready")
+        self.assertEqual(userland_provider.read(), "userland")
+        self.assertIsNot(commandops_provider, userland_provider)
+        self.assertIs(commandops_provider, root.meld(spell_id=commandops_id))
+        self.assertIs(userland_provider, root.meld(spell_id=userland_id))
+
+    def test_spellmap_selects_distinct_types_with_same_binding_name(self) -> None:
+        """SpellMap selects commandops/service when userland/service also exists."""
+        commandops_id, userland_id = self.bind_distinct_provider_pair()
+        consumer_id = self.bind_consumer(MappedConsumer)
+        root = self.conjure_root()
+
+        consumer = root.meld(spell_id=consumer_id)
+        commandops_provider = root.meld(spell_id=commandops_id)
+        userland_provider = root.meld(spell_id=userland_id)
+
+        self.assertEqual(consumer.execute(), "consumer:ready")
+        self.assertIs(consumer.provider, commandops_provider)
+        self.assertIsNot(consumer.provider, userland_provider)
+        self.assertEqual(userland_provider.read(), "userland")
+
+    def test_direct_qualified_lookup_needs_no_spellmap(self) -> None:
+        """Public frame/binding arguments and spell_id resolve the same live object."""
+        provider_id = self.bind_provider("commandops", "service")
+        root = self.conjure_root()
+
+        by_address = root.meld(spellframe="commandops", binding_name="service")
+        by_id = root.meld(spell_id=provider_id)
+
+        self.assertEqual(by_address.read(), "ready")
+        self.assertIs(by_address, by_id)
+
+    def test_direct_class_lookup_does_not_alias_custom_address(self) -> None:
+        """Direct class lookup has different addressing semantics from inference."""
+        provider_id = self.bind_provider("commandops", "service")
+        root = self.conjure_root()
+        self.assertEqual(root.meld(spell_id=provider_id).read(), "ready")
+
+        with self.assertRaisesRegex(KeyError, "No spell found"):
+            root.meld(Provider)
+
+
+class DynamicSpellframeTests(AutomaticSpellframeTests):
+    """Run the same ten scenarios with dynamic frame posture and native meld gates."""
+
+    DYNAMIC: ClassVar[bool] = True
+
+
+if __name__ == "__main__":
+    print("Python:", sys.version.split()[0], flush=True)
+    print("GIL enabled:", sys._is_gil_enabled(), flush=True)
+    print("Melder source:", inspect.getfile(Spellbook), flush=True)
+    unittest.main(verbosity=2)
+================================================================================
+END FILE: experimentation/test_spellframe_type_injection.py
+================================================================================
+================================================================================
 BEGIN FILE: pyproject.toml
-CONTENT SHA256: 04de772dd9338062edfcba0f8d06c4f5851bee11c6ec7652e9a8f967f573b8a1
+CONTENT SHA256: de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232
 SOURCE ENCODING: utf-8
 ================================================================================
 [build-system]
@@ -65657,9 +66250,8 @@ LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
 
 # PEP 735 dependency groups: development-only requirements that are NEVER
 # published in any built distribution. Install with `pip install --group dev`
-# (pip >= 25.1). Transitive pins (pluggy, iniconfig, execnet, mypy_extensions,
-# typing_extensions, packaging, ...) are deliberately omitted - the resolver
-# owns those.
+# (pip >= 25.1). Direct requirements stay broad here; uv.lock records the exact
+# transitive resolution for reproducible repository environments. See CONTRIBUTING.md.
 [dependency-groups]
 # Only pytest built-in markers are used suite-wide (parametrize, xfail, skip);
 # test tiers are split by directory, not marker. pytest-mock/-timeout/
@@ -65706,6 +66298,10 @@ dev = [
     { include-group = "lint" },
     { include-group = "build" },
 ]
+
+[tool.uv]
+# The generated lock and contributor setup are validated with this uv release.
+required-version = ">=0.11.23"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -65822,7 +66418,7 @@ END FILE: pyproject.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: requirements.txt
-CONTENT SHA256: 15d0087ac1c8f407bd34f5ab118477052682aee2011ae367a95419146ab65ac6
+CONTENT SHA256: 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder has ZERO third-party RUNTIME dependencies.
@@ -65864,14 +66460,14 @@ SOURCE ENCODING: utf-8
 # tests/integration), not by marker.
 pytest==9.1.1
 pytest-cov==7.1.0
-coverage==7.15.2
+coverage==7.16.1
 
 # --- lint ---
-ruff==0.16
+ruff==0.16.7
 
 # --- build ---
-setuptools==83.0.0
-wheel==0.47.0
+setuptools==84.0.0
+wheel==0.48.0
 
 # --- optional: parallel test runs (`pytest -n auto`) ---
 # pytest-xdist==3.8.0

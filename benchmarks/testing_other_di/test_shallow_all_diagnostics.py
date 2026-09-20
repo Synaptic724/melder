@@ -333,7 +333,7 @@ def _time_meld(conduit: Any, root_id: str, iterations: int) -> float:
         return 0.0
     start = time.perf_counter()
     for _ in range(iterations):
-        conduit.meld(spell=root_id)
+        conduit.meld(spell_id=root_id)
     elapsed = time.perf_counter() - start
     return elapsed / float(iterations)
 
@@ -432,7 +432,7 @@ def test_shallow_all_melder_route_diagnostics(graph: object) -> None:
             ("B", root_b_id, graph.root_b),
         ):
             for _ in range(warmup_iters):
-                conduit.meld(spell=root_id)
+                conduit.meld(spell_id=root_id)
 
             spell = _lookup_spell(meld, root_id)
             expected_route = _expected_route(meld, spell)

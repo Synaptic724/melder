@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="21" time="1.532" timestamp="2026-09-13T12:32:21.673758-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceGraphAnalyzerStrategy]" time="0.006"><failure message="TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46E2E9190&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:109: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert tuple(planner_type._iter_spell_contract_defaults(spell)) == ()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_analyzer\strategies\spell_occurrence_graph_analyzer_strategy.py:995: in _iter_spell_contract_defaults
+    signature = inspect.signature(spell.spell)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2441: in _signature_from_callable
+    raise TypeError('{!r} is not a callable object'.format(obj))
+E   TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46E2E9190&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceContractProcessorStrategy]" time="0.004"><failure message="TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD630D0&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:109: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert tuple(planner_type._iter_spell_contract_defaults(spell)) == ()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\artifact_processor\strategies\spell_occurrence_contract_processor_strategy.py:226: in _iter_spell_contract_defaults
+    signature = inspect.signature(spell.spell)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2441: in _signature_from_callable
+    raise TypeError('{!r} is not a callable object'.format(obj))
+E   TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD630D0&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[unqualified]" time="0.008" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[typed]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[named]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_dependency_retains_identity_without_contract_inspection" time="0.007"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD64110&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:135: in test_existing_value_dependency_retains_identity_without_contract_inspection
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD64110&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_transitive_dependency_retains_identity" time="0.008"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 2 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD63490&gt; is not a callable object; TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD63490&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:145: in test_existing_value_transitive_dependency_retains_identity
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 2 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD63490&gt; is not a callable object; TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD63490&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_in_collection_retain_identity" time="0.008"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD64390&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:154: in test_existing_values_in_collection_retain_identity
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46FD64390&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_explicit_map_injects_existing_value" time="0.007"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46C6B8E10&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:166: in test_explicit_map_injects_existing_value
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46C6B8E10&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_late_bound_consumer_injects_existing_value" time="0.009"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46C6B8310&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:176: in test_late_bound_consumer_injects_existing_value
+    assert root.meld(spell_id=consumer_id).value is supplied
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:642: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:883: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src\melder\aether\spellbook\spellbook.py:6759: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+src\melder\aether\spellbook\spellbook_creation_system.py:1606: in run_resolution_phases_for_target_spell
+    SpellbookCreationSystem._run_target_plan_resolution_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:2287: in _run_target_plan_resolution_phases
+    return SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000005D46C6B8310&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[consumer-book]" time="0.050" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[consumer-configuration-freeze]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[empty-conjure]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[link]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[contract]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[late-bind]" time="0.008" /><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[validate-resolution]" time="0.012"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:178: in test_provider_survives_independent_borrower_operation_prefix
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_independent_borrower_operation_prefix[consumer-meld]" time="0.014"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:178: in test_provider_survives_independent_borrower_operation_prefix
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_repeated_borrower_validation_and_cleanup[1-1]" time="0.013"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:200: in test_provider_survives_repeated_borrower_validation_and_cleanup
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_repeated_borrower_validation_and_cleanup[1-3]" time="0.017"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:200: in test_provider_survives_repeated_borrower_validation_and_cleanup
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_repeated_borrower_validation_and_cleanup[2-2]" time="0.021"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:200: in test_provider_survives_repeated_borrower_validation_and_cleanup
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase></testsuite></testsuites>

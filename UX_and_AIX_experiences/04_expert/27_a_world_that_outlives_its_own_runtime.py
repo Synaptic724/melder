@@ -111,7 +111,7 @@ def build_world():
 
 def main() -> None:
     crystallizer, conduit, commands = build_world()
-    vault = conduit.meld(spell=Vault, binding_name="outlive-vault")
+    vault = conduit.meld(Vault, binding_name="outlive-vault")
     vault.contents.append("written before any codegen")
     print("world up; custody recording:", crystallizer.activated)
 

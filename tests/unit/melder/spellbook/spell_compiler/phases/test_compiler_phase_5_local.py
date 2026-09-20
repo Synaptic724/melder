@@ -161,6 +161,7 @@ def _make_spell_stub(
         _spellbook=spellbook,
         _compiler_artifact=artifact,
         is_existing_creation=is_existing_creation,
+        resolvable=True,
     )
     spell._cleanup_creation_context = lambda: None
     spellbook._spell_id_pool[spell_id] = spell
@@ -338,6 +339,7 @@ def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates(
         system_index=system_index,
         spell_lookup=spellbook._spell_id_pool,
         root_builder=root_builder,
+        publication_spell_ids={"root", "dep", "existing"},
     )
 
     assert root_spell._compiler_artifact._spell_system_index_phase5 is system_index
@@ -355,7 +357,7 @@ def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates(
 def test_run_local_scopes_to_dependency_closure(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Phase 5 local entrypoint should only materialize the target dependency closure."""
+    """Build the full target closure while preserving a dependency's canonical artifacts."""
     phase = CompilerPhase5()
     states = _SpellSystemStatesStub(
         [
@@ -381,6 +383,10 @@ def test_run_local_scopes_to_dependency_closure(
         spell_system_states=states,
     )
     captured = _patch_ir_exports(monkeypatch)
+    retained_blueprint = _RootBlueprintStub("dep")
+    retained_codegen = object()
+    dep_spell._compiler_artifact._root_blueprint_phase5 = retained_blueprint
+    dep_spell._compiler_artifact._spell_codegen_creation = retained_codegen
     full_snapshot = SpellSystemAdjacencySnapshot(
         dependencies={
             "root": set(["dep"]),
@@ -431,7 +437,8 @@ def test_run_local_scopes_to_dependency_closure(
     assert index.get_node("dep") is not None
     assert index.get_node("outside") is None
     assert root_spell._compiler_artifact._root_blueprint_phase5 is not None
-    assert dep_spell._compiler_artifact._root_blueprint_phase5 is not None
+    assert dep_spell._compiler_artifact._root_blueprint_phase5 is retained_blueprint
+    assert dep_spell._compiler_artifact._spell_codegen_creation is retained_codegen
     assert outside_spell._compiler_artifact._root_blueprint_phase5 is None
     # Eager phase2_5 IR capture removed (write-only snapshot).
     assert captured["capture"] == []

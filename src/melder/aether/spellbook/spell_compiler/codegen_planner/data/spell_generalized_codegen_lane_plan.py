@@ -5,6 +5,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis import (
+        RequiredOverrideParam,
         SpellInjectionInstanceSpec,
     )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
@@ -92,6 +93,7 @@ class SpellGeneralizedCodegenPlanStep:
         "_creations_target_kind",
         "_shared_instance",
         "_inject_spec",
+        "_required_override_params",
         "_dependency_keys",
         "_dependency_keys_by_param",
         "_dependency_resolution_order",
@@ -144,6 +146,7 @@ class SpellGeneralizedCodegenPlanStep:
             owner_conduit_required: bool,
             must_register: bool,
             disposal_method_names: List[str],
+            required_override_params: Tuple[RequiredOverrideParam, ...] = (),
     ) -> None:
         """
         Initialize one generalized execution step.
@@ -156,6 +159,8 @@ class SpellGeneralizedCodegenPlanStep:
               this shape.
             - Borrows the established Spell disposal list without copying it.
               Plan teardown releases the step, never the borrowed list's contents.
+            - Retains required-input value rows in both variants, independently of
+              optional override metadata and without creating dependency keys.
         """
         if instance_key is None:
             raise ValueError("instance_key must not be None.")
@@ -211,6 +216,7 @@ class SpellGeneralizedCodegenPlanStep:
         self._creations_target_kind = creations_target_kind
         self._shared_instance = shared_instance
         self._inject_spec = inject_spec
+        self._required_override_params = required_override_params
         self._dependency_keys = dependency_keys
         self._dependency_keys_by_param = dependency_keys_by_param
         self._dependency_resolution_order = dependency_resolution_order
@@ -280,6 +286,11 @@ class SpellGeneralizedCodegenPlanStep:
         Return the fitted injection spec attached to this step.
         """
         return self._inject_spec
+
+    @property
+    def required_override_params(self) -> Tuple[RequiredOverrideParam, ...]:
+        """Return immutable required-input rows retained by both planner variants."""
+        return self._required_override_params
 
     @property
     def dependency_keys(self) -> List[InstanceKey]:
@@ -1242,6 +1253,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                         dependency_keys_by_param.items()
                     ),
                     collection_param_names=injection_spec.collection_param_names,
+                    required_override_params=injection_spec.required_override_params,
                     override_keys=override_keys,
                     override_match_prefix=override_match_prefix,
                     override_match_prefix_len=override_match_prefix_len,
@@ -1578,6 +1590,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     dependency_keys_by_param=dependency_keys_by_param,
                     dependency_resolution_order=dependency_resolution_order,
                     collection_param_names=injection_spec.collection_param_names,
+                    required_override_params=injection_spec.required_override_params,
                     override_keys=override_keys,
                     override_match_prefix=override_match_prefix,
                     override_match_prefix_len=override_match_prefix_len,
